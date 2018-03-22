@@ -32,6 +32,12 @@ In-browser bindings:
 
 - Ctrl+B: Bookmarks current page
 
+Screenshots
+===========
+
+.. image:: https://gitlab.com/cipres/galacteek/raw/927819fb2b6694c2dd6a93c12131aea9042fa94b/screenshots/filesview.png
+    :target: https://gitlab.com/cipres/galacteek/blob/927819fb2b6694c2dd6a93c12131aea9042fa94b/screenshots/filesview.png
+
 Platforms supported
 ===================
 
