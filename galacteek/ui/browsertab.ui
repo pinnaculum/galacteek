@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>BrowserTabForm</class>
+ <widget class="QWidget" name="BrowserTabForm">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>741</width>
+    <height>444</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_18">
+   <item>
+    <layout class="QVBoxLayout" name="verticalLayout_17">
+     <property name="bottomMargin">
+      <number>10</number>
+     </property>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_7">
+       <property name="sizeConstraint">
+        <enum>QLayout::SetMaximumSize</enum>
+       </property>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout">
+         <property name="sizeConstraint">
+          <enum>QLayout::SetMaximumSize</enum>
+         </property>
+         <item>
+          <widget class="QPushButton" name="loadIpfsHashButton">
+           <property name="maximumSize">
+            <size>
+             <width>40</width>
+             <height>24</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Load IPFS hash&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="galacteek.qrc">
+             <normaloff>:/share/icons/ipfs-logo-128-ice.png</normaloff>:/share/icons/ipfs-logo-128-ice.png</iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="loadIpnsHashButton">
+           <property name="maximumSize">
+            <size>
+             <width>40</width>
+             <height>24</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Load IPNS hash/name&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="galacteek.qrc">
+             <normaloff>:/share/icons/ipfs-logo-128-white.png</normaloff>:/share/icons/ipfs-logo-128-white.png</iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="loadFromClipboardButton">
+           <property name="maximumSize">
+            <size>
+             <width>40</width>
+             <height>24</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Load IPFS hash from clipboard&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="galacteek.qrc">
+             <normaloff>:/share/icons/clipboard-with-pencil-.png</normaloff>:/share/icons/clipboard-with-pencil-.png</iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="urlZone">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>400</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>1000</width>
+             <height>26</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <family>Sans Serif</family>
+             <pointsize>11</pointsize>
+             <italic>false</italic>
+            </font>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QToolButton" name="backButton">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Previous&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="galacteek.qrc">
+             <normaloff>:/share/icons/left-arrow.png</normaloff>:/share/icons/left-arrow.png</iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QToolButton" name="forwardButton">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Next&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="galacteek.qrc">
+             <normaloff>:/share/icons/right-arrow.png</normaloff>:/share/icons/right-arrow.png</iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="refreshButton">
+           <property name="maximumSize">
+            <size>
+             <width>50</width>
+             <height>24</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Refresh&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="galacteek.qrc">
+             <normaloff>:/share/icons/refresh.png</normaloff>:/share/icons/refresh.png</iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="pinComboBox">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pin&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QProgressBar" name="progressBar">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>30</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="value">
+            <number>24</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QVBoxLayout" name="vLayoutBrowser"/>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="galacteek.qrc"/>
+ </resources>
+ <connections/>
+</ui>

@@ -1,0 +1,6 @@
+PyQt5
+quamash
+aiohttp
+yarl
+py-cid
+git+https://gitlab.com/cipres/aioipfs

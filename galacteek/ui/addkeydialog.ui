@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>AddKeyDialog</class>
+ <widget class="QDialog" name="AddKeyDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>436</width>
+    <height>295</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <widget class="QDialogButtonBox" name="buttonBox">
+   <property name="geometry">
+    <rect>
+     <x>60</x>
+     <y>180</y>
+     <width>341</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Horizontal</enum>
+   </property>
+   <property name="standardButtons">
+    <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>30</y>
+     <width>121</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Key name</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="keyName">
+   <property name="geometry">
+    <rect>
+     <x>130</x>
+     <y>30</y>
+     <width>251</width>
+     <height>23</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_2">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>100</y>
+     <width>59</width>
+     <height>15</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Key size</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="keySize">
+   <property name="geometry">
+    <rect>
+     <x>130</x>
+     <y>100</y>
+     <width>79</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <item>
+    <property name="text">
+     <string>2048</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>4096</string>
+    </property>
+   </item>
+  </widget>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>AddKeyDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>248</x>
+     <y>254</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>157</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>AddKeyDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>316</x>
+     <y>260</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>286</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>
