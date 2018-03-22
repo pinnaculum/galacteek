@@ -1,0 +1,24 @@
+#!/bin/sh
+#
+# Script to generate the UI and translation files
+
+UIDIR=./galacteek/ui
+
+for ui in galacteek browsertab files keys addkeydialog mediaplayer settings; do
+	source="$UIDIR/$ui.ui"
+	dest="$UIDIR/ui_$ui.py"
+	rm -f $dest; pyuic5 --from-imports $source > $dest
+	echo "Generated $dest"
+done
+
+pylupdate5 -verbose galacteek.pro
+
+TRDIR=./share/translations
+for lang in en; do
+	lrelease-qt5 "$TRDIR/galacteek_$lang.ts" -qm \
+		"$TRDIR/galacteek_$lang.qm"
+	echo "Updated translation for language: $lang"
+done
+
+pyrcc5 $UIDIR/galacteek.qrc -o $UIDIR/galacteek_rc.py
+echo "Updated QRC file"
