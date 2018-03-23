@@ -431,7 +431,7 @@ class FilesTab(QWidget):
             if lIndex == 0:
                 lNew = basename
             else:
-                lNew = '{0}.{1}'.format(base, lIndex)
+                lNew = '{0}.{1}'.format(basename, lIndex)
             lookup = await op.filesLookup(GFILES_MYFILES_PATH, lNew)
             if not lookup:
                 await op.filesLink(entry, GFILES_MYFILES_PATH, name=lNew)
