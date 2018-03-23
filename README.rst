@@ -1,7 +1,7 @@
 Galacteek
 =========
 
-A modest IPFS navigator and file manager
+A modest IPFS_ navigator and file manager
 
 Installation
 ============
@@ -11,7 +11,7 @@ You need python 3.5 and pip installed. Install with:
 .. code-block:: shell
 
     pip install -r requirements.txt
-    python setup.py install
+    python setup.py build install
 
 Now just run the application with:
 
@@ -60,6 +60,7 @@ Requirements
 .. _quamash: https://github.com/harvimt/quamash
 .. _go-ipfs: https://github.com/ipfs/go-ipfs
 .. _dist.ipfs.io: https://dist.ipfs.io
+.. _IPFS: https://ipfs.io
 
 License
 =======
