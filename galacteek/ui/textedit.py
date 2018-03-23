@@ -7,7 +7,12 @@ from PyQt5.QtCore import QIODevice
 
 from . import ui_newdocument
 from .helpers import *
+from .i18n import *
 from galacteek.ipfs.ipfsops import *
+
+def iImportedDocument(name, hash):
+    return QCoreApplication.translate('NewDocumentForm',
+        'Succesfully imported {0} (hash reference {1})').format(name, hash)
 
 class AddDocumentWidget(QWidget):
     def __init__(self, gWindow, parent = None):
@@ -23,13 +28,13 @@ class AddDocumentWidget(QWidget):
     async def importFile(self, op):
         filename = self.ui.filename.text()
         if filename == '':
-            return messageBox('Please specify a filename')
+            return messageBox(iGeneralError('Please specify a filename'))
 
         text = self.ui.textEdit.toPlainText()
         tempDir = QTemporaryDir()
 
         if not tempDir.isValid():
-            return messageBox('Error creating directory')
+            return messageBox(iGeneralError('Error creating directory'))
 
         tempFilePath = tempDir.filePath(filename)
 
@@ -49,8 +54,7 @@ class AddDocumentWidget(QWidget):
         self.success(filename, root)
 
     def success(self, filename, entry):
-        messageBox('Succesfully imported {0} (hash {1})'.format(filename,
-            entry))
+        messageBox(iImportedDocument(filename, entry['Hash']))
         self.gWindow.removeTabFromWidget(self)
 
     def onImport(self):

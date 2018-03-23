@@ -10,6 +10,10 @@ def qtr(ctx, msg):
 def iNoStatus():
     return QCoreApplication.translate('GalacteekWindow', 'No status')
 
+def iGeneralError(msg):
+    return QCoreApplication.translate('GalacteekWindow',
+        'General error: {0}').format(msg)
+
 def iErrNoCx():
     return QCoreApplication.translate('GalacteekWindow',
         'No connection available')
