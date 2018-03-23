@@ -50,6 +50,6 @@ class BookmarksTab(QWidget):
 
     def onItemDoubleClicked(self, index):
         row = index.row()
-        url = self.model.data(index)
+        url = self.model.data(self.model.index(row, 0))
         tab = self.gWindow.addBrowserTab()
         tab.browseFsPath(url)

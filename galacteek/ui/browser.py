@@ -8,6 +8,8 @@ from PyQt5.QtWidgets import (QWidget, QFrame, QApplication, QMainWindow,
         QDialog, QLabel, QPushButton, QVBoxLayout, QAction,
         QMenu, QTabWidget, QInputDialog, QMessageBox)
 
+from PyQt5.QtPrintSupport import *
+
 from PyQt5.QtCore import QUrl, QBuffer, QIODevice, Qt, QCoreApplication, QObject
 from PyQt5 import QtWebEngineWidgets, QtWebEngine, QtWebEngineCore
 from PyQt5.Qt import QByteArray
@@ -179,7 +181,7 @@ class BrowserTab(QWidget):
         self.ui.loadFromClipboardButton.clicked.connect(self.loadFromClipboardButtonClicked)
         self.ui.loadIpfsHashButton.clicked.connect(self.loadIpfsHashButtonClicked)
         self.ui.loadIpnsHashButton.clicked.connect(self.loadIpnsHashButtonClicked)
-        #self.ui.pinPageButton.clicked.connect(self.pinPageButtonClicked)
+        #self.ui.printButton.clicked.connect(self.printButtonClicked)
 
         # Prepare the pin combo box
         iconPin = getIcon('pin.png')
@@ -233,6 +235,18 @@ class BrowserTab(QWidget):
 
         self.mainWindow.getApp().ipfsTask(pinCoro,
                 path)
+
+    def printButtonClicked(self):
+        printer = QPrinter()
+        dialog = QPrintDialog(printer, self)
+        dialog.setModal(True)
+
+        def success(ok):
+            return ok
+
+        if dialog.exec_() == QDialog.Accepted:
+            currentPage = self.ui.webEngineView.page()
+            currentPage.print(printer, success)
 
     def pinPageButtonClicked(self):
         self.pinPath(self.currentIpfsResource, recursive=False)

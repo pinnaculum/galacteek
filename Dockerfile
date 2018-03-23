@@ -11,6 +11,11 @@ ADD requirements.txt /usr/local
 RUN cd /usr/local && \
     pip3 install -r requirements.txt
 
+# Get ipfs binary
+RUN wget http://dist.ipfs.io/go-ipfs/v0.4.13/go-ipfs_v0.4.13_linux-amd64.tar.gz
+RUN tar -xvf go-ipfs_v0.4.13_linux-amd64.tar.gz
+RUN cp go-ipfs/ipfs /usr/local/bin
+
 # Add actual source code.
 COPY . /usr/local/galacteek
 RUN cd /usr/local/galacteek && \

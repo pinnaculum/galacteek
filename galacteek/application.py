@@ -62,32 +62,42 @@ class IPFSConnectionParams(object):
                 scheme='http', path='')
 
 class GalacteekApplication(QApplication):
-    def __init__(self):
+    GALACTEEK = 'galacteek'
+
+    def __init__(self, debug=False):
         QApplication.__init__(self, sys.argv)
+
+        QCoreApplication.setApplicationName(self.GALACTEEK)
 
         self._loop = None
         self._client = None
         self._pubsubListeners = []
         self.ipfsd = None
+
         self.pubsubEnabled = False
+        self.debugEnabled = debug
+        self.profile = 'main'
 
         self.mainWindow = None
 
         self.setupTranslator()
-        self.initSettings()
         self.initPaths()
+
+        self.initSettings()
         self.initSystemTray()
         self.initMisc()
+
+    def debug(self, msg):
+        if self.debugEnabled:
+            print(msg, file=sys.stderr)
 
     @property
     def ipfsConnParams(self):
         return self.getIpfsConnectionParams()
 
-    def initSettings(self):
-        QCoreApplication.setOrganizationName('galacteek')
-        QCoreApplication.setApplicationName('galacteek')
-
-        self.settingsMgr = SettingsManager()
+    def setProfile(self, profile):
+        """ Should only be called by the gui entrypoint """
+        self.profile = profile
 
     def initSystemTray(self):
         self.systemTray = QSystemTrayIcon(self)
@@ -106,7 +116,7 @@ class GalacteekApplication(QApplication):
 
     def initMisc(self):
         self.downloadsManager = downloads.DownloadsManager(self)
-        self.bookmarks = Bookmarks()
+        self.bookmarks = Bookmarks(self.bookmarksFileLocation)
 
     def setupTranslator(self):
         self.translator = QTranslator()
@@ -137,9 +147,7 @@ class GalacteekApplication(QApplication):
     def setupRepository(self):
         async def setup(oper):
             rootList = await oper.filesList('/')
-            if not rootList:
-                return
-            hasGalacteek = await oper.filesLookup('/', 'galacteek')
+            hasGalacteek = await oper.filesLookup('/', self.GALACTEEK)
             if not hasGalacteek:
                 await oper.client.files.mkdir(GFILES_MYFILES_PATH, parents=True)
 
@@ -209,16 +217,40 @@ class GalacteekApplication(QApplication):
         return self._loop
 
     def initPaths(self):
-        self.dataLocation = QStandardPaths.writableLocation(QStandardPaths.DataLocation)
+        qtDataLocation = QStandardPaths.writableLocation(QStandardPaths.DataLocation)
+        self.dataLocation = os.path.join(
+                qtDataLocation, self.profile)
+
         if not self.dataLocation:
             raise Exception('No writable data location found')
-        self.ipfsDataLocation = os.path.join(self.dataLocation, 'ipfs')
 
-        if not os.path.exists(self.ipfsDataLocation):
-            os.makedirs(self.ipfsDataLocation)
+        self.ipfsDataLocation = os.path.join(self.dataLocation, 'ipfs')
+        self.bookmarksFileLocation = os.path.join(self.dataLocation,
+            'bookmarks.json')
+
+        qtConfigLocation = QStandardPaths.writableLocation(
+                QStandardPaths.ConfigLocation)
+        self.configDirLocation = os.path.join(
+                qtConfigLocation, self.GALACTEEK, self.profile)
+        self.settingsFileLocation = os.path.join(
+                self.configDirLocation, '{}.conf'.format(self.GALACTEEK))
+
+        for dir in [ self.ipfsDataLocation,
+                self.configDirLocation ]:
+            if not os.path.exists(dir):
+                os.makedirs(dir)
 
         self.defaultDownloadsLocation = QStandardPaths.writableLocation(
             QStandardPaths.DownloadLocation)
+
+        self.debug('Data {0}, config {1}, configfile {2}'.format(
+                self.dataLocation,
+                self.configDirLocation,
+                self.settingsFileLocation))
+
+    def initSettings(self):
+        self.settingsMgr = SettingsManager(path=self.settingsFileLocation)
+        self.settingsMgr.sync()
 
     def getDataLocation(self):
         return self.dataLocation

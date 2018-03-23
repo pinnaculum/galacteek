@@ -24,9 +24,15 @@ def galacteekGui(args):
     asyncio.set_event_loop(loop)
     shApp.setLoop(loop)
 
+    shApp.setProfile(args.profile)
+
     # Sets the default settings
     sManager = shApp.settingsMgr
     section = CFG_SECTION_IPFSD
+
+    sManager.setDefaultSetting(section, CFG_KEY_APIPORT, 5008)
+    sManager.setDefaultSetting(section, CFG_KEY_SWARMPORT, 4008)
+    sManager.setDefaultSetting(section, CFG_KEY_HTTPGWPORT, 8081)
 
     if args.apiport:
         sManager.setSetting(section, CFG_KEY_APIPORT,  args.apiport)
@@ -78,6 +84,8 @@ def start():
         help='IPFS swarm port number')
     parser.add_argument('--gatewayport', default=None,
         help='IPFS http gateway port number')
+    parser.add_argument('--profile', default='main',
+        help='Profile')
     args = parser.parse_args()
 
     galacteekGui(args)

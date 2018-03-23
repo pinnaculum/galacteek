@@ -31,8 +31,8 @@ class SettingsManager(object):
     trueVal = 'true'
     falseVal = 'false'
 
-    def __init__(self):
-        self.settings = QSettings('galacteek', 'galacteek')
+    def __init__(self, path=None):
+        self.settings = QSettings(path, QSettings.IniFormat)
 
     def sync(self):
         return self.settings.sync()
