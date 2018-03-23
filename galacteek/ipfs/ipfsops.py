@@ -42,8 +42,9 @@ class IPFSOperator(object):
         except aioipfs.APIException as exc:
             self.debug(exc.message)
             return None
-        if not listing['Entries']:
-            return None
+
+        if not 'Entries' in listing or listing['Entries'] is None:
+            return []
 
         return listing['Entries']
 

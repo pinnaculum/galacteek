@@ -11,7 +11,7 @@ from PyQt5 import QtWebEngineWidgets, QtWebEngine, QtWebEngineCore
 from PyQt5.QtGui import QClipboard, QPixmap, QIcon
 
 from . import ui_galacteek
-from . import browser, files, keys, settings, bookmarks
+from . import browser, files, keys, settings, bookmarks, textedit
 from .helpers import *
 from ..appsettings import *
 from .i18n import *
@@ -47,6 +47,7 @@ class MainWindow(QMainWindow):
         self.ui.manageKeysButton.clicked.connect(self.onMyKeysClicked)
         self.ui.openBrowserTabButton.clicked.connect(self.onOpenBrowserTabClicked)
         self.ui.bookmarksButton.clicked.connect(self.addBookmarksTab)
+        self.ui.writeNewDocumentButton.clicked.connect(self.onWriteNewDocumentClicked)
 
         self.ui.tabWidget.setTabsClosable(True)
         self.ui.tabWidget.tabCloseRequested.connect(self.onTabCloseRequest)
@@ -74,8 +75,12 @@ class MainWindow(QMainWindow):
     def statusMessage(self, msg):
         self.ui.statusbar.showMessage(msg)
 
-    def registerTab(self, tab, name, current=False):
-        self.ui.tabWidget.addTab(tab, name)
+    def registerTab(self, tab, name, icon=None, current=False):
+        if icon:
+            self.ui.tabWidget.addTab(tab, icon, name)
+        else:
+            self.ui.tabWidget.addTab(tab, name)
+
         self.allTabs.append(tab)
 
         if current is True:
@@ -84,12 +89,21 @@ class MainWindow(QMainWindow):
     def findTabMyFiles(self):
         return self.findTabWithName(self.tabnMyFiles)
 
+    def findTabIndex(self, w):
+        return self.ui.tabWidget.indexOf(w)
+
     def findTabWithName(self, name):
         for idx in range(0, self.ui.tabWidget.count()):
             tname = self.ui.tabWidget.tabText(idx)
             tab = self.ui.tabWidget.widget(idx)
             if self.ui.tabWidget.tabText(idx) == name:
                 return tab
+
+    def removeTabFromWidget(self, w):
+        idx = self.ui.tabWidget.indexOf(w)
+        print(w, idx)
+        if idx:
+            self.ui.tabWidget.removeTab(idx)
 
     def onSettings(self):
         prefsDialog = settings.SettingsDialog(self.app)
@@ -152,11 +166,7 @@ class MainWindow(QMainWindow):
                 self.addBookmarksTab()
             if event.key() == Qt.Key_W:
                 idx = self.ui.tabWidget.currentIndex()
-                #w = self.ui.tabWidget.currentWidget()
                 self.onTabCloseRequest(idx)
-
-                #self.ui.tabWidget.removeTab(idx)
-                #del w
 
         if event.key() == Qt.Key_F1:
             self.addBookmarksTab()
@@ -190,6 +200,10 @@ class MainWindow(QMainWindow):
     def onOpenBrowserTabClicked(self):
         self.addBrowserTab()
 
+    def onWriteNewDocumentClicked(self):
+        w = textedit.AddDocumentWidget(self, parent=self.ui.tabWidget)
+        self.registerTab(w, 'New document', current=True)
+
     def onMyFilesClicked(self):
         name = self.tabnMyFiles
 
@@ -200,7 +214,7 @@ class MainWindow(QMainWindow):
             return self.ui.tabWidget.setCurrentWidget(ft)
 
         filesTab = files.FilesTab(self, parent=self.ui.tabWidget)
-        self.registerTab(filesTab, name, current=True)
+        self.registerTab(filesTab, name, current=True, icon=icon)
 
         filesTab.updateTree()
 

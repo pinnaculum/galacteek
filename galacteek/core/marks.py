@@ -12,7 +12,7 @@ from PyQt5.QtCore import (QCoreApplication, QStandardPaths)
 class Bookmarks(QObject):
     changed = pyqtSignal()
 
-    def __init__(self, path=None, parent=None):
+    def __init__(self, path, parent=None):
         super().__init__(parent)
 
         if path is None:
@@ -40,7 +40,8 @@ class Bookmarks(QObject):
         return marks
 
     def onChanged(self):
-        json.dump(self._marks, open(self.getPath(), 'w+t'))
+        with open(self.getPath(), 'w+t') as fd:
+            json.dump(self._marks, fd)
 
     def empty(self, category):
         if category in self._marks['bookmarks']:

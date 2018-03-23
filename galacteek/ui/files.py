@@ -1,4 +1,10 @@
 
+import sys
+import time
+import os.path
+import asyncio
+import cid
+
 from PyQt5.QtWidgets import (QWidget, QFrame, QApplication, QMainWindow,
         QDialog, QLabel, QTextEdit, QPushButton, QVBoxLayout, QAction,
         QTabWidget, QFileDialog)
@@ -18,9 +24,6 @@ from PyQt5.Qt import QByteArray
 
 from quamash import QEventLoop, QThreadExecutor
 
-import asyncio
-import cid
-
 from galacteek.ipfs.ipfsops import *
 
 from . import ui_files
@@ -30,9 +33,7 @@ from . import modelhelpers
 from .i18n import *
 from .helpers import *
 
-import sys
-import time
-import os.path
+import aioipfs
 
 # Files messages
 def iFileName():
@@ -307,10 +308,14 @@ class FilesTab(QWidget):
     def updateTree(self, highlight=None):
         async def listFiles(op, path, parentItem):
             self.enableButtons(flag=False)
-            await op.client.files.flush(GFILES_MYFILES_PATH)
-            await asyncio.wait_for(
-                    listPath(op, path, parentItem=parentItem),
-                    120)
+            try:
+                await op.client.files.flush(GFILES_MYFILES_PATH)
+                await asyncio.wait_for(
+                        listPath(op, path, parentItem=parentItem),
+                        120)
+            except aioipfs.APIException:
+                messageBox(iErrNoCx())
+
             self.enableButtons()
 
         async def listPath(op, path, parentItem=None):
@@ -358,7 +363,6 @@ class FilesTab(QWidget):
                     await listPath(op,
                         os.path.join(path, entry['Name']),
                         parentItem=nItemName)
-
 
             self.ui.treeFiles.expand(self.itemFilesIdx)
 

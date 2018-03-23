@@ -39,7 +39,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="pushButton">
+        <widget class="QPushButton" name="importButton">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Import this document to IPFS&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
