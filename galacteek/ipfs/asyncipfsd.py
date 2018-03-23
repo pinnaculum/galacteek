@@ -52,6 +52,8 @@ class IPFSDProtocol(asyncio.SubprocessProtocol):
         # TODO: implement ipfs process supervisor independent of daemon output
 
         for line in msg.split('\n'):
+            if self.debug:
+                print(line, file=sys.stderr)
             if re.search('Error: ipfs daemon is running', line):
                 self.errAlreadyRunning = True
             if re.search('Gateway.*server listening on', line):
@@ -62,6 +64,8 @@ class IPFSDProtocol(asyncio.SubprocessProtocol):
                 self.apiStarted = True
             if re.search('Daemon is ready', line):
                 self.daemonReady = True
+            if re.search('Error:', line):
+                pass
 
         if self.daemonReady is True:
             if not self.started_future.done():
@@ -81,7 +85,8 @@ class AsyncIPFSDaemon(object):
             swarmport=DEFAULT_SWARMPORT,
             gatewayport=DEFAULT_GWPORT, initrepo=True,
             swarm_lowwater=10, swarm_highwater=20,
-            pubsub_enable=False,
+            pubsub_enable=False, nobootstrap=False,
+            debug=False,
             loop=None):
 
         self.loop = loop if loop else asyncio.get_event_loop()
@@ -93,6 +98,8 @@ class AsyncIPFSDaemon(object):
         self.swarm_highwater = swarm_highwater
         self.initrepo = initrepo
         self.pubsub_enable = pubsub_enable
+        self.noBootstrap = nobootstrap
+        self.debug = debug
 
     async def start(self):
         # Sets the IPFS_PATH environment variable
@@ -117,6 +124,9 @@ class AsyncIPFSDaemon(object):
         await ipfs_config_json('Swarm.ConnMgr.LowWater', self.swarm_lowwater)
         await ipfs_config_json('Swarm.ConnMgr.HighWater', self.swarm_highwater)
 
+        if self.noBootstrap:
+            await ipfs_config_json('Bootstrap', '[]')
+
         exit_future = asyncio.Future(loop=self.loop)
         started_future = asyncio.Future(loop=self.loop)
         args = ['ipfs', 'daemon']
@@ -125,7 +135,8 @@ class AsyncIPFSDaemon(object):
             args.append('--enable-pubsub-experiment')
 
         f = self.loop.subprocess_exec(
-                lambda: IPFSDProtocol(exit_future, started_future),
+                lambda: IPFSDProtocol(exit_future, started_future,
+                    debug=self.debug),
                 *args,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE)
