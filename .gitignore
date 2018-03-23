@@ -1,6 +1,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+ui_*.py
 .Python
 build/
 dist/
