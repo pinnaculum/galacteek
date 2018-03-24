@@ -9,6 +9,8 @@ from . import ui_bookmarksmgr
 from .modelhelpers import *
 from .helpers import *
 from .dialogs import *
+from galacteek.ipfs.ipfsops import *
+from galacteek.ipfs.cidhelpers import *
 
 def iPath():
     return QCoreApplication.translate('BookmarksViewForm', 'Path')
@@ -69,7 +71,13 @@ class BookmarksTab(GalacteekWidget):
 
     def onBoxActivated(self, idx):
         mark = self.ui.bookmarkLine.text()
+
         if idx == 0:
+            if not isMultihash(mark):
+                return messageBox('Invalid input')
+
+            if not mark.startswith('/ipfs'):
+                mark = joinIpfs(mark)
             addBookmark(self.bookmarks, mark, '')
         self.ui.bookmarkLine.clear()
 
