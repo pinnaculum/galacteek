@@ -9,7 +9,7 @@ import asyncio
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu
 from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtCore import (QCoreApplication, QUrl, QStandardPaths,
-        QSettings, QTranslator)
+        QSettings, QTranslator, QFile)
 
 from galacteek.ipfs import pinning, ipfsd, asyncipfsd
 from galacteek.ipfs.ipfsops import *
@@ -86,6 +86,16 @@ class GalacteekApplication(QApplication):
         self.initSettings()
         self.initSystemTray()
         self.initMisc()
+
+        self.setStyle()
+
+    def setStyle(self):
+        qssPath = ":/share/static/qss/galacteek.qss"
+        qssFile = QFile(qssPath)
+        qssFile.open(QFile.ReadOnly)
+        styleSheetBa = qssFile.readAll()
+        styleSheetStr = styleSheetBa.data().decode('utf-8')
+        self.setStyleSheet(styleSheetStr)
 
     def debug(self, msg):
         if self.debugEnabled:

@@ -21,6 +21,8 @@ import cid
 from . import ui_browsertab
 from . import galacteek_rc
 from .helpers import *
+from .dialogs import *
+from .bookmarks import *
 from galacteek.ipfs import cidhelpers
 
 SCHEME_DWEB = 'dweb'
@@ -56,6 +58,11 @@ def iPinSuccess(path):
 def iBookmarked(path):
     return QCoreApplication.translate('BrowserTabForm',
         'Bookmarked {0}').format(path)
+
+
+def iBookmarkTitleDialog():
+    return QCoreApplication.translate('BrowserTabForm',
+        'Bookmark title')
 
 def iInvalidMultihash(text):
     return QCoreApplication.translate('BrowserTabForm',
@@ -228,10 +235,6 @@ class BrowserTab(QWidget):
         return self.gWindow.ui.tabWidget.indexOf(self)
 
     @property
-    def currentPageTitle(self):
-        return self.ui.webEngineView.page().title()
-
-    @property
     def gatewayAuthority(self):
         params = self.app.ipfsConnParams
         return '{0}:{1}'.format(params.getHost(), params.getGatewayPort())
@@ -243,9 +246,9 @@ class BrowserTab(QWidget):
 
     def onBookmarkPage(self):
         if self.currentIpfsResource:
-            self.app.bookmarks.add(self.currentIpfsResource,
+            addBookmark(self.app.bookmarks,
+                    self.currentIpfsResource,
                     self.currentPageTitle)
-            messageBox(iBookmarked(self.currentIpfsResource))
 
     def onPinSuccess(self, f):
         return self.app.systemTrayMessage('PIN', iPinSuccess(f.result()))
@@ -334,6 +337,8 @@ class BrowserTab(QWidget):
         currentPageTitle = self.ui.webEngineView.page().title()
         if currentPageTitle.startswith(self.gatewayAuthority):
             currentPageTitle = 'No title'
+
+        self.currentPageTitle = currentPageTitle
 
         idx = self.gWindow.ui.tabWidget.indexOf(self)
         self.gWindow.ui.tabWidget.setTabText(idx, currentPageTitle)

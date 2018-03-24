@@ -20,13 +20,14 @@ class Bookmarks(QObject):
             path = os.path.join(dir, 'bookmarks.json')
 
         self.path = path
-
         self._marks = self.load()
-
         self.changed.connect(self.onChanged)
 
     def getPath(self):
         return self.path
+
+    def root(self):
+        return self._marks['bookmarks']
 
     def load(self):
         try:
@@ -44,44 +45,49 @@ class Bookmarks(QObject):
             json.dump(self._marks, fd)
 
     def empty(self, category):
-        if category in self._marks['bookmarks']:
-            self._marks['bookmarks'][category] = []
+        if category in self.root():
+            self.root()[category] = []
             self.changed.emit()
 
     def hasCategory(self, category):
-        return category in self._marks['bookmarks']
+        return category in self.root()
+
+    def getCategories(self):
+        return self.root().keys()
 
     def addCategory(self, category):
-        self._marks['bookmarks'][category] = []
+        self.root()[category] = []
         self.changed.emit()
 
     def getAll(self):
-        return self._marks['bookmarks']
+        return self.root()
 
     def getForCategory(self, category='main'):
-        return self._marks['bookmarks'].get(category, [])
+        return self.root().get(category, [])
 
-    def search(self, url=None, category=None):
-        for cat, marks in self._marks['bookmarks'].items():
+    def search(self, path=None, category=None):
+        for cat, marks in self.root().items():
             if category and cat != category:
                 continue
             for mark in marks:
-                if url and mark['url'] == url:
+                if path and mark['path'] == path:
                     return mark
 
-    def add(self, url, title=None, category='main'):
+    def add(self, path, title=None, category='main',
+            share=False):
         if not self.hasCategory(category):
             self.addCategory(category)
 
-        if self.search(url=url):
+        if self.search(path=path):
             return False
 
-        sec = self._marks['bookmarks'][category]
+        sec = self.root()[category]
 
         sec.append({
-            'url': url,
+            'path': path,
             'title': title,
-            'created': int(time.time())
+            'created': int(time.time()),
+            'share': share
             })
 
         self.changed.emit()

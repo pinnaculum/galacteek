@@ -61,6 +61,9 @@ def iAddedFile(name):
 def iLoadingFile(name):
     return QCoreApplication.translate('FilesForm',
             'Loading file {0}').format(name)
+def iLoading(name):
+    return QCoreApplication.translate('FilesForm',
+            'Loading {0}').format(name)
 
 def iRemoveFile():
     return QCoreApplication.translate('FilesForm', 'Remove file')
@@ -266,7 +269,7 @@ class FilesTab(QWidget):
         self.statusSet(iAddedFile(name))
 
     def statusLoading(self, name):
-        self.statusSet(iLoadingFile(name))
+        self.statusSet(iLoading(name))
 
     def statusSet(self, msg):
         self.ui.statusLabel.setText(msg)

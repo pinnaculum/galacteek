@@ -6,7 +6,8 @@ import os.path
 from PyQt5.QtWidgets import (QApplication, QMainWindow,
         QDialog, QLabel, QTextEdit, QPushButton, QVBoxLayout,
         QSystemTrayIcon)
-from PyQt5.QtCore import QCoreApplication, QUrl, QBuffer, QIODevice, Qt, QTimer
+from PyQt5.QtCore import (QCoreApplication, QUrl, QBuffer, QIODevice, Qt,
+    QTimer, QFile)
 from PyQt5 import QtWebEngineWidgets, QtWebEngine, QtWebEngineCore
 from PyQt5.QtGui import QClipboard, QPixmap, QIcon
 
