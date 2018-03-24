@@ -1,0 +1,16 @@
+
+QTreeView {
+    background-color: #f6fafb;
+    font: 10pt "MS Shell Dlg 2";
+}
+
+QTreeView::item:open {
+    color: #06293d;
+}
+
+QTreeView::item:selected {
+    color: #06293d;
+}
+
+QTreeView::branch {
+}

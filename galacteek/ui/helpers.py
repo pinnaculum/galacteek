@@ -1,8 +1,9 @@
 import os
 
 from PyQt5.QtGui import QPixmap, QIcon
-from PyQt5.QtCore import QStandardPaths, Qt, QEvent, QObject, pyqtSignal
-from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtCore import (QStandardPaths, Qt, QEvent, QObject, pyqtSignal,
+        QFile)
+from PyQt5.QtWidgets import QMessageBox, QWidget
 
 from . import galacteek_rc
 
@@ -27,3 +28,7 @@ class KeyFilter(QObject):
         if event.type() == QEvent.KeyPress:
             modifiers = event.modifiers()
         return False
+
+class GalacteekWidget(QWidget):
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)

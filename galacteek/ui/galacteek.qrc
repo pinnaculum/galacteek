@@ -31,6 +31,7 @@
   </qresource>
   <qresource>
     <file>../../share/translations/galacteek_en.ts</file>
+    <file>../../share/static/qss/galacteek.qss</file>
     <file>../../share/translations/galacteek_en.qm</file>
   </qresource>
 </RCC>
