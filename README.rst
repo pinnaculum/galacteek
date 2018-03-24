@@ -35,8 +35,8 @@ In-browser bindings:
 Screenshots
 ===========
 
-.. image:: https://gitlab.com/cipres/galacteek/raw/927819fb2b6694c2dd6a93c12131aea9042fa94b/screenshots/filesview.png
-    :target: https://gitlab.com/cipres/galacteek/blob/927819fb2b6694c2dd6a93c12131aea9042fa94b/screenshots/filesview.png
+.. image:: https://gitlab.com/cipres/galacteek/raw/ee803df99ca70ff6489654becca1d399c85d2a06/screenshots/filesview.png
+    :target: https://gitlab.com/cipres/galacteek/raw/ee803df99ca70ff6489654becca1d399c85d2a06/screenshots/filesview.png
 
 Platforms supported
 ===================
