@@ -42,7 +42,7 @@ class Bookmarks(QObject):
 
     def onChanged(self):
         with open(self.getPath(), 'w+t') as fd:
-            json.dump(self._marks, fd)
+            json.dump(self._marks, fd, indent=4)
 
     def empty(self, category):
         if category in self.root():
