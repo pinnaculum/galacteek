@@ -2,6 +2,7 @@
 import pytest
 
 import tempfile
+import random
 import time
 import os
 import json
@@ -10,11 +11,11 @@ import asyncio
 import aioipfs
 
 from galacteek.ipfs import asyncipfsd
-from galacteek.ipfs import ipfsdconfig
 from galacteek.ipfs.ipfsops import *
+from galacteek.core.ipfsmodel import *
 
-apiport = 9005
-gwport = 9081
+apiport = 12000
+gwport = 12080
 swarmport = 9003
 
 @pytest.fixture()
@@ -24,7 +25,9 @@ def ipfsdaemon(event_loop, tmpdir):
             gatewayport=gwport,
             swarmport=swarmport,
             loop=event_loop,
-            pubsub_enable=False
+            nobootstrap=True,
+            pubsub_enable=False,
+            debug=True,
             )
     return daemon
 
@@ -37,34 +40,32 @@ def iclient(event_loop):
 def ipfsop(iclient):
     return IPFSOperator(iclient, debug=True)
 
-class TestIPFSD:
+class TestModel:
     @pytest.mark.asyncio
     async def test_basic(self, event_loop, ipfsdaemon, iclient, ipfsop):
+        model = mkIpfsModel()
+        root = model.invisibleRootItem()
+
         async def tests(op):
             id = await op.client.core.id()
+            r = random.Random()
 
-            slashList = await op.filesList('/')
-            async for r in op.client.add_json({'a': 123}):
-                assert await op.filesLink(r, '/') == True
+            for i in range(0, 16):
+                data = [str(r.randint(1, 128)) for j in range(0, 64) ]
+                async for o in op.client.add_bytes(
+                        ''.join(data).encode('ascii')):
+                    model.registerIpfsObject(o, root)
+                    print(o)
+
+                    assert len(modelSearch(model, search=o['Hash'])) > 0
 
             await op.client.close()
+
             ipfsdaemon.stop()
-            await asyncio.sleep(2)
 
         def cbstarted(f):
-            event_loop.create_task(tests(ipfsop))
+            event_loop.run_until_complete(tests(ipfsop))
 
         started = await ipfsdaemon.start()
         ipfsdaemon.proto.started_future.add_done_callback(cbstarted)
-        assert started == True
-        await asyncio.sleep(15)
-
-@pytest.fixture()
-def configD(tmpdir):
-    return ipfsdconfig.getDefault()
-
-class TestConfig:
-    def test_default(self, configD):
-        cfgStr = str(configD)
-        assert 'API' in configD.c
-        assert 'Bootstrap' in configD.c
+        await asyncio.sleep(5)

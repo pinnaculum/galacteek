@@ -3,8 +3,8 @@ import pytest
 from galacteek.core.marks import *
 
 @pytest.fixture
-def bmarks():
-    return Bookmarks()
+def bmarks(tmpdir):
+    return Bookmarks(str(tmpdir.join('bm')))
 
 class TestBookmarks:
     @pytest.mark.parametrize('hash',

@@ -92,9 +92,6 @@ defaultConfig = json.loads("""
     "RootRedirect": "",
     "Writable": false
   },
-  "Identity": {
-    "PeerID": "QmUNU7DAtv9tWDFojrWMAHyf7dkFLM1hFq9HQX3PqpVJuE"
-  },
   "Ipns": {
     "RecordLifetime": "",
     "RepublishPeriod": "",
