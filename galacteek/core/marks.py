@@ -93,5 +93,12 @@ class Bookmarks(QObject):
         self.changed.emit()
         return True
 
+    def delete(self, path):
+        ret = self.search(path=path)
+        if ret:
+            del ret
+            self.changed.emit()
+            return True
+
     def dump(self):
         print(json.dumps(self._marks, indent=4))
