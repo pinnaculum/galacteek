@@ -1,7 +1,7 @@
 
 import sys
 
-from PyQt5.QtWidgets import QWidget, QTreeView
+from PyQt5.QtWidgets import QWidget, QTreeView, QMenu
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtCore import QCoreApplication, QUrl, Qt, QObject
 
@@ -65,6 +65,8 @@ class BookmarksTab(GalacteekWidget):
         self.tree.setColumnWidth(0, 600)
         self.tree.resizeColumnToContents(0)
         self.tree.doubleClicked.connect(self.onItemDoubleClicked)
+        self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.tree.customContextMenuRequested.connect(self.onContextMenu)
         self.tree.setModel(self.model)
 
         self.updateTree()
@@ -85,26 +87,60 @@ class BookmarksTab(GalacteekWidget):
         pass
 
     def updateTree(self):
-        marks = self.bookmarks.getForCategory('main')
+        categories = self.bookmarks.getCategories()
 
-        for bm in marks:
-            path = bm.get('path', None)
-            if not path:
-                continue
-            ret = modelSearch(self.model, search=path)
-            if ret: continue
+        for cat in categories:
+            catItem = None
+            ret = modelSearch(self.model, search=cat)
+            if not ret:
+                item1 = QStandardItem(cat)
+                item2 = QStandardItem('')
+                self.model.invisibleRootItem().appendRow([item1, item2])
+                catItem = item1
+            else:
+                catItem = self.model.itemFromIndex(ret[0])
 
-            item1 = QStandardItem(path)
-            item2 = QStandardItem(bm['title'] or 'Unknown')
+            catItemIdx = self.model.indexFromItem(catItem)
 
-            item1.setEditable(True)
-            item2.setEditable(True)
-            self.model.appendRow([item1, item2])
+            marks = self.bookmarks.getForCategory(cat)
+            for bm in marks:
+                path = bm.get('path', None)
+                if not path:
+                    continue
+
+                ret = modelSearch(self.model, search=path)
+                if ret: continue
+
+                item1 = QStandardItem(path)
+                item2 = QStandardItem(bm['title'] or 'Unknown')
+
+                item1.setEditable(False)
+                item2.setEditable(True)
+                catItem.appendRow([item1, item2])
+
+            self.tree.expand(catItemIdx)
 
         self.tree.resizeColumnToContents(0)
 
+    def onContextMenu(self, point):
+        idx = self.tree.indexAt(point)
+        if not idx.isValid():
+            return
+
+        idxPath = self.model.sibling(idx.row(), 0, idx)
+        dataPath = self.model.data(idxPath)
+        menu = QMenu()
+
+        def remove(path):
+            if self.bookmarks.delete(path):
+                modelDelete(self.model, path)
+
+        act2 = menu.addAction('Remove', lambda:
+                remove(dataPath))
+        menu.exec(self.tree.mapToGlobal(point))
+
     def onItemDoubleClicked(self, index):
-        row = index.row()
-        path = self.model.data(self.model.index(row, 0))
+        indexPath = self.model.sibling(index.row(), 0, index)
+        path = self.model.data(indexPath)
         tab = self.gWindow.addBrowserTab()
         tab.browseFsPath(path)
