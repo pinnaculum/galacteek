@@ -51,6 +51,12 @@ class SettingsManager(object):
         if not existing:
             self.settings.setValue('{0}/{1}'.format(section, name), value)
 
+    def setDefaultTrue(self, section, name):
+        return self.setDefaultSetting(section, name, self.trueVal)
+
+    def setDefaultFalse(self, section, name):
+        return self.setDefaultSetting(section, name, self.falseVal)
+
     def getInt(self, section, name):
         return self.getSetting(section, name, type=int)
 
