@@ -6,6 +6,7 @@ import aioipfs
 
 GFILES_ROOT_PATH = '/galacteek/'
 GFILES_MYFILES_PATH = os.path.join(GFILES_ROOT_PATH, 'myfiles')
+GFILES_WEBSITES_PATH = os.path.join(GFILES_ROOT_PATH, 'websites')
 
 def joinIpfs(hash):
     return os.path.join('/ipfs/', hash)
@@ -76,3 +77,26 @@ class IPFSOperator(object):
     async def nodeId(self):
         info = await self.client.core.id()
         return info.get('ID', 'Unknown')
+
+    async def keysNames(self):
+        keys = await self.keys()
+        return [key['Name'] for key in keys]
+
+    async def keys(self):
+        kList = await self.client.key.list(long=True)
+        return kList.get('Keys', [])
+
+    async def keysRemove(self, name):
+        try:
+            await self.client.key.rm(name)
+        except aioipfs.APIException as exc:
+            self.debug('Exception on removing key {0}: {1}'.format(
+                name, exc.message))
+            return False
+        return True
+
+    async def publish(self, path, key='self'):
+        try:
+            return await self.client.name.publish(path, key=key)
+        except aioipfs.APIException as exc:
+            return None
