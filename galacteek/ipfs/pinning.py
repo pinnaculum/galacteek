@@ -13,7 +13,6 @@ class Pinner(object):
         self.queue = asyncio.Queue(loop=loop)
         self.lock = asyncio.Lock()
         self.pinstatus = {}
-        self.debug = True
 
     def status(self):
         return self.pinstatus
@@ -25,8 +24,6 @@ class Pinner(object):
             await asyncio.sleep(0)
             async with self.lock:
                 self.pinstatus[path] = pinned
-            if self.debug:
-                print('Pinning status', path, pinned)
         async with self.lock:
             del self.pinstatus[path]
         return path
