@@ -18,14 +18,14 @@ async def shell(arg):
 async def exec(*args, **kw):
     return await asyncio.create_subprocess_exec(*args, **kw)
 
-async def ipfs_config(param, value):
+async def ipfsConfig(param, value):
     return await shell("ipfs config '{0}' '{1}'".format(param, value))
 
-async def ipfs_config_json(param, value):
+async def ipfsConfigJson(param, value):
     return await shell('ipfs config --json "{0}" "{1}"'.format(
         param, json.dumps(value)))
 
-async def ipfs_config_get_json(param):
+async def ipfsConfigGetJson(param):
     return await shell('ipfs config --json "{0}"'.format(param))
 
 class IPFSDProtocol(asyncio.SubprocessProtocol):
@@ -33,10 +33,10 @@ class IPFSDProtocol(asyncio.SubprocessProtocol):
     # Mainly used to more finely monitor the process and know when the various
     # subsystems have been started
 
-    def __init__(self, exit_future, started_future, debug=True):
+    def __init__(self, exitFuture, startedFuture, debug=True):
         self.debug = debug
-        self.exit_future = exit_future
-        self.started_future = started_future
+        self.exitFuture = exitFuture
+        self.startedFuture = startedFuture
         self.output = bytearray()
         self.apiStarted = False
         self.gatewayStarted = False
@@ -45,7 +45,10 @@ class IPFSDProtocol(asyncio.SubprocessProtocol):
         self.errAlreadyRunning = False
 
     def pipe_data_received(self, fd, data):
-        msg = data.decode().strip()
+        try:
+            msg = data.decode().strip()
+        except:
+            return
 
         # The output we expect might be different in earlier versions
         # i've mainly tested with go-ipfs > 0.4.11
@@ -68,13 +71,13 @@ class IPFSDProtocol(asyncio.SubprocessProtocol):
                 pass
 
         if self.daemonReady is True:
-            if not self.started_future.done():
-                self.started_future.set_result(True)
+            if not self.startedFuture.done():
+                self.startedFuture.set_result(True)
 
         self.output.extend(data)
 
     def process_exited(self):
-        self.exit_future.set_result(True)
+        self.exitFuture.set_result(True)
 
 DEFAULT_APIPORT = 5001
 DEFAULT_SWARMPORT = 4001
@@ -84,21 +87,20 @@ class AsyncIPFSDaemon(object):
     def __init__(self, repopath, apiport=DEFAULT_APIPORT,
             swarmport=DEFAULT_SWARMPORT,
             gatewayport=DEFAULT_GWPORT, initrepo=True,
-            swarm_lowwater=10, swarm_highwater=20,
-            pubsub_enable=False, nobootstrap=False,
-            debug=False,
-            loop=None):
+            swarmLowWater=10, swarmHighWater=20,
+            pubsubEnable=False, noBootstrap=False,
+            debug=False, loop=None):
 
         self.loop = loop if loop else asyncio.get_event_loop()
         self.repopath = repopath
         self.apiport = apiport
         self.gatewayport = gatewayport
         self.swarmport = swarmport
-        self.swarm_lowwater = swarm_lowwater
-        self.swarm_highwater = swarm_highwater
+        self.swarmLowWater = swarmLowWater
+        self.swarmHighWater = swarmHighWater
         self.initrepo = initrepo
-        self.pubsub_enable = pubsub_enable
-        self.noBootstrap = nobootstrap
+        self.pubsubEnable = pubsubEnable
+        self.noBootstrap = noBootstrap
         self.debug = debug
 
     async def start(self):
@@ -113,29 +115,29 @@ class AsyncIPFSDaemon(object):
             initOutput = await shell('ipfs init')
 
         # Change the addresses/ports we listen on
-        await ipfs_config('Addresses.API',
+        await ipfsConfig('Addresses.API',
                 '/ip4/127.0.0.1/tcp/{0}'.format(self.apiport))
-        await ipfs_config('Addresses.Gateway',
+        await ipfsConfig('Addresses.Gateway',
                 '/ip4/127.0.0.1/tcp/{0}'.format(self.gatewayport))
-        await ipfs_config_json('Addresses.Swarm',
+        await ipfsConfigJson('Addresses.Swarm',
                 '["/ip4/0.0.0.0/tcp/{0}"]'.format(self.swarmport))
 
         # Swarm connection manager parameters
-        await ipfs_config_json('Swarm.ConnMgr.LowWater', self.swarm_lowwater)
-        await ipfs_config_json('Swarm.ConnMgr.HighWater', self.swarm_highwater)
+        await ipfsConfigJson('Swarm.ConnMgr.LowWater', self.swarmLowWater)
+        await ipfsConfigJson('Swarm.ConnMgr.HighWater', self.swarmHighWater)
 
         if self.noBootstrap:
-            await ipfs_config_json('Bootstrap', '[]')
+            await ipfsConfigJson('Bootstrap', '[]')
 
-        exit_future = asyncio.Future(loop=self.loop)
-        started_future = asyncio.Future(loop=self.loop)
+        exitFuture = asyncio.Future(loop=self.loop)
+        startedFuture = asyncio.Future(loop=self.loop)
         args = ['ipfs', 'daemon']
 
-        if self.pubsub_enable:
+        if self.pubsubEnable:
             args.append('--enable-pubsub-experiment')
 
         f = self.loop.subprocess_exec(
-                lambda: IPFSDProtocol(exit_future, started_future,
+                lambda: IPFSDProtocol(exitFuture, startedFuture,
                     debug=self.debug),
                 *args,
                 stdout=asyncio.subprocess.PIPE,

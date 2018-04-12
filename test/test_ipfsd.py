@@ -24,7 +24,7 @@ def ipfsdaemon(event_loop, tmpdir):
             gatewayport=gwport,
             swarmport=swarmport,
             loop=event_loop,
-            pubsub_enable=False
+            pubsubEnable=False
             )
     return daemon
 
@@ -55,7 +55,7 @@ class TestIPFSD:
             event_loop.create_task(tests(ipfsop))
 
         started = await ipfsdaemon.start()
-        ipfsdaemon.proto.started_future.add_done_callback(cbstarted)
+        ipfsdaemon.proto.startedFuture.add_done_callback(cbstarted)
         assert started == True
         await asyncio.sleep(15)
 
