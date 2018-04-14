@@ -18,6 +18,12 @@
     <layout class="QVBoxLayout" name="verticalLayout">
      <item>
       <widget class="QToolBox" name="toolbox">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="currentIndex">
         <number>0</number>
        </property>
@@ -27,11 +33,11 @@
           <x>0</x>
           <y>0</y>
           <width>514</width>
-          <height>312</height>
+          <height>341</height>
          </rect>
         </property>
         <attribute name="label">
-         <string>IPFS marks</string>
+         <string>Local IPFS marks</string>
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_4">
          <item>
@@ -47,24 +53,11 @@
             </layout>
            </item>
            <item>
-            <widget class="QTreeView" name="bookmarksTree"/>
+            <widget class="QTreeView" name="treeMarks"/>
            </item>
           </layout>
          </item>
         </layout>
-       </widget>
-       <widget class="QWidget" name="page_2">
-        <property name="geometry">
-         <rect>
-          <x>0</x>
-          <y>0</y>
-          <width>514</width>
-          <height>312</height>
-         </rect>
-        </property>
-        <attribute name="label">
-         <string>Follow</string>
-        </attribute>
        </widget>
       </widget>
      </item>

@@ -7,6 +7,7 @@ from PyQt5.QtCore import QIODevice
 
 from . import ui_newdocument
 from .helpers import *
+from .widgets import *
 from .i18n import *
 from galacteek.ipfs.ipfsops import *
 
@@ -14,15 +15,12 @@ def iImportedDocument(name, hash):
     return QCoreApplication.translate('NewDocumentForm',
         'Succesfully imported {0} (hash reference {1})').format(name, hash)
 
-class AddDocumentWidget(QWidget):
-    def __init__(self, gWindow, parent = None):
-        super(QWidget, self).__init__(parent = parent)
+class AddDocumentWidget(GalacteekTab):
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
 
-        self.gWindow = gWindow
-        self.app = self.gWindow.getApp()
         self.ui = ui_newdocument.Ui_NewDocumentForm()
         self.ui.setupUi(self)
-
         self.ui.importButton.clicked.connect(self.onImport)
 
     async def importFile(self, op):

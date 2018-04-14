@@ -18,13 +18,14 @@ def iErrNoCx():
     return QCoreApplication.translate('GalacteekWindow',
         'No connection available')
 
-def iErrNoPeers():
+def iCxButNoPeers(id, agent):
     return QCoreApplication.translate('GalacteekWindow',
-        'Not connected to any peers')
+        'IPFS node: {0} ({1}): not connected to any peers').format(
+        id, agent)
 
 def iConnectStatus(id, agent, peercount):
     return QCoreApplication.translate('GalacteekWindow',
-        'IPFS node: {0} ({1}) connected to {2} peer(s)').format(
+        'IPFS node: {0} ({1}): connected to {2} peer(s)').format(
         id, agent, peercount)
 
 def iItemsInPinningQueue(items):
@@ -40,4 +41,12 @@ def iUnknownAgent():
 def iMinimized():
     return QCoreApplication.translate('GalacteekWindow',
             'Galacteek was minimized to tray')
+
+# Headers used in the various tree widgets
+def iFileName():
+    return QCoreApplication.translate('TreeView', 'Name')
+def iFileSize():
+    return QCoreApplication.translate('TreeView', 'Size')
+def iFileHash():
+    return QCoreApplication.translate('TreeView', 'Hash')
 
