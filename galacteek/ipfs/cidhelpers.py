@@ -37,8 +37,11 @@ def cidValid(cidstring):
         return False
     if c.version == 0:
         # Ensure that we can decode the multihash
-        if multihash.decode(c.multihash):
-            return True
+        try: # can raise ValueError
+            if multihash.decode(c.multihash):
+                return True
+        except:
+            return False
     elif c.version == 1:
         return True
     return False
