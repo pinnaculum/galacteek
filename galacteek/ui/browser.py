@@ -169,11 +169,11 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
     def pinPage(self, menudata):
         url = menudata.linkUrl()
         path = url.path()
-        self.browsertab.pinPath(path, recursive=False)
+        self.browserTab.pinPath(path, recursive=False)
 
     def openInTab(self, menudata):
         url = menudata.linkUrl()
-        tab = self.browsertab.gWindow.addBrowserTab()
+        tab = self.browserTab.gWindow.addBrowserTab()
         tab.enterUrl(url)
 
     def downloadLink(self, menudata):
