@@ -3,6 +3,7 @@ from PyQt5.QtCore import QCoreApplication, QUrl, QStandardPaths, QSettings
 
 # Settings sections
 CFG_SECTION_IPFSD = 'ipfsdaemon'
+CFG_SECTION_IPFS = 'ipfs'
 CFG_SECTION_BROWSER = 'browser'
 CFG_SECTION_IPFSCONN1 = 'ipfsconn1'
 
@@ -20,6 +21,9 @@ CFG_KEY_HTTPGWPORT = 'httpgwport'
 CFG_KEY_HOST = 'host'
 CFG_KEY_SWARMLOWWATER = 'swarm_lowwater'
 CFG_KEY_SWARMHIGHWATER = 'swarm_highwater'
+
+# IPFS
+CFG_KEY_PUBSUB = 'pubsub'
 
 # for fast access
 S_HOMEURL = (CFG_SECTION_BROWSER, CFG_KEY_HOMEURL)

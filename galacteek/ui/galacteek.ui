@@ -185,6 +185,7 @@
      <string>File</string>
     </property>
     <addaction name="actionQuit"/>
+    <addaction name="actionCloseAllTabs"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -192,8 +193,15 @@
     </property>
     <addaction name="actionSettings"/>
    </widget>
+   <widget class="QMenu" name="menuAbout">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionAboutGalacteek"/>
+   </widget>
    <addaction name="menuVery_Good"/>
    <addaction name="menuEdit"/>
+   <addaction name="menuAbout"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionQuit">
@@ -202,6 +210,9 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Q</string>
+   </property>
+   <property name="priority">
+    <enum>QAction::LowPriority</enum>
    </property>
   </action>
   <action name="actionAddProfile">
@@ -222,6 +233,19 @@
   <action name="actionSettings">
    <property name="text">
     <string>Settings</string>
+   </property>
+  </action>
+  <action name="actionAboutGalacteek">
+   <property name="text">
+    <string>About</string>
+   </property>
+  </action>
+  <action name="actionCloseAllTabs">
+   <property name="text">
+    <string>Close all tabs</string>
+   </property>
+   <property name="priority">
+    <enum>QAction::HighPriority</enum>
    </property>
   </action>
  </widget>

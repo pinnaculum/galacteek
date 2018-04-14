@@ -11,10 +11,34 @@ GFILES_WEBSITES_PATH = os.path.join(GFILES_ROOT_PATH, 'websites')
 def joinIpfs(hash):
     return os.path.join('/ipfs/', hash)
 
+class IPFSLogWatcher(object):
+    def __init__(self, operator):
+        self.op = operator
+
+    async def analyze(self):
+        import pprint
+        async for msg in self.op.client.log.tail():
+            event = msg.get('event', None)
+            time = msg.get('time', None)
+
+            if not event:
+                continue
+
+            if event == 'handleAddProvider':
+                # Handle add provider
+                self.op.ctx.logAddProvider.emit(msg)
+
+            print(pprint.pprint(msg))
+
 class IPFSOperator(object):
-    def __init__(self, client, debug=False):
+    def __init__(self, client, ctx, debug=False):
         self.client = client
         self.debugInfo = debug
+        self.ctx = ctx
+
+    @property
+    def logwatch(self):
+        return IPFSLogWatcher(self)
 
     def debug(self, msg):
         if self.debugInfo:
@@ -99,4 +123,10 @@ class IPFSOperator(object):
         try:
             return await self.client.name.publish(path, key=key)
         except aioipfs.APIException as exc:
+            return None
+
+    async def resolve(self, path):
+        try:
+            return await self.client.name.resolve(path)
+        except aioipfs.APIException as e:
             return None

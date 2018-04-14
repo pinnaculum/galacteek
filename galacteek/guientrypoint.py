@@ -19,12 +19,11 @@ from galacteek.appsettings import *
 def galacteekGui(args):
     from PyQt5.QtWidgets import QApplication, QDialog
 
-    shApp = application.GalacteekApplication()
+    shApp = application.GalacteekApplication(profile=args.profile,
+            debug=args.debug)
     loop = QEventLoop(shApp)
     asyncio.set_event_loop(loop)
     shApp.setLoop(loop)
-
-    shApp.setProfile(args.profile)
 
     # Sets the default settings
     sManager = shApp.settingsMgr
@@ -33,6 +32,8 @@ def galacteekGui(args):
     sManager.setDefaultSetting(section, CFG_KEY_APIPORT, 5008)
     sManager.setDefaultSetting(section, CFG_KEY_SWARMPORT, 4008)
     sManager.setDefaultSetting(section, CFG_KEY_HTTPGWPORT, 8081)
+    sManager.setDefaultSetting(section, CFG_KEY_SWARMHIGHWATER, 50)
+    sManager.setDefaultTrue(section, CFG_KEY_ENABLED)
 
     if args.apiport:
         sManager.setSetting(section, CFG_KEY_APIPORT,  args.apiport)
@@ -42,20 +43,22 @@ def galacteekGui(args):
         sManager.setSetting(section, CFG_KEY_HTTPGWPORT, args.gatewayport)
 
     sManager.setDefaultSetting(section, CFG_KEY_SWARMLOWWATER, 10)
-    sManager.setDefaultSetting(section, CFG_KEY_SWARMHIGHWATER, 50)
-    sManager.setDefaultSetting(section, CFG_KEY_ENABLED, True)
 
     section = CFG_SECTION_BROWSER
     sManager.setDefaultSetting(section, CFG_KEY_HOMEURL, 'fs:/ipns/ipfs.io')
-    sManager.setDefaultSetting(section, CFG_KEY_GOTOHOME, True)
     sManager.setDefaultSetting(section, CFG_KEY_DLPATH,
         shApp.defaultDownloadsLocation)
+    sManager.setDefaultTrue(section, CFG_KEY_GOTOHOME)
 
     # Default IPFS connection when not spawning daemon
     section = CFG_SECTION_IPFSCONN1
     sManager.setDefaultSetting(section, CFG_KEY_APIPORT, 5001)
     sManager.setDefaultSetting(section, CFG_KEY_HOST, 'localhost')
     sManager.setDefaultSetting(section, CFG_KEY_HTTPGWPORT, 8080)
+
+    section = CFG_SECTION_IPFS
+    sManager.setDefaultTrue(section, CFG_KEY_PUBSUB)
+    sManager.sync()
 
     # Look if we can find the ipfs executable
     ipfsPath = shutil.which('ipfs')
@@ -69,7 +72,7 @@ def galacteekGui(args):
         shApp.updateIpfsClient()
 
     shApp.startPinner()
-    shApp.createMainWindow()
+    #shApp.mainWindow.show()
 
     # Use the context manager so loop cleanup/close is automatic
     with loop:
@@ -86,6 +89,8 @@ def start():
         help='IPFS http gateway port number')
     parser.add_argument('--profile', default='main',
         help='Profile')
+    parser.add_argument('-d', action='store_true',
+        dest='debug', help = 'Activate debugging')
     args = parser.parse_args()
 
     galacteekGui(args)

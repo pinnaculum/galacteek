@@ -15,3 +15,7 @@ class GalacteekTab(QWidget):
     @property
     def app(self):
         return self.gWindow.getApp()
+
+    @property
+    def loop(self):
+        return self.app.getLoop()

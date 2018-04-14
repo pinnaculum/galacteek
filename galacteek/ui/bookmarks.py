@@ -1,14 +1,17 @@
 
 import sys
+import asyncio
+from datetime import datetime
 
 from PyQt5.QtWidgets import QWidget, QTreeView, QMenu
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
-from PyQt5.QtCore import QCoreApplication, QUrl, Qt, QObject
+from PyQt5.QtCore import QCoreApplication, QUrl, Qt, QObject, QDateTime
 
-from . import ui_bookmarksmgr
+from . import ui_bookmarksmgr, ui_bookmarksmgrnetwork, ui_bookmarksmgrfeeds
 from .modelhelpers import *
 from .helpers import *
 from .dialogs import *
+from .widgets import *
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.cidhelpers import *
 
@@ -18,109 +21,192 @@ def iPath():
 def iTitle():
     return QCoreApplication.translate('BookmarksViewForm', 'Title')
 
+def iShared():
+    return QCoreApplication.translate('BookmarksViewForm', 'Shared')
+
 def iDate():
     return QCoreApplication.translate('BookmarksViewForm', 'Date')
+
+def iTimestamp():
+    return QCoreApplication.translate('BookmarksViewForm', 'Timestamp')
 
 def iAlreadyBookmarked():
     return QCoreApplication.translate('BookmarksViewForm',
         'Already Bookmarked')
 
+def iImportMark():
+    return QCoreApplication.translate('BookmarksViewForm',
+        'Import mark')
+
+def iNetworkMarks():
+    return QCoreApplication.translate('BookmarksViewForm', 'Network Marks')
+
+def iFeeds():
+    return QCoreApplication.translate('BookmarksViewForm', 'Feeds')
+
 class BookmarksView(QTreeView): pass
 
 class BookmarksModel(QStandardItemModel):
-    def itemChanged(item):
-        print(item, 'changed')
+    pass
 
-def addBookmark(bookmarks, path, title):
-    if bookmarks.search(path=path):
+class FeedsModel(QStandardItemModel):
+    pass
+
+class CategoryItem(UneditableItem):
+    pass
+
+def addBookmark(bookmarks, path, title, stats={}):
+    if bookmarks.search(path):
         return messageBox(iAlreadyBookmarked())
 
-    dlg = AddBookmarkDialog(bookmarks, path, title)
+    dlg = AddBookmarkDialog(bookmarks, path, title, stats)
     dlg.exec_()
     dlg.show()
     return
 
-class BookmarksTab(GalacteekWidget):
-    def __init__(self, gWindow, parent=None):
-        super().__init__(parent=parent)
+class _MarksUpdater:
+    def __init__(self):
+        self.updatingMarks = False
+        self._marksCache = []
 
-        self.gWindow = gWindow
-        self.bookmarks = gWindow.getApp().bookmarks
-        self.bookmarks.changed.connect(self.updateTree)
+    async def updateMarks(self, model, marks, tree, parent=None):
+        if self.updatingMarks == True:
+            return
 
-        self.ui = ui_bookmarksmgr.Ui_BookmarksViewForm()
-        self.ui.setupUi(self)
-        icon1 = getIcon('bookmarks.png')
-        self.ui.toolbox.setItemIcon(0, icon1)
+        self.updatingMarks = True
 
-        self.ui.bookmarksBox.insertItem(0, 'Bookmark as IPFS')
-        self.ui.bookmarksBox.setItemIcon(0, icon1)
-        self.ui.bookmarksBox.activated.connect(self.onBoxActivated)
+        if parent is None:
+            parent = model.invisibleRootItem()
 
-        self.model = BookmarksModel()
-        self.model.setHorizontalHeaderLabels([iPath(), iTitle()])
-
-        self.tree = self.ui.bookmarksTree
-
-        self.tree.setColumnWidth(0, 600)
-        self.tree.resizeColumnToContents(0)
-        self.tree.doubleClicked.connect(self.onItemDoubleClicked)
-        self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.tree.customContextMenuRequested.connect(self.onContextMenu)
-        self.tree.setModel(self.model)
-
-        self.updateTree()
-
-    def onBoxActivated(self, idx):
-        mark = self.ui.bookmarkLine.text()
-
-        if idx == 0:
-            if not isMultihash(mark):
-                return messageBox('Invalid input')
-
-            if not mark.startswith('/ipfs'):
-                mark = joinIpfs(mark)
-            addBookmark(self.bookmarks, mark, '')
-        self.ui.bookmarkLine.clear()
-
-    def onDataChanged(self, top, bottom):
-        pass
-
-    def updateTree(self):
-        categories = self.bookmarks.getCategories()
+        abQuery = marks.asyncQ
+        categories = await abQuery.getCategories()
 
         for cat in categories:
+            await asyncio.sleep(0)
             catItem = None
-            ret = modelSearch(self.model, search=cat)
-            if not ret:
-                item1 = QStandardItem(cat)
-                item2 = QStandardItem('')
-                self.model.invisibleRootItem().appendRow([item1, item2])
-                catItem = item1
+            ret = await modelSearchAsync(model,
+                    parent=parent.index(),
+                    maxdepth=1,
+                    search=cat, columns=[0])
+            if len(ret) == 0:
+                catItem = CategoryItem(cat)
+                parent.appendRow([catItem])
             else:
-                catItem = self.model.itemFromIndex(ret[0])
+                catItem = model.itemFromIndex(ret[0])
 
-            catItemIdx = self.model.indexFromItem(catItem)
+            catItemIdx = model.indexFromItem(catItem)
+            tree.expand(catItemIdx)
 
-            marks = self.bookmarks.getForCategory(cat)
-            for bm in marks:
-                path = bm.get('path', None)
-                if not path:
+            marks = await abQuery.getCategoryMarks(cat)
+            for path, bm in marks.items():
+                if path in self._marksCache:
                     continue
 
-                ret = modelSearch(self.model, search=path)
+                item1 = UneditableItem(path)
+                item2 = UneditableItem(bm['metadata']['title'] or 'Unknown')
+                item3 = UneditableItem('yes' if bm['share'] is True else 'no')
+                dt = QDateTime.fromString(bm['datecreated'], Qt.ISODate)
+                item4 = UneditableItem(dt.toString())
+                item5 = UneditableItem(str(bm['tscreated']))
+                catItem.appendRow([item1, item2, item3, item4, item5])
+
+                self._marksCache.append(path)
+
+        self.updatingMarks = False
+        tree.resizeColumnToContents(0)
+        tree.sortByColumn(4, Qt.DescendingOrder)
+        tree.setSortingEnabled(True)
+        tree.hideColumn(4)
+
+class FeedsView(QWidget):
+    def __init__(self, marksTab, marks, loop, parent=None):
+        super().__init__(parent)
+
+        self.marksTab = marksTab
+        self.loop = loop
+        self.marks = marks
+
+        self.ui = ui_bookmarksmgrfeeds.Ui_FeedsViewForm()
+        self.ui.setupUi(self)
+
+        self.marks.changed.connect(self.updateFeeds)
+        self.tree = self.ui.treeFeeds
+        self.model = FeedsModel()
+        self.model.setHorizontalHeaderLabels([iPath(), iTitle(), iDate()])
+        self.tree.setModel(self.model)
+        self.tree.doubleClicked.connect(self.onFeedDoubleClick)
+        self.tree.setSortingEnabled(True)
+
+        self.updateFeeds()
+
+    def updateFeeds(self):
+        parent = self.model.invisibleRootItem()
+        feeds = self.marks.getFeeds()
+
+        for fPath, fData in feeds.items():
+            fItem = None
+            ret = modelSearch(self.model, parent=parent.index(),
+                    search=fPath, columns=[0])
+            if not ret:
+                fItem = UneditableItem(fPath)
+                parent.appendRow([fItem])
+            else:
+                fItem = self.model.itemFromIndex(ret[0])
+
+            fItemIdx = self.model.indexFromItem(fItem)
+            self.ui.treeFeeds.expand(fItemIdx)
+
+            marks = self.marks.getFeedMarks(fPath)
+            for mPath, mData in marks.items():
+                ret = modelSearch(self.model, parent=parent.index(),
+                        search=mPath, columns=[0])
                 if ret: continue
 
-                item1 = QStandardItem(path)
-                item2 = QStandardItem(bm['title'] or 'Unknown')
-
+                item1 = UneditableItem(mPath)
                 item1.setEditable(False)
-                item2.setEditable(True)
-                catItem.appendRow([item1, item2])
-
-            self.tree.expand(catItemIdx)
+                dt = QDateTime.fromString(mData['datecreated'],
+                        Qt.ISODate)
+                fItem.appendRow([item1,
+                    UneditableItem(mData['metadata']['title']),
+                    UneditableItem(dt.toString())
+                ])
 
         self.tree.resizeColumnToContents(0)
+        self.tree.sortByColumn(2, Qt.DescendingOrder)
+        self.tree.setSortingEnabled(True)
+
+    def onFeedDoubleClick(self, index):
+        indexPath = self.model.sibling(index.row(), 0, index)
+        path = self.model.data(indexPath)
+        if path:
+            self.marksTab.gWindow.addBrowserTab().browseFsPath(path)
+
+class NetworkMarksView(QWidget, _MarksUpdater):
+    def __init__(self, marksTab, marks, loop, parent=None):
+        super().__init__(parent)
+
+        self.marksTab = marksTab
+        self.loop = loop
+        self.marks = marks
+
+        self.ui = ui_bookmarksmgrnetwork.Ui_NetworkMarksViewForm()
+        self.ui.setupUi(self)
+        self.ui.search.returnPressed.connect(self.onSearch)
+        self.ui.searchButton.clicked.connect(self.onSearch)
+
+        self.model = BookmarksModel()
+        self.model.setHorizontalHeaderLabels([iPath(), iTitle(), iShared(),
+            iDate(), iTimestamp()])
+
+        self.tree = self.ui.treeNetMarks
+        self.tree.doubleClicked.connect(self.onDoubleClick)
+        self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.tree.customContextMenuRequested.connect(self.onContextMenu)
+
+        self.tree.setModel(self.model)
+        self.marks.changed.connect(self.doMarksUpdate)
+
+        self.doMarksUpdate()
 
     def onContextMenu(self, point):
         idx = self.tree.indexAt(point)
@@ -131,16 +217,146 @@ class BookmarksTab(GalacteekWidget):
         dataPath = self.model.data(idxPath)
         menu = QMenu()
 
-        def remove(path):
-            if self.bookmarks.delete(path):
-                modelDelete(self.model, path)
+        def importMark(path):
+            mark = self.marks.search(path)
 
-        act2 = menu.addAction('Remove', lambda:
-                remove(dataPath))
+        act2 = menu.addAction(iImportMark(), lambda:
+                importMark(dataPath))
         menu.exec(self.tree.mapToGlobal(point))
 
-    def onItemDoubleClicked(self, index):
+    def doMarksUpdate(self):
+        self.loop.create_task(self.updateMarks(
+            self.model, self.marks, self.tree))
+
+    def onSearch(self):
+        text = self.ui.search.text()
+
+    def onDoubleClick(self, index):
         indexPath = self.model.sibling(index.row(), 0, index)
         path = self.model.data(indexPath)
+        if path:
+            self.marksTab.gWindow.addBrowserTab().browseFsPath(path)
+
+class BookmarksTab(GalacteekTab, _MarksUpdater):
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
+
+        self.marksLocal = self.app.marksLocal
+        self.marksNetwork = self.app.marksNetwork
+
+        self.marksLocal.changed.connect(self.doMarksUpdate)
+        self.marksLocal.markDeleted.connect(self.onMarkDeleted)
+
+        self.ui = ui_bookmarksmgr.Ui_BookmarksViewForm()
+        self.ui.setupUi(self)
+
+        self.uiNet = NetworkMarksView(self, self.marksNetwork,
+                self.loop, parent=self)
+        self.uiFeeds = FeedsView(self, self.marksLocal,
+                self.loop, parent=self)
+        self.ui.toolbox.addItem(self.uiNet, iNetworkMarks())
+        self.ui.toolbox.addItem(self.uiFeeds, iFeeds())
+
+        self.filter = BasicKeyFilter()
+        self.filter.deletePressed.connect(self.onDeletePressed)
+        self.installEventFilter(self.filter)
+
+        icon1 = getIcon('bookmarks.png')
+        self.ui.toolbox.setItemIcon(0, icon1)
+        self.ui.toolbox.setItemIcon(1, icon1)
+
+        self.ui.bookmarksBox.insertItem(0, 'Bookmark as IPFS')
+        self.ui.bookmarksBox.setItemIcon(0, icon1)
+        self.ui.bookmarksBox.activated.connect(self.onBoxActivated)
+
+        self.modelMarks = BookmarksModel()
+        self.modelMarks.setHorizontalHeaderLabels([iPath(), iTitle(),
+            iShared(), iDate(), iTimestamp()])
+
+        self.ui.treeMarks.setColumnWidth(0, 600)
+        self.ui.treeMarks.resizeColumnToContents(0)
+        self.ui.treeMarks.doubleClicked.connect(self.onMarkItemDoubleClick)
+        self.ui.treeMarks.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.ui.treeMarks.customContextMenuRequested.connect(self.onContextMenu)
+        self.ui.treeMarks.setModel(self.modelMarks)
+
+        self.updatingMarks = False
+        self.doMarksUpdate()
+
+    def onBoxActivated(self, idx):
+        mark = self.ui.bookmarkLine.text()
+
+        if idx == 0:
+            if not isMultihash(mark):
+                return messageBox('Invalid input')
+
+            if not mark.startswith('/ipfs'):
+                mark = joinIpfs(mark)
+            addBookmark(self.marksLocal, mark, '')
+        self.ui.bookmarkLine.clear()
+
+    def onMarkDeleted(self, mPath):
+        if mPath in self._marksCache:
+            self._marksCache.remove(mPath)
+
+    def doMarksUpdate(self):
+        self.loop.create_task(self.updateMarks(
+            self.modelMarks, self.marksLocal, self.ui.treeMarks))
+
+    def onContextMenu(self, point):
+        idx = self.ui.treeMarks.indexAt(point)
+        if not idx.isValid():
+            return
+
+        idxPath = self.modelMarks.sibling(idx.row(), 0, idx)
+        dataPath = self.modelMarks.data(idxPath)
+        menu = QMenu()
+
+        act2 = menu.addAction('Delete', lambda:
+                self.deleteMark(dataPath))
+        menu.exec(self.ui.treeMarks.mapToGlobal(point))
+
+    def deleteMark(self, path):
+        if self.marksLocal.delete(path):
+            modelDelete(self.modelMarks, path)
+
+    def currentItemPath(self):
+        idx = self.ui.treeMarks.currentIndex()
+        item = self.modelMarks.itemFromIndex(idx)
+
+        if type(item) is CategoryItem:
+            return None
+
+        return self.modelMarks.data(
+            self.modelMarks.sibling(idx.row(), 0, idx))
+
+    def onDeletePressed(self):
+        path = self.currentItemPath()
+        if path:
+            self.deleteMark(path)
+
+    def onMarkItemChangeShare(self, index, path):
+        shareItem = self.modelMarks.itemFromIndex(index)
+        mark = self.marksLocal.search(path)
+        if mark:
+            if mark['share'] is True:
+                mark['share'] = False
+                shareItem.setText('no')
+            elif mark['share'] is False:
+                mark['share'] = True
+                shareItem.setText('yes')
+            self.marksLocal.changed.emit()
+
+    def onMarkItemDoubleClick(self, index):
+        indexPath = self.modelMarks.sibling(index.row(), 0, index)
+        item0 = self.modelMarks.itemFromIndex(indexPath)
+        path = self.modelMarks.data(indexPath)
+
+        if index.column() == 2:
+            return self.onMarkItemChangeShare(index, path)
+
+        if type(item0) is CategoryItem:
+            return
+
         tab = self.gWindow.addBrowserTab()
         tab.browseFsPath(path)

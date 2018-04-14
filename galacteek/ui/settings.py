@@ -105,7 +105,6 @@ class SettingsDialog(QDialog):
 
         if self.ui.groupBoxDaemon.isChecked():
             self.sManager.setTrue(section, CFG_KEY_ENABLED)
-            self.app.startIpfsDaemon()
         else:
             self.sManager.setFalse(section, CFG_KEY_ENABLED)
 
@@ -129,8 +128,6 @@ class SettingsDialog(QDialog):
             self.sManager.setFalse(section, CFG_KEY_GOTOHOME)
 
         self.sManager.sync()
-        self.app.updateIpfsClient()
-
         self.done(0)
 
     def reject(self):

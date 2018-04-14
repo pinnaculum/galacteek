@@ -6,14 +6,15 @@ import re
 
 from PyQt5.QtWidgets import (QWidget, QFrame, QApplication, QMainWindow,
         QDialog, QLabel, QPushButton, QVBoxLayout, QAction,
-        QMenu, QTabWidget, QInputDialog, QMessageBox)
+        QMenu, QTabWidget, QInputDialog, QMessageBox, QToolButton)
 
 from PyQt5.QtPrintSupport import *
 
-from PyQt5.QtCore import QUrl, QBuffer, QIODevice, Qt, QCoreApplication, QObject
+from PyQt5.QtCore import (QUrl, QIODevice, Qt, QCoreApplication, QObject,
+    pyqtSignal)
 from PyQt5 import QtWebEngineWidgets, QtWebEngine, QtWebEngineCore
 from PyQt5.Qt import QByteArray
-from PyQt5.QtGui import QClipboard, QPixmap, QIcon
+from PyQt5.QtGui import QClipboard, QPixmap, QIcon, QKeySequence
 
 from yarl import URL
 import cid
@@ -23,6 +24,8 @@ from . import galacteek_rc
 from .helpers import *
 from .dialogs import *
 from .bookmarks import *
+from .widgets import *
+from ..appsettings import *
 from galacteek.ipfs import cidhelpers
 
 SCHEME_DWEB = 'dweb'
@@ -39,15 +42,33 @@ def iPinThisPage():
     return QCoreApplication.translate('BrowserTabForm', 'PIN (this page)')
 def iPinRecursive():
     return QCoreApplication.translate('BrowserTabForm', 'PIN (recursive)')
-def iEnterIpfsHash():
-    return QCoreApplication.translate('BrowserTabForm', 'Enter an IPFS multihash')
-def iEnterIpfsHashDialog():
-    return QCoreApplication.translate('BrowserTabForm', 'Load IPFS multihash dialog')
+def iFollow():
+    return QCoreApplication.translate('BrowserTabForm', 'Follow IPNS')
 
-def iEnterIpnsHash():
+def iEnterIpfsCID():
+    return QCoreApplication.translate('BrowserTabForm', 'Enter an IPFS CID')
+
+def iBrowseHomePage():
     return QCoreApplication.translate('BrowserTabForm',
-        'Enter an IPNS multihash/name')
-def iEnterIpnsHashDialog():
+        'Go to home page')
+
+def iBrowseIpfsCID():
+    return QCoreApplication.translate('BrowserTabForm',
+        'Browse IPFS resource from CID')
+
+def iEnterIpfsCIDDialog():
+    return QCoreApplication.translate('BrowserTabForm',
+        'Load IPFS CID dialog')
+
+def iBrowseIpnsHash():
+    return QCoreApplication.translate('BrowserTabForm',
+        'Browse IPNS resource from hash/name')
+
+def iEnterIpns():
+    return QCoreApplication.translate('BrowserTabForm',
+        'Enter an IPNS hash/name')
+
+def iEnterIpnsDialog():
     return QCoreApplication.translate('BrowserTabForm',
         'Load IPNS key dialog')
 
@@ -59,17 +80,17 @@ def iBookmarked(path):
     return QCoreApplication.translate('BrowserTabForm',
         'Bookmarked {0}').format(path)
 
-
 def iBookmarkTitleDialog():
     return QCoreApplication.translate('BrowserTabForm',
         'Bookmark title')
 
-def iInvalidMultihash(text):
+def iInvalidUrl(text):
     return QCoreApplication.translate('BrowserTabForm',
-        '{0} is an invalid multihash').format(text)
+        'Invalid URL')
+
 def iInvalidCID(text):
     return QCoreApplication.translate('BrowserTabForm',
-        '{0} is an invalid CID').format(text)
+        '{0} is an invalid IPFS CID (Content IDentifier)').format(text)
 
 def fsPath(path):
     return '{0}:{1}'.format(SCHEME_FS, path)
@@ -77,22 +98,21 @@ def isFsNs(url):
     return url.startswith('{0}:/'.format(SCHEME_FS))
 
 class IPFSSchemeHandler(QtWebEngineCore.QWebEngineUrlSchemeHandler):
-    def __init__(self, engine, browsertab, parent = None):
+    def __init__(self, engine, browserTab, parent = None):
         self.webengine = engine
-        self.browsertab = browsertab
+        self.browserTab = browserTab
         QtWebEngineCore.QWebEngineUrlSchemeHandler.__init__(self, parent)
 
     def requestStarted(self, request):
-        method = request.requestMethod()
         url = request.requestUrl()
         scheme = url.scheme()
-        host = url.host()
         path = url.path()
-        gatewayUrl = self.browsertab.gatewayUrl
+        gatewayUrl = self.browserTab.gatewayUrl
 
         def redirectIpfs():
             yUrl = URL(url.toString())
             if len(yUrl.parts) < 3:
+                messageBox(iInvalidUrl())
                 return None
 
             newurl = QUrl("{0}/{1}".format(gatewayUrl, url.path()))
@@ -101,7 +121,9 @@ class IPFSSchemeHandler(QtWebEngineCore.QWebEngineUrlSchemeHandler):
         def redirectIpns():
             yUrl = URL(url.toString())
             if len(yUrl.parts) < 3:
-                return
+                messageBox(iInvalidUrl())
+                return None
+
             newurl = QUrl("{0}/{1}".format(gatewayUrl, url.path()))
             return request.redirect(newurl)
 
@@ -113,18 +135,12 @@ class IPFSSchemeHandler(QtWebEngineCore.QWebEngineUrlSchemeHandler):
             if path.startswith("/ipns/"):
                 return redirectIpns()
 
-            # This would handle fs://{ipfs,ipns}/ but really we shouldn't care
-            if host == 'ipfs':
-                return redirectIpfs()
-            if host == 'ipns':
-                return redirectIpns()
-
 class WebView(QtWebEngineWidgets.QWebEngineView):
-    def __init__(self, browsertab, parent = None):
+    def __init__(self, browserTab, parent = None):
         super(QtWebEngineWidgets.QWebEngineView, self).__init__(parent = parent)
 
-        self.browsertab = browsertab
-        schemeHandler = IPFSSchemeHandler(self, self.browsertab, parent = self)
+        self.browserTab = browserTab
+        schemeHandler = IPFSSchemeHandler(self, self.browserTab, parent = self)
         profile = self.page().profile()
 
         # Register our naughty scheme handlers
@@ -168,7 +184,7 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
         pass
 
 class BrowserKeyFilter(QObject):
-    ctrlbPressed = pyqtSignal()
+    bookmarkPressed = pyqtSignal()
 
     def eventFilter(self,  obj,  event):
         if event.type() == QEvent.KeyPress:
@@ -177,16 +193,16 @@ class BrowserKeyFilter(QObject):
             key = event.key()
             if modifiers & Qt.ControlModifier:
                 if key == Qt.Key_B:
-                    self.ctrlbPressed.emit()
+                    self.bookmarkPressed.emit()
                     return True
         return False
 
-class BrowserTab(QWidget):
-    def __init__(self, gWindow, parent = None):
-        super(QWidget, self).__init__(parent = parent)
+class BrowserTab(GalacteekTab):
+    # signals
+    ipfsPathVisited = pyqtSignal(str)
 
-        self.gWindow = gWindow
-        self.app = self.gWindow.getApp()
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
 
         self.ui = ui_browsertab.Ui_BrowserTabForm()
         self.ui.setupUi(self)
@@ -206,25 +222,54 @@ class BrowserTab(QWidget):
         self.ui.forwardButton.clicked.connect(self.forwardButtonClicked)
         self.ui.refreshButton.clicked.connect(self.refreshButtonClicked)
         self.ui.loadFromClipboardButton.clicked.connect(self.loadFromClipboardButtonClicked)
-        self.ui.loadIpfsHashButton.clicked.connect(self.loadIpfsHashButtonClicked)
-        self.ui.loadIpnsHashButton.clicked.connect(self.loadIpnsHashButtonClicked)
         #self.ui.printButton.clicked.connect(self.printButtonClicked)
+
+        # Setup the tool button for browsing IPFS content
+        self.loadIpfsMenu = QMenu()
+        self.loadIpfsCIDAction = QAction(getIconIpfsIce(),
+                iBrowseIpfsCID(),self,
+                shortcut=QKeySequence('Ctrl+l'),
+                triggered=self.onLoadIpfsCID)
+        self.loadIpnsAction = QAction(getIconIpfsWhite(),
+                iBrowseIpnsHash(),self,
+                shortcut=QKeySequence('Ctrl+n'),
+                triggered=self.onLoadIpns)
+        self.loadHomeAction = QAction(iBrowseHomePage(),self,
+                shortcut=QKeySequence('Ctrl+h'),
+                triggered=self.onLoadHome)
+
+        self.loadIpfsMenu.addAction(self.loadIpfsCIDAction)
+        self.loadIpfsMenu.addAction(self.loadIpnsAction)
+        self.loadIpfsMenu.addAction(self.loadHomeAction)
+
+        self.ui.loadIpfsButton.setMenu(self.loadIpfsMenu)
+        self.ui.loadIpfsButton.setPopupMode(QToolButton.MenuButtonPopup)
+        self.ui.loadIpfsButton.clicked.connect(self.onLoadIpfsCID)
+
+        self.ui.pinAllButton.setCheckable(True)
+        self.ui.pinAllButton.setAutoRaise(True)
+        self.pinAll = False
+        self.ui.pinAllButton.toggled.connect(self.onToggledPinAll)
 
         # Prepare the pin combo box
         iconPin = getIcon('pin.png')
-        self.ui.pinComboBox.insertItem(0, iPinThisPage())
-        self.ui.pinComboBox.setItemIcon(0, iconPin)
-        self.ui.pinComboBox.insertItem(1, iPinRecursive())
-        self.ui.pinComboBox.setItemIcon(1, iconPin)
-        self.ui.pinComboBox.activated.connect(self.pinComboClicked)
+        self.ui.actionComboBox.insertItem(0, iPinThisPage())
+        self.ui.actionComboBox.setItemIcon(0, iconPin)
+        self.ui.actionComboBox.insertItem(1, iPinRecursive())
+        self.ui.actionComboBox.setItemIcon(1, iconPin)
+        self.ui.actionComboBox.insertItem(2, iFollow())
+        self.ui.actionComboBox.activated.connect(self.actionComboClicked)
 
         # Event filter
         evfilter = BrowserKeyFilter(self)
-        evfilter.ctrlbPressed.connect(self.onBookmarkPage)
+        evfilter.bookmarkPressed.connect(self.onBookmarkPage)
         self.installEventFilter(evfilter)
+
+        self.ipfsPathVisited.connect(self.onPathVisited)
 
         self.currentUrl = None
         self.currentIpfsResource = None
+        self.objectStats = {}
 
     @property
     def tabPage(self):
@@ -244,28 +289,41 @@ class BrowserTab(QWidget):
         params = self.app.ipfsConnParams
         return params.getGatewayUrl()
 
+    def onPathVisited(self, path):
+        async def fetchObjectStats(client, path):
+            try:
+                self.app.ipfsCtx.objectStats[path] = await client.object.stat(path)
+            except:
+                self.app.ipfsCtx.objectStats[path] = None
+
+        self.app.ipfsTask(fetchObjectStats, path)
+
+        if self.pinAll is True:
+            self.pinPath(path, recursive=False, notify=False)
+
+    def onToggledPinAll(self, checked):
+        if checked:
+            self.pinAll = True
+
     def onBookmarkPage(self):
         if self.currentIpfsResource:
-            addBookmark(self.app.bookmarks,
+            addBookmark(self.app.marksLocal,
                     self.currentIpfsResource,
-                    self.currentPageTitle)
+                    self.currentPageTitle,
+                    stats=self.objectStats.get(self.currentIpfsResource, {}))
 
     def onPinSuccess(self, f):
         return self.app.systemTrayMessage('PIN', iPinSuccess(f.result()))
 
-    def onPinSuccessMbox(self, f):
-        msgBox = QMessageBox()
-        msgBox.setText(iPinSuccess(f.result()))
-        msgBox.show()
-        return msgBox.exec_()
-
-    def pinPath(self, path, recursive=True):
+    def pinPath(self, path, recursive=True, notify=True):
         async def pinCoro(client, path):
-            pinner = self.gWindow.getApp().pinner
-            await pinner.queue.put((path, recursive, self.onPinSuccess))
+            pinner = self.app.pinner
+            onSuccess = None
+            if notify is True:
+                onSuccess = self.onPinSuccess
+            await pinner.queue.put((path, recursive, onSuccess))
 
-        self.gWindow.getApp().ipfsTask(pinCoro,
-                path)
+        self.app.ipfsTask(pinCoro, path)
 
     def printButtonClicked(self):
         printer = QPrinter()
@@ -279,38 +337,48 @@ class BrowserTab(QWidget):
             currentPage = self.ui.webEngineView.page()
             currentPage.print(printer, success)
 
-    def pinPageButtonClicked(self):
-        self.pinPath(self.currentIpfsResource, recursive=False)
-
-    def pinComboClicked(self, idx):
+    def actionComboClicked(self, idx):
         if not self.currentIpfsResource:
             return
         if idx == 0:
             self.pinPath(self.currentIpfsResource, recursive=False)
         if idx == 1:
             self.pinPath(self.currentIpfsResource, recursive=True)
+        if idx == 2:
+            # todo: better sanity check on ipns path validity
+            if self.currentIpfsResource.startswith('/ipns/'):
+                dlg = AddFeedDialog(self.app.marksLocal,
+                    self.currentIpfsResource)
+                dlg.exec_()
+                dlg.show()
 
     def loadFromClipboardButtonClicked(self):
-        app = self.gWindow.getApp()
-        clipboardSelection = app.clipboard().text(QClipboard.Selection)
+        clipboardSelection = self.app.clipboard().text(QClipboard.Selection)
+        if not cidhelpers.cidValid(clipboardSelection):
+            return messageBox(iInvalidCID(clipboardSelection))
         self.browseIpfsHash(clipboardSelection)
 
-    def loadIpfsHashButtonClicked(self):
-        text, ok = QInputDialog.getText(self,
-                iEnterIpfsHashDialog(),
-                iEnterIpfsHash())
-        if ok:
-            if cidhelpers.isMultihash(text):
-                self.browseIpfsHash(text)
-            else:
-                messageBox(iInvalidMultihash(text))
+    def onLoadIpfsCID(self):
+        def onValidated(d):
+            self.browseIpfsHash(d.getHash())
 
-    def loadIpnsHashButtonClicked(self):
+        runDialog(IPFSCIDInputDialog, title=iEnterIpfsCIDDialog(),
+            accepted=onValidated)
+
+    def onLoadIpns(self):
         text, ok = QInputDialog.getText(self,
-                iEnterIpnsHashDialog(),
-                iEnterIpnsHash())
+                iEnterIpnsDialog(),
+                iEnterIpns())
         if ok:
             self.browseIpnsHash(text)
+
+    def onLoadHome(self):
+        self.loadHomePage()
+
+    def loadHomePage(self):
+        homeUrl = self.app.settingsMgr.getSetting(CFG_SECTION_BROWSER,
+            CFG_KEY_HOMEURL)
+        self.enterUrl(QUrl(homeUrl))
 
     def refreshButtonClicked(self):
         self.ui.webEngineView.reload()
@@ -329,6 +397,7 @@ class BrowserTab(QWidget):
             self.ui.urlZone.clear()
             # Content loaded from IPFS gateway, this is IPFS content
             self.ui.urlZone.insert(fsPath(url.path()))
+            self.ipfsPathVisited.emit(self.currentIpfsResource)
         else:
             self.ui.urlZone.clear()
             self.ui.urlZone.insert(url.toString())
@@ -352,11 +421,14 @@ class BrowserTab(QWidget):
     def browseFsPath(self, path):
         self.enterUrl(QUrl('{0}:{1}'.format(SCHEME_FS, path)))
 
-    def browseIpfsHash(self, ipfshash):
-        self.enterUrl(QUrl('{0}:/ipfs/{1}'.format(SCHEME_FS, ipfshash)))
+    def browseIpfsHash(self, ipfsHash):
+        if not cidhelpers.cidValid(ipfsHash):
+            return messageBox(iInvalidCID(ipfsHash))
+
+        self.browseFsPath('/ipfs/{0}'.format(ipfsHash))
 
     def browseIpnsHash(self, ipnshash):
-        self.enterUrl(QUrl('{0}:/ipns/{1}'.format(SCHEME_FS, ipnshash)))
+        self.browseFsPath('/ipns/{0}'.format(ipnshash))
 
     def enterUrl(self, url):
         self.ui.urlZone.clear()
@@ -366,7 +438,7 @@ class BrowserTab(QWidget):
     def onUrlEdit(self):
         inputStr = self.ui.urlZone.text().strip()
 
-        if cidhelpers.isMultihash(inputStr):
+        if cidhelpers.cidValid(inputStr):
             return self.browseIpfsHash(inputStr)
 
         if not inputStr.startswith(SCHEME_DWEB) and \

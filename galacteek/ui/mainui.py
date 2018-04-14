@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow,
         QSystemTrayIcon)
 from PyQt5.QtCore import (QCoreApplication, QUrl, QBuffer, QIODevice, Qt,
     QTimer, QFile)
+from PyQt5.QtCore import pyqtSignal, QUrl, QObject
 from PyQt5 import QtWebEngineWidgets, QtWebEngine, QtWebEngineCore
 from PyQt5.QtGui import QClipboard, QPixmap, QIcon
 
@@ -24,6 +25,14 @@ def iMyFiles():
 def iKeys():
     return QCoreApplication.translate('GalacteekWindow', 'IPFS Keys')
 
+def iAbout():
+    from galacteek import __version__
+    return QCoreApplication.translate('GalacteekWindow', '''
+        <p><b>Galacteek</b> is a simple IPFS browser and content publisher
+        </p>
+        <p>Author: David Ferlier</p>
+        <p>Galacteek version {0}</p>''').format(__version__)
+
 class MainWindow(QMainWindow):
     tabnMyFiles = 'My Files'
     tabnKeys = 'IPFS keys'
@@ -37,6 +46,11 @@ class MainWindow(QMainWindow):
         self.ui.setupUi(self)
 
         self.ui.actionQuit.triggered.connect(self.quit)
+
+        self.ui.actionCloseAllTabs.triggered.connect(
+                self.onCloseAllTabs)
+        self.ui.actionAboutGalacteek.triggered.connect(
+                self.onAboutGalacteek)
         self.ui.actionShowPeersInformation.triggered.connect(
                 self.onShowPeersInformation)
         self.ui.actionShowIpfsRefs.triggered.connect(
@@ -45,7 +59,7 @@ class MainWindow(QMainWindow):
                 self.onSettings)
 
         self.ui.myFilesButton.clicked.connect(self.onMyFilesClicked)
-        self.ui.manageKeysButton.clicked.connect(self.onMyKeysClicked)
+        self.ui.manageKeysButton.clicked.connect(self.onIpfsKeysClicked)
         self.ui.openBrowserTabButton.clicked.connect(self.onOpenBrowserTabClicked)
         self.ui.bookmarksButton.clicked.connect(self.addBookmarksTab)
         self.ui.writeNewDocumentButton.clicked.connect(self.onWriteNewDocumentClicked)
@@ -60,27 +74,43 @@ class MainWindow(QMainWindow):
         self.ui.pinningStatusButton.setToolTip(iNoStatus())
         self.ui.pinningStatusButton.setIcon(getIcon('pin-black.png'))
         self.ui.statusbar.addPermanentWidget(self.ui.pinningStatusButton)
-        self.ui.statusbar.setStyleSheet("background-color: #4a9ea1")
+        self.ui.statusbar.setStyleSheet('background-color: #4a9ea1')
 
-        # Main timer
+        # Connection status timer
         self.timerStatus = QTimer(self)
         self.timerStatus.timeout.connect(self.onMainTimerStatus)
-        self.timerStatus.start(5000)
+        self.timerStatus.start(3000)
+
+        # Connect ipfsctx signals
+        self.app.ipfsCtx.ipfsRepositoryReady.connect(self.onRepoReady)
 
         self.allTabs = []
+
         self.ui.tabWidget.removeTab(0)
 
     def getApp(self):
         return self.app
 
+    def onRepoReady(self):
+        pass
+
+    def enableButtons(self, flag=True):
+        for btn in [ self.ui.myFilesButton,
+                self.ui.manageKeysButton,
+                self.ui.openBrowserTabButton,
+                self.ui.bookmarksButton,
+                self.ui.writeNewDocumentButton ]:
+            btn.setEnabled(flag)
+
     def statusMessage(self, msg):
         self.ui.statusbar.showMessage(msg)
 
-    def registerTab(self, tab, name, icon=None, current=False):
-        if icon:
-            self.ui.tabWidget.addTab(tab, icon, name)
-        else:
-            self.ui.tabWidget.addTab(tab, name)
+    def registerTab(self, tab, name, icon=None, current=False, add=True):
+        if add:
+            if icon:
+                self.ui.tabWidget.addTab(tab, icon, name)
+            else:
+                self.ui.tabWidget.addTab(tab, name)
 
         self.allTabs.append(tab)
 
@@ -102,7 +132,6 @@ class MainWindow(QMainWindow):
 
     def removeTabFromWidget(self, w):
         idx = self.ui.tabWidget.indexOf(w)
-        print(w, idx)
         if idx:
             self.ui.tabWidget.removeTab(idx)
 
@@ -110,6 +139,13 @@ class MainWindow(QMainWindow):
         prefsDialog = settings.SettingsDialog(self.app)
         prefsDialog.exec_()
         prefsDialog.show()
+
+    def onCloseAllTabs(self):
+        self.ui.tabWidget.clear()
+
+    def onAboutGalacteek(self):
+        from galacteek import __version__
+        QMessageBox.about(self, 'About Galacteek', iAbout())
 
     def onShowPeersInformation(self):
         pass
@@ -143,10 +179,11 @@ class MainWindow(QMainWindow):
             nodeId = info.get('ID', iUnknown())
             nodeAgent = info.get('AgentVersion', iUnknownAgent())
 
-            # Get IPFS swarm status
+            # Get IPFS peers list
             peers = await oper.peersList()
             if not peers:
-                return self.statusMessage(iErrNoPeers())
+                return self.statusMessage(iCxButNoPeers(
+                    nodeId, nodeAgent))
 
             peersCount = len(peers)
             message = iConnectStatus(nodeId, nodeAgent, peersCount)
@@ -169,8 +206,7 @@ class MainWindow(QMainWindow):
                 idx = self.ui.tabWidget.currentIndex()
                 self.onTabCloseRequest(idx)
 
-        if event.key() == Qt.Key_F1:
-            self.addBookmarksTab()
+        super(MainWindow, self).keyPressEvent(event)
 
     def addBookmarksTab(self):
         name = iBookmarks()
@@ -219,25 +255,24 @@ class MainWindow(QMainWindow):
 
         filesTab.updateTree()
 
-    def onMyKeysClicked(self):
+    def onIpfsKeysClicked(self):
         name = self.tabnKeys
         ft = self.findTabWithName(name)
         if ft:
             return self.ui.tabWidget.setCurrentWidget(ft)
 
-        keysTab = keys.KeysTab(self, parent=self.ui.tabWidget)
+        keysTab = keys.KeysTab(self)
         self.registerTab(keysTab, name, current=True)
 
     def addBrowserTab(self, label='No page loaded'):
-        icon = getIcon('ipfs-logo-128-ice.png')
+        icon = getIconIpfsIce()
         tab = browser.BrowserTab(self, parent=self.ui.tabWidget)
         self.ui.tabWidget.addTab(tab, icon, label)
         self.ui.tabWidget.setCurrentWidget(tab)
 
-        mgr = self.getApp().settingsMgr
+        mgr = self.app.settingsMgr
         if mgr.isTrue(CFG_SECTION_BROWSER, CFG_KEY_GOTOHOME):
-            home = mgr.eGet(S_HOMEURL)
-            tab.enterUrl(QUrl(home))
+            tab.loadHomePage()
 
         self.allTabs.append(tab)
         return tab
@@ -249,4 +284,4 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         event.ignore()
         self.hide()
-        self.getApp().systemTrayMessage('Galacteek', iMinimized())
+        self.app.systemTrayMessage('Galacteek', iMinimized())
