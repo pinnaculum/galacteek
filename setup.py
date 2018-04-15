@@ -3,6 +3,7 @@ import sys
 import codecs
 import subprocess
 import glob
+import shutil
 from setuptools import setup, find_packages, Command
 from distutils.command.build import build
 
@@ -54,12 +55,17 @@ class build_ui(Command):
         run(['pylupdate5', '-verbose', 'galacteek.pro'])
 
         trdir = './share/translations'
+        lrelease = shutil.which('lrelease-qt5')
+        if not lrelease:
+            lrelease = shutil.which('lrelease')
+
         for lang in ['en']:
-            run(['lrelease-qt5',
-                os.path.join(trdir, 'galacteek_{}.ts'.format(lang)),
-                '-qm',
-                os.path.join(trdir, 'galacteek_{}.qm'.format(lang)),
-                ])
+            if lrelease:
+                run([lrelease,
+                    os.path.join(trdir, 'galacteek_{}.ts'.format(lang)),
+                    '-qm',
+                    os.path.join(trdir, 'galacteek_{}.qm'.format(lang)),
+                    ])
 
         run(['pyrcc5', os.path.join(uidir, 'galacteek.qrc'), '-o',
             os.path.join(uidir, 'galacteek_rc.py')])
@@ -99,13 +105,15 @@ setup(
         'Environment :: X11 Applications :: Qt',
         'Topic :: Desktop Environment :: File Managers',
         'Topic :: Internet :: WWW/HTTP :: Browsers',
-        'Programming Language :: Python',
         'Intended Audience :: Developers',
         'Development Status :: 4 - Beta',
         'Natural Language :: English',
         'Operating System :: OS Independent',
         'License :: OSI Approved :: GNU Affero General Public License v3',
         'Topic :: System :: Filesystems',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
     ],
     keywords=[
         'async',
