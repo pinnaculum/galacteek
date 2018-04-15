@@ -95,6 +95,7 @@ class KeysTab(GalacteekTab):
                     UneditableItem(key['Name']),
                     UneditableItem(key['Id'])
                 ])
+            self.ui.treeKeys.resizeColumnToContents(0)
 
         self.app.ipfsTask(listKeys)
 
