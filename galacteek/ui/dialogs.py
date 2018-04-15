@@ -30,10 +30,17 @@ class AddBookmarkDialog(QDialog):
         self.ui.setupUi(self)
         self.ui.resourceLabel.setText(self.ipfsResource)
         self.ui.resourceLabel.setStyleSheet(boldLabelStyle())
+        self.ui.newCategory.textChanged.connect(self.onNewCatChanged)
         self.ui.title.setText(title)
 
         for cat in self.marks.getCategories():
             self.ui.category.addItem(cat)
+
+    def onNewCatChanged(self, text):
+        if len(text) > 0:
+            self.ui.category.setEnabled(False)
+        else:
+            self.ui.category.setEnabled(True)
 
     def accept(self):
         share = self.ui.share.isChecked()
