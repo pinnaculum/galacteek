@@ -11,7 +11,7 @@ from galacteek.ipfs import cidhelpers
 
 from . import ui_addkeydialog, ui_addbookmarkdialog
 from . import ui_addfeeddialog
-from . import ui_ipfscidinputdialog
+from . import ui_ipfscidinputdialog, ui_ipfsmultiplecidinputdialog
 
 import mimetypes
 
@@ -88,7 +88,7 @@ class IPFSCIDInputDialog(QDialog):
         super().__init__(parent)
 
         self.validCid = False
-        self.ui = ui_ipfscidinputdialog.Ui_IPFSCIDInputDialog()
+        self.ui = ui_ipfscidinputdialog.Ui_CIDInputDialog()
         self.ui.setupUi(self)
         self.ui.validity.setStyleSheet(boldLabelStyle())
         self.ui.cid.textChanged.connect(self.onCIDChanged)
@@ -115,3 +115,39 @@ class IPFSCIDInputDialog(QDialog):
     def accept(self):
         if self.validCid is True:
             self.done(1)
+
+class IPFSMultipleCIDInputDialog(QDialog):
+    """ Dialog for multiple IPFS CID input """
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.validCid = False
+        self.ui = ui_ipfsmultiplecidinputdialog.Ui_MultipleCIDInputDialog()
+        self.ui.setupUi(self)
+        self.ui.validity.setStyleSheet(boldLabelStyle())
+        self.ui.cid.textChanged.connect(self.onCIDChanged)
+        self.ui.addCidButton.clicked.connect(self.onAddCID)
+
+    def onAddCID(self):
+        if self.validCid:
+            self.ui.cidList.addItem(self.ui.cid.text())
+            self.ui.cid.clear()
+
+    def onCIDChanged(self, text):
+        if cidhelpers.cidValid(text):
+            self.ui.validity.setText('Valid CID')
+            self.validCid = True
+        else:
+            self.ui.validity.setText('Invalid CID')
+            self.validCid = False
+
+    def getCIDs(self):
+        cids = []
+        for idx in range(0, self.ui.cidList.count()):
+            item = self.ui.cidList.item(idx)
+            cids.append(item.text())
+        return cids
+
+    def accept(self):
+        self.done(1)

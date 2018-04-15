@@ -56,6 +56,10 @@ def iBrowseIpfsCID():
     return QCoreApplication.translate('BrowserTabForm',
         'Browse IPFS resource from CID')
 
+def iBrowseIpfsMultipleCID():
+    return QCoreApplication.translate('BrowserTabForm',
+        'Browse multiple IPFS resources from CID')
+
 def iEnterIpfsCIDDialog():
     return QCoreApplication.translate('BrowserTabForm',
         'Load IPFS CID dialog')
@@ -230,6 +234,9 @@ class BrowserTab(GalacteekTab):
                 iBrowseIpfsCID(),self,
                 shortcut=QKeySequence('Ctrl+l'),
                 triggered=self.onLoadIpfsCID)
+        self.loadIpfsMultipleCIDAction = QAction(getIconIpfsIce(),
+                iBrowseIpfsMultipleCID(), self,
+                triggered=self.onLoadIpfsMultipleCID)
         self.loadIpnsAction = QAction(getIconIpfsWhite(),
                 iBrowseIpnsHash(),self,
                 shortcut=QKeySequence('Ctrl+n'),
@@ -239,6 +246,7 @@ class BrowserTab(GalacteekTab):
                 triggered=self.onLoadHome)
 
         self.loadIpfsMenu.addAction(self.loadIpfsCIDAction)
+        self.loadIpfsMenu.addAction(self.loadIpfsMultipleCIDAction)
         self.loadIpfsMenu.addAction(self.loadIpnsAction)
         self.loadIpfsMenu.addAction(self.loadHomeAction)
 
@@ -363,6 +371,17 @@ class BrowserTab(GalacteekTab):
             self.browseIpfsHash(d.getHash())
 
         runDialog(IPFSCIDInputDialog, title=iEnterIpfsCIDDialog(),
+            accepted=onValidated)
+
+    def onLoadIpfsMultipleCID(self):
+        def onValidated(d):
+            # Open a tab for every CID
+            cids = d.getCIDs()
+            for cid in cids:
+                self.gWindow.addBrowserTab().browseIpfsHash(cid)
+
+        runDialog(IPFSMultipleCIDInputDialog,
+            title=iEnterIpfsCIDDialog(),
             accepted=onValidated)
 
     def onLoadIpns(self):
