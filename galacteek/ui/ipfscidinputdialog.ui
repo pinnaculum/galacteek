@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>IPFSCIDInputDialog</class>
- <widget class="QDialog" name="IPFSCIDInputDialog">
+ <class>CIDInputDialog</class>
+ <widget class="QDialog" name="CIDInputDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -59,7 +59,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>accepted()</signal>
-   <receiver>IPFSCIDInputDialog</receiver>
+   <receiver>CIDInputDialog</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -75,7 +75,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>IPFSCIDInputDialog</receiver>
+   <receiver>CIDInputDialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
