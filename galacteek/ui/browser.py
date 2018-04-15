@@ -43,7 +43,8 @@ def iPinThisPage():
 def iPinRecursive():
     return QCoreApplication.translate('BrowserTabForm', 'PIN (recursive)')
 def iFollow():
-    return QCoreApplication.translate('BrowserTabForm', 'Follow IPNS')
+    return QCoreApplication.translate('BrowserTabForm',
+        'Follow IPNS resource')
 
 def iEnterIpfsCID():
     return QCoreApplication.translate('BrowserTabForm', 'Enter an IPFS CID')
@@ -54,11 +55,11 @@ def iBrowseHomePage():
 
 def iBrowseIpfsCID():
     return QCoreApplication.translate('BrowserTabForm',
-        'Browse IPFS resource from CID')
+        'Browse IPFS resource (CID)')
 
 def iBrowseIpfsMultipleCID():
     return QCoreApplication.translate('BrowserTabForm',
-        'Browse multiple IPFS resources from CID')
+        'Browse multiple IPFS resources (CID)')
 
 def iEnterIpfsCIDDialog():
     return QCoreApplication.translate('BrowserTabForm',
@@ -241,6 +242,9 @@ class BrowserTab(GalacteekTab):
                 iBrowseIpnsHash(),self,
                 shortcut=QKeySequence('Ctrl+n'),
                 triggered=self.onLoadIpns)
+        self.followIpnsAction = QAction(getIconIpfsWhite(),
+                iFollow(),self,
+                triggered=self.onFollowIpns)
         self.loadHomeAction = QAction(iBrowseHomePage(),self,
                 shortcut=QKeySequence('Ctrl+h'),
                 triggered=self.onLoadHome)
@@ -248,6 +252,7 @@ class BrowserTab(GalacteekTab):
         self.loadIpfsMenu.addAction(self.loadIpfsCIDAction)
         self.loadIpfsMenu.addAction(self.loadIpfsMultipleCIDAction)
         self.loadIpfsMenu.addAction(self.loadIpnsAction)
+        self.loadIpfsMenu.addAction(self.followIpnsAction)
         self.loadIpfsMenu.addAction(self.loadHomeAction)
 
         self.ui.loadIpfsButton.setMenu(self.loadIpfsMenu)
@@ -265,8 +270,6 @@ class BrowserTab(GalacteekTab):
         self.ui.actionComboBox.setItemIcon(0, iconPin)
         self.ui.actionComboBox.insertItem(1, iPinRecursive())
         self.ui.actionComboBox.setItemIcon(1, iconPin)
-        self.ui.actionComboBox.insertItem(2, iFollow())
-        self.ui.actionComboBox.activated.connect(self.actionComboClicked)
 
         # Event filter
         evfilter = BrowserKeyFilter(self)
@@ -318,7 +321,8 @@ class BrowserTab(GalacteekTab):
             addBookmark(self.app.marksLocal,
                     self.currentIpfsResource,
                     self.currentPageTitle,
-                    stats=self.objectStats.get(self.currentIpfsResource, {}))
+                    stats=self.app.ipfsCtx.objectStats.get(
+                        self.currentIpfsResource, {}))
 
     def onPinSuccess(self, f):
         return self.app.systemTrayMessage('PIN', iPinSuccess(f.result()))
@@ -352,13 +356,6 @@ class BrowserTab(GalacteekTab):
             self.pinPath(self.currentIpfsResource, recursive=False)
         if idx == 1:
             self.pinPath(self.currentIpfsResource, recursive=True)
-        if idx == 2:
-            # todo: better sanity check on ipns path validity
-            if self.currentIpfsResource.startswith('/ipns/'):
-                dlg = AddFeedDialog(self.app.marksLocal,
-                    self.currentIpfsResource)
-                dlg.exec_()
-                dlg.show()
 
     def loadFromClipboardButtonClicked(self):
         clipboardSelection = self.app.clipboard().text(QClipboard.Selection)
@@ -391,6 +388,9 @@ class BrowserTab(GalacteekTab):
         if ok:
             self.browseIpnsHash(text)
 
+    def onFollowIpns(self):
+        runDialog(AddFeedDialog, self.app.marksLocal, self.currentIpfsResource)
+
     def onLoadHome(self):
         self.loadHomePage()
 
@@ -417,6 +417,13 @@ class BrowserTab(GalacteekTab):
             # Content loaded from IPFS gateway, this is IPFS content
             self.ui.urlZone.insert(fsPath(url.path()))
             self.ipfsPathVisited.emit(self.currentIpfsResource)
+
+            # Activate the follow action if this is IPNS
+            # todo: better sanity check on ipns path validity
+            if self.currentIpfsResource.startswith('/ipns/'):
+                self.followIpnsAction.setEnabled(True)
+            else:
+                self.followIpnsAction.setEnabled(False)
         else:
             self.ui.urlZone.clear()
             self.ui.urlZone.insert(url.toString())

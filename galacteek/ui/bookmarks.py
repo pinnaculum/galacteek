@@ -287,7 +287,7 @@ class BookmarksTab(GalacteekTab, _MarksUpdater):
         mark = self.ui.bookmarkLine.text()
 
         if idx == 0:
-            if not isMultihash(mark):
+            if not cidValid(mark):
                 return messageBox('Invalid input')
 
             if not mark.startswith('/ipfs'):
