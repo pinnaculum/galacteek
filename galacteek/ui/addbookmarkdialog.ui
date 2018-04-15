@@ -69,7 +69,11 @@
       </widget>
      </item>
      <item row="3" column="1">
-      <widget class="QLineEdit" name="newCategory"/>
+      <widget class="QLineEdit" name="newCategory">
+       <property name="maxLength">
+        <number>128</number>
+       </property>
+      </widget>
      </item>
      <item row="6" column="0">
       <widget class="QLabel" name="label_3">
@@ -93,7 +97,11 @@
       </widget>
      </item>
      <item row="4" column="1">
-      <widget class="QLineEdit" name="tags"/>
+      <widget class="QLineEdit" name="tags">
+       <property name="maxLength">
+        <number>256</number>
+       </property>
+      </widget>
      </item>
      <item row="5" column="0">
       <widget class="QLabel" name="label_6">
