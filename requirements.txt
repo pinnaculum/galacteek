@@ -3,4 +3,5 @@ quamash
 aiohttp
 yarl
 py-cid
+pymultihash
 git+https://gitlab.com/cipres/aioipfs
