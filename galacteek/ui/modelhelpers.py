@@ -1,5 +1,6 @@
 from async_generator import async_generator, yield_, yield_from_
 import asyncio
+import re
 
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtCore import QModelIndex
@@ -7,8 +8,23 @@ from PyQt5.QtCore import QModelIndex
 """ Helper functions to operate on QT item models """
 
 def modelWalk(model, parent=QModelIndex(), search=None,
-        columns=None, delete=False, dump=False):
-    # Walk the tree baby!
+        searchre=None, columns=None, delete=False, dump=False,
+        reflags=re.IGNORECASE, maxdepth=0, depth=0):
+    """Walk over every model index in the given model looking for data matching
+    the search parameter (or searchre if you want to use a regexp)
+
+    Yields matching model indexes
+
+    :param QAbstractItemModel model: the QT model
+    :param QModelIndex parent: the parent item index in the model
+    :param list columns: integer list of columns to search
+    :param str search: string to search
+    :param str searchre: regexp to search
+    :param int reflags: regexp flags passed to re.search
+    :param bool delete: delete matching indexes
+    :param int maxdepth: maximum tree depth
+    :return: list of matching indexes
+    """
 
     for row in range(0, model.rowCount(parent)):
         index0 = model.index(row, 0, parent)
@@ -22,22 +38,32 @@ def modelWalk(model, parent=QModelIndex(), search=None,
                 continue
             data = model.data(index)
             if search:
-                if search == data:
+                if search == str(data):
                     if delete == True:
                         model.removeRow(row, parent)
                         model.submit()
                     yield index
+            if searchre:
+                if re.search(searchre, str(data), reflags):
+                    yield index
         if model.hasChildren(index0):
-            yield from modelWalk(model, parent=index0,
-                    search=search, columns=columns, delete=delete,
-                    dump=dump)
+            if maxdepth == 0 or (maxdepth > depth):
+                yield from modelWalk(model, parent=index0,
+                        search=search, columns=columns, delete=delete,
+                        dump=dump, searchre=searchre, reflags=reflags,
+                        maxdepth=maxdepth, depth=depth)
+                depth += 1
 
-def modelSearch(model, parent=QModelIndex(), search=None,
-        columns=None, delete=False):
+def modelSearch(model, parent=QModelIndex(), columns=None, delete=False,
+        search=None, searchre=None, reflags=re.IGNORECASE):
+    """Searches data in a QT model, see modelWalk for more info on
+    parameters"""
     return list(modelWalk(model, parent=parent, columns=columns,
-        search=search, delete=delete))
+        search=search, delete=delete, searchre=searchre,
+        reflags=reflags))
 
 def modelDelete(model, search):
+    """Delete items matching search from a QT model """
     return list(modelSearch(model, search=search, delete=True))
 
 """ Asynchronous equivalents for when calling from coroutines """

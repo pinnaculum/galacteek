@@ -21,6 +21,12 @@ class TestModel:
         idxes = modelSearch(model, search='test')
         assert idxes.pop() == stditem.index()
 
+        idxes = modelSearch(model, searchre='.*est')
+        assert idxes.pop() == stditem.index()
+
+        idxes = modelSearch(model, searchre='TEST', reflags=0)
+        assert len(idxes) == 0
+
     def test_delete(self, model, stditem):
         model.invisibleRootItem().appendRow(stditem)
         item2 = QStandardItem('test2')
