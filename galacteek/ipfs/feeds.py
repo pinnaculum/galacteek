@@ -9,6 +9,11 @@ from galacteek.core.ipfsmarks import *
 from galacteek.ipfs.ipfsops import *
 
 class FeedFollower(object):
+    """
+    Follows an IPNS hash reference, in the sense that it will periodically
+    resolve the hash and register the resulting object path if it's new,
+    adding it as a mark inside the feed object
+    """
     def __init__(self, marks):
         self.marks = marks
 
@@ -20,7 +25,12 @@ class FeedFollower(object):
             for ipnsp, feed in feeds.items():
                 now = int(time.time())
 
+                resolvedLast = feed.get('resolvedlast', None)
+                resolveEvery = feed.get('resolveevery', 3600)
                 feedMarks = self.marks.getFeedMarks(ipnsp)
+
+                if resolvedLast and resolvedLast > (now - resolveEvery):
+                    continue
 
                 resolved = await op.resolve(ipnsp)
                 if not resolved:
@@ -41,5 +51,6 @@ class FeedFollower(object):
                 mark = IPFSMarkData.make(resolvedPath,
                         datasize=objStats.get('DataSize', None),
                         cumulativesize=objStats.get('CumulativeSize', None),
+                        numlinks=objStats.get('NumLinks', None),
                         share=feed['share'])
                 self.marks.feedAddMark(ipnsp, mark)
