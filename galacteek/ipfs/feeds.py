@@ -7,6 +7,7 @@ import time
 
 from galacteek.core.ipfsmarks import *
 from galacteek.ipfs.ipfsops import *
+from galacteek.ipfs import crawl
 
 class FeedFollower(object):
     """
@@ -48,7 +49,10 @@ class FeedFollower(object):
 
                 # Register the mark
                 objStats = await op.client.object.stat(resolvedPath)
+                title = await crawl.getTitle(op.client, resolvedPath)
+
                 mark = IPFSMarkData.make(resolvedPath,
+                        title=title,
                         datasize=objStats.get('DataSize', None),
                         cumulativesize=objStats.get('CumulativeSize', None),
                         numlinks=objStats.get('NumLinks', None),
