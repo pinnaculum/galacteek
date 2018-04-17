@@ -39,18 +39,31 @@ class SettingsManager(object):
         self.settings = QSettings(path, QSettings.IniFormat)
 
     def sync(self):
+        """ Synchronize settings to disk """
         return self.settings.sync()
 
     def eSet(self, key, value):
+        """ Easy set. key is a (section, key) tuple """
         return self.setSetting(key[0], key[1], value)
 
     def eGet(self, key, type=None):
+        """ Easy get. key is a (section, key) tuple """
         return self.getSetting(key[0], key[1], type=type)
 
     def setSetting(self, section, name, value):
+        """ Changes a setting to given value
+
+        :param str section: setting section
+        :param str name: key inside the section
+        :param value: setting value
+        """
         self.settings.setValue('{0}/{1}'.format(section, name), value)
 
     def setDefaultSetting(self, section, name, value):
+        """
+        Sets default setting for section and name if that setting hasn't
+        been registered yet
+        """
         existing = self.getSetting(section, name)
         if not existing:
             self.settings.setValue('{0}/{1}'.format(section, name), value)
@@ -62,9 +75,19 @@ class SettingsManager(object):
         return self.setDefaultSetting(section, name, self.falseVal)
 
     def getInt(self, section, name):
+        """
+        Gets the setting referenced by section and name, casting it as
+        an integer
+        """
         return self.getSetting(section, name, type=int)
 
     def getSetting(self, section, name, type=None):
+        """ Gets a setting, casting it to the given type
+
+        :param str section: setting section
+        :param str name: key inside the section
+        :param type: type to convert to
+        """
         key = '{0}/{1}'.format(section, name)
         if type:
             return self.settings.value(key, type=type)
