@@ -67,12 +67,25 @@ class IPFSConnectionParams(object):
         return URL.build(host=self.getHost(), port=self.getGatewayPort(),
                 scheme='http', path='')
 
-class IPFSCtx(QObject):
+class IPFSContext(QObject):
     # signals
     ipfsRepositoryReady = pyqtSignal()
 
     # log events
     logAddProvider = pyqtSignal(dict)
+
+    # pubsub
+    pubsubMessageRx = pyqtSignal()
+    pubsubMessageTx = pyqtSignal()
+
+    pubsubMarksReceived = pyqtSignal(int)
+
+    # pinning signals
+    pinQueueSizeChanged = pyqtSignal(int)
+    pinItemStatusChanged = pyqtSignal(str, dict)
+    pinItemsCount = pyqtSignal(int)
+    pinNewItem = pyqtSignal(str)
+    pinFinished = pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
@@ -91,6 +104,7 @@ class GalacteekApplication(QApplication):
         self._loop = None
         self._client = None
 
+        self.mainWindow = None
         self.gWindows = []
 
         self.ipfsd = None
@@ -98,9 +112,7 @@ class GalacteekApplication(QApplication):
 
         self.debugEnabled = debug
 
-        self.ipfsCtx = IPFSCtx()
-
-        self.createMainWindow()
+        self.ipfsCtx = IPFSContext()
 
         self.setupTranslator()
         self.setupPaths()
@@ -108,6 +120,7 @@ class GalacteekApplication(QApplication):
         self.initSettings()
         self.initSystemTray()
         self.initMisc()
+        self.createMainWindow()
 
         self.setStyle()
 
@@ -159,10 +172,9 @@ class GalacteekApplication(QApplication):
         QApplication.installTranslator(self.translator)
 
     def createMainWindow(self, show=True):
-        mainWindow = mainui.MainWindow(self)
-        self.gWindows.append(mainWindow)
-        if show:
-            mainWindow.show()
+        self.mainWindow = mainui.MainWindow(self)
+        if show is True:
+            self.mainWindow.show()
 
     def onSystemTrayIconClicked(self, reason):
         if reason == QSystemTrayIcon.Unknown:
@@ -194,14 +206,15 @@ class GalacteekApplication(QApplication):
 
     def ipfsTask(self, fn, *args, **kw):
         """ Schedule an async IPFS task """
-        self.getLoop().create_task(fn(self.getIpfsClient(),
+        return self.getLoop().create_task(fn(self.getIpfsClient(),
             *args, **kw))
 
     def ipfsTaskOp(self, fn, *args, **kw):
         """ Schedule an async IPFS task using an IPFSOperator instance """
         client = self.getIpfsClient()
         if client:
-            self.getLoop().create_task(fn(IPFSOperator(client, self.ipfsCtx,
+            return self.getLoop().create_task(fn(
+                IPFSOperator(client, ctx=self.ipfsCtx,
                 debug=self.debugEnabled), *args, **kw))
 
     def setIpfsClient(self, client):
@@ -242,13 +255,13 @@ class GalacteekApplication(QApplication):
         if pubsubEnabled:
             # Main pubsub topic
             listenerMain = PubsubListener(self.getIpfsClient(),
-                self.getLoop(), topic='galacteek.main')
+                self.getLoop(), self.ipfsCtx, topic='galacteek.main')
             listenerMain.start()
             self._pubsubListeners.append(listenerMain)
 
             # Pubsub marks exchanger
             listenerMarks = BookmarksExchanger(self.getIpfsClient(),
-                self.getLoop(), self.marksLocal,
+                self.getLoop(), self.ipfsCtx, self.marksLocal,
                 self.marksNetwork)
             listenerMarks.start()
             self._pubsubListeners.append(listenerMarks)

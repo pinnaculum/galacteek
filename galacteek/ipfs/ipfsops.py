@@ -26,12 +26,13 @@ class IPFSLogWatcher(object):
 
             if event == 'handleAddProvider':
                 # Handle add provider
-                self.op.ctx.logAddProvider.emit(msg)
+                if self.op.ctx:
+                    self.op.ctx.logAddProvider.emit(msg)
 
             print(pprint.pprint(msg))
 
 class IPFSOperator(object):
-    def __init__(self, client, ctx, debug=False):
+    def __init__(self, client, ctx=None, debug=False):
         self.client = client
         self.debugInfo = debug
         self.ctx = ctx

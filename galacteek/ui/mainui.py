@@ -2,19 +2,21 @@
 import sys
 import time
 import os.path
+import copy
 
 from PyQt5.QtWidgets import (QApplication, QMainWindow,
         QDialog, QLabel, QTextEdit, QPushButton, QVBoxLayout,
         QSystemTrayIcon)
 from PyQt5.QtCore import (QCoreApplication, QUrl, QBuffer, QIODevice, Qt,
     QTimer, QFile)
-from PyQt5.QtCore import pyqtSignal, QUrl, QObject
+from PyQt5.QtCore import pyqtSignal, QUrl, QObject, QDateTime
 from PyQt5 import QtWebEngineWidgets, QtWebEngine, QtWebEngineCore
-from PyQt5.QtGui import QClipboard, QPixmap, QIcon
+from PyQt5.QtGui import QClipboard, QPixmap, QIcon, QKeySequence
 
 from . import ui_galacteek
 from . import browser, files, keys, settings, bookmarks, textedit
 from .helpers import *
+from .dialogs import *
 from ..appsettings import *
 from .i18n import *
 
@@ -59,9 +61,11 @@ class MainWindow(QMainWindow):
                 self.onSettings)
 
         self.ui.myFilesButton.clicked.connect(self.onMyFilesClicked)
+        self.ui.myFilesButton.setShortcut(QKeySequence('Ctrl+f'))
         self.ui.manageKeysButton.clicked.connect(self.onIpfsKeysClicked)
         self.ui.openBrowserTabButton.clicked.connect(self.onOpenBrowserTabClicked)
         self.ui.bookmarksButton.clicked.connect(self.addBookmarksTab)
+        self.ui.bookmarksButton.setShortcut(QKeySequence('Ctrl+m'))
         self.ui.writeNewDocumentButton.clicked.connect(self.onWriteNewDocumentClicked)
 
         self.ui.tabWidget.setTabsClosable(True)
@@ -73,7 +77,11 @@ class MainWindow(QMainWindow):
         self.ui.pinningStatusButton = QPushButton()
         self.ui.pinningStatusButton.setToolTip(iNoStatus())
         self.ui.pinningStatusButton.setIcon(getIcon('pin-black.png'))
+        self.ui.pubsubStatusButton = QPushButton()
+        self.ui.pubsubStatusButton.setIcon(getIcon('network-offline.png'))
+
         self.ui.statusbar.addPermanentWidget(self.ui.pinningStatusButton)
+        self.ui.statusbar.addPermanentWidget(self.ui.pubsubStatusButton)
         self.ui.statusbar.setStyleSheet('background-color: #4a9ea1')
 
         # Connection status timer
@@ -83,6 +91,11 @@ class MainWindow(QMainWindow):
 
         # Connect ipfsctx signals
         self.app.ipfsCtx.ipfsRepositoryReady.connect(self.onRepoReady)
+        self.app.ipfsCtx.pubsubMessageRx.connect(self.onPubsubRx)
+        self.app.ipfsCtx.pubsubMessageTx.connect(self.onPubsubTx)
+
+        self.app.ipfsCtx.pinItemStatusChanged.connect(self.onPinStatusChanged)
+        self.app.ipfsCtx.pinItemsCount.connect(self.onPinItemsCount)
 
         self.allTabs = []
 
@@ -93,6 +106,50 @@ class MainWindow(QMainWindow):
 
     def onRepoReady(self):
         pass
+
+    def onPubsubRx(self):
+        now = QDateTime.currentDateTime()
+        self.ui.pubsubStatusButton.setIcon(getIcon('network-transmit.png'))
+        self.ui.pubsubStatusButton.setToolTip(
+                'Pubsub: last message received {}'.format(now.toString()))
+
+    def onPubsubTx(self):
+        pass
+
+    def updatePinningStatus(self):
+        iconLoading = getIcon('pin-blue-loading.png')
+        iconNormal = getIcon('pin-black.png')
+
+        status = copy.copy(self.app.pinner.status())
+        statusMsg = iItemsInPinningQueue(len(status))
+
+        for pinPath, pinStatus in status.items():
+            pinProgress = 'unknown'
+            if pinStatus:
+                pinProgress = pinStatus.get('Progress', 'unknown')
+
+            statusMsg += '\nPath: {0}, nodes processed: {1}'.format(
+                pinPath, pinProgress)
+
+        self.ui.pinningStatusButton.setToolTip(statusMsg)
+        self.ui.pinningStatusButton.setStatusTip(statusMsg)
+
+        del status
+
+    def onPinItemsCount(self, count):
+        iconLoading = getIcon('pin-blue-loading.png')
+        iconNormal = getIcon('pin-black.png')
+
+        if count > 0:
+            self.ui.pinningStatusButton.setIcon(iconLoading)
+        else:
+            self.ui.pinningStatusButton.setIcon(iconNormal)
+
+    def onPinFinished(self, path):
+        self.app.systemTrayMessage('PIN', iPinSuccess(path))
+
+    def onPinStatusChanged(self, path, status):
+        self.updatePinningStatus()
 
     def enableButtons(self, flag=True):
         for btn in [ self.ui.myFilesButton,
@@ -106,7 +163,7 @@ class MainWindow(QMainWindow):
         self.ui.statusbar.showMessage(msg)
 
     def registerTab(self, tab, name, icon=None, current=False, add=True):
-        if add:
+        if add is True:
             if icon:
                 self.ui.tabWidget.addTab(tab, icon, name)
             else:
@@ -136,9 +193,7 @@ class MainWindow(QMainWindow):
             self.ui.tabWidget.removeTab(idx)
 
     def onSettings(self):
-        prefsDialog = settings.SettingsDialog(self.app)
-        prefsDialog.exec_()
-        prefsDialog.show()
+        runDialog(settings.SettingsDialog, self.app)
 
     def onCloseAllTabs(self):
         self.ui.tabWidget.clear()
@@ -154,22 +209,6 @@ class MainWindow(QMainWindow):
         pass
 
     def onMainTimerStatus(self):
-        async def pinningUpdateStatus(client):
-            iconLoading = getIcon('pin-blue-loading.png')
-            iconNormal = getIcon('pin-black.png')
-            pinner = self.app.pinner
-
-            async with pinner.lock:
-                status = pinner.status()
-                statusMsg = iItemsInPinningQueue(len(status))
-                self.ui.pinningStatusButton.setToolTip(statusMsg)
-                self.ui.pinningStatusButton.setStatusTip(statusMsg)
-
-                if len(status) > 0:
-                    self.ui.pinningStatusButton.setIcon(iconLoading)
-                else:
-                    self.ui.pinningStatusButton.setIcon(iconNormal)
-
         async def connectionInfo(oper):
             try:
                 info = await oper.client.core.id()
@@ -190,18 +229,14 @@ class MainWindow(QMainWindow):
             self.statusMessage(message)
 
         self.app.ipfsTaskOp(connectionInfo)
-        self.app.ipfsTask(pinningUpdateStatus)
 
     def keyPressEvent(self, event):
+        # Ultimately this will be moved to configurable shortcuts
         modifiers = event.modifiers()
 
         if modifiers & Qt.ControlModifier:
-            if event.key() == Qt.Key_N:
-                self.addBrowserTab()
             if event.key() == Qt.Key_T:
                 self.addBrowserTab()
-            if event.key() == Qt.Key_M:
-                self.addBookmarksTab()
             if event.key() == Qt.Key_W:
                 idx = self.ui.tabWidget.currentIndex()
                 self.onTabCloseRequest(idx)
@@ -222,10 +257,6 @@ class MainWindow(QMainWindow):
         tab = self.ui.tabWidget.widget(idx)
 
         if not tab in self.allTabs:
-            return False
-
-        if tabName == self.tabnMyFiles:
-            self.ui.tabWidget.removeTab(idx)
             return False
 
         if hasattr(tab, 'onClose'):

@@ -50,3 +50,6 @@ def iFileSize():
 def iFileHash():
     return QCoreApplication.translate('TreeView', 'Hash')
 
+def iPinSuccess(path):
+    return QCoreApplication.translate('GalacteekWindow',
+        '{0} was pinned successfully').format(path)

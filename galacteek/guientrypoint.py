@@ -19,20 +19,21 @@ from galacteek.appsettings import *
 def galacteekGui(args):
     from PyQt5.QtWidgets import QApplication, QDialog
 
-    shApp = application.GalacteekApplication(profile=args.profile,
+    gApp = application.GalacteekApplication(profile=args.profile,
             debug=args.debug)
-    loop = QEventLoop(shApp)
+    loop = QEventLoop(gApp)
     asyncio.set_event_loop(loop)
-    shApp.setLoop(loop)
+    gApp.setLoop(loop)
 
     # Sets the default settings
-    sManager = shApp.settingsMgr
-    section = CFG_SECTION_IPFSD
+    sManager = gApp.settingsMgr
 
-    sManager.setDefaultSetting(section, CFG_KEY_APIPORT, 5008)
-    sManager.setDefaultSetting(section, CFG_KEY_SWARMPORT, 4008)
-    sManager.setDefaultSetting(section, CFG_KEY_HTTPGWPORT, 8081)
-    sManager.setDefaultSetting(section, CFG_KEY_SWARMHIGHWATER, 50)
+    section = CFG_SECTION_IPFSD
+    sManager.setDefaultSetting(section, CFG_KEY_APIPORT, 5001)
+    sManager.setDefaultSetting(section, CFG_KEY_SWARMPORT, 4001)
+    sManager.setDefaultSetting(section, CFG_KEY_HTTPGWPORT, 8080)
+    sManager.setDefaultSetting(section, CFG_KEY_SWARMHIGHWATER, 80)
+    sManager.setDefaultSetting(section, CFG_KEY_SWARMLOWWATER, 30)
     sManager.setDefaultTrue(section, CFG_KEY_ENABLED)
 
     if args.apiport:
@@ -42,18 +43,16 @@ def galacteekGui(args):
     if args.gatewayport:
         sManager.setSetting(section, CFG_KEY_HTTPGWPORT, args.gatewayport)
 
-    sManager.setDefaultSetting(section, CFG_KEY_SWARMLOWWATER, 10)
-
     section = CFG_SECTION_BROWSER
     sManager.setDefaultSetting(section, CFG_KEY_HOMEURL, 'fs:/ipns/ipfs.io')
     sManager.setDefaultSetting(section, CFG_KEY_DLPATH,
-        shApp.defaultDownloadsLocation)
+        gApp.defaultDownloadsLocation)
     sManager.setDefaultTrue(section, CFG_KEY_GOTOHOME)
 
     # Default IPFS connection when not spawning daemon
     section = CFG_SECTION_IPFSCONN1
-    sManager.setDefaultSetting(section, CFG_KEY_APIPORT, 5001)
     sManager.setDefaultSetting(section, CFG_KEY_HOST, 'localhost')
+    sManager.setDefaultSetting(section, CFG_KEY_APIPORT, 5001)
     sManager.setDefaultSetting(section, CFG_KEY_HTTPGWPORT, 8080)
 
     section = CFG_SECTION_IPFS
@@ -63,16 +62,15 @@ def galacteekGui(args):
     # Look if we can find the ipfs executable
     ipfsPath = shutil.which('ipfs')
     if not ipfsPath:
-        shApp.systemTrayMessage('IPFS',
+        gApp.systemTrayMessage('IPFS',
             'Could not find go-ipfs on your system')
 
     if ipfsPath and sManager.isTrue(CFG_SECTION_IPFSD, CFG_KEY_ENABLED):
-        shApp.startIpfsDaemon()
+        gApp.startIpfsDaemon()
     else:
-        shApp.updateIpfsClient()
+        gApp.updateIpfsClient()
 
-    shApp.startPinner()
-    #shApp.mainWindow.show()
+    gApp.startPinner()
 
     # Use the context manager so loop cleanup/close is automatic
     with loop:

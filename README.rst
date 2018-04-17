@@ -19,18 +19,32 @@ Now just run the application with:
 
     galacteek
 
+**galacteek** can either spawn an IPFS daemon and use it as transport, or
+connect to an existing IPFS daemon. By default it will try to run a daemon. You
+can change the IPFS connection settings through the *Edit* -> *Settings* menu.
+
+Features
+========
+
+- IPFS marks sharable through IPFS pubsub channels (*experimental*)
+- Browsing sessions with automatic pinning (pins every page you browse)
+- Feeds (following IPNS hashes)
+- File manager with drag-and-drop support
+
 Keybindings
 ===========
 
-Default keybindings:
+Main window keybindings:
 
-- Ctrl+t: Open a new tab
+- Ctrl+t: Open a new IPFS browsing tab
 - Ctrl+w: Close current tab
-- Ctrl+m: Opens bookmarks
+- Ctrl+m: Open the IPFS marks manager
+- Ctrl+f: Open the file manager
 
 In-browser bindings:
 
-- Ctrl+B: Bookmarks current page
+- Ctrl+b: Bookmark current page
+- Ctrl+l: Load an IPFS CID
 
 Screenshots
 ===========

@@ -10,7 +10,8 @@ from galacteek.ipfs.pubsubmsg import MarksBroadcastMessage
 class PubsubListener(object):
     """ IPFS pubsub listener for a given topic """
 
-    def __init__(self, client, loop, topic='defaulttopic'):
+    def __init__(self, client, loop, ipfsCtx, topic='defaulttopic'):
+        self.ipfsCtx = ipfsCtx
         self.loop = loop
         self.topic = topic
         self.client = client
@@ -22,6 +23,9 @@ class PubsubListener(object):
         self.tsPeriodic = None
 
     def msgDataJson(self, msg):
+        """
+        Decode JSON data contained in a pubsub message
+        """
         try:
             return json.loads(msg['data'].decode())
         except Exception as e:
@@ -54,16 +58,19 @@ class PubsubListener(object):
                 if message['from'] == nodeId:
                     continue
 
+                self.ipfsCtx.pubsubMessageRx.emit()
                 await self.inqueue.put(message)
 
     async def send(self, data, topic=None):
         if topic is None:
             topic = self.topic
-        return await self.client.pubsub.pub(topic, data)
+        status = await self.client.pubsub.pub(topic, data)
+        self.ipfsCtx.pubsubMessageTx.emit()
+        return status
 
 class BookmarksExchanger(PubsubListener):
-    def __init__(self, client, loop, marksLocal, marksNetwork):
-        super().__init__(client, loop, topic='galacteek.marks')
+    def __init__(self, client, loop, ipfsCtx, marksLocal, marksNetwork):
+        super().__init__(client, loop, ipfsCtx, topic='galacteek.marks')
         self.marksLocal = marksLocal
         self.marksNetwork = marksNetwork
 
@@ -96,9 +103,14 @@ class BookmarksExchanger(PubsubListener):
         if not marks:
             return
 
+        addedCount = 0
         for mark in marks.items():
             await asyncio.sleep(0)
             mPath = mark[0]
             if self.marksNetwork.search(mPath):
                 continue
             self.marksNetwork.insertMark(mark, 'auto')
+            addedCount += 1
+
+        if addedCount > 0:
+            self.ipfsCtx.pubsubMarksReceived.emit(addedCount)
