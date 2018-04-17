@@ -1,5 +1,10 @@
 <RCC>
   <qresource>
+    <file>../../share/icons/go-next.png</file>
+    <file>../../share/icons/go-previous.png</file>
+    <file>../../share/icons/go-home.png</file>
+    <file>../../share/icons/network-offline.png</file>
+    <file>../../share/icons/network-transmit.png</file>
     <file>../../share/icons/bookmarks.png</file>
     <file>../../share/icons/write-document.png</file>
     <file>../../share/icons/pin-black.png</file>

@@ -53,7 +53,14 @@
             </layout>
            </item>
            <item>
-            <widget class="QTreeView" name="treeMarks"/>
+            <widget class="QTreeView" name="treeMarks">
+             <attribute name="headerDefaultSectionSize">
+              <number>100</number>
+             </attribute>
+             <attribute name="headerStretchLastSection">
+              <bool>true</bool>
+             </attribute>
+            </widget>
            </item>
           </layout>
          </item>

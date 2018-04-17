@@ -3,7 +3,7 @@ import sys
 import asyncio
 from datetime import datetime
 
-from PyQt5.QtWidgets import QWidget, QTreeView, QMenu
+from PyQt5.QtWidgets import QWidget, QTreeView, QMenu, QHeaderView
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtCore import QCoreApplication, QUrl, Qt, QObject, QDateTime
 
@@ -59,10 +59,7 @@ def addBookmark(bookmarks, path, title, stats={}):
     if bookmarks.search(path):
         return messageBox(iAlreadyBookmarked())
 
-    dlg = AddBookmarkDialog(bookmarks, path, title, stats)
-    dlg.exec_()
-    dlg.show()
-    return
+    runDialog(AddBookmarkDialog, bookmarks, path, title, stats)
 
 class _MarksUpdater:
     def __init__(self):
@@ -113,10 +110,8 @@ class _MarksUpdater:
                 self._marksCache.append(path)
 
         self.updatingMarks = False
-        tree.resizeColumnToContents(0)
         tree.sortByColumn(4, Qt.DescendingOrder)
         tree.setSortingEnabled(True)
-        tree.hideColumn(4)
 
 class FeedsView(QWidget):
     def __init__(self, marksTab, marks, loop, parent=None):
@@ -136,6 +131,7 @@ class FeedsView(QWidget):
         self.tree.setModel(self.model)
         self.tree.doubleClicked.connect(self.onFeedDoubleClick)
         self.tree.setSortingEnabled(True)
+        self.tree.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
 
         self.updateFeeds()
 
@@ -163,7 +159,6 @@ class FeedsView(QWidget):
                 if ret: continue
 
                 item1 = UneditableItem(mPath)
-                item1.setEditable(False)
                 dt = QDateTime.fromString(mData['datecreated'],
                         Qt.ISODate)
                 fItem.appendRow([item1,
@@ -171,7 +166,6 @@ class FeedsView(QWidget):
                     UneditableItem(dt.toString())
                 ])
 
-        self.tree.resizeColumnToContents(0)
         self.tree.sortByColumn(2, Qt.DescendingOrder)
         self.tree.setSortingEnabled(True)
 
@@ -199,11 +193,13 @@ class NetworkMarksView(QWidget, _MarksUpdater):
             iDate(), iTimestamp()])
 
         self.tree = self.ui.treeNetMarks
+        self.tree.setModel(self.model)
         self.tree.doubleClicked.connect(self.onDoubleClick)
+        self.tree.header().setSectionResizeMode(0,
+                QHeaderView.ResizeToContents)
         self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self.onContextMenu)
 
-        self.tree.setModel(self.model)
         self.marks.changed.connect(self.doMarksUpdate)
 
         self.doMarksUpdate()
@@ -230,6 +226,11 @@ class NetworkMarksView(QWidget, _MarksUpdater):
 
     def onSearch(self):
         text = self.ui.search.text()
+        ret = modelSearch(self.model, searchre=text, columns=[0,1])
+        if len(ret) > 0:
+            idx = ret.pop()
+            self.tree.scrollTo(idx)
+            self.tree.setCurrentIndex(idx)
 
     def onDoubleClick(self, index):
         indexPath = self.model.sibling(index.row(), 0, index)
@@ -271,14 +272,14 @@ class BookmarksTab(GalacteekTab, _MarksUpdater):
 
         self.modelMarks = BookmarksModel()
         self.modelMarks.setHorizontalHeaderLabels([iPath(), iTitle(),
-            iShared(), iDate(), iTimestamp()])
+            iShared(), iDate()])
+        self.ui.treeMarks.setModel(self.modelMarks)
 
-        self.ui.treeMarks.setColumnWidth(0, 600)
-        self.ui.treeMarks.resizeColumnToContents(0)
+        self.ui.treeMarks.header().setSectionResizeMode(0,
+                QHeaderView.ResizeToContents)
         self.ui.treeMarks.doubleClicked.connect(self.onMarkItemDoubleClick)
         self.ui.treeMarks.setContextMenuPolicy(Qt.CustomContextMenu)
         self.ui.treeMarks.customContextMenuRequested.connect(self.onContextMenu)
-        self.ui.treeMarks.setModel(self.modelMarks)
 
         self.updatingMarks = False
         self.doMarksUpdate()

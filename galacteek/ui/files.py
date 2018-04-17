@@ -88,6 +88,9 @@ class IPFSItem(UneditableItem):
     def setParentHash(self, hash):
         self.parentHash = hash
 
+    def getParentHash(self):
+        return self.parentHash
+
     def setPath(self, path):
         self.path = path
 
@@ -228,8 +231,6 @@ class FilesTab(GalacteekTab):
         self.ui.treeFiles.setAcceptDrops(True)
         self.ui.treeFiles.setDragDropMode(QAbstractItemView.DropOnly)
 
-        #self.s = QShortcut(QKeySequence("Ctrl+i"), self.ui.treeFiles)
-
         self.ipfsKeys = []
 
         self.prepareTree()
@@ -288,8 +289,7 @@ class FilesTab(GalacteekTab):
         menu.addAction(iUnlinkFile(), lambda:
             unlink(dataHash))
         menu.addAction(iBookmarkFile(), lambda:
-            bookmark(ipfsPath,
-                nameItem.getEntry()['Name']))
+            bookmark(ipfsPath, nameItem.getEntry()['Name']))
         menu.addAction(iBrowseFile(), lambda:
             browse(dataHash))
 
@@ -298,7 +298,7 @@ class FilesTab(GalacteekTab):
             oHash = action.data()['hash']
 
             async def publish(op, oHash, keyName):
-                r = await op.publish(joinIpfs(oHash), key=key)
+                r = await op.publish(joinIpfs(oHash), key=keyName)
 
             self.app.ipfsTaskOp(publish, oHash, key)
 
@@ -321,6 +321,9 @@ class FilesTab(GalacteekTab):
     def browse(self, hash):
         self.gWindow.addBrowserTab().browseIpfsHash(hash)
 
+    def browseFs(self, path):
+        self.gWindow.addBrowserTab().browseFsPath(path)
+
     def onDoubleClicked(self, idx):
         if not idx.isValid() or idx == self.itemFilesIdx:
             return
@@ -331,7 +334,16 @@ class FilesTab(GalacteekTab):
         dataPath = self.model.getNameFromIdx(idx)
 
         if nameItem.isFile():
-            return self.browse(dataHash)
+            # Find the parent hash
+            parentHash = nameItem.getParentHash()
+            if parentHash:
+                # We have the parent hash, so use it to build a file path
+                # preserving the real file name
+                path = joinIpfs(os.path.join(parentHash,
+                    nameItem.text()))
+                return self.browseFs(path)
+            else:
+                return self.browse(dataHash)
 
         self.app.ipfsTaskOp(self.listFiles, item.getPath(), parentItem=item,
             autoexpand=True)

@@ -65,6 +65,10 @@ def iEnterIpfsCIDDialog():
     return QCoreApplication.translate('BrowserTabForm',
         'Load IPFS CID dialog')
 
+def iFollowIpnsDialog():
+    return QCoreApplication.translate('BrowserTabForm',
+        'IPNS add feed dialog')
+
 def iBrowseIpnsHash():
     return QCoreApplication.translate('BrowserTabForm',
         'Browse IPNS resource from hash/name')
@@ -76,10 +80,6 @@ def iEnterIpns():
 def iEnterIpnsDialog():
     return QCoreApplication.translate('BrowserTabForm',
         'Load IPNS key dialog')
-
-def iPinSuccess(path):
-    return QCoreApplication.translate('BrowserTabForm',
-        '{0} was pinned successfully').format(path)
 
 def iBookmarked(path):
     return QCoreApplication.translate('BrowserTabForm',
@@ -148,7 +148,7 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
         schemeHandler = IPFSSchemeHandler(self, self.browserTab, parent = self)
         profile = self.page().profile()
 
-        # Register our naughty scheme handlers
+        # Install the IPFS scheme handlers on current profile
         profile.installUrlSchemeHandler(QByteArray(b'fs'), schemeHandler)
         profile.installUrlSchemeHandler(QByteArray(b'dweb'), schemeHandler)
 
@@ -227,6 +227,7 @@ class BrowserTab(GalacteekTab):
         self.ui.forwardButton.clicked.connect(self.forwardButtonClicked)
         self.ui.refreshButton.clicked.connect(self.refreshButtonClicked)
         self.ui.loadFromClipboardButton.clicked.connect(self.loadFromClipboardButtonClicked)
+        self.ui.bookmarkPageButton.clicked.connect(self.onBookmarkPage)
         #self.ui.printButton.clicked.connect(self.printButtonClicked)
 
         # Setup the tool button for browsing IPFS content
@@ -245,7 +246,8 @@ class BrowserTab(GalacteekTab):
         self.followIpnsAction = QAction(getIconIpfsWhite(),
                 iFollow(),self,
                 triggered=self.onFollowIpns)
-        self.loadHomeAction = QAction(iBrowseHomePage(),self,
+        self.loadHomeAction = QAction(getIcon('go-home.png'),
+                iBrowseHomePage(),self,
                 shortcut=QKeySequence('Ctrl+h'),
                 triggered=self.onLoadHome)
 
@@ -270,6 +272,7 @@ class BrowserTab(GalacteekTab):
         self.ui.actionComboBox.setItemIcon(0, iconPin)
         self.ui.actionComboBox.insertItem(1, iPinRecursive())
         self.ui.actionComboBox.setItemIcon(1, iconPin)
+        self.ui.actionComboBox.activated.connect(self.actionComboClicked)
 
         # Event filter
         evfilter = BrowserKeyFilter(self)
@@ -280,7 +283,6 @@ class BrowserTab(GalacteekTab):
 
         self.currentUrl = None
         self.currentIpfsResource = None
-        self.objectStats = {}
 
     @property
     def tabPage(self):
@@ -313,8 +315,7 @@ class BrowserTab(GalacteekTab):
             self.pinPath(path, recursive=False, notify=False)
 
     def onToggledPinAll(self, checked):
-        if checked:
-            self.pinAll = True
+        self.pinAll = checked
 
     def onBookmarkPage(self):
         if self.currentIpfsResource:
@@ -325,7 +326,7 @@ class BrowserTab(GalacteekTab):
                         self.currentIpfsResource, {}))
 
     def onPinSuccess(self, f):
-        return self.app.systemTrayMessage('PIN', iPinSuccess(f.result()))
+        self.app.systemTrayMessage('PIN', iPinSuccess(f.result()))
 
     def pinPath(self, path, recursive=True, notify=True):
         async def pinCoro(client, path):
@@ -333,7 +334,7 @@ class BrowserTab(GalacteekTab):
             onSuccess = None
             if notify is True:
                 onSuccess = self.onPinSuccess
-            await pinner.queue.put((path, recursive, onSuccess))
+            await pinner.enqueue(path, recursive, onSuccess)
 
         self.app.ipfsTask(pinCoro, path)
 
@@ -389,7 +390,9 @@ class BrowserTab(GalacteekTab):
             self.browseIpnsHash(text)
 
     def onFollowIpns(self):
-        runDialog(AddFeedDialog, self.app.marksLocal, self.currentIpfsResource)
+        runDialog(AddFeedDialog, self.app.marksLocal,
+            self.currentIpfsResource,
+            title=iFollowIpnsDialog())
 
     def onLoadHome(self):
         self.loadHomePage()
@@ -419,7 +422,7 @@ class BrowserTab(GalacteekTab):
             self.ipfsPathVisited.emit(self.currentIpfsResource)
 
             # Activate the follow action if this is IPNS
-            # todo: better sanity check on ipns path validity
+            # todo: better check on ipns path validity
             if self.currentIpfsResource.startswith('/ipns/'):
                 self.followIpnsAction.setEnabled(True)
             else:
