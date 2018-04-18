@@ -266,10 +266,6 @@ class BookmarksTab(GalacteekTab, _MarksUpdater):
         self.ui.toolbox.setItemIcon(0, icon1)
         self.ui.toolbox.setItemIcon(1, icon1)
 
-        self.ui.bookmarksBox.insertItem(0, 'Bookmark as IPFS')
-        self.ui.bookmarksBox.setItemIcon(0, icon1)
-        self.ui.bookmarksBox.activated.connect(self.onBoxActivated)
-
         self.modelMarks = BookmarksModel()
         self.modelMarks.setHorizontalHeaderLabels([iPath(), iTitle(),
             iShared(), iDate()])

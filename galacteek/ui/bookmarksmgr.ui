@@ -43,16 +43,6 @@
          <item>
           <layout class="QVBoxLayout" name="verticalLayout_3">
            <item>
-            <layout class="QHBoxLayout" name="horizontalLayout">
-             <item>
-              <widget class="QLineEdit" name="bookmarkLine"/>
-             </item>
-             <item>
-              <widget class="QComboBox" name="bookmarksBox"/>
-             </item>
-            </layout>
-           </item>
-           <item>
             <widget class="QTreeView" name="treeMarks">
              <attribute name="headerDefaultSectionSize">
               <number>100</number>
