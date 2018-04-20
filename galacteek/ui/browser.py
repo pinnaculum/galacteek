@@ -24,6 +24,7 @@ from . import galacteek_rc
 from .helpers import *
 from .dialogs import *
 from .bookmarks import *
+from .i18n import *
 from .widgets import *
 from ..appsettings import *
 from galacteek.ipfs import cidhelpers
@@ -103,7 +104,7 @@ def isFsNs(url):
     return url.startswith('{0}:/'.format(SCHEME_FS))
 
 class IPFSSchemeHandler(QtWebEngineCore.QWebEngineUrlSchemeHandler):
-    def __init__(self, engine, browserTab, parent = None):
+    def __init__(self, engine, browserTab, parent=None):
         self.webengine = engine
         self.browserTab = browserTab
         QtWebEngineCore.QWebEngineUrlSchemeHandler.__init__(self, parent)
@@ -263,7 +264,7 @@ class BrowserTab(GalacteekTab):
 
         self.ui.pinAllButton.setCheckable(True)
         self.ui.pinAllButton.setAutoRaise(True)
-        self.pinAll = False
+        self.ui.pinAllButton.setChecked(self.gWindow.pinAllGlobalChecked)
         self.ui.pinAllButton.toggled.connect(self.onToggledPinAll)
 
         # Prepare the pin combo box
@@ -298,11 +299,19 @@ class BrowserTab(GalacteekTab):
         return '{0}:{1}'.format(params.getHost(), params.getGatewayPort())
 
     @property
+    def pinAll(self):
+        return self.ui.pinAllButton.isChecked()
+
+    @property
     def gatewayUrl(self):
         params = self.app.ipfsConnParams
         return params.getGatewayUrl()
 
     def onPathVisited(self, path):
+        # Called after a new IPFS object has been loaded in this tab
+        # We get object stat info (with the object/stat API call)
+        # If automatic pinning is checked we pin the object
+
         async def fetchObjectStats(client, path):
             try:
                 self.app.ipfsCtx.objectStats[path] = await client.object.stat(path)
@@ -315,7 +324,7 @@ class BrowserTab(GalacteekTab):
             self.pinPath(path, recursive=False, notify=False)
 
     def onToggledPinAll(self, checked):
-        self.pinAll = checked
+        pass
 
     def onBookmarkPage(self):
         if self.currentIpfsResource:
@@ -339,6 +348,7 @@ class BrowserTab(GalacteekTab):
         self.app.ipfsTask(pinCoro, path)
 
     def printButtonClicked(self):
+        # TODO: reinstate the printing button
         printer = QPrinter()
         dialog = QPrintDialog(printer, self)
         dialog.setModal(True)

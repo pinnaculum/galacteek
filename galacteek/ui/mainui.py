@@ -68,6 +68,12 @@ class MainWindow(QMainWindow):
         self.ui.bookmarksButton.setShortcut(QKeySequence('Ctrl+m'))
         self.ui.writeNewDocumentButton.clicked.connect(self.onWriteNewDocumentClicked)
 
+        # Global pin-all button
+        self.ui.pinAllGlobalButton.setCheckable(True)
+        self.ui.pinAllGlobalButton.setAutoRaise(True)
+        self.pinAllGlobalChecked = False
+        self.ui.pinAllGlobalButton.toggled.connect(self.onToggledPinAllGlobal)
+
         self.ui.tabWidget.setTabsClosable(True)
         self.ui.tabWidget.tabCloseRequested.connect(self.onTabCloseRequest)
 
@@ -197,6 +203,9 @@ class MainWindow(QMainWindow):
 
     def onCloseAllTabs(self):
         self.ui.tabWidget.clear()
+
+    def onToggledPinAllGlobal(self, checked):
+        self.pinAllGlobalChecked = checked
 
     def onAboutGalacteek(self):
         from galacteek import __version__

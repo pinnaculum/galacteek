@@ -473,12 +473,10 @@ class FilesTab(GalacteekTab):
                         nItemName.getPath(),
                         parentItem=nItemName,
                         maxdepth=maxdepth, depth=depth)
-                    depth-=1
+                    depth -= 1
 
         if autoexpand is True:
             self.ui.treeFiles.expand(parentItem.index())
-
-#        self.ui.treeFiles.expand(self.itemFilesIdx)
 
     async def unlinkFileFromHash(self, op, hash):
         listing = await op.filesList(GFILES_MYFILES_PATH)

@@ -17,3 +17,5 @@ sdist/
 *.egg
 MANIFEST
 pip-log.txt
+tmp/
+.pytest_cache/
