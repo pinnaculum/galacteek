@@ -191,8 +191,7 @@ class GalacteekApplication(QApplication):
 
     def systemTrayMessage(self, title, message, timeout=2000,
             messageIcon=QSystemTrayIcon.Information):
-        self.systemTray.showMessage(title, message,
-            QSystemTrayIcon.Information, timeout)
+        self.systemTray.showMessage(title, message, messageIcon, timeout)
 
     def setupRepository(self):
         async def setup(oper):

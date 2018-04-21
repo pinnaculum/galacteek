@@ -144,7 +144,10 @@ class FeedsView(QWidget):
             ret = modelSearch(self.model, parent=parent.index(),
                     search=fPath, columns=[0])
             if not ret:
-                fItem = UneditableItem(fPath)
+                feedName = fData['name']
+                if not feedName:
+                    feedName = fPath
+                fItem = UneditableItem(feedName)
                 parent.appendRow([fItem])
             else:
                 fItem = self.model.itemFromIndex(ret[0])
