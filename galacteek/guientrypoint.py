@@ -9,7 +9,6 @@ import time
 import shutil
 
 from PyQt5.QtWidgets import QApplication, QMainWindow
-from quamash import QEventLoop, QThreadExecutor
 
 from galacteek.ipfs import ipfsd
 from galacteek.ui import mainui
@@ -21,20 +20,8 @@ def galacteekGui(args):
 
     gApp = application.GalacteekApplication(profile=args.profile,
             debug=args.debug)
-    loop = QEventLoop(gApp)
-    asyncio.set_event_loop(loop)
-    gApp.setLoop(loop)
-
-    # Sets the default settings
+    loop = gApp.setupAsyncLoop()
     sManager = gApp.settingsMgr
-
-    section = CFG_SECTION_IPFSD
-    sManager.setDefaultSetting(section, CFG_KEY_APIPORT, 5001)
-    sManager.setDefaultSetting(section, CFG_KEY_SWARMPORT, 4001)
-    sManager.setDefaultSetting(section, CFG_KEY_HTTPGWPORT, 8080)
-    sManager.setDefaultSetting(section, CFG_KEY_SWARMHIGHWATER, 80)
-    sManager.setDefaultSetting(section, CFG_KEY_SWARMLOWWATER, 30)
-    sManager.setDefaultTrue(section, CFG_KEY_ENABLED)
 
     if args.apiport:
         sManager.setSetting(section, CFG_KEY_APIPORT,  args.apiport)
@@ -42,22 +29,6 @@ def galacteekGui(args):
         sManager.setSetting(section, CFG_KEY_SWARMPORT, args.swarmport)
     if args.gatewayport:
         sManager.setSetting(section, CFG_KEY_HTTPGWPORT, args.gatewayport)
-
-    section = CFG_SECTION_BROWSER
-    sManager.setDefaultSetting(section, CFG_KEY_HOMEURL, 'fs:/ipns/ipfs.io')
-    sManager.setDefaultSetting(section, CFG_KEY_DLPATH,
-        gApp.defaultDownloadsLocation)
-    sManager.setDefaultTrue(section, CFG_KEY_GOTOHOME)
-
-    # Default IPFS connection when not spawning daemon
-    section = CFG_SECTION_IPFSCONN1
-    sManager.setDefaultSetting(section, CFG_KEY_HOST, 'localhost')
-    sManager.setDefaultSetting(section, CFG_KEY_APIPORT, 5001)
-    sManager.setDefaultSetting(section, CFG_KEY_HTTPGWPORT, 8080)
-
-    section = CFG_SECTION_IPFS
-    sManager.setDefaultTrue(section, CFG_KEY_PUBSUB)
-    sManager.sync()
 
     # Look if we can find the ipfs executable
     ipfsPath = shutil.which('ipfs')

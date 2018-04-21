@@ -151,6 +151,8 @@ class MainWindow(QMainWindow):
         else:
             self.ui.pinningStatusButton.setIcon(iconNormal)
 
+        self.updatePinningStatus()
+
     def onPinFinished(self, path):
         self.app.systemTrayMessage('PIN', iPinSuccess(path))
 

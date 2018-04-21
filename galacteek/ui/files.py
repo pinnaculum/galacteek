@@ -380,13 +380,13 @@ class FilesTab(GalacteekTab):
         self.scheduleAddFiles(result[0])
 
     def scheduleAddFiles(self, path):
-        self.app.ipfsTaskOp(self.addFiles, path)
+        return self.app.ipfsTaskOp(self.addFiles, path)
 
     def scheduleAddDirectory(self, path):
-        self.app.ipfsTaskOp(self.addDirectory, path)
+        return self.app.ipfsTaskOp(self.addDirectory, path)
 
     def scheduleUnlink(self, hash):
-        self.app.ipfsTaskOp(self.unlinkFileFromHash, hash)
+        return self.app.ipfsTaskOp(self.unlinkFileFromHash, hash)
 
     def prepareTree(self):
         self.model.setHorizontalHeaderLabels(

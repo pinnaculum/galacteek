@@ -17,3 +17,10 @@ class IPFSEntryCache(object):
     def purge(self, oHash):
         if oHash in self:
             del self._cache[oHash]
+
+    def getByType(self, etype):
+        entries = {}
+        for ohash, entry in self._cache.items():
+            if entry['Type'] == etype:
+                entries[ohash] = entry
+        return entries

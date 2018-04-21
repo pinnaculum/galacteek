@@ -6,6 +6,8 @@ import multiprocessing
 import time
 import asyncio
 
+from quamash import QEventLoop
+
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu
 from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtCore import (QCoreApplication, QUrl, QStandardPaths,
@@ -108,7 +110,8 @@ class GalacteekApplication(QApplication):
         self.gWindows = []
 
         self.ipfsd = None
-        self._pubsubListeners = []
+        self.pubsubListeners = []
+        self.pinnerTask = None
 
         self.debugEnabled = debug
 
@@ -257,25 +260,33 @@ class GalacteekApplication(QApplication):
             listenerMain = PubsubListener(self.getIpfsClient(),
                 self.getLoop(), self.ipfsCtx, topic='galacteek.main')
             listenerMain.start()
-            self._pubsubListeners.append(listenerMain)
+            self.pubsubListeners.append(listenerMain)
 
             # Pubsub marks exchanger
             listenerMarks = BookmarksExchanger(self.getIpfsClient(),
                 self.getLoop(), self.ipfsCtx, self.marksLocal,
                 self.marksNetwork)
             listenerMarks.start()
-            self._pubsubListeners.append(listenerMarks)
+            self.pubsubListeners.append(listenerMarks)
 
         self.feedFollower = FeedFollower(self.marksLocal)
         self.ipfsTaskOp(self.feedFollower.process)
 
     def stopIpfsServices(self):
-        for s in self._pubsubListeners:
+        for s in self.pubsubListeners:
             s.stop()
+        if self.pinnerTask:
+            self.pinnerTask.cancel()
 
     def startPinner(self):
         self.pinner = pinning.Pinner(self, self.getLoop())
-        self.getLoop().create_task(self.pinner.process())
+        self.pinnerTask = self.getLoop().create_task(self.pinner.process())
+
+    def setupAsyncLoop(self):
+        loop = QEventLoop(self)
+        asyncio.set_event_loop(loop)
+        self.setLoop(loop)
+        return loop
 
     def setLoop(self, loop):
         self._loop = loop
@@ -321,6 +332,7 @@ class GalacteekApplication(QApplication):
 
     def initSettings(self):
         self.settingsMgr = SettingsManager(path=self.settingsFileLocation)
+        setDefaultSettings(self)
         self.settingsMgr.sync()
 
     def getDataLocation(self):

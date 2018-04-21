@@ -30,6 +30,35 @@ S_HOMEURL = (CFG_SECTION_BROWSER, CFG_KEY_HOMEURL)
 S_GOTOHOME = (CFG_SECTION_BROWSER, CFG_KEY_GOTOHOME)
 S_DOWNLOADS_PATH = (CFG_SECTION_BROWSER, CFG_KEY_DLPATH)
 
+def setDefaultSettings(gApp):
+    # Sets the default settings
+    sManager = gApp.settingsMgr
+
+    section = CFG_SECTION_IPFSD
+    sManager.setDefaultSetting(section, CFG_KEY_APIPORT, 5001)
+    sManager.setDefaultSetting(section, CFG_KEY_SWARMPORT, 4001)
+    sManager.setDefaultSetting(section, CFG_KEY_HTTPGWPORT, 8080)
+    sManager.setDefaultSetting(section, CFG_KEY_SWARMHIGHWATER, 80)
+    sManager.setDefaultSetting(section, CFG_KEY_SWARMLOWWATER, 30)
+    sManager.setDefaultTrue(section, CFG_KEY_ENABLED)
+
+    section = CFG_SECTION_BROWSER
+    sManager.setDefaultSetting(section, CFG_KEY_HOMEURL, 'fs:/ipns/ipfs.io')
+    sManager.setDefaultSetting(section, CFG_KEY_DLPATH,
+        gApp.defaultDownloadsLocation)
+    sManager.setDefaultTrue(section, CFG_KEY_GOTOHOME)
+
+    # Default IPFS connection when not spawning daemon
+    section = CFG_SECTION_IPFSCONN1
+    sManager.setDefaultSetting(section, CFG_KEY_HOST, 'localhost')
+    sManager.setDefaultSetting(section, CFG_KEY_APIPORT, 5001)
+    sManager.setDefaultSetting(section, CFG_KEY_HTTPGWPORT, 8080)
+
+    section = CFG_SECTION_IPFS
+    sManager.setDefaultTrue(section, CFG_KEY_PUBSUB)
+    sManager.sync()
+    return True
+
 class SettingsManager(object):
     # QSettings has its problems with pyqt5 regarding booleans
     trueVal = 'true'
