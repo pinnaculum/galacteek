@@ -4,6 +4,7 @@ import time
 import os.path
 import asyncio
 import cid
+import mimetypes
 
 from PyQt5.QtWidgets import (QWidget, QFrame, QApplication, QMainWindow,
         QDialog, QLabel, QTextEdit, QPushButton, QVBoxLayout, QAction,
@@ -57,6 +58,9 @@ def iLoading(name):
     return QCoreApplication.translate('FilesForm',
             'Loading {0}').format(name)
 
+def iOpenWith():
+    return QCoreApplication.translate('FilesForm', 'Open with')
+
 def iRemoveFile():
     return QCoreApplication.translate('FilesForm', 'Remove file')
 
@@ -100,7 +104,13 @@ class IPFSItem(UneditableItem):
 class IPFSNameItem(IPFSItem):
     def __init__(self, entry, text, icon):
         super().__init__(text, icon=icon)
+
         self.entry = entry
+        self.mimeType = mimetypes.guess_type(entry['Name'])[0]
+
+    def mimeCategory(self):
+        if self.mimeType:
+            return self.mimeType.split('/')[0]
 
     def getEntry(self):
         return self.entry
@@ -318,7 +328,7 @@ class FilesTab(GalacteekTab):
 
         publishMenu.triggered.connect(publishToKey)
 
-        openWithMenu = QMenu('Open with')
+        openWithMenu = QMenu(iOpenWith())
         openWithMenu.addAction('Media player', lambda:
                 openWithMediaPlayer(dataHash))
 
@@ -342,13 +352,20 @@ class FilesTab(GalacteekTab):
         dataPath = self.model.getNameFromIdx(idx)
 
         if nameItem.isFile():
+            fileName = nameItem.text()
+
+            if nameItem.mimeType:
+                cat = nameItem.mimeCategory()
+                # If it's media content try to open it in the media player
+                if cat and (cat == 'audio' or cat == 'video'):
+                    return self.gWindow.addMediaPlayerTab(dataHash)
+
             # Find the parent hash
             parentHash = nameItem.getParentHash()
             if parentHash:
                 # We have the parent hash, so use it to build a file path
                 # preserving the real file name
-                path = joinIpfs(os.path.join(parentHash,
-                    nameItem.text()))
+                path = joinIpfs(os.path.join(parentHash, fileName))
                 return self.browseFs(path)
             else:
                 return self.browse(dataHash)
