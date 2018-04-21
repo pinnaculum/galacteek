@@ -14,12 +14,16 @@ from . import ui_mediaplayer
 from .widgets import *
 from .helpers import *
 
+def iPlayerError(code):
+    return QCoreApplication.translate('MediaPlayer',
+            'Media player error (code: {0})').format(code)
+
 class VideoWidget(QVideoWidget):
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
             self.setFullScreen(False)
 
-        super(VidWidget, self).keyPressEvent(event)
+        super(VideoWidget, self).keyPressEvent(event)
 
 class MediaPlayerTab(GalacteekTab):
     def __init__(self, *args, **kw):
@@ -42,7 +46,7 @@ class MediaPlayerTab(GalacteekTab):
         self.player.stateChanged.connect(self.onStateChanged)
 
     def onError(self, error):
-        messageBox(str(error))
+        messageBox(iPlayerError(error))
 
     def onStateChanged(self, state):
         self.currentState = state
