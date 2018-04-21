@@ -282,6 +282,9 @@ class FilesTab(GalacteekTab):
         def copyHashToClipboard(itemHash, clipboardType):
             self.clipboard.setText(itemHash, clipboardType)
 
+        def openWithMediaPlayer(itemHash):
+            self.gWindow.addMediaPlayerTab(itemHash)
+
         menu.addAction(iCopyHashToSelClipboard(), lambda:
             copyHashToClipboard(dataHash, QClipboard.Selection))
         menu.addAction(iCopyHashToGlobalClipboard(), lambda:
@@ -315,7 +318,12 @@ class FilesTab(GalacteekTab):
 
         publishMenu.triggered.connect(publishToKey)
 
+        openWithMenu = QMenu('Open with')
+        openWithMenu.addAction('Media player', lambda:
+                openWithMediaPlayer(dataHash))
+
         menu.addMenu(publishMenu)
+        menu.addMenu(openWithMenu)
         menu.exec(self.ui.treeFiles.mapToGlobal(point))
 
     def browse(self, hash):

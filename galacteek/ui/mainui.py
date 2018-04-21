@@ -13,6 +13,7 @@ from PyQt5.QtCore import pyqtSignal, QUrl, QObject, QDateTime
 from PyQt5 import QtWebEngineWidgets, QtWebEngine, QtWebEngineCore
 from PyQt5.QtGui import QClipboard, QPixmap, QIcon, QKeySequence
 
+from galacteek.ipfs.ipfsops import *
 from . import ui_galacteek
 from . import browser, files, keys, settings, bookmarks, textedit
 from .helpers import *
@@ -253,6 +254,14 @@ class MainWindow(QMainWindow):
                 self.onTabCloseRequest(idx)
 
         super(MainWindow, self).keyPressEvent(event)
+
+    def addMediaPlayerTab(self, hash):
+        from galacteek.ui import mediaplayer
+        tab = mediaplayer.MediaPlayerTab(self)
+        gwUrl = self.app.gatewayUrl
+        mediaUrl = QUrl('{0}/{1}'.format(gwUrl, joinIpfs(hash)))
+        tab.playFromUrl(mediaUrl)
+        self.registerTab(tab, hash, current=True)
 
     def addBookmarksTab(self):
         name = iBookmarks()
