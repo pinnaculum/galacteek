@@ -149,6 +149,16 @@ class GalacteekApplication(QApplication):
     def ipfsConnParams(self):
         return self.getIpfsConnectionParams()
 
+    @property
+    def gatewayAuthority(self):
+        params = self.ipfsConnParams
+        return '{0}:{1}'.format(params.getHost(), params.getGatewayPort())
+
+    @property
+    def gatewayUrl(self):
+        params = self.ipfsConnParams
+        return params.getGatewayUrl()
+
     def initSystemTray(self):
         self.systemTray = QSystemTrayIcon(self)
         self.systemTray.setIcon(getIcon('ipfs-logo-128-ice-text.png'))
