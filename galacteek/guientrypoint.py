@@ -1,14 +1,11 @@
-#
 # Galacteek, GUI startup entry point
 
 import asyncio
 import sys
 import argparse
-import os, os.path
-import time
 import shutil
 
-from PyQt5.QtWidgets import QApplication, QMainWindow
+from PyQt5.QtWidgets import QApplication
 
 from galacteek.ipfs import ipfsd
 from galacteek.ui import mainui
@@ -16,15 +13,14 @@ from galacteek import application
 from galacteek.appsettings import *
 
 def galacteekGui(args):
-    from PyQt5.QtWidgets import QApplication, QDialog
-
     gApp = application.GalacteekApplication(profile=args.profile,
             debug=args.debug)
     loop = gApp.setupAsyncLoop()
     sManager = gApp.settingsMgr
 
+    section = CFG_SECTION_IPFSD
     if args.apiport:
-        sManager.setSetting(section, CFG_KEY_APIPORT,  args.apiport)
+        sManager.setSetting(section, CFG_KEY_APIPORT, args.apiport)
     if args.swarmport:
         sManager.setSetting(section, CFG_KEY_SWARMPORT, args.swarmport)
     if args.gatewayport:
