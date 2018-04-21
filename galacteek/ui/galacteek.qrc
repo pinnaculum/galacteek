@@ -1,5 +1,6 @@
 <RCC>
   <qresource>
+    <file>../../share/icons/clear-all.png</file>
     <file>../../share/icons/go-next.png</file>
     <file>../../share/icons/go-previous.png</file>
     <file>../../share/icons/go-home.png</file>

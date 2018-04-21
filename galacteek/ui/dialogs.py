@@ -99,21 +99,42 @@ class IPFSCIDInputDialog(QDialog):
         self.ui.setupUi(self)
         self.ui.validity.setStyleSheet(boldLabelStyle())
         self.ui.cid.textChanged.connect(self.onCIDChanged)
+        self.ui.clearButton.clicked.connect(self.onClearCID)
+
+    def onClearCID(self):
+        self.clearCID()
+
+    def clearCID(self):
+        """ Clears the CID input text """
+        self.ui.cid.clear()
 
     def onCIDChanged(self, text):
+        """
+        When the CID input text changes we verify if it's a valid CID and
+        update the validity label
+        """
         if cidhelpers.cidValid(text):
-            self.ui.validity.setText('Valid CID')
-            self.validCid = True
+            cid = self.getCID()
+            if cid:
+                self.ui.validity.setText(
+                    'Valid CID version {}'.format(cid.version))
+                self.validCid = True
+            else:
+                # Unlikely
+                self.ui.validity.setText('Unknown CID type')
+                self.validCid = False
         else:
             self.ui.validity.setText('Invalid CID')
             self.validCid = False
 
     def getHash(self):
+        """ Returns the hash corresponding to the input, if valid """
         cid = self.getCID()
         if cid:
             return str(cid)
 
     def getCID(self):
+        """ Returns the CID object corresponding to the input """
         try:
             return cidhelpers.getCID(self.ui.cid.text())
         except:
