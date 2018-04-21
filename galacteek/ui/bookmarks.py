@@ -240,7 +240,7 @@ class NetworkMarksView(QWidget, _MarksUpdater):
 
 class BookmarksTab(GalacteekTab, _MarksUpdater):
     def __init__(self, *args, **kw):
-        super().__init__(*args, **kw)
+        super(BookmarksTab, self).__init__(*args, **kw)
 
         self.marksLocal = self.app.marksLocal
         self.marksNetwork = self.app.marksNetwork
