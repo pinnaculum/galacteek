@@ -14,6 +14,12 @@ FORMS += galacteek/ui/addkeydialog.ui \
 	galacteek/ui/galacteek.ui\
 	galacteek/ui/keys.ui\
 	galacteek/ui/mediaplayer.ui\
-	galacteek/ui/settings.ui
+	galacteek/ui/settings.ui \
+	galacteek/ui/addbookmarkdialog.ui \
+	galacteek/ui/addfeeddialog.ui \
+	galacteek/ui/bookmarksmgrfeeds.ui \
+	galacteek/ui/bookmarksmgrnetwork.ui \
+	galacteek/ui/bookmarksmgr.ui \
+	galacteek/ui/newdocument.ui
 
 TRANSLATIONS = share/translations/galacteek_en.ts

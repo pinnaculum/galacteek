@@ -11,9 +11,10 @@ from PyQt5.QtWidgets import (QWidget, QFrame, QApplication, QMainWindow,
 from PyQt5.QtPrintSupport import *
 
 from PyQt5.QtCore import (QUrl, QIODevice, Qt, QCoreApplication, QObject,
-    pyqtSignal)
+    pyqtSignal, QMutex)
 from PyQt5 import QtWebEngineWidgets, QtWebEngine, QtWebEngineCore
 from PyQt5.QtWebEngineWidgets import QWebEngineDownloadItem
+from PyQt5.QtWebEngineCore import QWebEngineUrlRequestInterceptor
 from PyQt5.Qt import QByteArray
 from PyQt5.QtGui import QClipboard, QPixmap, QIcon, QKeySequence
 
@@ -107,16 +108,15 @@ def isFsNs(url):
     return url.startswith('{0}:/'.format(SCHEME_FS))
 
 class IPFSSchemeHandler(QtWebEngineCore.QWebEngineUrlSchemeHandler):
-    def __init__(self, engine, browserTab, parent=None):
-        self.webengine = engine
-        self.browserTab = browserTab
+    def __init__(self, app, parent=None):
         QtWebEngineCore.QWebEngineUrlSchemeHandler.__init__(self, parent)
+        self.app = app
 
     def requestStarted(self, request):
+        gatewayUrl = self.app.gatewayUrl
         url = request.requestUrl()
         scheme = url.scheme()
         path = url.path()
-        gatewayUrl = self.browserTab.gatewayUrl
 
         def redirectIpfs():
             yUrl = URL(url.toString())
@@ -144,17 +144,16 @@ class IPFSSchemeHandler(QtWebEngineCore.QWebEngineUrlSchemeHandler):
             if path.startswith("/ipns/"):
                 return redirectIpns()
 
+class RequestInterceptor(QWebEngineUrlRequestInterceptor):
+    def interceptRequest(self, info):
+        url = info.requestUrl()
+
 class WebView(QtWebEngineWidgets.QWebEngineView):
     def __init__(self, browserTab, parent = None):
         super(QtWebEngineWidgets.QWebEngineView, self).__init__(parent = parent)
 
+        self.mutex = QMutex()
         self.browserTab = browserTab
-        schemeHandler = IPFSSchemeHandler(self, self.browserTab, parent = self)
-        profile = self.page().profile()
-
-        # Install the IPFS scheme handlers on current profile
-        profile.installUrlSchemeHandler(QByteArray(b'fs'), schemeHandler)
-        profile.installUrlSchemeHandler(QByteArray(b'dweb'), schemeHandler)
 
     def contextMenuEvent(self, event):
         currentPage = self.page()
@@ -228,8 +227,11 @@ class BrowserTab(GalacteekTab):
         self.ui = ui_browsertab.Ui_BrowserTabForm()
         self.ui.setupUi(self)
 
-        self.ui.webEngineView = WebView(self)
+        # Install scheme handler early on
         self.webProfile = QtWebEngineWidgets.QWebEngineProfile.defaultProfile()
+        self.installIpfsSchemeHandler()
+
+        self.ui.webEngineView = WebView(self)
 
         self.ui.vLayoutBrowser.addWidget(self.ui.webEngineView)
 
@@ -323,6 +325,16 @@ class BrowserTab(GalacteekTab):
     @property
     def pinAll(self):
         return self.ui.pinAllButton.isChecked()
+
+    def installIpfsSchemeHandler(self):
+        baFs   = QByteArray(b'fs')
+        baDweb = QByteArray(b'dweb')
+
+        for scheme in [baFs, baDweb]:
+            eHandler = self.webProfile.urlSchemeHandler(scheme)
+            if not eHandler:
+                self.webProfile.installUrlSchemeHandler(scheme,
+                    self.app.ipfsSchemeHandler)
 
     def onPathVisited(self, path):
         # Called after a new IPFS object has been loaded in this tab

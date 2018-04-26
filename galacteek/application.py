@@ -18,7 +18,7 @@ from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.pubsub import *
 from galacteek.ipfs.feeds import FeedFollower
 
-from galacteek.ui import mainui, galacteek_rc, downloads
+from galacteek.ui import mainui, galacteek_rc, downloads, browser
 from galacteek.ui.helpers import *
 
 from galacteek.appsettings import *
@@ -122,6 +122,7 @@ class GalacteekApplication(QApplication):
         self.setupTranslator()
         self.setupPaths()
         self.setupClipboard()
+        self.setupSchemeHandlers()
 
         self.initSettings()
         self.initSystemTray()
@@ -439,6 +440,9 @@ class GalacteekApplication(QApplication):
         if self.appClipboard.supportsSelection():
             mode = QClipboard.Selection
         return self.appClipboard.text(mode)
+
+    def setupSchemeHandlers(self):
+        self.ipfsSchemeHandler = browser.IPFSSchemeHandler(self)
 
     def onExit(self):
         self.stopIpfsServices()
