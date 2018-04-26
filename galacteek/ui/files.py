@@ -293,7 +293,7 @@ class FilesTab(GalacteekTab):
             self.clipboard.setText(itemHash, clipboardType)
 
         def openWithMediaPlayer(itemHash):
-            self.gWindow.addMediaPlayerTab(itemHash)
+            self.gWindow.addMediaPlayerTab(joinIpfs(itemHash))
 
         menu.addAction(iCopyHashToSelClipboard(), lambda:
             copyHashToClipboard(dataHash, QClipboard.Selection))
@@ -358,7 +358,8 @@ class FilesTab(GalacteekTab):
                 cat = nameItem.mimeCategory()
                 # If it's media content try to open it in the media player
                 if cat and (cat == 'audio' or cat == 'video'):
-                    return self.gWindow.addMediaPlayerTab(dataHash)
+                    return self.gWindow.addMediaPlayerTab(
+                        joinIpfs(dataHash))
 
             # Find the parent hash
             parentHash = nameItem.getParentHash()
