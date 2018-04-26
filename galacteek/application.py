@@ -9,11 +9,11 @@ import asyncio
 from quamash import QEventLoop
 
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu
-from PyQt5.QtGui import QPixmap, QIcon
+from PyQt5.QtGui import QPixmap, QIcon, QClipboard
 from PyQt5.QtCore import (QCoreApplication, QUrl, QStandardPaths,
         QSettings, QTranslator, QFile, pyqtSignal, QObject)
 
-from galacteek.ipfs import pinning, ipfsd, asyncipfsd
+from galacteek.ipfs import pinning, ipfsd, asyncipfsd, cidhelpers
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.pubsub import *
 from galacteek.ipfs.feeds import FeedFollower
@@ -97,6 +97,8 @@ class IPFSContext(QObject):
 class GalacteekApplication(QApplication):
     GALACTEEK_NAME = 'galacteek'
 
+    clipboardHasIpfs = pyqtSignal(bool, str)
+
     def __init__(self, debug=False, profile='main'):
         QApplication.__init__(self, sys.argv)
 
@@ -119,6 +121,7 @@ class GalacteekApplication(QApplication):
 
         self.setupTranslator()
         self.setupPaths()
+        self.setupClipboard()
 
         self.initSettings()
         self.initSystemTray()
@@ -126,6 +129,7 @@ class GalacteekApplication(QApplication):
         self.createMainWindow()
 
         self.setStyle()
+        self.clipboardInit()
 
     def setStyle(self):
         qssPath = ":/share/static/qss/galacteek.qss"
@@ -398,6 +402,43 @@ class GalacteekApplication(QApplication):
 
         self.getLoop().create_task(startDaemon(self.ipfsd))
         return self.ipfsd
+
+    def setupClipboard(self):
+        self.appClipboard = self.clipboard()
+        self.appClipboard.changed.connect(self.onClipboardChanged)
+        self.clipHistory = {}
+
+    def onClipboardChanged(self, mode):
+        text = self.appClipboard.text(mode)
+        self.clipboardProcess(text)
+
+    def clipboardProcess(self, text):
+        """
+        Process the contents of the clipboard. If it is a valid CID, emit a
+        signal, processed by the main window for the clipboard loader button
+        """
+        if not text or len(text) > 256: # that shouldn't be worth handling
+            return
+
+        if cidhelpers.cidValid(text):
+            self.clipboardHasIpfs.emit(True, text)
+            self.clipHistory[text] = 1
+        else:
+            self.clipboardHasIpfs.emit(False, text)
+
+    def clipboardInit(self):
+        """ Used to process the clipboard's content on application's init """
+        text = self.getClipboardText()
+        self.clipboardProcess(text)
+
+    def getClipboardText(self):
+        """ Returns clipboard's text content. If the system supports selection
+            clipboard, favour that mode instead """
+
+        mode = QClipboard.Clipboard
+        if self.appClipboard.supportsSelection():
+            mode = QClipboard.Selection
+        return self.appClipboard.text(mode)
 
     def onExit(self):
         self.stopIpfsServices()

@@ -164,6 +164,26 @@
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_4">
           <item>
+           <widget class="QPushButton" name="clipboardLoader">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Browse IPFS hash from the clipboard&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="galacteek.qrc">
+              <normaloff>:/share/icons/clipboard-with-pencil-.png</normaloff>:/share/icons/clipboard-with-pencil-.png</iconset>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>24</width>
+              <height>24</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QToolButton" name="pinAllGlobalButton">
             <property name="toolTip">
              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Global automatic pinning (sets automatic pinning for every browsing tab)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>

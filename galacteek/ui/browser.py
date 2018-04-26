@@ -6,13 +6,14 @@ import re
 
 from PyQt5.QtWidgets import (QWidget, QFrame, QApplication, QMainWindow,
         QDialog, QLabel, QPushButton, QVBoxLayout, QAction,
-        QMenu, QTabWidget, QInputDialog, QMessageBox, QToolButton)
+        QMenu, QTabWidget, QInputDialog, QMessageBox, QToolButton, QFileDialog)
 
 from PyQt5.QtPrintSupport import *
 
 from PyQt5.QtCore import (QUrl, QIODevice, Qt, QCoreApplication, QObject,
     pyqtSignal)
 from PyQt5 import QtWebEngineWidgets, QtWebEngine, QtWebEngineCore
+from PyQt5.QtWebEngineWidgets import QWebEngineDownloadItem
 from PyQt5.Qt import QByteArray
 from PyQt5.QtGui import QClipboard, QPixmap, QIcon, QKeySequence
 
@@ -35,6 +36,8 @@ SCHEME_FS = 'fs'
 # i18n
 def iOpenInTab():
     return QCoreApplication.translate('BrowserTabForm', 'Open link in tab')
+def iOpenWith():
+    return QCoreApplication.translate('BrowserTabForm', 'Open with')
 def iDownload():
     return QCoreApplication.translate('BrowserTabForm', 'Download')
 def iPin():
@@ -169,8 +172,16 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
         menu.addMenu(ipfsMenu)
         act = ipfsMenu.addAction(getIcon('pin.png'), iPin(), lambda:
                 self.pinPage(contextMenuData))
+        openWithMenu = QMenu(iOpenWith())
+        openWithMenu.addAction('Media player', lambda:
+                self.openWithMediaPlayer(contextMenuData))
+        menu.addMenu(openWithMenu)
 
         menu.exec(event.globalPos())
+
+    def openWithMediaPlayer(self, menudata):
+        url = menudata.linkUrl()
+        self.browserTab.gWindow.addMediaPlayerTab(url.path())
 
     def pinPage(self, menudata):
         url = menudata.linkUrl()
@@ -191,6 +202,7 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
 
 class BrowserKeyFilter(QObject):
     bookmarkPressed = pyqtSignal()
+    savePagePressed = pyqtSignal()
 
     def eventFilter(self,  obj,  event):
         if event.type() == QEvent.KeyPress:
@@ -200,6 +212,9 @@ class BrowserKeyFilter(QObject):
             if modifiers & Qt.ControlModifier:
                 if key == Qt.Key_B:
                     self.bookmarkPressed.emit()
+                    return True
+                if key == Qt.Key_S:
+                    self.savePagePressed.emit()
                     return True
         return False
 
@@ -286,6 +301,10 @@ class BrowserTab(GalacteekTab):
         self.currentIpfsResource = None
 
     @property
+    def webView(self):
+        return self.ui.webEngineView
+
+    @property
     def tabPage(self):
         return self.gWindow.ui.tabWidget.widget(self.tabPageIdx)
 
@@ -295,17 +314,15 @@ class BrowserTab(GalacteekTab):
 
     @property
     def gatewayAuthority(self):
-        params = self.app.ipfsConnParams
-        return '{0}:{1}'.format(params.getHost(), params.getGatewayPort())
+        return self.app.gatewayAuthority
+
+    @property
+    def gatewayUrl(self):
+        return self.app.gatewayUrl
 
     @property
     def pinAll(self):
         return self.ui.pinAllButton.isChecked()
-
-    @property
-    def gatewayUrl(self):
-        params = self.app.ipfsConnParams
-        return params.getGatewayUrl()
 
     def onPathVisited(self, path):
         # Called after a new IPFS object has been loaded in this tab
@@ -325,6 +342,18 @@ class BrowserTab(GalacteekTab):
 
     def onToggledPinAll(self, checked):
         pass
+
+    def onSavePage(self):
+        page = self.webView.page()
+
+        result = QFileDialog.getSaveFileName(None,
+            'Select file',
+            self.app.settingsMgr.getSetting(CFG_SECTION_BROWSER,
+                CFG_KEY_DLPATH), '(*.*)')
+        if not result:
+            return
+
+        page.save(result[0], QWebEngineDownloadItem.CompleteHtmlSaveFormat)
 
     def onBookmarkPage(self):
         if self.currentIpfsResource:
@@ -382,9 +411,9 @@ class BrowserTab(GalacteekTab):
             accepted=onValidated)
 
     def onLoadIpfsMultipleCID(self):
-        def onValidated(d):
+        def onValidated(dlg):
             # Open a tab for every CID
-            cids = d.getCIDs()
+            cids = dlg.getCIDs()
             for cid in cids:
                 self.gWindow.addBrowserTab().browseIpfsHash(cid)
 
