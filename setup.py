@@ -40,7 +40,6 @@ class build_ui(Command):
         uidir = 'galacteek/ui'
         dstdir = uidir
 
-
         for uifile in glob.iglob('{}/*.ui'.format(uidir)):
             print('Updating UI:', uifile)
             base = os.path.basename(uifile).replace('.ui', '')
@@ -76,9 +75,9 @@ class _build(build):
 setup(
     name='galacteek',
     version=version,
-    license='AGPL3',
+    license='GPL3',
     author='David Ferlier',
-    url='https://gitlab.com/cipres/galacteek',
+    url='https://gitlab.com/galacteek/galacteek',
     description='IPFS navigator',
     include_package_data=False,
     cmdclass={'build': _build, 'build_ui': build_ui},
@@ -103,20 +102,20 @@ setup(
     },
     classifiers=[
         'Environment :: X11 Applications :: Qt',
+        'Framework :: AsyncIO',
         'Topic :: Desktop Environment :: File Managers',
         'Topic :: Internet :: WWW/HTTP :: Browsers',
-        'Intended Audience :: Developers',
         'Development Status :: 4 - Beta',
         'Natural Language :: English',
         'Operating System :: OS Independent',
-        'License :: OSI Approved :: GNU Affero General Public License v3',
+        'License :: OSI Approved :: GNU General Public License v3',
         'Topic :: System :: Filesystems',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
     ],
     keywords=[
-        'async',
+        'asyncio',
         'aiohttp',
         'ipfs'
     ]
