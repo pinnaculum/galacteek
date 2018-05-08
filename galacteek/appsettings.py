@@ -6,11 +6,7 @@ CFG_SECTION_IPFSD = 'ipfsdaemon'
 CFG_SECTION_IPFS = 'ipfs'
 CFG_SECTION_BROWSER = 'browser'
 CFG_SECTION_IPFSCONN1 = 'ipfsconn1'
-
-# Keys
-CFG_KEY_HOMEURL = 'homeurl'
-CFG_KEY_GOTOHOME = 'gotohomeonnewtab'
-CFG_KEY_DLPATH = 'downloadspath'
+CFG_SECTION_UI = 'ui'
 
 CFG_KEY_ENABLED = 'enabled'
 
@@ -22,8 +18,18 @@ CFG_KEY_HOST = 'host'
 CFG_KEY_SWARMLOWWATER = 'swarm_lowwater'
 CFG_KEY_SWARMHIGHWATER = 'swarm_highwater'
 
+# Browser
+CFG_KEY_HOMEURL = 'homeurl'
+CFG_KEY_GOTOHOME = 'gotohomeonnewtab'
+CFG_KEY_DLPATH = 'downloadspath'
+
 # IPFS
 CFG_KEY_PUBSUB = 'pubsub'
+
+# UI
+CFG_KEY_WRAPSINGLEFILES = 'wrapsinglefiles'
+CFG_KEY_WRAPDIRECTORIES = 'wrapdirectories'
+CFG_KEY_HIDEHASHES = 'hidehashes'
 
 # for fast access
 S_HOMEURL = (CFG_SECTION_BROWSER, CFG_KEY_HOMEURL)
@@ -56,6 +62,11 @@ def setDefaultSettings(gApp):
 
     section = CFG_SECTION_IPFS
     sManager.setDefaultTrue(section, CFG_KEY_PUBSUB)
+
+    section = CFG_SECTION_UI
+    sManager.setDefaultTrue(section, CFG_KEY_WRAPSINGLEFILES)
+    sManager.setDefaultFalse(section, CFG_KEY_WRAPDIRECTORIES)
+    sManager.setDefaultFalse(section, CFG_KEY_HIDEHASHES)
     sManager.sync()
     return True
 
@@ -129,8 +140,28 @@ class SettingsManager(object):
     def setFalse(self, section, name):
         return self.setSetting(section, name, self.falseVal)
 
+    def setBoolFrom(self, section, name, boolVal):
+        if boolVal is True:
+            self.setTrue(section, name)
+        elif boolVal is False:
+            self.setFalse(section, name)
+
     def isTrue(self, section, name):
         return self.getSetting(section, name) == self.trueVal
 
     def isFalse(self, section, name):
         return self.getSetting(section, name) == self.falseVal
+
+    # Properties
+
+    @property
+    def hideHashes(self):
+        return self.isTrue(CFG_SECTION_UI, CFG_KEY_HIDEHASHES)
+
+    @property
+    def wrapFiles(self):
+        return self.isTrue(CFG_SECTION_UI, CFG_KEY_WRAPSINGLEFILES)
+
+    @property
+    def wrapDirectories(self):
+        return self.isTrue(CFG_SECTION_UI, CFG_KEY_WRAPDIRECTORIES)

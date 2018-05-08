@@ -42,7 +42,8 @@ class TestMarks:
 
         assert bmarks.add(path2, title=title) == True
 
-        assert bmarks.search(path1)['metadata']['title'] == title
+        path, mark = bmarks.search(path1)
+        assert mark['metadata']['title'] == title
 
         c = bmarks.addCategory('tests', parent=None)
         cats = bmarks.getCategories()

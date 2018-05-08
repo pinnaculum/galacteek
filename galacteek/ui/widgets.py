@@ -2,15 +2,18 @@
 from PyQt5.QtCore import (Qt, QEvent, QObject, pyqtSignal, QFile)
 from PyQt5.QtWidgets import QWidget, QApplication
 
-class GalacteekWidget(QWidget):
-    def __init__(self, *args, **kw):
-        super().__init__(*args, **kw)
+from galacteek.ipfs.wrappers import ipfsOp
 
 class GalacteekTab(QWidget):
     def __init__(self, gWindow, parent=None, **kw):
         super().__init__(parent=parent, **kw)
 
         self.gWindow = gWindow
+        self.app.task(self.initialize)
+
+    @ipfsOp
+    async def initialize(self, op):
+        pass
 
     @property
     def app(self):

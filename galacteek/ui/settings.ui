@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>780</width>
+    <width>576</width>
     <height>421</height>
    </rect>
   </property>
@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>1</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="tab">
       <attribute name="title">
@@ -340,6 +340,63 @@
            <property name="text">
             <string>Restart the application after changing the IPFS connection settings.</string>
            </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_2">
+      <attribute name="title">
+       <string>UI</string>
+      </attribute>
+      <layout class="QGridLayout" name="gridLayout_2">
+       <item row="0" column="0">
+        <layout class="QGridLayout" name="gridLayout">
+         <item row="0" column="0">
+          <widget class="QGroupBox" name="groupBox">
+           <property name="title">
+            <string>Files</string>
+           </property>
+           <widget class="QCheckBox" name="wrapFiles">
+            <property name="geometry">
+             <rect>
+              <x>10</x>
+              <y>30</y>
+              <width>321</width>
+              <height>21</height>
+             </rect>
+            </property>
+            <property name="text">
+             <string>Wrap files with a directory (preserves filenames)</string>
+            </property>
+           </widget>
+           <widget class="QCheckBox" name="wrapDirectories">
+            <property name="geometry">
+             <rect>
+              <x>10</x>
+              <y>60</y>
+              <width>281</width>
+              <height>21</height>
+             </rect>
+            </property>
+            <property name="text">
+             <string>Wrap directories with a directory</string>
+            </property>
+           </widget>
+           <widget class="QCheckBox" name="hideHashes">
+            <property name="geometry">
+             <rect>
+              <x>10</x>
+              <y>90</y>
+              <width>231</width>
+              <height>21</height>
+             </rect>
+            </property>
+            <property name="text">
+             <string>Hide hashes in tree views</string>
+            </property>
+           </widget>
           </widget>
          </item>
         </layout>

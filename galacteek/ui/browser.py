@@ -21,6 +21,8 @@ from PyQt5.QtGui import QClipboard, QPixmap, QIcon, QKeySequence
 from yarl import URL
 import cid
 
+from galacteek.ipfs.wrappers import *
+
 from . import ui_browsertab
 from . import galacteek_rc
 from .helpers import *
@@ -246,7 +248,6 @@ class BrowserTab(GalacteekTab):
         self.ui.refreshButton.clicked.connect(self.refreshButtonClicked)
         self.ui.loadFromClipboardButton.clicked.connect(self.loadFromClipboardButtonClicked)
         self.ui.bookmarkPageButton.clicked.connect(self.onBookmarkPage)
-        #self.ui.printButton.clicked.connect(self.printButtonClicked)
 
         # Setup the tool button for browsing IPFS content
         self.loadIpfsMenu = QMenu()
@@ -259,14 +260,12 @@ class BrowserTab(GalacteekTab):
                 triggered=self.onLoadIpfsMultipleCID)
         self.loadIpnsAction = QAction(getIconIpfsWhite(),
                 iBrowseIpnsHash(),self,
-                shortcut=QKeySequence('Ctrl+n'),
                 triggered=self.onLoadIpns)
         self.followIpnsAction = QAction(getIconIpfsWhite(),
                 iFollow(),self,
                 triggered=self.onFollowIpns)
         self.loadHomeAction = QAction(getIcon('go-home.png'),
                 iBrowseHomePage(),self,
-                shortcut=QKeySequence('Ctrl+h'),
                 triggered=self.onLoadHome)
 
         self.loadIpfsMenu.addAction(self.loadIpfsCIDAction)
@@ -338,17 +337,11 @@ class BrowserTab(GalacteekTab):
 
     def onPathVisited(self, path):
         # Called after a new IPFS object has been loaded in this tab
-        # We get object stat info (with the object/stat API call)
+        self.app.task(self.tsVisitPath, path)
+
+    @ipfsStatOp
+    async def tsVisitPath(self, ipfsop, path, stat):
         # If automatic pinning is checked we pin the object
-
-        async def fetchObjectStats(client, path):
-            try:
-                self.app.ipfsCtx.objectStats[path] = await client.object.stat(path)
-            except:
-                self.app.ipfsCtx.objectStats[path] = None
-
-        self.app.ipfsTask(fetchObjectStats, path)
-
         if self.pinAll is True:
             self.pinPath(path, recursive=False, notify=False)
 

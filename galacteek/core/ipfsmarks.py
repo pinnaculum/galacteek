@@ -220,7 +220,7 @@ class IPFSMarks(QObject):
                         tagsOk = False
 
                 if tagsOk:
-                    return marks[path]
+                    return (path, marks[path])
 
     def insertMark(self, mark, category):
         # Insert a mark in given category, checking of already existing mark

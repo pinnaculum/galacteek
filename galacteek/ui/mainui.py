@@ -6,18 +6,23 @@ import copy
 
 from PyQt5.QtWidgets import (QApplication, QMainWindow,
         QDialog, QLabel, QTextEdit, QPushButton, QVBoxLayout,
-        QSystemTrayIcon)
+        QSystemTrayIcon, QMenu, QAction, QToolButton,
+        QTreeView, QHeaderView)
 from PyQt5.QtCore import (QCoreApplication, QUrl, QBuffer, QIODevice, Qt,
     QTimer, QFile)
 from PyQt5.QtCore import pyqtSignal, QUrl, QObject, QDateTime
 from PyQt5 import QtWebEngineWidgets, QtWebEngine, QtWebEngineCore
-from PyQt5.QtGui import QClipboard, QPixmap, QIcon, QKeySequence
+from PyQt5.QtGui import (QClipboard, QPixmap, QIcon, QKeySequence,
+        QStandardItemModel, QStandardItem)
 
+from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.cidhelpers import cidValid
 from . import ui_galacteek
-from . import browser, files, keys, settings, bookmarks, textedit
+from . import browser, files, keys, settings, bookmarks, textedit, ipfsview
 from .helpers import *
+from .modelhelpers import *
+from .widgets import GalacteekTab
 from .dialogs import *
 from ..appsettings import *
 from .i18n import *
@@ -29,13 +34,21 @@ def iMyFiles():
 def iKeys():
     return QCoreApplication.translate('GalacteekWindow', 'IPFS Keys')
 
-def iFromClipboard(cid):
+def iFromClipboard(path):
     return QCoreApplication.translate('GalacteekWindow',
-        'Clipboard: browse IPFS object from CID: {0}').format(cid)
+        'Clipboard: browse IPFS path: {0}').format(path)
 
 def iClipboardInvalid():
     return QCoreApplication.translate('GalacteekWindow',
-        'No valid IPFS CID in the clipboard')
+        'No valid IPFS CID/path in the clipboard')
+
+def iClipLoaderExplore(path):
+    return QCoreApplication.translate('GalacteekWindow',
+        'Explore IPFS path: {0}').format(path)
+
+def iClipLoaderBrowse(path):
+    return QCoreApplication.translate('GalacteekWindow',
+        'Browse IPFS path: {0}').format(path)
 
 def iPinningItemStatus(pinPath, pinProgress):
     return QCoreApplication.translate('GalacteekWindow',
@@ -48,6 +61,64 @@ def iAbout():
         </p>
         <p>Author: David Ferlier</p>
         <p>Galacteek version {0}</p>''').format(__version__)
+
+class PinStatusDetails(GalacteekTab):
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
+
+        self.tree = QTreeView(self)
+        self.vLayout = QVBoxLayout(self)
+        self.vLayout.addWidget(self.tree)
+
+        self.app.ipfsCtx.pinItemStatusChanged.connect(self.onPinStatusChanged)
+        self.app.ipfsCtx.pinFinished.connect(self.onPinFinished)
+
+        self.model = QStandardItemModel()
+        self.model.setHorizontalHeaderLabels(
+            ['Path', 'Nodes processed'])
+
+        self.tree.setModel(self.model)
+        self.tree.header().setSectionResizeMode(0,
+                QHeaderView.ResizeToContents)
+
+    def findPinItems(self, path):
+        ret = modelSearch(self.model,
+                search=path, columns=[0])
+        if len(ret) == 0:
+            return None, None
+        itemP = self.model.itemFromIndex(ret.pop())
+        idxS = self.model.index(itemP.row(), 1, itemP.index().parent())
+        itemS = self.model.itemFromIndex(idxS)
+        return itemP, itemS
+
+    def onPinFinished(self, path):
+        ePin, ePinS = self.findPinItems(path)
+        if ePinS:
+            ePinS.setText('Finished')
+
+    def onPinStatusChanged(self, path, status):
+        nodesProcessed = status.get('Progress', None)
+        ePin, ePinS = self.findPinItems(path)
+
+        if not ePin:
+            itemP = UneditableItem(path)
+            itemS = UneditableItem(str(nodesProcessed) or iUnknown())
+            self.model.invisibleRootItem().appendRow(
+                    [itemP, itemS])
+        else:
+            if nodesProcessed:
+                ePinS.setText(str(nodesProcessed))
+
+class ClipLoader(QObject):
+    def __init__(self):
+        super(ClipLoader, self).__init__()
+
+        self.ipfsPath = None
+        self.cidStr = None
+
+    def setTarget(self, cid, path):
+        self.cidStr = cid
+        self.ipfsPath = path
 
 class MainWindow(QMainWindow):
     tabnMyFiles = 'My Files'
@@ -81,9 +152,24 @@ class MainWindow(QMainWindow):
         self.ui.bookmarksButton.clicked.connect(self.addBookmarksTab)
         self.ui.bookmarksButton.setShortcut(QKeySequence('Ctrl+m'))
         self.ui.writeNewDocumentButton.clicked.connect(self.onWriteNewDocumentClicked)
-        self.ui.clipboardLoader.setEnabled(False)
-        self.ui.clipboardLoader.clicked.connect(self.onLoadFromClipboard)
-        self.ui.clipboardLoader.setShortcut(QKeySequence('Ctrl+b'))
+
+        self.multiLoaderMenu = QMenu()
+        self.multiLoadHashAction = QAction(getIconIpfsIce(),
+                'Browse hash', self,
+                shortcut=QKeySequence('Ctrl+o'),
+                triggered=self.onLoadFromClipboard)
+        self.multiExploreHashAction = QAction(getIconIpfsIce(),
+                'Explore hash', self,
+                shortcut=QKeySequence('Ctrl+e'),
+                triggered=self.onExploreFromClipboard)
+        self.multiLoaderMenu.addAction(self.multiLoadHashAction)
+        self.multiLoaderMenu.addAction(self.multiExploreHashAction)
+
+        self.clipLoader = ClipLoader()
+        self.ui.clipboardMultiLoader.clicked.connect(self.onLoadFromClipboard)
+        self.ui.clipboardMultiLoader.setMenu(self.multiLoaderMenu)
+        self.ui.clipboardMultiLoader.setEnabled(False)
+        self.ui.clipboardMultiLoader.setPopupMode(QToolButton.MenuButtonPopup)
 
         # Global pin-all button
         self.ui.pinAllGlobalButton.setCheckable(True)
@@ -102,6 +188,7 @@ class MainWindow(QMainWindow):
         self.ui.pinningStatusButton = QPushButton()
         self.ui.pinningStatusButton.setToolTip(iNoStatus())
         self.ui.pinningStatusButton.setIcon(getIcon('pin-black.png'))
+        self.ui.pinningStatusButton.clicked.connect(self.onPinningStatusDetails)
         self.ui.pubsubStatusButton = QPushButton()
         self.ui.pubsubStatusButton.setIcon(getIcon('network-offline.png'))
 
@@ -143,6 +230,14 @@ class MainWindow(QMainWindow):
 
     def onPubsubTx(self):
         pass
+
+    def onPinningStatusDetails(self):
+        name = 'Pinning Status'
+        ft = self.findTabWithName(name)
+        if ft:
+            return self.ui.tabWidget.setCurrentWidget(ft)
+        detailsTab = PinStatusDetails(self)
+        self.registerTab(detailsTab, name)
 
     def updatePinningStatus(self):
         iconLoading = getIcon('pin-blue-loading.png')
@@ -230,17 +325,32 @@ class MainWindow(QMainWindow):
     def onToggledPinAllGlobal(self, checked):
         self.pinAllGlobalChecked = checked
 
-    def onClipboardIpfs(self, valid, cid):
-        self.ui.clipboardLoader.setEnabled(valid)
+    def onClipboardIpfs(self, valid, cid, path):
+        self.ui.clipboardMultiLoader.setEnabled(valid)
         if valid:
-            self.ui.clipboardLoader.setToolTip(iFromClipboard(cid))
+            self.clipLoader.setTarget(cid, path)
+            self.multiExploreHashAction.setText(iClipLoaderExplore(path))
+            self.multiLoadHashAction.setText(iClipLoaderBrowse(path))
+            self.ui.clipboardMultiLoader.setToolTip(iFromClipboard(path))
         else:
-            self.ui.clipboardLoader.setToolTip(iClipboardInvalid())
+            self.clipLoader.setTarget(None, None)
+            self.ui.clipboardMultiLoader.setToolTip(iClipboardInvalid())
 
     def onLoadFromClipboard(self):
-        clipContent = self.app.getClipboardText()
-        if cidValid(clipContent):
-            self.addBrowserTab().browseIpfsHash(clipContent)
+        path = self.clipLoader.ipfsPath
+        if path:
+            self.addBrowserTab().browseFsPath(path)
+
+    def onExploreFromClipboard(self):
+        path = self.clipLoader.ipfsPath
+        if path:
+            self.app.task(self.exploreClipboardPath, path)
+
+    @ipfsStatOp
+    async def exploreClipboardPath(self, ipfsop, path, stat):
+        if stat:
+            view = ipfsview.IPFSHashViewToolBox(self, stat['Hash'])
+            self.registerTab(view, stat['Hash'], current=True)
 
     def onAboutGalacteek(self):
         from galacteek import __version__
@@ -293,7 +403,8 @@ class MainWindow(QMainWindow):
         gwUrl = self.app.gatewayUrl
         mediaUrl = QUrl('{0}/{1}'.format(gwUrl, path))
         tab.playFromUrl(mediaUrl)
-        self.registerTab(tab, path, current=True)
+        self.registerTab(tab, path, icon=getIcon('multimedia.png'),
+                current=True)
 
     def addBookmarksTab(self):
         name = iBookmarks()

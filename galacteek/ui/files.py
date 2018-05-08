@@ -23,10 +23,13 @@ from PyQt5.Qt import QByteArray
 from quamash import QEventLoop, QThreadExecutor
 
 from galacteek.ipfs.ipfsops import *
+from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cache import IPFSEntryCache
+from galacteek.appsettings import *
 
 from . import ui_files
 from . import mediaplayer
+from . import ipfsview
 from . import galacteek_rc
 from . import modelhelpers
 from .i18n import *
@@ -61,8 +64,11 @@ def iLoading(name):
 def iOpenWith():
     return QCoreApplication.translate('FilesForm', 'Open with')
 
-def iRemoveFile():
-    return QCoreApplication.translate('FilesForm', 'Remove file')
+def iMediaPlayer():
+    return QCoreApplication.translate('FilesForm', 'Media Player')
+
+def iDeleteFile():
+    return QCoreApplication.translate('FilesForm', 'Delete file')
 
 def iUnlinkFile():
     return QCoreApplication.translate('FilesForm', 'Unlink file')
@@ -123,7 +129,8 @@ class IPFSNameItem(IPFSItem):
 
 class treeKeyFilter(QObject):
     deletePressed = pyqtSignal()
-    copyPressed = pyqtSignal()
+    copyHashPressed = pyqtSignal()
+    copyPathPressed = pyqtSignal()
     returnPressed = pyqtSignal()
 
     def eventFilter(self, obj, event):
@@ -133,13 +140,17 @@ class treeKeyFilter(QObject):
             key = event.key()
             if key == Qt.Key_Return:
                 self.returnPressed.emit()
+                return True
             if modifiers & Qt.ControlModifier:
-                if key == Qt.Key_C:
-                    self.copyPressed.emit()
-
+                if key == Qt.Key_H:
+                    self.copyHashPressed.emit()
+                    return True
+                if key == Qt.Key_P:
+                    self.copyPathPressed.emit()
+                    return True
             if event.key() == Qt.Key_Delete:
                 self.deletePressed.emit()
-            return False
+                return True
         return False
 
 class IPFSItemModel(QStandardItemModel):
@@ -201,7 +212,7 @@ class FilesTab(GalacteekTab):
 
         self.ui = ui_files.Ui_FilesForm()
         self.ui.setupUi(self)
-        self.clipboard = self.gWindow.getApp().clipboard()
+        self.clipboard = self.app.appClipboard
 
         # Connect the various buttons
         self.ui.addFileButton.clicked.connect(self.onAddFilesClicked)
@@ -216,8 +227,9 @@ class FilesTab(GalacteekTab):
         self.ui.treeFiles.expanded.connect(self.onExpanded)
 
         # Connect the event filter
-        evfilter = treeKeyFilter(self.ui.treeFiles)
-        evfilter.copyPressed.connect(self.onCopyItemHash)
+        evfilter = IPFSTreeKeyFilter(self.ui.treeFiles)
+        evfilter.copyHashPressed.connect(self.onCopyItemHash)
+        evfilter.copyPathPressed.connect(self.onCopyItemPath)
         evfilter.returnPressed.connect(self.onReturn)
         self.ui.treeFiles.installEventFilter(evfilter)
 
@@ -233,6 +245,9 @@ class FilesTab(GalacteekTab):
         self.ui.treeFiles.setItemsExpandable(True)
         self.ui.treeFiles.setSortingEnabled(True)
         self.ui.treeFiles.sortByColumn(0, Qt.AscendingOrder)
+
+        if self.app.settingsMgr.hideHashes:
+            self.ui.treeFiles.hideColumn(2)
 
         self.iconFolder = getIcon('folder-open.png')
         self.iconFile = getIcon('file.png')
@@ -254,8 +269,15 @@ class FilesTab(GalacteekTab):
 
     def onCopyItemHash(self):
         currentIdx = self.ui.treeFiles.currentIndex()
-        dataHash = self.model.getHashFromIdx(currentIdx)
-        self.clipboard.setText(dataHash, QClipboard.Selection)
+        if currentIdx.isValid():
+            dataHash = self.model.getHashFromIdx(currentIdx)
+            self.app.setClipboardText(dataHash)
+
+    def onCopyItemPath(self):
+        currentIdx = self.ui.treeFiles.currentIndex()
+        if currentIdx.isValid():
+            dataHash = self.model.getHashFromIdx(currentIdx)
+            self.app.setClipboardText(joinIpfs(dataHash))
 
     def onReturn(self):
         currentIdx = self.ui.treeFiles.currentIndex()
@@ -283,6 +305,9 @@ class FilesTab(GalacteekTab):
         def unlink(hash):
             self.scheduleUnlink(hash)
 
+        def delete(hash):
+            self.scheduleDelete(hash)
+
         def bookmark(mPath, name):
             addBookmark(self.app.marksLocal, mPath, name)
 
@@ -301,6 +326,8 @@ class FilesTab(GalacteekTab):
             copyHashToClipboard(dataHash, QClipboard.Clipboard))
         menu.addAction(iUnlinkFile(), lambda:
             unlink(dataHash))
+        menu.addAction(iDeleteFile(), lambda:
+            delete(dataHash))
         menu.addAction(iBookmarkFile(), lambda:
             bookmark(ipfsPath, nameItem.getEntry()['Name']))
         menu.addAction(iBrowseFile(), lambda:
@@ -329,7 +356,7 @@ class FilesTab(GalacteekTab):
         publishMenu.triggered.connect(publishToKey)
 
         openWithMenu = QMenu(iOpenWith())
-        openWithMenu.addAction('Media player', lambda:
+        openWithMenu.addAction(iMediaPlayer(), lambda:
                 openWithMediaPlayer(dataHash))
 
         menu.addMenu(publishMenu)
@@ -351,7 +378,11 @@ class FilesTab(GalacteekTab):
         dataHash = self.model.getHashFromIdx(idx)
         dataPath = self.model.getNameFromIdx(idx)
 
-        if nameItem.isFile():
+        if nameItem.isDir():
+            view = ipfsview.IPFSHashViewToolBox(self.gWindow, dataHash)
+            self.gWindow.registerTab(view, dataHash, current=True)
+
+        elif nameItem.isFile():
             fileName = nameItem.text()
 
             if nameItem.mimeType:
@@ -371,7 +402,7 @@ class FilesTab(GalacteekTab):
             else:
                 return self.browse(dataHash)
 
-        self.app.ipfsTaskOp(self.listFiles, item.getPath(), parentItem=item,
+        self.app.task(self.listFiles, item.getPath(), parentItem=item,
             autoexpand=True)
 
     def onSearchFiles(self):
@@ -380,6 +411,7 @@ class FilesTab(GalacteekTab):
 
     def onRefreshClicked(self):
         self.updateTree()
+        self.ui.treeFiles.setFocus(Qt.OtherFocusReason)
 
     def onAddDirClicked(self):
         result = QFileDialog.getExistingDirectory(None,
@@ -406,13 +438,16 @@ class FilesTab(GalacteekTab):
         self.scheduleAddFiles(result[0])
 
     def scheduleAddFiles(self, path):
-        return self.app.ipfsTaskOp(self.addFiles, path)
+        return self.app.task(self.addFiles, path)
 
     def scheduleAddDirectory(self, path):
-        return self.app.ipfsTaskOp(self.addDirectory, path)
+        return self.app.task(self.addDirectory, path)
 
     def scheduleUnlink(self, hash):
-        return self.app.ipfsTaskOp(self.unlinkFileFromHash, hash)
+        return self.app.task(self.unlinkFileFromHash, hash)
+
+    def scheduleDelete(self, hash):
+        return self.app.task(self.deleteFromHash, hash)
 
     def prepareTree(self):
         self.model.setHorizontalHeaderLabels(
@@ -427,21 +462,23 @@ class FilesTab(GalacteekTab):
         self.ui.treeFiles.expand(self.itemFilesIdx)
 
     def updateTree(self):
-        async def _updateKeys(op):
-            self.ipfsKeys = await op.keys()
-
-        self.app.ipfsTaskOp(_updateKeys)
-        self.app.ipfsTaskOp(self.listFiles, GFILES_MYFILES_PATH,
+        self.app.task(self.updateKeys)
+        self.app.task(self.listFiles, GFILES_MYFILES_PATH,
             parentItem=self.itemFiles, maxdepth=1)
 
-    async def listFiles(self, op, path, parentItem, maxdepth=0,
+    @ipfsOp
+    async def updateKeys(self, ipfsop):
+        self.ipfsKeys = await ipfsop.keys()
+
+    @ipfsOp
+    async def listFiles(self, ipfsop, path, parentItem, maxdepth=0,
             autoexpand=False):
         self.enableButtons(flag=False)
+
         try:
-            await op.client.files.flush(GFILES_MYFILES_PATH)
             await asyncio.wait_for(
-                    self.listPath(op, path, parentItem=parentItem,
-                        maxdepth=maxdepth, autoexpand=autoexpand), 120)
+                self.listPath(ipfsop, path, parentItem=parentItem,
+                    maxdepth=maxdepth, autoexpand=autoexpand), 120)
         except aioipfs.APIException:
             messageBox(iErrNoCx())
 
@@ -449,8 +486,6 @@ class FilesTab(GalacteekTab):
 
     async def listPath(self, op, path, parentItem=None, depth=0, maxdepth=1,
             autoexpand=False):
-        self.statusLoading(path)
-
         if not parentItem.getPath():
             return
 
@@ -504,6 +539,17 @@ class FilesTab(GalacteekTab):
         if autoexpand is True:
             self.ui.treeFiles.expand(parentItem.index())
 
+    @ipfsOp
+    async def deleteFromHash(self, ipfsop, hash):
+        code = await ipfsop.purge(hash)
+        if code:
+            entry = await ipfsop.filesLookupHash(GFILES_MYFILES_PATH, hash)
+            if entry:
+                await ipfsop.filesDelete(GFILES_MYFILES_PATH,
+                    entry['Name'], recursive=True)
+                await modelhelpers.modelDeleteAsync(self.model, hash)
+
+    @ipfsOp
     async def unlinkFileFromHash(self, op, hash):
         listing = await op.filesList(GFILES_MYFILES_PATH)
         for entry in listing:
@@ -512,29 +558,33 @@ class FilesTab(GalacteekTab):
                     entry['Name'], recursive=True)
                 await modelhelpers.modelDeleteAsync(self.model, hash)
 
+    @ipfsOp
     async def addFiles(self, op, files):
         """ Add every file with a wrapper directory by default to preserve
             filenames and use the wrapper directory's hash as a link
             Will soon turn this into a configurable option in the GUI """
 
+        wrapEnabled = self.app.settingsMgr.isTrue(
+            CFG_SECTION_UI, CFG_KEY_WRAPSINGLEFILES)
+
         self.enableButtons(flag=False)
         last = None
-        for file in files:
-            root = None
-            async for added in op.client.add(file, wrap_with_directory=True):
-                await asyncio.sleep(0)
-                fileName = added['Name']
-                if fileName == '': # keep track of the directory wrapper
-                    root = added
-                    continue
 
-                self.statusAdded(fileName)
+        for file in files:
+            async def onEntry(entry):
+                self.statusAdded(entry['Name'])
+
+            root = await op.addPath(file, wrap=wrapEnabled,
+                    callback=onEntry)
 
             if root is None:
                 self.statusSet(iFileImportError())
                 continue
 
-            base = os.path.basename(file) + '.dirw'
+            base = os.path.basename(file)
+            if wrapEnabled is True:
+                base += '.dirw'
+
             await self.linkEntry(op, root, GFILES_MYFILES_PATH, base)
             last = root['Hash']
 
@@ -542,23 +592,27 @@ class FilesTab(GalacteekTab):
         self.updateTree()
         return True
 
+    @ipfsOp
     async def addDirectory(self, op, path):
+        wrapEnabled = self.app.settingsMgr.isTrue(
+            CFG_SECTION_UI, CFG_KEY_WRAPDIRECTORIES)
         self.enableButtons(flag=False)
         basename = os.path.basename(path)
         dirEntry = None
 
-        async for added in op.client.add(path, recursive=True,
-                wrap_with_directory=True, hidden=False):
-            await asyncio.sleep(0)
-            entryName = added['Name']
-            self.statusAdded(entryName)
-            if entryName == basename:
-                dirEntry = added
+        async def onEntry(entry):
+            self.statusAdded(entry['Name'])
+
+        dirEntry = await op.addPath(path, callback=onEntry,
+                recursive=True, wrap=wrapEnabled)
 
         if not dirEntry:
             # Nothing went through ?
             self.enableButtons()
-            return
+            return False
+
+        if wrapEnabled is True:
+            basename += '.dirw'
 
         await self.linkEntry(op, dirEntry, GFILES_MYFILES_PATH, basename)
 

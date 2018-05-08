@@ -41,17 +41,31 @@ def runDialog(cls, *args, **kw):
     dlgW.exec_()
     return dlgW
 
-# Key Filter
-class KeyFilter(QObject):
-    delKeyPressed = pyqtSignal()
+class IPFSTreeKeyFilter(QObject):
+    deletePressed = pyqtSignal()
+    copyHashPressed = pyqtSignal()
+    copyPathPressed = pyqtSignal()
+    returnPressed = pyqtSignal()
 
-    def eventFilter(self,  obj,  event):
+    def eventFilter(self, obj, event):
         if event.type() == QEvent.KeyPress:
             modifiers = event.modifiers()
-        return False
 
-def clipboardSupportsSelection():
-    return QApplication.clipboard().supportsSelection()
+            key = event.key()
+            if key == Qt.Key_Return:
+                self.returnPressed.emit()
+                return True
+            if modifiers & Qt.ControlModifier:
+                if key == Qt.Key_H:
+                    self.copyHashPressed.emit()
+                    return True
+                if key == Qt.Key_P:
+                    self.copyPathPressed.emit()
+                    return True
+            if event.key() == Qt.Key_Delete:
+                self.deletePressed.emit()
+                return True
+        return False
 
 class BasicKeyFilter(QObject):
     deletePressed = pyqtSignal()
@@ -74,4 +88,14 @@ class BasicKeyFilter(QObject):
             return True
         return False
 
+def clipboardSupportsSelection():
+    return QApplication.clipboard().supportsSelection()
 
+def sizeFormat(size):
+    if size > (1024*1024*1024):
+        return '{0:.2f} Gb'.format(size/(1024*1024*1024))
+    if size > (1024*1024):
+        return '{0:.2f} Mb'.format(size/(1024*1024))
+    if size > 1024:
+        return '{0:.2f} kb'.format(size/1024)
+    return '{0} bytes'.format(size)

@@ -3,26 +3,31 @@ from PyQt5.QtWidgets import QWidget, QTextEdit, QAction
 from PyQt5.QtWidgets import QMessageBox
 
 from PyQt5.QtCore import QUrl, Qt, QTemporaryFile, QTemporaryDir, QSaveFile
-from PyQt5.QtCore import QIODevice
+from PyQt5.QtCore import QIODevice, pyqtSignal
 
 from . import ui_newdocument
 from .helpers import *
 from .widgets import *
 from .i18n import *
 from galacteek.ipfs.ipfsops import *
+from galacteek.ipfs.wrappers import ipfsOp
 
 def iImportedDocument(name, hash):
     return QCoreApplication.translate('NewDocumentForm',
         'Succesfully imported {0} (hash reference {1})').format(name, hash)
 
 class AddDocumentWidget(GalacteekTab):
-    def __init__(self, *args, **kw):
-        super().__init__(*args, **kw)
+    importSuccess = pyqtSignal(str, dict)
+
+    def __init__(self, gWindow, *args, **kw):
+        super(AddDocumentWidget, self).__init__(gWindow, *args, **kw)
 
         self.ui = ui_newdocument.Ui_NewDocumentForm()
         self.ui.setupUi(self)
         self.ui.importButton.clicked.connect(self.onImport)
+        self.importSuccess.connect(self.onSuccess)
 
+    @ipfsOp
     async def importFile(self, op):
         filename = self.ui.filename.text()
         if filename == '':
@@ -49,11 +54,11 @@ class AddDocumentWidget(GalacteekTab):
                 await op.filesLink(added, GFILES_MYFILES_PATH,
                     name=filename)
 
-        self.success(filename, root)
+        self.importSuccess.emit(filename, root)
 
-    def success(self, filename, entry):
+    def onSuccess(self, filename, entry):
         messageBox(iImportedDocument(filename, entry['Hash']))
         self.gWindow.removeTabFromWidget(self)
 
     def onImport(self):
-        self.app.ipfsTaskOp(self.importFile)
+        self.app.task(self.importFile)
