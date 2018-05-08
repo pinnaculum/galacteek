@@ -55,6 +55,12 @@ class SettingsDialog(QDialog):
     def isChecked(self, w):
         return w.checkState() == Qt.Checked
 
+    def setChecked(self, w, bVal):
+        if bVal is True:
+            w.setCheckState(Qt.Checked)
+        else:
+            w.setCheckState(Qt.Unchecked)
+
     def setS(self, section, key, value):
         return self.sManager.setSetting(section, key, value)
 
@@ -94,11 +100,17 @@ class SettingsDialog(QDialog):
                 self.getS(section, CFG_KEY_HOMEURL, str))
         self.ui.downloadsLocation.setText(
                 self.getS(section, CFG_KEY_DLPATH, str))
+        self.setChecked(self.ui.goToHomePageOnOpen,
+                self.sManager.isTrue(section, CFG_KEY_GOTOHOME))
 
-        if self.sManager.isTrue(section, CFG_KEY_GOTOHOME):
-            self.ui.goToHomePageOnOpen.setCheckState(Qt.Checked)
-        else:
-            self.ui.goToHomePageOnOpen.setCheckState(Qt.Unchecked)
+	# UI
+        section = CFG_SECTION_UI
+        self.setChecked(self.ui.wrapFiles,
+                self.sManager.isTrue(section, CFG_KEY_WRAPSINGLEFILES))
+        self.setChecked(self.ui.wrapDirectories,
+                self.sManager.isTrue(section, CFG_KEY_WRAPDIRECTORIES))
+        self.setChecked(self.ui.hideHashes,
+                self.sManager.isTrue(section, CFG_KEY_HIDEHASHES))
 
     def accept(self):
         section = CFG_SECTION_IPFSD
@@ -121,14 +133,19 @@ class SettingsDialog(QDialog):
 
         section = CFG_SECTION_BROWSER
         self.setS(section, CFG_KEY_HOMEURL, self.ui.home.text())
+        self.sManager.setBoolFrom(section, CFG_KEY_GOTOHOME,
+                self.isChecked(self.ui.goToHomePageOnOpen))
 
-        if self.isChecked(self.ui.goToHomePageOnOpen):
-            self.sManager.setTrue(section, CFG_KEY_GOTOHOME)
-        else:
-            self.sManager.setFalse(section, CFG_KEY_GOTOHOME)
+        section = CFG_SECTION_UI
+        self.sManager.setBoolFrom(section, CFG_KEY_WRAPSINGLEFILES,
+                self.isChecked(self.ui.wrapFiles))
+        self.sManager.setBoolFrom(section, CFG_KEY_WRAPDIRECTORIES,
+                self.isChecked(self.ui.wrapDirectories))
+        self.sManager.setBoolFrom(section, CFG_KEY_HIDEHASHES,
+                self.isChecked(self.ui.hideHashes))
 
         self.sManager.sync()
-        self.done(0)
+        self.done(1)
 
     def reject(self):
         self.done(0)

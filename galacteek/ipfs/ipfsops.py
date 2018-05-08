@@ -2,7 +2,10 @@
 import sys
 import os.path
 
+from async_generator import async_generator, yield_
+
 import aioipfs
+import asyncio
 
 GFILES_ROOT_PATH = '/galacteek/'
 GFILES_MYFILES_PATH = os.path.join(GFILES_ROOT_PATH, 'myfiles')
@@ -29,13 +32,14 @@ class IPFSLogWatcher(object):
                 if self.op.ctx:
                     self.op.ctx.logAddProvider.emit(msg)
 
-            print(pprint.pprint(msg))
-
 class IPFSOperator(object):
     def __init__(self, client, ctx=None, debug=False):
         self.client = client
         self.debugInfo = debug
         self.ctx = ctx
+
+    async def sleep(self, t=0):
+        await asyncio.sleep(t)
 
     @property
     def logwatch(self):
@@ -60,6 +64,12 @@ class IPFSOperator(object):
         listing = await self.filesList(path)
         for entry in listing:
             if entry['Name'] == name:
+                return entry
+
+    async def filesLookupHash(self, path, hash):
+        listing = await self.filesList(path)
+        for entry in listing:
+            if entry['Hash'] == hash:
                 return entry
 
     async def filesList(self, path):
@@ -129,5 +139,99 @@ class IPFSOperator(object):
     async def resolve(self, path):
         try:
             return await self.client.name.resolve(path)
+        except aioipfs.APIException as e:
+            return None
+
+    async def purge(self, hashRef, rungc=False):
+        try:
+            await self.client.pin.rm(hashRef, recursive=True)
+            if rungc:
+                await self.client.repo.gc()
+            return True
+        except aioipfs.APIException as e:
+            return False
+
+    async def isPinned(self, hashRef):
+        """
+        Returns True if IPFS object references by hashRef is pinned,
+        False otherwise
+        """
+        try:
+            result = await self.client.pin.ls(multihash=hashRef)
+            keys = result.get('Keys', {})
+            return key in keys
+        except aioipfs.APIException as e:
+            return False
+
+    async def pinned(self, type='all'):
+        """
+        Returns all pinned keys of a given type
+        """
+        try:
+            result = await self.client.pin.ls(pintype=type)
+            return result.get('Keys', {})
+        except aioipfs.APIException as e:
+            return None
+
+    @async_generator
+    async def list(self, path):
+        """
+        Lists objects in path and yields them
+        """
+        try:
+            listing = await self.client.ls(path, headers=True)
+            objects = listing.get('Objects', [])
+
+            for obj in objects:
+                await yield_(obj)
+        except:
+            pass
+
+    async def objStat(self, path):
+        return await self.client.object.stat(path)
+
+    async def objStatCtxUpdate(self, path):
+        try:
+            self.ctx.objectStats[path] = await self.objStat(path)
+            return self.ctx.objectStats[path]
+        except aioipfs.APIException as e:
+            self.ctx.objectStats[path] = None
+
+    def objStatCtxGet(self, path):
+        return self.ctx.objectStats.get(path, None)
+
+    async def addPath(self, path, **kw):
+        """
+        Recursively adds files from path, and returns the top-level entry (the
+        root directory), optionally wrapping it with a directory object
+
+        :param str path: the path to the directory/file to import
+        :param bool wrap: add a wrapping directory
+        :return: the IPFS top-level entry
+        :rtype: dict
+        """
+        added = None
+        entryCb = kw.pop('callback', None)
+        async for entry in self.client.add(path, quiet=True,
+                recursive=kw.pop('recursive', True),
+                wrap_with_directory=kw.pop('wrap', False)):
+            await self.sleep()
+            added = entry
+            if asyncio.iscoroutinefunction(entryCb):
+                await entryCb(entry)
+        return added
+
+    async def closestPeers(self):
+        peers = []
+        try:
+            info = await self.client.core.id()
+            queryR = await self.client.dht.query(info['ID'])
+
+            responses = queryR.get('Responses', None)
+            if not responses:
+                return None
+            for resp in responses:
+                peers.append(resp['ID'])
+            return peers
         except aioipfs.APIException as e:
             return None

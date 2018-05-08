@@ -3,7 +3,7 @@ import sys
 import asyncio
 from datetime import datetime
 
-from PyQt5.QtWidgets import QWidget, QTreeView, QMenu, QHeaderView
+from PyQt5.QtWidgets import QWidget, QTreeView, QMenu, QHeaderView, QAction
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtCore import QCoreApplication, QUrl, Qt, QObject, QDateTime
 
@@ -34,12 +34,12 @@ def iAlreadyBookmarked():
     return QCoreApplication.translate('BookmarksViewForm',
         'Already Bookmarked')
 
-def iImportMark():
+def iImportBookmark():
     return QCoreApplication.translate('BookmarksViewForm',
-        'Import mark')
+        'Import bookmark to')
 
 def iNetworkMarks():
-    return QCoreApplication.translate('BookmarksViewForm', 'Network Marks')
+    return QCoreApplication.translate('BookmarksViewForm', 'Network Bookmarks')
 
 def iFeeds():
     return QCoreApplication.translate('BookmarksViewForm', 'Feeds')
@@ -179,12 +179,13 @@ class FeedsView(QWidget):
             self.marksTab.gWindow.addBrowserTab().browseFsPath(path)
 
 class NetworkMarksView(QWidget, _MarksUpdater):
-    def __init__(self, marksTab, marks, loop, parent=None):
+    def __init__(self, marksTab, marks, marksLocal, loop, parent=None):
         super().__init__(parent)
 
         self.marksTab = marksTab
         self.loop = loop
         self.marks = marks
+        self.marksLocal = marksLocal
 
         self.ui = ui_bookmarksmgrnetwork.Ui_NetworkMarksViewForm()
         self.ui.setupUi(self)
@@ -214,13 +215,28 @@ class NetworkMarksView(QWidget, _MarksUpdater):
 
         idxPath = self.model.sibling(idx.row(), 0, idx)
         dataPath = self.model.data(idxPath)
+
+        localCategories = self.marksLocal.getCategories()
         menu = QMenu()
+        catsMenu = QMenu(iImportBookmark())
 
-        def importMark(path):
-            mark = self.marks.search(path)
+        def importMark(action):
+            cat = action.data()['category']
+            mark = action.data()['mark']
 
-        act2 = menu.addAction(iImportMark(), lambda:
-                importMark(dataPath))
+            r = self.marksLocal.insertMark(mark, cat)
+
+        mark = self.marks.search(dataPath)
+        for cat in localCategories:
+            action = QAction(cat, self)
+            action.setData({
+                'category': cat,
+                'mark': mark
+            })
+            catsMenu.addAction(action)
+        catsMenu.triggered.connect(importMark)
+
+        menu.addMenu(catsMenu)
         menu.exec(self.tree.mapToGlobal(point))
 
     def doMarksUpdate(self):
@@ -255,7 +271,7 @@ class BookmarksTab(GalacteekTab, _MarksUpdater):
         self.ui.setupUi(self)
 
         self.uiNet = NetworkMarksView(self, self.marksNetwork,
-                self.loop, parent=self)
+                self.marksLocal, self.loop, parent=self)
         self.uiFeeds = FeedsView(self, self.marksLocal,
                 self.loop, parent=self)
         self.ui.toolbox.addItem(self.uiNet, iNetworkMarks())
@@ -337,8 +353,9 @@ class BookmarksTab(GalacteekTab, _MarksUpdater):
 
     def onMarkItemChangeShare(self, index, path):
         shareItem = self.modelMarks.itemFromIndex(index)
-        mark = self.marksLocal.search(path)
-        if mark:
+        markSearch = self.marksLocal.search(path)
+        if markSearch:
+            path, mark = markSearch
             if mark['share'] is True:
                 mark['share'] = False
                 shareItem.setText('no')

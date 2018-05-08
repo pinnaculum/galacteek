@@ -6,7 +6,7 @@ A modest IPFS_ navigator and file manager
 Installation
 ============
 
-You need python 3.5 and pip installed. Install with:
+You need to have python 3.5 and pip installed. Install with:
 
 .. code-block:: shell
 
@@ -21,7 +21,8 @@ Now just run the application with:
 
 **galacteek** can either spawn an IPFS daemon and use it as transport, or
 connect to an existing IPFS daemon. By default it will try to run a daemon. You
-can change the IPFS connection settings through the *Edit* -> *Settings* menu.
+can change the IPFS connection settings through the *Edit* -> *Settings* menu
+and restart the application afterwards.
 
 Features
 ========
@@ -35,16 +36,27 @@ Keybindings
 ===========
 
 Main window keybindings:
+------------------------
 
-- Ctrl+t: Open a new IPFS browsing tab
-- Ctrl+w: Close current tab
-- Ctrl+m: Open the IPFS marks manager
-- Ctrl+f: Open the file manager
+- *Ctrl+t*: Open a new IPFS browsing tab
+- *Ctrl+w*: Close current tab
+- *Ctrl+m*: Open the IPFS marks manager
+- *Ctrl+f*: Open the file manager
+- *Ctrl+o*: Browse IPFS path from the clipboard
+- *Ctrl+e*: Explore IPFS path from the clipboard
 
-In-browser bindings:
+Browser keybindings:
+--------------------
 
-- Ctrl+b: Bookmark current page
-- Ctrl+l: Load an IPFS CID
+- *Ctrl+b*: Bookmark current page
+- *Ctrl+l*: Load an IPFS CID
+
+IPFS views keybindings (file manager, hash views):
+--------------------------------------------------
+
+- *Ctrl+h*: Copy selected item's hash (CID) to the clipboard
+- *Ctrl+p*: Copy selected item's IPFS path to the clipboard
+- *Ctrl+w*: Close tab/hash view
 
 Screenshots
 ===========
@@ -56,14 +68,14 @@ Platforms supported
 ===================
 
 This has been mainly tested on Linux but should work on other systems
-as well where python and qt5 is available.
+as well where python and qt5 are available.
 
 Requirements
 ============
 
 - go-ipfs_ (install from dist.ipfs.io_)
 - python3 >= 3.5
-- qt5 (i use version 5.10 but it should work with earlier versions)
+- qt5 (preferrably >5.6)
 - PyQt5 with QtWebEngine support
 - quamash_
 - aiohttp_
@@ -79,5 +91,4 @@ Requirements
 License
 =======
 
-**galacteek** is offered under the GNU Affero GPL3 license with no guarantees
-whatsoever :-)
+**galacteek** is offered under the GNU GPL3 license

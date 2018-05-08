@@ -5,13 +5,15 @@ import os, os.path
 import multiprocessing
 import time
 import asyncio
+import re
 
 from quamash import QEventLoop
 
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu
 from PyQt5.QtGui import QPixmap, QIcon, QClipboard
 from PyQt5.QtCore import (QCoreApplication, QUrl, QStandardPaths,
-        QSettings, QTranslator, QFile, pyqtSignal, QObject)
+        QSettings, QTranslator, QFile, pyqtSignal, QObject,
+        QTemporaryDir)
 
 from galacteek.ipfs import pinning, ipfsd, asyncipfsd, cidhelpers
 from galacteek.ipfs.ipfsops import *
@@ -97,7 +99,7 @@ class IPFSContext(QObject):
 class GalacteekApplication(QApplication):
     GALACTEEK_NAME = 'galacteek'
 
-    clipboardHasIpfs = pyqtSignal(bool, str)
+    clipboardHasIpfs = pyqtSignal(bool, str, str)
 
     def __init__(self, debug=False, profile='main'):
         QApplication.__init__(self, sys.argv)
@@ -184,6 +186,10 @@ class GalacteekApplication(QApplication):
         self.marksLocal = IPFSMarks(self.localMarksFileLocation)
         self.marksNetwork = IPFSMarks(self.networkMarksFileLocation)
 
+        self.tempDir = QTemporaryDir()
+        if not self.tempDir.isValid():
+            pass
+
     def setupTranslator(self):
         self.translator = QTranslator()
         self.translator.load(':/share/translations/galacteek_en.qm')
@@ -239,6 +245,10 @@ class GalacteekApplication(QApplication):
 
     def getIpfsClient(self):
         return self._client
+
+    def getIpfsOperator(self):
+        return IPFSOperator(self.getIpfsClient(), ctx=self.ipfsCtx,
+            debug=self.debugEnabled)
 
     def getIpfsConnectionParams(self):
         mgr = self.settingsMgr
@@ -307,6 +317,9 @@ class GalacteekApplication(QApplication):
 
     def getLoop(self):
         return self._loop
+
+    def task(self, fn, *args, **kw):
+        return self.getLoop().create_task(fn(*args, **kw))
 
     def setupPaths(self):
         qtDataLocation = QStandardPaths.writableLocation(QStandardPaths.DataLocation)
@@ -418,36 +431,63 @@ class GalacteekApplication(QApplication):
         Process the contents of the clipboard. If it is a valid CID, emit a
         signal, processed by the main window for the clipboard loader button
         """
-        if not text or len(text) > 256: # that shouldn't be worth handling
+        if not text or len(text) > 1024: # that shouldn't be worth handling
             return
 
-        if cidhelpers.cidValid(text):
-            self.clipboardHasIpfs.emit(True, text)
+        if text.startswith('/ipfs/'):
+            # The clipboard contains a full IPFS path
+            ma = re.search('/ipfs/([a-zA-Z0-9]*)(\/.*$)?', text)
+            if ma:
+                cid = ma.group(1)
+                if not cidhelpers.cidValid(cid):
+                    return
+                path = joinIpfs(cid)
+                if ma.group(2):
+                    path += ma.group(2)
+                self.clipboardHasIpfs.emit(True, ma.group(1), path)
+        elif text.startswith('/ipns/'):
+            # The clipboard contains a full IPNS path
+            ma = re.search('/ipns/([a-zA-Z0-9\.]*)(\/.*$)?', text)
+            if ma:
+                path = text
+                self.clipboardHasIpfs.emit(True, None, path)
+        elif cidhelpers.cidValid(text):
+            # The clipboard simply contains a CID
+            self.clipboardHasIpfs.emit(True, text, joinIpfs(text))
             self.clipHistory[text] = 1
         else:
-            self.clipboardHasIpfs.emit(False, text)
+            # Not a CID/path
+            self.clipboardHasIpfs.emit(False, None, None)
 
     def clipboardInit(self):
         """ Used to process the clipboard's content on application's init """
         text = self.getClipboardText()
         self.clipboardProcess(text)
 
-    def getClipboardText(self):
-        """ Returns clipboard's text content. If the system supports selection
-            clipboard, favour that mode instead """
-
+    def clipboardPreferredMode(self):
         mode = QClipboard.Clipboard
         if self.appClipboard.supportsSelection():
             mode = QClipboard.Selection
-        return self.appClipboard.text(mode)
+        return mode
+
+    def setClipboardText(self, text):
+        self.appClipboard.setText(text, self.clipboardPreferredMode())
+
+    def getClipboardText(self):
+        """ Returns clipboard's text content. If the system supports selection
+            clipboard, give priority to that mode instead """
+
+        return self.appClipboard.text(self.clipboardPreferredMode())
 
     def setupSchemeHandlers(self):
         self.ipfsSchemeHandler = browser.IPFSSchemeHandler(self)
 
     def onExit(self):
         self.stopIpfsServices()
+
         if self.ipfsd:
             self.ipfsd.stop()
 
+        self.tempDir.remove()
         self.quit()
         sys.exit(1)

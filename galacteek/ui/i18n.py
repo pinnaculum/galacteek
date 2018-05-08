@@ -49,6 +49,10 @@ def iFileSize():
     return QCoreApplication.translate('TreeView', 'Size')
 def iFileHash():
     return QCoreApplication.translate('TreeView', 'Hash')
+def iMimeType():
+    return QCoreApplication.translate('TreeView', 'Mime type')
+def iUnknown():
+    return QCoreApplication.translate('TreeView', 'Unknown')
 
 def iPinSuccess(path):
     return QCoreApplication.translate('GalacteekWindow',

@@ -3,6 +3,7 @@
 
 import pytest
 import asyncio
+import os.path
 
 import tempfile
 import time
@@ -10,6 +11,11 @@ import time
 from PyQt5.QtCore import Qt
 
 from galacteek.ui import dialogs
+from galacteek.ui import mainui, ipfsview
+from galacteek import application
+from galacteek.appsettings import *
+from galacteek.ipfs.wrappers import *
+from quamash import QEventLoop, QThreadExecutor
 
 class TestCIDDialogs:
     # Valid and invalid CID lists
@@ -70,30 +76,38 @@ class TestCIDDialogs:
         for char in cid:
             qtbot.keyPress(dlg.ui.cid, char)
 
-from galacteek.ui import mainui
-from galacteek import application
-from galacteek.appsettings import *
-from quamash import QEventLoop, QThreadExecutor
-
 @pytest.fixture
 def testfile1(tmpdir):
     filep = tmpdir.join('testfile1.txt')
     filep.write('POIEKJDOOOPIDMWOPIMPOWE()=ds129084bjcy')
     return filep
 
+@pytest.fixture
+def dirTestFiles(pytestconfig):
+    return os.path.join(pytestconfig.rootdir,
+        'test', 'testfiles')
+
+@pytest.fixture
+def testFilesDocsAsync(dirTestFiles):
+    return os.path.join(dirTestFiles, 'docs-asyncio')
+
+@pytest.fixture
+def gApp(tmpdir):
+    gApp = application.GalacteekApplication(profile='pytest', debug=True)
+    loop = gApp.setupAsyncLoop()
+    sManager = gApp.settingsMgr
+    sManager.setFalse(CFG_SECTION_IPFSD, CFG_KEY_ENABLED)
+    sManager.setSetting(CFG_SECTION_BROWSER, CFG_KEY_DLPATH, str(tmpdir))
+    sManager.sync()
+    gApp.updateIpfsClient()
+    return gApp
+
 class TestApp:
-    def test_appmain(self, qtbot, tmpdir, testfile1):
+    def test_appmain(self, gApp, qtbot, tmpdir, testfile1):
         """
         Test the application, running the GUI and testing all components
         """
-        gApp = application.GalacteekApplication(profile='pytest', debug=True)
-        loop = gApp.setupAsyncLoop()
-
-        sManager = gApp.settingsMgr
-        sManager.setFalse(CFG_SECTION_IPFSD, CFG_KEY_ENABLED)
-        sManager.setSetting(CFG_SECTION_BROWSER, CFG_KEY_DLPATH, tmpdir)
-        sManager.sync()
-        gApp.updateIpfsClient()
+        loop = gApp.getLoop()
         gApp.startPinner()
 
         def leftClick(w):
@@ -134,3 +148,16 @@ class TestApp:
 
             loop.run_until_complete(openTabs())
             loop.run_until_complete(browse())
+
+    def test_ipfsview(self, qtbot, gApp, testFilesDocsAsync):
+        loop = gApp.getLoop()
+        view = ipfsview.IPFSHashViewToolBox(gApp.mainWindow, None)
+        gApp.mainWindow.registerTab(view, '')
+
+        @ipfsOpFn
+        async def addAndView(ipfsop):
+            root = await ipfsop.addPath(testFilesDocsAsync)
+            view.viewHash(root['Hash'], autoOpenFolders=True)
+
+        with loop:
+            loop.run_until_complete(gApp.task(addAndView))
