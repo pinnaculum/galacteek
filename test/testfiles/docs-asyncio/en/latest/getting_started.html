@@ -1,0 +1,264 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Getting Started &#8212; Asyncio Documentation 0.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="https://media.readthedocs.org/css/badge_only.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/jquery/jquery-2.0.3.min.js"></script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/jquery/jquery-migrate-1.2.1.min.js"></script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/underscore.js"></script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/doctools.js"></script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/readthedocs-doc-embed.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Hello World" href="hello_world.html" />
+    <link rel="prev" title="Why use asyncio?" href="why_asyncio.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  
+<!-- RTD Extra Head -->
+
+<!-- 
+Always link to the latest version, as canonical.
+http://docs.readthedocs.org/en/latest/canonical.html
+-->
+<link rel="canonical" href="http://asyncio.readthedocs.io/en/latest/getting_started.html" />
+
+<link rel="stylesheet" href="https://media.readthedocs.org/css/readthedocs-doc-embed.css" type="text/css" />
+
+<script type="text/javascript" src="_static/readthedocs-data.js"></script>
+
+<!-- Add page-specific data, which must exist in the page js, not global -->
+<script type="text/javascript">
+READTHEDOCS_DATA['page'] = 'getting_started' 		
+READTHEDOCS_DATA['source_suffix'] = '.rst'
+</script>
+
+<script type="text/javascript" src="_static/readthedocs-dynamic-include.js"></script>
+
+<!-- end RTD <extrahead> --></head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="getting-started">
+<h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="python-3-5-or-higher-only">
+<h2>Python 3.5 (or higher) only<a class="headerlink" href="#python-3-5-or-higher-only" title="Permalink to this headline">¶</a></h2>
+<p>This documentation is written for Python 3.5 to avail of the new
+<code class="docutils literal"><span class="pre">async</span></code> and <code class="docutils literal"><span class="pre">await</span></code> keywords.</p>
+<p>If you have Python 3.5 installed you only need to install <code class="docutils literal"><span class="pre">aiohttp</span></code>:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">U</span> <span class="n">aiohttp</span>
+</pre></div>
+</div>
+<p>If you don&#8217;t have Python 3.5 installed yet, you have several options
+to install it.</p>
+<div class="section" id="all-platforms-with-conda">
+<h3>All platforms with <code class="docutils literal"><span class="pre">conda</span></code><a class="headerlink" href="#all-platforms-with-conda" title="Permalink to this headline">¶</a></h3>
+<ul>
+<li><p class="first">Download and install
+<a class="reference external" href="http://conda.pydata.org/miniconda.html">Miniconda</a>  for our platform.</p>
+</li>
+<li><p class="first">Create a new Python 3.5 environment (named <code class="docutils literal"><span class="pre">aio35</span></code>, use a different
+if you like):</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">create</span> <span class="o">-</span><span class="n">n</span> <span class="n">aio35</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.5</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Activate it.
+Linux and OS X:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span>$ source activate aio35
+</pre></div>
+</div>
+<p>Windows:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span>$ source activate aio35
+</pre></div>
+</div>
+</li>
+<li><p class="first">Install <code class="docutils literal"><span class="pre">aiohttp</span></code>:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span>$(aio35) pip install aiohttp
+</pre></div>
+</div>
+</li>
+</ul>
+</div>
+<div class="section" id="platform-specific">
+<h3>Platform specific<a class="headerlink" href="#platform-specific" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Windows: The easiest way to use Python 3.5 would be to use a package manager
+such as conda. See the installation instructions above.</li>
+<li>Mac OS X: Install <a class="reference external" href="/usr/bin/ruby-e&quot;$(curl-fsSLhttps://raw.githubusercontent.com/Homebrew/install/master/install)&quot;">Homebrew</a> and
+then type <code class="docutils literal"><span class="pre">brew</span> <span class="pre">install</span> <span class="pre">python3</span></code></li>
+<li>Linux: Ubuntu 16.04+ and Arch linux ship with Python 3.5 included.
+If you don&#8217;t have Python 3.5+ on your computer, you can compile it or use
+<a class="reference external" href="https://github.com/saghul/pythonz">Pythonz</a>.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="create-a-virtual-environment-to-run-examples">
+<h2>Create a virtual environment to run examples<a class="headerlink" href="#create-a-virtual-environment-to-run-examples" title="Permalink to this headline">¶</a></h2>
+<p>If you don&#8217;t use conda (see above), create a virtual environment:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span><span class="n">python3</span> <span class="o">-</span><span class="n">m</span> <span class="n">venv</span> <span class="n">venv</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Depending on your platform, the Python 3 interpreter could be invoked by
+<code class="docutils literal"><span class="pre">python</span></code> instead. This is the case for conda on Windows for example.</p>
+</div>
+<p>Install <code class="docutils literal"><span class="pre">aiohttp</span></code> in the virtual environment:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">venv</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">U</span> <span class="n">aiohttp</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Asyncio Documentation</a></h1>
+
+
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=asyncio-doc&repo=asyncio-doc&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="why_asyncio.html">Why use asyncio?</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#python-3-5-or-higher-only">Python 3.5 (or higher) only</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#create-a-virtual-environment-to-run-examples">Create a virtual environment to run examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="hello_world.html">Hello World</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hello_clock.html">Hello Clock</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http_client.html">HTTP client example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="performance.html">asyncio performance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="twisted.html">Learn asyncio if you come from Twisted</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_help.html">Getting Help</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tcp_echo.html">TCP echo client and server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="threads.html">Threads</a></li>
+<li class="toctree-l1"><a class="reference internal" href="subprocess.html">Subprocess</a></li>
+<li class="toctree-l1"><a class="reference internal" href="producer_consumer.html">Producer/consumer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debug_mode.html">Asyncio Debug Mode</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="webscraper.html">Web Scraping</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="README.html">Asyncio documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#notes-to-writers">Notes to writers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#ideas">Ideas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#how-to-install-sphinx">How to install Sphinx</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#how-to-build-the-documentation">How to build the documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#see-also">See also</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="why_asyncio.html" title="previous chapter">Why use asyncio?</a></li>
+      <li>Next: <a href="hello_world.html" title="next chapter">Hello World</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Getting Started</a><ul>
+<li><a class="reference internal" href="#python-3-5-or-higher-only">Python 3.5 (or higher) only</a><ul>
+<li><a class="reference internal" href="#all-platforms-with-conda">All platforms with <code class="docutils literal"><span class="pre">conda</span></code></a></li>
+<li><a class="reference internal" href="#platform-specific">Platform specific</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#create-a-virtual-environment-to-run-examples">Create a virtual environment to run examples</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/getting_started.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Victor Stinner.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/getting_started.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/asyncio-doc/asyncio-doc" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

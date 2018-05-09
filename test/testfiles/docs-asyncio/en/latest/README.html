@@ -1,0 +1,236 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Asyncio documentation &#8212; Asyncio Documentation 0.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="https://media.readthedocs.org/css/badge_only.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/jquery/jquery-2.0.3.min.js"></script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/jquery/jquery-migrate-1.2.1.min.js"></script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/underscore.js"></script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/doctools.js"></script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/readthedocs-doc-embed.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Glossary" href="glossary.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  
+<!-- RTD Extra Head -->
+
+<!-- 
+Always link to the latest version, as canonical.
+http://docs.readthedocs.org/en/latest/canonical.html
+-->
+<link rel="canonical" href="http://asyncio.readthedocs.io/en/latest/README.html" />
+
+<link rel="stylesheet" href="https://media.readthedocs.org/css/readthedocs-doc-embed.css" type="text/css" />
+
+<script type="text/javascript" src="_static/readthedocs-data.js"></script>
+
+<!-- Add page-specific data, which must exist in the page js, not global -->
+<script type="text/javascript">
+READTHEDOCS_DATA['page'] = 'README' 		
+READTHEDOCS_DATA['source_suffix'] = '.rst'
+</script>
+
+<script type="text/javascript" src="_static/readthedocs-dynamic-include.js"></script>
+
+<!-- end RTD <extrahead> --></head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="asyncio-documentation">
+<h1>Asyncio documentation<a class="headerlink" href="#asyncio-documentation" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li>Online doc: <a class="reference external" href="https://asyncio.readthedocs.io/">https://asyncio.readthedocs.io/</a></li>
+<li>GitHub: <a class="reference external" href="https://github.com/asyncio-doc/asyncio-doc">https://github.com/asyncio-doc/asyncio-doc</a></li>
+<li>AsyncIO documentation is written with <a class="reference external" href="http://www.sphinx-doc.org/">Sphinx</a>.</li>
+</ul>
+</div>
+<div class="section" id="notes-to-writers">
+<h1>Notes to writers<a class="headerlink" href="#notes-to-writers" title="Permalink to this headline">¶</a></h1>
+<p>Tutorials should use Python 3.5 <code class="docutils literal"><span class="pre">async</span></code> and <code class="docutils literal"><span class="pre">await</span></code> keywords rather than
+<code class="docutils literal"><span class="pre">&#64;asyncio.coroutine</span></code> and <code class="docutils literal"><span class="pre">yield</span> <span class="pre">from</span></code>.</p>
+</div>
+<div class="section" id="ideas">
+<h1>Ideas<a class="headerlink" href="#ideas" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li>Advanced section:<ul>
+<li>protocols and transports: as least point to good implementations</li>
+<li>explain how to <em>test</em> asyncio applications. <a class="reference external" href="https://twistedmatrix.com/documents/current/core/howto/trial.html">Twisted documentation example</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="how-to-install-sphinx">
+<h1>How to install Sphinx<a class="headerlink" href="#how-to-install-sphinx" title="Permalink to this headline">¶</a></h1>
+<p>Firstly, you need to install the Sphinx tool using the Linux package manager
+like apt-get or dnf for example.</p>
+<p>But if you want to install it via <a class="reference external" href="https://pip.pypa.io/en/stable/">pip</a> , you
+can create a virtual environment with the <cite>venv</cite> module of Python 3</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span><span class="n">python3</span> <span class="o">-</span><span class="n">m</span> <span class="n">venv</span> <span class="n">env</span>
+<span class="n">source</span> <span class="n">env</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">activate</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">r</span> <span class="n">requirements</span><span class="o">.</span><span class="n">txt</span>
+</pre></div>
+</div>
+<p>Once you have installed Sphinx, you can build the documentation.</p>
+</div>
+<div class="section" id="how-to-build-the-documentation">
+<h1>How to build the documentation<a class="headerlink" href="#how-to-build-the-documentation" title="Permalink to this headline">¶</a></h1>
+<p>Install Sphinx using the Linux package manager like apt-get or dnf for example.
+Then build the documentation using:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="n">html</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="see-also">
+<h1>See also<a class="headerlink" href="#see-also" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference external" href="https://github.com/python/asyncio">https://github.com/python/asyncio</a></li>
+<li><a class="reference external" href="http://krondo.com/an-introduction-to-asynchronous-programming-and-twisted/">http://krondo.com/an-introduction-to-asynchronous-programming-and-twisted/</a></li>
+<li><a class="reference external" href="https://curio.readthedocs.io/en/latest/tutorial.html">https://curio.readthedocs.io/en/latest/tutorial.html</a></li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Asyncio Documentation</a></h1>
+
+
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=asyncio-doc&repo=asyncio-doc&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="why_asyncio.html">Why use asyncio?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hello_world.html">Hello World</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hello_clock.html">Hello Clock</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http_client.html">HTTP client example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="performance.html">asyncio performance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="twisted.html">Learn asyncio if you come from Twisted</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_help.html">Getting Help</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tcp_echo.html">TCP echo client and server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="threads.html">Threads</a></li>
+<li class="toctree-l1"><a class="reference internal" href="subprocess.html">Subprocess</a></li>
+<li class="toctree-l1"><a class="reference internal" href="producer_consumer.html">Producer/consumer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debug_mode.html">Asyncio Debug Mode</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="webscraper.html">Web Scraping</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Asyncio documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#notes-to-writers">Notes to writers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#ideas">Ideas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#how-to-install-sphinx">How to install Sphinx</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#how-to-build-the-documentation">How to build the documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="glossary.html" title="previous chapter">Glossary</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Asyncio documentation</a></li>
+<li><a class="reference internal" href="#notes-to-writers">Notes to writers</a></li>
+<li><a class="reference internal" href="#ideas">Ideas</a></li>
+<li><a class="reference internal" href="#how-to-install-sphinx">How to install Sphinx</a></li>
+<li><a class="reference internal" href="#how-to-build-the-documentation">How to build the documentation</a></li>
+<li><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/README.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Victor Stinner.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/README.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/asyncio-doc/asyncio-doc" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

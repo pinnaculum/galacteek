@@ -1,0 +1,946 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Web Scraping &#8212; Asyncio Documentation 0.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="https://media.readthedocs.org/css/badge_only.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/jquery/jquery-2.0.3.min.js"></script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/jquery/jquery-migrate-1.2.1.min.js"></script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/underscore.js"></script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/doctools.js"></script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/readthedocs-doc-embed.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Glossary" href="glossary.html" />
+    <link rel="prev" title="Asyncio Debug Mode" href="debug_mode.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  
+<!-- RTD Extra Head -->
+
+<!-- 
+Always link to the latest version, as canonical.
+http://docs.readthedocs.org/en/latest/canonical.html
+-->
+<link rel="canonical" href="http://asyncio.readthedocs.io/en/latest/webscraper.html" />
+
+<link rel="stylesheet" href="https://media.readthedocs.org/css/readthedocs-doc-embed.css" type="text/css" />
+
+<script type="text/javascript" src="_static/readthedocs-data.js"></script>
+
+<!-- Add page-specific data, which must exist in the page js, not global -->
+<script type="text/javascript">
+READTHEDOCS_DATA['page'] = 'webscraper' 		
+READTHEDOCS_DATA['source_suffix'] = '.rst'
+</script>
+
+<script type="text/javascript" src="_static/readthedocs-dynamic-include.js"></script>
+
+<!-- end RTD <extrahead> --></head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="web-scraping">
+<h1>Web Scraping<a class="headerlink" href="#web-scraping" title="Permalink to this headline">¶</a></h1>
+<p>Web scraping means downloading multiple web pages, often from different
+servers.
+Typically, there is a considerable waiting time between sending a request and
+receiving the answer.
+Using a client that always waits for the server to answer before sending
+the next request, can lead to spending most of time waiting.
+Here <code class="docutils literal"><span class="pre">asyncio</span></code> can help to send many requests without waiting for a response
+and collecting the answers later.
+The following examples show how a synchronous client spends most of the time
+waiting and how to use <code class="docutils literal"><span class="pre">asyncio</span></code> to write asynchronous client that
+can handle many requests concurrently.</p>
+<div class="section" id="a-mock-web-server">
+<h2>A Mock Web Server<a class="headerlink" href="#a-mock-web-server" title="Permalink to this headline">¶</a></h2>
+<p>This is a very simple web server. (See below for the code.)
+Its only purpose is to wait for a given amount of time.
+Test it by running it from the command line:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span>$ python simple_server.py
+</pre></div>
+</div>
+<p>It will answer like this:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span><span class="n">Serving</span> <span class="kn">from</span> <span class="nn">port</span> <span class="mi">8000</span> <span class="o">...</span>
+</pre></div>
+</div>
+<p>Now, open a browser and go to this URL:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span><span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">localhost</span><span class="p">:</span><span class="mi">8000</span><span class="o">/</span>
+</pre></div>
+</div>
+<p>You should see this text in your browser:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span><span class="n">Waited</span> <span class="k">for</span> <span class="mf">0.00</span> <span class="n">seconds</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>Now, add <code class="docutils literal"><span class="pre">2.5</span></code> to the URL:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span><span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">localhost</span><span class="p">:</span><span class="mi">8000</span><span class="o">/</span><span class="mf">2.5</span>
+</pre></div>
+</div>
+<p>After pressing enter, it will take 2.5 seconds until you see this
+response:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span><span class="n">Waited</span> <span class="k">for</span> <span class="mf">2.50</span> <span class="n">seconds</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>Use different numbers and see how long it takes until the server responds.</p>
+<p>The full implementation looks like this:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="c1"># file: simple_server.py</span>
+
+<span class="sd">&quot;&quot;&quot;Simple HTTP server with GET that waits for given seconds.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">http.server</span> <span class="kn">import</span> <span class="n">BaseHTTPRequestHandler</span><span class="p">,</span> <span class="n">HTTPServer</span>
+<span class="kn">from</span> <span class="nn">socketserver</span> <span class="kn">import</span> <span class="n">ThreadingMixIn</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+
+<span class="n">ENCODING</span> <span class="o">=</span> <span class="s1">&#39;utf-8&#39;</span>
+
+
+<span class="k">class</span> <span class="nc">ThreadingHTTPServer</span><span class="p">(</span><span class="n">ThreadingMixIn</span><span class="p">,</span> <span class="n">HTTPServer</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Simple multi-threaded HTTP server.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+
+
+<span class="k">class</span> <span class="nc">MyRequestHandler</span><span class="p">(</span><span class="n">BaseHTTPRequestHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Very simple request handler. Only supports GET.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">do_GET</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>  <span class="c1"># pylint: disable=invalid-name</span>
+        <span class="sd">&quot;&quot;&quot;Respond after seconds given in path.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">seconds</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="n">seconds</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">if</span> <span class="n">seconds</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">seconds</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;Waited for {:4.2f} seconds.</span><span class="se">\n</span><span class="s2">That&#39;s all.</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">seconds</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">ENCODING</span><span class="p">)</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">seconds</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">send_response</span><span class="p">(</span><span class="mi">200</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">send_header</span><span class="p">(</span><span class="s2">&quot;Content-type&quot;</span><span class="p">,</span> <span class="s1">&#39;text/plain; charset=utf-8&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">send_header</span><span class="p">(</span><span class="s2">&quot;Content-length&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">msg</span><span class="p">)))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end_headers</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="n">server_class</span><span class="o">=</span><span class="n">ThreadingHTTPServer</span><span class="p">,</span>
+        <span class="n">handler_class</span><span class="o">=</span><span class="n">MyRequestHandler</span><span class="p">,</span>
+        <span class="n">port</span><span class="o">=</span><span class="mi">8000</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Run the simple server on given port.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">server_address</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span>
+    <span class="n">httpd</span> <span class="o">=</span> <span class="n">server_class</span><span class="p">(</span><span class="n">server_address</span><span class="p">,</span> <span class="n">handler_class</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s1">&#39;Serving from port {} ...&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">port</span><span class="p">))</span>
+    <span class="n">httpd</span><span class="o">.</span><span class="n">serve_forever</span><span class="p">()</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">run</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Let&#8217;s have a look into the details.
+This provides a simple multi-threaded web server:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>
+
+<span class="k">class</span> <span class="nc">ThreadingHTTPServer</span><span class="p">(</span><span class="n">ThreadingMixIn</span><span class="p">,</span> <span class="n">HTTPServer</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Simple multi-threaded HTTP server.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+
+
+</pre></div>
+</div>
+<p>It uses multiple inheritance.
+The mix-in class <code class="docutils literal"><span class="pre">ThreadingMixIn</span></code> provides the multi-threading support and
+the class <code class="docutils literal"><span class="pre">HTTPServer</span></code> a basic HTTP server.</p>
+<p>The request handler only has a <code class="docutils literal"><span class="pre">GET</span></code> method:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>
+
+<span class="k">class</span> <span class="nc">MyRequestHandler</span><span class="p">(</span><span class="n">BaseHTTPRequestHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Very simple request handler. Only supports GET.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">do_GET</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>  <span class="c1"># pylint: disable=invalid-name</span>
+        <span class="sd">&quot;&quot;&quot;Respond after seconds given in path.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">seconds</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="n">seconds</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">if</span> <span class="n">seconds</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">seconds</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;Waited for {:4.2f} seconds.</span><span class="se">\n</span><span class="s2">That&#39;s all.</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">seconds</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">ENCODING</span><span class="p">)</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">seconds</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">send_response</span><span class="p">(</span><span class="mi">200</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">send_header</span><span class="p">(</span><span class="s2">&quot;Content-type&quot;</span><span class="p">,</span> <span class="s1">&#39;text/plain; charset=utf-8&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">send_header</span><span class="p">(</span><span class="s2">&quot;Content-length&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">msg</span><span class="p">)))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end_headers</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+
+</pre></div>
+</div>
+<p>It takes the last entry in the paths with <code class="docutils literal"><span class="pre">self.path[1:]</span></code>, i.e.
+our <code class="docutils literal"><span class="pre">2.5</span></code>, and tries to convert it into a floating point number.
+This will be the time the function is going to sleep, using <code class="docutils literal"><span class="pre">time.sleep()</span></code>.
+This means waiting 2.5 seconds until it answers.
+The rest of the method contains the HTTP header and message.</p>
+</div>
+<div class="section" id="a-synchronous-client">
+<h2>A Synchronous Client<a class="headerlink" href="#a-synchronous-client" title="Permalink to this headline">¶</a></h2>
+<p>Our first attempt is synchronous.
+This is the full implementation:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;Synchronous client to retrieve web pages.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="kn">from</span> <span class="nn">urllib.request</span> <span class="k">import</span> <span class="n">urlopen</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="n">ENCODING</span> <span class="o">=</span> <span class="s1">&#39;ISO-8859-1&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">get_encoding</span><span class="p">(</span><span class="n">http_response</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Find out encoding.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">content_type</span> <span class="o">=</span> <span class="n">http_response</span><span class="o">.</span><span class="n">getheader</span><span class="p">(</span><span class="s1">&#39;Content-type&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">content_type</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;;&#39;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;charset&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">entry</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">ENCODING</span>
+
+
+<span class="k">def</span> <span class="nf">get_page</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get one page supplying `wait` time.</span>
+
+<span class="sd">    The path will be build with: `host:port/wait`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">full_url</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">:</span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">wait</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">urlopen</span><span class="p">(</span><span class="n">full_url</span><span class="p">)</span> <span class="k">as</span> <span class="n">http_response</span><span class="p">:</span>
+        <span class="n">html</span> <span class="o">=</span> <span class="n">http_response</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">get_encoding</span><span class="p">(</span><span class="n">http_response</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">html</span>
+
+
+<span class="k">def</span> <span class="nf">get_multiple_pages</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">waits</span><span class="p">,</span> <span class="n">show_time</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get multiple pages.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+    <span class="n">pages</span> <span class="o">=</span> <span class="p">[</span><span class="n">get_page</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">wait</span><span class="p">)</span> <span class="k">for</span> <span class="n">wait</span> <span class="ow">in</span> <span class="n">waits</span><span class="p">]</span>
+    <span class="n">duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
+    <span class="n">sum_waits</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">waits</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">show_time</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;It took </span><span class="si">{:4.2f}</span><span class="s1"> seconds for a total waiting time of </span><span class="si">{:4.2f}</span><span class="s1">.&#39;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">duration</span><span class="p">,</span> <span class="n">sum_waits</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">pages</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+        <span class="sd">&quot;&quot;&quot;Test it.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pages</span> <span class="o">=</span> <span class="n">get_multiple_pages</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s1">&#39;http://localhost&#39;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="s1">&#39;8000&#39;</span><span class="p">,</span>
+                                   <span class="n">waits</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="n">pages</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">page</span><span class="p">)</span>
+
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Again, we go through it step-by-step.</p>
+<p>While about 80 % of the websites use <code class="docutils literal"><span class="pre">utf-8</span></code> as encoding
+(provided by the default in <code class="docutils literal"><span class="pre">ENCODING</span></code>), it is a good idea to actually use
+the encoding specified by <code class="docutils literal"><span class="pre">charset</span></code>.
+This is our helper to find out what the encoding of the page is:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>
+
+<span class="k">def</span> <span class="nf">get_encoding</span><span class="p">(</span><span class="n">http_response</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Find out encoding.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">content_type</span> <span class="o">=</span> <span class="n">http_response</span><span class="o">.</span><span class="n">getheader</span><span class="p">(</span><span class="s1">&#39;Content-type&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">content_type</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;;&#39;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;charset&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">entry</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">ENCODING</span>
+
+
+</pre></div>
+</div>
+<p>It falls back to <code class="docutils literal"><span class="pre">ISO-8859-1</span></code> if it cannot find a specification of the
+encoding.</p>
+<p>Using <code class="docutils literal"><span class="pre">urllib.request.urlopen()</span></code>, retrieving a web page is rather simple.
+The response is a bytestring and <code class="docutils literal"><span class="pre">.encode()</span></code> is needed to convert it into a
+string:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>
+
+<span class="k">def</span> <span class="nf">get_page</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get one page supplying `wait` time.</span>
+
+<span class="sd">    The path will be build with: `host:port/wait`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">full_url</span> <span class="o">=</span> <span class="s1">&#39;{}:{}/{}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">wait</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">urlopen</span><span class="p">(</span><span class="n">full_url</span><span class="p">)</span> <span class="k">as</span> <span class="n">http_response</span><span class="p">:</span>
+        <span class="n">html</span> <span class="o">=</span> <span class="n">http_response</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">get_encoding</span><span class="p">(</span><span class="n">http_response</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">html</span>
+
+
+</pre></div>
+</div>
+<p>Now, we want multiple pages:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>
+
+<span class="k">def</span> <span class="nf">get_multiple_pages</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">waits</span><span class="p">,</span> <span class="n">show_time</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get multiple pages.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+    <span class="n">pages</span> <span class="o">=</span> <span class="p">[</span><span class="n">get_page</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">wait</span><span class="p">)</span> <span class="k">for</span> <span class="n">wait</span> <span class="ow">in</span> <span class="n">waits</span><span class="p">]</span>
+    <span class="n">duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
+    <span class="n">sum_waits</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">waits</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">show_time</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;It took {:4.2f} seconds for a total waiting time of {:4.2f}.&#39;</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">duration</span><span class="p">,</span> <span class="n">sum_waits</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">pages</span>
+
+
+</pre></div>
+</div>
+<p>We just iterate over the waiting times and call <code class="docutils literal"><span class="pre">get_page()</span></code> for all
+of them.
+The function <code class="docutils literal"><span class="pre">time.perf_counter()</span></code> provides a time stamp.
+Taking two time stamps a different points in time and calculating their
+difference provides the elapsed run time.</p>
+<p>Finally, we can run our client:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span>$ python synchronous_client.py
+</pre></div>
+</div>
+<p>and get this output:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span><span class="n">It</span> <span class="n">took</span> <span class="mf">11.08</span> <span class="n">seconds</span> <span class="k">for</span> <span class="n">a</span> <span class="n">total</span> <span class="n">waiting</span> <span class="n">time</span> <span class="n">of</span> <span class="mf">11.00</span><span class="o">.</span>
+<span class="n">Waited</span> <span class="k">for</span> <span class="mf">1.00</span> <span class="n">seconds</span><span class="o">.</span>
+<span class="n">That</span><span class="s1">&#39;s all.</span>
+
+<span class="n">Waited</span> <span class="k">for</span> <span class="mf">5.00</span> <span class="n">seconds</span><span class="o">.</span>
+<span class="n">That</span><span class="s1">&#39;s all.</span>
+
+<span class="n">Waited</span> <span class="k">for</span> <span class="mf">3.00</span> <span class="n">seconds</span><span class="o">.</span>
+<span class="n">That</span><span class="s1">&#39;s all.</span>
+
+<span class="n">Waited</span> <span class="k">for</span> <span class="mf">2.00</span> <span class="n">seconds</span><span class="o">.</span>
+<span class="n">That</span><span class="s1">&#39;s all.</span>
+</pre></div>
+</div>
+<p>Because we wait for each call to <code class="docutils literal"><span class="pre">get_page()</span></code> to complete, we need to
+wait about 11 seconds.
+That is the sum of all waiting times.
+Let&#8217;s see if we can do it any better going asynchronously.</p>
+</div>
+<div class="section" id="getting-one-page-asynchronously">
+<h2>Getting One Page Asynchronously<a class="headerlink" href="#getting-one-page-asynchronously" title="Permalink to this headline">¶</a></h2>
+<p>This module contains a functions that reads a page asynchronously,
+using the new Python 3.5 keywords <code class="docutils literal"><span class="pre">async</span></code> and <code class="docutils literal"><span class="pre">await</span></code>:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span><span class="c1"># file: async_page.py</span>
+
+<span class="sd">&quot;&quot;&quot;Get a &quot;web page&quot; asynchronously.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">asyncio</span>
+
+<span class="n">ENCODING</span> <span class="o">=</span> <span class="s1">&#39;ISO-8859-1&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">get_encoding</span><span class="p">(</span><span class="n">header</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Find out encoding.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">header</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;Content-type&#39;</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;;&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;charset&#39;</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">entry</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">ENCODING</span>
+
+
+<span class="k">async</span> <span class="k">def</span> <span class="nf">get_page</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get a &quot;web page&quot; asynchronously.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">reader</span><span class="p">,</span> <span class="n">writer</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">open_connection</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span>
+    <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span>
+        <span class="s1">&#39;GET /</span><span class="si">{}</span><span class="s1"> HTTP/1.0&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">wait</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">ENCODING</span><span class="p">),</span>
+        <span class="sa">b</span><span class="s1">&#39;Host: %b&#39;</span> <span class="o">%</span> <span class="n">host</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">ENCODING</span><span class="p">),</span>
+        <span class="sa">b</span><span class="s1">&#39;Connection: close&#39;</span><span class="p">,</span>
+        <span class="sa">b</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span>
+    <span class="p">]))</span>
+    <span class="n">header</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">msg_lines</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">raw_line</span> <span class="ow">in</span> <span class="n">reader</span><span class="p">:</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="n">raw_line</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">ENCODING</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+            <span class="k">break</span>
+        <span class="n">header</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+    <span class="n">encoding</span> <span class="o">=</span> <span class="n">get_encoding</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">raw_line</span> <span class="ow">in</span> <span class="n">reader</span><span class="p">:</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="n">raw_line</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">encoding</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">msg_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+    <span class="n">writer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">msg_lines</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>As with the synchronous example, finding out the encoding of the page
+is a good idea.
+This function helps here by going through the lines of the HTTP header,
+which it gets as an argument, searching for <code class="docutils literal"><span class="pre">charset</span></code> and returning its value
+if found.
+Again, the default encoding is <code class="docutils literal"><span class="pre">ISO-8859-1</span></code>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>
+
+<span class="k">def</span> <span class="nf">get_encoding</span><span class="p">(</span><span class="n">header</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Find out encoding.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">header</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;Content-type&#39;</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;;&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;charset&#39;</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">entry</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">ENCODING</span>
+
+
+</pre></div>
+</div>
+<p>The next function is way more interesting because it actually works
+asynchronously:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>
+
+<span class="n">async</span> <span class="k">def</span> <span class="nf">get_page</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get a &quot;web page&quot; asynchronously.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">reader</span><span class="p">,</span> <span class="n">writer</span> <span class="o">=</span> <span class="n">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">open_connection</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span>
+    <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span>
+        <span class="s1">&#39;GET /{} HTTP/1.0&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">wait</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">ENCODING</span><span class="p">),</span>
+        <span class="sa">b</span><span class="s1">&#39;Host: %b&#39;</span> <span class="o">%</span> <span class="n">host</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">ENCODING</span><span class="p">),</span>
+        <span class="sa">b</span><span class="s1">&#39;Connection: close&#39;</span><span class="p">,</span>
+        <span class="sa">b</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span>
+    <span class="p">]))</span>
+    <span class="n">header</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">msg_lines</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">async</span> <span class="k">for</span> <span class="n">raw_line</span> <span class="ow">in</span> <span class="n">reader</span><span class="p">:</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="n">raw_line</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">ENCODING</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+            <span class="k">break</span>
+        <span class="n">header</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+    <span class="n">encoding</span> <span class="o">=</span> <span class="n">get_encoding</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
+    <span class="n">async</span> <span class="k">for</span> <span class="n">raw_line</span> <span class="ow">in</span> <span class="n">reader</span><span class="p">:</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="n">raw_line</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">encoding</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">msg_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+    <span class="n">writer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">msg_lines</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The function <code class="docutils literal"><span class="pre">asyncio.open_connection()</span></code> opens a connection to the given URL.
+It returns a coroutine.
+Using <code class="docutils literal"><span class="pre">await</span></code>, which had to be <code class="docutils literal"><span class="pre">yield</span> <span class="pre">from</span></code> in Python versions prior
+to 3.5, it yields an instance of a <code class="docutils literal"><span class="pre">StreamReader</span></code> and one of a
+<code class="docutils literal"><span class="pre">StreamWriter</span></code>.
+These only work within the event loop.</p>
+<p>Now, we can send a <code class="docutils literal"><span class="pre">GET</span></code> request, suppling our waiting time by
+writing to the <code class="docutils literal"><span class="pre">StreamWriter</span></code> instance <code class="docutils literal"><span class="pre">writer</span></code>.
+The request has to be in bytes.
+Therefore, we need to convert our strings in to bytestrings.</p>
+<p>Next, we read header and message from the reader, which is a <code class="docutils literal"><span class="pre">StreamReader</span></code>
+instance.
+We need to iterate over the reader by using a special or loop for
+<code class="docutils literal"><span class="pre">asyncio</span></code>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">async</span> <span class="k">for</span> <span class="n">raw_line</span> <span class="ow">in</span> <span class="n">reader</span><span class="p">:</span>
+</pre></div>
+</div>
+<p>Header and message are dived by an empty line.
+We just stop the iteration as soon as we found an empty line.
+Handing the header over too <code class="docutils literal"><span class="pre">get_encoding()</span></code> provides the encoding
+of the retrieved page.
+The <code class="docutils literal"><span class="pre">.decode()</span></code> method uses this encoding to convert the read bytes
+into strings.
+After closing the writer, we can return the message lines joined by newline
+characters.</p>
+</div>
+<div class="section" id="getting-multiple-pages-asynchronously-without-time-savings">
+<h2>Getting Multiple Pages Asynchronously - Without Time Savings<a class="headerlink" href="#getting-multiple-pages-asynchronously-without-time-savings" title="Permalink to this headline">¶</a></h2>
+<p>This is our first approach retrieving multiple pages, using our asynchronous
+<code class="docutils literal"><span class="pre">get_page()</span></code>:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;Get &quot;web pages.</span>
+
+<span class="sd">Waiting until one pages is download before getting the next.&quot;</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">closing</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">from</span> <span class="nn">async_page</span> <span class="k">import</span> <span class="n">get_page</span>
+
+
+<span class="k">def</span> <span class="nf">get_multiple_pages</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">waits</span><span class="p">,</span> <span class="n">show_time</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get multiple pages.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+    <span class="n">pages</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">with</span> <span class="n">closing</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">())</span> <span class="k">as</span> <span class="n">loop</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">wait</span> <span class="ow">in</span> <span class="n">waits</span><span class="p">:</span>
+            <span class="n">pages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loop</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="n">get_page</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">wait</span><span class="p">)))</span>
+    <span class="n">duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
+    <span class="n">sum_waits</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">waits</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">show_time</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;It took </span><span class="si">{:4.2f}</span><span class="s1"> seconds for a total waiting time of </span><span class="si">{:4.2f}</span><span class="s1">.&#39;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">duration</span><span class="p">,</span> <span class="n">sum_waits</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">pages</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+        <span class="sd">&quot;&quot;&quot;Test it.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pages</span> <span class="o">=</span> <span class="n">get_multiple_pages</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="s1">&#39;8000&#39;</span><span class="p">,</span>
+                                   <span class="n">waits</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="n">pages</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">page</span><span class="p">)</span>
+
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The interesting things happen in a few lines in <code class="docutils literal"><span class="pre">get_multiple_pages()</span></code>
+(the rest of this function just measures the run time and displays it):</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>    <span class="k">with</span> <span class="n">closing</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">())</span> <span class="k">as</span> <span class="n">loop</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">wait</span> <span class="ow">in</span> <span class="n">waits</span><span class="p">:</span>
+            <span class="n">pages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loop</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="n">get_page</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">wait</span><span class="p">)))</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal"><span class="pre">closing</span></code> from the standard library module <code class="docutils literal"><span class="pre">contextlib</span></code> starts
+the event loop within a context and closes the loop when leaving the context:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">closing</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">())</span> <span class="k">as</span> <span class="n">loop</span><span class="p">:</span>
+    <span class="o">&lt;</span><span class="n">body</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>The two lines above are equivalent to these five lines:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">():</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="o">&lt;</span><span class="n">body</span><span class="o">&gt;</span>
+<span class="k">finally</span><span class="p">:</span>
+    <span class="n">loop</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>We call <code class="docutils literal"><span class="pre">get_page()</span></code> for each page in a loop.
+Here we decide to wrap each call in <code class="docutils literal"><span class="pre">loop.run_until_complete()</span></code>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">wait</span> <span class="ow">in</span> <span class="n">waits</span><span class="p">:</span>
+    <span class="n">pages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loop</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="n">get_page</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">wait</span><span class="p">)))</span>
+</pre></div>
+</div>
+<p>This means, we wait until each pages has been retrieved before asking for
+the next.
+Let&#8217;s run it from the command-line to see what happens:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span>$ async_client_blocking.py
+It took 11.06 seconds for a total waiting time of 11.00.
+Waited for 1.00 seconds.
+That&#39;s all.
+Waited for 5.00 seconds.
+That&#39;s all.
+Waited for 3.00 seconds.
+That&#39;s all.
+Waited for 2.00 seconds.
+That&#39;s all.
+</pre></div>
+</div>
+<p>So it still takes about eleven seconds in total.
+We made it more complex and did not improve speed.
+Let&#8217;s see if we can do better.</p>
+</div>
+<div class="section" id="getting-multiple-pages-asynchronously-with-time-savings">
+<h2>Getting Multiple Pages Asynchronously - With Time Savings<a class="headerlink" href="#getting-multiple-pages-asynchronously-with-time-savings" title="Permalink to this headline">¶</a></h2>
+<p>We want to take advantage of the asynchronous nature of <code class="docutils literal"><span class="pre">get_page()</span></code>
+and save time.
+We modify our client to use a list with four instances of
+a <a class="reference internal" href="glossary.html#term-task"><span class="xref std std-term">task</span></a>.
+This allows us to send out requests for all pages we want to retrieve without
+waiting for the answer before asking for the next page:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;Get &quot;web pages.</span>
+
+<span class="sd">Waiting until one pages is download before getting the next.&quot;</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">closing</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">from</span> <span class="nn">async_page</span> <span class="k">import</span> <span class="n">get_page</span>
+
+
+<span class="k">def</span> <span class="nf">get_multiple_pages</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">waits</span><span class="p">,</span> <span class="n">show_time</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get multiple pages.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+    <span class="n">pages</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">tasks</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">with</span> <span class="n">closing</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">())</span> <span class="k">as</span> <span class="n">loop</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">wait</span> <span class="ow">in</span> <span class="n">waits</span><span class="p">:</span>
+            <span class="n">tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">get_page</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">wait</span><span class="p">))</span>
+        <span class="n">pages</span> <span class="o">=</span> <span class="n">loop</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="n">tasks</span><span class="p">))</span>
+    <span class="n">duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
+    <span class="n">sum_waits</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">waits</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">show_time</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;It took </span><span class="si">{:4.2f}</span><span class="s1"> seconds for a total waiting time of </span><span class="si">{:4.2f}</span><span class="s1">.&#39;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">duration</span><span class="p">,</span> <span class="n">sum_waits</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">pages</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+        <span class="sd">&quot;&quot;&quot;Test it.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pages</span> <span class="o">=</span> <span class="n">get_multiple_pages</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="s1">&#39;8000&#39;</span><span class="p">,</span>
+                                   <span class="n">waits</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="n">pages</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">page</span><span class="p">)</span>
+
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The interesting part is in this loop:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">closing</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">())</span> <span class="k">as</span> <span class="n">loop</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">wait</span> <span class="ow">in</span> <span class="n">waits</span><span class="p">:</span>
+        <span class="n">tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">get_page</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">wait</span><span class="p">))</span>
+    <span class="n">pages</span> <span class="o">=</span> <span class="n">loop</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="n">tasks</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>We append all return values of <code class="docutils literal"><span class="pre">get_page()</span></code> to our lits of tasks.
+This allows us to send out all request, in our case four, without
+waiting for the answers.
+After sending all of them, we wait for the answers, using:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">loop</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="n">tasks</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>We used <code class="docutils literal"><span class="pre">loop.run_until_complete()</span></code> already for each call to <code class="docutils literal"><span class="pre">get_page()</span></code>
+in the previous section.
+The difference here is the use of <code class="docutils literal"><span class="pre">asyncio.gather()</span></code> that is called with all
+our tasks in the list <code class="docutils literal"><span class="pre">tasks</span></code> as arguments.
+The <code class="docutils literal"><span class="pre">asyncio.gather(*tasks)</span></code> means for our example with four list entries:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">tasks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">tasks</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">tasks</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">tasks</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>So, for a list with 100 tasks it would mean:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">tasks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">tasks</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">tasks</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+               <span class="c1"># 96 more tasks here</span>
+               <span class="n">tasks</span><span class="p">[</span><span class="mi">99</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Let&#8217;s see if we got any faster:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span>$ async_client_nonblocking.py
+It took 5.08 seconds for a total waiting time of 11.00.
+Waited for 1.00 seconds.
+That&#39;s all.
+Waited for 5.00 seconds.
+That&#39;s all.
+Waited for 3.00 seconds.
+That&#39;s all.
+Waited for 2.00 seconds.
+That&#39;s all.
+</pre></div>
+</div>
+<p>Yes! It works.
+The total run time is about five seconds.
+This is the run time for the longest wait.
+Now, we don&#8217;t have to wait for the sum of <code class="docutils literal"><span class="pre">waits</span></code> but rather for
+<code class="docutils literal"><span class="pre">max(waits)</span></code>.</p>
+<p>We did quite a bit of work, sending a request and scanning an answer,
+including finding out the encoding.
+There should be a shorter way as these steps seem to be always necessary for
+getting the page content with the right encoding.
+Therefore, in the next section, we will have a look at high-level library
+<code class="docutils literal"><span class="pre">aiohttp</span></code> that can help to make our code shorter.</p>
+<div class="section" id="exercise">
+<h3>Exercise<a class="headerlink" href="#exercise" title="Permalink to this headline">¶</a></h3>
+<p>Add more waiting times to the list <code class="docutils literal"><span class="pre">waits</span></code> and see how this impacts
+the run times of the blocking and the non-blocking implementation.
+Try (positive) numbers that are all less than five.
+Then try numbers greater than five.</p>
+</div>
+</div>
+<div class="section" id="high-level-approach-with-aiohttp">
+<h2>High-Level Approach with <code class="docutils literal"><span class="pre">aiohttp</span></code><a class="headerlink" href="#high-level-approach-with-aiohttp" title="Permalink to this headline">¶</a></h2>
+<p>The library <a class="reference external" href="https://aiohttp.readthedocs.io/en/stable/">aiohttp</a> allows to write HTTP client and server applications,
+using a high-level approach.
+Install with:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span>$ pip install aiohttp
+</pre></div>
+</div>
+<p>The whole program looks like this:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;aiohttp-based client to retrieve web pages.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">closing</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">import</span> <span class="nn">aiohttp</span>
+
+
+<span class="k">async</span> <span class="k">def</span> <span class="nf">fetch_page</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8000</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get one page.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">url</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">:</span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">wait</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">Timeout</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span> <span class="k">as</span> <span class="n">response</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="mi">200</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">get_multiple_pages</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">waits</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8000</span><span class="p">,</span> <span class="n">show_time</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get multiple pages.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tasks</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">pages</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+    <span class="k">with</span> <span class="n">closing</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">())</span> <span class="k">as</span> <span class="n">loop</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientSession</span><span class="p">(</span><span class="n">loop</span><span class="o">=</span><span class="n">loop</span><span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">wait</span> <span class="ow">in</span> <span class="n">waits</span><span class="p">:</span>
+                <span class="n">tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fetch_page</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">wait</span><span class="p">))</span>
+            <span class="n">pages</span> <span class="o">=</span> <span class="n">loop</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="n">tasks</span><span class="p">))</span>
+    <span class="n">duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
+    <span class="n">sum_waits</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">waits</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">show_time</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;It took </span><span class="si">{:4.2f}</span><span class="s1"> seconds for a total waiting time of </span><span class="si">{:4.2f}</span><span class="s1">.&#39;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">duration</span><span class="p">,</span> <span class="n">sum_waits</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">pages</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+        <span class="sd">&quot;&quot;&quot;Test it.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pages</span> <span class="o">=</span> <span class="n">get_multiple_pages</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s1">&#39;http://localhost&#39;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="s1">&#39;8000&#39;</span><span class="p">,</span>
+                                   <span class="n">waits</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="n">pages</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">page</span><span class="p">)</span>
+
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The function to get one page is asynchronous, because of the <code class="docutils literal"><span class="pre">async</span> <span class="pre">def</span></code>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>
+
+<span class="n">async</span> <span class="k">def</span> <span class="nf">fetch_page</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8000</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get one page.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">url</span> <span class="o">=</span> <span class="s1">&#39;{}:{}/{}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">wait</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">Timeout</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+        <span class="n">async</span> <span class="k">with</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span> <span class="k">as</span> <span class="n">response</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="mi">200</span>
+            <span class="k">return</span> <span class="n">await</span> <span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
+
+
+</pre></div>
+</div>
+<p>The arguments are the same as those for the previous function to retrieve one
+page plus the additional argument <code class="docutils literal"><span class="pre">session</span></code>.
+The first task is to construct the full URL as a string from the given
+host, port, and the desired waiting time.</p>
+<p>We use a timeout of 10 seconds.
+If it takes longer than the given time to retrieve a page, the programm
+throws a <code class="docutils literal"><span class="pre">TimeoutError</span></code>.
+Therefore, to make this more robust, you might want to catch this error and
+handle it appropriately.</p>
+<p>The <code class="docutils literal"><span class="pre">async</span> <span class="pre">with</span></code> provides a context manager that gives us a response.
+After checking the status being <code class="docutils literal"><span class="pre">200</span></code>, which means that all is alright,
+we need to <code class="docutils literal"><span class="pre">await</span></code> again to return the body of the page, using the method
+<code class="docutils literal"><span class="pre">text()</span></code> on the response.</p>
+<p>This is the interesting part of <code class="docutils literal"><span class="pre">get_multiple_pages()</span></code>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">closing</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">())</span> <span class="k">as</span> <span class="n">loop</span><span class="p">:</span>
+    <span class="k">with</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientSession</span><span class="p">(</span><span class="n">loop</span><span class="o">=</span><span class="n">loop</span><span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">wait</span> <span class="ow">in</span> <span class="n">waits</span><span class="p">:</span>
+            <span class="n">tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fetch_page</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">wait</span><span class="p">))</span>
+        <span class="n">pages</span> <span class="o">=</span> <span class="n">loop</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="n">tasks</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>It is very similar to the code in the example of the time-saving implementation
+with <code class="docutils literal"><span class="pre">asyncio</span></code>.
+The only difference is the opened client session and handing over this session
+to <code class="docutils literal"><span class="pre">fetch_page()</span></code> as the first argument.</p>
+<p>Finally, we run this program:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span>$ python aiohttp_client.py
+It took 5.04 seconds for a total waiting time of 11.00.
+Waited for 1.00 seconds.
+That&#39;s all.
+
+Waited for 5.00 seconds.
+That&#39;s all.
+
+Waited for 3.00 seconds.
+That&#39;s all.
+
+Waited for 2.00 seconds.
+That&#39;s all.
+</pre></div>
+</div>
+<p>It also takes about five seconds and gives the same output as our version
+before.
+But the implementation for getting a single page is much simpler and takes
+care of the encoding and other aspects not mentioned here.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Asyncio Documentation</a></h1>
+
+
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=asyncio-doc&repo=asyncio-doc&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="why_asyncio.html">Why use asyncio?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hello_world.html">Hello World</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hello_clock.html">Hello Clock</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http_client.html">HTTP client example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="performance.html">asyncio performance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="twisted.html">Learn asyncio if you come from Twisted</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_help.html">Getting Help</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tcp_echo.html">TCP echo client and server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="threads.html">Threads</a></li>
+<li class="toctree-l1"><a class="reference internal" href="subprocess.html">Subprocess</a></li>
+<li class="toctree-l1"><a class="reference internal" href="producer_consumer.html">Producer/consumer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debug_mode.html">Asyncio Debug Mode</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Web Scraping</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#a-mock-web-server">A Mock Web Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a-synchronous-client">A Synchronous Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#getting-one-page-asynchronously">Getting One Page Asynchronously</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#getting-multiple-pages-asynchronously-without-time-savings">Getting Multiple Pages Asynchronously - Without Time Savings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#getting-multiple-pages-asynchronously-with-time-savings">Getting Multiple Pages Asynchronously - With Time Savings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#high-level-approach-with-aiohttp">High-Level Approach with <code class="docutils literal"><span class="pre">aiohttp</span></code></a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="README.html">Asyncio documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#notes-to-writers">Notes to writers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#ideas">Ideas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#how-to-install-sphinx">How to install Sphinx</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#how-to-build-the-documentation">How to build the documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#see-also">See also</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="debug_mode.html" title="previous chapter">Asyncio Debug Mode</a></li>
+      <li>Next: <a href="glossary.html" title="next chapter">Glossary</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Web Scraping</a><ul>
+<li><a class="reference internal" href="#a-mock-web-server">A Mock Web Server</a></li>
+<li><a class="reference internal" href="#a-synchronous-client">A Synchronous Client</a></li>
+<li><a class="reference internal" href="#getting-one-page-asynchronously">Getting One Page Asynchronously</a></li>
+<li><a class="reference internal" href="#getting-multiple-pages-asynchronously-without-time-savings">Getting Multiple Pages Asynchronously - Without Time Savings</a></li>
+<li><a class="reference internal" href="#getting-multiple-pages-asynchronously-with-time-savings">Getting Multiple Pages Asynchronously - With Time Savings</a><ul>
+<li><a class="reference internal" href="#exercise">Exercise</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#high-level-approach-with-aiohttp">High-Level Approach with <code class="docutils literal"><span class="pre">aiohttp</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/webscraper.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Victor Stinner.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/webscraper.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/asyncio-doc/asyncio-doc" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

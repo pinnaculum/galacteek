@@ -6,6 +6,7 @@ import multiprocessing
 import time
 import asyncio
 import re
+import collections
 
 from quamash import QEventLoop
 
@@ -13,7 +14,7 @@ from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu
 from PyQt5.QtGui import QPixmap, QIcon, QClipboard
 from PyQt5.QtCore import (QCoreApplication, QUrl, QStandardPaths,
         QSettings, QTranslator, QFile, pyqtSignal, QObject,
-        QTemporaryDir)
+        QTemporaryDir, QDateTime)
 
 from galacteek.ipfs import pinning, ipfsd, asyncipfsd, cidhelpers
 from galacteek.ipfs.ipfsops import *
@@ -237,8 +238,7 @@ class GalacteekApplication(QApplication):
         client = self.getIpfsClient()
         if client:
             return self.getLoop().create_task(fn(
-                IPFSOperator(client, ctx=self.ipfsCtx,
-                debug=self.debugEnabled), *args, **kw))
+                self.getIpfsOperator(), *args, **kw))
 
     def setIpfsClient(self, client):
         self._client = client
@@ -267,7 +267,6 @@ class GalacteekApplication(QApplication):
             )
 
     def updateIpfsClient(self):
-        #pClient = self.getIpfsClient()
         connParams = self.getIpfsConnectionParams()
         client = aioipfs.AsyncIPFS(host=connParams.getHost(),
                 port=connParams.getApiPort(), loop=self.getLoop())
@@ -419,65 +418,16 @@ class GalacteekApplication(QApplication):
 
     def setupClipboard(self):
         self.appClipboard = self.clipboard()
-        self.appClipboard.changed.connect(self.onClipboardChanged)
-        self.clipHistory = {}
-
-    def onClipboardChanged(self, mode):
-        text = self.appClipboard.text(mode)
-        self.clipboardProcess(text)
-
-    def clipboardProcess(self, text):
-        """
-        Process the contents of the clipboard. If it is a valid CID, emit a
-        signal, processed by the main window for the clipboard loader button
-        """
-        if not text or len(text) > 1024: # that shouldn't be worth handling
-            return
-
-        if text.startswith('/ipfs/'):
-            # The clipboard contains a full IPFS path
-            ma = re.search('/ipfs/([a-zA-Z0-9]*)(\/.*$)?', text)
-            if ma:
-                cid = ma.group(1)
-                if not cidhelpers.cidValid(cid):
-                    return
-                path = joinIpfs(cid)
-                if ma.group(2):
-                    path += ma.group(2)
-                self.clipboardHasIpfs.emit(True, ma.group(1), path)
-        elif text.startswith('/ipns/'):
-            # The clipboard contains a full IPNS path
-            ma = re.search('/ipns/([a-zA-Z0-9\.]*)(\/.*$)?', text)
-            if ma:
-                path = text
-                self.clipboardHasIpfs.emit(True, None, path)
-        elif cidhelpers.cidValid(text):
-            # The clipboard simply contains a CID
-            self.clipboardHasIpfs.emit(True, text, joinIpfs(text))
-            self.clipHistory[text] = 1
-        else:
-            # Not a CID/path
-            self.clipboardHasIpfs.emit(False, None, None)
+        self.clipTracker = ClipboardTracker(self.appClipboard)
 
     def clipboardInit(self):
-        """ Used to process the clipboard's content on application's init """
-        text = self.getClipboardText()
-        self.clipboardProcess(text)
-
-    def clipboardPreferredMode(self):
-        mode = QClipboard.Clipboard
-        if self.appClipboard.supportsSelection():
-            mode = QClipboard.Selection
-        return mode
+        self.clipTracker.clipboardInit()
 
     def setClipboardText(self, text):
-        self.appClipboard.setText(text, self.clipboardPreferredMode())
+        self.clipTracker.setText(text)
 
     def getClipboardText(self):
-        """ Returns clipboard's text content. If the system supports selection
-            clipboard, give priority to that mode instead """
-
-        return self.appClipboard.text(self.clipboardPreferredMode())
+        return self.clipTracker.getText()
 
     def setupSchemeHandlers(self):
         self.ipfsSchemeHandler = browser.IPFSSchemeHandler(self)
@@ -491,3 +441,107 @@ class GalacteekApplication(QApplication):
         self.tempDir.remove()
         self.quit()
         sys.exit(1)
+
+class ClipboardTracker(QObject):
+    """
+    Tracks the system's clipboard activity and emits signals
+    depending on whether or not the clipboard contains an IPFS CID or path
+    """
+    clipboardHasIpfs = pyqtSignal(bool, str, str)
+    clipboardHistoryChanged = pyqtSignal()
+
+    def __init__(self, clipboard):
+        super(ClipboardTracker, self).__init__()
+
+        self.hasIpfs = False
+        self.history = {}
+        self.clipboard = clipboard
+        self.clipboard.changed.connect(self.onClipboardChanged)
+        self.clipboardHasIpfs.connect(self.onHasIpfs)
+
+    def onClipboardChanged(self, mode):
+        text = self.clipboard.text(mode)
+        self.clipboardProcess(text)
+
+    def clipboardProcess(self, text):
+        """
+        Process the contents of the clipboard. If it is a valid CID, emit a
+        signal, processed by the main window for the clipboard loader button
+        """
+        if not text or len(text) > 1024: # that shouldn't be worth handling
+            return
+
+        if text.startswith('/ipfs/'):
+            # The clipboard contains a full IPFS path
+            ma = cidhelpers.ipfsRegSearch(text)
+            if ma:
+                cid = ma.group(1)
+                if not cidhelpers.cidValid(cid):
+                    return
+                path = joinIpfs(cid)
+                if ma.group(2):
+                    path += ma.group(2)
+                self.hRecord(path)
+                self.clipboardHasIpfs.emit(True, ma.group(1), path)
+        elif text.startswith('/ipns/'):
+            # The clipboard contains a full IPNS path
+            ma = cidhelpers.ipnsRegSearch(text)
+            if ma:
+                path = text
+                self.hRecord(path)
+                self.clipboardHasIpfs.emit(True, None, path)
+        elif cidhelpers.cidValid(text):
+            # The clipboard simply contains a CID
+            path = joinIpfs(text)
+            self.hRecord(path)
+            self.clipboardHasIpfs.emit(True, text, path)
+        else:
+            # Not a CID/path
+            self.clipboardHasIpfs.emit(False, None, None)
+
+    def hRecord(self, path):
+        """ Records an item in the history and emits a signal """
+        now = time.time()
+        self.history[now] = {
+            'path': path,
+            'date': QDateTime.currentDateTime()
+        }
+        self.clipboardHistoryChanged.emit()
+
+    def getHistory(self):
+        return collections.OrderedDict(sorted(self.history.items(),
+            key=lambda t: t[0]))
+
+    def getHistoryLatest(self):
+        """ Returns latest history item """
+        h = self.getHistory()
+        try:
+            return h.popitem(last=True)[1]
+        except KeyError:
+            return None
+
+    def getCurrent(self):
+        """ Returns current clipboard item """
+        if self.hasIpfs:
+            return self.getHistoryLatest()
+
+    def clipboardInit(self):
+        """ Used to process the clipboard's content on application's init """
+        text = self.getText()
+        self.clipboardProcess(text)
+
+    def clipboardPreferredMode(self):
+        mode = QClipboard.Clipboard
+        if self.clipboard.supportsSelection():
+            mode = QClipboard.Selection
+        return mode
+
+    def setText(self, text):
+        self.clipboard.setText(text, self.clipboardPreferredMode())
+
+    def getText(self):
+        """ Returns clipboard's text content from the preferred source """
+        return self.clipboard.text(self.clipboardPreferredMode())
+
+    def onHasIpfs(self, valid, cid, path):
+        self.hasIpfs = valid

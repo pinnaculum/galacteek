@@ -1,0 +1,258 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Subprocess &#8212; Asyncio Documentation 0.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="https://media.readthedocs.org/css/badge_only.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/jquery/jquery-2.0.3.min.js"></script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/jquery/jquery-migrate-1.2.1.min.js"></script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/underscore.js"></script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/doctools.js"></script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/readthedocs-doc-embed.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Producer/consumer" href="producer_consumer.html" />
+    <link rel="prev" title="Threads" href="threads.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  
+<!-- RTD Extra Head -->
+
+<!-- 
+Always link to the latest version, as canonical.
+http://docs.readthedocs.org/en/latest/canonical.html
+-->
+<link rel="canonical" href="http://asyncio.readthedocs.io/en/latest/subprocess.html" />
+
+<link rel="stylesheet" href="https://media.readthedocs.org/css/readthedocs-doc-embed.css" type="text/css" />
+
+<script type="text/javascript" src="_static/readthedocs-data.js"></script>
+
+<!-- Add page-specific data, which must exist in the page js, not global -->
+<script type="text/javascript">
+READTHEDOCS_DATA['page'] = 'subprocess' 		
+READTHEDOCS_DATA['source_suffix'] = '.rst'
+</script>
+
+<script type="text/javascript" src="_static/readthedocs-dynamic-include.js"></script>
+
+<!-- end RTD <extrahead> --></head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="subprocess">
+<h1>Subprocess<a class="headerlink" href="#subprocess" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="run-a-subprocess-and-read-its-output">
+<h2>Run a subprocess and read its output<a class="headerlink" href="#run-a-subprocess-and-read-its-output" title="Permalink to this headline">¶</a></h2>
+<p>A simple example to run commands in a subprocess using
+<a class="reference external" href="https://docs.python.org/3.6/library/asyncio-subprocess.html#asyncio.create_subprocess_exec">asyncio.create_subprocess_exec</a>
+and get the output using <a class="reference external" href="https://docs.python.org/3/library/asyncio-subprocess.html#asyncio.asyncio.subprocess.Process.communicate">process.communicate</a>:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">asyncio</span>
+
+
+<span class="k">async</span> <span class="k">def</span> <span class="nf">run_command</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="c1"># Create subprocess</span>
+    <span class="n">process</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_subprocess_exec</span><span class="p">(</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="c1"># stdout must a pipe to be accessible as process.stdout</span>
+        <span class="n">stdout</span><span class="o">=</span><span class="n">asyncio</span><span class="o">.</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">)</span>
+    <span class="c1"># Wait for the subprocess to finish</span>
+    <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="k">await</span> <span class="n">process</span><span class="o">.</span><span class="n">communicate</span><span class="p">()</span>
+    <span class="c1"># Return stdout</span>
+    <span class="k">return</span> <span class="n">stdout</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+
+<span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span>
+<span class="c1"># Gather uname and date commands</span>
+<span class="n">commands</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">run_command</span><span class="p">(</span><span class="s1">&#39;uname&#39;</span><span class="p">),</span> <span class="n">run_command</span><span class="p">(</span><span class="s1">&#39;date&#39;</span><span class="p">))</span>
+<span class="c1"># Run the commands</span>
+<span class="n">uname</span><span class="p">,</span> <span class="n">date</span> <span class="o">=</span> <span class="n">loop</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="n">commands</span><span class="p">)</span>
+<span class="c1"># Print a report</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;uname: </span><span class="si">{}</span><span class="s1">, date: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">uname</span><span class="p">,</span> <span class="n">date</span><span class="p">))</span>
+<span class="n">loop</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="communicate-with-a-subprocess-using-standard-streams">
+<h2>Communicate with a subprocess using standard streams<a class="headerlink" href="#communicate-with-a-subprocess-using-standard-streams" title="Permalink to this headline">¶</a></h2>
+<p>A simple example to communicate with an echo subprocess using <a class="reference external" href="https://docs.python.org/3/library/asyncio-subprocess.html#asyncio.asyncio.subprocess.Process.stdin">process.stdin</a>
+and <a class="reference external" href="https://docs.python.org/3/library/asyncio-subprocess.html#asyncio.asyncio.subprocess.Process.stdout">process.stdout</a>:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">asyncio</span>
+
+
+<span class="k">async</span> <span class="k">def</span> <span class="nf">echo</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
+    <span class="c1"># Run an echo subprocess</span>
+    <span class="n">process</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_subprocess_exec</span><span class="p">(</span>
+        <span class="s1">&#39;cat&#39;</span><span class="p">,</span>
+        <span class="c1"># stdin must a pipe to be accessible as process.stdin</span>
+        <span class="n">stdin</span><span class="o">=</span><span class="n">asyncio</span><span class="o">.</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+        <span class="c1"># stdout must a pipe to be accessible as process.stdout</span>
+        <span class="n">stdout</span><span class="o">=</span><span class="n">asyncio</span><span class="o">.</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">)</span>
+    <span class="c1"># Write message</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Writing </span><span class="si">{!r}</span><span class="s1"> ...&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">msg</span><span class="p">))</span>
+    <span class="n">process</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span> <span class="o">+</span> <span class="sa">b</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="c1"># Read reply</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">process</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+    <span class="n">reply</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Received </span><span class="si">{!r}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">reply</span><span class="p">))</span>
+    <span class="c1"># Stop the subprocess</span>
+    <span class="n">process</span><span class="o">.</span><span class="n">terminate</span><span class="p">()</span>
+    <span class="n">code</span> <span class="o">=</span> <span class="k">await</span> <span class="n">process</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Terminated with code </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">code</span><span class="p">))</span>
+
+
+<span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span>
+<span class="n">loop</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="n">echo</span><span class="p">(</span><span class="s1">&#39;hello!&#39;</span><span class="p">))</span>
+<span class="n">loop</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>For more information, see the <a class="reference external" href="https://docs.python.org/3/library/asyncio-subprocess.html">asyncio subprocess documentation</a>.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Asyncio Documentation</a></h1>
+
+
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=asyncio-doc&repo=asyncio-doc&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="why_asyncio.html">Why use asyncio?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hello_world.html">Hello World</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hello_clock.html">Hello Clock</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http_client.html">HTTP client example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="performance.html">asyncio performance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="twisted.html">Learn asyncio if you come from Twisted</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_help.html">Getting Help</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="tcp_echo.html">TCP echo client and server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="threads.html">Threads</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Subprocess</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#run-a-subprocess-and-read-its-output">Run a subprocess and read its output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#communicate-with-a-subprocess-using-standard-streams">Communicate with a subprocess using standard streams</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="producer_consumer.html">Producer/consumer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debug_mode.html">Asyncio Debug Mode</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="webscraper.html">Web Scraping</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="README.html">Asyncio documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#notes-to-writers">Notes to writers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#ideas">Ideas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#how-to-install-sphinx">How to install Sphinx</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#how-to-build-the-documentation">How to build the documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#see-also">See also</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="threads.html" title="previous chapter">Threads</a></li>
+      <li>Next: <a href="producer_consumer.html" title="next chapter">Producer/consumer</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Subprocess</a><ul>
+<li><a class="reference internal" href="#run-a-subprocess-and-read-its-output">Run a subprocess and read its output</a></li>
+<li><a class="reference internal" href="#communicate-with-a-subprocess-using-standard-streams">Communicate with a subprocess using standard streams</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/subprocess.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Victor Stinner.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/subprocess.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/asyncio-doc/asyncio-doc" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

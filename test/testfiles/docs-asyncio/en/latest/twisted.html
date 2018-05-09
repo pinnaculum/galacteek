@@ -1,0 +1,305 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Learn asyncio if you come from Twisted &#8212; Asyncio Documentation 0.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="https://media.readthedocs.org/css/badge_only.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/jquery/jquery-2.0.3.min.js"></script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/jquery/jquery-migrate-1.2.1.min.js"></script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/underscore.js"></script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/doctools.js"></script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/readthedocs-doc-embed.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Getting Help" href="getting_help.html" />
+    <link rel="prev" title="asyncio performance" href="performance.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  
+<!-- RTD Extra Head -->
+
+<!-- 
+Always link to the latest version, as canonical.
+http://docs.readthedocs.org/en/latest/canonical.html
+-->
+<link rel="canonical" href="http://asyncio.readthedocs.io/en/latest/twisted.html" />
+
+<link rel="stylesheet" href="https://media.readthedocs.org/css/readthedocs-doc-embed.css" type="text/css" />
+
+<script type="text/javascript" src="_static/readthedocs-data.js"></script>
+
+<!-- Add page-specific data, which must exist in the page js, not global -->
+<script type="text/javascript">
+READTHEDOCS_DATA['page'] = 'twisted' 		
+READTHEDOCS_DATA['source_suffix'] = '.rst'
+</script>
+
+<script type="text/javascript" src="_static/readthedocs-dynamic-include.js"></script>
+
+<!-- end RTD <extrahead> --></head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="learn-asyncio-if-you-come-from-twisted">
+<h1>Learn asyncio if you come from Twisted<a class="headerlink" href="#learn-asyncio-if-you-come-from-twisted" title="Permalink to this headline">¶</a></h1>
+<p>The <a class="reference external" href="https://twistedmatrix.com/trac/">Twisted project</a> is probably one of the
+oldest libraries that supports asynchronous programming in Python.
+It has been used by many programmers to develop a variety of applications.
+It supports many network protocols and can be used for many different
+types of network programming.
+In fact, asyncio was heavily inspired by Twisted.
+The expertise of several Twisted developers had been incorporated in
+asyncio.
+Soon, there will be a version of Twisted that is based on asyncio.</p>
+<div class="section" id="rosetta-stone">
+<h2>Rosetta Stone<a class="headerlink" href="#rosetta-stone" title="Permalink to this headline">¶</a></h2>
+<p>This tables shows equivalent concepts in Twisted and asyncio.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="40%" />
+<col width="60%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Twisted</th>
+<th class="head">asyncio</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">Deferred</span></code></td>
+<td><code class="docutils literal"><span class="pre">asyncio.Future</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">deferToThread(func)</span></code></td>
+<td><code class="docutils literal"><span class="pre">loop.run_in_executor(None,</span> <span class="pre">func)</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">&#64;inlineCallbacks</span></code></td>
+<td><code class="docutils literal"><span class="pre">async</span> <span class="pre">def</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">reactor.run()</span></code></td>
+<td><code class="docutils literal"><span class="pre">loop.run_forever()</span></code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="deferred-example">
+<h2>Deferred example<a class="headerlink" href="#deferred-example" title="Permalink to this headline">¶</a></h2>
+<p>This small example shows two equivalent programs, one implemented in Twisted
+and one in asyncio.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Twisted</th>
+<th class="head">asyncio</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><p class="first">Basic Twisted example using deferred:</p>
+<div class="last highlight-python3"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="k">import</span> <span class="n">defer</span>
+<span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="k">import</span> <span class="n">reactor</span>
+
+
+<span class="k">def</span> <span class="nf">multiply</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">2</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">defer</span><span class="o">.</span><span class="n">Deferred</span><span class="p">()</span>
+    <span class="n">reactor</span><span class="o">.</span><span class="n">callLater</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">d</span><span class="o">.</span><span class="n">callback</span><span class="p">,</span>
+                      <span class="n">result</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">d</span>
+
+
+<span class="k">def</span> <span class="nf">step1</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">multiply</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">step2</span><span class="p">(</span><span class="n">result</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;result: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">result</span><span class="p">)</span>
+
+    <span class="n">reactor</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+
+
+<span class="n">d</span> <span class="o">=</span> <span class="n">defer</span><span class="o">.</span><span class="n">Deferred</span><span class="p">()</span>
+<span class="n">d</span><span class="o">.</span><span class="n">addCallback</span><span class="p">(</span><span class="n">step1</span><span class="p">)</span>
+<span class="n">d</span><span class="o">.</span><span class="n">addCallback</span><span class="p">(</span><span class="n">step2</span><span class="p">)</span>
+<span class="n">d</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+
+<span class="n">reactor</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+</pre></div>
+</div>
+</td>
+<td><p class="first">Similar example written using asyncio:</p>
+<div class="last highlight-python3"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">asyncio</span>
+
+
+<span class="k">async</span> <span class="k">def</span> <span class="nf">multiply</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">2</span>
+    <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+
+<span class="k">async</span> <span class="k">def</span> <span class="nf">steps</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">multiply</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;result: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">result</span><span class="p">)</span>
+
+
+<span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span>
+<span class="n">coro</span> <span class="o">=</span> <span class="n">steps</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">loop</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="n">coro</span><span class="p">)</span>
+<span class="n">loop</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+</pre></div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Asyncio Documentation</a></h1>
+
+
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=asyncio-doc&repo=asyncio-doc&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="why_asyncio.html">Why use asyncio?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hello_world.html">Hello World</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hello_clock.html">Hello Clock</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http_client.html">HTTP client example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="performance.html">asyncio performance</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Learn asyncio if you come from Twisted</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#rosetta-stone">Rosetta Stone</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#deferred-example">Deferred example</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="getting_help.html">Getting Help</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tcp_echo.html">TCP echo client and server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="threads.html">Threads</a></li>
+<li class="toctree-l1"><a class="reference internal" href="subprocess.html">Subprocess</a></li>
+<li class="toctree-l1"><a class="reference internal" href="producer_consumer.html">Producer/consumer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debug_mode.html">Asyncio Debug Mode</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="webscraper.html">Web Scraping</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="README.html">Asyncio documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#notes-to-writers">Notes to writers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#ideas">Ideas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#how-to-install-sphinx">How to install Sphinx</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#how-to-build-the-documentation">How to build the documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#see-also">See also</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="performance.html" title="previous chapter">asyncio performance</a></li>
+      <li>Next: <a href="getting_help.html" title="next chapter">Getting Help</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Learn asyncio if you come from Twisted</a><ul>
+<li><a class="reference internal" href="#rosetta-stone">Rosetta Stone</a></li>
+<li><a class="reference internal" href="#deferred-example">Deferred example</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/twisted.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Victor Stinner.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/twisted.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/asyncio-doc/asyncio-doc" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

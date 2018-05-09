@@ -1,0 +1,288 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Producer/consumer &#8212; Asyncio Documentation 0.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="https://media.readthedocs.org/css/badge_only.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/jquery/jquery-2.0.3.min.js"></script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/jquery/jquery-migrate-1.2.1.min.js"></script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/underscore.js"></script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/doctools.js"></script>
+    <script type="text/javascript" src="https://media.readthedocs.org/javascript/readthedocs-doc-embed.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Asyncio Debug Mode" href="debug_mode.html" />
+    <link rel="prev" title="Subprocess" href="subprocess.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  
+<!-- RTD Extra Head -->
+
+<!-- 
+Always link to the latest version, as canonical.
+http://docs.readthedocs.org/en/latest/canonical.html
+-->
+<link rel="canonical" href="http://asyncio.readthedocs.io/en/latest/producer_consumer.html" />
+
+<link rel="stylesheet" href="https://media.readthedocs.org/css/readthedocs-doc-embed.css" type="text/css" />
+
+<script type="text/javascript" src="_static/readthedocs-data.js"></script>
+
+<!-- Add page-specific data, which must exist in the page js, not global -->
+<script type="text/javascript">
+READTHEDOCS_DATA['page'] = 'producer_consumer' 		
+READTHEDOCS_DATA['source_suffix'] = '.rst'
+</script>
+
+<script type="text/javascript" src="_static/readthedocs-dynamic-include.js"></script>
+
+<!-- end RTD <extrahead> --></head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="producer-consumer">
+<h1>Producer/consumer<a class="headerlink" href="#producer-consumer" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="simple-example">
+<h2>Simple example<a class="headerlink" href="#simple-example" title="Permalink to this headline">¶</a></h2>
+<p>A simple producer/consumer example, using an <a class="reference external" href="https://docs.python.org/3/library/asyncio-queue.html#asyncio.Queue">asyncio.Queue</a>:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span> <span class="nn">random</span>
+
+
+<span class="k">async</span> <span class="k">def</span> <span class="nf">produce</span><span class="p">(</span><span class="n">queue</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="c1"># produce an item</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;producing </span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+        <span class="c1"># simulate i/o operation using sleep</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">())</span>
+        <span class="n">item</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="c1"># put the item in the queue</span>
+        <span class="k">await</span> <span class="n">queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+
+    <span class="c1"># indicate the producer is done</span>
+    <span class="k">await</span> <span class="n">queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+
+<span class="k">async</span> <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="n">queue</span><span class="p">):</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="c1"># wait for an item from the producer</span>
+        <span class="n">item</span> <span class="o">=</span> <span class="k">await</span> <span class="n">queue</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># the producer emits None to indicate that it is done</span>
+            <span class="k">break</span>
+
+        <span class="c1"># process the item</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;consuming item </span><span class="si">{}</span><span class="s1">...&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+        <span class="c1"># simulate i/o operation using sleep</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">())</span>
+
+
+<span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span>
+<span class="n">queue</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Queue</span><span class="p">(</span><span class="n">loop</span><span class="o">=</span><span class="n">loop</span><span class="p">)</span>
+<span class="n">producer_coro</span> <span class="o">=</span> <span class="n">produce</span><span class="p">(</span><span class="n">queue</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">consumer_coro</span> <span class="o">=</span> <span class="n">consume</span><span class="p">(</span><span class="n">queue</span><span class="p">)</span>
+<span class="n">loop</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">producer_coro</span><span class="p">,</span> <span class="n">consumer_coro</span><span class="p">))</span>
+<span class="n">loop</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="using-task-done">
+<h2>Using task_done()<a class="headerlink" href="#using-task-done" title="Permalink to this headline">¶</a></h2>
+<p>A simple producer/consumer example, using <a class="reference external" href="https://docs.python.org/3/library/asyncio-queue.html#asyncio.Queue.task_done">Queue.task_done</a>
+and <a class="reference external" href="https://docs.python.org/3/library/asyncio-queue.html#asyncio.Queue.join">Queue.join</a>:</p>
+<div class="highlight-python3"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span> <span class="nn">random</span>
+
+
+<span class="k">async</span> <span class="k">def</span> <span class="nf">produce</span><span class="p">(</span><span class="n">queue</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+        <span class="c1"># produce an item</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;producing </span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+        <span class="c1"># simulate i/o operation using sleep</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">())</span>
+        <span class="n">item</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="c1"># put the item in the queue</span>
+        <span class="k">await</span> <span class="n">queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+
+
+<span class="k">async</span> <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="n">queue</span><span class="p">):</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="c1"># wait for an item from the producer</span>
+        <span class="n">item</span> <span class="o">=</span> <span class="k">await</span> <span class="n">queue</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+        <span class="c1"># process the item</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;consuming </span><span class="si">{}</span><span class="s1">...&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+        <span class="c1"># simulate i/o operation using sleep</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">())</span>
+
+        <span class="c1"># Notify the queue that the item has been processed</span>
+        <span class="n">queue</span><span class="o">.</span><span class="n">task_done</span><span class="p">()</span>
+
+
+<span class="k">async</span> <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="n">queue</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
+    <span class="c1"># schedule the consumer</span>
+    <span class="n">consumer</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">ensure_future</span><span class="p">(</span><span class="n">consume</span><span class="p">(</span><span class="n">queue</span><span class="p">))</span>
+    <span class="c1"># run the producer and wait for completion</span>
+    <span class="k">await</span> <span class="n">produce</span><span class="p">(</span><span class="n">queue</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+    <span class="c1"># wait until the consumer has processed all items</span>
+    <span class="k">await</span> <span class="n">queue</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+    <span class="c1"># the consumer is still awaiting for an item, cancel it</span>
+    <span class="n">consumer</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
+
+
+<span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span>
+<span class="n">loop</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="n">run</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+<span class="n">loop</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>For more information, see the <a class="reference external" href="https://docs.python.org/3/library/asyncio-queue.html">asyncio queue documentation</a>.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Asyncio Documentation</a></h1>
+
+
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=asyncio-doc&repo=asyncio-doc&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="why_asyncio.html">Why use asyncio?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hello_world.html">Hello World</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hello_clock.html">Hello Clock</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http_client.html">HTTP client example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="performance.html">asyncio performance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="twisted.html">Learn asyncio if you come from Twisted</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_help.html">Getting Help</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="tcp_echo.html">TCP echo client and server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="threads.html">Threads</a></li>
+<li class="toctree-l1"><a class="reference internal" href="subprocess.html">Subprocess</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Producer/consumer</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#simple-example">Simple example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#using-task-done">Using task_done()</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="debug_mode.html">Asyncio Debug Mode</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="webscraper.html">Web Scraping</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="README.html">Asyncio documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#notes-to-writers">Notes to writers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#ideas">Ideas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#how-to-install-sphinx">How to install Sphinx</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#how-to-build-the-documentation">How to build the documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#see-also">See also</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="subprocess.html" title="previous chapter">Subprocess</a></li>
+      <li>Next: <a href="debug_mode.html" title="next chapter">Asyncio Debug Mode</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Producer/consumer</a><ul>
+<li><a class="reference internal" href="#simple-example">Simple example</a></li>
+<li><a class="reference internal" href="#using-task-done">Using task_done()</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/producer_consumer.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Victor Stinner.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/producer_consumer.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/asyncio-doc/asyncio-doc" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>
