@@ -70,12 +70,12 @@ class PubsubListener(object):
 
 class BookmarksExchanger(PubsubListener):
     def __init__(self, client, loop, ipfsCtx, marksLocal, marksNetwork):
-        super().__init__(client, loop, ipfsCtx, topic='galacteek.marks')
+        super().__init__(client, loop, ipfsCtx, topic='galacteek.ipfsmarks')
         self.marksLocal = marksLocal
         self.marksNetwork = marksNetwork
 
     async def periodic(self):
-        """ Very basic broadcasting of marks for now """
+        """ Very basic broadcasting for now """
         while True:
             await asyncio.sleep(60)
             o = self.marksLocal.getAll(share=True)

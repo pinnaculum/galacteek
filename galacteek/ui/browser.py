@@ -247,6 +247,7 @@ class BrowserTab(GalacteekTab):
         self.ui.forwardButton.clicked.connect(self.forwardButtonClicked)
         self.ui.refreshButton.clicked.connect(self.refreshButtonClicked)
         self.ui.loadFromClipboardButton.clicked.connect(self.loadFromClipboardButtonClicked)
+        self.ui.loadFromClipboardButton.setEnabled(self.app.clipTracker.hasIpfs)
         self.ui.bookmarkPageButton.clicked.connect(self.onBookmarkPage)
 
         # Setup the tool button for browsing IPFS content
@@ -296,6 +297,7 @@ class BrowserTab(GalacteekTab):
         evfilter.bookmarkPressed.connect(self.onBookmarkPage)
         self.installEventFilter(evfilter)
 
+        self.app.clipTracker.clipboardHasIpfs.connect(self.onClipboardIpfs)
         self.ipfsPathVisited.connect(self.onPathVisited)
 
         self.currentUrl = None
@@ -344,6 +346,9 @@ class BrowserTab(GalacteekTab):
         # If automatic pinning is checked we pin the object
         if self.pinAll is True:
             self.pinPath(path, recursive=False, notify=False)
+
+    def onClipboardIpfs(self, valid, cid, path):
+        self.ui.loadFromClipboardButton.setEnabled(valid)
 
     def onToggledPinAll(self, checked):
         pass
@@ -403,10 +408,9 @@ class BrowserTab(GalacteekTab):
             self.pinPath(self.currentIpfsResource, recursive=True)
 
     def loadFromClipboardButtonClicked(self):
-        clipboardSelection = self.app.clipboard().text(QClipboard.Selection)
-        if not cidhelpers.cidValid(clipboardSelection):
-            return messageBox(iInvalidCID(clipboardSelection))
-        self.browseIpfsHash(clipboardSelection)
+        current = self.app.clipTracker.getCurrent()
+        if current:
+            self.browseFsPath(current['path'])
 
     def onLoadIpfsCID(self):
         def onValidated(d):

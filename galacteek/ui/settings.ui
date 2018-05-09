@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>2</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="tab">
       <attribute name="title">
@@ -356,7 +356,7 @@
          <item row="0" column="0">
           <widget class="QGroupBox" name="groupBox">
            <property name="title">
-            <string>Files</string>
+            <string>File manager</string>
            </property>
            <widget class="QCheckBox" name="wrapFiles">
             <property name="geometry">
@@ -394,7 +394,7 @@
              </rect>
             </property>
             <property name="text">
-             <string>Hide hashes in tree views</string>
+             <string>Hide IPFS hashes in tree views</string>
             </property>
            </widget>
           </widget>

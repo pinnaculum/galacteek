@@ -2,6 +2,7 @@
 from cid.cid import make_cid, CIDv0, CIDv1
 
 import multihash
+import re
 
 def isMultihash(hashstring):
     """
@@ -45,3 +46,9 @@ def cidValid(cidstring):
     elif c.version == 1:
         return True
     return False
+
+def ipfsRegSearch(text):
+    return re.search('/ipfs/([a-zA-Z0-9]*)(\/.*$)?', text)
+
+def ipnsRegSearch(text):
+    return re.search('/ipns/([a-zA-Z0-9\.]*)(\/.*$)?', text)

@@ -15,28 +15,36 @@ from galacteek.ui import mainui, ipfsview
 from galacteek import application
 from galacteek.appsettings import *
 from galacteek.ipfs.wrappers import *
+from galacteek.ipfs.ipfsops import *
 from quamash import QEventLoop, QThreadExecutor
+
+# CID lists
+validcid0 = [
+    'QmT1TPVjdZ9CRnqwyQ9WygDoRgRRibFrEyWufenu92SuUV',
+    'QmT1TPajdu9CRnqwyQ9WygDoRgRRibFrEyWufenu92SuUV',
+    'Qma1TPVjdZ9CRhqwyQ9Wev3oRgRRi5FrEyWufenu92SuUV',
+    'Qmb2nxinR41eLpLr3FXquDV9kA2pxC6JAcJHs2aFYyeohP',
+]
+
+validcid1 = [
+    'zb2rhnNU1uLw96nnLBXgrtRiJnKxLdU589S9kgCRt2FbALmYp',
+    'zb2rhcrqjEudykbZ9eu245D4SoVxZFhBgiFGoGW7gGESgp67Z',
+    'zb2rhYZ4An39RKsqpKU4D9Ux6Y5fZ7HeBP5KuxZKjt24dvB6P'
+]
+
+invalidcids = [
+    'QmT1TPVjdZnu92SuUV',
+    'QmT1TPajdu9CRnqwyQygfenu92Su',
+    'Qma1TPVjdZ9CRhqwyQ9WevWufenuSuUV',
+    '42',
+    'knightswhosayni'
+]
 
 class TestCIDDialogs:
     # Valid and invalid CID lists
-    @pytest.mark.parametrize('validcid0', [
-        'QmT1TPVjdZ9CRnqwyQ9WygDoRgRRibFrEyWufenu92SuUV',
-        'QmT1TPajdu9CRnqwyQ9WygDoRgRRibFrEyWufenu92SuUV',
-        'Qma1TPVjdZ9CRhqwyQ9Wev3oRgRRi5FrEyWufenu92SuUV',
-        'Qmb2nxinR41eLpLr3FXquDV9kA2pxC6JAcJHs2aFYyeohP',
-    ])
-    @pytest.mark.parametrize('validcid1', [
-        'zb2rhnNU1uLw96nnLBXgrtRiJnKxLdU589S9kgCRt2FbALmYp',
-	'zb2rhcrqjEudykbZ9eu245D4SoVxZFhBgiFGoGW7gGESgp67Z',
-	'zb2rhYZ4An39RKsqpKU4D9Ux6Y5fZ7HeBP5KuxZKjt24dvB6P'
-    ])
-    @pytest.mark.parametrize('invalidcid', [
-        'QmT1TPVjdZnu92SuUV',
-        'QmT1TPajdu9CRnqwyQygfenu92Su',
-        'Qma1TPVjdZ9CRhqwyQ9WevWufenuSuUV',
-        '42',
-        'knightswhosayni'
-    ])
+    @pytest.mark.parametrize('validcid0', validcid0)
+    @pytest.mark.parametrize('validcid1', validcid1)
+    @pytest.mark.parametrize('invalidcid', invalidcids)
     def test_singlecidinput(self, qtbot, validcid0, validcid1, invalidcid):
         dlg = dialogs.IPFSCIDInputDialog()
         qtbot.addWidget(dlg)
@@ -54,10 +62,7 @@ class TestCIDDialogs:
         self.cidInput(qtbot, dlg, invalidcid)
         assert dlg.validCid is False
 
-    @pytest.mark.parametrize('validcid0', [
-        'QmT1TPVjdZ9CRnqwyQ9WygDoRgRRibFrEyWufenu92SuUV',
-        'Qmb2nxinR41eLpLr3FXquDV9kA2pxC6JAcJHs2aFYyeohP',
-    ])
+    @pytest.mark.parametrize('validcid0', validcid0)
     def test_mulcidinput(self, qtbot, validcid0):
         dlg = dialogs.IPFSMultipleCIDInputDialog()
         qtbot.addWidget(dlg)
@@ -91,15 +96,26 @@ def dirTestFiles(pytestconfig):
 def testFilesDocsAsync(dirTestFiles):
     return os.path.join(dirTestFiles, 'docs-asyncio')
 
-@pytest.fixture
-def gApp(tmpdir):
+def makeApp():
     gApp = application.GalacteekApplication(profile='pytest', debug=True)
     loop = gApp.setupAsyncLoop()
     sManager = gApp.settingsMgr
     sManager.setFalse(CFG_SECTION_IPFSD, CFG_KEY_ENABLED)
-    sManager.setSetting(CFG_SECTION_BROWSER, CFG_KEY_DLPATH, str(tmpdir))
     sManager.sync()
     gApp.updateIpfsClient()
+    return gApp
+
+@pytest.fixture
+def gApp(tmpdir):
+    gApp = makeApp()
+    sManager = gApp.settingsMgr
+    sManager.setSetting(CFG_SECTION_BROWSER, CFG_KEY_DLPATH, str(tmpdir))
+    sManager.sync()
+    return gApp
+
+@pytest.fixture(scope='module')
+def modApp():
+    gApp = makeApp()
     return gApp
 
 class TestApp:
@@ -161,3 +177,45 @@ class TestApp:
 
         with loop:
             loop.run_until_complete(gApp.task(addAndView))
+
+    @pytest.mark.parametrize('validcid0', validcid0)
+    @pytest.mark.parametrize('validcid1', validcid1)
+    @pytest.mark.parametrize('invalidcid', invalidcids)
+    def test_clipboard(self, qtbot, modApp, validcid0, validcid1, invalidcid):
+        def checkCorrect(valid, cid, path):
+            item = modApp.clipTracker.getHistoryLatest()
+            assert item['path'] == path
+            return valid == True
+        def checkIncorrect(valid, cid, path):
+            return valid == False
+
+        # Bare CIDv0
+        with qtbot.waitSignal(modApp.clipTracker.clipboardHasIpfs, timeout=1000,
+                check_params_cb=checkCorrect):
+            modApp.setClipboardText(validcid0)
+
+        # Bare CIDv1
+        with qtbot.waitSignal(modApp.clipTracker.clipboardHasIpfs, timeout=1000,
+                check_params_cb=checkCorrect):
+            modApp.setClipboardText(validcid1)
+
+        # /ipfs/CID
+        with qtbot.waitSignal(modApp.clipTracker.clipboardHasIpfs, timeout=1000,
+                check_params_cb=checkCorrect):
+            modApp.setClipboardText(joinIpfs(validcid0))
+
+        # /ipfs/CID/something
+        with qtbot.waitSignal(modApp.clipTracker.clipboardHasIpfs, timeout=1000,
+                check_params_cb=checkCorrect):
+            path = os.path.join(joinIpfs(validcid0), 'some', 'garlic')
+            modApp.setClipboardText(path)
+
+        # /ipns/CID/something
+        with qtbot.waitSignal(modApp.clipTracker.clipboardHasIpfs, timeout=1000,
+                check_params_cb=checkCorrect):
+            path = os.path.join(joinIpns(validcid0), 'share', 'the', 'wine')
+            modApp.setClipboardText(path)
+
+        with qtbot.waitSignal(modApp.clipTracker.clipboardHasIpfs, timeout=1000,
+                check_params_cb=checkIncorrect):
+            modApp.setClipboardText(invalidcid)

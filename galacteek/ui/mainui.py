@@ -207,7 +207,7 @@ class MainWindow(QMainWindow):
         self.app.ipfsCtx.pubsubMessageTx.connect(self.onPubsubTx)
 
         # App signals
-        self.app.clipboardHasIpfs.connect(self.onClipboardIpfs)
+        self.app.clipTracker.clipboardHasIpfs.connect(self.onClipboardIpfs)
 
         self.app.ipfsCtx.pinItemStatusChanged.connect(self.onPinStatusChanged)
         self.app.ipfsCtx.pinItemsCount.connect(self.onPinItemsCount)
@@ -337,14 +337,14 @@ class MainWindow(QMainWindow):
             self.ui.clipboardMultiLoader.setToolTip(iClipboardInvalid())
 
     def onLoadFromClipboard(self):
-        path = self.clipLoader.ipfsPath
-        if path:
-            self.addBrowserTab().browseFsPath(path)
+        current = self.app.clipTracker.getCurrent()
+        if current:
+            self.addBrowserTab().browseFsPath(current['path'])
 
     def onExploreFromClipboard(self):
-        path = self.clipLoader.ipfsPath
-        if path:
-            self.app.task(self.exploreClipboardPath, path)
+        current = self.app.clipTracker.getCurrent()
+        if current:
+            self.app.task(self.exploreClipboardPath, current['path'])
 
     @ipfsStatOp
     async def exploreClipboardPath(self, ipfsop, path, stat):
