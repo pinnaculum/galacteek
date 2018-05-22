@@ -402,9 +402,6 @@ class FilesTab(GalacteekTab):
 
     def onExploreItem(self):
         current = self.currentItem
-        #currentIdx = self.ui.treeFiles.currentIndex()
-        #nameItem = self.model.getNameItemFromIdx(currentIdx)
-        #dataHash = self.model.getHashFromIdx(currentIdx)
 
         if current and current.isDir():
             dataHash = self.model.getHashFromIdx(current.index())
