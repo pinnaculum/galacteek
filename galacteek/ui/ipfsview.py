@@ -327,7 +327,7 @@ class IPFSHashViewWidget(QWidget):
             tView = TextView(data, item.mimeType, parent=self.gWindow)
             self.gWindow.registerTab(tView, item.getEntry()['Name'], current=True)
         elif item.mimeCategory == 'video' or item.mimeCategory == 'audio':
-            return self.gWindow.addMediaPlayerTab(joinIpfs(fileHash))
+            return self.gWindow.mediaPlayerQueue(joinIpfs(fileHash))
         elif item.mimeCategory == 'image':
             return self.browse(fileHash)
         else:

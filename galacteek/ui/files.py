@@ -73,8 +73,8 @@ def iDeleteFile():
 def iUnlinkFile():
     return QCoreApplication.translate('FilesForm', 'Unlink file')
 
-def iBookmarkFile():
-    return QCoreApplication.translate('FilesForm', 'Bookmark')
+def iHashmarkFile():
+    return QCoreApplication.translate('FilesForm', 'Hashmark')
 
 def iBrowseFile():
     return QCoreApplication.translate('FilesForm', 'Browse')
@@ -127,63 +127,47 @@ class IPFSNameItem(IPFSItem):
     def isDir(self):
         return self.entry['Type'] == 1
 
-class treeKeyFilter(QObject):
-    deletePressed = pyqtSignal()
-    copyHashPressed = pyqtSignal()
-    copyPathPressed = pyqtSignal()
-    returnPressed = pyqtSignal()
+class FilesItemModel(QStandardItemModel):
+    fileDropEvent = pyqtSignal(IPFSItem, str)
+    directoryDropEvent = pyqtSignal(IPFSItem, str)
 
-    def eventFilter(self, obj, event):
-        if event.type() == QEvent.KeyPress:
-            modifiers = event.modifiers()
-
-            key = event.key()
-            if key == Qt.Key_Return:
-                self.returnPressed.emit()
-                return True
-            if modifiers & Qt.ControlModifier:
-                if key == Qt.Key_H:
-                    self.copyHashPressed.emit()
-                    return True
-                if key == Qt.Key_P:
-                    self.copyPathPressed.emit()
-                    return True
-            if event.key() == Qt.Key_Delete:
-                self.deletePressed.emit()
-                return True
-        return False
-
-class IPFSItemModel(QStandardItemModel):
-    def __init__(self, parent, *args, **kw):
+    def __init__(self, *args, **kw):
         QStandardItemModel.__init__(self, *args, **kw)
 
-        self.filesW = parent
+        self.itemRoot = self.invisibleRootItem()
+        self.itemFiles = IPFSItem(iMyFiles())
+        self.itemFiles.setPath(GFILES_MYFILES_PATH)
+        self.itemRoot.appendRow([self.itemFiles])
+
+        self.itemRootIdx = self.indexFromItem(self.itemRoot)
+        self.itemFilesIdx = self.indexFromItem(self.itemFiles)
+        self.entryCache = IPFSEntryCache()
+        self.rowsInserted.connect(self.onRowsInserted)
+        self.rowsAboutToBeRemoved.connect(self.onRowsToBeRemoved)
+
+    def onRowsInserted(self, parent, first, last):
+        for itNum in range(first, last+1):
+            itNameIdx = self.index(itNum, 0, parent)
+            itName = self.itemFromIndex(itNameIdx)
+            entry = itName.getEntry()
+            self.entryCache.register(entry)
+
+    def onRowsToBeRemoved(self, parent, first, last):
+        print(first, last)
+        for itNum in range(first, last+1):
+            itNameIdx = self.index(itNum, 0, parent)
+            itName = self.itemFromIndex(itNameIdx)
+            if itName:
+                entry = itName.getEntry()
+                print("Purging", entry)
+                self.entryCache.purge(entry['Hash'])
 
     def supportedDropActions(self):
         return Qt.CopyAction | Qt.MoveAction | Qt.TargetMoveAction | Qt.LinkAction
 
-    def flagsUnused(self, index):
-        if not index.isValid():
-            return Qt.ItemIsEnabled
-        return Qt.ItemIsEnabled | Qt.ItemIsSelectable | \
-               Qt.ItemIsDragEnabled | Qt.ItemIsDropEnabled
-
     def mimeData(self, indexes):
         mimedata = QMimeData()
         return mimedata
-
-    def dropMimeData(self, data, action, row, column, parent):
-        mimeText = data.text()
-        try:
-            path = QUrl(mimeText).toLocalFile()
-            if os.path.isfile(path):
-                self.filesW.scheduleAddFiles([path])
-            if os.path.isdir(path):
-                self.filesW.scheduleAddDirectory(path)
-        except Exception as e:
-            print('Drag and drop error', str(e), file=sys.stderr)
-
-        return True
 
     def canDropMimeData(self, data, action, row, column, parent):
         mimeText = data.text()
@@ -191,6 +175,23 @@ class IPFSItemModel(QStandardItemModel):
         if mimeText and mimeText.startswith('file://'):
             return True
         return False
+
+    def dropMimeData(self, data, action, row, column, parent):
+        mimeText = data.text()
+        itemIdx = self.index(row, column, parent)
+        item = self.itemFromIndex(itemIdx)
+        if item is None:
+            item = self.itemFiles
+        try:
+            path = QUrl(mimeText).toLocalFile()
+            if os.path.isfile(path):
+                self.fileDropEvent.emit(item, path)
+            if os.path.isdir(path):
+                self.directoryDropEvent.emit(item, path)
+        except Exception as e:
+            print('Drag and drop error', str(e), file=sys.stderr)
+            return False
+        return True
 
     def getHashFromIdx(self, idx):
         idxHash = self.index(idx.row(), 2, idx.parent())
@@ -204,9 +205,17 @@ class IPFSItemModel(QStandardItemModel):
         idxName = self.index(idx.row(), 0, idx.parent())
         return self.itemFromIndex(idxName)
 
+def makeFilesModel():
+    # Setup the model
+    model = FilesItemModel()
+    model.setColumnCount(3)
+    model.setHorizontalHeaderLabels(
+            [iFileName(), iFileSize(), iFileHash()])
+    return model
+
 class FilesTab(GalacteekTab):
-    def __init__(self, *args, **kw):
-        super().__init__(*args, **kw)
+    def __init__(self, gWindow, **kw):
+        super().__init__(gWindow, **kw)
 
         self.lock = asyncio.Lock()
 
@@ -231,12 +240,15 @@ class FilesTab(GalacteekTab):
         evfilter.copyHashPressed.connect(self.onCopyItemHash)
         evfilter.copyPathPressed.connect(self.onCopyItemPath)
         evfilter.returnPressed.connect(self.onReturn)
+        evfilter.explorePressed.connect(self.onExploreItem)
         self.ui.treeFiles.installEventFilter(evfilter)
 
-        # Setup the model
-        self.model = IPFSItemModel(self)
-        self.model.setColumnCount(3)
-        self.entryCache = IPFSEntryCache()
+        # Setup the model, caching it in the application
+        if self.app.filesModel:
+            self.model = self.app.filesModel
+        else:
+            self.model = makeFilesModel()
+            self.app.filesModel = self.model
 
         # Setup the tree view
         self.ui.treeFiles.setModel(self.model)
@@ -255,10 +267,11 @@ class FilesTab(GalacteekTab):
         # Configure drag-and-drop
         self.ui.treeFiles.setAcceptDrops(True)
         self.ui.treeFiles.setDragDropMode(QAbstractItemView.DropOnly)
+        self.model.fileDropEvent.connect(self.onDropFile)
+        self.model.directoryDropEvent.connect(self.onDropDirectory)
 
         self.ipfsKeys = []
-
-        self.prepareTree()
+        self.ui.treeFiles.expand(self.model.itemFilesIdx)
 
     def enableButtons(self, flag=True):
         for btn in [ self.ui.addFileButton,
@@ -266,6 +279,22 @@ class FilesTab(GalacteekTab):
                 self.ui.refreshButton,
                 self.ui.searchFiles ]:
             btn.setEnabled(flag)
+
+    @property
+    def currentItem(self):
+        currentIdx = self.ui.treeFiles.currentIndex()
+        if currentIdx.isValid():
+            return self.model.getNameItemFromIdx(currentIdx)
+
+    def onClose(self):
+        self.model.fileDropEvent.disconnect(self.onDropFile)
+        self.model.directoryDropEvent.disconnect(self.onDropDirectory)
+
+    def onDropFile(self, item, path):
+        self.scheduleAddFiles([path])
+
+    def onDropDirectory(self, item, path):
+        self.scheduleAddDirectory([path])
 
     def onCopyItemHash(self):
         currentIdx = self.ui.treeFiles.currentIndex()
@@ -293,7 +322,7 @@ class FilesTab(GalacteekTab):
 
     def onContextMenu(self, point):
         idx = self.ui.treeFiles.indexAt(point)
-        if not idx.isValid() or idx == self.itemFilesIdx:
+        if not idx.isValid() or idx == self.model.itemFilesIdx:
             return
 
         nameItem = self.model.getNameItemFromIdx(idx)
@@ -318,7 +347,9 @@ class FilesTab(GalacteekTab):
             self.clipboard.setText(itemHash, clipboardType)
 
         def openWithMediaPlayer(itemHash):
-            self.gWindow.addMediaPlayerTab(joinIpfs(itemHash))
+            #self.gWindow.addMediaPlayerTab(joinIpfs(itemHash))
+            self.gWindow.mediaPlayerQueue(joinIpfs(itemHash),
+                    mediaName=nameItem.getEntry()['Name'])
 
         menu.addAction(iCopyHashToSelClipboard(), lambda:
             copyHashToClipboard(dataHash, QClipboard.Selection))
@@ -328,7 +359,7 @@ class FilesTab(GalacteekTab):
             unlink(dataHash))
         menu.addAction(iDeleteFile(), lambda:
             delete(dataHash))
-        menu.addAction(iBookmarkFile(), lambda:
+        menu.addAction(iHashmarkFile(), lambda:
             bookmark(ipfsPath, nameItem.getEntry()['Name']))
         menu.addAction(iBrowseFile(), lambda:
             browse(dataHash))
@@ -369,8 +400,19 @@ class FilesTab(GalacteekTab):
     def browseFs(self, path):
         self.gWindow.addBrowserTab().browseFsPath(path)
 
+    def onExploreItem(self):
+        current = self.currentItem
+        #currentIdx = self.ui.treeFiles.currentIndex()
+        #nameItem = self.model.getNameItemFromIdx(currentIdx)
+        #dataHash = self.model.getHashFromIdx(currentIdx)
+
+        if current and current.isDir():
+            dataHash = self.model.getHashFromIdx(current.index())
+            view = ipfsview.IPFSHashViewToolBox(self.gWindow, dataHash)
+            self.gWindow.registerTab(view, dataHash, current=True)
+
     def onDoubleClicked(self, idx):
-        if not idx.isValid() or idx == self.itemFilesIdx:
+        if not idx.isValid() or idx == self.model.itemFilesIdx:
             return
 
         nameItem = self.model.getNameItemFromIdx(idx)
@@ -378,19 +420,15 @@ class FilesTab(GalacteekTab):
         dataHash = self.model.getHashFromIdx(idx)
         dataPath = self.model.getNameFromIdx(idx)
 
-        if nameItem.isDir():
-            view = ipfsview.IPFSHashViewToolBox(self.gWindow, dataHash)
-            self.gWindow.registerTab(view, dataHash, current=True)
-
-        elif nameItem.isFile():
+        if nameItem.isFile():
             fileName = nameItem.text()
 
             if nameItem.mimeType:
                 cat = nameItem.mimeCategory()
                 # If it's media content try to open it in the media player
                 if cat and (cat == 'audio' or cat == 'video'):
-                    return self.gWindow.addMediaPlayerTab(
-                        joinIpfs(dataHash))
+                    return self.gWindow.mediaPlayerQueue(joinIpfs(dataHash),
+                            mediaName=fileName)
 
             # Find the parent hash
             parentHash = nameItem.getParentHash()
@@ -449,22 +487,10 @@ class FilesTab(GalacteekTab):
     def scheduleDelete(self, hash):
         return self.app.task(self.deleteFromHash, hash)
 
-    def prepareTree(self):
-        self.model.setHorizontalHeaderLabels(
-                [iFileName(), iFileSize(), iFileHash()])
-        self.itemRoot = self.model.invisibleRootItem()
-        self.itemFiles = IPFSItem(iMyFiles())
-        self.itemFiles.setPath(GFILES_MYFILES_PATH)
-        self.itemRoot.appendRow(self.itemFiles)
-
-        self.itemRootIdx = self.model.indexFromItem(self.itemRoot)
-        self.itemFilesIdx = self.model.indexFromItem(self.itemFiles)
-        self.ui.treeFiles.expand(self.itemFilesIdx)
-
     def updateTree(self):
         self.app.task(self.updateKeys)
         self.app.task(self.listFiles, GFILES_MYFILES_PATH,
-            parentItem=self.itemFiles, maxdepth=1)
+            parentItem=self.model.itemFiles, maxdepth=1)
 
     @ipfsOp
     async def updateKeys(self, ipfsop):
@@ -502,7 +528,7 @@ class FilesTab(GalacteekTab):
             if entry['Hash'] == '':
                 continue
 
-            if entry['Hash'] in self.entryCache:
+            if entry['Hash'] in self.model.entryCache:
                 continue
 
             if entry['Type'] == 1: # directory
@@ -522,8 +548,6 @@ class FilesTab(GalacteekTab):
 
             parentItem.appendRow(nItem)
 
-            self.entryCache.register(entry)
-
             if entry['Type'] == 1: # directory
                 if autoexpand is True:
                     self.ui.treeFiles.setExpanded(nItemName.index(), True)
@@ -541,13 +565,13 @@ class FilesTab(GalacteekTab):
 
     @ipfsOp
     async def deleteFromHash(self, ipfsop, hash):
-        code = await ipfsop.purge(hash)
-        if code:
-            entry = await ipfsop.filesLookupHash(GFILES_MYFILES_PATH, hash)
-            if entry:
-                await ipfsop.filesDelete(GFILES_MYFILES_PATH,
-                    entry['Name'], recursive=True)
-                await modelhelpers.modelDeleteAsync(self.model, hash)
+        entry = await ipfsop.filesLookupHash(GFILES_MYFILES_PATH, hash)
+
+        if entry:
+            purged = await ipfsop.purge(hash)
+            await ipfsop.filesDelete(GFILES_MYFILES_PATH,
+                entry['Name'], recursive=True)
+            await modelhelpers.modelDeleteAsync(self.model, hash)
 
     @ipfsOp
     async def unlinkFileFromHash(self, op, hash):

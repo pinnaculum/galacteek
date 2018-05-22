@@ -31,6 +31,7 @@ Features
 - Browsing sessions with automatic pinning (pins every page you browse)
 - Feeds (following IPNS hashes)
 - File manager with drag-and-drop support
+- Basic built-in media player
 
 Keybindings
 ===========

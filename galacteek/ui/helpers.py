@@ -45,6 +45,7 @@ class IPFSTreeKeyFilter(QObject):
     deletePressed = pyqtSignal()
     copyHashPressed = pyqtSignal()
     copyPathPressed = pyqtSignal()
+    explorePressed = pyqtSignal()
     returnPressed = pyqtSignal()
 
     def eventFilter(self, obj, event):
@@ -61,6 +62,9 @@ class IPFSTreeKeyFilter(QObject):
                     return True
                 if key == Qt.Key_P:
                     self.copyPathPressed.emit()
+                    return True
+                if key == Qt.Key_X:
+                    self.explorePressed.emit()
                     return True
             if event.key() == Qt.Key_Delete:
                 self.deletePressed.emit()

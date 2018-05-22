@@ -39,7 +39,7 @@ def iImportBookmark():
         'Import bookmark to')
 
 def iNetworkMarks():
-    return QCoreApplication.translate('BookmarksViewForm', 'Network Bookmarks')
+    return QCoreApplication.translate('BookmarksViewForm', 'Network hashmarks')
 
 def iFeeds():
     return QCoreApplication.translate('BookmarksViewForm', 'Feeds')

@@ -199,6 +199,8 @@ class TestApp:
                 check_params_cb=checkCorrect):
             modApp.setClipboardText(validcid1)
 
+        modApp.clipTracker.clearHistory()
+
         # /ipfs/CID
         with qtbot.waitSignal(modApp.clipTracker.clipboardHasIpfs, timeout=1000,
                 check_params_cb=checkCorrect):
@@ -219,3 +221,6 @@ class TestApp:
         with qtbot.waitSignal(modApp.clipTracker.clipboardHasIpfs, timeout=1000,
                 check_params_cb=checkIncorrect):
             modApp.setClipboardText(invalidcid)
+
+    def test_mediaplayer(self, qtbot, modApp):
+        pass

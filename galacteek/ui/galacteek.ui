@@ -95,7 +95,7 @@
         <item>
          <widget class="QPushButton" name="bookmarksButton">
           <property name="toolTip">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Bookmarks&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Hashmarks&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="text">
            <string/>
@@ -234,7 +234,7 @@
      <height>20</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuVery_Good">
+   <widget class="QMenu" name="menuFile">
     <property name="title">
      <string>File</string>
     </property>
@@ -253,7 +253,7 @@
     </property>
     <addaction name="actionAboutGalacteek"/>
    </widget>
-   <addaction name="menuVery_Good"/>
+   <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuAbout"/>
   </widget>

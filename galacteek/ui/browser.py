@@ -182,7 +182,7 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
 
     def openWithMediaPlayer(self, menudata):
         url = menudata.linkUrl()
-        self.browserTab.gWindow.addMediaPlayerTab(url.path())
+        self.browserTab.gWindow.mediaPlayerQueue(url.path())
 
     def pinPage(self, menudata):
         url = menudata.linkUrl()
