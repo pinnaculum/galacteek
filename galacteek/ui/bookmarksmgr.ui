@@ -37,7 +37,7 @@
          </rect>
         </property>
         <attribute name="label">
-         <string>Local IPFS marks</string>
+         <string>Local hashmarks</string>
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_4">
          <item>

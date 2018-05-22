@@ -146,6 +146,7 @@ class IPFSOperator(object):
             return None
 
     async def purge(self, hashRef, rungc=False):
+        """ Unpins an object and optionally runs the garbage collector """
         try:
             await self.client.pin.rm(hashRef, recursive=True)
             if rungc:

@@ -15,6 +15,7 @@ from PyQt5 import QtWebEngineWidgets, QtWebEngine, QtWebEngineCore
 from PyQt5.QtGui import (QClipboard, QPixmap, QIcon, QKeySequence,
         QStandardItemModel, QStandardItem)
 
+from galacteek.ui import mediaplayer
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.cidhelpers import cidValid
@@ -27,8 +28,8 @@ from .dialogs import *
 from ..appsettings import *
 from .i18n import *
 
-def iBookmarks():
-    return QCoreApplication.translate('GalacteekWindow', 'Bookmarks')
+def iHashmarks():
+    return QCoreApplication.translate('GalacteekWindow', 'Hashmarks')
 def iMyFiles():
     return QCoreApplication.translate('GalacteekWindow', 'My Files')
 def iKeys():
@@ -38,13 +39,16 @@ def iFromClipboard(path):
     return QCoreApplication.translate('GalacteekWindow',
         'Clipboard: browse IPFS path: {0}').format(path)
 
-def iClipboardInvalid():
+def iClipboardEmpty():
     return QCoreApplication.translate('GalacteekWindow',
         'No valid IPFS CID/path in the clipboard')
 
 def iClipLoaderExplore(path):
     return QCoreApplication.translate('GalacteekWindow',
         'Explore IPFS path: {0}').format(path)
+
+def iClipboardHistory():
+    return QCoreApplication.translate('GalacteekWindow', 'Clipboard history')
 
 def iClipLoaderBrowse(path):
     return QCoreApplication.translate('GalacteekWindow',
@@ -109,20 +113,11 @@ class PinStatusDetails(GalacteekTab):
             if nodesProcessed:
                 ePinS.setText(str(nodesProcessed))
 
-class ClipLoader(QObject):
-    def __init__(self):
-        super(ClipLoader, self).__init__()
-
-        self.ipfsPath = None
-        self.cidStr = None
-
-    def setTarget(self, cid, path):
-        self.cidStr = cid
-        self.ipfsPath = path
-
 class MainWindow(QMainWindow):
     tabnMyFiles = 'My Files'
     tabnKeys = 'IPFS keys'
+    tabnPinning = 'Pinning Status'
+    tabnMediaPlayer = 'Media Player'
 
     def __init__(self, app):
         super(MainWindow, self).__init__()
@@ -145,6 +140,9 @@ class MainWindow(QMainWindow):
         self.ui.actionSettings.triggered.connect(
                 self.onSettings)
 
+        self.menuManual = QMenu(iManual())
+        self.ui.menuAbout.addMenu(self.menuManual)
+
         self.ui.myFilesButton.clicked.connect(self.onMyFilesClicked)
         self.ui.myFilesButton.setShortcut(QKeySequence('Ctrl+f'))
         self.ui.manageKeysButton.clicked.connect(self.onIpfsKeysClicked)
@@ -154,21 +152,24 @@ class MainWindow(QMainWindow):
         self.ui.writeNewDocumentButton.clicked.connect(self.onWriteNewDocumentClicked)
 
         self.multiLoaderMenu = QMenu()
+        self.multiLoaderHMenu = QMenu(iClipboardHistory())
         self.multiLoadHashAction = QAction(getIconIpfsIce(),
-                'Browse hash', self,
+                iClipboardEmpty(), self,
                 shortcut=QKeySequence('Ctrl+o'),
                 triggered=self.onLoadFromClipboard)
         self.multiExploreHashAction = QAction(getIconIpfsIce(),
-                'Explore hash', self,
+                iClipboardEmpty(), self,
                 shortcut=QKeySequence('Ctrl+e'),
                 triggered=self.onExploreFromClipboard)
+        self.multiExploreHashAction.setEnabled(False)
+        self.multiLoadHashAction.setEnabled(False)
         self.multiLoaderMenu.addAction(self.multiLoadHashAction)
         self.multiLoaderMenu.addAction(self.multiExploreHashAction)
+        self.multiLoaderMenu.addMenu(self.multiLoaderHMenu)
 
-        self.clipLoader = ClipLoader()
         self.ui.clipboardMultiLoader.clicked.connect(self.onLoadFromClipboard)
         self.ui.clipboardMultiLoader.setMenu(self.multiLoaderMenu)
-        self.ui.clipboardMultiLoader.setEnabled(False)
+        self.ui.clipboardMultiLoader.setToolTip(iClipboardEmpty())
         self.ui.clipboardMultiLoader.setPopupMode(QToolButton.MenuButtonPopup)
 
         # Global pin-all button
@@ -208,6 +209,8 @@ class MainWindow(QMainWindow):
 
         # App signals
         self.app.clipTracker.clipboardHasIpfs.connect(self.onClipboardIpfs)
+        self.app.clipTracker.clipboardHistoryChanged.connect(self.onClipboardHistory)
+        self.app.documentationAvailable.connect(self.onDocAvailable)
 
         self.app.ipfsCtx.pinItemStatusChanged.connect(self.onPinStatusChanged)
         self.app.ipfsCtx.pinItemsCount.connect(self.onPinItemsCount)
@@ -232,7 +235,7 @@ class MainWindow(QMainWindow):
         pass
 
     def onPinningStatusDetails(self):
-        name = 'Pinning Status'
+        name = self.tabnPinning
         ft = self.findTabWithName(name)
         if ft:
             return self.ui.tabWidget.setCurrentWidget(ft)
@@ -274,6 +277,13 @@ class MainWindow(QMainWindow):
 
     def onPinStatusChanged(self, path, status):
         self.updatePinningStatus()
+
+    def onDocAvailable(self, lang, entry):
+        self.menuManual.addAction(lang, lambda:
+            self.onOpenDocumentation('en', entry))
+
+    def onOpenDocumentation(self, lang, docEntry):
+        self.addBrowserTab().browseIpfsHash(docEntry['Hash'])
 
     def enableButtons(self, flag=True):
         for btn in [ self.ui.myFilesButton,
@@ -325,26 +335,45 @@ class MainWindow(QMainWindow):
     def onToggledPinAllGlobal(self, checked):
         self.pinAllGlobalChecked = checked
 
+    def onClipboardHistory(self, history):
+        # Called when the clipboard history has changed
+        self.multiLoaderHMenu.clear()
+        hItems = history.items()
+
+        def onHistoryItem(hItem):
+            self.addBrowserTab().browseFsPath(hItem['path'])
+
+        for hTs, hItem in hItems:
+            self.multiLoaderHMenu.addAction(getIconIpfsIce(),
+                    '{0} ({1})'.format(hItem['path'],
+                        hItem['date'].toString()),
+                    lambda: onHistoryItem(hItem))
+
     def onClipboardIpfs(self, valid, cid, path):
-        self.ui.clipboardMultiLoader.setEnabled(valid)
+        self.multiExploreHashAction.setEnabled(valid)
+        self.multiLoadHashAction.setEnabled(valid)
         if valid:
-            self.clipLoader.setTarget(cid, path)
             self.multiExploreHashAction.setText(iClipLoaderExplore(path))
             self.multiLoadHashAction.setText(iClipLoaderBrowse(path))
             self.ui.clipboardMultiLoader.setToolTip(iFromClipboard(path))
         else:
-            self.clipLoader.setTarget(None, None)
-            self.ui.clipboardMultiLoader.setToolTip(iClipboardInvalid())
+            self.multiExploreHashAction.setText(iClipboardEmpty())
+            self.multiLoadHashAction.setText(iClipboardEmpty())
+            self.ui.clipboardMultiLoader.setToolTip(iClipboardEmpty())
 
     def onLoadFromClipboard(self):
         current = self.app.clipTracker.getCurrent()
         if current:
             self.addBrowserTab().browseFsPath(current['path'])
+        else:
+            messageBox(iClipboardEmpty())
 
     def onExploreFromClipboard(self):
         current = self.app.clipTracker.getCurrent()
         if current:
             self.app.task(self.exploreClipboardPath, current['path'])
+        else:
+            messageBox(iClipboardEmpty())
 
     @ipfsStatOp
     async def exploreClipboardPath(self, ipfsop, path, stat):
@@ -397,17 +426,24 @@ class MainWindow(QMainWindow):
 
         super(MainWindow, self).keyPressEvent(event)
 
-    def addMediaPlayerTab(self, path):
-        from galacteek.ui import mediaplayer
+    def addMediaPlayerTab(self):
+        name = self.tabnMediaPlayer
+        ft = self.findTabWithName(name)
+        if ft:
+            return ft
         tab = mediaplayer.MediaPlayerTab(self)
-        gwUrl = self.app.gatewayUrl
-        mediaUrl = QUrl('{0}/{1}'.format(gwUrl, path))
-        tab.playFromUrl(mediaUrl)
-        self.registerTab(tab, path, icon=getIcon('multimedia.png'),
+        self.registerTab(tab, name, icon=getIcon('multimedia.png'),
                 current=True)
+        return tab
+
+    def mediaPlayerQueue(self, path, mediaName=None):
+        tab = self.addMediaPlayerTab()
+        gwUrl = self.app.gatewayUrl
+        mediaUrl = QUrl('{0}{1}'.format(gwUrl, path))
+        tab.playFromUrl(mediaUrl, mediaName=mediaName)
 
     def addBookmarksTab(self):
-        name = iBookmarks()
+        name = iHashmarks()
         ft = self.findTabWithName(name)
         if ft:
             return self.ui.tabWidget.setCurrentWidget(ft)

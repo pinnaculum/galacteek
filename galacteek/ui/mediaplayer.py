@@ -1,13 +1,15 @@
 
 from PyQt5.QtWidgets import (QWidget, QFrame, QApplication, QMainWindow,
         QDialog, QLabel, QTextEdit, QPushButton, QVBoxLayout, QAction,
-        QTabWidget, QFileDialog)
+        QHBoxLayout, QTabWidget, QFileDialog, QListView, QSplitter,
+        QToolButton, QStyle, QSlider, QGraphicsScene)
 
-from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
+from PyQt5.QtMultimedia import (QMediaPlayer, QMediaContent, QMediaPlaylist,
+    QMediaMetaData)
 from PyQt5.QtMultimediaWidgets import QVideoWidget, QGraphicsVideoItem
-from PyQt5.QtWidgets import QGraphicsScene
 
-from PyQt5.QtCore import QCoreApplication, QUrl, Qt
+from PyQt5.QtCore import (QCoreApplication, QUrl, Qt, QAbstractItemModel,
+    QModelIndex, QTime)
 
 from . import ui_mediaplayer
 
@@ -25,6 +27,10 @@ class VideoWidget(QVideoWidget):
 
         super(VideoWidget, self).keyPressEvent(event)
 
+def durationConvert(duration):
+    return QTime((duration/3600)%60, (duration/60)%60,
+        duration%60, (duration*1000)%1000)
+
 class MediaPlayerTab(GalacteekTab):
     def __init__(self, *args, **kw):
         super(MediaPlayerTab, self).__init__(*args, **kw)
@@ -32,38 +38,162 @@ class MediaPlayerTab(GalacteekTab):
         self.ui = ui_mediaplayer.Ui_MediaPlayer()
         self.ui.setupUi(self)
 
-        self.player = QMediaPlayer()
-        self.currentMedia = None
-        self.currentState = None
+        self.playlist = QMediaPlaylist()
+        self.model = ListModel(self.playlist)
+        self.pListView = QListView()
+        self.pListView.setModel(self.model)
+        self.pListView.setResizeMode(QListView.Adjust)
+        self.pListView.setMinimumWidth(500)
 
-        self.videoWidget = VideoWidget(parent=self)
-        self.videoWidget.show()
-        self.ui.verticalLayout.addWidget(self.videoWidget)
+        self.duration = None
+        self.currentState = None
+        self.player = QMediaPlayer()
+        self.player.setPlaylist(self.playlist)
+
+        self.videoWidget = VideoWidget()
 
         self.player.setVideoOutput(self.videoWidget)
 
         self.player.error.connect(self.onError)
         self.player.stateChanged.connect(self.onStateChanged)
+        self.player.metaDataChanged.connect(self.onMetaData)
+        self.playlist.currentIndexChanged.connect(self.playlistPositionChanged)
+        self.player.durationChanged.connect(self.mediaDurationChanged)
+        self.player.positionChanged.connect(self.mediaPositionChanged)
+        self.pListView.activated.connect(self.onListActivated)
+
+        self.togglePList = QToolButton()
+        self.togglePList.setIcon(self.style().standardIcon(QStyle.SP_ArrowRight))
+        self.togglePList.setFixedSize(32, 128)
+        self.togglePList.clicked.connect(self.onTogglePlaylist)
+
+        self.playButton = QToolButton(clicked=self.onPlayClicked)
+        self.playButton.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+
+        self.pauseButton = QToolButton(clicked=self.onPauseClicked)
+        self.pauseButton.setIcon(self.style().standardIcon(QStyle.SP_MediaPause))
+        self.pauseButton.setEnabled(False)
+
+        self.stopButton = QToolButton(clicked=self.onStopClicked)
+        self.stopButton.setIcon(self.style().standardIcon(QStyle.SP_MediaStop))
+        self.stopButton.setEnabled(False)
+
+        self.seekSlider = QSlider(Qt.Horizontal, sliderMoved=self.onSeek)
+        self.durationLabel = QLabel()
+
+        vLayout = QVBoxLayout()
+        hLayoutControls = QHBoxLayout()
+        hLayoutControls.setContentsMargins(0, 0, 0, 0)
+        hLayoutControls.addWidget(self.playButton, 0, Qt.AlignLeft)
+        hLayoutControls.addWidget(self.pauseButton, 0, Qt.AlignLeft)
+        hLayoutControls.addWidget(self.stopButton, 0, Qt.AlignLeft)
+        hLayoutControls.addWidget(self.seekSlider)
+        hLayoutControls.addWidget(self.durationLabel)
+        vLayout.addWidget(self.videoWidget)
+        vLayout.addLayout(hLayoutControls)
+
+        hLayout = QHBoxLayout()
+        hLayout.addLayout(vLayout)
+        hLayout.addWidget(self.pListView)
+        hLayout.addWidget(self.togglePList)
+
+        self.pListView.hide()
+
+        self.ui.verticalLayout.addLayout(hLayout)
+
+    def onPlayClicked(self):
+        self.player.play()
+
+    def onPauseClicked(self):
+        if self.currentState == QMediaPlayer.PlayingState:
+            self.player.pause()
+        elif self.currentState == QMediaPlayer.PausedState:
+            self.player.play()
+
+    def onStopClicked(self):
+        self.player.stop()
+        self.player.setPosition(0)
+        self.seekSlider.setValue(0)
+        self.seekSlider.setRange(0, 0)
+
+    def onSeek(self, seconds):
+        self.player.setPosition(seconds * 1000)
+
+    def onTogglePlaylist(self):
+        if self.pListView.isHidden():
+            self.pListView.show()
+        else:
+            self.pListView.hide()
 
     def onError(self, error):
         messageBox(iPlayerError(error))
 
     def onStateChanged(self, state):
         self.currentState = state
+        self.updateControls(state)
 
-    def playFromUrl(self, url):
+    def updateControls(self, state):
+        if state == QMediaPlayer.StoppedState:
+            self.stopButton.setEnabled(False)
+            self.pauseButton.setEnabled(False)
+            self.playButton.setEnabled(True)
+            self.seekSlider.setEnabled(False)
+            self.duration = None
+        elif state == QMediaPlayer.PlayingState:
+            self.seekSlider.setRange(0, self.player.duration() / 1000)
+            self.seekSlider.setEnabled(True)
+            self.pauseButton.setEnabled(True)
+            self.playButton.setEnabled(False)
+            self.stopButton.setEnabled(True)
+
+    def onListActivated(self, index):
+        if index.isValid():
+            self.playlist.setCurrentIndex(index.row())
+            self.player.play()
+
+    def onMetaData(self):
+        # Unfinished
+        if self.player.isMetaDataAvailable():
+            availableKeys = self.player.availableMetaData()
+
+            for key in availableKeys:
+                value = self.player.metaData(key)
+
+    def playFromUrl(self, url, mediaName=None):
         if self.currentState == QMediaPlayer.PlayingState:
             self.player.stop()
-            self.player.setMedia(QMediaContent(None))
 
-        self.currentMedia = QMediaContent(url)
-        self.player.setMedia(self.currentMedia)
+        media = QMediaContent(url)
+        self.playlist.addMedia(media)
+        self.playlist.next()
         self.player.play()
+
+    def clearPlaylist(self):
+        self.playlist.clear()
+
+    def playlistPositionChanged(self, position):
+        self.pListView.setCurrentIndex(self.model.index(position, 0))
+
+    def mediaDurationChanged(self, duration):
+        duration /= 1000
+        self.duration = duration
+        self.seekSlider.setMaximum(duration)
+
+    def mediaPositionChanged(self, progress):
+        progress /= 1000
+
+        if self.duration:
+            cTime = durationConvert(progress)
+            tTime = durationConvert(self.duration)
+            self.durationLabel.setText('{0} @{1}'.format(
+                cTime.toString(), tTime.toString()))
+
+        if not self.seekSlider.isSliderDown():
+            self.seekSlider.setValue(progress)
 
     def onClose(self):
         self.player.stop()
         self.player.setMedia(QMediaContent(None))
-        del self.currentMedia
 
     def keyPressEvent(self, event):
         modifiers = event.modifiers()
@@ -93,7 +223,45 @@ class MediaPlayerTab(GalacteekTab):
             else:
                 self.player.setPosition(0)
         if event.key() == Qt.Key_F:
-            if not self.isFullScreen():
-                self.videoWidget.setFullScreen(True)
+            self.videoWidget.setFullScreen(True)
 
         super(MediaPlayerTab, self).keyPressEvent(event)
+
+class ListModel(QAbstractItemModel):
+    def __init__(self, playlist, parent=None):
+        super(ListModel, self).__init__(parent)
+        self.playlist = playlist
+        self.playlist.mediaAboutToBeInserted.connect(
+                self.beginInsertItems)
+        self.playlist.mediaInserted.connect(self.endInsertItems)
+        self.playlist.mediaChanged.connect(self.changeItems)
+
+    def rowCount(self, parent=QModelIndex()):
+        return self.playlist.mediaCount()
+
+    def columnCount(self, parent=QModelIndex()):
+        return 1 if not parent.isValid() else 0
+
+    def index(self, row, column, parent=QModelIndex()):
+        return self.createIndex(row, column)
+
+    def parent(self, child):
+        return QModelIndex()
+
+    def beginInsertItems(self, start, end):
+        self.beginInsertRows(QModelIndex(), start, end)
+
+    def endInsertItems(self):
+        self.endInsertRows()
+
+    def changeItems(self, start, end):
+        self.dataChanged.emit(self.index(start, 0), self.index(end, 1))
+
+    def data(self, index, role=Qt.DisplayRole):
+        if index.isValid() and role == Qt.DisplayRole:
+            if index.column() == 0:
+                media = self.playlist.media(index.row())
+                location = media.canonicalUrl()
+                return location.path()
+            return self.m_data[index]
+        return None

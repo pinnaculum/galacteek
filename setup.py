@@ -27,6 +27,20 @@ def run(*args):
     stdout, err = p.communicate()
     return stdout
 
+class build_docs(Command):
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        from sphinx import build_main
+        build_main([sys.argv[0], '-b', 'html',
+            'docs/manual/en', 'docs/manual/en/html'])
+
 class build_ui(Command):
     user_options = []
 
@@ -70,7 +84,7 @@ class build_ui(Command):
             os.path.join(uidir, 'galacteek_rc.py')])
 
 class _build(build):
-    sub_commands = [('build_ui', None)] + build.sub_commands
+    sub_commands = [('build_ui', None), ('build_docs', None)] + build.sub_commands
 
 setup(
     name='galacteek',
@@ -79,9 +93,10 @@ setup(
     author='David Ferlier',
     url='https://gitlab.com/galacteek/galacteek',
     description='IPFS navigator',
-    include_package_data=False,
-    cmdclass={'build': _build, 'build_ui': build_ui},
+    include_package_data=True,
+    cmdclass={'build': _build, 'build_ui': build_ui, 'build_docs': build_docs},
     packages=[
+        'docs',
         'galacteek',
         'galacteek.core',
         'galacteek.ipfs',
@@ -94,7 +109,15 @@ setup(
         'yarl',
         'base58',
         'py-cid',
+        'Sphinx>=1.4.8'
     ],
+    package_data={
+        'docs': [
+             'manual/en/html/*.html',
+             'manual/en/html/_images/*',
+             'manual/en/html/_static/*',
+        ]
+    },
     entry_points={
         'gui_scripts': [
             'galacteek = galacteek.guientrypoint:start',

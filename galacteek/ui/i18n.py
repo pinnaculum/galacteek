@@ -57,3 +57,6 @@ def iUnknown():
 def iPinSuccess(path):
     return QCoreApplication.translate('GalacteekWindow',
         '{0} was pinned successfully').format(path)
+
+def iManual():
+    return QCoreApplication.translate('GalacteekWindow', 'Manual')

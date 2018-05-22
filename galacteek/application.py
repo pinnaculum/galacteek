@@ -7,6 +7,7 @@ import time
 import asyncio
 import re
 import collections
+import pkg_resources
 
 from quamash import QEventLoop
 
@@ -14,10 +15,11 @@ from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu
 from PyQt5.QtGui import QPixmap, QIcon, QClipboard
 from PyQt5.QtCore import (QCoreApplication, QUrl, QStandardPaths,
         QSettings, QTranslator, QFile, pyqtSignal, QObject,
-        QTemporaryDir, QDateTime)
+        QTemporaryDir, QDateTime, QMessageLogger)
 
 from galacteek.ipfs import pinning, ipfsd, asyncipfsd, cidhelpers
 from galacteek.ipfs.ipfsops import *
+from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.pubsub import *
 from galacteek.ipfs.feeds import FeedFollower
 
@@ -101,6 +103,7 @@ class GalacteekApplication(QApplication):
     GALACTEEK_NAME = 'galacteek'
 
     clipboardHasIpfs = pyqtSignal(bool, str, str)
+    documentationAvailable = pyqtSignal(str, dict)
 
     def __init__(self, debug=False, profile='main'):
         QApplication.__init__(self, sys.argv)
@@ -110,6 +113,7 @@ class GalacteekApplication(QApplication):
         self.__profile = profile
         self._loop = None
         self._client = None
+        self.logger = QMessageLogger()
 
         self.mainWindow = None
         self.gWindows = []
@@ -151,7 +155,7 @@ class GalacteekApplication(QApplication):
 
     def debug(self, msg):
         if self.debugEnabled:
-            print(msg, file=sys.stderr)
+            self.logger.debug(msg)
 
     @property
     def ipfsConnParams(self):
@@ -183,9 +187,14 @@ class GalacteekApplication(QApplication):
         self.systemTray.setContextMenu(systemTrayMenu)
 
     def initMisc(self):
+        from galacteek.ui.files import makeFilesModel
+
+        self.manuals = ManualsImporter(self)
+
         self.downloadsManager = downloads.DownloadsManager(self)
         self.marksLocal = IPFSMarks(self.localMarksFileLocation)
         self.marksNetwork = IPFSMarks(self.networkMarksFileLocation)
+        self.filesModel = None
 
         self.tempDir = QTemporaryDir()
         if not self.tempDir.isValid():
@@ -224,6 +233,7 @@ class GalacteekApplication(QApplication):
                 await oper.client.files.mkdir(GFILES_MYFILES_PATH, parents=True)
                 await oper.client.files.mkdir(GFILES_WEBSITES_PATH, parents=True)
 
+            self.manuals.importManualMain()
             self.ipfsCtx.ipfsRepositoryReady.emit()
 
         self.ipfsTaskOp(setup)
@@ -388,33 +398,31 @@ class GalacteekApplication(QApplication):
             swarmHighWater=sManager.getInt(section, CFG_KEY_SWARMHIGHWATER),
             pubsubEnable=pubsubEnabled)
 
-        async def startDaemon(ipfsd):
-            res = await ipfsd.start()
-
-            if res:
-                running = False
-                self.systemTrayMessage('IPFS', iIpfsDaemonStarted(),
-                    timeout=1000)
-                for iters in range(0, 64):
-                    await asyncio.sleep(0.2)
-                    if ipfsd.proto.daemonReady:
-                        # Good to go
-                        self.systemTrayMessage('IPFS',
-                            iIpfsDaemonReady(), timeout=1000)
-                        running = True
-                        break
-
-                if running is True:
-                    # Update the client and open a browser tab
-                    self.updateIpfsClient()
-                    tab = self.mainWindow.addBrowserTab()
-                else:
-                    self.systemTrayMessage('IPFS', iIpfsDaemonInitProblem())
-            else:
-                self.systemTrayMessage('IPFS', iIpfsDaemonProblem())
-
-        self.getLoop().create_task(startDaemon(self.ipfsd))
+        self.task(self.startIpfsdTask, self.ipfsd)
         return self.ipfsd
+
+    async def startIpfsdTask(self, ipfsd):
+        res = await ipfsd.start()
+
+        if res:
+            running = False
+            self.systemTrayMessage('IPFS', iIpfsDaemonStarted(),
+                timeout=1000)
+            for iters in range(0, 64):
+                await asyncio.sleep(0.2)
+                if ipfsd.proto.daemonReady:
+                    # Good to go
+                    self.systemTrayMessage('IPFS',
+                        iIpfsDaemonReady(), timeout=1000)
+                    running = True
+                    break
+
+            if running is True:
+                self.updateIpfsClient()
+            else:
+                self.systemTrayMessage('IPFS', iIpfsDaemonInitProblem())
+        else:
+            self.systemTrayMessage('IPFS', iIpfsDaemonProblem())
 
     def setupClipboard(self):
         self.appClipboard = self.clipboard()
@@ -448,7 +456,7 @@ class ClipboardTracker(QObject):
     depending on whether or not the clipboard contains an IPFS CID or path
     """
     clipboardHasIpfs = pyqtSignal(bool, str, str)
-    clipboardHistoryChanged = pyqtSignal()
+    clipboardHistoryChanged = pyqtSignal(dict)
 
     def __init__(self, clipboard):
         super(ClipboardTracker, self).__init__()
@@ -499,18 +507,28 @@ class ClipboardTracker(QObject):
             # Not a CID/path
             self.clipboardHasIpfs.emit(False, None, None)
 
+    def hLookup(self, path):
+        for hTs, hItem in self.history.items():
+            if hItem['path'] == path:
+                return hItem
+
     def hRecord(self, path):
         """ Records an item in the history and emits a signal """
         now = time.time()
+        if self.hLookup(path):
+            return
         self.history[now] = {
             'path': path,
             'date': QDateTime.currentDateTime()
         }
-        self.clipboardHistoryChanged.emit()
+        self.clipboardHistoryChanged.emit(self.getHistory())
 
     def getHistory(self):
         return collections.OrderedDict(sorted(self.history.items(),
             key=lambda t: t[0]))
+
+    def clearHistory(self):
+        self.history = {}
 
     def getHistoryLatest(self):
         """ Returns latest history item """
@@ -545,3 +563,38 @@ class ClipboardTracker(QObject):
 
     def onHasIpfs(self, valid, cid, path):
         self.hasIpfs = valid
+
+class ManualsImporter(QObject):
+    """ Imports the HTML manuals in IPFS """
+
+    def __init__(self, app):
+        super(ManualsImporter, self).__init__()
+
+        self.app = app
+        self.registry = {}
+
+    def importManualMain(self):
+        try:
+            listing = pkg_resources.resource_listdir('docs.manual', '')
+            for entry in listing:
+                if entry.startswith('__'):
+                    continue
+                self.importManualLang(entry)
+        except Exception as e:
+            self.app.debug(str(e))
+
+    def importManualLang(self, lang):
+        try:
+            docPath = pkg_resources.resource_filename('docs.manual',
+                '{0}/html'.format(lang))
+            self.app.task(self.importDocPath, docPath, lang)
+        except Exception as e:
+            self.app.debug('Failed importing manual ({0}) {1}'.format(
+                lang, str(e)))
+
+    @ipfsOp
+    async def importDocPath(self, ipfsop, docPath, lang):
+        docEntry = await ipfsop.addPath(docPath)
+        if docEntry:
+            self.registry[lang] = docEntry
+            self.app.documentationAvailable.emit(lang, docEntry)
