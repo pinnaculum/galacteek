@@ -59,12 +59,6 @@ IPFS views keybindings (file manager, hash views):
 - *Ctrl+p*: Copy selected item's IPFS path to the clipboard
 - *Ctrl+w*: Close tab/hash view
 
-Screenshots
-===========
-
-.. image:: https://gitlab.com/cipres/galacteek/raw/ee803df99ca70ff6489654becca1d399c85d2a06/screenshots/filesview.png
-    :target: https://gitlab.com/cipres/galacteek/raw/ee803df99ca70ff6489654becca1d399c85d2a06/screenshots/filesview.png
-
 Platforms supported
 ===================
 

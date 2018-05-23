@@ -91,6 +91,7 @@ setup(
     version=version,
     license='GPL3',
     author='David Ferlier',
+    author_email='galacteek@gmx.co.uk',
     url='https://gitlab.com/galacteek/galacteek',
     description='IPFS navigator',
     include_package_data=True,
