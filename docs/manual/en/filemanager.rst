@@ -11,15 +11,21 @@ file manager for importing content in the IPFS repository. With IPFS all your
 data is addressed by its content and referenced by its cryptographic hash 
 (e.g *Qmb9uWkLmiFNEhp6PyV5iw4qh5wsv2dtJNGwUi1k15JwJd*)
 
-Importing your files
---------------------
+Selecting the working directory
+-------------------------------
+
+The path selector menu lets you select the current working directory. *Home* is
+the default directory.
+
+Importing your files using the files selection dialogs
+------------------------------------------------------
 
 .. image:: ../../../share/icons/add-file.png
     :width: 64
     :height: 64
 
 If you click on the **Add files** icon you are prompted with a file selection
-dialog. All files selected will be imported on your IPFS repository. By default
+dialog. All files selected will be imported to your IPFS repository. By default
 your files will be wrapped with a directory in order to preserve filenames (you
 can change this in the settings).
 
@@ -33,14 +39,23 @@ including dotfiles (files and directories starting with *.* on Linux)
 
 Because the application accesses IPFS in an *asynchronous* manner, importing
 even large amounts of data should not cause the application to hang or becoming
-unresponsive so you can perform other tasks, but the file manager prevents you
-from adding more content while the import is running.
+unresponsive so you can perform other tasks meanwhile, but the file manager
+will prevent you from adding more content while the import is running.
 
-Drag and drop
--------------
+Importing your files using the local file manager (drag-and-drop)
+-----------------------------------------------------------------
 
-Dropping files from other applications in the file manager's widget is supported
-(only tested on Linux).
+.. image:: ../../../share/icons/file-manager.png
+    :width: 64
+    :height: 64
+
+Clicking on the file manager icon will open up a file manager displaying your
+local files. Just select and drag-and-drop your files from the local file
+manager to the IPFS file manager on the left and they will be imported to your
+repository. Multiple selection is supported by holding the *Control* or *Shift*
+keys.
+
+Drag-and-dropping content from other applications is supported as well.
 
 Double-clicking items
 ---------------------
@@ -61,6 +76,7 @@ options:
   data on their node, it will still be available)
 - *Hashmark*: bookmark the IPFS hash associated with the file
 - *Browse*: open a browser tab for this file 
+- *Explore*: for directories, open an explorer tab for this entry
 - *Open with*: use specific application/method to open this file (mediaplayer,
   ebook..)
 - *Publish to IPNS key*: this will link this file to the given IPNS key

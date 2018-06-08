@@ -53,7 +53,7 @@ def start():
     parser.add_argument('--gatewayport', default=None,
         help='IPFS http gateway port number')
     parser.add_argument('--profile', default='main',
-        help='Profile')
+        help='Application Profile')
     parser.add_argument('-d', action='store_true',
         dest='debug', help = 'Activate debugging')
     args = parser.parse_args()

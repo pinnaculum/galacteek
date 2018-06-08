@@ -7,6 +7,7 @@ import os.path
 
 import tempfile
 import time
+import random
 
 from PyQt5.QtCore import Qt
 
@@ -96,8 +97,8 @@ def dirTestFiles(pytestconfig):
 def testFilesDocsAsync(dirTestFiles):
     return os.path.join(dirTestFiles, 'docs-asyncio')
 
-def makeApp():
-    gApp = application.GalacteekApplication(profile='pytest', debug=True)
+def makeAppNoDaemon():
+    gApp = application.GalacteekApplication(profile='pytest-noipfsd', debug=True)
     loop = gApp.setupAsyncLoop()
     sManager = gApp.settingsMgr
     sManager.setFalse(CFG_SECTION_IPFSD, CFG_KEY_ENABLED)
@@ -105,21 +106,46 @@ def makeApp():
     gApp.updateIpfsClient()
     return gApp
 
+def makeApp(profile='pytest-withipfsd'):
+    r = random.Random()
+    gApp = application.GalacteekApplication(profile=profile, debug=True)
+
+    sManager = gApp.settingsMgr
+    sManager.setTrue(CFG_SECTION_IPFSD, CFG_KEY_ENABLED)
+    sManager.setSetting(CFG_SECTION_IPFSD, CFG_KEY_APIPORT,
+            r.randint(15500, 15580))
+    sManager.setSetting(CFG_SECTION_IPFSD, CFG_KEY_SWARMPORT,
+            r.randint(15600, 15680))
+    sManager.setSetting(CFG_SECTION_IPFSD, CFG_KEY_HTTPGWPORT,
+            r.randint(15700, 15780))
+    sManager.sync()
+    loop = gApp.setupAsyncLoop()
+    gApp.startIpfsDaemon()
+    return gApp
+
 @pytest.fixture
-def gApp(tmpdir):
+def gApp(qtbot, tmpdir):
     gApp = makeApp()
     sManager = gApp.settingsMgr
     sManager.setSetting(CFG_SECTION_BROWSER, CFG_KEY_DLPATH, str(tmpdir))
     sManager.sync()
-    return gApp
+
+    with qtbot.waitSignal(gApp.ipfsCtx.ipfsRepositoryReady):
+        qtbot.wait(8000)
+
+    yield gApp
+    gApp.ipfsd.stop()
+    gApp.stopIpfsServices()
+    gApp.quit()
 
 @pytest.fixture(scope='module')
 def modApp():
-    gApp = makeApp()
+    gApp = makeApp(profile='pytest-modapp')
     return gApp
 
 class TestApp:
-    def test_appmain(self, gApp, qtbot, tmpdir, testfile1):
+    @pytest.mark.asyncio
+    async def test_appmain(self, qtbot, gApp, tmpdir, testfile1):
         """
         Test the application, running the GUI and testing all components
         """
@@ -130,11 +156,6 @@ class TestApp:
             qtbot.mouseClick(w, Qt.LeftButton)
 
         with loop:
-            async def addSomeFiles(op):
-                async for added in op.client.add(str(testfile1)):
-                    await op.filesLink(added, '/galacteek/myfiles',
-                        wrap_with_directory=True)
-
             mainW = gApp.mainWindow
 
             async def openTabs():
@@ -146,21 +167,20 @@ class TestApp:
 
                 # Activate global pinning
                 leftClick(mainW.ui.pinAllGlobalButton)
+                await asyncio.sleep(1)
 
             async def browse():
                 # Browse some hashes retrieved from the file manager's entry
                 # cache, opening a tab for every tab
                 await asyncio.sleep(1)
-                filesW = mainW.findTabMyFiles()
-                cacheDirs = filesW.entryCache.getByType(1)
+                filesW = mainW.findTabFileManager()
+                cacheDirs = filesW.model.entryCache.getByType(1)
                 hashes = list(cacheDirs.keys())
 
                 for ohash in hashes[0:16]:
                     t = gApp.mainWindow.addBrowserTab()
                     t.browseIpfsHash(ohash)
-                await asyncio.sleep(3)
-
-                gApp.stopIpfsServices()
+                await asyncio.sleep(5)
 
             loop.run_until_complete(openTabs())
             loop.run_until_complete(browse())
@@ -174,6 +194,7 @@ class TestApp:
         async def addAndView(ipfsop):
             root = await ipfsop.addPath(testFilesDocsAsync)
             view.viewHash(root['Hash'], autoOpenFolders=True)
+            await asyncio.sleep(2)
 
         with loop:
             loop.run_until_complete(gApp.task(addAndView))

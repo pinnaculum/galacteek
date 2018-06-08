@@ -194,6 +194,7 @@ class MediaPlayerTab(GalacteekTab):
     def onClose(self):
         self.player.stop()
         self.player.setMedia(QMediaContent(None))
+        return True
 
     def keyPressEvent(self, event):
         modifiers = event.modifiers()

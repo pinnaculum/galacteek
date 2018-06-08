@@ -8,11 +8,21 @@ IPFS settings
 -------------
 
 The application can either spawn a local IPFS daemon (this is the default) or let
-you use an IPFS daemon to which you already have access. You need to restart
-the application after accepting the new settings.
+you use an IPFS daemon to which you already have access.
 
-**Note**: changing these settings will make you lose access to the content
-that you might have published using the previous settings.
+If the IPFS daemon cannot be started, it is possible that one of the listening
+ports (API, swarm or HTTP gateway) is already being used on your system. In
+that case, change the ports configuration in the settings and restart the
+application.
+
+The *Minimum swarm connections* and *Maximum swarm connections* settings
+let you modify the number of connections to be used for the IPFS swarm.
+Using low values can significantly reduce CPU usage.
+
+**Note**: switching from a local to custom daemon (or vice versa) will make you
+lose access to the content that you might have published using the previous
+settings, so use with care. Use separate *application profiles* with the
+**--profile** command-line switch to keep multiple profiles separately
 
 User interface settings
 -----------------------
@@ -20,7 +30,7 @@ User interface settings
 Hide hashes
 ^^^^^^^^^^^
 
-This will hide the IPFS hashes wherever possible (file manager, ipfs views..)
+This will hide the IPFS hashes wherever possible (file manager, explorer..)
 
 Wrap single files or directories
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

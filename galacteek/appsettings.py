@@ -44,8 +44,8 @@ def setDefaultSettings(gApp):
     sManager.setDefaultSetting(section, CFG_KEY_APIPORT, 5001)
     sManager.setDefaultSetting(section, CFG_KEY_SWARMPORT, 4001)
     sManager.setDefaultSetting(section, CFG_KEY_HTTPGWPORT, 8080)
-    sManager.setDefaultSetting(section, CFG_KEY_SWARMHIGHWATER, 80)
-    sManager.setDefaultSetting(section, CFG_KEY_SWARMLOWWATER, 30)
+    sManager.setDefaultSetting(section, CFG_KEY_SWARMHIGHWATER, 300)
+    sManager.setDefaultSetting(section, CFG_KEY_SWARMLOWWATER, 150)
     sManager.setDefaultTrue(section, CFG_KEY_ENABLED)
 
     section = CFG_SECTION_BROWSER

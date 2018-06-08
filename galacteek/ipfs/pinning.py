@@ -6,11 +6,10 @@ import aioipfs
 class Pinner(object):
     """ Pins objects on request through an async queue """
 
-    def __init__(self, app, loop):
+    def __init__(self, app):
         self.pintasks = []
         self.app = app
-        self.loop = loop
-        self.queue = asyncio.Queue(loop=loop)
+        self.queue = asyncio.Queue(loop=self.app.loop)
         self.lock = asyncio.Lock()
         self.pinstatus = {}
 
@@ -31,7 +30,7 @@ class Pinner(object):
         self._emitSLength()
 
     async def pin(self, path, recursive=False):
-        ipfsClient = self.app.getIpfsClient()
+        ipfsClient = self.app.ipfsClient
         self.pathRegister(path)
 
         async for pinned in ipfsClient.pin.add(path, recursive=recursive):

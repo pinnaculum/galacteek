@@ -6,7 +6,9 @@ import mimetypes
 
 from PyQt5.QtWidgets import (QWidget, QFrame, QApplication,
         QLabel, QPushButton, QVBoxLayout, QAction, QHBoxLayout,
-        QTreeView, QHeaderView, QShortcut, QToolBox, QTextBrowser)
+        QTreeView, QHeaderView, QShortcut, QToolBox, QTextBrowser,
+        QFileDialog, QProgressBar, QSpacerItem, QSizePolicy,
+        QToolButton)
 
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QKeySequence
 
@@ -32,6 +34,22 @@ def iCIDInfo(cidv, linksCount, size):
     return QCoreApplication.translate('IPFSHashView',
         'CID (v{0}): {1} links, total size: {2}').format(
             cidv, linksCount, size)
+
+def iGitClone():
+    return QCoreApplication.translate('IPFSHashView',
+        'Clone repository')
+
+def iGitClonedRepo(path):
+    return QCoreApplication.translate('IPFSHashView',
+        'Cloned git repository: {0}').format(path)
+
+def iGitErrorCloning(msg):
+    return QCoreApplication.translate('IPFSHashView',
+        'Error cloning git repository: {0}').format(msg)
+
+def iGitInvalid():
+    return QCoreApplication.translate('IPFSHashView',
+        'Invalid git repository')
 
 class IPFSItem(UneditableItem):
     def __init__(self, text, icon=None):
@@ -188,7 +206,7 @@ class TreeEventFilter(QObject):
                     return True
         return False
 
-class TextView(QWidget):
+class TextView(GalacteekTab):
     def __init__(self, data, mimeType, parent=None):
         super(TextView, self).__init__(parent)
 
@@ -238,16 +256,43 @@ class IPFSHashViewWidget(QWidget):
 
         self.autoOpenFolders = autoOpenFolders
         self.hLayoutTop = QHBoxLayout()
+        self.hLayoutInfo = QHBoxLayout()
+        self.hLayoutCtrl = QHBoxLayout()
+        self.hLayoutTop.addLayout(self.hLayoutInfo)
+        spacerItem = QSpacerItem(10, 20, QSizePolicy.Expanding,
+                QSizePolicy.Minimum)
+        self.hLayoutTop.addItem(spacerItem)
+        self.hLayoutTop.addLayout(self.hLayoutCtrl)
+
         self.labelInfo = QLabel()
 
-        self.hLayoutTop.addWidget(self.labelInfo, 0, Qt.AlignLeft)
+        self.hLayoutInfo.addWidget(self.labelInfo, 0, Qt.AlignLeft)
 
         if addClose:
             self.closeButton = QPushButton('Close')
-            self.closeButton.clicked.connect(self.onClose)
+            self.closeButton.clicked.connect(self.onCloseView)
             self.closeButton.setMaximumWidth(100)
             self.closeButton.setShortcut(QKeySequence('Ctrl+w'))
-            self.hLayoutTop.addWidget(self.closeButton, 0, Qt.AlignLeft)
+            self.hLayoutCtrl.addWidget(self.closeButton, 0, Qt.AlignLeft)
+
+        self.getTask = None
+        self.getButton = QPushButton('Download')
+        self.getButton.clicked.connect(self.onGet)
+        self.getButton.setShortcut(QKeySequence('Ctrl+d'))
+        self.getLabel = QLabel()
+        self.getProgress = QProgressBar()
+        self.getProgress.setMinimum(0)
+        self.getProgress.setMaximum(100)
+        self.getProgress.hide()
+
+        self.pinButton = QPushButton('Pin')
+        self.pinButton.clicked.connect(self.onPin)
+        self.pinButton.setShortcut(QKeySequence('Ctrl+p'))
+
+        self.hLayoutCtrl.addWidget(self.getButton, 0, Qt.AlignLeft)
+        self.hLayoutCtrl.addWidget(self.pinButton, 0, Qt.AlignLeft)
+        self.hLayoutCtrl.addWidget(self.getLabel, 0, Qt.AlignLeft)
+        self.hLayoutCtrl.addWidget(self.getProgress, 0, Qt.AlignLeft)
 
         self.vLayout.addLayout(self.hLayoutTop)
 
@@ -281,6 +326,67 @@ class IPFSHashViewWidget(QWidget):
     def reFocus(self):
         self.tree.setFocus(Qt.OtherFocusReason)
 
+    @ipfsOp
+    async def gitClone(self, ipfsop, entry, dest):
+        """
+        Clone the git repository contained within entry, to directory dest
+        """
+        from git.repo import base
+        from git.exc import InvalidGitRepositoryError
+
+        self.gitButton.setEnabled(False)
+
+        getRet = await ipfsop.client.get(entry['Hash'],
+                dstdir=self.app.tempDir.path())
+        if getRet != True:
+            self.gitButton.setEnabled(True)
+            return messageBox('Could not fetch the git repository')
+
+        repoPath = os.path.join(self.app.tempDir.path(), entry['Hash'])
+        try:
+            repo = base.Repo(repoPath)
+        except InvalidGitRepositoryError:
+            return messageBox(iGitInvalid())
+
+        dstPath = '{}.git'.format(
+            os.path.join(dest, self.rootHash))
+        # Clone it now. No need to run it in a threadpool since the git module
+        # will run a git subprocess for the cloning
+        try:
+            newRepo = repo.clone(dstPath)
+        except Exception as e:
+            return messageBox(iGitErrorCloning(str(e)))
+
+        messageBox(iGitClonedRepo(dstPath))
+        self.gitButton.setEnabled(True)
+
+    def addGitControl(self, gitEntry):
+        """
+        Adds a tool button for making operations on the git repo
+        """
+        def clone(entry):
+            dirSel = directorySelect()
+            if dirSel:
+                self.app.task(self.gitClone, entry, dirSel)
+
+        self.gitMenu = QMenu()
+        self.gitMenu.addAction(iGitClone(), lambda: clone(gitEntry))
+        self.gitButton = QToolButton()
+        self.gitButton.setText('Git')
+        self.gitButton.setMenu(self.gitMenu)
+        self.gitButton.setPopupMode(QToolButton.MenuButtonPopup)
+        self.hLayoutCtrl.addWidget(self.gitButton)
+
+    def onGet(self):
+        dirSel = directorySelect()
+        if dirSel:
+            self.getTask = self.app.task(self.getResource, self.rootPath,
+                    dirSel)
+
+    def onPin(self):
+        self.app.task(self.app.pinner.enqueue, self.rootPath, True,
+                None)
+
     def onReturnPressed(self):
         currentIdx = self.tree.currentIndex()
         if currentIdx.isValid():
@@ -294,7 +400,7 @@ class IPFSHashViewWidget(QWidget):
         dataHash = self.model.getHashFromIdx(self.tree.currentIndex())
         self.app.setClipboardText(joinIpfs(dataHash))
 
-    def onClose(self):
+    def onCloseView(self):
         self.parent.remove(self)
 
     def browse(self, hash):
@@ -302,9 +408,7 @@ class IPFSHashViewWidget(QWidget):
 
     def onDoubleClicked(self, idx):
         nameItem = self.model.getNameItemFromIdx(idx)
-        item = self.model.itemFromIndex(idx)
         dataHash = self.model.getHashFromIdx(idx)
-        dataPath = self.model.getNameFromIdx(idx)
 
         if nameItem.isDir():
             self.parent.viewHash(dataHash, addClose=True)
@@ -312,10 +416,7 @@ class IPFSHashViewWidget(QWidget):
             self.openFile(nameItem, dataHash)
 
     def openFile(self, item, fileHash):
-        if item.mimeType is None:
-            return self.browse(fileHash)
-
-        if item.mimeType == 'text/html':
+        if item.mimeType is None or item.mimeType == 'text/html':
             return self.browse(fileHash)
 
         self.gWindow.app.task(self.openFileWithMime, item, fileHash)
@@ -346,7 +447,6 @@ class IPFSHashViewWidget(QWidget):
         menu = QMenu()
         nameItem = self.model.getNameItemFromIdx(idx)
         dataHash = self.model.getHashFromIdx(idx)
-        dataPath = self.model.getNameFromIdx(idx)
         ipfsPath = joinIpfs(dataHash)
 
         def pinRecursive(rHash):
@@ -419,3 +519,29 @@ class IPFSHashViewWidget(QWidget):
                     # Automatically open sub folders. Used by unit tests
                     self.parent.viewHash(entry['Hash'],
                         addClose=True, autoOpenFolders=self.autoOpenFolders)
+
+                if nItemName.isDir() and entry['Name'] == '.git':
+                    # If there's a git repo here, add a control button
+                    self.addGitControl(entry)
+
+    @ipfsStatOp
+    async def getResource(self, ipfsop, rPath, dest, rStat):
+        """
+        Get the resource referenced by rPath to directory dest
+        """
+
+        self.getProgress.show()
+        cumulative = rStat['CumulativeSize']
+
+        async def onGetProgress(ref, bytesRead, arg):
+            per = int((bytesRead*100) / cumulative)
+            self.getLabel.setText('Downloaded: {0}'.format(
+                sizeFormat(bytesRead)))
+            self.getProgress.setValue(per)
+
+        ret = await ipfsop.client.get(rPath, dstdir=dest,
+                progress_callback=onGetProgress,
+                chunk_size=32768)
+
+        self.getLabel.setText('Download finished')
+        self.getProgress.hide()

@@ -11,14 +11,17 @@ def _getOp():
         raise Exception('No Application')
     return app.getIpfsOperator()
 
+def appTask(fn, *args, **kw):
+    app = QApplication.instance()
+    app.task(fn, *args, **kw)
+
 def ipfsFunc(func):
     @functools.wraps(func)
     async def wrapper(*args, **kw):
         app = QApplication.instance()
         if not app:
             raise Exception('No Application')
-        client = app.getIpfsClient()
-        return await func(client, *args, **kw)
+        return await func(app.ipfsClient, *args, **kw)
     return wrapper
 
 def ipfsOpFn(func):

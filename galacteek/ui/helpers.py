@@ -3,7 +3,7 @@ import os
 from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtCore import (QStandardPaths, Qt, QEvent, QObject, pyqtSignal,
         QFile)
-from PyQt5.QtWidgets import QMessageBox, QWidget, QApplication
+from PyQt5.QtWidgets import QMessageBox, QWidget, QApplication, QFileDialog
 
 from . import galacteek_rc
 
@@ -25,6 +25,10 @@ def messageBox(message):
     msgBox.setText(message)
     msgBox.show()
     return msgBox.exec_()
+
+def directorySelect(caption=''):
+    return QFileDialog.getExistingDirectory(None,
+        caption, getHomePath(), QFileDialog.ShowDirsOnly)
 
 def runDialog(cls, *args, **kw):
     title = kw.pop('title', None)
@@ -102,4 +106,6 @@ def sizeFormat(size):
         return '{0:.2f} Mb'.format(size/(1024*1024))
     if size > 1024:
         return '{0:.2f} kb'.format(size/1024)
+    if size == 0:
+        return '0'
     return '{0} bytes'.format(size)
