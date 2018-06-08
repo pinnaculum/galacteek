@@ -17,6 +17,9 @@ def joinIpfs(path):
 def joinIpns(path):
     return os.path.join('/ipns/', path)
 
+class OperatorException(Exception):
+    pass
+
 class IPFSLogWatcher(object):
     def __init__(self, operator):
         self.op = operator
@@ -41,6 +44,8 @@ class IPFSOperator(object):
         self.debugInfo = debug
         self.ctx = ctx
 
+        self.filesChroot = None
+
     async def sleep(self, t=0):
         await asyncio.sleep(t)
 
@@ -64,16 +69,51 @@ class IPFSOperator(object):
         return True
 
     async def filesLookup(self, path, name):
+        """
+        Looks for a file (files API) with a given name in this path
+
+        :param str path: the path to search
+        :param str name: the entry name to look for
+        :return: IPFS entry
+        """
         listing = await self.filesList(path)
         for entry in listing:
             if entry['Name'] == name:
                 return entry
 
     async def filesLookupHash(self, path, hash):
+        """
+        Searches for a file (files API) with a given hash in this path
+
+        :param str path: the path to search
+        :param str hash: the multihash to look for
+        :return: IPFS entry
+        """
         listing = await self.filesList(path)
         for entry in listing:
             if entry['Hash'] == hash:
                 return entry
+
+    async def filesRm(self, path, recursive=False):
+        try:
+            await self.client.files.rm(path, recursive=recursive)
+        except aioipfs.APIException as exc:
+            self.debug(exc.message)
+            return None
+
+    async def filesMkdir(self, path, parents=True):
+        try:
+            await self.client.files.mkdir(path, parents=parents)
+        except aioipfs.APIException as exc:
+            self.debug(exc.message)
+            return None
+
+    async def filesMove(self, source, dest):
+        try:
+            return await self.client.files.mv(source, dest)
+        except aioipfs.APIException as exc:
+            self.debug(exc.message)
+            return None
 
     async def filesList(self, path):
         try:
@@ -86,6 +126,28 @@ class IPFSOperator(object):
             return []
 
         return listing['Entries']
+
+    async def filesStat(self, path):
+        try:
+            return await self.client.files.stat(path)
+        except aioipfs.APIException as exc:
+            self.debug(exc.message)
+            return None
+
+    async def chroot(self, path):
+        self.filesChroot = path
+
+    async def vMkdir(self, path):
+        if self.filesChroot:
+            return await self.filesMkdir(os.path.join(self.filesChroot,
+                path))
+
+    async def vFilesList(self, path):
+        if self.filesChroot:
+            return await self.filesList(os.path.join(self.filesChroot,
+                path))
+        else:
+            raise OperatorException('No chroot provided')
 
     async def filesLink(self, entry, dest, flush=True, name=None):
         """ Given an entry (as returned by /files/ls), make a link
@@ -101,6 +163,17 @@ class IPFSOperator(object):
 
         if flush:
             await self.client.files.flush(dest)
+        return True
+
+    async def filesLinkFp(self, entry, dest):
+        try:
+            resp = await self.client.files.cp(joinIpfs(entry['Hash']),
+                    dest)
+        except aioipfs.APIException as exc:
+            self.debug('Exception on copying entry {0} to {1}'.format(
+                entry, dest))
+            return False
+
         return True
 
     async def peersList(self):

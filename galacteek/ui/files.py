@@ -8,16 +8,16 @@ import mimetypes
 
 from PyQt5.QtWidgets import (QWidget, QFrame, QApplication, QMainWindow,
         QDialog, QLabel, QTextEdit, QPushButton, QVBoxLayout, QAction,
-        QTabWidget, QFileDialog)
-from PyQt5.QtWidgets import (QTreeWidget, QTreeWidgetItem)
-from PyQt5.QtWidgets import (QTreeView, QTreeWidgetItem)
-from PyQt5.QtWidgets import QMessageBox, QMenu, QAbstractItemView, QShortcut
+        QTabWidget, QFileDialog, QTreeWidget, QTreeWidgetItem,
+        QTreeView, QTreeWidgetItem, QMessageBox, QMenu, QAbstractItemView,
+        QShortcut, QInputDialog, QToolButton, QHeaderView, QFileSystemModel)
 
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtGui import QPixmap, QIcon, QClipboard, QKeySequence
 
-from PyQt5.QtCore import QCoreApplication, QUrl, Qt, QEvent, QObject, pyqtSignal
-from PyQt5.QtCore import QBuffer, QModelIndex, QMimeData, QFile, QStandardPaths
+from PyQt5.QtCore import (QCoreApplication, QUrl, Qt, QEvent, QObject,
+    pyqtSignal,QBuffer, QModelIndex, QMimeData, QFile, QStandardPaths,
+    QDir)
 from PyQt5.Qt import QByteArray
 
 from quamash import QEventLoop, QThreadExecutor
@@ -70,6 +70,9 @@ def iMediaPlayer():
 def iDeleteFile():
     return QCoreApplication.translate('FilesForm', 'Delete file')
 
+def iExploreDir():
+    return QCoreApplication.translate('FilesForm', 'Explore directory')
+
 def iUnlinkFile():
     return QCoreApplication.translate('FilesForm', 'Unlink file')
 
@@ -89,14 +92,29 @@ def iSelectFiles():
 def iMyFiles():
     return QCoreApplication.translate('FilesForm', 'My Files')
 
-class IPFSItem(UneditableItem):
-    def __init__(self, text, icon=None):
-        super().__init__(text, icon=icon)
-        self.path = None
-        self.setParentHash(None)
+def iMusic():
+    return QCoreApplication.translate('FilesForm', 'Music')
 
-    def setParentHash(self, hash):
-        self.parentHash = hash
+def iPictures():
+    return QCoreApplication.translate('FilesForm', 'Pictures')
+
+def iVideos():
+    return QCoreApplication.translate('FilesForm', 'Videos')
+
+def iHome():
+    return QCoreApplication.translate('FilesForm', 'Home')
+
+def iCode():
+    return QCoreApplication.translate('FilesForm', 'Code')
+
+class IPFSItem(UneditableItem):
+    def __init__(self, text, path=None, parenthash=None, icon=None):
+        super(IPFSItem, self).__init__(text, icon=icon)
+        self.path = path
+        self.setParentHash(parenthash)
+
+    def setParentHash(self, pHash):
+        self.parentHash = pHash
 
     def getParentHash(self):
         return self.parentHash
@@ -128,38 +146,56 @@ class IPFSNameItem(IPFSItem):
         return self.entry['Type'] == 1
 
 class FilesItemModel(QStandardItemModel):
-    fileDropEvent = pyqtSignal(IPFSItem, str)
-    directoryDropEvent = pyqtSignal(IPFSItem, str)
+    fileDropEvent = pyqtSignal(str)
+    directoryDropEvent = pyqtSignal(str)
 
-    def __init__(self, *args, **kw):
-        QStandardItemModel.__init__(self, *args, **kw)
+    def __init__(self):
+        QStandardItemModel.__init__(self)
 
         self.itemRoot = self.invisibleRootItem()
-        self.itemFiles = IPFSItem(iMyFiles())
-        self.itemFiles.setPath(GFILES_MYFILES_PATH)
-        self.itemRoot.appendRow([self.itemFiles])
-
         self.itemRootIdx = self.indexFromItem(self.itemRoot)
-        self.itemFilesIdx = self.indexFromItem(self.itemFiles)
         self.entryCache = IPFSEntryCache()
+
         self.rowsInserted.connect(self.onRowsInserted)
         self.rowsAboutToBeRemoved.connect(self.onRowsToBeRemoved)
+
+    def setupItemsFromProfile(self, profile):
+        self.itemHome = IPFSItem(iHome(), path=profile.pathHome)
+        self.itemPictures = IPFSItem(iPictures(),
+                path=profile.pathPictures)
+        self.itemVideos = IPFSItem(iVideos(),
+                path=profile.pathVideos)
+        self.itemMusic = IPFSItem(iMusic(),
+                path=profile.pathMusic)
+        self.itemCode = IPFSItem(iCode(),
+                path=profile.pathCode)
+
+        self.itemRoot.appendRows([
+            self.itemHome,
+            self.itemPictures,
+            self.itemVideos,
+            self.itemCode,
+            self.itemMusic
+        ])
+
+    def displayItem(self, arg):
+        self.itemRoot.appendRow(arg)
 
     def onRowsInserted(self, parent, first, last):
         for itNum in range(first, last+1):
             itNameIdx = self.index(itNum, 0, parent)
-            itName = self.itemFromIndex(itNameIdx)
-            entry = itName.getEntry()
-            self.entryCache.register(entry)
+            item = self.itemFromIndex(itNameIdx)
+
+            if type(item) is IPFSNameItem:
+                self.entryCache.register(item.getEntry())
 
     def onRowsToBeRemoved(self, parent, first, last):
-        print(first, last)
         for itNum in range(first, last+1):
             itNameIdx = self.index(itNum, 0, parent)
-            itName = self.itemFromIndex(itNameIdx)
-            if itName:
-                entry = itName.getEntry()
-                print("Purging", entry)
+            item = self.itemFromIndex(itNameIdx)
+
+            if type(item) is IPFSNameItem:
+                entry = item.getEntry()
                 self.entryCache.purge(entry['Hash'])
 
     def supportedDropActions(self):
@@ -180,18 +216,17 @@ class FilesItemModel(QStandardItemModel):
         mimeText = data.text()
         itemIdx = self.index(row, column, parent)
         item = self.itemFromIndex(itemIdx)
-        if item is None:
-            item = self.itemFiles
-        try:
-            path = QUrl(mimeText).toLocalFile()
-            if os.path.isfile(path):
-                self.fileDropEvent.emit(item, path)
-            if os.path.isdir(path):
-                self.directoryDropEvent.emit(item, path)
-        except Exception as e:
-            print('Drag and drop error', str(e), file=sys.stderr)
+
+        if data.hasUrls():
+            for url in data.urls():
+                path = url.toLocalFile()
+                if os.path.isfile(path):
+                    self.fileDropEvent.emit(path)
+                if os.path.isdir(path):
+                    self.directoryDropEvent.emit(path)
+            return True
+        else:
             return False
-        return True
 
     def getHashFromIdx(self, idx):
         idxHash = self.index(idx.row(), 2, idx.parent())
@@ -208,12 +243,14 @@ class FilesItemModel(QStandardItemModel):
 def makeFilesModel():
     # Setup the model
     model = FilesItemModel()
-    model.setColumnCount(3)
     model.setHorizontalHeaderLabels(
             [iFileName(), iFileSize(), iFileHash()])
     return model
 
 class FilesTab(GalacteekTab):
+    statusReady = 0
+    statusBusy = 1
+
     def __init__(self, gWindow, **kw):
         super().__init__(gWindow, **kw)
 
@@ -222,18 +259,32 @@ class FilesTab(GalacteekTab):
         self.ui = ui_files.Ui_FilesForm()
         self.ui.setupUi(self)
         self.clipboard = self.app.appClipboard
+        self.status = self.statusReady
+
+        # Build file browser
+        self.createFileManager()
 
         # Connect the various buttons
         self.ui.addFileButton.clicked.connect(self.onAddFilesClicked)
         self.ui.addDirectoryButton.clicked.connect(self.onAddDirClicked)
         self.ui.refreshButton.clicked.connect(self.onRefreshClicked)
         self.ui.searchFiles.returnPressed.connect(self.onSearchFiles)
+        self.ui.fileManagerSwitch.clicked.connect(self.onFileManager)
+        self.ui.fileManagerButton.clicked.connect(self.onFileManager)
 
         # Connect the tree view actions
         self.ui.treeFiles.doubleClicked.connect(self.onDoubleClicked)
         self.ui.treeFiles.setContextMenuPolicy(Qt.CustomContextMenu)
         self.ui.treeFiles.customContextMenuRequested.connect(self.onContextMenu)
         self.ui.treeFiles.expanded.connect(self.onExpanded)
+
+        # Path selector
+        self.ui.pathSelector.insertItem(0, getIcon('go-home.png'), 'Home')
+        self.ui.pathSelector.insertItem(1, iPictures())
+        self.ui.pathSelector.insertItem(2, iVideos())
+        self.ui.pathSelector.insertItem(3, iMusic())
+        self.ui.pathSelector.insertItem(4, iCode())
+        self.ui.pathSelector.activated.connect(self.onPathSelector)
 
         # Connect the event filter
         evfilter = IPFSTreeKeyFilter(self.ui.treeFiles)
@@ -243,16 +294,9 @@ class FilesTab(GalacteekTab):
         evfilter.explorePressed.connect(self.onExploreItem)
         self.ui.treeFiles.installEventFilter(evfilter)
 
-        # Setup the model, caching it in the application
-        if self.app.filesModel:
-            self.model = self.app.filesModel
-        else:
-            self.model = makeFilesModel()
-            self.app.filesModel = self.model
+        self.setupModel()
 
         # Setup the tree view
-        self.ui.treeFiles.setModel(self.model)
-        self.ui.treeFiles.setColumnWidth(0, 400)
         self.ui.treeFiles.setExpandsOnDoubleClick(True)
         self.ui.treeFiles.setItemsExpandable(True)
         self.ui.treeFiles.setSortingEnabled(True)
@@ -267,63 +311,149 @@ class FilesTab(GalacteekTab):
         # Configure drag-and-drop
         self.ui.treeFiles.setAcceptDrops(True)
         self.ui.treeFiles.setDragDropMode(QAbstractItemView.DropOnly)
-        self.model.fileDropEvent.connect(self.onDropFile)
-        self.model.directoryDropEvent.connect(self.onDropDirectory)
 
         self.ipfsKeys = []
-        self.ui.treeFiles.expand(self.model.itemFilesIdx)
+
+    @property
+    def displayPath(self):
+        return self.displayItem.getPath()
+
+    @property
+    def busy(self):
+        return self.status == self.statusBusy
+
+    def createFileManager(self):
+        self.fManagerModel = QFileSystemModel()
+        self.fManagerModel.setRootPath('')
+
+        self.localTree = QTreeView()
+        self.localTree.setModel(self.fManagerModel)
+        self.localTree.setDragEnabled(True)
+        self.localTree.setDragDropMode(QAbstractItemView.DragOnly)
+        self.localTree.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.localTree.setItemsExpandable(True)
+
+        rootIndex = self.fManagerModel.index(QDir.rootPath())
+        if rootIndex.isValid():
+            self.localTree.setRootIndex(rootIndex)
+
+        for col in range(1, 4):
+            self.localTree.hideColumn(col)
+
+        self.localTree.hide()
+        self.ui.hLayoutBrowser.insertWidget(0, self.localTree)
+
+    def setupModel(self):
+        # Setup the model, caching it in the profile object
+        if self.profile.filesModel:
+            self.model = self.profile.filesModel
+        else:
+            self.model = makeFilesModel()
+            self.profile.setFilesModel(self.model)
+            self.model.setupItemsFromProfile(self.profile)
+
+        self.ui.treeFiles.setModel(self.model)
+        self.changeDisplayItem(self.model.itemHome)
+        self.app.task(self.updateKeys)
+
+        self.disconnectDropSignals()
+
+        # Connect the model's drag-and-drop signals
+        self.model.fileDropEvent.connect(self.onDropFile)
+        self.model.directoryDropEvent.connect(self.onDropDirectory)
 
     def enableButtons(self, flag=True):
         for btn in [ self.ui.addFileButton,
                 self.ui.addDirectoryButton,
                 self.ui.refreshButton,
+                self.ui.fileManagerSwitch,
+                self.ui.fileManagerButton,
                 self.ui.searchFiles ]:
             btn.setEnabled(flag)
 
-    @property
     def currentItem(self):
         currentIdx = self.ui.treeFiles.currentIndex()
         if currentIdx.isValid():
             return self.model.getNameItemFromIdx(currentIdx)
 
     def onClose(self):
-        self.model.fileDropEvent.disconnect(self.onDropFile)
-        self.model.directoryDropEvent.disconnect(self.onDropDirectory)
+        if not self.busy:
+            self.disconnectDropSignals()
+            return True
+        return False
 
-    def onDropFile(self, item, path):
+    def disconnectDropSignals(self):
+        try:
+            self.model.fileDropEvent.disconnect(self.onDropFile)
+            self.model.directoryDropEvent.disconnect(self.onDropDirectory)
+        except Exception as e:
+            self.app.debug(str(e))
+
+    def onFileManager(self):
+        if self.localTree.isHidden():
+            self.localTree.show()
+        else:
+            self.localTree.hide()
+
+    def onDropFile(self, path):
         self.scheduleAddFiles([path])
 
-    def onDropDirectory(self, item, path):
-        self.scheduleAddDirectory([path])
+    def onDropDirectory(self, path):
+        self.scheduleAddDirectory(path)
 
     def onCopyItemHash(self):
-        currentIdx = self.ui.treeFiles.currentIndex()
-        if currentIdx.isValid():
-            dataHash = self.model.getHashFromIdx(currentIdx)
+        currentItem = self.currentItem()
+        if currentItem:
+            dataHash = self.model.getHashFromIdx(currentItem.index())
             self.app.setClipboardText(dataHash)
 
     def onCopyItemPath(self):
-        currentIdx = self.ui.treeFiles.currentIndex()
-        if currentIdx.isValid():
-            dataHash = self.model.getHashFromIdx(currentIdx)
+        currentItem = self.currentItem()
+        if currentItem:
+            dataHash = self.model.getHashFromIdx(currentItem.index())
             self.app.setClipboardText(joinIpfs(dataHash))
 
     def onReturn(self):
-        currentIdx = self.ui.treeFiles.currentIndex()
-        dataHash = self.model.getHashFromIdx(currentIdx)
+        currentItem = self.currentItem()
+        dataHash = self.model.getHashFromIdx(currentItem.index())
         if dataHash:
             self.gWindow.addBrowserTab().browseIpfsHash(dataHash)
 
     def onExpanded(self, idx):
-        dataHash = self.model.getHashFromIdx(idx)
-        dataName = self.model.getNameFromIdx(idx)
+        pass
 
-        it = self.model.itemFromIndex(idx)
+    def pathSelectorDefault(self):
+        self.ui.pathSelector.setCurrentIndex(0)
+
+    def onPathSelector(self, idx):
+        text = self.ui.pathSelector.itemText(idx)
+
+        if text == iHome():
+            self.changeDisplayItem(self.model.itemHome)
+        if text == iPictures():
+            self.changeDisplayItem(self.model.itemPictures)
+        if text == iVideos():
+            self.changeDisplayItem(self.model.itemVideos)
+        if text == iMusic():
+            self.changeDisplayItem(self.model.itemMusic)
+        if text == iCode():
+            self.changeDisplayItem(self.model.itemCode)
+
+    def changeDisplayItem(self, item):
+        self.displayItem = item
+        self.ui.treeFiles.setRootIndex(self.displayItem.index())
+        self.updateTree()
+        self.ui.treeFiles.expand(self.displayItem.index())
+
+    def onContextMenuVoid(self, point):
+        idx = self.ui.treeFiles.indexAt(point)
+        menu = QMenu()
+        menu.exec(self.ui.treeFiles.mapToGlobal(point))
 
     def onContextMenu(self, point):
         idx = self.ui.treeFiles.indexAt(point)
-        if not idx.isValid() or idx == self.model.itemFilesIdx:
-            return
+        if not idx.isValid():
+            return self.onContextMenuVoid(point)
 
         nameItem = self.model.getNameItemFromIdx(idx)
         dataHash = self.model.getHashFromIdx(idx)
@@ -333,6 +463,10 @@ class FilesTab(GalacteekTab):
 
         def unlink(hash):
             self.scheduleUnlink(hash)
+
+        def explore(hash):
+            view = ipfsview.IPFSHashViewToolBox(self.gWindow, hash)
+            self.gWindow.registerTab(view, hash, current=True)
 
         def delete(hash):
             self.scheduleDelete(hash)
@@ -347,7 +481,6 @@ class FilesTab(GalacteekTab):
             self.clipboard.setText(itemHash, clipboardType)
 
         def openWithMediaPlayer(itemHash):
-            #self.gWindow.addMediaPlayerTab(joinIpfs(itemHash))
             self.gWindow.mediaPlayerQueue(joinIpfs(itemHash),
                     mediaName=nameItem.getEntry()['Name'])
 
@@ -363,6 +496,10 @@ class FilesTab(GalacteekTab):
             bookmark(ipfsPath, nameItem.getEntry()['Name']))
         menu.addAction(iBrowseFile(), lambda:
             browse(dataHash))
+
+        if nameItem.isDir():
+            menu.addAction(iExploreDir(), lambda:
+                explore(dataHash))
 
         def publishToKey(action):
             key = action.data()['key']['Name']
@@ -401,7 +538,7 @@ class FilesTab(GalacteekTab):
         self.gWindow.addBrowserTab().browseFsPath(path)
 
     def onExploreItem(self):
-        current = self.currentItem
+        current = self.currentItem()
 
         if current and current.isDir():
             dataHash = self.model.getHashFromIdx(current.index())
@@ -409,7 +546,7 @@ class FilesTab(GalacteekTab):
             self.gWindow.registerTab(view, dataHash, current=True)
 
     def onDoubleClicked(self, idx):
-        if not idx.isValid() or idx == self.model.itemFilesIdx:
+        if not idx.isValid():
             return
 
         nameItem = self.model.getNameItemFromIdx(idx)
@@ -444,6 +581,13 @@ class FilesTab(GalacteekTab):
         search = self.ui.searchFiles.text()
         self.ui.treeFiles.keyboardSearch(search)
 
+    def onMkDirClicked(self):
+        dirName = QInputDialog.getText(self, 'Directory name',
+                'Directory name')
+        if dirName:
+            self.app.task(self.makeDir, self.displayItem.getPath(),
+                    dirName[0])
+
     def onRefreshClicked(self):
         self.updateTree()
         self.ui.treeFiles.setFocus(Qt.OtherFocusReason)
@@ -465,17 +609,29 @@ class FilesTab(GalacteekTab):
         self.ui.statusLabel.setText(msg)
 
     def onAddFilesClicked(self):
+        self.addFilesDialog()
+
+    def addFilesDialog(self, parent=None):
+        if parent is None:
+            parent = self.displayPath
+
         result = QFileDialog.getOpenFileNames(None,
             iSelectFiles(), getHomePath(), '(*.*)')
         if not result:
             return
 
-        self.scheduleAddFiles(result[0])
+        self.scheduleAddFiles(result[0], parent=parent)
 
-    def scheduleAddFiles(self, path):
-        return self.app.task(self.addFiles, path)
+    def scheduleAddFiles(self, path, parent=None):
+        if self.busy:
+            return
+        if parent is None:
+            parent = self.displayPath
+        return self.app.task(self.addFiles, path, parent)
 
     def scheduleAddDirectory(self, path):
+        if self.busy:
+            return
         return self.app.task(self.addDirectory, path)
 
     def scheduleUnlink(self, hash):
@@ -485,18 +641,25 @@ class FilesTab(GalacteekTab):
         return self.app.task(self.deleteFromHash, hash)
 
     def updateTree(self):
-        self.app.task(self.updateKeys)
-        self.app.task(self.listFiles, GFILES_MYFILES_PATH,
-            parentItem=self.model.itemFiles, maxdepth=1)
+        self.app.task(self.listFiles, self.displayPath,
+            parentItem=self.displayItem, maxdepth=1)
 
     @ipfsOp
     async def updateKeys(self, ipfsop):
         self.ipfsKeys = await ipfsop.keys()
 
     @ipfsOp
+    async def makeDir(self, ipfsop, parent, path):
+        ret = await ipfsop.filesMkdir(os.path.join(parent, path))
+        self.updateTree()
+
+    @ipfsOp
     async def listFiles(self, ipfsop, path, parentItem, maxdepth=0,
             autoexpand=False):
+        if self.busy:
+            return
         self.enableButtons(flag=False)
+        self.status = self.statusBusy
 
         try:
             await asyncio.wait_for(
@@ -506,6 +669,7 @@ class FilesTab(GalacteekTab):
             messageBox(iErrNoCx())
 
         self.enableButtons()
+        self.status = self.statusReady
 
     async def listPath(self, op, path, parentItem=None, depth=0, maxdepth=1,
             autoexpand=False):
@@ -522,10 +686,8 @@ class FilesTab(GalacteekTab):
 
         for entry in listing:
             await asyncio.sleep(0)
-            if entry['Hash'] == '':
-                continue
 
-            if entry['Hash'] in self.model.entryCache:
+            if entry['Hash'] == '' or entry['Hash'] in self.model.entryCache:
                 continue
 
             if entry['Type'] == 1: # directory
@@ -535,7 +697,7 @@ class FilesTab(GalacteekTab):
 
             nItemName = IPFSNameItem(entry, entry['Name'], icon)
             nItemName.setParentHash(parentItemHash)
-            nItemSize = IPFSItem(str(entry['Size']))
+            nItemSize = IPFSItem(sizeFormat(entry['Size']))
             nItemHash = IPFSItem(entry['Hash'])
 
             nItemName.setPath(os.path.join(parentItem.getPath(),
@@ -562,33 +724,32 @@ class FilesTab(GalacteekTab):
 
     @ipfsOp
     async def deleteFromHash(self, ipfsop, hash):
-        entry = await ipfsop.filesLookupHash(GFILES_MYFILES_PATH, hash)
+        entry = await ipfsop.filesLookupHash(self.displayPath, hash)
 
         if entry:
             purged = await ipfsop.purge(hash)
-            await ipfsop.filesDelete(GFILES_MYFILES_PATH,
+            await ipfsop.filesDelete(self.displayPath,
                 entry['Name'], recursive=True)
             await modelhelpers.modelDeleteAsync(self.model, hash)
 
     @ipfsOp
     async def unlinkFileFromHash(self, op, hash):
-        listing = await op.filesList(GFILES_MYFILES_PATH)
+        listing = await op.filesList(self.displayPath)
         for entry in listing:
             if entry['Hash'] == hash:
-                await op.filesDelete(GFILES_MYFILES_PATH,
+                await op.filesDelete(self.displayPath,
                     entry['Name'], recursive=True)
                 await modelhelpers.modelDeleteAsync(self.model, hash)
 
     @ipfsOp
-    async def addFiles(self, op, files):
-        """ Add every file with a wrapper directory by default to preserve
-            filenames and use the wrapper directory's hash as a link
-            Will soon turn this into a configurable option in the GUI """
+    async def addFiles(self, op, files, parent):
+        """ Add every file with an optional wrapper directory """
 
         wrapEnabled = self.app.settingsMgr.isTrue(
             CFG_SECTION_UI, CFG_KEY_WRAPSINGLEFILES)
 
         self.enableButtons(flag=False)
+        self.status = self.statusBusy
         last = None
 
         for file in files:
@@ -606,10 +767,11 @@ class FilesTab(GalacteekTab):
             if wrapEnabled is True:
                 base += '.dirw'
 
-            await self.linkEntry(op, root, GFILES_MYFILES_PATH, base)
+            await self.linkEntry(op, root, parent, base)
             last = root['Hash']
 
         self.enableButtons()
+        self.status = self.statusReady
         self.updateTree()
         return True
 
@@ -618,6 +780,7 @@ class FilesTab(GalacteekTab):
         wrapEnabled = self.app.settingsMgr.isTrue(
             CFG_SECTION_UI, CFG_KEY_WRAPDIRECTORIES)
         self.enableButtons(flag=False)
+        self.status = self.statusBusy
         basename = os.path.basename(path)
         dirEntry = None
 
@@ -635,9 +798,10 @@ class FilesTab(GalacteekTab):
         if wrapEnabled is True:
             basename += '.dirw'
 
-        await self.linkEntry(op, dirEntry, GFILES_MYFILES_PATH, basename)
+        await self.linkEntry(op, dirEntry, self.displayPath, basename)
 
         self.enableButtons()
+        self.status = self.statusReady
         self.updateTree()
         return True
 
@@ -648,7 +812,8 @@ class FilesTab(GalacteekTab):
                 lNew = basename
             else:
                 lNew = '{0}.{1}'.format(basename, lIndex)
-            lookup = await op.filesLookup(GFILES_MYFILES_PATH, lNew)
+            lookup = await op.filesLookup(dest, lNew)
             if not lookup:
-                if await op.filesLink(entry, GFILES_MYFILES_PATH, name=lNew):
-                    break
+                linkS = await op.filesLink(entry, dest, name=lNew)
+                if linkS:
+                    return lNew

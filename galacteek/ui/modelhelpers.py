@@ -113,7 +113,7 @@ async def modelDeleteAsync(model, search):
 class UneditableItem(QStandardItem):
     def __init__(self, text, icon=None):
         if icon:
-            super().__init__(icon, text)
+            super(UneditableItem, self).__init__(icon, text)
         else:
-            super().__init__(text)
+            super(UneditableItem, self).__init__(text)
         self.setEditable(False)

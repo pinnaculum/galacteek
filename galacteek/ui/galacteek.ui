@@ -75,7 +75,7 @@
         <item alignment="Qt::AlignLeft">
          <widget class="QToolButton" name="myFilesButton">
           <property name="toolTip">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;My Files&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;File Manager&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="text">
            <string>...</string>
@@ -245,7 +245,14 @@
     <property name="title">
      <string>Edit</string>
     </property>
+    <widget class="QMenu" name="menuUser_Profile">
+     <property name="title">
+      <string>User Profile</string>
+     </property>
+     <addaction name="actionNew_Profile"/>
+    </widget>
     <addaction name="actionSettings"/>
+    <addaction name="menuUser_Profile"/>
    </widget>
    <widget class="QMenu" name="menuAbout">
     <property name="title">
@@ -300,6 +307,11 @@
    </property>
    <property name="priority">
     <enum>QAction::HighPriority</enum>
+   </property>
+  </action>
+  <action name="actionNew_Profile">
+   <property name="text">
+    <string>New Profile</string>
    </property>
   </action>
  </widget>

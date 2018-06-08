@@ -6,8 +6,8 @@ import copy
 
 from PyQt5.QtWidgets import (QApplication, QMainWindow,
         QDialog, QLabel, QTextEdit, QPushButton, QVBoxLayout,
-        QSystemTrayIcon, QMenu, QAction, QToolButton,
-        QTreeView, QHeaderView)
+        QSystemTrayIcon, QMenu, QAction, QActionGroup, QToolButton,
+        QTreeView, QHeaderView, QInputDialog)
 from PyQt5.QtCore import (QCoreApplication, QUrl, QBuffer, QIODevice, Qt,
     QTimer, QFile)
 from PyQt5.QtCore import pyqtSignal, QUrl, QObject, QDateTime
@@ -30,8 +30,8 @@ from .i18n import *
 
 def iHashmarks():
     return QCoreApplication.translate('GalacteekWindow', 'Hashmarks')
-def iMyFiles():
-    return QCoreApplication.translate('GalacteekWindow', 'My Files')
+def iFileManager():
+    return QCoreApplication.translate('GalacteekWindow', 'File Manager')
 def iKeys():
     return QCoreApplication.translate('GalacteekWindow', 'IPFS Keys')
 
@@ -49,6 +49,13 @@ def iClipLoaderExplore(path):
 
 def iClipboardHistory():
     return QCoreApplication.translate('GalacteekWindow', 'Clipboard history')
+
+def iNewProfile():
+    return QCoreApplication.translate('GalacteekWindow', 'New Profile')
+
+def iSwitchedProfile():
+    return QCoreApplication.translate('GalacteekWindow',
+            'Successfully switched profile')
 
 def iClipLoaderBrowse(path):
     return QCoreApplication.translate('GalacteekWindow',
@@ -114,7 +121,7 @@ class PinStatusDetails(GalacteekTab):
                 ePinS.setText(str(nodesProcessed))
 
 class MainWindow(QMainWindow):
-    tabnMyFiles = 'My Files'
+    tabnFManager = 'File Manager'
     tabnKeys = 'IPFS keys'
     tabnPinning = 'Pinning Status'
     tabnMediaPlayer = 'Media Player'
@@ -143,7 +150,7 @@ class MainWindow(QMainWindow):
         self.menuManual = QMenu(iManual())
         self.ui.menuAbout.addMenu(self.menuManual)
 
-        self.ui.myFilesButton.clicked.connect(self.onMyFilesClicked)
+        self.ui.myFilesButton.clicked.connect(self.onFileManagerClicked)
         self.ui.myFilesButton.setShortcut(QKeySequence('Ctrl+f'))
         self.ui.manageKeysButton.clicked.connect(self.onIpfsKeysClicked)
         self.ui.openBrowserTabButton.clicked.connect(self.onOpenBrowserTabClicked)
@@ -185,6 +192,10 @@ class MainWindow(QMainWindow):
 
         self.webProfile = QtWebEngineWidgets.QWebEngineProfile.defaultProfile()
 
+        self.ui.menuUser_Profile.addSeparator()
+        self.ui.menuUser_Profile.triggered.connect(self.onUserProfile)
+        self.profilesActionGroup = QActionGroup(self)
+
         # Status bar setup
         self.ui.pinningStatusButton = QPushButton()
         self.ui.pinningStatusButton.setToolTip(iNoStatus())
@@ -202,15 +213,19 @@ class MainWindow(QMainWindow):
         self.timerStatus.timeout.connect(self.onMainTimerStatus)
         self.timerStatus.start(3000)
 
+        self.enableButtons(False)
+
         # Connect ipfsctx signals
         self.app.ipfsCtx.ipfsRepositoryReady.connect(self.onRepoReady)
         self.app.ipfsCtx.pubsubMessageRx.connect(self.onPubsubRx)
         self.app.ipfsCtx.pubsubMessageTx.connect(self.onPubsubTx)
+        self.app.ipfsCtx.profilesAvailable.connect(self.onProfilesList)
+        self.app.ipfsCtx.profileChanged.connect(self.onProfileChanged)
 
         # App signals
         self.app.clipTracker.clipboardHasIpfs.connect(self.onClipboardIpfs)
         self.app.clipTracker.clipboardHistoryChanged.connect(self.onClipboardHistory)
-        self.app.documentationAvailable.connect(self.onDocAvailable)
+        self.app.manualAvailable.connect(self.onManualAvailable)
 
         self.app.ipfsCtx.pinItemStatusChanged.connect(self.onPinStatusChanged)
         self.app.ipfsCtx.pinItemsCount.connect(self.onPinItemsCount)
@@ -222,8 +237,48 @@ class MainWindow(QMainWindow):
     def getApp(self):
         return self.app
 
+    def onProfileChanged(self, pName):
+        for action in self.profilesActionGroup.actions():
+            if action.data() == pName:
+                action.setChecked(True)
+                # Refresh the file manager
+                tab = self.findTabFileManager()
+                if tab:
+                    tab.setupModel()
+                    tab.pathSelectorDefault()
+
+    def onUserProfile(self, action):
+        if action is self.ui.actionNew_Profile:
+            inText = QInputDialog.getText(self, iNewProfile(),
+                    iNewProfile())
+            profile, create = inText
+            if create is True and profile:
+                self.app.task(self.app.ipfsCtx.profileNew, profile)
+        else:
+            pName = action.text()
+            if action.isChecked() and \
+                    self.app.ipfsCtx.currentProfile.name != pName:
+                rCode = self.app.ipfsCtx.profileChange(pName)
+
+    def onProfilesList(self, pList):
+        currentList = [action.data() for action in \
+                self.profilesActionGroup.actions()]
+
+        currentProfile = self.app.ipfsCtx.currentProfile
+
+        for pName in pList:
+            if pName in currentList:
+                continue
+
+            action = QAction(self.profilesActionGroup,
+                    checkable=True, text=pName)
+            action.setData(pName)
+
+        for action in self.profilesActionGroup.actions():
+            self.ui.menuUser_Profile.addAction(action)
+
     def onRepoReady(self):
-        pass
+        self.enableButtons()
 
     def onPubsubRx(self):
         now = QDateTime.currentDateTime()
@@ -278,11 +333,11 @@ class MainWindow(QMainWindow):
     def onPinStatusChanged(self, path, status):
         self.updatePinningStatus()
 
-    def onDocAvailable(self, lang, entry):
+    def onManualAvailable(self, lang, entry):
         self.menuManual.addAction(lang, lambda:
-            self.onOpenDocumentation('en', entry))
+            self.onOpenManual(lang, entry))
 
-    def onOpenDocumentation(self, lang, docEntry):
+    def onOpenManual(self, lang, docEntry):
         self.addBrowserTab().browseIpfsHash(docEntry['Hash'])
 
     def enableButtons(self, flag=True):
@@ -308,8 +363,8 @@ class MainWindow(QMainWindow):
         if current is True:
             self.ui.tabWidget.setCurrentWidget(tab)
 
-    def findTabMyFiles(self):
-        return self.findTabWithName(self.tabnMyFiles)
+    def findTabFileManager(self):
+        return self.findTabWithName(self.tabnFManager)
 
     def findTabIndex(self, w):
         return self.ui.tabWidget.indexOf(w)
@@ -458,11 +513,9 @@ class MainWindow(QMainWindow):
         if not tab in self.allTabs:
             return False
 
-        if hasattr(tab, 'onClose'):
-            tab.onClose()
-
-        self.ui.tabWidget.removeTab(idx)
-        del tab
+        if tab.onClose() is True:
+            self.ui.tabWidget.removeTab(idx)
+            del tab
 
     def onOpenBrowserTabClicked(self):
         self.addBrowserTab()
@@ -471,8 +524,8 @@ class MainWindow(QMainWindow):
         w = textedit.AddDocumentWidget(self, parent=self.ui.tabWidget)
         self.registerTab(w, 'New document', current=True)
 
-    def onMyFilesClicked(self):
-        name = self.tabnMyFiles
+    def onFileManagerClicked(self):
+        name = self.tabnFManager
 
         icon = getIcon('folder-open.png')
         ft = self.findTabWithName(name)

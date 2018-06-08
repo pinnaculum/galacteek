@@ -11,6 +11,9 @@ class GalacteekTab(QWidget):
         self.gWindow = gWindow
         self.app.task(self.initialize)
 
+    def onClose(self):
+        return True
+
     @ipfsOp
     async def initialize(self, op):
         pass
@@ -22,3 +25,7 @@ class GalacteekTab(QWidget):
     @property
     def loop(self):
         return self.app.getLoop()
+
+    @property
+    def profile(self):
+        return self.app.ipfsCtx.currentProfile
