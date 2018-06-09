@@ -188,7 +188,7 @@
           </property>
           <property name="icon">
            <iconset resource="galacteek.qrc">
-            <normaloff>:/share/icons/clipboard-with-pencil-.png</normaloff>:/share/icons/clipboard-with-pencil-.png</iconset>
+            <normaloff>:/share/icons/clipboard.png</normaloff>:/share/icons/clipboard.png</iconset>
           </property>
           <property name="iconSize">
            <size>
