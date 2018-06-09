@@ -14,6 +14,7 @@
     <file>../../share/icons/pin-blue-loading.png</file>
     <file>../../share/icons/right-arrow.png</file>
     <file>../../share/icons/refresh.png</file>
+    <file>../../share/icons/clipboard.png</file>
     <file>../../share/icons/pin.png</file>
     <file>../../share/icons/lock-and-key.png</file>
     <file>../../share/icons/left-arrow.png</file>
@@ -32,7 +33,6 @@
     <file>../../share/icons/folder-open.png</file>
     <file>../../share/icons/file.png</file>
     <file>../../share/icons/document.png</file>
-    <file>../../share/icons/clipboard-with-pencil-.png</file>
     <file>../../share/icons/cancel.png</file>
     <file>../../share/icons/add-folder.png</file>
     <file>../../share/icons/add-file.png</file>

@@ -13,7 +13,7 @@ used.
 The clipboard loader
 --------------------
 
-.. image:: ../../../share/icons/clipboard-with-pencil-.png
+.. image:: ../../../share/icons/clipboard.png
     :width: 64
     :height: 64
 

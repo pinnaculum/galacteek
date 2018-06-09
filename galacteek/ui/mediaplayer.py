@@ -68,7 +68,7 @@ class MediaPlayerTab(GalacteekTab):
         self.togglePList.clicked.connect(self.onTogglePlaylist)
 
         self.clipboardButton = QToolButton(clicked=self.onClipboardClicked)
-        self.clipboardButton.setIcon(getIcon('clipboard-with-pencil-.png'))
+        self.clipboardButton.setIcon(getIcon('clipboard.png'))
         self.clipboardButton.setEnabled(self.app.clipTracker.hasIpfs)
         self.app.clipTracker.clipboardHasIpfs.connect(self.onClipboardIpfs)
 
