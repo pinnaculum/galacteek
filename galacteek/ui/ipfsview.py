@@ -276,7 +276,7 @@ class IPFSHashViewWidget(QWidget):
             self.hLayoutCtrl.addWidget(self.closeButton, 0, Qt.AlignLeft)
 
         self.getTask = None
-        self.getButton = QPushButton('Download')
+        self.getButton = QPushButton(iDownload())
         self.getButton.clicked.connect(self.onGet)
         self.getButton.setShortcut(QKeySequence('Ctrl+d'))
         self.getLabel = QLabel()
@@ -285,14 +285,18 @@ class IPFSHashViewWidget(QWidget):
         self.getProgress.setMaximum(100)
         self.getProgress.hide()
 
+        self.markButton = QPushButton(getIcon('bookmarks.png'), iHashmark())
+        self.markButton.clicked.connect(self.onBookmark)
+
         self.pinButton = QPushButton('Pin')
         self.pinButton.clicked.connect(self.onPin)
         self.pinButton.setShortcut(QKeySequence('Ctrl+p'))
 
-        self.hLayoutCtrl.addWidget(self.getButton, 0, Qt.AlignLeft)
-        self.hLayoutCtrl.addWidget(self.pinButton, 0, Qt.AlignLeft)
-        self.hLayoutCtrl.addWidget(self.getLabel, 0, Qt.AlignLeft)
-        self.hLayoutCtrl.addWidget(self.getProgress, 0, Qt.AlignLeft)
+        self.hLayoutCtrl.addWidget(self.getButton)
+        self.hLayoutCtrl.addWidget(self.pinButton)
+        self.hLayoutCtrl.addWidget(self.markButton)
+        self.hLayoutCtrl.addWidget(self.getLabel)
+        self.hLayoutCtrl.addWidget(self.getProgress)
 
         self.vLayout.addLayout(self.hLayoutTop)
 
@@ -355,6 +359,7 @@ class IPFSHashViewWidget(QWidget):
         try:
             newRepo = repo.clone(dstPath)
         except Exception as e:
+            self.gitButton.setEnabled(True)
             return messageBox(iGitErrorCloning(str(e)))
 
         messageBox(iGitClonedRepo(dstPath))
@@ -376,6 +381,12 @@ class IPFSHashViewWidget(QWidget):
         self.gitButton.setMenu(self.gitMenu)
         self.gitButton.setPopupMode(QToolButton.MenuButtonPopup)
         self.hLayoutCtrl.addWidget(self.gitButton)
+
+    def onBookmark(self):
+        addBookmark(self.app.marksLocal,
+            self.rootPath, '',
+            stats=self.app.ipfsCtx.objectStats.get(
+                self.rootPath, {}))
 
     def onGet(self):
         dirSel = directorySelect()

@@ -38,7 +38,7 @@
         <widget class="QLineEdit" name="filename">
          <property name="maximumSize">
           <size>
-           <width>300</width>
+           <width>1024</width>
            <height>16777215</height>
           </size>
          </property>

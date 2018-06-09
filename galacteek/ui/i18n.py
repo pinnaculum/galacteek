@@ -60,3 +60,12 @@ def iPinSuccess(path):
 
 def iManual():
     return QCoreApplication.translate('GalacteekWindow', 'Manual')
+
+def iHashmark():
+    return QCoreApplication.translate('GalacteekWindow', 'Hashmark')
+
+def iDownload():
+    return QCoreApplication.translate('GalacteekWindow', 'Download')
+
+def iMediaPlayer():
+    return QCoreApplication.translate('GalacteekWindow', 'Media Player')

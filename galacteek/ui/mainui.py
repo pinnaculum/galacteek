@@ -157,6 +157,7 @@ class MainWindow(QMainWindow):
         self.ui.bookmarksButton.clicked.connect(self.addBookmarksTab)
         self.ui.bookmarksButton.setShortcut(QKeySequence('Ctrl+m'))
         self.ui.writeNewDocumentButton.clicked.connect(self.onWriteNewDocumentClicked)
+        self.ui.mediaPlayerButton.clicked.connect(self.onOpenMediaPlayer)
 
         self.multiLoaderMenu = QMenu()
         self.multiLoaderHMenu = QMenu(iClipboardHistory())
@@ -516,6 +517,9 @@ class MainWindow(QMainWindow):
         if tab.onClose() is True:
             self.ui.tabWidget.removeTab(idx)
             del tab
+
+    def onOpenMediaPlayer(self):
+        self.addMediaPlayerTab()
 
     def onOpenBrowserTabClicked(self):
         self.addBrowserTab()

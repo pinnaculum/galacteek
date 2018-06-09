@@ -64,9 +64,6 @@ def iLoading(name):
 def iOpenWith():
     return QCoreApplication.translate('FilesForm', 'Open with')
 
-def iMediaPlayer():
-    return QCoreApplication.translate('FilesForm', 'Media Player')
-
 def iDeleteFile():
     return QCoreApplication.translate('FilesForm', 'Delete file')
 
@@ -88,9 +85,6 @@ def iSelectDirectory():
 def iSelectFiles():
     return QCoreApplication.translate('FilesForm',
         'Select one or more files to import')
-
-def iMyFiles():
-    return QCoreApplication.translate('FilesForm', 'My Files')
 
 def iMusic():
     return QCoreApplication.translate('FilesForm', 'Music')
