@@ -67,6 +67,11 @@ class MediaPlayerTab(GalacteekTab):
         self.togglePList.setFixedSize(32, 128)
         self.togglePList.clicked.connect(self.onTogglePlaylist)
 
+        self.clipboardButton = QToolButton(clicked=self.onClipboardClicked)
+        self.clipboardButton.setIcon(getIcon('clipboard-with-pencil-.png'))
+        self.clipboardButton.setEnabled(self.app.clipTracker.hasIpfs)
+        self.app.clipTracker.clipboardHasIpfs.connect(self.onClipboardIpfs)
+
         self.playButton = QToolButton(clicked=self.onPlayClicked)
         self.playButton.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
 
@@ -84,9 +89,10 @@ class MediaPlayerTab(GalacteekTab):
         vLayout = QVBoxLayout()
         hLayoutControls = QHBoxLayout()
         hLayoutControls.setContentsMargins(0, 0, 0, 0)
-        hLayoutControls.addWidget(self.playButton, 0, Qt.AlignLeft)
-        hLayoutControls.addWidget(self.pauseButton, 0, Qt.AlignLeft)
-        hLayoutControls.addWidget(self.stopButton, 0, Qt.AlignLeft)
+        hLayoutControls.addWidget(self.clipboardButton)
+        hLayoutControls.addWidget(self.playButton)
+        hLayoutControls.addWidget(self.pauseButton)
+        hLayoutControls.addWidget(self.stopButton)
         hLayoutControls.addWidget(self.seekSlider)
         hLayoutControls.addWidget(self.durationLabel)
         vLayout.addWidget(self.videoWidget)
@@ -100,6 +106,15 @@ class MediaPlayerTab(GalacteekTab):
         self.pListView.hide()
 
         self.ui.verticalLayout.addLayout(hLayout)
+
+    def onClipboardIpfs(self, valid, cid, path):
+        self.clipboardButton.setEnabled(valid)
+        self.clipboardButton.setToolTip(path)
+
+    def onClipboardClicked(self):
+        current = self.app.clipTracker.getCurrent()
+        if current:
+            self.playFromPath(current['path'])
 
     def onPlayClicked(self):
         self.player.play()
@@ -168,6 +183,10 @@ class MediaPlayerTab(GalacteekTab):
         self.playlist.next()
         self.player.play()
 
+    def playFromPath(self, path, mediaName=None):
+        mediaUrl = QUrl('{0}{1}'.format(self.app.gatewayUrl, path))
+        self.playFromUrl(mediaUrl)
+
     def clearPlaylist(self):
         self.playlist.clear()
 
@@ -185,7 +204,7 @@ class MediaPlayerTab(GalacteekTab):
         if self.duration:
             cTime = durationConvert(progress)
             tTime = durationConvert(self.duration)
-            self.durationLabel.setText('{0} @{1}'.format(
+            self.durationLabel.setText('{0} ({1})'.format(
                 cTime.toString(), tTime.toString()))
 
         if not self.seekSlider.isSliderDown():
