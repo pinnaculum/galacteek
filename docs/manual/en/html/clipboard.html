@@ -1,0 +1,147 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Using the clipboard &#8212; galacteek  documentation</title>
+    <link rel="stylesheet" href="_static/pyramid.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Pinning content" href="pinning.html" />
+    <link rel="prev" title="File manager" href="filemanager.html" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Neuton&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nobile:regular,italic,bold,bolditalic&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
+<!--[if lte IE 6]>
+<link rel="stylesheet" href="_static/ie6.css" type="text/css" media="screen" charset="utf-8" />
+<![endif]-->
+
+  </head>
+  <body>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="pinning.html" title="Pinning content"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="filemanager.html" title="File manager"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">galacteek  documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="using-the-clipboard">
+<h1>Using the clipboard<a class="headerlink" href="#using-the-clipboard" title="Permalink to this headline">¶</a></h1>
+<p>By their very nature, IPFS hashes are difficult to remember (unless you train
+long enough …) so it becomes quite convenient to be able to quickly store those
+valuable hashes in a transitory place, and the clipboard fits that purpose.</p>
+<p>On Linux systems, the <strong>selection</strong> clipboard will always be used as the
+primary clipboard, while on other platforms the system’s clipboard will be
+used.</p>
+<div class="section" id="the-clipboard-loader">
+<h2>The clipboard loader<a class="headerlink" href="#the-clipboard-loader" title="Permalink to this headline">¶</a></h2>
+<a class="reference internal image-reference" href="_images/clipboard.png"><img alt="_images/clipboard.png" src="_images/clipboard.png" style="width: 64px; height: 64px;" /></a>
+<p>On the top-right corner of the window sits the clipboard loader button. It records
+the computer’s clipboard activity and keeps an history of all the IPFS hashes
+that have been stored in it since the application was started.</p>
+<p>Clicking on the arrow next to the clipboard icon will open a menu giving you
+access to the clipboard’s history as well as actions to browse/explore the IPFS
+resource currently referenced in the clipboard, if any.</p>
+<p>It recognizes the following formats:</p>
+<ul class="simple">
+<li><em>IPFS CID (version 0)</em>, for example
+<strong>QmRifA98t769dzkDv2gQocqJPXGtTySR5dPkyTaUZXtkLo</strong></li>
+<li><em>IPFS CID (version 1)</em>, for example
+<strong>zb2rhd4c97sLJwmnVvUjW5movikNJaYBMfpfpGP7hktYtt8Bo</strong></li>
+<li><em>IPFS path</em> for example
+<strong>/ipfs/QmWzhNYvNaxz41qitbqMaTDbViFoES1NgTuoYC7dAAMJw3/src/tools</strong> or
+<strong>/ipfs/QmdjTSAM2xSVsXcusNHRoES4KqkJ5mW17u6oQARTWMuWMF/CHANGES</strong></li>
+<li><em>IPNS path</em> for example <strong>/ipns/ipfs.io</strong> or
+<strong>/ipns/Qmef8KSNLZZfdnrxHZKhCBBynSUFLQ4RrH88wW3sTWxfwB</strong></li>
+</ul>
+<p>Passing the mouse over the clipboard button will display a tooltip message
+giving you information about the status of the clipboard.</p>
+</div>
+<div class="section" id="clipboard-keyboard-shortcuts">
+<h2>Clipboard keyboard shortcuts<a class="headerlink" href="#clipboard-keyboard-shortcuts" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><strong>Ctrl+o</strong> will browse the IPFS resource currently referenced in the
+clipboard</li>
+<li><strong>Ctrl+e</strong> will open the explorer for the IPFS resource currently
+referenced in the clipboard</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="filemanager.html"
+                        title="previous chapter">File manager</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="pinning.html"
+                        title="next chapter">Pinning content</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="pinning.html" title="Pinning content"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="filemanager.html" title="File manager"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">galacteek  documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, galacteek.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.7.
+    </div>
+  </body>
+</html>

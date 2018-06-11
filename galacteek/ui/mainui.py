@@ -346,6 +346,7 @@ class MainWindow(QMainWindow):
                 self.ui.manageKeysButton,
                 self.ui.openBrowserTabButton,
                 self.ui.bookmarksButton,
+                self.ui.mediaPlayerButton,
                 self.ui.writeNewDocumentButton ]:
             btn.setEnabled(flag)
 
@@ -494,9 +495,7 @@ class MainWindow(QMainWindow):
 
     def mediaPlayerQueue(self, path, mediaName=None):
         tab = self.addMediaPlayerTab()
-        gwUrl = self.app.gatewayUrl
-        mediaUrl = QUrl('{0}{1}'.format(gwUrl, path))
-        tab.playFromUrl(mediaUrl, mediaName=mediaName)
+        tab.playFromPath(path, mediaName=mediaName)
 
     def addBookmarksTab(self):
         name = iHashmarks()

@@ -42,8 +42,12 @@ class UserProfile(QObject):
             self.pathFiles,
             self.pathHome,
             self.pathMedia,
+            self.pathEtc,
+            self.pathData,
+            self.pathPlaylists,
             self.pathPictures,
             self.pathVideos,
+            self.pathDocuments,
             self.pathMusic,
             self.pathCode,
             self.pathWebsites
@@ -54,12 +58,12 @@ class UserProfile(QObject):
         return os.path.join(self.root, self.P_FILES)
 
     @property
-    def pathConfig(self):
-        return os.path.join(self.root, 'config')
-
-    @property
     def pathHome(self):
         return os.path.join(self.pathFiles, 'home')
+
+    @property
+    def pathDocuments(self):
+        return os.path.join(self.pathFiles, 'documents')
 
     @property
     def pathMedia(self):
@@ -84,6 +88,18 @@ class UserProfile(QObject):
     @property
     def pathWebsites(self):
         return os.path.join(self.pathFiles, 'websites')
+
+    @property
+    def pathEtc(self):
+        return os.path.join(self.root, 'etc')
+
+    @property
+    def pathData(self):
+        return os.path.join(self.root, 'data')
+
+    @property
+    def pathPlaylists(self):
+        return os.path.join(self.pathData, 'playlists')
 
     def setFilesModel(self, model):
         self._filesModel = model

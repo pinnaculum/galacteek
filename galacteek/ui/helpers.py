@@ -3,7 +3,8 @@ import os
 from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtCore import (QStandardPaths, Qt, QEvent, QObject, pyqtSignal,
         QFile)
-from PyQt5.QtWidgets import QMessageBox, QWidget, QApplication, QFileDialog
+from PyQt5.QtWidgets import (QMessageBox, QWidget, QApplication, QFileDialog,
+        QInputDialog)
 
 from . import galacteek_rc
 
@@ -15,6 +16,9 @@ def getIconIpfsIce():
 
 def getIconIpfsWhite():
     return getIcon('ipfs-logo-128-white.png')
+
+def getIconClipboard():
+    return getIcon('clipboard.png')
 
 def getHomePath():
     pList = QStandardPaths.standardLocations(QStandardPaths.HomeLocation)
@@ -44,6 +48,11 @@ def runDialog(cls, *args, **kw):
     dlgW.show()
     dlgW.exec_()
     return dlgW
+
+def inputText(title='', label='', parent=None):
+    text, ok = QInputDialog.getText(parent, title, label)
+    if ok:
+        return text
 
 class IPFSTreeKeyFilter(QObject):
     deletePressed = pyqtSignal()

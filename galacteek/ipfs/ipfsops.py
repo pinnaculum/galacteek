@@ -1,6 +1,7 @@
 
 import sys
 import os.path
+import json
 
 from async_generator import async_generator, yield_
 
@@ -311,4 +312,12 @@ class IPFSOperator(object):
                 peers.append(resp['ID'])
             return peers
         except aioipfs.APIException as e:
+            return None
+
+    async def jsonLoad(self, path):
+        try:
+            data = await self.client.cat(path)
+            return json.loads(data)
+        except aioipfs.APIException as e:
+            self.debug(exc.message)
             return None

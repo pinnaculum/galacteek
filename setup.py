@@ -84,7 +84,7 @@ class build_ui(Command):
             os.path.join(uidir, 'galacteek_rc.py')])
 
 class _build(build):
-    sub_commands = [('build_ui', None), ('build_docs', None)] + build.sub_commands
+    sub_commands = [('build_ui', None)] + build.sub_commands
 
 setup(
     name='galacteek',

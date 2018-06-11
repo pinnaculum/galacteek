@@ -17,6 +17,7 @@ CFG_KEY_HTTPGWPORT = 'httpgwport'
 CFG_KEY_HOST = 'host'
 CFG_KEY_SWARMLOWWATER = 'swarm_lowwater'
 CFG_KEY_SWARMHIGHWATER = 'swarm_highwater'
+CFG_KEY_STORAGEMAX = 'storagemax' # integer, max storage in Gb
 
 # Browser
 CFG_KEY_HOMEURL = 'homeurl'
@@ -46,6 +47,7 @@ def setDefaultSettings(gApp):
     sManager.setDefaultSetting(section, CFG_KEY_HTTPGWPORT, 8080)
     sManager.setDefaultSetting(section, CFG_KEY_SWARMHIGHWATER, 300)
     sManager.setDefaultSetting(section, CFG_KEY_SWARMLOWWATER, 150)
+    sManager.setDefaultSetting(section, CFG_KEY_STORAGEMAX, 20)
     sManager.setDefaultTrue(section, CFG_KEY_ENABLED)
 
     section = CFG_SECTION_BROWSER

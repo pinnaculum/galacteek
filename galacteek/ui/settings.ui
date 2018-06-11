@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>2</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="tab">
       <attribute name="title">
@@ -223,6 +223,23 @@
              <widget class="QLabel" name="label_14">
               <property name="text">
                <string>Swarm port</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="2">
+             <widget class="QLabel" name="label_5">
+              <property name="text">
+               <string>Maximum storage (Gb)</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="3">
+             <widget class="QSpinBox" name="storageMax">
+              <property name="minimum">
+               <number>5</number>
+              </property>
+              <property name="maximum">
+               <number>2048</number>
               </property>
              </widget>
             </item>
