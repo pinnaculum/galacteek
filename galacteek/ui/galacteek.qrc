@@ -1,5 +1,10 @@
 <RCC>
   <qresource>
+    <file>../../share/icons/fullscreen.png</file>
+    <file>../../share/icons/folder-pictures.png</file>
+    <file>../../share/icons/folder-videos.png</file>
+    <file>../../share/icons/folder-music.png</file>
+    <file>../../share/icons/folder-documents.png</file>
     <file>../../share/icons/file-manager.png</file>
     <file>../../share/icons/multimedia.png</file>
     <file>../../share/icons/clear-all.png</file>

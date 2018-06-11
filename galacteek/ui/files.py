@@ -101,6 +101,9 @@ def iHome():
 def iCode():
     return QCoreApplication.translate('FilesForm', 'Code')
 
+def iDocuments():
+    return QCoreApplication.translate('FilesForm', 'Documents')
+
 class IPFSItem(UneditableItem):
     def __init__(self, text, path=None, parenthash=None, icon=None):
         super(IPFSItem, self).__init__(text, icon=icon)
@@ -163,13 +166,16 @@ class FilesItemModel(QStandardItemModel):
                 path=profile.pathMusic)
         self.itemCode = IPFSItem(iCode(),
                 path=profile.pathCode)
+        self.itemDocuments = IPFSItem(iDocuments(),
+                path=profile.pathDocuments)
 
         self.itemRoot.appendRows([
             self.itemHome,
             self.itemPictures,
             self.itemVideos,
             self.itemCode,
-            self.itemMusic
+            self.itemMusic,
+            self.itemDocuments
         ])
 
     def displayItem(self, arg):
@@ -274,10 +280,15 @@ class FilesTab(GalacteekTab):
 
         # Path selector
         self.ui.pathSelector.insertItem(0, getIcon('go-home.png'), 'Home')
-        self.ui.pathSelector.insertItem(1, iPictures())
-        self.ui.pathSelector.insertItem(2, iVideos())
-        self.ui.pathSelector.insertItem(3, iMusic())
+        self.ui.pathSelector.insertItem(1, getIcon('folder-pictures.png'),
+                iPictures())
+        self.ui.pathSelector.insertItem(2, getIcon('folder-videos.png'),
+                iVideos())
+        self.ui.pathSelector.insertItem(3, getIcon('folder-music.png'),
+                iMusic())
         self.ui.pathSelector.insertItem(4, iCode())
+        self.ui.pathSelector.insertItem(5, getIcon('folder-documents.png'),
+                iDocuments())
         self.ui.pathSelector.activated.connect(self.onPathSelector)
 
         # Connect the event filter
@@ -432,6 +443,8 @@ class FilesTab(GalacteekTab):
             self.changeDisplayItem(self.model.itemMusic)
         if text == iCode():
             self.changeDisplayItem(self.model.itemCode)
+        if text == iDocuments():
+            self.changeDisplayItem(self.model.itemDocuments)
 
     def changeDisplayItem(self, item):
         self.displayItem = item
@@ -475,8 +488,14 @@ class FilesTab(GalacteekTab):
             self.clipboard.setText(itemHash, clipboardType)
 
         def openWithMediaPlayer(itemHash):
-            self.gWindow.mediaPlayerQueue(joinIpfs(itemHash),
-                    mediaName=nameItem.getEntry()['Name'])
+            parentHash = nameItem.getParentHash()
+            name = nameItem.getEntry()['Name']
+            if parentHash:
+                fp = joinIpfs(os.path.join(parentHash, name))
+                self.gWindow.mediaPlayerQueue(fp, mediaName=name)
+            else:
+                self.gWindow.mediaPlayerQueue(joinIpfs(itemHash),
+                        mediaName = name)
 
         menu.addAction(iCopyHashToSelClipboard(), lambda:
             copyHashToClipboard(dataHash, QClipboard.Selection))
@@ -550,23 +569,23 @@ class FilesTab(GalacteekTab):
 
         if nameItem.isFile():
             fileName = nameItem.text()
-
-            if nameItem.mimeType:
-                cat = nameItem.mimeCategory()
-                # If it's media content try to open it in the media player
-                if cat and (cat == 'audio' or cat == 'video'):
-                    return self.gWindow.mediaPlayerQueue(joinIpfs(dataHash),
-                            mediaName=fileName)
+            finalPath = joinIpfs(dataHash)
 
             # Find the parent hash
             parentHash = nameItem.getParentHash()
             if parentHash:
                 # We have the parent hash, so use it to build a file path
                 # preserving the real file name
-                path = joinIpfs(os.path.join(parentHash, fileName))
-                return self.browseFs(path)
-            else:
-                return self.browse(dataHash)
+                finalPath = joinIpfs(os.path.join(parentHash, fileName))
+
+            if nameItem.mimeType:
+                cat = nameItem.mimeCategory()
+                # If it's media content try to open it in the media player
+                if cat and (cat == 'audio' or cat == 'video'):
+                    return self.gWindow.mediaPlayerQueue(finalPath,
+                            mediaName=fileName)
+
+            return self.browseFs(finalPath)
 
         self.app.task(self.listFiles, item.getPath(), parentItem=item,
             autoexpand=True)

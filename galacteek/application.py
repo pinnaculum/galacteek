@@ -473,6 +473,7 @@ class GalacteekApplication(QApplication):
             gatewayport=sManager.getInt(section, CFG_KEY_HTTPGWPORT),
             swarmLowWater=sManager.getInt(section, CFG_KEY_SWARMLOWWATER),
             swarmHighWater=sManager.getInt(section, CFG_KEY_SWARMHIGHWATER),
+            storageMax=sManager.getInt(section, CFG_KEY_STORAGEMAX),
             pubsubEnable=pubsubEnabled)
 
         self.task(self.startIpfsdTask, self.ipfsd)
@@ -517,6 +518,12 @@ class GalacteekApplication(QApplication):
 
     def setupSchemeHandlers(self):
         self.ipfsSchemeHandler = browser.IPFSSchemeHandler(self)
+
+    def subUrl(self, path):
+        """ Joins the gatewayUrl and path to form a new URL """
+        sub = QUrl(str(self.gatewayUrl))
+        sub.setPath(path)
+        return sub
 
     def onExit(self):
         self.exit()

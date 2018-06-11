@@ -89,7 +89,7 @@ class AsyncIPFSDaemon(object):
             gatewayport=DEFAULT_GWPORT, initrepo=True,
             swarmLowWater=10, swarmHighWater=20,
             pubsubEnable=False, noBootstrap=False,
-            debug=False, loop=None):
+            storageMax=20, debug=False, loop=None):
 
         self.loop = loop if loop else asyncio.get_event_loop()
         self.repopath = repopath
@@ -98,6 +98,7 @@ class AsyncIPFSDaemon(object):
         self.swarmport = swarmport
         self.swarmLowWater = swarmLowWater
         self.swarmHighWater = swarmHighWater
+        self.storageMax = storageMax
         self.initrepo = initrepo
         self.pubsubEnable = pubsubEnable
         self.noBootstrap = noBootstrap
@@ -125,6 +126,10 @@ class AsyncIPFSDaemon(object):
         # Swarm connection manager parameters
         await ipfsConfigJson('Swarm.ConnMgr.LowWater', self.swarmLowWater)
         await ipfsConfigJson('Swarm.ConnMgr.HighWater', self.swarmHighWater)
+
+        # Maximum storage
+        await ipfsConfig('Datastore.StorageMax',
+                '{0}GB'.format(self.storageMax))
 
         if self.noBootstrap:
             await ipfsConfigJson('Bootstrap', '[]')

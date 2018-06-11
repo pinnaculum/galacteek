@@ -395,6 +395,11 @@
         <source>Explore directory</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../../galacteek/ui/files.py" line="104"/>
+        <source>Documents</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>Galacteek</name>
@@ -787,7 +792,7 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="289"/>
+        <location filename="../../galacteek/ui/settings.ui" line="306"/>
         <source>HTTP gateway port</source>
         <translation type="unfinished"></translation>
     </message>
@@ -802,7 +807,7 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="266"/>
+        <location filename="../../galacteek/ui/settings.ui" line="283"/>
         <source>API port</source>
         <translation type="unfinished"></translation>
     </message>
@@ -812,43 +817,48 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="244"/>
+        <location filename="../../galacteek/ui/settings.ui" line="261"/>
         <source>Use a custom IPFS daemon</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="259"/>
+        <location filename="../../galacteek/ui/settings.ui" line="276"/>
         <source>Host</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="341"/>
+        <location filename="../../galacteek/ui/settings.ui" line="358"/>
         <source>Restart the application after changing the IPFS connection settings.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="351"/>
+        <location filename="../../galacteek/ui/settings.ui" line="368"/>
         <source>UI</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="371"/>
+        <location filename="../../galacteek/ui/settings.ui" line="388"/>
         <source>Wrap files with a directory (preserves filenames)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="384"/>
+        <location filename="../../galacteek/ui/settings.ui" line="401"/>
         <source>Wrap directories with a directory</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="359"/>
+        <location filename="../../galacteek/ui/settings.ui" line="376"/>
         <source>File manager</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="397"/>
+        <location filename="../../galacteek/ui/settings.ui" line="414"/>
         <source>Hide IPFS hashes in tree views</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/settings.ui" line="232"/>
+        <source>Maximum storage (Gb)</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

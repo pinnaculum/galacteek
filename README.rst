@@ -1,12 +1,12 @@
 Galacteek
 =========
 
-A modest IPFS_ navigator and file manager
+A modest IPFS_ navigator and content publisher
 
 Installation
 ============
 
-You need to have python 3.5 and pip installed. Install with:
+You need to have python 3.5 and pip installed, as well as go-ipfs_. Install with:
 
 .. code-block:: shell
 
@@ -27,11 +27,11 @@ and restart the application afterwards.
 Features
 ========
 
-- IPFS marks sharable through IPFS pubsub channels (*experimental*)
+- IPFS hashmarks sharable through IPFS pubsub channels (*experimental*)
 - Browsing sessions with automatic pinning (pins every page you browse)
 - Feeds (following IPNS hashes)
 - File manager with drag-and-drop support
-- Basic built-in media player
+- Basic built-in media player with IPFS-stored, per-profile playlists
 
 Keybindings
 ===========
@@ -65,6 +65,11 @@ Platforms supported
 This has been mainly tested on Linux but should work on other systems
 as well where python and qt5 are available.
 
+Contact
+=======
+
+Contact by email at galacteek@gmx.co.uk
+
 Requirements
 ============
 
@@ -72,6 +77,7 @@ Requirements
 - python3 >= 3.5
 - qt5 (preferrably >5.6)
 - PyQt5 with QtWebEngine support
+- gstreamer (on Linux) for media player support
 - quamash_
 - aiohttp_
 - aioipfs_

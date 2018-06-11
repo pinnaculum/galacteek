@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (QWidget, QFrame, QApplication,
         QLabel, QPushButton, QVBoxLayout, QAction, QHBoxLayout,
         QTreeView, QHeaderView, QShortcut, QToolBox, QTextBrowser,
         QFileDialog, QProgressBar, QSpacerItem, QSizePolicy,
-        QToolButton)
+        QToolButton, QAbstractItemView)
 
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QKeySequence
 
@@ -79,6 +79,19 @@ class IPFSNameItem(IPFSItem):
 
     def cid(self):
         return cidhelpers.getCID(self.getEntry()['Hash'])
+
+    def getFullPath(self):
+        """
+        Returns the full IPFS path of the entry associated with this item
+        (preserving file names) if we have the parent's hash, or the IPFS path
+        with the entry's hash otherwise
+        """
+        parentHash = self.getParentHash()
+        name = self.entry['Name']
+        if parentHash:
+            return joinIpfs(os.path.join(parentHash, name))
+        else:
+            return joinIpfs(self.entry['Hash'])
 
     def isRaw(self):
         return self.getEntry()['Type'] == 0
@@ -301,6 +314,8 @@ class IPFSHashViewWidget(QWidget):
         self.vLayout.addLayout(self.hLayoutTop)
 
         self.tree = HashTreeView()
+        self.tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.tree.setDragDropMode(QAbstractItemView.DragOnly)
         self.vLayout.addWidget(self.tree)
 
         self.model = IPFSHashItemModel(self)
@@ -417,6 +432,9 @@ class IPFSHashViewWidget(QWidget):
     def browse(self, hash):
         self.gWindow.addBrowserTab().browseIpfsHash(hash)
 
+    def browseFs(self, path):
+        self.gWindow.addBrowserTab().browseFsPath(path)
+
     def onDoubleClicked(self, idx):
         nameItem = self.model.getNameItemFromIdx(idx)
         dataHash = self.model.getHashFromIdx(idx)
@@ -434,37 +452,45 @@ class IPFSHashViewWidget(QWidget):
 
     @ipfsOp
     async def openFileWithMime(self, ipfsop, item, fileHash):
+        fullPath = item.getFullPath()
+
         if item.mimeCategory == 'text':
             data = await ipfsop.client.cat(fileHash)
             tView = TextView(data, item.mimeType, parent=self.gWindow)
             self.gWindow.registerTab(tView, item.getEntry()['Name'], current=True)
         elif item.mimeCategory == 'video' or item.mimeCategory == 'audio':
-            return self.gWindow.mediaPlayerQueue(joinIpfs(fileHash))
+            return self.gWindow.mediaPlayerQueue(fullPath)
         elif item.mimeCategory == 'image':
-            return self.browse(fileHash)
+            return self.browseFs(fullPath)
         else:
             # Default
-            return self.browse(fileHash)
+            return self.browseFs(fullPath)
 
     def updateTree(self):
         self.app.task(self.listHash, self.rootPath,
             parentItem=self.itemRoot)
 
     def onContextMenu(self, point):
-        idx = self.tree.indexAt(point)
-        if not idx.isValid():
-            return
+        selModel = self.tree.selectionModel()
+        rows = selModel.selectedRows()
+
+        items = [self.model.getNameItemFromIdx(idx) for idx in rows]
 
         menu = QMenu()
-        nameItem = self.model.getNameItemFromIdx(idx)
-        dataHash = self.model.getHashFromIdx(idx)
-        ipfsPath = joinIpfs(dataHash)
 
         def pinRecursive(rHash):
-            self.app.task(self.app.pinner.enqueue, ipfsPath, True, None)
+            for item in items:
+                fp = item.getFullPath()
+                self.app.task(self.app.pinner.enqueue, fp, True, None)
+
+        def queueMedia():
+            for item in items:
+                self.gWindow.mediaPlayerQueue(item.getFullPath())
 
         menu.addAction(getIcon('pin-black.png'), 'Pin (recursive)',
                 lambda: pinRecursive(dataHash))
+        menu.addAction(getIcon('multimedia.png'), 'Queue in media player',
+                lambda: queueMedia())
 
         menu.exec(self.tree.mapToGlobal(point))
 
