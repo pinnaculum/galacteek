@@ -126,15 +126,29 @@ class IPFSNameItem(IPFSItem):
     def __init__(self, entry, text, icon):
         super().__init__(text, icon=icon)
 
-        self.entry = entry
-        self.mimeType = mimetypes.guess_type(entry['Name'])[0]
+        self._entry = entry
+        self._mimeType = None
 
+    @property
+    def entry(self):
+        return self._entry
+
+    @property
+    def mimeType(self):
+        return self._mimeType
+
+    def mimeFromDb(self, db):
+        self._mimeType = db.mimeTypeForFile(self.entry['Name'])
+
+    @property
     def mimeCategory(self):
         if self.mimeType:
-            return self.mimeType.split('/')[0]
+            return self.mimeTypeName.split('/')[0]
 
-    def getEntry(self):
-        return self.entry
+    @property
+    def mimeTypeName(self):
+        if self.mimeType:
+            return self.mimeType.name()
 
     def isFile(self):
         return self.entry['Type'] == 0
@@ -187,7 +201,7 @@ class FilesItemModel(QStandardItemModel):
             item = self.itemFromIndex(itNameIdx)
 
             if type(item) is IPFSNameItem:
-                self.entryCache.register(item.getEntry())
+                self.entryCache.register(item.entry)
 
     def onRowsToBeRemoved(self, parent, first, last):
         for itNum in range(first, last+1):
@@ -195,7 +209,7 @@ class FilesItemModel(QStandardItemModel):
             item = self.itemFromIndex(itNameIdx)
 
             if type(item) is IPFSNameItem:
-                entry = item.getEntry()
+                entry = item.entry
                 self.entryCache.purge(entry['Hash'])
 
     def supportedDropActions(self):
@@ -286,7 +300,7 @@ class FilesTab(GalacteekTab):
                 iVideos())
         self.ui.pathSelector.insertItem(3, getIcon('folder-music.png'),
                 iMusic())
-        self.ui.pathSelector.insertItem(4, iCode())
+        self.ui.pathSelector.insertItem(4, getIcon('code-fork.png'), iCode())
         self.ui.pathSelector.insertItem(5, getIcon('folder-documents.png'),
                 iDocuments())
         self.ui.pathSelector.activated.connect(self.onPathSelector)
@@ -392,7 +406,7 @@ class FilesTab(GalacteekTab):
             self.model.fileDropEvent.disconnect(self.onDropFile)
             self.model.directoryDropEvent.disconnect(self.onDropDirectory)
         except Exception as e:
-            self.app.debug(str(e))
+            pass
 
     def onFileManager(self):
         if self.localTree.isHidden():
@@ -489,7 +503,7 @@ class FilesTab(GalacteekTab):
 
         def openWithMediaPlayer(itemHash):
             parentHash = nameItem.getParentHash()
-            name = nameItem.getEntry()['Name']
+            name = nameItem.entry['Name']
             if parentHash:
                 fp = joinIpfs(os.path.join(parentHash, name))
                 self.gWindow.mediaPlayerQueue(fp, mediaName=name)
@@ -506,7 +520,7 @@ class FilesTab(GalacteekTab):
         menu.addAction(iDeleteFile(), lambda:
             delete(dataHash))
         menu.addAction(iHashmarkFile(), lambda:
-            bookmark(ipfsPath, nameItem.getEntry()['Name']))
+            bookmark(ipfsPath, nameItem.entry['Name']))
         menu.addAction(iBrowseFile(), lambda:
             browse(dataHash))
 
@@ -579,7 +593,7 @@ class FilesTab(GalacteekTab):
                 finalPath = joinIpfs(os.path.join(parentHash, fileName))
 
             if nameItem.mimeType:
-                cat = nameItem.mimeCategory()
+                cat = nameItem.mimeCategory
                 # If it's media content try to open it in the media player
                 if cat and (cat == 'audio' or cat == 'video'):
                     return self.gWindow.mediaPlayerQueue(finalPath,
@@ -709,6 +723,7 @@ class FilesTab(GalacteekTab):
                 icon = self.iconFile
 
             nItemName = IPFSNameItem(entry, entry['Name'], icon)
+            nItemName.mimeFromDb(self.app.mimeDb)
             nItemName.setParentHash(parentItemHash)
             nItemSize = IPFSItem(sizeFormat(entry['Size']))
             nItemHash = IPFSItem(entry['Hash'])

@@ -1,5 +1,6 @@
 <RCC>
   <qresource>
+    <file>../../share/icons/code-fork.png</file>
     <file>../../share/icons/fullscreen.png</file>
     <file>../../share/icons/folder-pictures.png</file>
     <file>../../share/icons/folder-videos.png</file>
