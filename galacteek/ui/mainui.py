@@ -128,6 +128,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self, app):
         super(MainWindow, self).__init__()
+        self.showMaximized()
 
         self.app = app
 
@@ -140,6 +141,8 @@ class MainWindow(QMainWindow):
                 self.onCloseAllTabs)
         self.ui.actionAboutGalacteek.triggered.connect(
                 self.onAboutGalacteek)
+        self.ui.actionDonate.triggered.connect(
+                self.onHelpDonate)
         self.ui.actionShowPeersInformation.triggered.connect(
                 self.onShowPeersInformation)
         self.ui.actionShowIpfsRefs.triggered.connect(
@@ -549,6 +552,11 @@ class MainWindow(QMainWindow):
 
         keysTab = keys.KeysTab(self)
         self.registerTab(keysTab, name, current=True)
+
+    def onHelpDonate(self):
+        moneroAddress = '48oNcgpqwUNWjHeTSSH8BCaJHMR7Bc8ooGY13USYxuMuGwtXfLQ1Qf9f7rJMB9g1PWELee2cNnTWz1rJiZyPigcXRCTkhU3'
+        bcAddress = '3HSsNcwzkiWGu6wB18BC6D37JHExpxZvyS'
+        runDialog(DonateDialog, moneroAddress, bcAddress)
 
     def addBrowserTab(self, label='No page loaded'):
         icon = getIconIpfsIce()

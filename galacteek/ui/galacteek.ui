@@ -279,6 +279,7 @@
      <string>Help</string>
     </property>
     <addaction name="actionAboutGalacteek"/>
+    <addaction name="actionDonate"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -332,6 +333,11 @@
   <action name="actionNew_Profile">
    <property name="text">
     <string>New Profile</string>
+   </property>
+  </action>
+  <action name="actionDonate">
+   <property name="text">
+    <string>Donate</string>
    </property>
   </action>
  </widget>
