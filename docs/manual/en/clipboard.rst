@@ -2,9 +2,10 @@
 Using the clipboard
 ===================
 
-By their very nature, IPFS hashes are difficult to remember (unless you train
-long enough ...) so it becomes quite convenient to be able to quickly store those
-valuable hashes in a transitory place, and the clipboard fits that purpose.
+By their very nature, IPFS hashes are difficult to remember. It becomes
+quite convenient to store those valuable hashes in a temporary place, and the
+system's clipboard is a convenient buffer that will help you keep track of
+these.
 
 On Linux systems, the **selection** clipboard will always be used as the
 primary clipboard, while on other platforms the system's clipboard will be
