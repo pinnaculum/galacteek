@@ -79,7 +79,6 @@ class _MarksUpdater:
         categories = await abQuery.getCategories()
 
         for cat in categories:
-            await asyncio.sleep(0)
             catItem = None
             ret = await modelSearchAsync(model,
                     parent=parent.index(),
