@@ -3,7 +3,6 @@ import sys
 import time
 import os.path
 import asyncio
-import cid
 import mimetypes
 
 from PyQt5.QtWidgets import (QWidget, QFrame, QApplication, QMainWindow,

@@ -19,7 +19,6 @@ from PyQt5.Qt import QByteArray
 from PyQt5.QtGui import QClipboard, QPixmap, QIcon, QKeySequence
 
 from yarl import URL
-import cid
 
 from galacteek.ipfs.wrappers import *
 
