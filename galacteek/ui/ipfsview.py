@@ -10,10 +10,10 @@ from PyQt5.QtWidgets import (QWidget, QFrame, QApplication,
         QFileDialog, QProgressBar, QSpacerItem, QSizePolicy,
         QToolButton, QAbstractItemView)
 
-from PyQt5.QtGui import QStandardItemModel, QStandardItem, QKeySequence
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QKeySequence, QIcon
 
 from PyQt5.QtCore import (QCoreApplication, QUrl, Qt, QEvent, QObject,
-    pyqtSignal, QMimeData)
+    pyqtSignal, QMimeData, QMimeDatabase)
 
 from galacteek.appsettings import *
 from galacteek.ipfs import cidhelpers
@@ -66,19 +66,32 @@ class IPFSNameItem(IPFSItem):
     def __init__(self, entry, text, icon):
         super().__init__(text, icon=icon)
 
-        self.entry = entry
-        self.mimeType = mimetypes.guess_type(entry['Name'])[0]
+        self._entry = entry
+        self._mimeType = None
 
-    def getEntry(self):
-        return self.entry
+    @property
+    def entry(self):
+        return self._entry
+
+    @property
+    def mimeType(self):
+        return self._mimeType
+
+    def mimeFromDb(self, db):
+        self._mimeType = db.mimeTypeForFile(self.entry['Name'])
 
     @property
     def mimeCategory(self):
         if self.mimeType:
-            return self.mimeType.split('/')[0]
+            return self.mimeTypeName.split('/')[0]
+
+    @property
+    def mimeTypeName(self):
+        if self.mimeType:
+            return self.mimeType.name()
 
     def cid(self):
-        return cidhelpers.getCID(self.getEntry()['Hash'])
+        return cidhelpers.getCID(self.entry['Hash'])
 
     def getFullPath(self):
         """
@@ -94,22 +107,22 @@ class IPFSNameItem(IPFSItem):
             return joinIpfs(self.entry['Hash'])
 
     def isRaw(self):
-        return self.getEntry()['Type'] == 0
+        return self.entry['Type'] == 0
 
     def isDir(self):
-        return self.getEntry()['Type'] == 1
+        return self.entry['Type'] == 1
 
     def isFile(self):
-        return self.getEntry()['Type'] == 2
+        return self.entry['Type'] == 2
 
     def isMetadata(self):
-        return self.getEntry()['Type'] == 3
+        return self.entry['Type'] == 3
 
     def isSymlink(self):
-        return self.getEntry()['Type'] == 4
+        return self.entry['Type'] == 4
 
     def isUnknown(self):
-        return self.getEntry()['Type'] == -1
+        return self.entry['Type'] == -1
 
 class IPFSHashItemModel(QStandardItemModel):
     COL_NAME = 0
@@ -143,7 +156,7 @@ class IPFSHashItemModel(QStandardItemModel):
         for itNum in range(first, last+1):
             itNameIdx = self.index(itNum, self.COL_NAME, parent)
             itName = self.itemFromIndex(itNameIdx)
-            entry = itName.getEntry()
+            entry = itName.entry
             self.entryCache.register(entry)
 
 class IPFSHashViewToolBox(GalacteekTab):
@@ -445,7 +458,7 @@ class IPFSHashViewWidget(QWidget):
             self.openFile(nameItem, dataHash)
 
     def openFile(self, item, fileHash):
-        if item.mimeType is None or item.mimeType == 'text/html':
+        if item.mimeTypeName is None or item.mimeTypeName == 'text/html':
             return self.browse(fileHash)
 
         self.gWindow.app.task(self.openFileWithMime, item, fileHash)
@@ -456,8 +469,8 @@ class IPFSHashViewWidget(QWidget):
 
         if item.mimeCategory == 'text':
             data = await ipfsop.client.cat(fileHash)
-            tView = TextView(data, item.mimeType, parent=self.gWindow)
-            self.gWindow.registerTab(tView, item.getEntry()['Name'], current=True)
+            tView = TextView(data, item.mimeTypeName, parent=self.gWindow)
+            self.gWindow.registerTab(tView, item.entry['Name'], current=True)
         elif item.mimeCategory == 'video' or item.mimeCategory == 'audio':
             return self.gWindow.mediaPlayerQueue(fullPath)
         elif item.mimeCategory == 'image':
@@ -542,10 +555,11 @@ class IPFSHashViewWidget(QWidget):
                     icon = self.iconFile
 
                 nItemName = IPFSNameItem(entry, entry['Name'], icon)
+                nItemName.mimeFromDb(self.app.mimeDb)
                 nItemName.setParentHash(parentItemHash)
                 nItemSize = IPFSItem(sizeFormat(entry['Size']))
                 nItemSize.setToolTip(str(entry['Size']))
-                nItemMime = IPFSItem(nItemName.mimeType or iUnknown())
+                nItemMime = IPFSItem(nItemName.mimeTypeName or iUnknown())
                 nItemHash = IPFSItem(entry['Hash'])
                 nItemName.setToolTip(entry['Hash'])
 

@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu
 from PyQt5.QtGui import QPixmap, QIcon, QClipboard
 from PyQt5.QtCore import (QCoreApplication, QUrl, QStandardPaths,
         QSettings, QTranslator, QFile, pyqtSignal, QObject,
-        QTemporaryDir, QDateTime, QMessageLogger)
+        QTemporaryDir, QDateTime, QMessageLogger, QMimeDatabase)
 
 from galacteek.ipfs import pinning, ipfsd, asyncipfsd, cidhelpers
 from galacteek.ipfs.ipfsops import *
@@ -283,6 +283,7 @@ class GalacteekApplication(QApplication):
 
     def initMisc(self):
         self.manuals = ManualsImporter(self)
+        self.mimeDb = QMimeDatabase()
 
         self.downloadsManager = downloads.DownloadsManager(self)
         self.marksLocal = IPFSMarks(self.localMarksFileLocation)
@@ -670,7 +671,7 @@ class ManualsImporter(QObject):
                     continue
                 self.importManualLang(entry)
         except Exception as e:
-            self.app.debug(str(e))
+            self.app.debug('Failed importing manuals {0}'.format(str(e)))
 
     def importManualLang(self, lang):
         try:
