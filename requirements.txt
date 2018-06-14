@@ -2,8 +2,9 @@ PyQt5
 quamash
 aiohttp
 yarl
-py-cid
 pymultihash
+py-multicodec
+py-multibase
 Sphinx>=1.4.8
 GitPython
 git+https://gitlab.com/cipres/aioipfs

@@ -1,5 +1,5 @@
 
-from cid.cid import make_cid, CIDv0, CIDv1
+from galacteek.ipfs.cid import make_cid, CIDv0, CIDv1
 
 import multihash
 import re
