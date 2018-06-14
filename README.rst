@@ -59,6 +59,18 @@ IPFS views keybindings (file manager, hash views):
 - *Ctrl+p*: Copy selected item's IPFS path to the clipboard
 - *Ctrl+w*: Close tab/hash view
 
+Contact and donations
+=====================
+
+Contact by email at galacteek@gmx.co.uk
+
+Donations to the project of any amount are very welcome as time resources are
+limited and i plan to keep the software fully opensource and free of charge.
+
+You can make a donation with Monero to this monero address:
+
+**48oNcgpqwUNWjHeTSSH8BCaJHMR7Bc8ooGY13USYxuMuGwtXfLQ1Qf9f7rJMB9g1PWELee2cNnTWz1rJiZyPigcXRCTkhU3**
+
 Screenshots
 ===========
 
@@ -70,11 +82,6 @@ Platforms supported
 
 This has been mainly tested on Linux but should work on other systems
 as well where python and qt5 are available.
-
-Contact
-=======
-
-Contact by email at galacteek@gmx.co.uk
 
 Requirements
 ============
@@ -88,14 +95,18 @@ Requirements
 - aiohttp_
 - aioipfs_
 
+License
+=======
+
+**galacteek** is offered under the GNU GPL3 license
+
+Some of the beautiful artwork (under the Creative Commons CC-BY-SA license)
+from the ipfs-logo_ project's repository is included, unchanged.
+
 .. _aiohttp: https://pypi.python.org/pypi/aiohttp
 .. _aioipfs: https://gitlab.com/cipres/aioipfs
 .. _quamash: https://github.com/harvimt/quamash
 .. _go-ipfs: https://github.com/ipfs/go-ipfs
 .. _dist.ipfs.io: https://dist.ipfs.io
 .. _IPFS: https://ipfs.io
-
-License
-=======
-
-**galacteek** is offered under the GNU GPL3 license
+.. _ipfs-logo: https://github.com/ipfs/logo

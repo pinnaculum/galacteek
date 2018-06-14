@@ -24,9 +24,13 @@ def getHomePath():
     pList = QStandardPaths.standardLocations(QStandardPaths.HomeLocation)
     return pList[0] if len(pList) > 0 else os.getenv('HOME')
 
-def messageBox(message):
+def messageBox(message, title=None):
     msgBox = QMessageBox()
     msgBox.setText(message)
+
+    if title:
+        msgBox.setWindowTitle(title)
+
     msgBox.show()
     return msgBox.exec_()
 

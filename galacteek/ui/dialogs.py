@@ -4,7 +4,8 @@ import time
 from PyQt5.QtWidgets import (QWidget, QApplication,
         QDialog, QLabel, QTextEdit, QPushButton, QMessageBox)
 
-from PyQt5.QtCore import QUrl, Qt, pyqtSlot
+from PyQt5.QtCore import QUrl, Qt, pyqtSlot, QCoreApplication
+from PyQt5.QtGui import QClipboard
 
 from galacteek.core.ipfsmarks import *
 from galacteek.ipfs import cidhelpers
@@ -12,6 +13,7 @@ from galacteek.ipfs import cidhelpers
 from . import ui_addkeydialog, ui_addbookmarkdialog
 from . import ui_addfeeddialog
 from . import ui_ipfscidinputdialog, ui_ipfsmultiplecidinputdialog
+from . import ui_donatedialog
 
 import mimetypes
 
@@ -176,6 +178,39 @@ class IPFSMultipleCIDInputDialog(QDialog):
             item = self.ui.cidList.item(idx)
             cids.append(item.text())
         return cids
+
+    def accept(self):
+        self.done(1)
+
+class DonateDialog(QDialog):
+    def __init__(self, moneroAddr, bcAddr, parent=None):
+        super().__init__(parent)
+
+        self.ui = ui_donatedialog.Ui_DonateDialog()
+        self.ui.setupUi(self)
+        self.ui.moneroClip.clicked.connect(self.onMoneroClip)
+        self.ui.okButton.clicked.connect(self.close)
+        self.ui.bitcoinClip.clicked.connect(self.onBcClip)
+
+        self._moneroAddr = moneroAddr
+        self._bcAddr = bcAddr
+        self.ui.moneroAddress.setText('<b>{0}</b>'.format(self._moneroAddr))
+        self.ui.bitcoinAddress.setText('<b>{0}</b>'.format(self._bcAddr))
+        self.setWindowTitle('Make a donation')
+
+    def onMoneroClip(self):
+        self.toClip(self._moneroAddr)
+
+    def onBcClip(self):
+        self.toClip(self._bcAddr)
+
+    def toClip(self, data):
+        app = QCoreApplication.instance()
+        app.clipboard().setText(data, QClipboard.Selection)
+        app.clipboard().setText(data, QClipboard.Clipboard)
+
+    def close(self):
+        self.done(1)
 
     def accept(self):
         self.done(1)
