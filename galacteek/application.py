@@ -599,13 +599,16 @@ class ClipboardTracker(QObject):
     def hLookup(self, path):
         for hTs, hItem in self.history.items():
             if hItem['path'] == path:
-                return hItem
+                return hTs, hItem
 
     def hRecord(self, path):
         """ Records an item in the history and emits a signal """
         now = time.time()
-        if self.hLookup(path):
-            return
+        itLookup = self.hLookup(path)
+        if itLookup:
+            hTs, hItem = itLookup
+            if (now - hTs) < 10:
+                return
         self.history[now] = {
             'path': path,
             'date': QDateTime.currentDateTime()
@@ -618,6 +621,7 @@ class ClipboardTracker(QObject):
 
     def clearHistory(self):
         self.history = {}
+        self.clipboardHistoryChanged.emit(self.getHistory())
 
     def getHistoryLatest(self):
         """ Returns latest history item """

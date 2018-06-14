@@ -444,6 +444,9 @@ class FilesTab(GalacteekTab):
         self.ui.pathSelector.setCurrentIndex(0)
 
     def onPathSelector(self, idx):
+        if self.busy:
+            return
+
         text = self.ui.pathSelector.itemText(idx)
 
         if text == iHome():
@@ -505,9 +508,9 @@ class FilesTab(GalacteekTab):
             name = nameItem.entry['Name']
             if parentHash:
                 fp = joinIpfs(os.path.join(parentHash, name))
-                self.gWindow.mediaPlayerQueue(fp, mediaName=name)
+                self.gWindow.mediaPlayerPlay(fp, mediaName=name)
             else:
-                self.gWindow.mediaPlayerQueue(joinIpfs(itemHash),
+                self.gWindow.mediaPlayerPlay(joinIpfs(itemHash),
                         mediaName = name)
 
         menu.addAction(iCopyHashToSelClipboard(), lambda:
@@ -595,7 +598,7 @@ class FilesTab(GalacteekTab):
                 cat = nameItem.mimeCategory
                 # If it's media content try to open it in the media player
                 if cat and (cat == 'audio' or cat == 'video'):
-                    return self.gWindow.mediaPlayerQueue(finalPath,
+                    return self.gWindow.mediaPlayerPlay(finalPath,
                             mediaName=fileName)
 
             return self.browseFs(finalPath)
