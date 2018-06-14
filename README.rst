@@ -62,10 +62,8 @@ IPFS views keybindings (file manager, hash views):
 Screenshots
 ===========
 
-.. image:: https://gitlab.com/galacteek/galacteek/raw/1f6a41fda107a83a4c73199f20bf47adee58f18e/sc
-reenshots/filesview.png
-    :target: https://gitlab.com/galacteek/galacteek/raw/1f6a41fda107a83a4c73199f20bf47adee58f18e/
-screenshots/filesview.png
+.. image:: https://gitlab.com/galacteek/galacteek/raw/1f6a41fda107a83a4c73199f20bf47adee58f18e/screenshots/filesview.png
+    :target: https://gitlab.com/galacteek/galacteek/raw/1f6a41fda107a83a4c73199f20bf47adee58f18e/screenshots/filesview.png
 
 Platforms supported
 ===================
