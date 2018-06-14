@@ -109,7 +109,8 @@ setup(
         'async_generator>=1.0',
         'yarl',
         'base58',
-        'py-cid',
+        'py-multibase',
+        'py-multicodec',
         'Sphinx>=1.4.8'
     ],
     package_data={
