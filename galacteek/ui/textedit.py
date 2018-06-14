@@ -10,11 +10,17 @@ from .helpers import *
 from .widgets import *
 from .i18n import *
 from galacteek.ipfs.ipfsops import *
+from galacteek.appsettings import *
 from galacteek.ipfs.wrappers import ipfsOp
 
 def iImportedDocument(name, hash):
     return QCoreApplication.translate('NewDocumentForm',
-        'Succesfully imported {0} (hash reference {1})').format(name, hash)
+        'Succesfully imported {0} in the Documents folder (hash reference {1})').format(
+                name, hash)
+
+def iImportError():
+    return QCoreApplication.translate('NewDocumentForm',
+        'File import error')
 
 class AddDocumentWidget(GalacteekTab):
     importSuccess = pyqtSignal(str, dict)
@@ -29,6 +35,8 @@ class AddDocumentWidget(GalacteekTab):
 
     @ipfsOp
     async def importFile(self, op):
+        wrapEnabled = self.app.settingsMgr.isTrue(
+            CFG_SECTION_UI, CFG_KEY_WRAPSINGLEFILES)
         filename = self.ui.filename.text()
         if filename == '':
             return messageBox(iGeneralError('Please specify a filename'))
@@ -46,15 +54,11 @@ class AddDocumentWidget(GalacteekTab):
         tempFile.write(text.encode('utf-8'))
         tempFile.commit()
 
-        root = None
-        async for added in op.client.core.add(tempFile.fileName(),
-                wrap_with_directory=True):
-            if added['Name'] == '':
-                root = added
-                await op.filesLink(added, GFILES_MYFILES_PATH,
-                    name=filename)
-
-        self.importSuccess.emit(filename, root)
+        root = await op.addPath(tempFile.fileName(), wrap=wrapEnabled)
+        if await op.filesLink(root, self.profile.pathDocuments, name=filename):
+            self.importSuccess.emit(filename, root)
+        else:
+            messageBox(iImportError())
 
     def onSuccess(self, filename, entry):
         messageBox(iImportedDocument(filename, entry['Hash']))

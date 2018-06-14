@@ -43,6 +43,10 @@ def iClipboardEmpty():
     return QCoreApplication.translate('GalacteekWindow',
         'No valid IPFS CID/path in the clipboard')
 
+def iClipboardClearHistory():
+    return QCoreApplication.translate('GalacteekWindow',
+        'Clear clipboard history')
+
 def iClipLoaderExplore(path):
     return QCoreApplication.translate('GalacteekWindow',
         'Explore IPFS path: {0}').format(path)
@@ -164,6 +168,7 @@ class MainWindow(QMainWindow):
 
         self.multiLoaderMenu = QMenu()
         self.multiLoaderHMenu = QMenu(iClipboardHistory())
+        self.multiLoaderHMenu.triggered.connect(self.onClipboardHistoryMenu)
         self.multiLoadHashAction = QAction(getIconIpfsIce(),
                 iClipboardEmpty(), self,
                 shortcut=QKeySequence('Ctrl+o'),
@@ -395,19 +400,35 @@ class MainWindow(QMainWindow):
     def onToggledPinAllGlobal(self, checked):
         self.pinAllGlobalChecked = checked
 
+    def onClipboardHistoryMenu(self, action):
+        aData = action.data()
+
+        if aData:
+            hItem = aData['item']
+            self.addBrowserTab().browseFsPath(hItem['path'])
+
     def onClipboardHistory(self, history):
         # Called when the clipboard history has changed
         self.multiLoaderHMenu.clear()
         hItems = history.items()
 
-        def onHistoryItem(hItem):
-            self.addBrowserTab().browseFsPath(hItem['path'])
+        def onHistoryClear():
+            self.app.clipTracker.clearHistory()
+            self.onClipboardIpfs(False, None, None)
+
+        self.multiLoaderHMenu.addSeparator()
+        self.multiLoaderHMenu.addAction(iClipboardClearHistory(),
+                lambda: onHistoryClear())
 
         for hTs, hItem in hItems:
-            self.multiLoaderHMenu.addAction(getIconIpfsIce(),
-                    '{0} ({1})'.format(hItem['path'],
-                        hItem['date'].toString()),
-                    lambda: onHistoryItem(hItem))
+            action = QAction('{0} ({1})'.format(hItem['path'],
+                        hItem['date'].toString()), self)
+            action.setIcon(getIconIpfsIce())
+            action.setData({
+                'item': hItem
+            })
+
+            self.multiLoaderHMenu.addAction(action)
 
     def onClipboardIpfs(self, valid, cid, path):
         self.multiExploreHashAction.setEnabled(valid)
@@ -497,6 +518,10 @@ class MainWindow(QMainWindow):
         return tab
 
     def mediaPlayerQueue(self, path, mediaName=None):
+        tab = self.addMediaPlayerTab()
+        tab.queueFromPath(path, mediaName=mediaName)
+
+    def mediaPlayerPlay(self, path, mediaName=None):
         tab = self.addMediaPlayerTab()
         tab.playFromPath(path, mediaName=mediaName)
 
