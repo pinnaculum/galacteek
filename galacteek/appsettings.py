@@ -63,7 +63,7 @@ def setDefaultSettings(gApp):
     sManager.setDefaultSetting(section, CFG_KEY_HTTPGWPORT, 8080)
 
     section = CFG_SECTION_IPFS
-    sManager.setDefaultTrue(section, CFG_KEY_PUBSUB)
+    sManager.setDefaultFalse(section, CFG_KEY_PUBSUB)
 
     section = CFG_SECTION_UI
     sManager.setDefaultTrue(section, CFG_KEY_WRAPSINGLEFILES)
