@@ -101,8 +101,8 @@ You can make a donation with Monero to this monero address:
 Screenshots
 ===========
 
-.. image:: https://gitlab.com/galacteek/galacteek/raw/1f6a41fda107a83a4c73199f20bf47adee58f18e/screenshots/filesview.png
-    :target: https://gitlab.com/galacteek/galacteek/raw/1f6a41fda107a83a4c73199f20bf47adee58f18e/screenshots/filesview.png
+.. image:: https://gitlab.com/galacteek/galacteek/raw/61343d519d30709a5009dfc67f63704519aa6e62/screenshots/filesview.png
+    :target: https://gitlab.com/galacteek/galacteek/raw/61343d519d30709a5009dfc67f63704519aa6e62/screenshots/filesview.png
 
 .. image:: https://gitlab.com/galacteek/galacteek/raw/62c8b5a47d47fdff7b520795c0408b93f94de0b4/screenshots/mediaplayer.png
     :target: https://gitlab.com/galacteek/galacteek/raw/62c8b5a47d47fdff7b520795c0408b93f94de0b4/screenshots/mediaplayer.png
