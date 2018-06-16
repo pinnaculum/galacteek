@@ -6,6 +6,31 @@ A modest IPFS_ navigator and content publisher
 Installation
 ============
 
+Installation from binary
+------------------------
+
+Binary releases are only available for Linux AMD64 (also known as
+*x86-64* or *x64*) platforms. They include the *0.4.15* release of go-ipfs_
+and are built from the *master* branch with cxFreeze_.
+
+If you already have IPFS installed on your system you can download the latest
+binary release with:
+
+.. code-block:: shell
+
+    ipfs get /ipfs/QmWi2aEy9mMy43upd3QiPa2pXFKTrLSvHk8uqjxcA1uM5W/galacteek-0.1.6-linux-amd64.tar.gz
+    tar -xzvf galacteek-0.1.6-linux-amd64.tar.gz
+
+Just go into the unpacked directory and run the **galacteek** program.
+
+If you don't have IPFS installed on your system you can download the same file
+here_
+
+.. _here: https://gateway.ipfs.io/ipfs/QmWi2aEy9mMy43upd3QiPa2pXFKTrLSvHk8uqjxcA1uM5W/galacteek-0.1.6-linux-amd64.tar.gz
+
+Installation from source
+------------------------
+
 You need to have python 3.5 and pip installed, as well as go-ipfs_. Install with:
 
 .. code-block:: shell
@@ -27,7 +52,8 @@ and restart the application afterwards.
 Features
 ========
 
-- IPFS hashmarks sharable through IPFS pubsub channels (*experimental*)
+- IPFS hashmarks sharable through IPFS pubsub channels (*experimental* and
+  desactivated by default)
 - Browsing sessions with automatic pinning (pins every page you browse)
 - Feeds (following IPNS hashes)
 - File manager with drag-and-drop support
@@ -41,10 +67,11 @@ Main window keybindings:
 
 - *Ctrl+t*: Open a new IPFS browsing tab
 - *Ctrl+w*: Close current tab
-- *Ctrl+m*: Open the IPFS marks manager
+- *Ctrl+m*: Open the IPFS hashmarks manager
 - *Ctrl+f*: Open the file manager
 - *Ctrl+o*: Browse IPFS path from the clipboard
 - *Ctrl+e*: Explore IPFS path from the clipboard
+- *Ctrl+g*: DAG view of IPFS object from the clipboard
 
 Browser keybindings:
 --------------------
@@ -52,8 +79,8 @@ Browser keybindings:
 - *Ctrl+b*: Bookmark current page
 - *Ctrl+l*: Load an IPFS CID
 
-IPFS views keybindings (file manager, hash views):
---------------------------------------------------
+IPFS views keybindings (file manager, hash views, dag viewer):
+--------------------------------------------------------------
 
 - *Ctrl+h*: Copy selected item's hash (CID) to the clipboard
 - *Ctrl+p*: Copy selected item's IPFS path to the clipboard
@@ -76,6 +103,9 @@ Screenshots
 
 .. image:: https://gitlab.com/galacteek/galacteek/raw/1f6a41fda107a83a4c73199f20bf47adee58f18e/screenshots/filesview.png
     :target: https://gitlab.com/galacteek/galacteek/raw/1f6a41fda107a83a4c73199f20bf47adee58f18e/screenshots/filesview.png
+
+.. image:: https://gitlab.com/galacteek/galacteek/raw/62c8b5a47d47fdff7b520795c0408b93f94de0b4/screenshots/mediaplayer.png
+    :target: https://gitlab.com/galacteek/galacteek/raw/62c8b5a47d47fdff7b520795c0408b93f94de0b4/screenshots/mediaplayer.png
 
 Platforms supported
 ===================
@@ -110,3 +140,4 @@ from the ipfs-logo_ project's repository is included, unchanged.
 .. _dist.ipfs.io: https://dist.ipfs.io
 .. _IPFS: https://ipfs.io
 .. _ipfs-logo: https://github.com/ipfs/logo
+.. _cxFreeze: https://anthony-tuininga.github.io/cx_Freeze/
