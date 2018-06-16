@@ -20,7 +20,8 @@ from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.cidhelpers import cidValid
 from . import ui_galacteek
-from . import browser, files, keys, settings, bookmarks, textedit, ipfsview
+from . import (browser, files, keys, settings, bookmarks,
+        textedit, ipfsview, dag)
 from .helpers import *
 from .modelhelpers import *
 from .widgets import GalacteekTab
@@ -34,6 +35,9 @@ def iFileManager():
     return QCoreApplication.translate('GalacteekWindow', 'File Manager')
 def iKeys():
     return QCoreApplication.translate('GalacteekWindow', 'IPFS Keys')
+
+def iDagViewer():
+    return QCoreApplication.translate('GalacteekWindow', 'DAG viewer')
 
 def iFromClipboard(path):
     return QCoreApplication.translate('GalacteekWindow',
@@ -50,6 +54,10 @@ def iClipboardClearHistory():
 def iClipLoaderExplore(path):
     return QCoreApplication.translate('GalacteekWindow',
         'Explore IPFS path: {0}').format(path)
+
+def iClipLoaderDagView(path):
+    return QCoreApplication.translate('GalacteekWindow',
+        'DAG view: {0}').format(path)
 
 def iClipboardHistory():
     return QCoreApplication.translate('GalacteekWindow', 'Clipboard history')
@@ -177,10 +185,17 @@ class MainWindow(QMainWindow):
                 iClipboardEmpty(), self,
                 shortcut=QKeySequence('Ctrl+e'),
                 triggered=self.onExploreFromClipboard)
+        self.multiDagViewAction = QAction(getIconIpfsIce(),
+                iClipboardEmpty(), self,
+                shortcut=QKeySequence('Ctrl+d'),
+                triggered=self.onDagViewFromClipboard)
+
         self.multiExploreHashAction.setEnabled(False)
         self.multiLoadHashAction.setEnabled(False)
+        self.multiDagViewAction.setEnabled(False)
         self.multiLoaderMenu.addAction(self.multiLoadHashAction)
         self.multiLoaderMenu.addAction(self.multiExploreHashAction)
+        self.multiLoaderMenu.addAction(self.multiDagViewAction)
         self.multiLoaderMenu.addMenu(self.multiLoaderHMenu)
 
         self.ui.clipboardMultiLoader.clicked.connect(self.onLoadFromClipboard)
@@ -433,13 +448,16 @@ class MainWindow(QMainWindow):
     def onClipboardIpfs(self, valid, cid, path):
         self.multiExploreHashAction.setEnabled(valid)
         self.multiLoadHashAction.setEnabled(valid)
+        self.multiDagViewAction.setEnabled(valid)
         if valid:
             self.multiExploreHashAction.setText(iClipLoaderExplore(path))
             self.multiLoadHashAction.setText(iClipLoaderBrowse(path))
+            self.multiDagViewAction.setText(iClipLoaderDagView(path))
             self.ui.clipboardMultiLoader.setToolTip(iFromClipboard(path))
         else:
             self.multiExploreHashAction.setText(iClipboardEmpty())
             self.multiLoadHashAction.setText(iClipboardEmpty())
+            self.multiDagViewAction.setText(iClipboardEmpty())
             self.ui.clipboardMultiLoader.setToolTip(iClipboardEmpty())
 
     def onLoadFromClipboard(self):
@@ -453,6 +471,14 @@ class MainWindow(QMainWindow):
         current = self.app.clipTracker.getCurrent()
         if current:
             self.app.task(self.exploreClipboardPath, current['path'])
+        else:
+            messageBox(iClipboardEmpty())
+
+    def onDagViewFromClipboard(self):
+        current = self.app.clipTracker.getCurrent()
+        if current:
+            view = dag.DAGViewer(current['path'], self)
+            self.registerTab(view, iDagViewer(), current=True)
         else:
             messageBox(iClipboardEmpty())
 
