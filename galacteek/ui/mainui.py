@@ -187,7 +187,7 @@ class MainWindow(QMainWindow):
                 triggered=self.onExploreFromClipboard)
         self.multiDagViewAction = QAction(getIconIpfsIce(),
                 iClipboardEmpty(), self,
-                shortcut=QKeySequence('Ctrl+d'),
+                shortcut=QKeySequence('Ctrl+g'),
                 triggered=self.onDagViewFromClipboard)
 
         self.multiExploreHashAction.setEnabled(False)
