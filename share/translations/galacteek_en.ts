@@ -497,7 +497,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="35"/>
+        <location filename="../../galacteek/ui/mainui.py" line="36"/>
         <source>IPFS Keys</source>
         <translation type="unfinished"></translation>
     </message>
@@ -557,7 +557,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="69"/>
+        <location filename="../../galacteek/ui/mainui.py" line="81"/>
         <source>
         &lt;p&gt;&lt;b&gt;Galacteek&lt;/b&gt; is a simple IPFS browser and content publisher
         &lt;/p&gt;
@@ -571,28 +571,28 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="64"/>
+        <location filename="../../galacteek/ui/mainui.py" line="76"/>
         <source>
 Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="38"/>
+        <location filename="../../galacteek/ui/mainui.py" line="42"/>
         <source>Clipboard: browse IPFS path: {0}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="42"/>
+        <location filename="../../galacteek/ui/mainui.py" line="46"/>
         <source>No valid IPFS CID/path in the clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="46"/>
+        <location filename="../../galacteek/ui/mainui.py" line="54"/>
         <source>Explore IPFS path: {0}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="60"/>
+        <location filename="../../galacteek/ui/mainui.py" line="72"/>
         <source>Browse IPFS path: {0}</source>
         <translation type="unfinished"></translation>
     </message>
@@ -602,12 +602,12 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="31"/>
+        <location filename="../../galacteek/ui/mainui.py" line="32"/>
         <source>Hashmarks</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="50"/>
+        <location filename="../../galacteek/ui/mainui.py" line="62"/>
         <source>Clipboard history</source>
         <translation type="unfinished"></translation>
     </message>
@@ -622,7 +622,7 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="53"/>
+        <location filename="../../galacteek/ui/mainui.py" line="65"/>
         <source>New Profile</source>
         <translation type="unfinished"></translation>
     </message>
@@ -632,12 +632,12 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="56"/>
+        <location filename="../../galacteek/ui/mainui.py" line="68"/>
         <source>Successfully switched profile</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="33"/>
+        <location filename="../../galacteek/ui/mainui.py" line="34"/>
         <source>File Manager</source>
         <translation type="unfinished"></translation>
     </message>
@@ -677,14 +677,18 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="78"/>
-        <source>
-        &lt;p&gt;Any donation is welcome to keep the project&apos;s development going.
-        &lt;/p&gt;
-        &lt;p&gt;You can make a donation by Monero at this address
-        &lt;/p&gt;
-        &lt;p&gt;&lt;b&gt;{0}&lt;/b&gt;&lt;/&lt;p&gt;
-        </source>
+        <location filename="../../galacteek/ui/mainui.py" line="50"/>
+        <source>Clear clipboard history</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/mainui.py" line="39"/>
+        <source>DAG viewer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/mainui.py" line="58"/>
+        <source>DAG view: {0}</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

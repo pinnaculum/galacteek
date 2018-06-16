@@ -2,6 +2,7 @@
 import sys
 import os.path
 import json
+import tempfile
 
 from async_generator import async_generator, yield_
 
@@ -318,6 +319,39 @@ class IPFSOperator(object):
         try:
             data = await self.client.cat(path)
             return json.loads(data)
-        except aioipfs.APIException as e:
+        except aioipfs.APIException as exc:
+            self.debug(exc.message)
+            return None
+
+    async def dagPut(self, data):
+        """
+        Create a new DAG object from data and returns the root hash of the DAG
+        """
+        dagFile = tempfile.NamedTemporaryFile()
+        if not dagFile:
+            return None
+        try:
+            dagFile.write(json.dumps(data).encode())
+        except Exception as e:
+            self.debug('Cannot convert DAG object: {}'.format(str(e)))
+            return None
+
+        dagFile.seek(0, 0)
+        try:
+            output = await self.client.dag.put(dagFile.name)
+            if 'Cid' in output:
+                return output['Cid'].get('/', None)
+        except aioipfs.APIException as exc:
+            self.debug(exc.message)
+            return None
+
+    async def dagGet(self, multihash):
+        """
+        Gets the DAG object referenced by multihash and returns a JSON object
+        """
+        try:
+            output = await self.client.dag.get(multihash)
+            return json.loads(output)
+        except aioipfs.APIException as exc:
             self.debug(exc.message)
             return None
