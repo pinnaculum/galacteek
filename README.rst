@@ -11,14 +11,16 @@ Installation from binary
 
 Binary releases are only available for Linux AMD64 (also known as
 *x86-64* or *x64*) platforms. They include the *0.4.15* release of go-ipfs_
-and are built from the *master* branch with cxFreeze_.
+and are built from the *master* branch with cxFreeze_. It's always preferable
+to build from source and depending on the distribution you use you might run
+into dependency problems with the binaries.
 
 If you already have IPFS installed on your system you can download the latest
 binary release with:
 
 .. code-block:: shell
 
-    ipfs get /ipfs/QmWi2aEy9mMy43upd3QiPa2pXFKTrLSvHk8uqjxcA1uM5W/galacteek-0.1.6-linux-amd64.tar.gz
+    ipfs get /ipfs/QmVSXeCpiRaWWgwxei63VQrNmJVbpj8XevNRuDZPCEki4e/galacteek-0.1.6-linux-amd64.tar.gz
     tar -xzvf galacteek-0.1.6-linux-amd64.tar.gz
 
 Just go into the unpacked directory and run the **galacteek** program.
@@ -26,7 +28,7 @@ Just go into the unpacked directory and run the **galacteek** program.
 If you don't have IPFS installed on your system you can download the same file
 here_
 
-.. _here: https://gateway.ipfs.io/ipfs/QmWi2aEy9mMy43upd3QiPa2pXFKTrLSvHk8uqjxcA1uM5W/galacteek-0.1.6-linux-amd64.tar.gz
+.. _here: https://gateway.ipfs.io/ipfs/QmVSXeCpiRaWWgwxei63VQrNmJVbpj8XevNRuDZPCEki4e/galacteek-0.1.6-linux-amd64.tar.gz
 
 Installation from source
 ------------------------
@@ -52,8 +54,6 @@ and restart the application afterwards.
 Features
 ========
 
-- IPFS hashmarks sharable through IPFS pubsub channels (*experimental* and
-  desactivated by default)
 - Browsing sessions with automatic pinning (pins every page you browse)
 - Feeds (following IPNS hashes)
 - File manager with drag-and-drop support
@@ -101,6 +101,8 @@ You can make a donation with Monero to this monero address:
 Screenshots
 ===========
 
+See the screenshots_ directory.
+
 .. image:: https://gitlab.com/galacteek/galacteek/raw/61343d519d30709a5009dfc67f63704519aa6e62/screenshots/filesview.png
     :target: https://gitlab.com/galacteek/galacteek/raw/61343d519d30709a5009dfc67f63704519aa6e62/screenshots/filesview.png
 
@@ -110,7 +112,7 @@ Screenshots
 Platforms supported
 ===================
 
-This has been mainly tested on Linux but should work on other systems
+This has been only tested on Linux but should work on other systems
 as well where python and qt5 are available.
 
 Requirements
@@ -141,3 +143,4 @@ from the ipfs-logo_ project's repository is included, unchanged.
 .. _IPFS: https://ipfs.io
 .. _ipfs-logo: https://github.com/ipfs/logo
 .. _cxFreeze: https://anthony-tuininga.github.io/cx_Freeze/
+.. _screenshots: https://gitlab.com/galacteek/galacteek/tree/master/screenshots
