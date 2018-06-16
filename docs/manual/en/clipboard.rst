@@ -48,3 +48,5 @@ Clipboard keyboard shortcuts
   clipboard
 - **Ctrl+e** will open the explorer for the IPFS resource currently
   referenced in the clipboard
+- **Ctrl+g** will open the DAG viewer for the IPFS resource currently
+  referenced in the clipboard
