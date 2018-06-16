@@ -27,10 +27,28 @@ class DAGViewer(GalacteekTab):
         self.ui = ui_dagview.Ui_DagViewForm()
         self.ui.setupUi(self)
 
+        evfilter = IPFSTreeKeyFilter(self.ui.dagTree)
+        evfilter.copyHashPressed.connect(self.onCopyItemHash)
+        self.ui.dagTree.installEventFilter(evfilter)
+
         self.ui.dagTree.itemDoubleClicked.connect(self.onItemDoubleClicked)
         self.ui.dagTree.setHeaderLabels(['Key', 'Value'])
         self.ui.dagHash.setText('DAG object: <b>{0}</b>'.format(self.dagHash))
         self.app.task(self.loadDag)
+
+    def onCopyItemHash(self):
+        currentItem = self.ui.dagTree.currentItem()
+        value = currentItem.text(1)
+        if cidhelpers.cidValid:
+            self.app.setClipboardText(value)
+
+    def onItemDoubleClicked(self, item, col):
+        if col == 1:
+            text = item.text(col)
+            if text.startswith('/ipfs/'):
+                self.gWindow.addBrowserTab().browseFsPath(text)
+            elif cidhelpers.cidValid(text):
+                self.gWindow.addBrowserTab().browseIpfsHash(text)
 
     @ipfsOp
     async def loadDag(self, ipfsop):
@@ -41,14 +59,6 @@ class DAGViewer(GalacteekTab):
         self.displayItem(dagNode, root)
         root.setExpanded(True)
         self.ui.dagTree.resizeColumnToContents(0)
-
-    def onItemDoubleClicked(self, item, col):
-        if col == 1:
-            text = item.text(col)
-            if text.startswith('/ipfs/'):
-                self.gWindow.addBrowserTab().browseFsPath(text)
-            elif cidhelpers.cidValid(text):
-                self.gWindow.addBrowserTab().browseIpfsHash(text)
 
     def displayItem(self, data, item):
         if data is None:
