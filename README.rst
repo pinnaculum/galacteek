@@ -46,13 +46,13 @@ Now just run the application with:
 
     galacteek
 
+Features
+========
+
 **galacteek** can either spawn an IPFS daemon and use it as transport, or
 connect to an existing IPFS daemon. By default it will try to run a daemon. You
 can change the IPFS connection settings through the *Edit* -> *Settings* menu
 and restart the application afterwards.
-
-Features
-========
 
 - Browsing sessions with automatic pinning (pins every page you browse)
 - Feeds (following IPNS hashes)
@@ -100,8 +100,8 @@ Screenshots
 
 See the screenshots_ directory.
 
-.. image:: https://gitlab.com/galacteek/galacteek/raw/61343d519d30709a5009dfc67f63704519aa6e62/screenshots/filesview.png
-    :target: https://gitlab.com/galacteek/galacteek/raw/61343d519d30709a5009dfc67f63704519aa6e62/screenshots/filesview.png
+.. image:: https://gitlab.com/galacteek/galacteek/raw/5fad7ce074f0eb98f6688b2a69a0121065b40904/screenshots/atari2600.png
+    :target: https://gitlab.com/galacteek/galacteek/raw/5fad7ce074f0eb98f6688b2a69a0121065b40904/screenshots/atari2600.png
 
 .. image:: https://gitlab.com/galacteek/galacteek/raw/62c8b5a47d47fdff7b520795c0408b93f94de0b4/screenshots/mediaplayer.png
     :target: https://gitlab.com/galacteek/galacteek/raw/62c8b5a47d47fdff7b520795c0408b93f94de0b4/screenshots/mediaplayer.png
