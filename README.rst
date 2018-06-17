@@ -20,7 +20,7 @@ binary release with:
 
 .. code-block:: shell
 
-    ipfs get /ipfs/QmVSXeCpiRaWWgwxei63VQrNmJVbpj8XevNRuDZPCEki4e/galacteek-0.1.6-linux-amd64.tar.gz
+    ipfs get /ipfs/QmfF7gW9VktgAgTgokw5h25do1GZhMHcCu9mRnfyYsPmnm/galacteek-0.1.6-linux-amd64.tar.gz
     tar -xzvf galacteek-0.1.6-linux-amd64.tar.gz
 
 Just go into the unpacked directory and run the **galacteek** program.
@@ -28,7 +28,7 @@ Just go into the unpacked directory and run the **galacteek** program.
 If you don't have IPFS installed on your system you can download the same file
 here_
 
-.. _here: https://gateway.ipfs.io/ipfs/QmVSXeCpiRaWWgwxei63VQrNmJVbpj8XevNRuDZPCEki4e/galacteek-0.1.6-linux-amd64.tar.gz
+.. _here: https://gateway.ipfs.io/ipfs/QmfF7gW9VktgAgTgokw5h25do1GZhMHcCu9mRnfyYsPmnm/galacteek-0.1.6-linux-amd64.tar.gz
 
 Installation from source
 ------------------------
@@ -91,10 +91,7 @@ Contact and donations
 
 Contact by email at galacteek@gmx.co.uk
 
-Donations to the project of any amount are very welcome as time resources are
-limited and i plan to keep the software fully opensource and free of charge.
-
-You can make a donation with Monero to this monero address:
+You can make a donation to the project with Monero to this monero address:
 
 **48oNcgpqwUNWjHeTSSH8BCaJHMR7Bc8ooGY13USYxuMuGwtXfLQ1Qf9f7rJMB9g1PWELee2cNnTWz1rJiZyPigcXRCTkhU3**
 
