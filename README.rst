@@ -20,15 +20,15 @@ binary release with:
 
 .. code-block:: shell
 
-    ipfs get /ipfs/QmfF7gW9VktgAgTgokw5h25do1GZhMHcCu9mRnfyYsPmnm/galacteek-0.1.6-linux-amd64.tar.gz
-    tar -xzvf galacteek-0.1.6-linux-amd64.tar.gz
+    ipfs get /ipfs/QmP8YBEGu5Stgc85yuYZ4HfSoVZmZEtbxRGE88HcEKLHW2/galacteek-0.1.7-linux-amd64.tar.gz
+    tar -xzvf galacteek-0.1.7-linux-amd64.tar.gz
 
 Just go into the unpacked directory and run the **galacteek** program.
 
 If you don't have IPFS installed on your system you can download the same file
 here_
 
-.. _here: https://gateway.ipfs.io/ipfs/QmfF7gW9VktgAgTgokw5h25do1GZhMHcCu9mRnfyYsPmnm/galacteek-0.1.6-linux-amd64.tar.gz
+.. _here: https://gateway.ipfs.io/ipfs/QmP8YBEGu5Stgc85yuYZ4HfSoVZmZEtbxRGE88HcEKLHW2/galacteek-0.1.7-linux-amd64.tar.gz
 
 Installation from source
 ------------------------
