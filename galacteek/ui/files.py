@@ -386,6 +386,7 @@ class FilesTab(GalacteekTab):
                 self.ui.refreshButton,
                 self.ui.fileManagerSwitch,
                 self.ui.fileManagerButton,
+                self.ui.pathSelector,
                 self.ui.searchFiles ]:
             btn.setEnabled(flag)
 

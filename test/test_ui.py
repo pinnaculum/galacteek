@@ -227,6 +227,11 @@ class TestApp:
                 check_params_cb=checkCorrect):
             modApp.setClipboardText(joinIpfs(validcid0))
 
+        # fs:/ipfs/CID
+        with qtbot.waitSignal(modApp.clipTracker.clipboardHasIpfs, timeout=1000,
+                check_params_cb=checkCorrect):
+            modApp.setClipboardText('fs:' + joinIpfs(validcid0))
+
         # /ipfs/CID/something
         with qtbot.waitSignal(modApp.clipTracker.clipboardHasIpfs, timeout=1000,
                 check_params_cb=checkCorrect):
