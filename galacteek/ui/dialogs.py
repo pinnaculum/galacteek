@@ -26,7 +26,7 @@ class AddBookmarkDialog(QDialog):
 
         self.ipfsResource = resource
         self.marks = marks
-        self.stats = stats # ipfs object stat
+        self.stats = stats if stats else {}
 
         self.ui = ui_addbookmarkdialog.Ui_AddBookmarkDialog()
         self.ui.setupUi(self)

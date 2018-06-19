@@ -21,7 +21,7 @@ from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.cidhelpers import cidValid
 from . import ui_galacteek
 from . import (browser, files, keys, settings, bookmarks,
-        textedit, ipfsview, dag)
+        textedit, ipfsview, dag, ipfssearchview)
 from .helpers import *
 from .modelhelpers import *
 from .widgets import GalacteekTab
@@ -38,6 +38,10 @@ def iKeys():
 
 def iDagViewer():
     return QCoreApplication.translate('GalacteekWindow', 'DAG viewer')
+
+def iIpfsSearch(text):
+    return QCoreApplication.translate('GalacteekWindow',
+            'Search: {0}').format(text)
 
 def iFromClipboard(path):
     return QCoreApplication.translate('GalacteekWindow',
@@ -173,6 +177,8 @@ class MainWindow(QMainWindow):
         self.ui.bookmarksButton.setShortcut(QKeySequence('Ctrl+m'))
         self.ui.writeNewDocumentButton.clicked.connect(self.onWriteNewDocumentClicked)
         self.ui.mediaPlayerButton.clicked.connect(self.onOpenMediaPlayer)
+        self.ui.ipfsSearchButton.clicked.connect(self.onIpfsSearch)
+        self.ui.ipfsSearch.returnPressed.connect(self.onIpfsSearch)
 
         self.multiLoaderMenu = QMenu()
         self.multiLoaderHMenu = QMenu(iClipboardHistory())
@@ -570,6 +576,14 @@ class MainWindow(QMainWindow):
         if tab.onClose() is True:
             self.ui.tabWidget.removeTab(idx)
             del tab
+
+    def onIpfsSearch(self):
+        text = self.ui.ipfsSearch.text()
+        self.ui.ipfsSearch.clear()
+        if len(text) > 0:
+            view = ipfssearchview.IPFSSearchView(text, self)
+            self.registerTab(view, iIpfsSearch(text), current=True,
+                    icon=getIcon('ipfs-search.png'))
 
     def onOpenMediaPlayer(self):
         self.addMediaPlayerTab()

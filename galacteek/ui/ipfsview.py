@@ -491,7 +491,7 @@ class IPFSHashViewWidget(QWidget):
 
         menu = QMenu()
 
-        def pinRecursive(rHash):
+        def pinRecursive():
             for item in items:
                 fp = item.getFullPath()
                 self.app.task(self.app.pinner.enqueue, fp, True, None)
@@ -501,7 +501,7 @@ class IPFSHashViewWidget(QWidget):
                 self.gWindow.mediaPlayerQueue(item.getFullPath())
 
         menu.addAction(getIcon('pin-black.png'), 'Pin (recursive)',
-                lambda: pinRecursive(dataHash))
+                lambda: pinRecursive())
         menu.addAction(getIcon('multimedia.png'), 'Queue in media player',
                 lambda: queueMedia())
 

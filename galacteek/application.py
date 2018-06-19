@@ -568,7 +568,7 @@ class ClipboardTracker(QObject):
         if not text or len(text) > 1024: # that shouldn't be worth handling
             return
 
-        if text.startswith('/ipfs/'):
+        if text.startswith('/ipfs/') or text.startswith('fs:/ipfs/'):
             # The clipboard contains a full IPFS path
             ma = cidhelpers.ipfsRegSearch(text)
             if ma:

@@ -48,7 +48,7 @@ def cidValid(cidstring):
     return False
 
 def ipfsRegSearch(text):
-    return re.search('/ipfs/([a-zA-Z0-9]*)(\/.*$)?', text)
+    return re.search('(?:[fs])?/ipfs/([a-zA-Z0-9]*)(\/.*$)?', text)
 
 def ipnsRegSearch(text):
-    return re.search('/ipns/([a-zA-Z0-9\.]*)(\/.*$)?', text)
+    return re.search('(?:[fs])?/ipns/([a-zA-Z0-9\.]*)(\/.*$)?', text)
