@@ -433,6 +433,11 @@
         <source>Problem initializing the IPFS daemon (check the ports configuration)</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../../galacteek/ui/downloads.py" line="13"/>
+        <source>Downloading file {0} ..</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>GalacteekWindow</name>
@@ -452,47 +457,47 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="239"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="252"/>
         <source>...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="289"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="302"/>
         <source>File</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="296"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="309"/>
         <source>Edit</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="321"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="334"/>
         <source>Quit</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="324"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="337"/>
         <source>Ctrl+Q</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="332"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="345"/>
         <source>Add Profile</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="337"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="350"/>
         <source>Show peers information</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="342"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="355"/>
         <source>Show refs</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="347"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="360"/>
         <source>Settings</source>
         <translation type="unfinished"></translation>
     </message>
@@ -532,12 +537,12 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="309"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="322"/>
         <source>Help</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="352"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="365"/>
         <source>About</source>
         <translation type="unfinished"></translation>
     </message>
@@ -552,7 +557,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="357"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="370"/>
         <source>Close all tabs</source>
         <translation type="unfinished"></translation>
     </message>
@@ -617,7 +622,7 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="300"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="313"/>
         <source>User Profile</source>
         <translation type="unfinished"></translation>
     </message>
@@ -657,7 +662,7 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="236"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="249"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Global automatic pinning (enables automatic pinning for all browsing sessions)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
@@ -672,7 +677,7 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="370"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="383"/>
         <source>Donate</source>
         <translation type="unfinished"></translation>
     </message>
@@ -692,13 +697,18 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="197"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="210"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Search IPFS&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../galacteek/ui/mainui.py" line="42"/>
         <source>Search: {0}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/galacteek.ui" line="187"/>
+        <source>Search</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

@@ -11,13 +11,15 @@ import aiohttp
 
 class IPFSSearchResults:
     def __init__(self, page, results):
-        self.pageCount = results['page_count']
+        self.pageCount = results.get('page_count', 0)
         self.page = page
         self.results = results
 
+    @property
     def hits(self):
-        for hit in self.results['hits']:
-            yield hit
+        return self.results.get('hits', [])
+
+emptyResults = IPFSSearchResults(0, {})
 
 async def searchPage(query, page):
     params = {
@@ -27,22 +29,29 @@ async def searchPage(query, page):
 
     async with aiohttp.ClientSession() as session:
         async with session.get('https://api.ipfs-search.com/v1/search',
-                params=params) as resp:
+                verify_ssl=False, params=params) as resp:
             return await resp.json()
 
-async def searchPageResults(query, page):
+async def getPageResults(query, page):
     try:
         results = await searchPage(query, page)
         return IPFSSearchResults(page, results)
-    except:
+    except Exception as e:
         return None
 
 @async_generator
-async def search(query, maxpages=12):
-    if not query:
+async def search(query, preloadPages=0):
+    page1Results = await getPageResults(query, 1)
+    if page1Results is None:
+        await yield_(emptyResults)
         return
 
-    for page in range(1, maxpages):
-        results = await searchPageResults(query, page)
-        if results:
-            await yield_(results)
+    await yield_(page1Results)
+    pageCount = page1Results.pageCount
+
+    if preloadPages > 0:
+        pageLast = preloadPages if pageCount >= preloadPages else pageCount
+        for page in range(page1Results.page+1, pageLast+1):
+            results = await getPageResults(query, page)
+            if results:
+                await yield_(results)

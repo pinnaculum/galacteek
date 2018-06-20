@@ -2,7 +2,7 @@
 import os.path
 
 from PyQt5 import QtWebEngineWidgets, QtWebEngine, QtWebEngineCore
-from PyQt5.QtCore import QCoreApplication
+from PyQt5.QtCore import QCoreApplication, QObject
 
 from ..appsettings import *
 
@@ -10,14 +10,18 @@ def iFinishedDownload(filename):
     return QCoreApplication.translate('Galacteek',
         'Finished downloading file {0}').format(filename)
 
-class DownloadsManager(object):
+def iStartingDownload(filename):
+    return QCoreApplication.translate('Galacteek',
+        'Downloading file {0} ..').format(filename)
+
+class DownloadsManager(QObject):
     def __init__(self, app):
         self.app = app
         self.webProfile = QtWebEngineWidgets.QWebEngineProfile.defaultProfile()
         self.webProfile.downloadRequested.connect(self.onDownloadRequested)
 
-    def onDownloadRequested(self, downitem):
-        if not downitem:
+    def onDownloadRequested(self, downItem):
+        if not downItem:
             return
 
         downloadsLoc = self.app.settingsMgr.eGet(S_DOWNLOADS_PATH)
@@ -29,9 +33,10 @@ class DownloadsManager(object):
             filename = item.path() or 'Unknown'
             self.app.systemTrayMessage('Galacteek', iFinishedDownload(filename))
 
-        downitem.setPath(os.path.join(downloadsLoc,
-            os.path.basename(downitem.path())))
+        name = os.path.basename(downItem.path())
+        self.app.systemTrayMessage('Galacteek', iStartingDownload(name))
 
-        downitem.finished.connect(lambda: finished(downitem))
-        downitem.downloadProgress.connect(progress)
-        downitem.accept()
+        downItem.setPath(os.path.join(downloadsLoc, name))
+        downItem.finished.connect(lambda: finished(downItem))
+        downItem.downloadProgress.connect(progress)
+        downItem.accept()
