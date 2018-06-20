@@ -53,6 +53,25 @@ class TestMarks:
 
         bmarks.dump()
 
+    @pytest.mark.parametrize('path1,path2,path3', [
+        (
+            '/ipfs/QmT1TPVjdZ9CRnqwyQ9WygDoRgRRibFrEyWufenu92SuUV/',
+            '/ipfs/QmT1TPVjdZ9CRnqwyQ9WygDoRgRRibFrEyWufenu92SuUV/a/abcdefgh/system/ak/',
+            '/ipfs/Qma1TPVjdZ9CReqwyQ9Wvv3oRgRRi5FrEyWufenu92SuUV/www'
+        )])
+    @pytest.mark.parametrize('title', ['Smooth ride'])
+    def test_merge(self, bmarks, bmarks2, path1, path2, path3, title):
+        bmarks.add(path1, title=title, tags=['dev'])
+        bmarks2.add(path2, category='www/sub/cat', title=title)
+        bmarks2.add(path3, category='www/other', title=title)
+        bmarks.merge(bmarks2)
+
+        assert bmarks.search(path2) != None
+        assert bmarks.search(path3) != None
+
+        bmarks2.add(path3, category='www/other', title=title)
+        bmarks.dump()
+
     @pytest.mark.parametrize('feed1,mark1', [
             (
                 '/ipns/QmT1TPVjdZ9CvngwyQ9WygDoRgRRibFrEyWufenu92SuUV',

@@ -182,12 +182,25 @@
          </spacer>
         </item>
         <item>
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>Search</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QLineEdit" name="ipfsSearch">
           <property name="maximumSize">
            <size>
             <width>230</width>
             <height>16777215</height>
            </size>
+          </property>
+          <property name="focusPolicy">
+           <enum>Qt::ClickFocus</enum>
+          </property>
+          <property name="maxLength">
+           <number>128</number>
           </property>
          </widget>
         </item>

@@ -500,10 +500,17 @@ class IPFSHashViewWidget(QWidget):
             for item in items:
                 self.gWindow.mediaPlayerQueue(item.getFullPath())
 
+        def download():
+            dirSel = directorySelect()
+            for item in items:
+                getTask = self.app.task(self.getResource, item.getFullPath(),
+                    dirSel)
+
         menu.addAction(getIcon('pin-black.png'), 'Pin (recursive)',
                 lambda: pinRecursive())
         menu.addAction(getIcon('multimedia.png'), 'Queue in media player',
                 lambda: queueMedia())
+        menu.addAction('Download', lambda: download())
 
         menu.exec(self.tree.mapToGlobal(point))
 

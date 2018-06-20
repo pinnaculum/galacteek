@@ -63,7 +63,6 @@ class IPFSMarkData(collections.UserDict):
 class IPFSMarks(QObject):
     changed = pyqtSignal()
     changedContent = pyqtSignal()
-    changedStructure = pyqtSignal()
     markDeleted = pyqtSignal(str)
 
     def __init__(self, path, parent=None):
@@ -83,20 +82,24 @@ class IPFSMarks(QObject):
         """ Async query """
         return _AsyncMarksQuery(self)
 
-    def getPath(self):
-        return self.path
-
+    @property
     def _root(self):
         return self._marks
 
+    @property
     def _rootMarks(self):
-        return self._root()['ipfsmarks']
+        return self._root['ipfsmarks']
 
+    @property
     def _rootCategories(self):
-        return self._rootMarks()['categories']
+        return self._rootMarks['categories']
 
+    @property
     def _rootFeeds(self):
-        return self._root()['feeds']
+        return self._root['feeds']
+
+    def getPath(self):
+        return self.path
 
     def load(self):
         try:
@@ -124,7 +127,7 @@ class IPFSMarks(QObject):
 
     def hasCategory(self, category, parent=None):
         if parent is None:
-            parent = self._rootCategories()
+            parent = self._rootCategories
         return category in parent
 
     def enterCategory(self, section, create=False):
@@ -147,7 +150,7 @@ class IPFSMarks(QObject):
                 else:
                     return
             return parent
-        return _walk(path, parent=self._rootCategories())
+        return _walk(path, parent=self._rootCategories)
 
     def getCategories(self):
         def _list(path, parent=None):
@@ -159,11 +162,11 @@ class IPFSMarks(QObject):
                 yield '/'.join(fullPath)
                 yield from  _list(fullPath, parent=parent[p])
 
-        return list(_list([], parent=self._rootCategories()))
+        return list(_list([], parent=self._rootCategories))
 
     def addCategory(self, category, parent=None):
         if parent is None:
-            parent = self._rootCategories()
+            parent = self._rootCategories
 
         if len(category) > 256:
             return None
@@ -272,9 +275,15 @@ class IPFSMarks(QObject):
     def delete(self, path):
         return self.search(path, delete=True)
 
+    def merge(self, oMarks):
+        for cat in oMarks.getCategories():
+            marks = oMarks.getCategoryMarks(cat)
+            for mark in marks.items():
+                r = self.insertMark(mark, cat)
+
     def follow(self, ipnsp, name, active=True, maxentries=4096,
             resolveevery=3600, share=False):
-        feedsSec = self._rootFeeds()
+        feedsSec = self._rootFeeds
         ipnsp = rSlash(ipnsp)
 
         if ipnsp in feedsSec:
@@ -293,7 +302,7 @@ class IPFSMarks(QObject):
         return feedsSec[ipnsp]
 
     def feedAddMark(self, ipnsp, mark):
-        feeds = self._rootFeeds()
+        feeds = self._rootFeeds
         if not ipnsp in feeds:
             return False
         sec = feeds[ipnsp][marksKey]
@@ -305,7 +314,7 @@ class IPFSMarks(QObject):
         return True
 
     def getFeeds(self):
-        return self._rootFeeds()
+        return self._rootFeeds
 
     def getFeedMarks(self, path):
         feeds = self.getFeeds()
@@ -314,7 +323,7 @@ class IPFSMarks(QObject):
                 return fData[marksKey]
 
     def serialize(self, fd):
-        return json.dump(self._root(), fd, indent=4, cls=MarksEncoder)
+        return json.dump(self._root, fd, indent=4, cls=MarksEncoder)
 
     def dump(self):
         print(self.serialize(sys.stdout))
@@ -396,7 +405,7 @@ class _AsyncMarksQuery:
                     return
             return parent
 
-        return await _w(path, parent=self.m._rootCategories())
+        return await _w(path, parent=self.m._rootCategories)
 
     async def getCategories(self):
         @async_generator
@@ -411,7 +420,7 @@ class _AsyncMarksQuery:
                 await yield_from_( _list(path + [p], parent=parent[p]) )
 
         cats = []
-        async for v in _list([], parent=self.m._rootCategories()):
+        async for v in _list([], parent=self.m._rootCategories):
             cats.append(v)
         return cats
 
