@@ -20,7 +20,7 @@ binary release with:
 
 .. code-block:: shell
 
-    ipfs get /ipfs/QmP8YBEGu5Stgc85yuYZ4HfSoVZmZEtbxRGE88HcEKLHW2/galacteek-0.1.7-linux-amd64.tar.gz
+    ipfs get /ipfs/QmYRYRUssMA78Rw6pyqbLbCdKn6nVH3co6UjFzPxYvscsT/galacteek-0.1.7-linux-amd64.tar.gz
     tar -xzvf galacteek-0.1.7-linux-amd64.tar.gz
 
 Just go into the unpacked directory and run the **galacteek** program.
@@ -28,7 +28,7 @@ Just go into the unpacked directory and run the **galacteek** program.
 If you don't have IPFS installed on your system you can download the same file
 here_
 
-.. _here: https://gateway.ipfs.io/ipfs/QmP8YBEGu5Stgc85yuYZ4HfSoVZmZEtbxRGE88HcEKLHW2/galacteek-0.1.7-linux-amd64.tar.gz
+.. _here: https://gateway.ipfs.io/ipfs/QmYRYRUssMA78Rw6pyqbLbCdKn6nVH3co6UjFzPxYvscsT/galacteek-0.1.7-linux-amd64.tar.gz
 
 Installation from source
 ------------------------
@@ -58,6 +58,7 @@ and restart the application afterwards.
 - Feeds (following IPNS hashes)
 - File manager with drag-and-drop support
 - Basic built-in media player with IPFS-stored, per-profile playlists
+- Searches content with ipfs-search_
 
 Keybindings
 ===========
@@ -91,6 +92,7 @@ Contact and donations
 
 Contact by email at galacteek@gmx.co.uk
 
+Donations are welcome and will go to other projects like ipfs-search_.
 You can make a donation to the project with Monero to this monero address:
 
 **48oNcgpqwUNWjHeTSSH8BCaJHMR7Bc8ooGY13USYxuMuGwtXfLQ1Qf9f7rJMB9g1PWELee2cNnTWz1rJiZyPigcXRCTkhU3**
@@ -141,3 +143,4 @@ from the ipfs-logo_ project's repository is included, unchanged.
 .. _ipfs-logo: https://github.com/ipfs/logo
 .. _cxFreeze: https://anthony-tuininga.github.io/cx_Freeze/
 .. _screenshots: https://gitlab.com/galacteek/galacteek/tree/master/screenshots
+.. _ipfs-search: https://ipfs-search.com
