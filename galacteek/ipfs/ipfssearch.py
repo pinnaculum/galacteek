@@ -29,7 +29,7 @@ async def searchPage(query, page):
 
     async with aiohttp.ClientSession() as session:
         async with session.get('https://api.ipfs-search.com/v1/search',
-                verify_ssl=False, params=params) as resp:
+                params=params) as resp:
             return await resp.json()
 
 async def getPageResults(query, page):
@@ -41,7 +41,7 @@ async def getPageResults(query, page):
 
 @async_generator
 async def search(query, preloadPages=0):
-    page1Results = await getPageResults(query, 1)
+    page1Results = await getPageResults(query, 0)
     if page1Results is None:
         await yield_(emptyResults)
         return
