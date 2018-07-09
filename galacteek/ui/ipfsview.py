@@ -26,29 +26,29 @@ from . import modelhelpers
 from .i18n import *
 from .helpers import *
 from .widgets import GalacteekTab
-from .bookmarks import *
+from .hashmarks import *
 
 import aioipfs
 
 def iCIDInfo(cidv, linksCount, size):
-    return QCoreApplication.translate('IPFSHashView',
+    return QCoreApplication.translate('IPFSHashExplorer',
         'CID (v{0}): {1} links, total size: {2}').format(
             cidv, linksCount, size)
 
 def iGitClone():
-    return QCoreApplication.translate('IPFSHashView',
+    return QCoreApplication.translate('IPFSHashExplorer',
         'Clone repository')
 
 def iGitClonedRepo(path):
-    return QCoreApplication.translate('IPFSHashView',
+    return QCoreApplication.translate('IPFSHashExplorer',
         'Cloned git repository: {0}').format(path)
 
 def iGitErrorCloning(msg):
-    return QCoreApplication.translate('IPFSHashView',
+    return QCoreApplication.translate('IPFSHashExplorer',
         'Error cloning git repository: {0}').format(msg)
 
 def iGitInvalid():
-    return QCoreApplication.translate('IPFSHashView',
+    return QCoreApplication.translate('IPFSHashExplorer',
         'Invalid git repository')
 
 class IPFSItem(UneditableItem):
@@ -159,12 +159,12 @@ class IPFSHashItemModel(QStandardItemModel):
             entry = itName.entry
             self.entryCache.register(entry)
 
-class IPFSHashViewToolBox(GalacteekTab):
+class IPFSHashExplorerToolBox(GalacteekTab):
     """
-    Organizes IPFSHashViewWidgets with a QToolBox
+    Organizes IPFSHashExplorerWidgets with a QToolBox
     """
     def __init__(self, gWindow, hashRef, maxItems=16, parent=None):
-        super(IPFSHashViewToolBox, self).__init__(gWindow)
+        super(IPFSHashExplorerToolBox, self).__init__(gWindow)
 
         self.rootHash = hashRef
         self.maxItems = maxItems
@@ -189,7 +189,7 @@ class IPFSHashViewToolBox(GalacteekTab):
         if self.itemsCount > self.maxItems:
             return False
 
-        view = IPFSHashViewWidget(self.gWindow, hashRef,
+        view = IPFSHashExplorerWidget(self.gWindow, hashRef,
                 parent=self, addClose=addClose,
                 autoOpenFolders=autoOpenFolders)
         idx = self.toolbox.addItem(view, getIconIpfsWhite(), hashRef)
@@ -264,11 +264,10 @@ class TextView(GalacteekTab):
 class HashTreeView(QTreeView):
     pass
 
-class IPFSHashViewWidget(QWidget):
+class IPFSHashExplorerWidget(QWidget):
     def __init__(self, gWindow, hashRef, addClose=False,
-            autoOpenFolders=False,
-            parent=None):
-        super(IPFSHashViewWidget, self).__init__(parent)
+            autoOpenFolders=False, parent=None):
+        super(IPFSHashExplorerWidget, self).__init__(parent)
 
         self.parent = parent
 
@@ -311,8 +310,8 @@ class IPFSHashViewWidget(QWidget):
         self.getProgress.setMaximum(100)
         self.getProgress.hide()
 
-        self.markButton = QPushButton(getIcon('bookmarks.png'), iHashmark())
-        self.markButton.clicked.connect(self.onBookmark)
+        self.markButton = QPushButton(getIcon('hashmarks.png'), iHashmark())
+        self.markButton.clicked.connect(self.onHashmark)
 
         self.pinButton = QPushButton('Pin')
         self.pinButton.clicked.connect(self.onPin)
@@ -410,8 +409,8 @@ class IPFSHashViewWidget(QWidget):
         self.gitButton.setPopupMode(QToolButton.MenuButtonPopup)
         self.hLayoutCtrl.addWidget(self.gitButton)
 
-    def onBookmark(self):
-        addBookmark(self.app.marksLocal,
+    def onHashmark(self):
+        addHashmark(self.app.marksLocal,
             self.rootPath, '',
             stats=self.app.ipfsCtx.objectStats.get(
                 self.rootPath, {}))

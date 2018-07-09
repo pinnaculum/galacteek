@@ -23,6 +23,7 @@ CFG_KEY_STORAGEMAX = 'storagemax' # integer, max storage in Gb
 CFG_KEY_HOMEURL = 'homeurl'
 CFG_KEY_GOTOHOME = 'gotohomeonnewtab'
 CFG_KEY_DLPATH = 'downloadspath'
+CFG_KEY_ALLOWHTTPBROWSING = 'httpbrowsing'
 
 # IPFS
 CFG_KEY_PUBSUB = 'pubsub'
@@ -31,6 +32,7 @@ CFG_KEY_PUBSUB = 'pubsub'
 CFG_KEY_WRAPSINGLEFILES = 'wrapsinglefiles'
 CFG_KEY_WRAPDIRECTORIES = 'wrapdirectories'
 CFG_KEY_HIDEHASHES = 'hidehashes'
+CFG_KEY_LANG = 'lang'
 
 # for fast access
 S_HOMEURL = (CFG_SECTION_BROWSER, CFG_KEY_HOMEURL)
@@ -55,6 +57,7 @@ def setDefaultSettings(gApp):
     sManager.setDefaultSetting(section, CFG_KEY_DLPATH,
         gApp.defaultDownloadsLocation)
     sManager.setDefaultTrue(section, CFG_KEY_GOTOHOME)
+    sManager.setDefaultFalse(section, CFG_KEY_ALLOWHTTPBROWSING)
 
     # Default IPFS connection when not spawning daemon
     section = CFG_SECTION_IPFSCONN1
@@ -69,6 +72,7 @@ def setDefaultSettings(gApp):
     sManager.setDefaultTrue(section, CFG_KEY_WRAPSINGLEFILES)
     sManager.setDefaultFalse(section, CFG_KEY_WRAPDIRECTORIES)
     sManager.setDefaultFalse(section, CFG_KEY_HIDEHASHES)
+    sManager.setDefaultSetting(section, CFG_KEY_LANG, 'en')
     sManager.sync()
     return True
 
@@ -167,3 +171,7 @@ class SettingsManager(object):
     @property
     def wrapDirectories(self):
         return self.isTrue(CFG_SECTION_UI, CFG_KEY_WRAPDIRECTORIES)
+
+    @property
+    def allowHttpBrowsing(self):
+        return self.isTrue(CFG_SECTION_BROWSER, CFG_KEY_ALLOWHTTPBROWSING)

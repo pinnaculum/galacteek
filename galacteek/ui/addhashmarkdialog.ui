@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>AddBookmarkDialog</class>
- <widget class="QDialog" name="AddBookmarkDialog">
+ <class>AddHashmarkDialog</class>
+ <widget class="QDialog" name="AddHashmarkDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -44,7 +44,7 @@
      <item row="1" column="0">
       <widget class="QLabel" name="label">
        <property name="text">
-        <string>Use title for bookmark</string>
+        <string>Use title for hashmark</string>
        </property>
       </widget>
      </item>
@@ -132,7 +132,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>accepted()</signal>
-   <receiver>AddBookmarkDialog</receiver>
+   <receiver>AddHashmarkDialog</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -148,7 +148,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>AddBookmarkDialog</receiver>
+   <receiver>AddHashmarkDialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">

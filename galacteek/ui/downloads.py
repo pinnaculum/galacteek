@@ -2,9 +2,11 @@
 import os.path
 
 from PyQt5 import QtWebEngineWidgets, QtWebEngine, QtWebEngineCore
+from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtCore import QCoreApplication, QObject
 
 from ..appsettings import *
+from .i18n import *
 
 def iFinishedDownload(filename):
     return QCoreApplication.translate('Galacteek',
@@ -16,6 +18,8 @@ def iStartingDownload(filename):
 
 class DownloadsManager(QObject):
     def __init__(self, app):
+        super(DownloadsManager, self).__init__()
+
         self.app = app
         self.webProfile = QtWebEngineWidgets.QWebEngineProfile.defaultProfile()
         self.webProfile.downloadRequested.connect(self.onDownloadRequested)
@@ -30,10 +34,11 @@ class DownloadsManager(QObject):
             pass
 
         def finished(item):
-            filename = item.path() or 'Unknown'
+            filename = item.path() or iUnknown()
             self.app.systemTrayMessage('Galacteek', iFinishedDownload(filename))
 
         name = os.path.basename(downItem.path())
+
         self.app.systemTrayMessage('Galacteek', iStartingDownload(name))
 
         downItem.setPath(os.path.join(downloadsLoc, name))

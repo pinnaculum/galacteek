@@ -10,7 +10,7 @@ from PyQt5.QtGui import QClipboard
 from galacteek.core.ipfsmarks import *
 from galacteek.ipfs import cidhelpers
 
-from . import ui_addkeydialog, ui_addbookmarkdialog
+from . import ui_addkeydialog, ui_addhashmarkdialog
 from . import ui_addfeeddialog
 from . import ui_ipfscidinputdialog, ui_ipfsmultiplecidinputdialog
 from . import ui_donatedialog
@@ -20,7 +20,7 @@ import mimetypes
 def boldLabelStyle():
     return 'QLabel { font-weight: bold; }'
 
-class AddBookmarkDialog(QDialog):
+class AddHashmarkDialog(QDialog):
     def __init__(self, marks, resource, title, stats, parent=None):
         super().__init__(parent)
 
@@ -28,7 +28,7 @@ class AddBookmarkDialog(QDialog):
         self.marks = marks
         self.stats = stats if stats else {}
 
-        self.ui = ui_addbookmarkdialog.Ui_AddBookmarkDialog()
+        self.ui = ui_addhashmarkdialog.Ui_AddHashmarkDialog()
         self.ui.setupUi(self)
         self.ui.resourceLabel.setText(self.ipfsResource)
         self.ui.resourceLabel.setStyleSheet(boldLabelStyle())
@@ -60,7 +60,7 @@ class AddBookmarkDialog(QDialog):
             title=self.ui.title.text(),
             share=share,
             comment=self.ui.comment.text(),
-            tags=self.ui.tags.text().split(' '),
+            tags=self.ui.tags.text().split(),
             datasize=self.stats.get('DataSize', None),
             cumulativesize=self.stats.get('CumulativeSize', None),
             numlinks=self.stats.get('NumLinks', None),

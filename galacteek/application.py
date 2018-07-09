@@ -193,6 +193,7 @@ class GalacteekApplication(QApplication):
         self._ipfsClient = None
         self._ipfsd = None
 
+        self.translator = None
         self.logger = QMessageLogger()
 
         self.mainWindow = None
@@ -205,12 +206,12 @@ class GalacteekApplication(QApplication):
 
         self.ipfsCtx = IPFSContext()
 
-        self.setupTranslator()
         self.setupPaths()
         self.setupClipboard()
         self.setupSchemeHandlers()
 
         self.initSettings()
+        self.setupTranslator()
         self.initSystemTray()
         self.initMisc()
         self.createMainWindow()
@@ -294,9 +295,14 @@ class GalacteekApplication(QApplication):
             pass
 
     def setupTranslator(self):
+        if self.translator:
+            QApplication.removeTranslator(self.translator)
+
         self.translator = QTranslator()
-        self.translator.load(':/share/translations/galacteek_en.qm')
         QApplication.installTranslator(self.translator)
+        lang = self.settingsMgr.getSetting(CFG_SECTION_UI, CFG_KEY_LANG)
+        self.translator.load(':/share/translations/galacteek_{0}.qm'.format(
+            lang))
 
     def createMainWindow(self, show=True):
         self.mainWindow = mainui.MainWindow(self)
@@ -379,7 +385,7 @@ class GalacteekApplication(QApplication):
             self.pubsubListeners.append(listenerMain)
 
             # Pubsub marks exchanger
-            listenerMarks = BookmarksExchanger(self.ipfsClient,
+            listenerMarks = HashmarksExchanger(self.ipfsClient,
                 self.loop, self.ipfsCtx, self.marksLocal,
                 self.marksNetwork)
             listenerMarks.start()
@@ -568,33 +574,32 @@ class ClipboardTracker(QObject):
         if not text or len(text) > 1024: # that shouldn't be worth handling
             return
 
-        if text.startswith('/ipfs/') or text.startswith('fs:/ipfs/'):
+        ma = cidhelpers.ipfsRegSearchPath(text)
+
+        if ma:
             # The clipboard contains a full IPFS path
-            ma = cidhelpers.ipfsRegSearch(text)
-            if ma:
-                cid = ma.group(1)
-                if not cidhelpers.cidValid(cid):
-                    return
-                path = joinIpfs(cid)
-                if ma.group(2):
-                    path += ma.group(2)
-                self.hRecord(path)
-                self.clipboardHasIpfs.emit(True, ma.group(1), path)
-        elif text.startswith('/ipns/'):
+            cid = ma.group('cid')
+            if not cidhelpers.cidValid(cid):
+                return
+            path = ma.group('fullpath')
+            self.hRecord(path)
+            return self.clipboardHasIpfs.emit(True, cid, path)
+
+        ma = cidhelpers.ipnsRegSearchPath(text)
+        if ma:
             # The clipboard contains a full IPNS path
-            ma = cidhelpers.ipnsRegSearch(text)
-            if ma:
-                path = text
-                self.hRecord(path)
-                self.clipboardHasIpfs.emit(True, None, path)
-        elif cidhelpers.cidValid(text):
+            path = ma.group('fullpath')
+            self.hRecord(path)
+            return self.clipboardHasIpfs.emit(True, None, path)
+
+        if cidhelpers.cidValid(text):
             # The clipboard simply contains a CID
             path = joinIpfs(text)
             self.hRecord(path)
-            self.clipboardHasIpfs.emit(True, text, path)
-        else:
-            # Not a CID/path
-            self.clipboardHasIpfs.emit(False, None, None)
+            return self.clipboardHasIpfs.emit(True, text, path)
+
+        # Not a CID/path
+        self.clipboardHasIpfs.emit(False, None, None)
 
     def hLookup(self, path):
         for hTs, hItem in self.history.items():

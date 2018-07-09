@@ -34,74 +34,74 @@ from . import modelhelpers
 from .i18n import *
 from .helpers import *
 from .widgets import GalacteekTab
-from .bookmarks import *
+from .hashmarks import *
 
 import aioipfs
 
 # Files messages
 def iFileImportError():
-    return QCoreApplication.translate('FilesForm', 'Error importing file {}')
+    return QCoreApplication.translate('FileManagerForm', 'Error importing file {}')
 
 def iCopyHashToSelClipboard():
-    return QCoreApplication.translate('FilesForm',
+    return QCoreApplication.translate('FileManagerForm',
         "Copy file's hash to selection clipboard")
 
 def iCopyHashToGlobalClipboard():
-    return QCoreApplication.translate('FilesForm',
+    return QCoreApplication.translate('FileManagerForm',
         "Copy file's hash to global clipboard")
 
 def iAddedFile(name):
-    return QCoreApplication.translate('FilesForm',
+    return QCoreApplication.translate('FileManagerForm',
             'Added file {0}').format(name)
 def iLoadingFile(name):
-    return QCoreApplication.translate('FilesForm',
+    return QCoreApplication.translate('FileManagerForm',
             'Loading file {0}').format(name)
 def iLoading(name):
-    return QCoreApplication.translate('FilesForm',
+    return QCoreApplication.translate('FileManagerForm',
             'Loading {0}').format(name)
 
 def iOpenWith():
-    return QCoreApplication.translate('FilesForm', 'Open with')
+    return QCoreApplication.translate('FileManagerForm', 'Open with')
 
 def iDeleteFile():
-    return QCoreApplication.translate('FilesForm', 'Delete file')
+    return QCoreApplication.translate('FileManagerForm', 'Delete file')
 
 def iExploreDir():
-    return QCoreApplication.translate('FilesForm', 'Explore directory')
+    return QCoreApplication.translate('FileManagerForm', 'Explore directory')
 
 def iUnlinkFile():
-    return QCoreApplication.translate('FilesForm', 'Unlink file')
+    return QCoreApplication.translate('FileManagerForm', 'Unlink file')
 
 def iHashmarkFile():
-    return QCoreApplication.translate('FilesForm', 'Hashmark')
+    return QCoreApplication.translate('FileManagerForm', 'Hashmark')
 
 def iBrowseFile():
-    return QCoreApplication.translate('FilesForm', 'Browse')
+    return QCoreApplication.translate('FileManagerForm', 'Browse')
 
 def iSelectDirectory():
-    return QCoreApplication.translate('FilesForm', 'Select directory')
+    return QCoreApplication.translate('FileManagerForm', 'Select directory')
 
 def iSelectFiles():
-    return QCoreApplication.translate('FilesForm',
+    return QCoreApplication.translate('FileManagerForm',
         'Select one or more files to import')
 
 def iMusic():
-    return QCoreApplication.translate('FilesForm', 'Music')
+    return QCoreApplication.translate('FileManagerForm', 'Music')
 
 def iPictures():
-    return QCoreApplication.translate('FilesForm', 'Pictures')
+    return QCoreApplication.translate('FileManagerForm', 'Pictures')
 
 def iVideos():
-    return QCoreApplication.translate('FilesForm', 'Videos')
+    return QCoreApplication.translate('FileManagerForm', 'Videos')
 
 def iHome():
-    return QCoreApplication.translate('FilesForm', 'Home')
+    return QCoreApplication.translate('FileManagerForm', 'Home')
 
 def iCode():
-    return QCoreApplication.translate('FilesForm', 'Code')
+    return QCoreApplication.translate('FileManagerForm', 'Code')
 
 def iDocuments():
-    return QCoreApplication.translate('FilesForm', 'Documents')
+    return QCoreApplication.translate('FileManagerForm', 'Documents')
 
 class IPFSItem(UneditableItem):
     def __init__(self, text, path=None, parenthash=None, icon=None):
@@ -269,7 +269,7 @@ class FilesTab(GalacteekTab):
 
         self.lock = asyncio.Lock()
 
-        self.ui = ui_files.Ui_FilesForm()
+        self.ui = ui_files.Ui_FileManagerForm()
         self.ui.setupUi(self)
         self.clipboard = self.app.appClipboard
         self.status = self.statusReady
@@ -489,14 +489,14 @@ class FilesTab(GalacteekTab):
             self.scheduleUnlink(hash)
 
         def explore(hash):
-            view = ipfsview.IPFSHashViewToolBox(self.gWindow, hash)
+            view = ipfsview.IPFSHashExplorerToolBox(self.gWindow, hash)
             self.gWindow.registerTab(view, hash, current=True)
 
         def delete(hash):
             self.scheduleDelete(hash)
 
-        def bookmark(mPath, name):
-            addBookmark(self.app.marksLocal, mPath, name)
+        def hashmark(mPath, name):
+            addHashmark(self.app.marksLocal, mPath, name)
 
         def browse(hash):
             self.browse(hash)
@@ -523,7 +523,7 @@ class FilesTab(GalacteekTab):
         menu.addAction(iDeleteFile(), lambda:
             delete(dataHash))
         menu.addAction(iHashmarkFile(), lambda:
-            bookmark(ipfsPath, nameItem.entry['Name']))
+            hashmark(ipfsPath, nameItem.entry['Name']))
         menu.addAction(iBrowseFile(), lambda:
             browse(dataHash))
 
@@ -572,7 +572,7 @@ class FilesTab(GalacteekTab):
 
         if current and current.isDir():
             dataHash = self.model.getHashFromIdx(current.index())
-            view = ipfsview.IPFSHashViewToolBox(self.gWindow, dataHash)
+            view = ipfsview.IPFSHashExplorerToolBox(self.gWindow, dataHash)
             self.gWindow.registerTab(view, dataHash, current=True)
 
     def onDoubleClicked(self, idx):

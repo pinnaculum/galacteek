@@ -11,6 +11,8 @@ from PyQt5.QtCore import QUrl, Qt, pyqtSlot
 
 from . import ui_settings
 from ..appsettings import *
+from .helpers import *
+from .i18n import *
 
 class SettingsDialog(QDialog):
     def __init__(self, app, parent=None):
@@ -24,6 +26,9 @@ class SettingsDialog(QDialog):
         self.ui.groupBoxDaemon.toggled.connect(self.onDaemonToggle)
         self.ui.changeDownloadsPathButton.clicked.connect(self.onChangeDownloadsPath)
 
+        self.ui.language.insertItem(0, iLangEnglish())
+        self.ui.language.insertItem(1, iLangFrench())
+
         self.loadSettings()
 
     def enableGroupDaemon(self):
@@ -36,12 +41,10 @@ class SettingsDialog(QDialog):
         self.ui.groupBoxDaemon.setChecked(False)
 
     def onChangeDownloadsPath(self):
-        result = QFileDialog.getExistingDirectory(None,
-            self.tr('Select directory'), os.getenv('HOME'),
-            QFileDialog.ShowDirsOnly)
-        if result:
-            self.ui.downloadsLocation.setText(result)
-            self.setS(CFG_SECTION_BROWSER, CFG_KEY_DLPATH, result)
+        dirSel = directorySelect()
+        if dirSel:
+            self.ui.downloadsLocation.setText(dirSel)
+            self.setS(CFG_SECTION_BROWSER, CFG_KEY_DLPATH, dirSel)
 
     def onDaemonToggle(self, on):
         if on:
@@ -114,6 +117,12 @@ class SettingsDialog(QDialog):
         self.setChecked(self.ui.hideHashes,
                 self.sManager.isTrue(section, CFG_KEY_HIDEHASHES))
 
+        lang = self.sManager.getSetting(section, CFG_KEY_LANG)
+        if lang == 'en':
+            self.ui.language.setCurrentText(iLangEnglish())
+        elif lang == 'fr':
+            self.ui.language.setCurrentText(iLangFrench())
+
     def accept(self):
         section = CFG_SECTION_IPFSD
 
@@ -146,6 +155,13 @@ class SettingsDialog(QDialog):
                 self.isChecked(self.ui.wrapDirectories))
         self.sManager.setBoolFrom(section, CFG_KEY_HIDEHASHES,
                 self.isChecked(self.ui.hideHashes))
+
+        lang = self.ui.language.currentText()
+        if lang == iLangEnglish():
+            self.sManager.setSetting(section, CFG_KEY_LANG, 'en')
+        elif lang == iLangFrench():
+            self.sManager.setSetting(section, CFG_KEY_LANG, 'fr')
+        self.app.setupTranslator()
 
         self.sManager.sync()
         self.done(1)

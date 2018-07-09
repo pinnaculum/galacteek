@@ -7,46 +7,48 @@ from PyQt5.QtWidgets import QWidget, QTreeView, QMenu, QHeaderView, QAction
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtCore import QCoreApplication, QUrl, Qt, QObject, QDateTime
 
-from . import ui_bookmarksmgr, ui_bookmarksmgrnetwork, ui_bookmarksmgrfeeds
+from galacteek.ipfs.ipfsops import *
+from galacteek.ipfs.cidhelpers import *
+
+from . import ui_hashmarksmgr, ui_hashmarksmgrnetwork, ui_hashmarksmgrfeeds
 from .modelhelpers import *
 from .helpers import *
 from .dialogs import *
 from .widgets import *
-from galacteek.ipfs.ipfsops import *
-from galacteek.ipfs.cidhelpers import *
+from .i18n import *
 
 def iPath():
-    return QCoreApplication.translate('BookmarksViewForm', 'Path')
+    return QCoreApplication.translate('HashmarksViewForm', 'Path')
 
 def iTitle():
-    return QCoreApplication.translate('BookmarksViewForm', 'Title')
+    return QCoreApplication.translate('HashmarksViewForm', 'Title')
 
 def iShared():
-    return QCoreApplication.translate('BookmarksViewForm', 'Shared')
+    return QCoreApplication.translate('HashmarksViewForm', 'Shared')
 
 def iDate():
-    return QCoreApplication.translate('BookmarksViewForm', 'Date')
+    return QCoreApplication.translate('HashmarksViewForm', 'Date')
 
 def iTimestamp():
-    return QCoreApplication.translate('BookmarksViewForm', 'Timestamp')
+    return QCoreApplication.translate('HashmarksViewForm', 'Timestamp')
 
-def iAlreadyBookmarked():
-    return QCoreApplication.translate('BookmarksViewForm',
-        'Already Bookmarked')
+def iAlreadyHashmarked():
+    return QCoreApplication.translate('HashmarksViewForm',
+        'Already Hashmarked')
 
-def iImportBookmark():
-    return QCoreApplication.translate('BookmarksViewForm',
-        'Import bookmark to')
+def iImportHashmark():
+    return QCoreApplication.translate('HashmarksViewForm',
+        'Import hashmark to')
 
 def iNetworkMarks():
-    return QCoreApplication.translate('BookmarksViewForm', 'Network hashmarks')
+    return QCoreApplication.translate('HashmarksViewForm', 'Network hashmarks')
 
 def iFeeds():
-    return QCoreApplication.translate('BookmarksViewForm', 'Feeds')
+    return QCoreApplication.translate('HashmarksViewForm', 'Feeds')
 
-class BookmarksView(QTreeView): pass
+class HashmarksView(QTreeView): pass
 
-class BookmarksModel(QStandardItemModel):
+class HashmarksModel(QStandardItemModel):
     pass
 
 class FeedsModel(QStandardItemModel):
@@ -55,11 +57,11 @@ class FeedsModel(QStandardItemModel):
 class CategoryItem(UneditableItem):
     pass
 
-def addBookmark(bookmarks, path, title, stats={}):
-    if bookmarks.search(path):
-        return messageBox(iAlreadyBookmarked())
+def addHashmark(hashmarks, path, title, stats={}):
+    if hashmarks.search(path):
+        return messageBox(iAlreadyHashmarked())
 
-    runDialog(AddBookmarkDialog, bookmarks, path, title, stats)
+    runDialog(AddHashmarkDialog, hashmarks, path, title, stats)
 
 class _MarksUpdater:
     def __init__(self):
@@ -100,7 +102,7 @@ class _MarksUpdater:
 
                 item1 = UneditableItem(path)
                 item2 = UneditableItem(bm['metadata']['title'] or 'Unknown')
-                item3 = UneditableItem('yes' if bm['share'] is True else 'no')
+                item3 = UneditableItem(iYes() if bm['share'] is True else iNo())
                 dt = QDateTime.fromString(bm['datecreated'], Qt.ISODate)
                 item4 = UneditableItem(dt.toString())
                 item5 = UneditableItem(str(bm['tscreated']))
@@ -120,7 +122,7 @@ class FeedsView(QWidget):
         self.loop = loop
         self.marks = marks
 
-        self.ui = ui_bookmarksmgrfeeds.Ui_FeedsViewForm()
+        self.ui = ui_hashmarksmgrfeeds.Ui_FeedsViewForm()
         self.ui.setupUi(self)
 
         self.marks.changed.connect(self.updateFeeds)
@@ -186,12 +188,12 @@ class NetworkMarksView(QWidget, _MarksUpdater):
         self.marks = marks
         self.marksLocal = marksLocal
 
-        self.ui = ui_bookmarksmgrnetwork.Ui_NetworkMarksViewForm()
+        self.ui = ui_hashmarksmgrnetwork.Ui_NetworkHashmarksViewForm()
         self.ui.setupUi(self)
         self.ui.search.returnPressed.connect(self.onSearch)
         self.ui.searchButton.clicked.connect(self.onSearch)
 
-        self.model = BookmarksModel()
+        self.model = HashmarksModel()
         self.model.setHorizontalHeaderLabels([iPath(), iTitle(), iShared(),
             iDate(), iTimestamp()])
 
@@ -217,7 +219,7 @@ class NetworkMarksView(QWidget, _MarksUpdater):
 
         localCategories = self.marksLocal.getCategories()
         menu = QMenu()
-        catsMenu = QMenu(iImportBookmark())
+        catsMenu = QMenu(iImportHashmark())
 
         def importMark(action):
             cat = action.data()['category']
@@ -256,9 +258,9 @@ class NetworkMarksView(QWidget, _MarksUpdater):
         if path:
             self.marksTab.gWindow.addBrowserTab().browseFsPath(path)
 
-class BookmarksTab(GalacteekTab, _MarksUpdater):
+class HashmarksTab(GalacteekTab, _MarksUpdater):
     def __init__(self, *args, **kw):
-        super(BookmarksTab, self).__init__(*args, **kw)
+        super(HashmarksTab, self).__init__(*args, **kw)
 
         self.marksLocal = self.app.marksLocal
         self.marksNetwork = self.app.marksNetwork
@@ -266,25 +268,22 @@ class BookmarksTab(GalacteekTab, _MarksUpdater):
         self.marksLocal.changed.connect(self.doMarksUpdate)
         self.marksLocal.markDeleted.connect(self.onMarkDeleted)
 
-        self.ui = ui_bookmarksmgr.Ui_BookmarksViewForm()
+        self.ui = ui_hashmarksmgr.Ui_HashmarksViewForm()
         self.ui.setupUi(self)
 
-        self.uiNet = NetworkMarksView(self, self.marksNetwork,
-                self.marksLocal, self.loop, parent=self)
         self.uiFeeds = FeedsView(self, self.marksLocal,
                 self.loop, parent=self)
-        self.ui.toolbox.addItem(self.uiNet, iNetworkMarks())
         self.ui.toolbox.addItem(self.uiFeeds, iFeeds())
 
         self.filter = BasicKeyFilter()
         self.filter.deletePressed.connect(self.onDeletePressed)
         self.installEventFilter(self.filter)
 
-        icon1 = getIcon('bookmarks.png')
+        icon1 = getIcon('hashmarks.png')
         self.ui.toolbox.setItemIcon(0, icon1)
         self.ui.toolbox.setItemIcon(1, icon1)
 
-        self.modelMarks = BookmarksModel()
+        self.modelMarks = HashmarksModel()
         self.modelMarks.setHorizontalHeaderLabels([iPath(), iTitle(),
             iShared(), iDate()])
         self.ui.treeMarks.setModel(self.modelMarks)
@@ -299,16 +298,16 @@ class BookmarksTab(GalacteekTab, _MarksUpdater):
         self.doMarksUpdate()
 
     def onBoxActivated(self, idx):
-        mark = self.ui.bookmarkLine.text()
+        mark = self.ui.hashmarkLine.text()
 
         if idx == 0:
             if not cidValid(mark):
-                return messageBox('Invalid input')
+                return messageBox(iInvalidInput())
 
             if not mark.startswith('/ipfs'):
                 mark = joinIpfs(mark)
-            addBookmark(self.marksLocal, mark, '')
-        self.ui.bookmarkLine.clear()
+            addHashmark(self.marksLocal, mark, '')
+        self.ui.hashmarkLine.clear()
 
     def onMarkDeleted(self, mPath):
         if mPath in self._marksCache:
@@ -327,7 +326,7 @@ class BookmarksTab(GalacteekTab, _MarksUpdater):
         dataPath = self.modelMarks.data(idxPath)
         menu = QMenu()
 
-        act2 = menu.addAction('Delete', lambda:
+        act2 = menu.addAction(iDelete(), lambda:
                 self.deleteMark(dataPath))
         menu.exec(self.ui.treeMarks.mapToGlobal(point))
 

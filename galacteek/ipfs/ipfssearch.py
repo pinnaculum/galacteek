@@ -19,6 +19,12 @@ class IPFSSearchResults:
     def hits(self):
         return self.results.get('hits', [])
 
+    def findByHash(self, hashV):
+        for hit in self.hits:
+            hitHash = hit.get('hash', None)
+            if hitHash == hashV:
+                return hit
+
 emptyResults = IPFSSearchResults(0, {})
 
 async def searchPage(query, page):

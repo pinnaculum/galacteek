@@ -16,6 +16,9 @@ GFILES_WEBSITES_PATH = os.path.join(GFILES_ROOT_PATH, 'websites')
 def joinIpfs(path):
     return os.path.join('/ipfs/', path)
 
+def stripIpfs(path):
+    return path.strip('/ipfs/')
+
 def joinIpns(path):
     return os.path.join('/ipns/', path)
 

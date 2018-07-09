@@ -123,7 +123,7 @@ class KeysTab(GalacteekTab):
         if resolved:
             item.setText(resolved['Path'])
         else:
-            item.setText('Unknown')
+            item.setText(iUnknown())
 
     def updateKeysList(self):
         self.app.task(self.listKeys)
