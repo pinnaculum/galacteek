@@ -44,15 +44,15 @@ def iMinimized():
 
 # Headers used in the various tree widgets
 def iFileName():
-    return QCoreApplication.translate('TreeView', 'Name')
+    return QCoreApplication.translate('IPFSTreeView', 'Name')
 def iFileSize():
-    return QCoreApplication.translate('TreeView', 'Size')
+    return QCoreApplication.translate('IPFSTreeView', 'Size')
 def iFileHash():
-    return QCoreApplication.translate('TreeView', 'Hash')
+    return QCoreApplication.translate('IPFSTreeView', 'Hash')
 def iMimeType():
-    return QCoreApplication.translate('TreeView', 'Mime type')
+    return QCoreApplication.translate('IPFSTreeView', 'Mime type')
 def iUnknown():
-    return QCoreApplication.translate('TreeView', 'Unknown')
+    return QCoreApplication.translate('IPFSTreeView', 'Unknown')
 
 def iPinSuccess(path):
     return QCoreApplication.translate('GalacteekWindow',
@@ -69,3 +69,39 @@ def iDownload():
 
 def iMediaPlayer():
     return QCoreApplication.translate('GalacteekWindow', 'Media Player')
+
+def iLangEnglish():
+    return QCoreApplication.translate('Galacteek', 'English')
+
+def iLangFrench():
+    return QCoreApplication.translate('Galacteek', 'French')
+
+def iYes():
+    return QCoreApplication.translate('Galacteek', 'yes')
+
+def iNo():
+    return QCoreApplication.translate('Galacteek', 'no')
+
+def iDelete():
+    return QCoreApplication.translate('Galacteek', 'Delete')
+
+def iInvalidInput():
+    return QCoreApplication.translate('Galacteek', 'Invalid input')
+
+def iKey():
+    return QCoreApplication.translate('Galacteek', 'Key')
+
+def iValue():
+    return QCoreApplication.translate('Galacteek', 'Value')
+
+def iMerkleLink():
+    return QCoreApplication.translate('Galacteek', 'Merkle link')
+
+def iIpfsInfos():
+    return QCoreApplication.translate('GalacteekWindow', 'IPFS informations')
+
+def iNoTitle():
+    return QCoreApplication.translate('GalacteekWindow', 'No title')
+
+def iFinished():
+    return QCoreApplication.translate('GalacteekWindow', 'Finished')

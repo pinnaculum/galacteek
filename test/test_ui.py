@@ -131,7 +131,7 @@ def gApp(qtbot, tmpdir):
     sManager.sync()
 
     with qtbot.waitSignal(gApp.ipfsCtx.ipfsRepositoryReady):
-        qtbot.wait(8000)
+        qtbot.wait(12000)
 
     yield gApp
     gApp.ipfsd.stop()
@@ -231,6 +231,11 @@ class TestApp:
         with qtbot.waitSignal(modApp.clipTracker.clipboardHasIpfs, timeout=1000,
                 check_params_cb=checkCorrect):
             modApp.setClipboardText('fs:' + joinIpfs(validcid0))
+
+        # ipfs:/ipfs/CID
+        with qtbot.waitSignal(modApp.clipTracker.clipboardHasIpfs, timeout=1000,
+                check_params_cb=checkCorrect):
+            modApp.setClipboardText('ipfs:' + joinIpfs(validcid0))
 
         # /ipfs/CID/something
         with qtbot.waitSignal(modApp.clipTracker.clipboardHasIpfs, timeout=1000,

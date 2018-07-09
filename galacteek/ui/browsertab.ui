@@ -162,16 +162,16 @@
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="bookmarkPageButton">
+          <widget class="QPushButton" name="hashmarkPageButton">
            <property name="toolTip">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Bookmark this page&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Hashmark this page&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="text">
             <string/>
            </property>
            <property name="icon">
             <iconset resource="galacteek.qrc">
-             <normaloff>:/share/icons/bookmarks.png</normaloff>:/share/icons/bookmarks.png</iconset>
+             <normaloff>:/share/icons/hashmarks.png</normaloff>:/share/icons/hashmarks.png</iconset>
            </property>
           </widget>
          </item>

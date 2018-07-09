@@ -37,6 +37,8 @@ It recognizes the following formats:
   **/ipfs/QmdjTSAM2xSVsXcusNHRoES4KqkJ5mW17u6oQARTWMuWMF/CHANGES**
 - *IPNS path* for example **/ipns/ipfs.io** or
   **/ipns/Qmef8KSNLZZfdnrxHZKhCBBynSUFLQ4RrH88wW3sTWxfwB**
+- *URLs using the fs: or ipfs: scheme* for example
+  **fs:/ipfs/QmRifA98t769dzkDv2gQocqJPXGtTySR5dPkyTaUZXtkLo**
 
 Passing the mouse over the clipboard button will display a tooltip message
 giving you information about the status of the clipboard.

@@ -68,7 +68,7 @@ class PubsubListener(object):
         self.ipfsCtx.pubsubMessageTx.emit()
         return status
 
-class BookmarksExchanger(PubsubListener):
+class HashmarksExchanger(PubsubListener):
     def __init__(self, client, loop, ipfsCtx, marksLocal, marksNetwork):
         super().__init__(client, loop, ipfsCtx, topic='galacteek.ipfsmarks')
         self.marksLocal = marksLocal

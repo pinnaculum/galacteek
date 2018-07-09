@@ -19,8 +19,8 @@ from galacteek.ui import mediaplayer
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.cidhelpers import cidValid
-from . import ui_galacteek
-from . import (browser, files, keys, settings, bookmarks,
+from . import ui_galacteek, ui_ipfsinfos
+from . import (browser, files, keys, settings, hashmarks,
         textedit, ipfsview, dag, ipfssearchview)
 from .helpers import *
 from .modelhelpers import *
@@ -35,6 +35,9 @@ def iFileManager():
     return QCoreApplication.translate('GalacteekWindow', 'File Manager')
 def iKeys():
     return QCoreApplication.translate('GalacteekWindow', 'IPFS Keys')
+
+def iPinningStatus():
+    return QCoreApplication.translate('GalacteekWindow', 'Pinning status')
 
 def iDagViewer():
     return QCoreApplication.translate('GalacteekWindow', 'DAG viewer')
@@ -89,6 +92,43 @@ def iAbout():
         <p>Author: David Ferlier</p>
         <p>Galacteek version {0}</p>''').format(__version__)
 
+class InfosDialog(QDialog):
+    def __init__(self, app, parent=None):
+        super().__init__(parent)
+
+        self.ui = ui_ipfsinfos.Ui_IPFSInfosDialog()
+        self.ui.setupUi(self)
+        self.ui.okButton.clicked.connect(lambda: self.done(1))
+
+    @ipfsOp
+    async def loadInfos(self, ipfsop):
+        try:
+            repoStat = await ipfsop.client.repo.stat()
+            idInfo   = await ipfsop.client.core.id()
+        except:
+            for label in [ self.ui.repoObjCount,
+                    self.ui.repoVersion,
+                    self.ui.repoSize,
+                    self.ui.repoMaxStorage,
+                    self.ui.nodeId,
+                    self.ui.agentVersion,
+                    self.ui.protocolVersion ]:
+                label.setText(iUnknown())
+        else:
+            self.ui.repoObjCount.setText(str(repoStat.get(
+                'NumObjects', iUnknown())))
+            self.ui.repoVersion.setText(str(repoStat.get(
+                'Version', iUnknown())))
+            self.ui.repoSize.setText(sizeFormat(repoStat.get(
+                'RepoSize', 0)))
+            self.ui.repoMaxStorage.setText(sizeFormat(repoStat.get(
+                'StorageMax', 0)))
+
+            self.ui.nodeId.setText(idInfo.get('ID', iUnknown()))
+            self.ui.agentVersion.setText(idInfo.get('AgentVersion', iUnknown()))
+            self.ui.protocolVersion.setText(idInfo.get('ProtocolVersion',
+                iUnknown()))
+
 class PinStatusDetails(GalacteekTab):
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
@@ -121,7 +161,7 @@ class PinStatusDetails(GalacteekTab):
     def onPinFinished(self, path):
         ePin, ePinS = self.findPinItems(path)
         if ePinS:
-            ePinS.setText('Finished')
+            ePinS.setText(iFinished())
 
     def onPinStatusChanged(self, path, status):
         nodesProcessed = status.get('Progress', None)
@@ -137,19 +177,19 @@ class PinStatusDetails(GalacteekTab):
                 ePinS.setText(str(nodesProcessed))
 
 class MainWindow(QMainWindow):
-    tabnFManager = 'File Manager'
-    tabnKeys = 'IPFS keys'
-    tabnPinning = 'Pinning Status'
-    tabnMediaPlayer = 'Media Player'
-
     def __init__(self, app):
         super(MainWindow, self).__init__()
-        self.showMaximized()
 
+        self.showMaximized()
         self.app = app
 
         self.ui = ui_galacteek.Ui_GalacteekWindow()
         self.ui.setupUi(self)
+
+        self.tabnFManager = iFileManager()
+        self.tabnKeys = iKeys()
+        self.tabnPinning = iPinningStatus()
+        self.tabnMediaPlayer = iMediaPlayer()
 
         self.ui.actionQuit.triggered.connect(self.quit)
 
@@ -173,8 +213,8 @@ class MainWindow(QMainWindow):
         self.ui.myFilesButton.setShortcut(QKeySequence('Ctrl+f'))
         self.ui.manageKeysButton.clicked.connect(self.onIpfsKeysClicked)
         self.ui.openBrowserTabButton.clicked.connect(self.onOpenBrowserTabClicked)
-        self.ui.bookmarksButton.clicked.connect(self.addBookmarksTab)
-        self.ui.bookmarksButton.setShortcut(QKeySequence('Ctrl+m'))
+        self.ui.hashmarksButton.clicked.connect(self.addHashmarksTab)
+        self.ui.hashmarksButton.setShortcut(QKeySequence('Ctrl+m'))
         self.ui.writeNewDocumentButton.clicked.connect(self.onWriteNewDocumentClicked)
         self.ui.mediaPlayerButton.clicked.connect(self.onOpenMediaPlayer)
         self.ui.ipfsSearchButton.clicked.connect(self.onIpfsSearch)
@@ -233,7 +273,12 @@ class MainWindow(QMainWindow):
         self.ui.pinningStatusButton.clicked.connect(self.onPinningStatusDetails)
         self.ui.pubsubStatusButton = QPushButton()
         self.ui.pubsubStatusButton.setIcon(getIcon('network-offline.png'))
+        self.ui.ipfsInfosButton = QPushButton()
+        self.ui.ipfsInfosButton.setIcon(getIcon('information.png'))
+        self.ui.ipfsInfosButton.setToolTip(iIpfsInfos())
+        self.ui.ipfsInfosButton.clicked.connect(self.onIpfsInfos)
 
+        self.ui.statusbar.addPermanentWidget(self.ui.ipfsInfosButton)
         self.ui.statusbar.addPermanentWidget(self.ui.pinningStatusButton)
         self.ui.statusbar.addPermanentWidget(self.ui.pubsubStatusButton)
         self.ui.statusbar.setStyleSheet('background-color: #4a9ea1')
@@ -245,20 +290,19 @@ class MainWindow(QMainWindow):
 
         self.enableButtons(False)
 
-        # Connect ipfsctx signals
+        # Connect the IPFS context signals
         self.app.ipfsCtx.ipfsRepositoryReady.connect(self.onRepoReady)
         self.app.ipfsCtx.pubsubMessageRx.connect(self.onPubsubRx)
         self.app.ipfsCtx.pubsubMessageTx.connect(self.onPubsubTx)
         self.app.ipfsCtx.profilesAvailable.connect(self.onProfilesList)
         self.app.ipfsCtx.profileChanged.connect(self.onProfileChanged)
+        self.app.ipfsCtx.pinItemStatusChanged.connect(self.onPinStatusChanged)
+        self.app.ipfsCtx.pinItemsCount.connect(self.onPinItemsCount)
 
-        # App signals
+        # Application signals
         self.app.clipTracker.clipboardHasIpfs.connect(self.onClipboardIpfs)
         self.app.clipTracker.clipboardHistoryChanged.connect(self.onClipboardHistory)
         self.app.manualAvailable.connect(self.onManualAvailable)
-
-        self.app.ipfsCtx.pinItemStatusChanged.connect(self.onPinStatusChanged)
-        self.app.ipfsCtx.pinItemsCount.connect(self.onPinItemsCount)
 
         self.allTabs = []
 
@@ -309,6 +353,12 @@ class MainWindow(QMainWindow):
 
     def onRepoReady(self):
         self.enableButtons()
+
+    def onIpfsInfos(self):
+        dlg = InfosDialog(self.app)
+        dlg.setWindowTitle(iIpfsInfos())
+        self.app.task(dlg.loadInfos)
+        dlg.exec_()
 
     def onPubsubRx(self):
         now = QDateTime.currentDateTime()
@@ -374,7 +424,7 @@ class MainWindow(QMainWindow):
         for btn in [ self.ui.myFilesButton,
                 self.ui.manageKeysButton,
                 self.ui.openBrowserTabButton,
-                self.ui.bookmarksButton,
+                self.ui.hashmarksButton,
                 self.ui.mediaPlayerButton,
                 self.ui.writeNewDocumentButton ]:
             btn.setEnabled(flag)
@@ -491,7 +541,7 @@ class MainWindow(QMainWindow):
     @ipfsStatOp
     async def exploreClipboardPath(self, ipfsop, path, stat):
         if stat:
-            view = ipfsview.IPFSHashViewToolBox(self, stat['Hash'])
+            view = ipfsview.IPFSHashExplorerToolBox(self, stat['Hash'])
             self.registerTab(view, stat['Hash'], current=True)
 
     def onAboutGalacteek(self):
@@ -557,13 +607,13 @@ class MainWindow(QMainWindow):
         tab = self.addMediaPlayerTab()
         tab.playFromPath(path, mediaName=mediaName)
 
-    def addBookmarksTab(self):
+    def addHashmarksTab(self):
         name = iHashmarks()
         ft = self.findTabWithName(name)
         if ft:
             return self.ui.tabWidget.setCurrentWidget(ft)
 
-        tab = bookmarks.BookmarksTab(self)
+        tab = hashmarks.HashmarksTab(self)
         self.registerTab(tab, name, current=True)
 
     def onTabCloseRequest(self, idx):

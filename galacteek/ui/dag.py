@@ -1,5 +1,6 @@
 
 import json
+import asyncio
 
 from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem
 from PyQt5.QtCore import Qt, QCoreApplication
@@ -10,6 +11,7 @@ from galacteek.ipfs import cidhelpers
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import ipfsOp, ipfsStatOp
 from .helpers import *
+from .i18n import *
 from .widgets import GalacteekTab
 
 from . import ui_dagview
@@ -17,6 +19,14 @@ from . import ui_dagview
 def iDagError(path):
     return QCoreApplication.translate('DagViewForm',
             'Error loading the DAG object: {0}').format(path)
+
+def iDagInfo(obj):
+    return QCoreApplication.translate('DagViewForm',
+            'DAG object: <b>{0}</b>').format(obj)
+
+def iDagItem(it):
+    return QCoreApplication.translate('DagViewForm',
+            'Item {0}').format(it)
 
 class DAGViewer(GalacteekTab):
     def __init__(self, dagHash, *args, **kw):
@@ -32,14 +42,16 @@ class DAGViewer(GalacteekTab):
         self.ui.dagTree.installEventFilter(evfilter)
 
         self.ui.dagTree.itemDoubleClicked.connect(self.onItemDoubleClicked)
-        self.ui.dagTree.setHeaderLabels(['Key', 'Value'])
-        self.ui.dagHash.setText('DAG object: <b>{0}</b>'.format(self.dagHash))
-        self.app.task(self.loadDag)
+        self.ui.dagTree.setHeaderLabels([iKey(), iValue()])
+        self.ui.dagHash.setText(iDagInfo(self.dagHash))
+
+        self.rootItem = self.ui.dagTree.invisibleRootItem()
+        self.app.task(self.loadDag, self.dagHash, self.rootItem)
 
     def onCopyItemHash(self):
         currentItem = self.ui.dagTree.currentItem()
         value = currentItem.text(1)
-        if cidhelpers.cidValid:
+        if cidhelpers.cidValid(value):
             self.app.setClipboardText(value)
 
     def onItemDoubleClicked(self, item, col):
@@ -51,25 +63,30 @@ class DAGViewer(GalacteekTab):
                 self.gWindow.addBrowserTab().browseIpfsHash(text)
 
     @ipfsOp
-    async def loadDag(self, ipfsop):
-        dagNode = await ipfsop.dagGet(self.dagHash)
+    async def loadDag(self, ipfsop, hashRef, item=None):
+        if item is None:
+            item = self.rootItem
+        await asyncio.sleep(0)
+        dagNode = await ipfsop.dagGet(hashRef)
         if not dagNode:
-            return messageBox(iDagError(self.dagHash))
-        root = self.ui.dagTree.invisibleRootItem()
-        self.displayItem(dagNode, root)
-        root.setExpanded(True)
+            return messageBox(iDagError(hashRef))
+
+        await self.displayItem(dagNode, item)
+        item.setExpanded(True)
         self.ui.dagTree.resizeColumnToContents(0)
 
-    def displayItem(self, data, item):
+    async def displayItem(self, data, item):
         if data is None:
             return
+        await asyncio.sleep(0)
         if type(data) == dict:
             for dkey, dval in data.items():
+                await asyncio.sleep(0)
                 if dkey == '/':
                     # Merkle-link
                     linkValue = str(dval)
                     dictItem = QTreeWidgetItem(item)
-                    dictItem.setText(0, 'Merkle link')
+                    dictItem.setText(0, iMerkleLink())
                     dictItem.setText(1, linkValue)
                     color = QColor(212, 184, 116)
                     dictItem.setBackground(0, color)
@@ -84,11 +101,12 @@ class DAGViewer(GalacteekTab):
                     elif type(dval) == int:
                         dictItem.setText(1, str(dval))
                     else:
-                        self.displayItem(dval, dictItem)
+                        await self.displayItem(dval, dictItem)
 
         elif type(data) == list:
             for i in range(0, len(data)):
+                await asyncio.sleep(0)
                 listItem = QTreeWidgetItem(item)
-                listItem.setText(0, "Item {0}".format(i))
+                listItem.setText(0, iDagItem(i))
                 listItem.setExpanded(True)
-                self.displayItem(data[i], listItem)
+                await self.displayItem(data[i], listItem)

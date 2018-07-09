@@ -93,7 +93,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="bookmarksButton">
+         <widget class="QPushButton" name="hashmarksButton">
           <property name="toolTip">
            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Hashmarks&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
@@ -102,7 +102,7 @@
           </property>
           <property name="icon">
            <iconset resource="galacteek.qrc">
-            <normaloff>:/share/icons/bookmarks.png</normaloff>:/share/icons/bookmarks.png</iconset>
+            <normaloff>:/share/icons/hashmarks.png</normaloff>:/share/icons/hashmarks.png</iconset>
           </property>
           <property name="iconSize">
            <size>

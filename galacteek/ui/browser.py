@@ -13,7 +13,7 @@ from PyQt5.QtPrintSupport import *
 from PyQt5.QtCore import (QUrl, QIODevice, Qt, QCoreApplication, QObject,
     pyqtSignal, QMutex)
 from PyQt5 import QtWebEngineWidgets, QtWebEngine, QtWebEngineCore
-from PyQt5.QtWebEngineWidgets import QWebEngineDownloadItem
+from PyQt5.QtWebEngineWidgets import QWebEngineDownloadItem, QWebEngineScript
 from PyQt5.QtWebEngineCore import QWebEngineUrlRequestInterceptor
 from PyQt5.Qt import QByteArray
 from PyQt5.QtGui import QClipboard, QPixmap, QIcon, QKeySequence
@@ -26,7 +26,7 @@ from . import ui_browsertab
 from . import galacteek_rc
 from .helpers import *
 from .dialogs import *
-from .bookmarks import *
+from .hashmarks import *
 from .i18n import *
 from .widgets import *
 from ..appsettings import *
@@ -34,6 +34,7 @@ from galacteek.ipfs import cidhelpers
 
 SCHEME_DWEB = 'dweb'
 SCHEME_FS = 'fs'
+SCHEME_IPFS = 'ipfs'
 
 # i18n
 def iOpenInTab():
@@ -87,17 +88,17 @@ def iEnterIpnsDialog():
     return QCoreApplication.translate('BrowserTabForm',
         'Load IPNS key dialog')
 
-def iBookmarked(path):
+def iHashmarked(path):
     return QCoreApplication.translate('BrowserTabForm',
-        'Bookmarked {0}').format(path)
+        'Hashmarked {0}').format(path)
 
-def iBookmarkTitleDialog():
+def iHashmarkTitleDialog():
     return QCoreApplication.translate('BrowserTabForm',
-        'Bookmark title')
+        'Hashmark title')
 
 def iInvalidUrl(text):
     return QCoreApplication.translate('BrowserTabForm',
-        'Invalid URL')
+        'Invalid URL: {0}').format(text)
 
 def iInvalidCID(text):
     return QCoreApplication.translate('BrowserTabForm',
@@ -105,6 +106,7 @@ def iInvalidCID(text):
 
 def fsPath(path):
     return '{0}:{1}'.format(SCHEME_FS, path)
+
 def isFsNs(url):
     return url.startswith('{0}:/'.format(SCHEME_FS))
 
@@ -119,31 +121,20 @@ class IPFSSchemeHandler(QtWebEngineCore.QWebEngineUrlSchemeHandler):
         scheme = url.scheme()
         path = url.path()
 
-        def redirectIpfs():
+        def redirectIpfs(path):
             yUrl = URL(url.toString())
             if len(yUrl.parts) < 3:
                 messageBox(iInvalidUrl())
                 return None
 
-            newurl = QUrl("{0}/{1}".format(gatewayUrl, url.path()))
-            return request.redirect(newurl)
+            newUrl = self.app.subUrl(path)
+            return request.redirect(newUrl)
 
-        def redirectIpns():
-            yUrl = URL(url.toString())
-            if len(yUrl.parts) < 3:
-                messageBox(iInvalidUrl())
-                return None
+        if scheme in [SCHEME_FS, SCHEME_IPFS, SCHEME_DWEB]:
+            # Handle scheme:/{ipfs,ipns}/path
 
-            newurl = QUrl("{0}/{1}".format(gatewayUrl, url.path()))
-            return request.redirect(newurl)
-
-        if scheme == SCHEME_FS or scheme == SCHEME_DWEB:
-            # Handle fs:/{ipfs,ipns}/path and dweb:/{ipfs,ipns}/path
-
-            if path.startswith("/ipfs/"):
-                return redirectIpfs()
-            if path.startswith("/ipns/"):
-                return redirectIpns()
+            if path.startswith('/ipfs/') or path.startswith('/ipns/'):
+                return redirectIpfs(path)
 
 class RequestInterceptor(QWebEngineUrlRequestInterceptor):
     def interceptRequest(self, info):
@@ -201,7 +192,7 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
         pass
 
 class BrowserKeyFilter(QObject):
-    bookmarkPressed = pyqtSignal()
+    hashmarkPressed = pyqtSignal()
     savePagePressed = pyqtSignal()
 
     def eventFilter(self,  obj,  event):
@@ -211,7 +202,7 @@ class BrowserKeyFilter(QObject):
             key = event.key()
             if modifiers & Qt.ControlModifier:
                 if key == Qt.Key_B:
-                    self.bookmarkPressed.emit()
+                    self.hashmarkPressed.emit()
                     return True
                 if key == Qt.Key_S:
                     self.savePagePressed.emit()
@@ -231,7 +222,6 @@ class BrowserTab(GalacteekTab):
         # Install scheme handler early on
         self.webProfile = QtWebEngineWidgets.QWebEngineProfile.defaultProfile()
         self.installIpfsSchemeHandler()
-
         self.ui.webEngineView = WebView(self)
 
         self.ui.vLayoutBrowser.addWidget(self.ui.webEngineView)
@@ -247,7 +237,7 @@ class BrowserTab(GalacteekTab):
         self.ui.refreshButton.clicked.connect(self.refreshButtonClicked)
         self.ui.loadFromClipboardButton.clicked.connect(self.loadFromClipboardButtonClicked)
         self.ui.loadFromClipboardButton.setEnabled(self.app.clipTracker.hasIpfs)
-        self.ui.bookmarkPageButton.clicked.connect(self.onBookmarkPage)
+        self.ui.hashmarkPageButton.clicked.connect(self.onHashmarkPage)
 
         # Setup the tool button for browsing IPFS content
         self.loadIpfsMenu = QMenu()
@@ -293,7 +283,7 @@ class BrowserTab(GalacteekTab):
 
         # Event filter
         evfilter = BrowserKeyFilter(self)
-        evfilter.bookmarkPressed.connect(self.onBookmarkPage)
+        evfilter.hashmarkPressed.connect(self.onHashmarkPage)
         self.installEventFilter(evfilter)
 
         self.app.clipTracker.clipboardHasIpfs.connect(self.onClipboardIpfs)
@@ -301,6 +291,7 @@ class BrowserTab(GalacteekTab):
 
         self.currentUrl = None
         self.currentIpfsResource = None
+        self.currentPageTitle = None
 
     @property
     def webView(self):
@@ -328,9 +319,10 @@ class BrowserTab(GalacteekTab):
 
     def installIpfsSchemeHandler(self):
         baFs   = QByteArray(b'fs')
+        baIpfs = QByteArray(b'ipfs')
         baDweb = QByteArray(b'dweb')
 
-        for scheme in [baFs, baDweb]:
+        for scheme in [baFs, baIpfs, baDweb]:
             eHandler = self.webProfile.urlSchemeHandler(scheme)
             if not eHandler:
                 self.webProfile.installUrlSchemeHandler(scheme,
@@ -364,9 +356,9 @@ class BrowserTab(GalacteekTab):
 
         page.save(result[0], QWebEngineDownloadItem.CompleteHtmlSaveFormat)
 
-    def onBookmarkPage(self):
+    def onHashmarkPage(self):
         if self.currentIpfsResource:
-            addBookmark(self.app.marksLocal,
+            addHashmark(self.app.marksLocal,
                     self.currentIpfsResource,
                     self.currentPageTitle,
                     stats=self.app.ipfsCtx.objectStats.get(
@@ -475,18 +467,27 @@ class BrowserTab(GalacteekTab):
             else:
                 self.followIpnsAction.setEnabled(False)
         else:
+            self.currentIpfsResource = None
             self.ui.urlZone.clear()
             self.ui.urlZone.insert(url.toString())
 
     def onLoadFinished(self, ok):
-        currentPageTitle = self.ui.webEngineView.page().title()
-        if currentPageTitle.startswith(self.gatewayAuthority):
-            currentPageTitle = 'No title'
+        lenMax = 16
+        pageTitle = self.ui.webEngineView.page().title()
 
-        self.currentPageTitle = currentPageTitle
+        if pageTitle.startswith(self.gatewayAuthority):
+            pageTitle = iNoTitle()
+
+        self.currentPageTitle = pageTitle
+
+        if len(pageTitle) > lenMax:
+            pageTitle = '{0} ...'.format(pageTitle[0:lenMax])
 
         idx = self.gWindow.ui.tabWidget.indexOf(self)
-        self.gWindow.ui.tabWidget.setTabText(idx, currentPageTitle)
+        self.gWindow.ui.tabWidget.setTabText(idx, pageTitle)
+
+        self.gWindow.ui.tabWidget.setTabToolTip(idx,
+                self.currentPageTitle)
 
     def onIconChanged(self, icon):
         self.gWindow.ui.tabWidget.setTabIcon(self.tabPageIdx, icon)
@@ -515,12 +516,19 @@ class BrowserTab(GalacteekTab):
         inputStr = self.ui.urlZone.text().strip()
 
         if cidhelpers.cidValid(inputStr):
+            # Raw CID in the URL zone
             return self.browseIpfsHash(inputStr)
 
-        if not inputStr.startswith(SCHEME_DWEB) and \
-           not inputStr.startswith(SCHEME_FS):
-            # Browse through ipns
-            inputStr = '{0}:/ipns/{1}'.format(SCHEME_FS, inputStr)
+        url = QUrl(inputStr)
+        scheme = url.scheme()
 
-        if isFsNs(inputStr):
-            self.enterUrl(QUrl(inputStr))
+        if scheme in [SCHEME_FS, SCHEME_IPFS, SCHEME_DWEB]:
+            self.enterUrl(url)
+
+        elif scheme in ['http', 'https'] and \
+                self.app.settingsMgr.allowHttpBrowsing is True:
+            # Browse http urls if allowed
+            self.enterUrl(url)
+
+        else:
+            messageBox(iInvalidUrl(inputStr))

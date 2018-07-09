@@ -12,6 +12,7 @@ from galacteek.ipfs import ipfssearch
 
 from . import ui_ipfssearchw, ui_ipfssearchwresults
 from .helpers import *
+from .hashmarks import *
 from .widgets import *
 from .i18n import *
 
@@ -53,8 +54,10 @@ class IPFSSearchResultsW(QWidget):
             pageHtml += '''
                 <li>
                     <p>
-                    <a href="fs:{0}">{1}</a>
-                        (Size {2})
+                    <a href="fs:{0}">{1}</a> (Size {2})
+
+                    <a href="fs:{0}#hashmark"><img src=":/share/icons/hashmarks.png" width="16" height="16"/></a>
+
                     </p>
                     <ul style="list-style-type: none"><li>
                         {3}
@@ -71,8 +74,22 @@ class IPFSSearchResultsW(QWidget):
                 self.ui.browser.document())
 
     def onAnchorClicked(self, url):
-        tab = self.searchW.gWindow.addBrowserTab()
-        tab.enterUrl(url)
+        fragment = url.fragment()
+        path = url.path()
+
+        if not path:
+            return
+
+        if fragment == 'hashmark':
+            hashV = stripIpfs(path)
+            hit = self.results.findByHash(hashV)
+            title = hit.get('title', iUnknown()) if hit else ''
+
+            addHashmark(self.searchW.app.marksLocal,
+                    path, title)
+        else:
+            tab = self.searchW.gWindow.addBrowserTab()
+            tab.enterUrl(url)
 
 class EmptyResultsW(IPFSSearchResultsW):
     def render(self):
@@ -130,7 +147,7 @@ class IPFSSearchView(GalacteekTab):
         self.disableCombo()
         w = self.stack.widget(idx)
         if not w:
-            self.app.task(self.runSearchPage, self.searchQuery, idx+1)
+            self.app.task(self.runSearchPage, self.searchQuery, idx)
         else:
             self.stack.setCurrentWidget(w)
             self.enableCombo()
@@ -156,7 +173,7 @@ class IPFSSearchView(GalacteekTab):
                 self.addEmptyResultsPage(sr)
                 continue
 
-            if sr.page == 1 and self.ui.comboPages.count() == 0:
+            if sr.page == 0 and self.ui.comboPages.count() == 0:
                 resCount = sr.results.get('total', iUnknown())
                 maxScore = sr.results.get('max_score', iUnknown())
                 self.ui.labelInfo.setText(iResultsInfo(resCount, maxScore))

@@ -1,5 +1,7 @@
 <RCC>
   <qresource>
+    <file>../../share/icons/information.png</file>
+    <file>../../share/translations/galacteek_fr.qm</file>
     <file>../../share/icons/ipfs-search.png</file>
     <file>../../share/icons/code-fork.png</file>
     <file>../../share/icons/fullscreen.png</file>
@@ -11,17 +13,19 @@
     <file>../../share/icons/multimedia.png</file>
     <file>../../share/icons/clear-all.png</file>
     <file>../../share/icons/go-next.png</file>
+    <file>../../share/icons/hashmarks.png</file>
     <file>../../share/icons/go-previous.png</file>
     <file>../../share/icons/go-home.png</file>
     <file>../../share/icons/network-offline.png</file>
     <file>../../share/icons/network-transmit.png</file>
-    <file>../../share/icons/bookmarks.png</file>
     <file>../../share/icons/write-document.png</file>
+    <file>../../share/icons/network-transmit.png</file>
     <file>../../share/icons/pin-black.png</file>
     <file>../../share/icons/pin-blue-loading.png</file>
     <file>../../share/icons/right-arrow.png</file>
     <file>../../share/icons/refresh.png</file>
     <file>../../share/icons/clipboard.png</file>
+    <file>../../share/icons/network-offline.png</file>
     <file>../../share/icons/pin.png</file>
     <file>../../share/icons/lock-and-key.png</file>
     <file>../../share/icons/left-arrow.png</file>

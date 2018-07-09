@@ -72,7 +72,7 @@ class build_ui(Command):
         if not lrelease:
             lrelease = shutil.which('lrelease')
 
-        for lang in ['en']:
+        for lang in ['en', 'fr']:
             if lrelease:
                 run([lrelease,
                     os.path.join(trdir, 'galacteek_{}.ts'.format(lang)),

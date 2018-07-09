@@ -3,8 +3,9 @@ import pytest
 from galacteek.appsettings import *
 
 @pytest.fixture
-def mgr():
-    return SettingsManager()
+def mgr(tmpdir):
+    filep = tmpdir.join('settings.txt')
+    return SettingsManager(str(filep))
 
 class TestSettings:
     @pytest.mark.parametrize('sec', ['SEC1', 'SEC190'])
