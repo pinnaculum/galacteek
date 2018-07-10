@@ -6,30 +6,6 @@ A modest IPFS_ navigator and content publisher
 Installation
 ============
 
-Installation from binary
-------------------------
-
-Binary releases are only available for Linux AMD64 (also known as
-*x86-64* or *x64*) platforms. They include the *0.4.15* release of go-ipfs_
-and are built from the *master* branch with cxFreeze_. It's always preferable
-to build from source and depending on the distribution you use you might run
-into dependency problems with the binaries.
-
-If you already have IPFS installed on your system you can download the latest
-binary release with:
-
-.. code-block:: shell
-
-    ipfs get /ipfs/QmbiJDTCGdjHDcau5CQAvdXHKZjKiQhBR4VAS3hBwp1fyd/galacteek-0.1.7-linux-amd64.tar.gz
-    tar -xzvf galacteek-0.1.7-linux-amd64.tar.gz
-
-Just go into the unpacked directory and run the **galacteek** program.
-
-If you don't have IPFS installed on your system you can download the same file
-here_
-
-.. _here: https://gateway.ipfs.io/ipfs/QmbiJDTCGdjHDcau5CQAvdXHKZjKiQhBR4VAS3hBwp1fyd/galacteek-0.1.7-linux-amd64.tar.gz
-
 Installation from source
 ------------------------
 
@@ -45,6 +21,30 @@ Now just run the application with:
 .. code-block:: shell
 
     galacteek
+
+Installation from binary
+------------------------
+
+Binary releases are only available for Linux AMD64 (also known as
+*x86-64* or *x64*) platforms. They include the *0.4.15* release of go-ipfs_
+and are built from the *master* branch with cxFreeze_. It's always preferable
+to build from source and depending on the distribution you use you might run
+into dependency problems with the binaries.
+
+If you already have IPFS installed on your system you can download the latest
+binary release with:
+
+.. code-block:: shell
+
+    ipfs get /ipfs/QmVrhsZHwLXhqpqZ8ggXggEax4Qoa4646FMBQTqitXPThL/galacteek-0.1.8-linux-amd64.tar.gz
+    tar -xzvf galacteek-0.1.8-linux-amd64.tar.gz
+
+Just go into the unpacked directory and run the **galacteek** program.
+
+If you don't have IPFS installed on your system you can download the same file
+here_
+
+.. _here: https://gateway.ipfs.io/ipfs/QmVrhsZHwLXhqpqZ8ggXggEax4Qoa4646FMBQTqitXPThL/galacteek-0.1.8-linux-amd64.tar.gz
 
 Features
 ========
@@ -90,7 +90,7 @@ IPFS views keybindings (file manager, hash views, dag viewer):
 Contact and donations
 =====================
 
-Contact by email at galacteek@gmx.co.uk
+Contact by email at **galacteek@gmx.co.uk**
 
 Donations are welcome and will go to other projects like ipfs-search_.
 You can make a donation to the project with Monero to this monero address:
