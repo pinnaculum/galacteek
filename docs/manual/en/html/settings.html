@@ -4,20 +4,12 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Application settings &#8212; galacteek  documentation</title>
     <link rel="stylesheet" href="_static/pyramid.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
@@ -31,8 +23,7 @@
 <link rel="stylesheet" href="_static/ie6.css" type="text/css" media="screen" charset="utf-8" />
 <![endif]-->
 
-  </head>
-  <body>
+  </head><body>
 
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -85,6 +76,13 @@ settings, so use with care. Use separate <em>application profiles</em> with the
 <p>If enabled, files or directories will be wrapped within a directory object
 (.dirw)</p>
 </div>
+<div class="section" id="activate-javascript-ipfs-api">
+<h3>Activate Javascript IPFS API<a class="headerlink" href="#activate-javascript-ipfs-api" title="Permalink to this headline">¶</a></h3>
+<p>With this setting you can activate the Javascript API in the browser, allowing
+control of your IPFS daemon from the Javascript engine. Access to the IPFS
+daemon is done through the <strong>window.ipfs</strong> JS attribute (which is an
+<em>IpfsApi</em> instance from the <strong>js-ipfs-api</strong> project).</p>
+</div>
 </div>
 </div>
 
@@ -102,12 +100,14 @@ settings, so use with care. Use separate <em>application profiles</em> with the
                         title="next chapter">File manager</a></p>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
+    <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
+    </div>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
@@ -131,7 +131,7 @@ settings, so use with care. Use separate <em>application profiles</em> with the
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, galacteek.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.7.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.5.
     </div>
   </body>
 </html>

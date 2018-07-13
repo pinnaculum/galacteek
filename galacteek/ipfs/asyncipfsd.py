@@ -22,7 +22,7 @@ async def ipfsConfig(param, value):
     return await shell("ipfs config '{0}' '{1}'".format(param, value))
 
 async def ipfsConfigJson(param, value):
-    return await shell('ipfs config --json "{0}" "{1}"'.format(
+    return await shell('ipfs config --json {0} {1}'.format(
         param, json.dumps(value)))
 
 async def ipfsConfigGetJson(param):
@@ -88,7 +88,7 @@ class AsyncIPFSDaemon(object):
             swarmport=DEFAULT_SWARMPORT,
             gatewayport=DEFAULT_GWPORT, initrepo=True,
             swarmLowWater=10, swarmHighWater=20,
-            pubsubEnable=False, noBootstrap=False,
+            pubsubEnable=False, noBootstrap=False, corsEnable=True,
             storageMax=20, debug=False, loop=None):
 
         self.loop = loop if loop else asyncio.get_event_loop()
@@ -101,6 +101,7 @@ class AsyncIPFSDaemon(object):
         self.storageMax = storageMax
         self.initrepo = initrepo
         self.pubsubEnable = pubsubEnable
+        self.corsEnable = corsEnable
         self.noBootstrap = noBootstrap
         self.debug = debug
 
@@ -130,6 +131,16 @@ class AsyncIPFSDaemon(object):
         # Maximum storage
         await ipfsConfig('Datastore.StorageMax',
                 '{0}GB'.format(self.storageMax))
+
+        # CORS
+        if self.corsEnable:
+            # Setup the CORS headers, only allowing the gateway's origin
+            await ipfsConfigJson(
+                    'API.HTTPHeaders.Access-Control-Allow-Credentials',
+                    '["true"]')
+            await ipfsConfigJson(
+                    'API.HTTPHeaders.Access-Control-Allow-Origin',
+                    '["http://localhost:{0}"]'.format(self.gatewayport))
 
         if self.noBootstrap:
             await ipfsConfigJson('Bootstrap', '[]')

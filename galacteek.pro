@@ -35,6 +35,7 @@ FORMS += galacteek/ui/addkeydialog.ui \
 	galacteek/ui/mediaplayer.ui \
 	galacteek/ui/mediaplaylist.ui \
 	galacteek/ui/dagview.ui \
+	galacteek/ui/donatedialog.ui \
 	galacteek/ui/ipfscidinputdialog.ui \
 	galacteek/ui/ipfsmultiplecidinputdialog.ui \
 	galacteek/ui/newdocument.ui

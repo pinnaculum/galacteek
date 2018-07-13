@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (QWidget, QFrame, QApplication, QMainWindow,
 from PyQt5.QtPrintSupport import *
 
 from PyQt5.QtCore import (QUrl, QIODevice, Qt, QCoreApplication, QObject,
-    pyqtSignal, QMutex)
+    pyqtSignal, QMutex, QFile)
 from PyQt5 import QtWebEngineWidgets, QtWebEngine, QtWebEngineCore
 from PyQt5.QtWebEngineWidgets import QWebEngineDownloadItem, QWebEngineScript
 from PyQt5.QtWebEngineCore import QWebEngineUrlRequestInterceptor
@@ -222,9 +222,12 @@ class BrowserTab(GalacteekTab):
         # Install scheme handler early on
         self.webProfile = QtWebEngineWidgets.QWebEngineProfile.defaultProfile()
         self.installIpfsSchemeHandler()
-        self.ui.webEngineView = WebView(self)
 
+        self.ui.webEngineView = WebView(self)
         self.ui.vLayoutBrowser.addWidget(self.ui.webEngineView)
+
+        self.webScripts = self.webProfile.scripts()
+        self.installScripts()
 
         self.ui.webEngineView.urlChanged.connect(self.onUrlChanged)
         self.ui.webEngineView.loadFinished.connect(self.onLoadFinished)
@@ -316,6 +319,36 @@ class BrowserTab(GalacteekTab):
     @property
     def pinAll(self):
         return self.ui.pinAllButton.isChecked()
+
+    def installScripts(self):
+        # Install the browserified js-ipfs API
+
+        exSc = self.webScripts.findScript('js-ipfs-api')
+        if self.app.settingsMgr.jsIpfsApi is True and exSc.isNull():
+            jsFile = QFile(':/share/js/js-ipfs-api/index.js')
+            if not jsFile.open(QFile.ReadOnly):
+                return
+            scriptJsIpfs = QWebEngineScript()
+            scriptJsIpfs.setName('js-ipfs-api')
+            scriptJsIpfs.setSourceCode(jsFile.readAll().data().decode('utf-8'))
+            scriptJsIpfs.setWorldId(QWebEngineScript.MainWorld)
+            scriptJsIpfs.setInjectionPoint(QWebEngineScript.DocumentCreation)
+            scriptJsIpfs.setRunsOnSubFrames(True)
+            self.webScripts.insert(scriptJsIpfs)
+
+            # Install another script creating an IpfsApi instance
+            # The API is available from Javascript as 'window.ipfs'
+
+            script = QWebEngineScript()
+            script.setSourceCode('\n'.join([
+                "document.addEventListener('DOMContentLoaded', function () {",
+                "window.ipfs = window.IpfsApi('{host}', '{port}');".format(
+                    host=self.app.getIpfsConnectionParams().host,
+                    port=self.app.getIpfsConnectionParams().apiPort),
+                "})"]))
+            script.setWorldId(QWebEngineScript.MainWorld)
+            script.setInjectionPoint(QWebEngineScript.DocumentCreation)
+            self.webScripts.insert(script)
 
     def installIpfsSchemeHandler(self):
         baFs   = QByteArray(b'fs')
@@ -502,10 +535,10 @@ class BrowserTab(GalacteekTab):
         if not cidhelpers.cidValid(ipfsHash):
             return messageBox(iInvalidCID(ipfsHash))
 
-        self.browseFsPath('/ipfs/{0}'.format(ipfsHash))
+        self.browseFsPath(joinIpfs(ipfsHash))
 
-    def browseIpnsHash(self, ipnshash):
-        self.browseFsPath('/ipns/{0}'.format(ipnshash))
+    def browseIpnsHash(self, ipnsHash):
+        self.browseFsPath(joinIpns(ipnsHash))
 
     def enterUrl(self, url):
         self.ui.urlZone.clear()
