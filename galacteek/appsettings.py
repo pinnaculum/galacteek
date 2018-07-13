@@ -60,7 +60,7 @@ def setDefaultSettings(gApp):
     sManager.setDefaultSetting(section, CFG_KEY_DLPATH,
         gApp.defaultDownloadsLocation)
     sManager.setDefaultTrue(section, CFG_KEY_GOTOHOME)
-    sManager.setDefaultTrue(section, CFG_KEY_JSAPI)
+    sManager.setDefaultFalse(section, CFG_KEY_JSAPI)
     sManager.setDefaultFalse(section, CFG_KEY_ALLOWHTTPBROWSING)
 
     # Default IPFS connection when not spawning daemon
