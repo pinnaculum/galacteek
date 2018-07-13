@@ -3,6 +3,10 @@ Galacteek
 
 A modest IPFS_ navigator and content publisher
 
+This is a standalone browser allowing you to search, browse, publish and
+hashmark content on the permanent web accessible through the IPFS_ peer-to-peer
+network.
+
 Installation
 ============
 
@@ -58,7 +62,9 @@ and restart the application afterwards.
 - Feeds (following IPNS hashes)
 - File manager with drag-and-drop support
 - Basic built-in media player with IPFS-stored, per-profile playlists
-- Searches content with ipfs-search_
+- Search content with ipfs-search_
+- Decentralized application development/testing with the Javascript API
+  (using *window.ipfs*)
 
 Keybindings
 ===========
@@ -96,6 +102,8 @@ Donations are welcome and will go to other projects like ipfs-search_.
 You can make a donation to the project with Monero to this monero address:
 
 **48oNcgpqwUNWjHeTSSH8BCaJHMR7Bc8ooGY13USYxuMuGwtXfLQ1Qf9f7rJMB9g1PWELee2cNnTWz1rJiZyPigcXRCTkhU3**
+
+or with Bitcoin here: **3HSsNcwzkiWGu6wB18BC6D37JHExpxZvyS**
 
 Screenshots
 ===========

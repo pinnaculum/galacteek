@@ -295,6 +295,43 @@
     </message>
 </context>
 <context>
+    <name>DonateDialog</name>
+    <message>
+        <location filename="../../galacteek/ui/donatedialog.ui" line="14"/>
+        <source>Dialog</source>
+        <translation>Dialogue</translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/donatedialog.ui" line="34"/>
+        <source>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:&apos;Sans Serif&apos;; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p align=&quot;center&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;Any donation is most welcome to help keep the project&apos;s development going. The application&apos;s translation to other languages is planned as well as new features. Donations will help support other projects like &lt;/span&gt;&lt;a href=&quot;https://ipfs-search.com&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;IPFS Search&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;p align=&quot;center&quot; style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:10pt;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p align=&quot;center&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;You can make a donation with Monero (or bitcoin) using the addresses below.&lt;/span&gt;&lt;/p&gt;
+&lt;p align=&quot;center&quot; style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:10pt;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p align=&quot;center&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;Thanks!&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/donatedialog.ui" line="49"/>
+        <source>Monero donation address</source>
+        <translation>Adresse de donation Monero</translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/donatedialog.ui" line="108"/>
+        <source>Bitcoin donation address</source>
+        <translation>Adresse donation Bitcoin</translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/donatedialog.ui" line="165"/>
+        <source>OK</source>
+        <translatorcomment>OK</translatorcomment>
+        <translation>OK</translation>
+    </message>
+</context>
+<context>
     <name>FeedsViewForm</name>
     <message>
         <location filename="../../galacteek/ui/hashmarksmgrfeeds.ui" line="14"/>
@@ -1225,102 +1262,102 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation>Page d&apos;accueil:</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="59"/>
+        <location filename="../../galacteek/ui/settings.ui" line="66"/>
         <source>Go to home page when opening a new browser tab</source>
         <translation>Aller a la page d&apos;accueil lors de l&apos;ouverture du navigateur</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="79"/>
+        <location filename="../../galacteek/ui/settings.ui" line="86"/>
         <source>Save downloads to:</source>
         <translation>Sauvegarder les téléchargements vers:</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="95"/>
+        <location filename="../../galacteek/ui/settings.ui" line="102"/>
         <source>Change directory</source>
         <translation>Changer le répertoire</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="103"/>
+        <location filename="../../galacteek/ui/settings.ui" line="110"/>
         <source>IPFS</source>
         <translation>IPFS</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="120"/>
+        <location filename="../../galacteek/ui/settings.ui" line="127"/>
         <source>Spawn IPFS daemon and use as transport</source>
         <translation>Lancer un démon IPFS et l&apos;utiliser comme transport</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="306"/>
+        <location filename="../../galacteek/ui/settings.ui" line="313"/>
         <source>HTTP gateway port</source>
         <translation>Port de la passerelle HTTP</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="168"/>
+        <location filename="../../galacteek/ui/settings.ui" line="175"/>
         <source>Minimum swarm connections</source>
         <translation>Nombre de connexions minimum (swarm)</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="185"/>
+        <location filename="../../galacteek/ui/settings.ui" line="192"/>
         <source>Maximum swarm connections</source>
         <translation>Nombre de connexions maximum (swarm)</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="283"/>
+        <location filename="../../galacteek/ui/settings.ui" line="290"/>
         <source>API port</source>
         <translation>Port de l&apos;API</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="225"/>
+        <location filename="../../galacteek/ui/settings.ui" line="232"/>
         <source>Swarm port</source>
         <translation>Port du swarm</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="232"/>
+        <location filename="../../galacteek/ui/settings.ui" line="239"/>
         <source>Maximum storage (Gb)</source>
         <translation>Stockage maximum (Gb)</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="261"/>
+        <location filename="../../galacteek/ui/settings.ui" line="268"/>
         <source>Use a custom IPFS daemon</source>
         <translation>Utiliser un démon IPFS existant</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="276"/>
+        <location filename="../../galacteek/ui/settings.ui" line="283"/>
         <source>Host</source>
         <translation>Hôte</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="358"/>
+        <location filename="../../galacteek/ui/settings.ui" line="365"/>
         <source>Restart the application after changing the IPFS connection settings.</source>
         <translation>Redémarrez l&apos;application après avoir changé les paramètres de connexion.</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="368"/>
+        <location filename="../../galacteek/ui/settings.ui" line="375"/>
         <source>UI</source>
         <translation>Interface</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="376"/>
+        <location filename="../../galacteek/ui/settings.ui" line="418"/>
         <source>File manager</source>
         <translation>Gestionnaire de fichiers</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="388"/>
+        <location filename="../../galacteek/ui/settings.ui" line="430"/>
         <source>Wrap files with a directory (preserves filenames)</source>
         <translation>Envelopper les fichiers dans un répertoire (préserve les noms de fichiers)</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="401"/>
+        <location filename="../../galacteek/ui/settings.ui" line="443"/>
         <source>Wrap directories with a directory</source>
         <translation>Envelopper les répertoires dans un autre répertoire</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="414"/>
+        <location filename="../../galacteek/ui/settings.ui" line="456"/>
         <source>Hide IPFS hashes in tree views</source>
         <translation>Cacher les hashs IPFS dans l&apos;interface</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="436"/>
+        <location filename="../../galacteek/ui/settings.ui" line="397"/>
         <source>Language</source>
         <translation>Langage</translation>
     </message>
@@ -1333,6 +1370,16 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <location filename="../../galacteek/ui/settings.ui" line="449"/>
         <source>French</source>
         <translation type="obsolete">Francais</translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/settings.ui" line="466"/>
+        <source>Browser</source>
+        <translation>Navigateur</translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/settings.ui" line="475"/>
+        <source>Enable Javascript IPFS API</source>
+        <translation>Activer l&apos;API IPFS Javascript</translation>
     </message>
 </context>
 </TS>

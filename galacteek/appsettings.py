@@ -18,12 +18,14 @@ CFG_KEY_HOST = 'host'
 CFG_KEY_SWARMLOWWATER = 'swarm_lowwater'
 CFG_KEY_SWARMHIGHWATER = 'swarm_highwater'
 CFG_KEY_STORAGEMAX = 'storagemax' # integer, max storage in Gb
+CFG_KEY_CORS = 'cors'
 
 # Browser
 CFG_KEY_HOMEURL = 'homeurl'
 CFG_KEY_GOTOHOME = 'gotohomeonnewtab'
 CFG_KEY_DLPATH = 'downloadspath'
 CFG_KEY_ALLOWHTTPBROWSING = 'httpbrowsing'
+CFG_KEY_JSAPI = 'jsapi'
 
 # IPFS
 CFG_KEY_PUBSUB = 'pubsub'
@@ -50,6 +52,7 @@ def setDefaultSettings(gApp):
     sManager.setDefaultSetting(section, CFG_KEY_SWARMHIGHWATER, 300)
     sManager.setDefaultSetting(section, CFG_KEY_SWARMLOWWATER, 150)
     sManager.setDefaultSetting(section, CFG_KEY_STORAGEMAX, 20)
+    sManager.setDefaultTrue(section, CFG_KEY_CORS)
     sManager.setDefaultTrue(section, CFG_KEY_ENABLED)
 
     section = CFG_SECTION_BROWSER
@@ -57,6 +60,7 @@ def setDefaultSettings(gApp):
     sManager.setDefaultSetting(section, CFG_KEY_DLPATH,
         gApp.defaultDownloadsLocation)
     sManager.setDefaultTrue(section, CFG_KEY_GOTOHOME)
+    sManager.setDefaultTrue(section, CFG_KEY_JSAPI)
     sManager.setDefaultFalse(section, CFG_KEY_ALLOWHTTPBROWSING)
 
     # Default IPFS connection when not spawning daemon
@@ -175,3 +179,7 @@ class SettingsManager(object):
     @property
     def allowHttpBrowsing(self):
         return self.isTrue(CFG_SECTION_BROWSER, CFG_KEY_ALLOWHTTPBROWSING)
+
+    @property
+    def jsIpfsApi(self):
+        return self.isTrue(CFG_SECTION_BROWSER, CFG_KEY_JSAPI)

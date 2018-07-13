@@ -467,6 +467,8 @@ class GalacteekApplication(QApplication):
 
         pubsubEnabled = self.settingsMgr.isTrue(CFG_SECTION_IPFS,
             CFG_KEY_PUBSUB)
+        corsEnabled = self.settingsMgr.isTrue(CFG_SECTION_IPFSD,
+            CFG_KEY_CORS)
 
         sManager = self.settingsMgr
         section = CFG_SECTION_IPFSD
@@ -481,7 +483,7 @@ class GalacteekApplication(QApplication):
             swarmLowWater=sManager.getInt(section, CFG_KEY_SWARMLOWWATER),
             swarmHighWater=sManager.getInt(section, CFG_KEY_SWARMHIGHWATER),
             storageMax=sManager.getInt(section, CFG_KEY_STORAGEMAX),
-            pubsubEnable=pubsubEnabled)
+            pubsubEnable=pubsubEnabled, corsEnable=corsEnabled)
 
         self.task(self.startIpfsdTask, self.ipfsd)
 
