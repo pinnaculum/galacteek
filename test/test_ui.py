@@ -11,35 +11,14 @@ import random
 
 from PyQt5.QtCore import Qt
 
+from .cidtest import *
+
 from galacteek.ui import dialogs
 from galacteek.ui import mainui, ipfsview
 from galacteek import application
 from galacteek.appsettings import *
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.ipfsops import *
-from quamash import QEventLoop, QThreadExecutor
-
-# CID lists
-validcid0 = [
-    'QmT1TPVjdZ9CRnqwyQ9WygDoRgRRibFrEyWufenu92SuUV',
-    'QmT1TPajdu9CRnqwyQ9WygDoRgRRibFrEyWufenu92SuUV',
-    'Qma1TPVjdZ9CRhqwyQ9Wev3oRgRRi5FrEyWufenu92SuUV',
-    'Qmb2nxinR41eLpLr3FXquDV9kA2pxC6JAcJHs2aFYyeohP',
-]
-
-validcid1 = [
-    'zb2rhnNU1uLw96nnLBXgrtRiJnKxLdU589S9kgCRt2FbALmYp',
-    'zb2rhcrqjEudykbZ9eu245D4SoVxZFhBgiFGoGW7gGESgp67Z',
-    'zb2rhYZ4An39RKsqpKU4D9Ux6Y5fZ7HeBP5KuxZKjt24dvB6P'
-]
-
-invalidcids = [
-    'QmT1TPVjdZnu92SuUV',
-    'QmT1TPajdu9CRnqwyQygfenu92Su',
-    'Qma1TPVjdZ9CRhqwyQ9WevWufenuSuUV',
-    '42',
-    'knightswhosayni'
-]
 
 class TestCIDDialogs:
     # Valid and invalid CID lists
@@ -130,8 +109,8 @@ def gApp(qtbot, tmpdir):
     sManager.setSetting(CFG_SECTION_BROWSER, CFG_KEY_DLPATH, str(tmpdir))
     sManager.sync()
 
-    with qtbot.waitSignal(gApp.ipfsCtx.ipfsRepositoryReady):
-        qtbot.wait(12000)
+    with qtbot.waitSignal(gApp.ipfsCtx.ipfsRepositoryReady, timeout=20000):
+        print('Waiting for IPFS repository ...')
 
     yield gApp
     gApp.ipfsd.stop()
@@ -140,8 +119,7 @@ def gApp(qtbot, tmpdir):
 
 @pytest.fixture(scope='module')
 def modApp():
-    gApp = makeApp(profile='pytest-modapp')
-    return gApp
+    return makeApp(profile='pytest-modapp')
 
 class TestApp:
     @pytest.mark.asyncio
@@ -161,7 +139,7 @@ class TestApp:
             async def openTabs():
                 leftClick(mainW.ui.myFilesButton)
                 leftClick(mainW.ui.openBrowserTabButton)
-                leftClick(mainW.ui.bookmarksButton)
+                leftClick(mainW.ui.hashmarksButton)
                 leftClick(mainW.ui.manageKeysButton)
                 leftClick(mainW.ui.writeNewDocumentButton)
 
@@ -185,9 +163,10 @@ class TestApp:
             loop.run_until_complete(openTabs())
             loop.run_until_complete(browse())
 
+    @pytest.mark.asyncio
     def test_ipfsview(self, qtbot, gApp, testFilesDocsAsync):
         loop = gApp.getLoop()
-        view = ipfsview.IPFSHashViewToolBox(gApp.mainWindow, None)
+        view = ipfsview.IPFSHashExplorerToolBox(gApp.mainWindow, None)
         gApp.mainWindow.registerTab(view, '')
 
         @ipfsOpFn
@@ -210,47 +189,69 @@ class TestApp:
         def checkIncorrect(valid, cid, path):
             return valid == False
 
+        def waitCorrect(cb=checkCorrect, timeout=1000):
+            return qtbot.waitSignal(modApp.clipTracker.clipboardHasIpfs,
+                timeout=timeout, check_params_cb=cb)
+
+        def waitIncorrect(cb=checkIncorrect, timeout=1000):
+            return qtbot.waitSignal(modApp.clipTracker.clipboardHasIpfs,
+                timeout=timeout, check_params_cb=cb)
+
+        modApp.clipTracker.clearHistory()
+
         # Bare CIDv0
-        with qtbot.waitSignal(modApp.clipTracker.clipboardHasIpfs, timeout=1000,
-                check_params_cb=checkCorrect):
+        with waitCorrect():
             modApp.setClipboardText(validcid0)
 
+        # Multiline CIDs
+        with waitCorrect():
+            modApp.setClipboardText('\n'.join([
+                validcid0,
+                '++' * 30,
+                validcid1
+            ]))
+
         # Bare CIDv1
-        with qtbot.waitSignal(modApp.clipTracker.clipboardHasIpfs, timeout=1000,
-                check_params_cb=checkCorrect):
+        with waitCorrect():
             modApp.setClipboardText(validcid1)
 
         modApp.clipTracker.clearHistory()
 
         # /ipfs/CID
-        with qtbot.waitSignal(modApp.clipTracker.clipboardHasIpfs, timeout=1000,
-                check_params_cb=checkCorrect):
+        with waitCorrect():
             modApp.setClipboardText(joinIpfs(validcid0))
 
+        # /ipfs/CID with leading and trailing spaces
+        with waitCorrect():
+            modApp.setClipboardText('      {}   '.format(joinIpfs(validcid0)))
+
+        # multiple lines with /ipfs/CID, will only register the first match
+        with waitCorrect():
+            modApp.setClipboardText('\n'.join([
+                joinIpfs(validcid0),
+                joinIpfs(validcid1),
+            ]))
+
         # fs:/ipfs/CID
-        with qtbot.waitSignal(modApp.clipTracker.clipboardHasIpfs, timeout=1000,
-                check_params_cb=checkCorrect):
+        with waitCorrect():
             modApp.setClipboardText('fs:' + joinIpfs(validcid0))
 
         # ipfs:/ipfs/CID
-        with qtbot.waitSignal(modApp.clipTracker.clipboardHasIpfs, timeout=1000,
-                check_params_cb=checkCorrect):
+        with waitCorrect():
             modApp.setClipboardText('ipfs:' + joinIpfs(validcid0))
 
         # /ipfs/CID/something
-        with qtbot.waitSignal(modApp.clipTracker.clipboardHasIpfs, timeout=1000,
-                check_params_cb=checkCorrect):
+        with waitCorrect():
             path = os.path.join(joinIpfs(validcid0), 'some', 'garlic')
             modApp.setClipboardText(path)
 
         # /ipns/CID/something
-        with qtbot.waitSignal(modApp.clipTracker.clipboardHasIpfs, timeout=1000,
-                check_params_cb=checkCorrect):
+        with waitCorrect():
             path = os.path.join(joinIpns(validcid0), 'share', 'the', 'wine')
             modApp.setClipboardText(path)
 
-        with qtbot.waitSignal(modApp.clipTracker.clipboardHasIpfs, timeout=1000,
-                check_params_cb=checkIncorrect):
+        # Invalid CID input
+        with waitIncorrect():
             modApp.setClipboardText(invalidcid)
 
     def test_mediaplayer(self, qtbot, modApp):

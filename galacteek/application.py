@@ -566,16 +566,17 @@ class ClipboardTracker(QObject):
 
     def onClipboardChanged(self, mode):
         text = self.clipboard.text(mode)
-        self.clipboardProcess(text)
+        self.clipboardProcess(text, clipboardMode=mode)
 
-    def clipboardProcess(self, text):
+    def clipboardProcess(self, text, clipboardMode=None):
         """
-        Process the contents of the clipboard. If it is a valid CID, emit a
+        Process the contents of the clipboard. If it is a valid CID/path, emit a
         signal, processed by the main window for the clipboard loader button
         """
         if not text or len(text) > 1024: # that shouldn't be worth handling
             return
 
+        text = text.strip()
         ma = cidhelpers.ipfsRegSearchPath(text)
 
         if ma:
@@ -594,14 +595,20 @@ class ClipboardTracker(QObject):
             self.hRecord(path)
             return self.clipboardHasIpfs.emit(True, None, path)
 
-        if cidhelpers.cidValid(text):
+        ma = cidhelpers.ipfsRegSearchCid(text)
+        if ma:
             # The clipboard simply contains a CID
-            path = joinIpfs(text)
+            cid = ma.group('cid')
+            if not cidhelpers.cidValid(cid):
+                return
+
+            path = joinIpfs(cid)
             self.hRecord(path)
-            return self.clipboardHasIpfs.emit(True, text, path)
+            return self.clipboardHasIpfs.emit(True, cid, path)
 
         # Not a CID/path
-        self.clipboardHasIpfs.emit(False, None, None)
+        if clipboardMode == self.clipboardPreferredMode():
+            self.clipboardHasIpfs.emit(False, None, None)
 
     def hLookup(self, path):
         for hTs, hItem in self.history.items():
@@ -649,10 +656,8 @@ class ClipboardTracker(QObject):
         self.clipboardProcess(text)
 
     def clipboardPreferredMode(self):
-        mode = QClipboard.Clipboard
-        if self.clipboard.supportsSelection():
-            mode = QClipboard.Selection
-        return mode
+        return QClipboard.Selection if self.clipboard.supportsSelection() \
+                else QClipboard.Clipboard
 
     def setText(self, text):
         """ Sets the clipboard's text content """
