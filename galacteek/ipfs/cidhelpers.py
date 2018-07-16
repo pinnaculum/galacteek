@@ -47,20 +47,24 @@ def cidValid(cidstring):
         return True
     return False
 
-def ipfsRegSearch(text):
-    return re.search('(?:fs:|ipfs:)?/ipfs/([a-zA-Z0-9]*)(\/.*$)?', text)
-
-def ipnsRegSearch(text):
-    return re.search('(?:fs:|ipfs:)?/ipns/([a-zA-Z0-9\.]*)(\/.*$)?', text)
+# Regexps
 
 ipfsPathRe = re.compile(
-    '(?:fs:|ipfs:)?(?P<fullpath>/ipfs/(?P<cid>[a-zA-Z0-9]{46,49}?)(?P<subpath>\/.*)?$)?')
+    '^(\s*)?(?:fs:|ipfs:)?(?P<fullpath>/ipfs/(?P<cid>[a-zA-Z0-9]{46,49}?)(?P<subpath>\/.*)?)$',
+    flags=re.MULTILINE)
+
+ipfsCidRe = re.compile(
+    '^(\s*)?(?P<cid>[a-zA-Z0-9]{46,49})$', flags=re.MULTILINE)
 
 ipnsPathRe = re.compile(
-    '(?:fs:|ipfs:)?(?P<fullpath>/ipns/([a-zA-Z0-9\.\-]*)(?P<subpath>\/.*)?$)?')
+    '^(\s*)?(?:fs:|ipfs:)?(?P<fullpath>/ipns/([a-zA-Z0-9\.\-]*)(?P<subpath>\/.*)?$)',
+    flags=re.MULTILINE)
 
 def ipfsRegSearchPath(text):
-    return ipfsPathRe.fullmatch(text)
+    return ipfsPathRe.match(text)
+
+def ipfsRegSearchCid(text):
+    return ipfsCidRe.match(text)
 
 def ipnsRegSearchPath(text):
-    return ipnsPathRe.fullmatch(text)
+    return ipnsPathRe.match(text)
