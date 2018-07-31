@@ -8,6 +8,7 @@ import asyncio
 import re
 import collections
 import pkg_resources
+import jinja2, jinja2.exceptions
 
 from quamash import QEventLoop
 
@@ -283,6 +284,9 @@ class GalacteekApplication(QApplication):
         self.systemTray.setContextMenu(systemTrayMenu)
 
     def initMisc(self):
+        self.jinjaEnv = jinja2.Environment(
+            loader=jinja2.PackageLoader('galacteek', 'templates'))
+
         self.manuals = ManualsImporter(self)
         self.mimeDb = QMimeDatabase()
 
@@ -533,6 +537,14 @@ class GalacteekApplication(QApplication):
         sub = QUrl(str(self.gatewayUrl))
         sub.setPath(path)
         return sub
+
+    def getJinjaTemplate(self, name):
+        try:
+            tmpl = self.jinjaEnv.get_template(name)
+        except jinja2.exceptions.TemplateNotFound as e:
+            return None
+        else:
+            return tmpl
 
     def onExit(self):
         self.exit()

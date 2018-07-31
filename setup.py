@@ -111,6 +111,7 @@ setup(
         'base58',
         'py-multibase',
         'py-multicodec',
+        'Jinja2',
         'Sphinx>=1.4.8'
     ],
     package_data={
@@ -118,6 +119,9 @@ setup(
              'manual/en/html/*.html',
              'manual/en/html/_images/*',
              'manual/en/html/_static/*',
+        ],
+        'galacteek': [
+            'templates/*.html'
         ]
     },
     entry_points={

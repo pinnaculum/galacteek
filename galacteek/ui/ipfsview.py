@@ -51,6 +51,13 @@ def iGitInvalid():
     return QCoreApplication.translate('IPFSHashExplorer',
         'Invalid git repository')
 
+def iLoading():
+    return QCoreApplication.translate('IPFSHashExplorer', 'Loading ...')
+
+def iErrorTimeout():
+    return QCoreApplication.translate('IPFSHashExplorer',
+            'Timeout error')
+
 class IPFSItem(UneditableItem):
     def __init__(self, text, icon=None):
         super().__init__(text, icon=icon)
@@ -479,8 +486,8 @@ class IPFSHashExplorerWidget(QWidget):
             return self.browseFs(fullPath)
 
     def updateTree(self):
-        self.app.task(self.listHash, self.rootPath,
-            parentItem=self.itemRoot)
+        self.setInfo(iLoading())
+        self.app.task(self.listHash, self.rootPath, parentItem=self.itemRoot)
 
     def onContextMenu(self, point):
         selModel = self.tree.selectionModel()
@@ -513,14 +520,20 @@ class IPFSHashExplorerWidget(QWidget):
 
         menu.exec(self.tree.mapToGlobal(point))
 
-    @ipfsStatOp
-    async def listHash(self, ipfsop, rHash, rStat, parentItem,
+    @ipfsOp
+    async def listHash(self, ipfsop, objPath, parentItem,
             autoexpand=False):
-        """ Lists contents of IPFS object references by rHash,
+        """ Lists contents of IPFS object referenced by objPath,
             and change the tree's model afterwards """
         try:
-            await self.list(ipfsop, rHash, parentItem=parentItem,
-                    autoexpand=autoexpand)
+            try:
+                await asyncio.wait_for(
+                    self.list(ipfsop, objPath,
+                        parentItem=parentItem, autoexpand=autoexpand), 20)
+            except Exception as e:
+                self.setInfo(iErrorTimeout())
+                return
+
             self.tree.setModel(self.model)
             self.tree.header().setSectionResizeMode(self.model.COL_NAME,
                     QHeaderView.ResizeToContents)
@@ -530,6 +543,8 @@ class IPFSHashExplorerWidget(QWidget):
 
             if self.app.settingsMgr.hideHashes:
                 self.tree.hideColumn(self.model.COL_HASH)
+
+            rStat = await ipfsop.objStatCtxUpdate(objPath)
 
             if rStat:
                 self.setInfo(iCIDInfo(self.cid.version,

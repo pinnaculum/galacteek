@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE TS>
-<TS version="2.1" language="fr">
+<!DOCTYPE TS><TS version="2.0" language="fr" sourcelanguage="">
 <context>
     <name>AddFeedDialog</name>
     <message>
@@ -327,7 +326,6 @@ p, li { white-space: pre-wrap; }
     <message>
         <location filename="../../galacteek/ui/donatedialog.ui" line="165"/>
         <source>OK</source>
-        <translatorcomment>OK</translatorcomment>
         <translation>OK</translation>
     </message>
 </context>
@@ -480,27 +478,27 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>Galacteek</name>
     <message>
-        <location filename="../../galacteek/application.py" line="43"/>
+        <location filename="../../galacteek/application.py" line="44"/>
         <source>IPFS daemon started</source>
         <translation>Démon IPFS: démarré</translation>
     </message>
     <message>
-        <location filename="../../galacteek/application.py" line="46"/>
+        <location filename="../../galacteek/application.py" line="47"/>
         <source>IPFS daemon&apos;s gateway started</source>
         <translation>Démon IPFS: passerelle HTTP démarrée</translation>
     </message>
     <message>
-        <location filename="../../galacteek/application.py" line="50"/>
+        <location filename="../../galacteek/application.py" line="51"/>
         <source>IPFS daemon is ready</source>
         <translation>Démon IPFS: prêt</translation>
     </message>
     <message>
-        <location filename="../../galacteek/application.py" line="53"/>
+        <location filename="../../galacteek/application.py" line="54"/>
         <source>Problem starting IPFS daemon</source>
         <translation>Démon IPFS: problème de démarrage</translation>
     </message>
     <message>
-        <location filename="../../galacteek/application.py" line="57"/>
+        <location filename="../../galacteek/application.py" line="58"/>
         <source>Problem initializing the IPFS daemon (check the ports configuration)</source>
         <translation>Démon IPFS: problème lors de l&apos;initialisation (vérifiez les ports)</translation>
     </message>
@@ -943,6 +941,16 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <source>Invalid git repository</source>
         <translation>Repository git invalide</translation>
     </message>
+    <message>
+        <location filename="../../galacteek/ui/ipfsview.py" line="54"/>
+        <source>Loading ...</source>
+        <translation>Chargement ...</translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/ipfsview.py" line="57"/>
+        <source>Timeout error</source>
+        <translation>Erreur (délai expiré)</translation>
+    </message>
 </context>
 <context>
     <name>IPFSInfosDialog</name>
@@ -1018,19 +1026,24 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearchview.py" line="19"/>
+        <location filename="../../galacteek/ui/ipfssearchview.py" line="20"/>
         <source>Results count: &lt;b&gt;{0}&lt;/b&gt; (max score: &lt;b&gt;{1}&lt;/b&gt;)</source>
         <translation>&lt;b&gt;{0} résultats&lt;/b&gt; (score maximum: &lt;b&gt;{1}&lt;/b&gt;)</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearchview.py" line="24"/>
+        <location filename="../../galacteek/ui/ipfssearchview.py" line="25"/>
         <source>&lt;b&gt;No results found&lt;/b&gt;</source>
         <translation>&lt;b&gt;Pas de résultats trouvés&lt;/b&gt;</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearchview.py" line="28"/>
+        <location filename="../../galacteek/ui/ipfssearchview.py" line="33"/>
         <source>&lt;b&gt;Searching ...&lt;/b&gt;</source>
         <translation>&lt;b&gt;Recherche en cours ...&lt;/b&gt;</translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/ipfssearchview.py" line="29"/>
+        <source>&lt;b&gt;Error while fetching results&lt;/b&gt;</source>
+        <translation>&lt;b&gt;Erreur lors du chargement des résultats&lt;/b&gt;</translation>
     </message>
 </context>
 <context>
