@@ -89,6 +89,7 @@ class AsyncIPFSDaemon(object):
             gatewayport=DEFAULT_GWPORT, initrepo=True,
             swarmLowWater=10, swarmHighWater=20,
             pubsubEnable=False, noBootstrap=False, corsEnable=True,
+            p2pStreams=False,
             storageMax=20, debug=False, loop=None):
 
         self.loop = loop if loop else asyncio.get_event_loop()
@@ -102,6 +103,7 @@ class AsyncIPFSDaemon(object):
         self.initrepo = initrepo
         self.pubsubEnable = pubsubEnable
         self.corsEnable = corsEnable
+        self.p2pStreams = p2pStreams
         self.noBootstrap = noBootstrap
         self.debug = debug
 
@@ -132,6 +134,13 @@ class AsyncIPFSDaemon(object):
         await ipfsConfig('Datastore.StorageMax',
                 '{0}GB'.format(self.storageMax))
 
+        # P2P
+        if self.p2pStreams:
+            await ipfsConfigJson(
+                    'Experimental.Libp2pStreamMounting',
+                    'true'
+            )
+
         # CORS
         if self.corsEnable:
             # Setup the CORS headers, only allowing the gateway's origin
@@ -145,15 +154,16 @@ class AsyncIPFSDaemon(object):
         if self.noBootstrap:
             await ipfsConfigJson('Bootstrap', '[]')
 
-        exitFuture = asyncio.Future(loop=self.loop)
-        startedFuture = asyncio.Future(loop=self.loop)
+        self.exitFuture = asyncio.Future(loop=self.loop)
+        self.startedFuture = asyncio.Future(loop=self.loop)
         args = ['ipfs', 'daemon']
+        args.append('--migrate')
 
         if self.pubsubEnable:
             args.append('--enable-pubsub-experiment')
 
         f = self.loop.subprocess_exec(
-                lambda: IPFSDProtocol(exitFuture, startedFuture,
+                lambda: IPFSDProtocol(self.exitFuture, self.startedFuture,
                     debug=self.debug),
                 *args,
                 stdout=asyncio.subprocess.PIPE,

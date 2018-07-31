@@ -1,0 +1,29 @@
+<html>
+<body>
+    <ul>
+{% for hit in hits %}
+        <li>
+            <p>
+                <a href="fs:{{ hit['path'] }}">{{ hit['title'] }}</a>
+                (Size {{ hit['size'] }})
+
+                <a href="fs:{{ hit['path'] }}#hashmark"><img src=":/share/icons/hashmarks.png" width="16" height="16"/></a>
+
+{% if hit['type'] == 'directory' %}
+                <a href="fs:{{ hit['path'] }}#explore"><img src=":/share/icons/folder-open.png" width="16" height="16"/></a>
+{% endif %}
+
+            </p>
+            <ul style="list-style-type: none">
+                <li>{{ hit['descr'] }} </li>
+            </ul>
+        </li>
+{% endfor %}
+    </ul>
+
+
+    <br/>
+    <p align="left">Powered by the <b>ipfs-search.com</b> search engine</p>
+
+</body>
+</html>

@@ -52,3 +52,8 @@ QLineEdit {
     selection-background-color: #4a9ea1;
     selection-color: black;
 }
+
+QTextBrowser {
+    background-color: #f6fafb;
+    font: 12pt "Helvetica";
+}

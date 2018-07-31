@@ -265,12 +265,19 @@ class IPFSOperator(object):
             objects = listing.get('Objects', [])
 
             for obj in objects:
+                await self.sleep()
                 await yield_(obj)
         except:
             pass
 
-    async def objStat(self, path):
-        return await self.client.object.stat(path)
+    async def objStat(self, path, timeout=30):
+        try:
+            stat = await asyncio.wait_for(self.client.object.stat(path),
+                    timeout)
+        except Exception as e:
+            return None
+        else:
+            return stat
 
     async def objStatCtxUpdate(self, path):
         try:
