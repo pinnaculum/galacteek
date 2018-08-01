@@ -217,11 +217,17 @@ class IPFSOperator(object):
         except aioipfs.APIException as exc:
             return None
 
-    async def resolve(self, path):
+    async def resolve(self, path, timeout=20):
         try:
-            return await self.client.name.resolve(path)
-        except aioipfs.APIException as e:
+            resolved = await asyncio.wait_for(self.client.name.resolve(path),
+                    timeout)
+        except asyncio.TimeoutError as timeExc:
             return None
+        except aioipfs.APIException as e:
+            self.debug(e.message)
+            return None
+        else:
+            return resolved
 
     async def purge(self, hashRef, rungc=False):
         """ Unpins an object and optionally runs the garbage collector """

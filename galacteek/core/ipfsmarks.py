@@ -283,6 +283,9 @@ class IPFSMarks(QObject):
 
     def follow(self, ipnsp, name, active=True, maxentries=4096,
             resolveevery=3600, share=False):
+        if ipnsp is None:
+            return
+
         feedsSec = self._rootFeeds
         ipnsp = rSlash(ipnsp)
 
@@ -314,11 +317,11 @@ class IPFSMarks(QObject):
         return True
 
     def getFeeds(self):
-        return self._rootFeeds
+        return list(self._rootFeeds.items())
 
     def getFeedMarks(self, path):
         feeds = self.getFeeds()
-        for fPath, fData in feeds.items():
+        for fPath, fData in feeds:
             if fPath == path:
                 return fData[marksKey]
 

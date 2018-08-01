@@ -20,10 +20,11 @@ class FeedFollower(object):
 
     async def process(self, op):
         while True:
-            await asyncio.sleep(30)
+            await asyncio.sleep(120)
 
             feeds = self.marks.getFeeds()
-            for ipnsp, feed in feeds.items():
+
+            for ipnsp, feed in feeds:
                 now = int(time.time())
 
                 resolvedLast = feed.get('resolvedlast', None)
@@ -48,7 +49,11 @@ class FeedFollower(object):
                     continue
 
                 # Register the mark
-                objStats = await op.client.object.stat(resolvedPath)
+                objStats = {}
+                stat = await op.objStat(resolvedPath)
+                if stat:
+                    objStats = stat
+
                 title = await crawl.getTitle(op.client, resolvedPath)
 
                 mark = IPFSMarkData.make(resolvedPath,
@@ -57,4 +62,5 @@ class FeedFollower(object):
                         cumulativesize=objStats.get('CumulativeSize', None),
                         numlinks=objStats.get('NumLinks', None),
                         share=feed['share'])
+
                 self.marks.feedAddMark(ipnsp, mark)

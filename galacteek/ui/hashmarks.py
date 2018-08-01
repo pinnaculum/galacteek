@@ -140,7 +140,7 @@ class FeedsView(QWidget):
         parent = self.model.invisibleRootItem()
         feeds = self.marks.getFeeds()
 
-        for fPath, fData in feeds.items():
+        for fPath, fData in feeds:
             fItem = None
             ret = modelSearch(self.model, parent=parent.index(),
                     search=fPath, columns=[0])
