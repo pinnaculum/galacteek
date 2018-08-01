@@ -1,5 +1,6 @@
 <RCC>
   <qresource>
+    <file>../../share/icons/hash.png</file>
     <file>../../share/js/js-ipfs-api/index.js</file>
     <file>../../share/icons/information.png</file>
     <file>../../share/translations/galacteek_fr.qm</file>

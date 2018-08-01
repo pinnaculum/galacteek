@@ -91,9 +91,7 @@ class IPFSSearchResultsW(QWidget):
 
         elif fragment == 'explore':
             mainW = self.searchW.app.mainWindow
-            view = ipfsview.IPFSHashExplorerToolBox(mainW, hashV)
-            mainW.registerTab(view, hashV, current=True)
-
+            mainW.exploreHash(hashV)
         else:
             tab = self.searchW.gWindow.addBrowserTab()
             tab.enterUrl(url)

@@ -489,8 +489,7 @@ class FilesTab(GalacteekTab):
             self.scheduleUnlink(hash)
 
         def explore(hash):
-            view = ipfsview.IPFSHashExplorerToolBox(self.gWindow, hash)
-            self.gWindow.registerTab(view, hash, current=True)
+            self.gWindow.exploreHash(hash)
 
         def delete(hash):
             self.scheduleDelete(hash)
@@ -572,8 +571,7 @@ class FilesTab(GalacteekTab):
 
         if current and current.isDir():
             dataHash = self.model.getHashFromIdx(current.index())
-            view = ipfsview.IPFSHashExplorerToolBox(self.gWindow, dataHash)
-            self.gWindow.registerTab(view, dataHash, current=True)
+            self.gWindow.exploreHash(dataHash)
 
     def onDoubleClicked(self, idx):
         if not idx.isValid():

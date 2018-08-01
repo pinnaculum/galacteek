@@ -432,17 +432,23 @@ class MainWindow(QMainWindow):
     def statusMessage(self, msg):
         self.ui.statusbar.showMessage(msg)
 
-    def registerTab(self, tab, name, icon=None, current=False, add=True):
+    def registerTab(self, tab, name, icon=None, current=False, add=True,
+            tooltip=None):
+        idx = None
+
         if add is True:
             if icon:
-                self.ui.tabWidget.addTab(tab, icon, name)
+                idx = self.ui.tabWidget.addTab(tab, icon, name)
             else:
-                self.ui.tabWidget.addTab(tab, name)
+                idx = self.ui.tabWidget.addTab(tab, name)
 
         self.allTabs.append(tab)
 
         if current is True:
             self.ui.tabWidget.setCurrentWidget(tab)
+
+        if tooltip and idx:
+            self.ui.tabWidget.setTabToolTip(idx, tooltip)
 
     def findTabFileManager(self):
         return self.findTabWithName(self.tabnFManager)
@@ -541,8 +547,7 @@ class MainWindow(QMainWindow):
     @ipfsStatOp
     async def exploreClipboardPath(self, ipfsop, path, stat):
         if stat:
-            view = ipfsview.IPFSHashExplorerToolBox(self, stat['Hash'])
-            self.registerTab(view, stat['Hash'], current=True)
+            self.exploreHash(stat['Hash'])
 
     def onAboutGalacteek(self):
         from galacteek import __version__
@@ -588,6 +593,13 @@ class MainWindow(QMainWindow):
                 self.onTabCloseRequest(idx)
 
         super(MainWindow, self).keyPressEvent(event)
+
+    def exploreHash(self, hashV):
+        tabName = '... {0}'.format(hashV[2*int(len(hashV)/3):])
+        tooltip = 'Hash explorer: {0}'.format(hashV)
+        view = ipfsview.IPFSHashExplorerToolBox(self, hashV)
+        tab = self.registerTab(view, tabName, current=True,
+                icon=getIcon('hash.png'), tooltip=tooltip)
 
     def addMediaPlayerTab(self):
         name = self.tabnMediaPlayer
