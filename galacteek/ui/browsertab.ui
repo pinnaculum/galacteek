@@ -90,6 +90,12 @@
              <italic>false</italic>
             </font>
            </property>
+           <property name="styleSheet">
+            <string notr="true">background-color: rgb(189, 236, 255);</string>
+           </property>
+           <property name="maxLength">
+            <number>2048</number>
+           </property>
           </widget>
          </item>
          <item>
@@ -117,6 +123,17 @@
            <property name="icon">
             <iconset resource="galacteek.qrc">
              <normaloff>:/share/icons/go-next.png</normaloff>:/share/icons/go-next.png</iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="stopButton">
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="galacteek.qrc">
+             <normaloff>:/share/icons/cancel.png</normaloff>:/share/icons/cancel.png</iconset>
            </property>
           </widget>
          </item>

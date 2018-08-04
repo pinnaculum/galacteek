@@ -21,7 +21,7 @@ def boldLabelStyle():
     return 'QLabel { font-weight: bold; }'
 
 class AddHashmarkDialog(QDialog):
-    def __init__(self, marks, resource, title, stats, parent=None):
+    def __init__(self, marks, resource, title, description, stats, parent=None):
         super().__init__(parent)
 
         self.ipfsResource = resource
@@ -35,6 +35,9 @@ class AddHashmarkDialog(QDialog):
         self.ui.newCategory.textChanged.connect(self.onNewCatChanged)
         self.ui.title.setText(title)
 
+        if isinstance(description, str):
+            self.ui.description.insertPlainText(description)
+
         for cat in self.marks.getCategories():
             self.ui.category.addItem(cat)
 
@@ -47,24 +50,22 @@ class AddHashmarkDialog(QDialog):
     def accept(self):
         share = self.ui.share.isChecked()
         newCat = self.ui.newCategory.text()
+        description = self.ui.description.toPlainText()
 
         if len(newCat) > 0:
             category = newCat
         else:
             category = self.ui.category.currentText()
 
-        # Basic content-type guessing for now
-        ctype = mimetypes.guess_type(self.ipfsResource)[0] or None
-
-        mark = IPFSMarkData.make(self.ipfsResource,
+        mark = IPFSHashMark.make(self.ipfsResource,
             title=self.ui.title.text(),
             share=share,
             comment=self.ui.comment.text(),
+            description=description,
             tags=self.ui.tags.text().split(),
             datasize=self.stats.get('DataSize', None),
             cumulativesize=self.stats.get('CumulativeSize', None),
-            numlinks=self.stats.get('NumLinks', None),
-            ctype=ctype
+            numlinks=self.stats.get('NumLinks', None)
         )
 
         self.marks.insertMark(mark, category)

@@ -50,7 +50,11 @@ def cidValid(cidstring):
 # Regexps
 
 ipfsPathRe = re.compile(
-    '^(\s*)?(?:fs:|ipfs:)?(?P<fullpath>/ipfs/(?P<cid>[a-zA-Z0-9]{46,49}?)(?P<subpath>\/.*)?)$',
+        '^(\s*)?(?:fs:|ipfs:|dweb:)?(?P<fullpath>/ipfs/(?P<cid>[a-zA-Z0-9]{46,49}?)(?P<subpath>\/.*)?)$',
+    flags=re.MULTILINE)
+
+ipfsPathGwRe = re.compile(
+        '^(\s*)?(?:https?://[a-zA-Z0-9:.]*)?(?P<fullpath>/ipfs/(?P<cid>[a-zA-Z0-9]{46,49}?)(?P<subpath>\/.*)?)$',
     flags=re.MULTILINE)
 
 ipfsCidRe = re.compile(
@@ -60,11 +64,23 @@ ipnsPathRe = re.compile(
     '^(\s*)?(?:fs:|ipfs:)?(?P<fullpath>/ipns/([a-zA-Z0-9\.\-]*)(?P<subpath>\/.*)?$)',
     flags=re.MULTILINE)
 
+ipnsPathGwRe = re.compile(
+    '^(\s*)?(?:https?://[a-zA-Z0-9:.]*)?(?P<fullpath>/ipns/([a-zA-Z0-9\.\-]*)(?P<subpath>\/.*)?$)',
+    flags=re.MULTILINE)
+
 def ipfsRegSearchPath(text):
-    return ipfsPathRe.match(text)
+    for reg in [ ipfsPathRe, ipfsPathGwRe ]:
+        matched = reg.match(text)
+        if matched:
+            return matched
+    return None
 
 def ipfsRegSearchCid(text):
     return ipfsCidRe.match(text)
 
 def ipnsRegSearchPath(text):
-    return ipnsPathRe.match(text)
+    for reg in [ ipnsPathRe, ipnsPathGwRe ]:
+        matched = reg.match(text)
+        if matched:
+            return matched
+    return None

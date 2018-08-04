@@ -286,7 +286,7 @@ class MainWindow(QMainWindow):
         # Connection status timer
         self.timerStatus = QTimer(self)
         self.timerStatus.timeout.connect(self.onMainTimerStatus)
-        self.timerStatus.start(3000)
+        self.timerStatus.start(6000)
 
         self.enableButtons(False)
 

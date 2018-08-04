@@ -5,7 +5,7 @@ import os.path
 import re
 
 from PyQt5.QtWidgets import (QWidget, QFrame, QApplication, QMainWindow,
-        QDialog, QLabel, QPushButton, QVBoxLayout, QAction,
+        QDialog, QLabel, QPushButton, QVBoxLayout, QAction, QStyle,
         QMenu, QTabWidget, QInputDialog, QMessageBox, QToolButton, QFileDialog)
 
 from PyQt5.QtPrintSupport import *
@@ -105,10 +105,10 @@ def iInvalidCID(text):
         '{0} is an invalid IPFS CID (Content IDentifier)').format(text)
 
 def fsPath(path):
-    return '{0}:{1}'.format(SCHEME_FS, path)
+    return '{0}:{1}'.format(SCHEME_IPFS, path)
 
-def isFsNs(url):
-    return url.startswith('{0}:/'.format(SCHEME_FS))
+def usesIpfsNs(url):
+    return url.startswith('{0}:/'.format(SCHEME_IPFS))
 
 class IPFSSchemeHandler(QtWebEngineCore.QWebEngineUrlSchemeHandler):
     def __init__(self, app, parent=None):
@@ -236,8 +236,11 @@ class BrowserTab(GalacteekTab):
 
         self.ui.urlZone.returnPressed.connect(self.onUrlEdit)
         self.ui.backButton.clicked.connect(self.backButtonClicked)
+        self.ui.backButton.setIcon(self.style().standardIcon(QStyle.SP_ArrowLeft))
         self.ui.forwardButton.clicked.connect(self.forwardButtonClicked)
+        self.ui.forwardButton.setIcon(self.style().standardIcon(QStyle.SP_ArrowRight))
         self.ui.refreshButton.clicked.connect(self.refreshButtonClicked)
+        self.ui.stopButton.clicked.connect(self.stopButtonClicked)
         self.ui.loadFromClipboardButton.clicked.connect(self.loadFromClipboardButtonClicked)
         self.ui.loadFromClipboardButton.setEnabled(self.app.clipTracker.hasIpfs)
         self.ui.hashmarkPageButton.clicked.connect(self.onHashmarkPage)
@@ -477,6 +480,10 @@ class BrowserTab(GalacteekTab):
     def refreshButtonClicked(self):
         self.ui.webEngineView.reload()
 
+    def stopButtonClicked(self):
+        self.ui.webEngineView.stop()
+        self.ui.progressBar.setValue(0)
+
     def backButtonClicked(self):
         currentPage = self.ui.webEngineView.page()
         currentPage.history().back()
@@ -529,7 +536,7 @@ class BrowserTab(GalacteekTab):
         self.ui.progressBar.setValue(progress)
 
     def browseFsPath(self, path):
-        self.enterUrl(QUrl('{0}:{1}'.format(SCHEME_FS, path)))
+        self.enterUrl(QUrl('{0}:{1}'.format(SCHEME_IPFS, path)))
 
     def browseIpfsHash(self, ipfsHash):
         if not cidhelpers.cidValid(ipfsHash):

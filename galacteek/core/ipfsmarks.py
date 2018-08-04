@@ -15,7 +15,7 @@ from PyQt5.QtCore import pyqtSignal, QUrl, QObject
 
 class MarksEncoder(json.JSONEncoder):
     def default(self, obj):
-        if isinstance(obj, IPFSMarkData):
+        if isinstance(obj, IPFSHashMark):
             return obj.data
         return json.JSONEncoder.default(self, obj)
 
@@ -24,7 +24,7 @@ marksKey = '_marks'
 def rSlash(path):
     return path.rstrip('/')
 
-class IPFSMarkData(collections.UserDict):
+class IPFSHashMark(collections.UserDict):
     def addTags(self, tags):
         self.data[self.path]['tags'] += tags
 
@@ -32,22 +32,26 @@ class IPFSMarkData(collections.UserDict):
         print(json.dumps(self.data, indent=4))
 
     @staticmethod
+    def fromJson(data):
+        return IPFSHashMark(data)
+
+    @staticmethod
     def make(path, title=None, datecreated=None, share=False, tags=[],
-            comment='', datasize=None, cumulativesize=None,
-            numlinks=None, ctype=None):
+            description='', comment='', datasize=None, cumulativesize=None,
+            numlinks=None):
         if datecreated is None:
             datecreated = datetime.now().isoformat()
 
         path = rSlash(path)
 
-        mData = IPFSMarkData({
+        mData = IPFSHashMark({
             path: {
                 'metadata': {
                     'title': title,
+                    'description': description,
                     'datasize': datasize,
                     'cumulativesize': cumulativesize,
                     'numlinks': numlinks,
-                    'content-type': ctype,
                 },
                 'datecreated': datecreated,
                 'tscreated': int(time.time()),
@@ -73,9 +77,6 @@ class IPFSMarks(QObject):
         self.changed.connect(self.onChanged)
         self.lastsaved = time.time()
         self.changed.emit()
-
-        # Default category
-        self.addCategory('general')
 
     @property
     def asyncQ(self):
@@ -173,8 +174,7 @@ class IPFSMarks(QObject):
 
         if not self.hasCategory(category, parent=parent):
             parent[category] = {
-                marksKey: {},
-                '_display': True
+                marksKey: {}
             }
             self.changed.emit()
             return parent[category]
@@ -232,8 +232,8 @@ class IPFSMarks(QObject):
         if not sec:
             return False
 
-        # Handle IPFSMarkData or tuple
-        if type(mark) == IPFSMarkData:
+        # Handle IPFSHashMark or tuple
+        if isinstance(mark, IPFSHashMark):
             sec[marksKey].update(mark)
         else:
             try:
@@ -260,7 +260,7 @@ class IPFSMarks(QObject):
             # We already have stored a mark with this path
             return False
 
-        mark = IPFSMarkData.make(path,
+        mark = IPFSHashMark.make(path,
             title=title,
             datecreated=datetime.now().isoformat(),
             share=share,
@@ -381,7 +381,7 @@ class _AsyncMarksQuery:
             # We have already stored a mark with this path
             return False
 
-        mark = IPFSMarkData.make(path,
+        mark = IPFSHashMark.make(path,
             title=title,
             datecreated=datetime.now().isoformat(),
             share=share,

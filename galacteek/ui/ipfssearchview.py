@@ -85,9 +85,10 @@ class IPFSSearchResultsW(QWidget):
         if fragment == 'hashmark':
             hit = self.results.findByHash(hashV)
             title = hit.get('title', iUnknown()) if hit else ''
+            descr = hit.get('description', iUnknown()) if hit else ''
 
             addHashmark(self.searchW.app.marksLocal,
-                    path, title)
+                    path, title, description=descr)
 
         elif fragment == 'explore':
             mainW = self.searchW.app.mainWindow

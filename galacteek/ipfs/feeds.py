@@ -56,7 +56,7 @@ class FeedFollower(object):
 
                 title = await crawl.getTitle(op.client, resolvedPath)
 
-                mark = IPFSMarkData.make(resolvedPath,
+                mark = IPFSHashMark.make(resolvedPath,
                         title=title,
                         datasize=objStats.get('DataSize', None),
                         cumulativesize=objStats.get('CumulativeSize', None),

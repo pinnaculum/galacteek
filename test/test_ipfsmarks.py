@@ -53,6 +53,12 @@ class TestMarks:
 
         bmarks.dump()
 
+    @pytest.mark.parametrize('path',
+            ['/ipfs/QmT1TPVjdZ9CRnqwyQ9WygDoRgRRibFrEyWufenu92SuUV/'])
+    def test_fromjson(self, bmarks, path):
+        m = IPFSHashMark.make(path, title='One')
+        mark = IPFSHashMark.fromJson(m.data)
+
     @pytest.mark.parametrize('path1,path2,path3', [
         (
             '/ipfs/QmT1TPVjdZ9CRnqwyQ9WygDoRgRRibFrEyWufenu92SuUV/',
@@ -79,8 +85,8 @@ class TestMarks:
                 )])
     def test_follow(self, bmarks, feed1, mark1):
         fo = bmarks.follow(feed1, 'test', resolveevery=60)
-        bmarks.feedAddMark(feed1, IPFSMarkData.make(mark1, title='ok'))
-        assert bmarks.feedAddMark(feed1, IPFSMarkData.make(mark1, title='ok2')) == False
+        bmarks.feedAddMark(feed1, IPFSHashMark.make(mark1, title='ok'))
+        assert bmarks.feedAddMark(feed1, IPFSHashMark.make(mark1, title='ok2')) == False
         bmarks.dump()
 
     @pytest.mark.parametrize('path1,path2', [
@@ -91,7 +97,7 @@ class TestMarks:
     @pytest.mark.parametrize('title', ['Broken glass'])
     @pytest.mark.asyncio
     async def test_asyncquery(self, event_loop, bmarks, path1, path2, title):
-        mark = IPFSMarkData.make(path1, title=title)
+        mark = IPFSHashMark.make(path1, title=title)
         mark.addTags(['one', 'two', 'three'])
         bmarks.walk(['one', 'two', 'three'])
 

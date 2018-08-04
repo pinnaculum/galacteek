@@ -1,7 +1,7 @@
 Galacteek
 =========
 
-A modest IPFS_ navigator and content publisher
+A modest IPFS_ browser
 
 This is a standalone browser allowing you to search, browse, publish and
 hashmark content on the permanent web accessible through the IPFS_ peer-to-peer
@@ -62,7 +62,7 @@ and restart the application afterwards.
 - Feeds (following IPNS hashes)
 - File manager with drag-and-drop support
 - Basic built-in media player with IPFS-stored, per-profile playlists
-- Search content with ipfs-search_
+- Search content with the ipfs-search_ search engine
 - Decentralized application development/testing with the Javascript API
   (using *window.ipfs*)
 
@@ -72,26 +72,37 @@ Keybindings
 Main window keybindings:
 ------------------------
 
-- *Ctrl+t*: Open a new IPFS browsing tab
-- *Ctrl+w*: Close current tab
-- *Ctrl+m*: Open the IPFS hashmarks manager
-- *Ctrl+f*: Open the file manager
-- *Ctrl+o*: Browse IPFS path from the clipboard
-- *Ctrl+e*: Explore IPFS path from the clipboard
-- *Ctrl+g*: DAG view of IPFS object from the clipboard
+- **Ctrl+t**: Open a new IPFS browsing tab
+- **Ctrl+w**: Close current tab
+- **Ctrl+m**: Open the IPFS hashmarks manager
+- **Ctrl+f**: Open the file manager
+- **Ctrl+o**: Browse IPFS path from the clipboard
+- **Ctrl+e**: Explore IPFS path from the clipboard
+- **Ctrl+g**: DAG view of IPFS object from the clipboard
 
 Browser keybindings:
 --------------------
 
-- *Ctrl+b*: Bookmark current page
-- *Ctrl+l*: Load an IPFS CID
+- **Ctrl+b**: Bookmark current page
+- **Ctrl+l**: Load an IPFS CID
 
 IPFS views keybindings (file manager, hash views, dag viewer):
 --------------------------------------------------------------
 
-- *Ctrl+h*: Copy selected item's hash (CID) to the clipboard
-- *Ctrl+p*: Copy selected item's IPFS path to the clipboard
-- *Ctrl+w*: Close tab/hash view
+- **Ctrl+h**: Copy selected item's hash (CID) to the clipboard
+- **Ctrl+p**: Copy selected item's IPFS path to the clipboard
+- **Ctrl+w**: Close tab/hash view
+
+Screenshots
+===========
+
+See the screenshots_ directory.
+
+Platforms supported
+===================
+
+This has been only tested on Linux but should work on other systems
+as well where python and qt5 are available.
 
 Contact and donations
 =====================
@@ -104,23 +115,6 @@ You can make a donation to the project with Monero to this monero address:
 **48oNcgpqwUNWjHeTSSH8BCaJHMR7Bc8ooGY13USYxuMuGwtXfLQ1Qf9f7rJMB9g1PWELee2cNnTWz1rJiZyPigcXRCTkhU3**
 
 or with Bitcoin here: **3HSsNcwzkiWGu6wB18BC6D37JHExpxZvyS**
-
-Screenshots
-===========
-
-See the screenshots_ directory.
-
-.. image:: https://gitlab.com/galacteek/galacteek/raw/5fad7ce074f0eb98f6688b2a69a0121065b40904/screenshots/atari2600.png
-    :target: https://gitlab.com/galacteek/galacteek/raw/5fad7ce074f0eb98f6688b2a69a0121065b40904/screenshots/atari2600.png
-
-.. image:: https://gitlab.com/galacteek/galacteek/raw/62c8b5a47d47fdff7b520795c0408b93f94de0b4/screenshots/mediaplayer.png
-    :target: https://gitlab.com/galacteek/galacteek/raw/62c8b5a47d47fdff7b520795c0408b93f94de0b4/screenshots/mediaplayer.png
-
-Platforms supported
-===================
-
-This has been only tested on Linux but should work on other systems
-as well where python and qt5 are available.
 
 Requirements
 ============

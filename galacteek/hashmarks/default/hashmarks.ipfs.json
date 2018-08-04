@@ -1,0 +1,112 @@
+{
+    "ipfsmarks": {
+        "categories": {
+            "ipfs": {
+                "_marks": {
+                    "/ipns/ipfs.io": {
+                        "metadata": {
+                            "title": "IPFS is the distributed web",
+                            "description": "IPFS website",
+                            "datasize": null,
+                            "cumulativesize": null,
+                            "numlinks": null
+                        },
+                        "datecreated": "2018-08-04T21:36:43.879378",
+                        "tscreated": 1533411403,
+                        "comment": "",
+                        "share": false,
+                        "tags": [
+                            "ipfs"
+                        ]
+                    },
+                    "/ipns/dist.ipfs.io": {
+                        "metadata": {
+                            "title": "IPFS Distributions",
+                            "description": "IPFS distributions website",
+                            "datasize": null,
+                            "cumulativesize": null,
+                            "numlinks": null
+                        },
+                        "datecreated": "2018-08-04T21:36:43.879503",
+                        "tscreated": 1533411403,
+                        "comment": "",
+                        "share": false,
+                        "tags": [
+                            "ipfs"
+                        ]
+                    },
+                    "/ipns/archives.ipfs.io": {
+                        "metadata": {
+                            "title": "Archives on IPFS",
+                            "description": "",
+                            "datasize": null,
+                            "cumulativesize": null,
+                            "numlinks": null
+                        },
+                        "datecreated": "2018-08-04T21:36:43.879699",
+                        "tscreated": 1533411403,
+                        "comment": "",
+                        "share": false,
+                        "tags": [
+                            "ipfs"
+                        ]
+                    },
+                    "/ipns/awesome.ipfs.io": {
+                        "metadata": {
+                            "title": "Awesome IPFS",
+                            "description": "",
+                            "datasize": null,
+                            "cumulativesize": null,
+                            "numlinks": null
+                        },
+                        "datecreated": "2018-08-04T21:36:43.879835",
+                        "tscreated": 1533411403,
+                        "comment": "",
+                        "share": false,
+                        "tags": [
+                            "ipfs"
+                        ]
+                    }
+                },
+                "apps": {
+                    "_marks": {
+                        "/ipfs/QmdDbLyNKCwtBVFhEVQfdBTCnEWmWRJGnm93qa3kzBjVym": {
+                            "metadata": {
+                                "title": "Interplanetary Wiki",
+                                "description": "Interplanetary Wiki",
+                                "datasize": 2,
+                                "cumulativesize": 2207940,
+                                "numlinks": 9
+                            },
+                            "datecreated": "2018-08-04T21:36:43.879575",
+                            "tscreated": 1533411403,
+                            "comment": "",
+                            "share": false,
+                            "tags": [
+                                "ipfs"
+                            ]
+                        },
+                        "/ipns/peerpad.net": {
+                            "metadata": {
+                                "title": "PeerPad",
+                                "description": "Collaborative editing tool",
+                                "datasize": null,
+                                "cumulativesize": null,
+                                "numlinks": null
+                            },
+                            "datecreated": "2018-08-04T21:36:43.879769",
+                            "tscreated": 1533411403,
+                            "comment": "",
+                            "share": false,
+                            "tags": [
+                                "ipfs",
+                                "collaborative"
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "feeds": {}
+}

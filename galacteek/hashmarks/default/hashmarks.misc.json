@@ -1,0 +1,106 @@
+{
+    "ipfsmarks": {
+        "categories": {
+            "computers": {
+                "_marks": {},
+                "atari": {
+                    "_marks": {
+                        "/ipfs/QmbKxNNCxBox7Cmv3jiUZbiG3zpzmtnYzVUuKHxfAjvpyH": {
+                            "metadata": {
+                                "title": "Atari 2600 + IPFS",
+                                "description": "Play atari 2600 games (JS emulator)",
+                                "datasize": 2,
+                                "cumulativesize": 5483645,
+                                "numlinks": 6
+                            },
+                            "datecreated": "2018-08-04T21:36:43.902723",
+                            "tscreated": 1533411403,
+                            "comment": "",
+                            "share": false,
+                            "tags": []
+                        }
+                    }
+                }
+            },
+            "misc": {
+                "_marks": {
+                    "/ipfs/Qmb8wsGZNXt5VXZh1pEmYynjB6Euqpq3HYyeAdw2vScTkQ": {
+                        "metadata": {
+                            "title": "XKCD",
+                            "description": "",
+                            "datasize": 2,
+                            "cumulativesize": 109796940,
+                            "numlinks": 1799
+                        },
+                        "datecreated": "2018-08-04T21:36:43.902852",
+                        "tscreated": 1533411403,
+                        "comment": "",
+                        "share": false,
+                        "tags": []
+                    }
+                }
+            },
+            "archives": {
+                "_marks": {
+                    "/ipfs/QmRTSA1UFHSx3z7taNRwUVM8AjB2EQwKvyZu3BfJg9QRtZ": {
+                        "metadata": {
+                            "title": "The World Wide Web History Project",
+                            "description": "The World Wide Web History Project is a collaborative effort to record and publish the history of the World Wide Web and its roots in hypermedia and networking",
+                            "datasize": 2,
+                            "cumulativesize": 96444667,
+                            "numlinks": 12
+                        },
+                        "datecreated": "2018-08-04T21:36:43.902923",
+                        "tscreated": 1533411403,
+                        "comment": "",
+                        "share": false,
+                        "tags": []
+                    },
+                    "/ipfs/QmbsZEvJE8EU51HCUHQg2aem9JNFmFHdva3tGVYutdCXHp": {
+                        "metadata": {
+                            "title": "Old Internet files",
+                            "description": "",
+                            "datasize": 2,
+                            "cumulativesize": 217761653,
+                            "numlinks": 1
+                        },
+                        "datecreated": "2018-08-04T21:36:43.902990",
+                        "tscreated": 1533411403,
+                        "comment": "",
+                        "share": false,
+                        "tags": []
+                    },
+                    "/ipfs/QmdA5WkDNALetBn4iFeSepHjdLGJdxPBwZyY47ir1bZGAK": {
+                        "metadata": {
+                            "title": "Usenet Archives",
+                            "description": "",
+                            "datasize": 2,
+                            "cumulativesize": 205218066,
+                            "numlinks": 35
+                        },
+                        "datecreated": "2018-08-04T21:36:43.903058",
+                        "tscreated": 1533411403,
+                        "comment": "",
+                        "share": false,
+                        "tags": []
+                    },
+                    "/ipfs/QmSnuWmxptJZdLJpKRarxBMS2Ju2oANVrgbr2xWbie9b2D": {
+                        "metadata": {
+                            "title": "Project Apollo Archives",
+                            "description": "",
+                            "datasize": 2,
+                            "cumulativesize": 61702258918,
+                            "numlinks": 6
+                        },
+                        "datecreated": "2018-08-04T21:36:43.903125",
+                        "tscreated": 1533411403,
+                        "comment": "",
+                        "share": false,
+                        "tags": []
+                    }
+                }
+            }
+        }
+    },
+    "feeds": {}
+}

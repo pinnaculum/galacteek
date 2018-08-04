@@ -79,7 +79,7 @@ class DAGViewer(GalacteekTab):
         if data is None:
             return
         await asyncio.sleep(0)
-        if type(data) == dict:
+        if isinstance(data, dict):
             for dkey, dval in data.items():
                 await asyncio.sleep(0)
                 if dkey == '/':
@@ -96,14 +96,14 @@ class DAGViewer(GalacteekTab):
                     dictItem = QTreeWidgetItem(item)
                     dictItem.setText(0, dkey)
                     dictItem.setExpanded(True)
-                    if type(dval) == str:
+                    if isinstance(dval, str):
                         dictItem.setText(1, dval)
-                    elif type(dval) == int:
+                    elif isinstance(dval, int):
                         dictItem.setText(1, str(dval))
                     else:
                         await self.displayItem(dval, dictItem)
 
-        elif type(data) == list:
+        elif isinstance(data, list):
             for i in range(0, len(data)):
                 await asyncio.sleep(0)
                 listItem = QTreeWidgetItem(item)
