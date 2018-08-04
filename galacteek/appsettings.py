@@ -56,7 +56,7 @@ def setDefaultSettings(gApp):
     sManager.setDefaultTrue(section, CFG_KEY_ENABLED)
 
     section = CFG_SECTION_BROWSER
-    sManager.setDefaultSetting(section, CFG_KEY_HOMEURL, 'fs:/ipns/ipfs.io')
+    sManager.setDefaultSetting(section, CFG_KEY_HOMEURL, 'ipfs:/ipns/ipfs.io')
     sManager.setDefaultSetting(section, CFG_KEY_DLPATH,
         gApp.defaultDownloadsLocation)
     sManager.setDefaultTrue(section, CFG_KEY_GOTOHOME)

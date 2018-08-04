@@ -39,6 +39,9 @@ It recognizes the following formats:
   **/ipns/Qmef8KSNLZZfdnrxHZKhCBBynSUFLQ4RrH88wW3sTWxfwB**
 - *URLs using the fs: or ipfs: scheme* for example
   **fs:/ipfs/QmRifA98t769dzkDv2gQocqJPXGtTySR5dPkyTaUZXtkLo**
+- *HTTP/HTTPs URLs that use an IPFS http gateway (like ipfs.io)* for example
+  **https://ipfs.io/ipfs/QmRifA98t769dzkDv2gQocqJPXGtTySR5dPkyTaUZXtkLo** or
+  **http://localhost:8080/ipns/peerpad.net**.
 
 Passing the mouse over the clipboard button will display a tooltip message
 giving you information about the status of the clipboard.

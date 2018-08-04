@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import QApplication
 
 from galacteek.ipfs import ipfsd
 from galacteek.ui import mainui
+from galacteek.ui.i18n import *
 from galacteek import application
 from galacteek.appsettings import *
 
@@ -26,18 +27,24 @@ def galacteekGui(args):
     if args.gatewayport:
         sManager.setSetting(section, CFG_KEY_HTTPGWPORT, args.gatewayport)
 
-    # Look if we can find the ipfs executable
-    ipfsPath = shutil.which('ipfs')
-    if not ipfsPath:
-        gApp.systemTrayMessage('IPFS',
-            'Could not find go-ipfs on your system')
+    if sManager.isTrue(CFG_SECTION_IPFSD, CFG_KEY_ENABLED):
+        fsMigratePath = shutil.which('fs-repo-migrations')
+        hasFsMigrate = fsMigratePath is not None
 
-    if ipfsPath and sManager.isTrue(CFG_SECTION_IPFSD, CFG_KEY_ENABLED):
-        gApp.startIpfsDaemon()
+        if hasFsMigrate is False:
+            gApp.systemTrayMessage('Galacteek', iFsRepoMigrateNotFound())
+
+        # Look if we can find the ipfs executable
+        ipfsPath = shutil.which('ipfs')
+        if not ipfsPath:
+            gApp.systemTrayMessage('Galacteek', iGoIpfsNotFound(), timeout=8000)
+        else:
+            gApp.startIpfsDaemon()
     else:
         gApp.updateIpfsClient()
 
     gApp.startPinner()
+    gApp.mainWindow.addHashmarksTab()
 
     # Use the context manager so loop cleanup/close is automatic
     with loop:

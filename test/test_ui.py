@@ -225,6 +225,18 @@ class TestApp:
         with waitCorrect():
             modApp.setClipboardText('      {}   '.format(joinIpfs(validcid0)))
 
+        # http(s)://ipfs.io/ipfs/CID
+        with waitCorrect():
+            modApp.setClipboardText('https://ipfs.io{}'.format(joinIpfs(validcid0)))
+
+        # http(s)://localhost:8080/ipfs/CID
+        with waitCorrect():
+            modApp.setClipboardText('http://localhost:8080{}'.format(joinIpfs(validcid0)))
+
+        # http(s)://localhost:8080/ipns/CID
+        with waitCorrect():
+            modApp.setClipboardText('http://localhost:8080{}'.format(joinIpns(validcid1)))
+
         # multiple lines with /ipfs/CID, will only register the first match
         with waitCorrect():
             modApp.setClipboardText('\n'.join([

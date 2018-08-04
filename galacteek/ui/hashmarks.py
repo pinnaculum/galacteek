@@ -57,11 +57,11 @@ class FeedsModel(QStandardItemModel):
 class CategoryItem(UneditableItem):
     pass
 
-def addHashmark(hashmarks, path, title, stats={}):
+def addHashmark(hashmarks, path, title, description='', stats={}):
     if hashmarks.search(path):
         return messageBox(iAlreadyHashmarked())
 
-    runDialog(AddHashmarkDialog, hashmarks, path, title, stats)
+    runDialog(AddHashmarkDialog, hashmarks, path, title, description, stats)
 
 class _MarksUpdater:
     def __init__(self):
@@ -93,26 +93,40 @@ class _MarksUpdater:
                 catItem = model.itemFromIndex(ret[0])
 
             catItemIdx = model.indexFromItem(catItem)
-            tree.expand(catItemIdx)
 
             marks = await abQuery.getCategoryMarks(cat)
             for path, bm in marks.items():
                 if path in self._marksCache:
                     continue
 
-                item1 = UneditableItem(path)
-                item2 = UneditableItem(bm['metadata']['title'] or 'Unknown')
-                item3 = UneditableItem(iYes() if bm['share'] is True else iNo())
+                bmTitle = bm['metadata']['title']
+
+                if bmTitle:
+                    title = (bmTitle[:64] + '..') if len(bmTitle) > 64 else bmTitle
+                    titleTooltip = bmTitle
+                else:
+                    title = iUnknown()
+                    titleTooltip = iUnknown()
+
+                item1 = UneditableItem(title)
+                item1.setToolTip(titleTooltip)
+                item2 = UneditableItem(path)
+                item2.setToolTip(path)
+                #item3 = UneditableItem(iYes() if bm['share'] is True else iNo())
                 dt = QDateTime.fromString(bm['datecreated'], Qt.ISODate)
                 item4 = UneditableItem(dt.toString())
                 item5 = UneditableItem(str(bm['tscreated']))
-                catItem.appendRow([item1, item2, item3, item4, item5])
+                catItem.appendRow([item1, item2, item4, item5])
 
                 self._marksCache.append(path)
 
         self.updatingMarks = False
-        tree.sortByColumn(4, Qt.DescendingOrder)
+        tree.sortByColumn(0, Qt.AscendingOrder)
         tree.setSortingEnabled(True)
+        tree.setModel(model)
+        tree.setAlternatingRowColors(True)
+        tree.setColumnWidth(0, tree.width() / 3)
+        tree.setColumnWidth(1, tree.width() / 3)
 
 class FeedsView(QWidget):
     def __init__(self, marksTab, marks, loop, parent=None):
@@ -133,6 +147,7 @@ class FeedsView(QWidget):
         self.tree.doubleClicked.connect(self.onFeedDoubleClick)
         self.tree.setSortingEnabled(True)
         self.tree.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.tree.setAlternatingRowColors(True)
 
         self.updateFeeds()
 
@@ -262,6 +277,8 @@ class HashmarksTab(GalacteekTab, _MarksUpdater):
     def __init__(self, *args, **kw):
         super(HashmarksTab, self).__init__(*args, **kw)
 
+        model = kw.pop('model', None)
+
         self.marksLocal = self.app.marksLocal
         self.marksNetwork = self.app.marksNetwork
 
@@ -274,6 +291,8 @@ class HashmarksTab(GalacteekTab, _MarksUpdater):
         self.uiFeeds = FeedsView(self, self.marksLocal,
                 self.loop, parent=self)
         self.ui.toolbox.addItem(self.uiFeeds, iFeeds())
+        self.ui.expandButton.clicked.connect(lambda:
+                self.ui.treeMarks.expandAll())
 
         self.filter = BasicKeyFilter()
         self.filter.deletePressed.connect(self.onDeletePressed)
@@ -283,31 +302,15 @@ class HashmarksTab(GalacteekTab, _MarksUpdater):
         self.ui.toolbox.setItemIcon(0, icon1)
         self.ui.toolbox.setItemIcon(1, icon1)
 
-        self.modelMarks = HashmarksModel()
-        self.modelMarks.setHorizontalHeaderLabels([iPath(), iTitle(),
-            iShared(), iDate()])
-        self.ui.treeMarks.setModel(self.modelMarks)
+        self.modelMarks = model if model else HashmarksModel()
+        self.modelMarks.setHorizontalHeaderLabels([iTitle(), iPath(), iDate()])
 
-        self.ui.treeMarks.header().setSectionResizeMode(0,
-                QHeaderView.ResizeToContents)
         self.ui.treeMarks.doubleClicked.connect(self.onMarkItemDoubleClick)
         self.ui.treeMarks.setContextMenuPolicy(Qt.CustomContextMenu)
         self.ui.treeMarks.customContextMenuRequested.connect(self.onContextMenu)
 
         self.updatingMarks = False
         self.doMarksUpdate()
-
-    def onBoxActivated(self, idx):
-        mark = self.ui.hashmarkLine.text()
-
-        if idx == 0:
-            if not cidValid(mark):
-                return messageBox(iInvalidInput())
-
-            if not mark.startswith('/ipfs'):
-                mark = joinIpfs(mark)
-            addHashmark(self.marksLocal, mark, '')
-        self.ui.hashmarkLine.clear()
 
     def onMarkDeleted(self, mPath):
         if mPath in self._marksCache:
@@ -322,12 +325,14 @@ class HashmarksTab(GalacteekTab, _MarksUpdater):
         if not idx.isValid():
             return
 
-        idxPath = self.modelMarks.sibling(idx.row(), 0, idx)
+        idxPath = self.modelMarks.sibling(idx.row(), 1, idx)
         dataPath = self.modelMarks.data(idxPath)
         menu = QMenu()
 
-        act2 = menu.addAction(iDelete(), lambda:
-                self.deleteMark(dataPath))
+        if dataPath:
+            act2 = menu.addAction(iDelete(), lambda:
+                    self.deleteMark(dataPath))
+
         menu.exec(self.ui.treeMarks.mapToGlobal(point))
 
     def deleteMark(self, path):
@@ -342,7 +347,7 @@ class HashmarksTab(GalacteekTab, _MarksUpdater):
             return None
 
         return self.modelMarks.data(
-            self.modelMarks.sibling(idx.row(), 0, idx))
+            self.modelMarks.sibling(idx.row(), 1, idx))
 
     def onDeletePressed(self):
         path = self.currentItemPath()
@@ -356,19 +361,17 @@ class HashmarksTab(GalacteekTab, _MarksUpdater):
             path, mark = markSearch
             if mark['share'] is True:
                 mark['share'] = False
-                shareItem.setText('no')
+                shareItem.setText(iNo())
             elif mark['share'] is False:
                 mark['share'] = True
-                shareItem.setText('yes')
+                shareItem.setText(iYes())
             self.marksLocal.changed.emit()
 
     def onMarkItemDoubleClick(self, index):
-        indexPath = self.modelMarks.sibling(index.row(), 0, index)
-        item0 = self.modelMarks.itemFromIndex(indexPath)
+        indexCat = self.modelMarks.sibling(index.row(), 0, index)
+        indexPath = self.modelMarks.sibling(index.row(), 1, index)
+        item0 = self.modelMarks.itemFromIndex(indexCat)
         path = self.modelMarks.data(indexPath)
-
-        if index.column() == 2:
-            return self.onMarkItemChangeShare(index, path)
 
         if type(item0) is CategoryItem:
             return

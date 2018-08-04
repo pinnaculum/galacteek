@@ -105,3 +105,13 @@ def iNoTitle():
 
 def iFinished():
     return QCoreApplication.translate('GalacteekWindow', 'Finished')
+
+# IPFS daemon ui messages
+
+def iFsRepoMigrateNotFound():
+    return QCoreApplication.translate('Galacteek',
+        'Warning: could not find IPFS repository migration tool on your system')
+
+def iGoIpfsNotFound():
+    return QCoreApplication.translate('Galacteek',
+        'Error: Could not find go-ipfs on your system')

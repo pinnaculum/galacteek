@@ -1,5 +1,7 @@
 <RCC>
   <qresource>
+    <file>../../share/icons/unknown-file.png</file>
+    <file>../../share/icons/expand.png</file>
     <file>../../share/icons/hash.png</file>
     <file>../../share/js/js-ipfs-api/index.js</file>
     <file>../../share/icons/information.png</file>

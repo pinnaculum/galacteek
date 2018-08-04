@@ -28,37 +28,47 @@
     <message>
         <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="20"/>
         <source>Dialog</source>
-        <translation>Dialogue</translation>
+        <translation type="obsolete">Dialogue</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="47"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="53"/>
         <source>Use title for hashmark</source>
         <translation>Utiliser ce titre pour le hashmark</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="57"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="63"/>
         <source>Category</source>
         <translation>Catégorie</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="67"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="73"/>
         <source>or create new category, e.g news/world</source>
         <translation>ou créer une nouvelle catégorie (par ex: news/world)</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="88"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="94"/>
         <source>Share (public)</source>
         <translation>Partager (public)</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="95"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="101"/>
         <source>Tags list</source>
         <translation>Liste de tags</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="109"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="115"/>
         <source>Comment</source>
         <translation>Commentaire</translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="26"/>
+        <source>Add hashmark dialog</source>
+        <translation>Dialogue d&apos;ajout de hashmark</translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="125"/>
+        <source>Description</source>
+        <translation>Description</translation>
     </message>
 </context>
 <context>
@@ -112,32 +122,32 @@
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Charger un CID IPFS depuis le presse-papier&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browsertab.ui" line="98"/>
+        <location filename="../../galacteek/ui/browsertab.ui" line="104"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Previous&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Précédent&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browsertab.ui" line="112"/>
+        <location filename="../../galacteek/ui/browsertab.ui" line="118"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Next&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>Suivant</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browsertab.ui" line="132"/>
+        <location filename="../../galacteek/ui/browsertab.ui" line="149"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Reload page&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>Recharger la page</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browsertab.ui" line="146"/>
+        <location filename="../../galacteek/ui/browsertab.ui" line="163"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Automatically pins visited pages&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Cloue les pages visitées automatiquement&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browsertab.ui" line="160"/>
+        <location filename="../../galacteek/ui/browsertab.ui" line="177"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pin&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pin&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browsertab.ui" line="167"/>
+        <location filename="../../galacteek/ui/browsertab.ui" line="184"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Hashmark this page&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Hash-marquer cette page&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
@@ -321,7 +331,7 @@ p, li { white-space: pre-wrap; }
     <message>
         <location filename="../../galacteek/ui/donatedialog.ui" line="108"/>
         <source>Bitcoin donation address</source>
-        <translation>Adresse donation Bitcoin</translation>
+        <translation>Adresse de donation Bitcoin</translation>
     </message>
     <message>
         <location filename="../../galacteek/ui/donatedialog.ui" line="165"/>
@@ -557,6 +567,16 @@ p, li { white-space: pre-wrap; }
         <source>Merkle link</source>
         <translation>Lien Merkle</translation>
     </message>
+    <message>
+        <location filename="../../galacteek/ui/i18n.py" line="111"/>
+        <source>Warning: could not find IPFS repository migration tool on your system</source>
+        <translation>Avertissement: impossible de trouver l&apos;outil de migration de depots IPFS</translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/i18n.py" line="115"/>
+        <source>Error: Could not find go-ipfs on your system</source>
+        <translation>Erreur: impossible de trouver go-ipfs sur votre système</translation>
+    </message>
 </context>
 <context>
     <name>GalacteekWindow</name>
@@ -608,7 +628,7 @@ p, li { white-space: pre-wrap; }
     <message>
         <location filename="../../galacteek/ui/galacteek.ui" line="210"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Search IPFS&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Chercher sur IPFS&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+        <translation type="obsolete">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Chercher sur IPFS&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
         <location filename="../../galacteek/ui/galacteek.ui" line="249"/>
@@ -855,6 +875,11 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <source>Finished</source>
         <translation>Terminé</translation>
     </message>
+    <message>
+        <location filename="../../galacteek/ui/galacteek.ui" line="210"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Search content on IPFS (ipfs-search.com)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Chercher du contenu sur IPFS (ipfs-search.com)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+    </message>
 </context>
 <context>
     <name>HashmarksViewForm</name>
@@ -913,6 +938,11 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <source>Feeds</source>
         <translation>Feeds</translation>
     </message>
+    <message>
+        <location filename="../../galacteek/ui/hashmarksmgr.ui" line="50"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Expand&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Etendre&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+    </message>
 </context>
 <context>
     <name>IPFSHashExplorer</name>
@@ -950,6 +980,16 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <location filename="../../galacteek/ui/ipfsview.py" line="57"/>
         <source>Timeout error</source>
         <translation>Erreur (délai expiré)</translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/ipfsview.py" line="61"/>
+        <source>Timeout error: trying without resolving nodes types ..</source>
+        <translation>Délai expiré: essai sans résoudre le type des noeuds ..</translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/ipfsview.py" line="65"/>
+        <source>Timeout error: invalid hash</source>
+        <translation>Délai expiré: hash invalide</translation>
     </message>
 </context>
 <context>

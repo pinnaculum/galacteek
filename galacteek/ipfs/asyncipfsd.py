@@ -157,7 +157,6 @@ class AsyncIPFSDaemon(object):
         self.exitFuture = asyncio.Future(loop=self.loop)
         self.startedFuture = asyncio.Future(loop=self.loop)
         args = ['ipfs', 'daemon']
-        args.append('--migrate')
 
         if self.pubsubEnable:
             args.append('--enable-pubsub-experiment')

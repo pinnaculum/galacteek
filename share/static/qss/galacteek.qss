@@ -1,11 +1,15 @@
 * {
-    font: 12pt "Helvetica";
+    font: 10pt "Helvetica";
+}
+
+QTabWidget::pane {
+    border-top: 2px solid #C2C7CB;
 }
 
 QTreeView {
     background-color: #f6fafb;
-    font: 12pt "Helvetica";
-    show-decoration-selected: 1;
+    alternate-background-color: #C2C7CB;
+    font: 10pt "Helvetica";
 }
 
 QTreeView::item:open {
@@ -13,7 +17,6 @@ QTreeView::item:open {
 }
 
 QTreeView::item:selected {
-    color: #06293d;
 }
 
 QTreeView::item:hover {
@@ -55,5 +58,5 @@ QLineEdit {
 
 QTextBrowser {
     background-color: #f6fafb;
-    font: 12pt "Helvetica";
+    font: 10pt "Helvetica";
 }

@@ -4,13 +4,13 @@
 {% for hit in hits %}
         <li>
             <p>
-                <a href="fs:{{ hit['path'] }}">{{ hit['title'] }}</a>
+                <a href="ipfs:{{ hit['path'] }}">{{ hit['title'] }}</a>
                 (Size {{ hit['size'] }})
 
-                <a href="fs:{{ hit['path'] }}#hashmark"><img src=":/share/icons/hashmarks.png" width="16" height="16"/></a>
+                <a href="ipfs:{{ hit['path'] }}#hashmark"><img src=":/share/icons/hashmarks.png" width="16" height="16"/></a>
 
 {% if hit['type'] == 'directory' %}
-                <a href="fs:{{ hit['path'] }}#explore"><img src=":/share/icons/folder-open.png" width="16" height="16"/></a>
+                <a href="ipfs:{{ hit['path'] }}#explore"><img src=":/share/icons/folder-open.png" width="16" height="16"/></a>
 {% endif %}
 
             </p>

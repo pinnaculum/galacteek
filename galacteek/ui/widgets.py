@@ -6,7 +6,7 @@ from galacteek.ipfs.wrappers import ipfsOp
 
 class GalacteekTab(QWidget):
     def __init__(self, gWindow, parent=None, **kw):
-        super().__init__(parent=parent, **kw)
+        super().__init__(parent=parent)
 
         self.gWindow = gWindow
         self.app.task(self.initialize)

@@ -24,7 +24,7 @@ from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.pubsub import *
 from galacteek.ipfs.feeds import FeedFollower
 
-from galacteek.ui import mainui, galacteek_rc, downloads, browser
+from galacteek.ui import mainui, galacteek_rc, downloads, browser, hashmarks
 from galacteek.ui.helpers import *
 
 from galacteek.appsettings import *
@@ -292,11 +292,27 @@ class GalacteekApplication(QApplication):
 
         self.downloadsManager = downloads.DownloadsManager(self)
         self.marksLocal = IPFSMarks(self.localMarksFileLocation)
+        self.importDefaultHashmarks(self.marksLocal)
+
+        self.marksLocal.addCategory('general')
         self.marksNetwork = IPFSMarks(self.networkMarksFileLocation)
 
         self.tempDir = QTemporaryDir()
         if not self.tempDir.isValid():
             pass
+
+    def importDefaultHashmarks(self, marksLocal):
+        pkg = 'galacteek.hashmarks.default'
+        try:
+            listing = pkg_resources.resource_listdir(pkg, '')
+            for fn in listing:
+                if fn.endswith('.json'):
+                    path = pkg_resources.resource_filename(pkg, fn)
+                    self.debug('Importing hashmark file: {}'.format(path))
+                    marks = IPFSMarks(path)
+                    marksLocal.merge(marks)
+        except Exception as e:
+            self.debug(str(e))
 
     def setupTranslator(self):
         if self.translator:
@@ -631,10 +647,6 @@ class ClipboardTracker(QObject):
         """ Records an item in the history and emits a signal """
         now = time.time()
         itLookup = self.hLookup(path)
-        if itLookup:
-            hTs, hItem = itLookup
-            if (now - hTs) < 10:
-                return
         self.history[now] = {
             'path': path,
             'date': QDateTime.currentDateTime()

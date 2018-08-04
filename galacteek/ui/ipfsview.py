@@ -54,9 +54,17 @@ def iGitInvalid():
 def iLoading():
     return QCoreApplication.translate('IPFSHashExplorer', 'Loading ...')
 
-def iErrorTimeout():
+def iTimeout():
     return QCoreApplication.translate('IPFSHashExplorer',
             'Timeout error')
+
+def iTimeoutTryNoResolve():
+    return QCoreApplication.translate('IPFSHashExplorer',
+            'Timeout error: trying without resolving nodes types ..')
+
+def iTimeoutInvalidHash():
+    return QCoreApplication.translate('IPFSHashExplorer',
+            'Timeout error: invalid hash')
 
 class IPFSItem(UneditableItem):
     def __init__(self, text, icon=None):
@@ -355,6 +363,7 @@ class IPFSHashExplorerWidget(QWidget):
         self.tree.installEventFilter(evfilter)
         self.iconFolder = getIcon('folder-open.png')
         self.iconFile = getIcon('file.png')
+        self.iconUnknown = getIcon('unknown-file.png')
 
         self.updateTree()
 
@@ -486,7 +495,6 @@ class IPFSHashExplorerWidget(QWidget):
             return self.browseFs(fullPath)
 
     def updateTree(self):
-        self.setInfo(iLoading())
         self.app.task(self.listHash, self.rootPath, parentItem=self.itemRoot)
 
     def onContextMenu(self, point):
@@ -520,41 +528,61 @@ class IPFSHashExplorerWidget(QWidget):
 
         menu.exec(self.tree.mapToGlobal(point))
 
+    async def timedList(self, ipfsop, objPath, parentItem, autoexpand,
+            secs, resolve_type):
+        return await asyncio.wait_for(
+            self.list(ipfsop, objPath,
+                parentItem=parentItem, autoexpand=autoexpand,
+                resolve_type=resolve_type), secs)
+
     @ipfsOp
     async def listHash(self, ipfsop, objPath, parentItem,
             autoexpand=False):
         """ Lists contents of IPFS object referenced by objPath,
-            and change the tree's model afterwards """
+            and change the tree's model afterwards.
+
+            We first try with resolve-type set to true, and if that gets a
+            timeout do the same call but without resolving nodes types
+        """
+
         try:
+            self.setInfo(iLoading())
+            await self.timedList(ipfsop, objPath, parentItem,
+                    autoexpand, 15, True)
+        except asyncio.TimeoutError as timeoutE:
+            self.setInfo(iTimeoutTryNoResolve())
+
             try:
-                await asyncio.wait_for(
-                    self.list(ipfsop, objPath,
-                        parentItem=parentItem, autoexpand=autoexpand), 20)
-            except Exception as e:
-                self.setInfo(iErrorTimeout())
+                await self.timedList(ipfsop, objPath, parentItem,
+                    autoexpand, 10, False)
+            except asyncio.TimeoutError as timeoutE:
+                # That's a dead end .. bury that hash please ..
+                self.setInfo(iTimeoutInvalidHash())
                 return
 
-            self.tree.setModel(self.model)
-            self.tree.header().setSectionResizeMode(self.model.COL_NAME,
-                    QHeaderView.ResizeToContents)
-            self.tree.header().setSectionResizeMode(self.model.COL_MIME,
-                    QHeaderView.ResizeToContents)
-            self.tree.sortByColumn(self.model.COL_NAME, Qt.AscendingOrder)
-
-            if self.app.settingsMgr.hideHashes:
-                self.tree.hideColumn(self.model.COL_HASH)
-
-            rStat = await ipfsop.objStatCtxUpdate(objPath)
-
-            if rStat:
-                self.setInfo(iCIDInfo(self.cid.version,
-                    rStat['NumLinks'],
-                    sizeFormat(rStat['CumulativeSize'])))
         except aioipfs.APIException:
-            messageBox(iErrNoCx())
+            self.setInfo(iErrNoCx())
+            return
+
+        self.tree.setModel(self.model)
+        self.tree.header().setSectionResizeMode(self.model.COL_NAME,
+                QHeaderView.ResizeToContents)
+        self.tree.header().setSectionResizeMode(self.model.COL_MIME,
+                QHeaderView.ResizeToContents)
+        self.tree.sortByColumn(self.model.COL_NAME, Qt.AscendingOrder)
+
+        if self.app.settingsMgr.hideHashes:
+            self.tree.hideColumn(self.model.COL_HASH)
+
+        rStat = await ipfsop.objStatCtxUpdate(objPath)
+
+        if rStat:
+            self.setInfo(iCIDInfo(self.cid.version,
+                rStat['NumLinks'],
+                sizeFormat(rStat['CumulativeSize'])))
 
     async def list(self, op, path, parentItem=None,
-            autoexpand=False):
+            autoexpand=False, resolve_type=True):
 
         parentItemSibling = self.model.sibling(parentItem.row(),
                 self.model.COL_HASH,
@@ -563,19 +591,14 @@ class IPFSHashExplorerWidget(QWidget):
         if parentItemHash is None:
             parentItemHash = self.rootHash
 
-        async for obj in op.list(path):
+        async for obj in op.list(path, resolve_type):
             for entry in obj['Links']:
                 await op.sleep()
 
                 if entry['Hash'] in self.model.entryCache:
                     continue
 
-                if entry['Type'] == 1: # directory
-                    icon = self.iconFolder
-                else:
-                    icon = self.iconFile
-
-                nItemName = IPFSNameItem(entry, entry['Name'], icon)
+                nItemName = IPFSNameItem(entry, entry['Name'], None)
                 nItemName.mimeFromDb(self.app.mimeDb)
                 nItemName.setParentHash(parentItemHash)
                 nItemSize = IPFSItem(sizeFormat(entry['Size']))
@@ -583,6 +606,13 @@ class IPFSHashExplorerWidget(QWidget):
                 nItemMime = IPFSItem(nItemName.mimeTypeName or iUnknown())
                 nItemHash = IPFSItem(entry['Hash'])
                 nItemName.setToolTip(entry['Hash'])
+
+                if nItemName.isDir():
+                    nItemName.setIcon(self.iconFolder)
+                elif nItemName.isFile():
+                    nItemName.setIcon(self.iconFile)
+                elif nItemName.isUnknown():
+                    nItemName.setIcon(self.iconUnknown)
 
                 nItem = [nItemName, nItemSize, nItemMime, nItemHash]
                 parentItem.appendRow(nItem)
@@ -601,6 +631,9 @@ class IPFSHashExplorerWidget(QWidget):
         """
         Get the resource referenced by rPath to directory dest
         """
+
+        if rStat is None:
+            return
 
         self.getProgress.show()
         cumulative = rStat['CumulativeSize']

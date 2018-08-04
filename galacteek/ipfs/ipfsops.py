@@ -262,12 +262,13 @@ class IPFSOperator(object):
             return None
 
     @async_generator
-    async def list(self, path):
+    async def list(self, path, resolve_type=True):
         """
-        Lists objects in path and yields them
+        Lists objects in a given path and yields them
         """
         try:
-            listing = await self.client.ls(path, headers=True)
+            listing = await self.client.ls(path, headers=True,
+                    resolve_type=resolve_type)
             objects = listing.get('Objects', [])
 
             for obj in objects:

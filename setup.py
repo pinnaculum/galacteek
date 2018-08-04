@@ -93,14 +93,17 @@ setup(
     author='David Ferlier',
     author_email='galacteek@gmx.co.uk',
     url='https://gitlab.com/galacteek/galacteek',
-    description='IPFS navigator',
+    description='IPFS browser',
     include_package_data=True,
     cmdclass={'build': _build, 'build_ui': build_ui, 'build_docs': build_docs},
     packages=[
         'docs',
+        'docs.manual',
         'galacteek',
         'galacteek.core',
         'galacteek.ipfs',
+        'galacteek.hashmarks',
+        'galacteek.hashmarks.default',
         'galacteek.ui'
     ],
     install_requires=[
@@ -121,7 +124,8 @@ setup(
              'manual/en/html/_static/*',
         ],
         'galacteek': [
-            'templates/*.html'
+            'templates/*.html',
+            'hashmarks/default/*.json'
         ]
     },
     entry_points={
