@@ -89,7 +89,7 @@ class AsyncIPFSDaemon(object):
             gatewayport=DEFAULT_GWPORT, initrepo=True,
             swarmLowWater=10, swarmHighWater=20,
             pubsubEnable=False, noBootstrap=False, corsEnable=True,
-            p2pStreams=False,
+            p2pStreams=False, migrateRepo=False,
             storageMax=20, debug=False, loop=None):
 
         self.loop = loop if loop else asyncio.get_event_loop()
@@ -105,6 +105,7 @@ class AsyncIPFSDaemon(object):
         self.corsEnable = corsEnable
         self.p2pStreams = p2pStreams
         self.noBootstrap = noBootstrap
+        self.migrateRepo = migrateRepo
         self.debug = debug
 
     async def start(self):
@@ -160,6 +161,9 @@ class AsyncIPFSDaemon(object):
 
         if self.pubsubEnable:
             args.append('--enable-pubsub-experiment')
+
+        if self.migrateRepo:
+            args.append('--migrate')
 
         f = self.loop.subprocess_exec(
                 lambda: IPFSDProtocol(self.exitFuture, self.startedFuture,

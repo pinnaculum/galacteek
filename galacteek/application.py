@@ -481,7 +481,7 @@ class GalacteekApplication(QApplication):
         setDefaultSettings(self)
         self.settingsMgr.sync()
 
-    def startIpfsDaemon(self):
+    def startIpfsDaemon(self, migrateRepo=False):
         if self.ipfsd: # we only support one daemon for now
             return
 
@@ -503,7 +503,8 @@ class GalacteekApplication(QApplication):
             swarmLowWater=sManager.getInt(section, CFG_KEY_SWARMLOWWATER),
             swarmHighWater=sManager.getInt(section, CFG_KEY_SWARMHIGHWATER),
             storageMax=sManager.getInt(section, CFG_KEY_STORAGEMAX),
-            pubsubEnable=pubsubEnabled, corsEnable=corsEnabled)
+            pubsubEnable=pubsubEnabled, corsEnable=corsEnabled,
+            migrateRepo=migrateRepo)
 
         self.task(self.startIpfsdTask, self.ipfsd)
 

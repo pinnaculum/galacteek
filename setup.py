@@ -69,6 +69,7 @@ class build_ui(Command):
 
         trdir = './share/translations'
         lrelease = shutil.which('lrelease-qt5')
+
         if not lrelease:
             lrelease = shutil.which('lrelease')
 
@@ -79,6 +80,8 @@ class build_ui(Command):
                     '-qm',
                     os.path.join(trdir, 'galacteek_{}.qm'.format(lang)),
                     ])
+            else:
+                print('lrelease was not found, cannot build translation files')
 
         run(['pyrcc5', os.path.join(uidir, 'galacteek.qrc'), '-o',
             os.path.join(uidir, 'galacteek_rc.py')])

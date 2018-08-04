@@ -31,15 +31,17 @@ def galacteekGui(args):
         fsMigratePath = shutil.which('fs-repo-migrations')
         hasFsMigrate = fsMigratePath is not None
 
-        if hasFsMigrate is False:
+        if hasFsMigrate is False and args.migrate is True:
             gApp.systemTrayMessage('Galacteek', iFsRepoMigrateNotFound())
+
+        enableMigrate = hasFsMigrate is True and args.migrate is True
 
         # Look if we can find the ipfs executable
         ipfsPath = shutil.which('ipfs')
         if not ipfsPath:
             gApp.systemTrayMessage('Galacteek', iGoIpfsNotFound(), timeout=8000)
         else:
-            gApp.startIpfsDaemon()
+            gApp.startIpfsDaemon(migrateRepo=enableMigrate)
     else:
         gApp.updateIpfsClient()
 
@@ -61,6 +63,8 @@ def start():
         help='IPFS http gateway port number')
     parser.add_argument('--profile', default='main',
         help='Application Profile')
+    parser.add_argument('--migrate', action='store_true',
+        dest='migrate', help = 'Activate automatic repository migration')
     parser.add_argument('-d', action='store_true',
         dest='debug', help = 'Activate debugging')
     args = parser.parse_args()
