@@ -29,26 +29,34 @@ Now just run the application with:
 Installation from binary
 ------------------------
 
-Binary releases are only available for Linux AMD64 (also known as
-*x86-64* or *x64*) platforms. They include the *0.4.15* release of go-ipfs_
-and are built from the *master* branch with cxFreeze_. It's always preferable
-to build from source and depending on the distribution you use you might run
-into dependency problems with the binaries.
+If you cannot build from source and want to try a binary, there's a release
+available for Linux AMD64 platforms (built with cxFreeze_). There's no guarantee
+that they will work on your distribution and building from source is advised.
 
 If you already have IPFS installed on your system you can download the latest
 binary release with:
 
 .. code-block:: shell
 
-    ipfs get /ipfs/QmVrhsZHwLXhqpqZ8ggXggEax4Qoa4646FMBQTqitXPThL/galacteek-0.1.8-linux-amd64.tar.gz
-    tar -xzvf galacteek-0.1.8-linux-amd64.tar.gz
+    ipfs get /ipfs/QmZ8dCfbJBA5aFxbA3UenVkg6Qm8TMcEJUXMw4zSRVdTDp/galacteek-0.1.9-linux-amd64.tar.gz
+    tar -xzvf galacteek-0.1.9-linux-amd64.tar.gz
 
 Just go into the unpacked directory and run the **galacteek** program.
 
 If you don't have IPFS installed on your system you can download the same file
-here_
+directly from here_
 
-.. _here: https://gateway.ipfs.io/ipfs/QmVrhsZHwLXhqpqZ8ggXggEax4Qoa4646FMBQTqitXPThL/galacteek-0.1.8-linux-amd64.tar.gz
+.. _here: https://gateway.ipfs.io/ipfs/QmZ8dCfbJBA5aFxbA3UenVkg6Qm8TMcEJUXMw4zSRVdTDp/galacteek-0.1.9-linux-amd64.tar.gz
+
+Installation with Docker
+------------------------
+
+A Dockerfile is provided. Build and run the image on Linux with:
+
+.. code-block:: shell
+
+    docker build -t galacteek .
+    docker run -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix galacteek
 
 Features
 ========
@@ -101,20 +109,17 @@ See the screenshots_ directory.
 Platforms supported
 ===================
 
-This has been only tested on Linux but should work on other systems
-as well where python and qt5 are available.
+Mainly tested on Linux. The application relies heavily on quamash_ which
+should work with most platforms.
 
 Contact and donations
 =====================
 
 Contact by email at **galacteek@gmx.co.uk**
 
-Donations are welcome and will go to other projects like ipfs-search_.
-You can make a donation to the project with Monero to this monero address:
-
-**48oNcgpqwUNWjHeTSSH8BCaJHMR7Bc8ooGY13USYxuMuGwtXfLQ1Qf9f7rJMB9g1PWELee2cNnTWz1rJiZyPigcXRCTkhU3**
-
-or with Bitcoin here: **3HSsNcwzkiWGu6wB18BC6D37JHExpxZvyS**
+Donations are welcome and will go to support other projects like ipfs-search_.
+You can find donation details in the *Donate* section of the *Help* menu in the
+application's main window.
 
 Requirements
 ============
