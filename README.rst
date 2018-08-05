@@ -106,6 +106,21 @@ Screenshots
 
 See the screenshots_ directory.
 
+.. figure:: screenshots/browse-wikipedia.png
+    :target: https://gitlab.com/galacteek/galacteek/raw/master/screenshots/browse-wikipedia.png
+    :align: center
+    :width: 50%
+    :alt: Browsing the IPFS Wikipedia mirror
+
+    Browsing the wikipedia IPFS mirror
+
+.. figure:: screenshots/explorer1.png
+    :target: https://gitlab.com/galacteek/galacteek/raw/master/screenshots/explorer1.png
+    :align: center
+    :width: 50%
+
+    Explorer
+
 Platforms supported
 ===================
 
