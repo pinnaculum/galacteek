@@ -51,12 +51,23 @@ directly from here_
 Installation with Docker
 ------------------------
 
-A Dockerfile is provided. Build and run the image on Linux with:
+Pull and run the latest Docker image from the Gitlab's registry with:
+
+.. code-block:: shell
+
+    docker pull registry.gitlab.com/galacteek/galacteek:latest
+    docker run -e DISPLAY=$DISPLAY -e QTWEBENGINE_DISABLE_SANDBOX=1 -v /tmp/.X11-unix:/tmp/.X11-unix registry.gitlab.com/galacteek/galacteek
+
+Otherwise, to build and run your own image locally, use:
 
 .. code-block:: shell
 
     docker build -t galacteek .
     docker run -e DISPLAY=$DISPLAY -e QTWEBENGINE_DISABLE_SANDBOX=1 -v /tmp/.X11-unix:/tmp/.X11-unix galacteek
+
+Be sure to have proper permissions to the X server. If you get a
+*connection refused* message, just run *xhost +*. The media player won't work
+with the Docker image.
 
 Features
 ========
