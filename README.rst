@@ -56,7 +56,7 @@ A Dockerfile is provided. Build and run the image on Linux with:
 .. code-block:: shell
 
     docker build -t galacteek .
-    docker run -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix galacteek
+    docker run -e DISPLAY=$DISPLAY -e QTWEBENGINE_DISABLE_SANDBOX=1 -v /tmp/.X11-unix:/tmp/.X11-unix galacteek
 
 Features
 ========
