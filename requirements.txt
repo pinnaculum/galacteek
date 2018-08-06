@@ -1,6 +1,7 @@
 PyQt5
 quamash
 aiohttp
+aiofiles
 yarl
 pymultihash
 py-multicodec
@@ -9,3 +10,5 @@ Sphinx>=1.4.8
 GitPython
 Jinja2
 aioipfs
+async_generator>=1.0
+base58
