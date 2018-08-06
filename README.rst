@@ -1,9 +1,9 @@
 Galacteek
 =========
 
-A modest IPFS_ browser
+:info: A modest IPFS_ browser
 
-This is a standalone browser allowing you to search, browse, publish and
+This is a simple application allowing you to search, browse, publish and
 hashmark content on the permanent web accessible through the IPFS_ peer-to-peer
 network.
 
@@ -31,6 +31,21 @@ Now just run the application with:
 .. code-block:: shell
 
     galacteek
+
+The following command-line switches and arguments can be used:
+
+.. code-block:: shell
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      --apiport APIPORT     IPFS API port number
+      --swarmport SWARMPORT
+                            IPFS swarm port number
+      --gatewayport GATEWAYPORT
+                            IPFS http gateway port number
+      --profile PROFILE     Application Profile
+      --migrate             Activate automatic repository migration
+      -d                    Activate debugging
 
 Docker image
 ------------

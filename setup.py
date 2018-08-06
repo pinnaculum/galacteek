@@ -123,8 +123,12 @@ setup(
         'base58',
         'py-multibase',
         'py-multicodec',
+        'pymultihash',
         'Jinja2',
-        'Sphinx>=1.4.8'
+        'GitPython',
+        'Sphinx>=1.4.8',
+        'quamash',
+        'PyQt5'
     ],
     package_data={
         'docs': [
