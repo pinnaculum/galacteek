@@ -8,4 +8,4 @@ py-multibase
 Sphinx>=1.4.8
 GitPython
 Jinja2
-git+https://gitlab.com/cipres/aioipfs
+aioipfs
