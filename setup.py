@@ -89,6 +89,9 @@ class build_ui(Command):
 class _build(build):
     sub_commands = [('build_ui', None)] + build.sub_commands
 
+with open("README.rst", "r") as fh:
+    long_description = fh.read()
+
 setup(
     name='galacteek',
     version=version,
@@ -97,6 +100,8 @@ setup(
     author_email='galacteek@gmx.co.uk',
     url='https://gitlab.com/galacteek/galacteek',
     description='IPFS browser',
+    long_description=long_description,
+    long_description_content_type='text/x-rst',
     include_package_data=True,
     cmdclass={'build': _build, 'build_ui': build_ui, 'build_docs': build_docs},
     packages=[
@@ -110,6 +115,7 @@ setup(
         'galacteek.ui'
     ],
     install_requires=[
+        'aioipfs',
         'aiohttp',
         'aiofiles',
         'async_generator>=1.0',
@@ -144,7 +150,7 @@ setup(
         'Development Status :: 4 - Beta',
         'Natural Language :: English',
         'Operating System :: OS Independent',
-        'License :: OSI Approved :: GNU General Public License v3',
+        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Topic :: System :: Filesystems',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3.5',

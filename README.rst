@@ -10,10 +10,16 @@ network.
 Installation
 ============
 
-Installation from source
-------------------------
+PIP
+---
 
 You need to have python 3.5 and pip installed, as well as go-ipfs_. Install with:
+
+.. code-block:: shell
+
+    pip install galacteek
+
+Or building it from source:
 
 .. code-block:: shell
 
@@ -26,30 +32,8 @@ Now just run the application with:
 
     galacteek
 
-Installation from binary
-------------------------
-
-If you cannot build from source and want to try a binary, there's a release
-available for Linux AMD64 platforms (built with cxFreeze_). There's no guarantee
-that they will work on your distribution and building from source is advised.
-
-If you already have IPFS installed on your system you can download the latest
-binary release with:
-
-.. code-block:: shell
-
-    ipfs get /ipfs/QmZ8dCfbJBA5aFxbA3UenVkg6Qm8TMcEJUXMw4zSRVdTDp/galacteek-0.1.9-linux-amd64.tar.gz
-    tar -xzvf galacteek-0.1.9-linux-amd64.tar.gz
-
-Just go into the unpacked directory and run the **galacteek** program.
-
-If you don't have IPFS installed on your system you can download the same file
-directly from here_
-
-.. _here: https://gateway.ipfs.io/ipfs/QmZ8dCfbJBA5aFxbA3UenVkg6Qm8TMcEJUXMw4zSRVdTDp/galacteek-0.1.9-linux-amd64.tar.gz
-
-Installation with Docker
-------------------------
+Docker image
+------------
 
 Pull and run the latest Docker image from the Gitlab's registry with:
 
@@ -57,13 +41,6 @@ Pull and run the latest Docker image from the Gitlab's registry with:
 
     docker pull registry.gitlab.com/galacteek/galacteek:latest
     docker run -e DISPLAY=$DISPLAY -e QTWEBENGINE_DISABLE_SANDBOX=1 -v /tmp/.X11-unix:/tmp/.X11-unix registry.gitlab.com/galacteek/galacteek
-
-Otherwise, to build and run your own image locally, use:
-
-.. code-block:: shell
-
-    docker build -t galacteek .
-    docker run -e DISPLAY=$DISPLAY -e QTWEBENGINE_DISABLE_SANDBOX=1 -v /tmp/.X11-unix:/tmp/.X11-unix galacteek
 
 Be sure to have proper permissions to the X server. If you get a
 *connection refused* message, just run *xhost +*. The media player won't work
@@ -120,9 +97,9 @@ See the screenshots_ directory.
 .. figure:: screenshots/browse-wikipedia-small.png
     :target: https://gitlab.com/galacteek/galacteek/raw/master/screenshots/browse-wikipedia.png
     :align: center
-    :alt: Browsing the wikipedia IPFS mirror
+    :alt: Browsing the Wikipedia mirror over IPFS
 
-    Browsing the wikipedia IPFS mirror
+    Browsing the Wikipedia mirror over IPFS
 
 Platforms supported
 ===================
