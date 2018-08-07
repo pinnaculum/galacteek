@@ -247,6 +247,10 @@ class GalacteekApplication(QApplication):
         return params.gatewayUrl
 
     @property
+    def ipfsBinLocation(self):
+        return self._ipfsBinLocation
+
+    @property
     def ipfsDataLocation(self):
         return self._ipfsDataLocation
 
@@ -448,6 +452,7 @@ class GalacteekApplication(QApplication):
         self._dataLocation = os.path.join(
                 qtDataLocation, self._appProfile)
 
+        self._ipfsBinLocation = os.path.join(qtDataLocation, 'ipfs-bin')
         self._ipfsDataLocation = os.path.join(self._dataLocation, 'ipfs')
         self.marksDataLocation = os.path.join(self._dataLocation, 'marks')
         self.localMarksFileLocation = os.path.join(self.marksDataLocation,
@@ -463,6 +468,7 @@ class GalacteekApplication(QApplication):
                 self.configDirLocation, '{}.conf'.format(GALACTEEK_NAME))
 
         for dir in [ self._ipfsDataLocation,
+                self.ipfsBinLocation,
                 self.marksDataLocation,
                 self.configDirLocation ]:
             if not os.path.exists(dir):
@@ -476,12 +482,14 @@ class GalacteekApplication(QApplication):
                 self.configDirLocation,
                 self.settingsFileLocation))
 
+        os.environ['PATH'] += os.pathsep + self.ipfsBinLocation
+
     def initSettings(self):
         self.settingsMgr = SettingsManager(path=self.settingsFileLocation)
         setDefaultSettings(self)
         self.settingsMgr.sync()
 
-    def startIpfsDaemon(self, migrateRepo=False):
+    def startIpfsDaemon(self, goIpfsPath='ipfs', migrateRepo=False):
         if self.ipfsd: # we only support one daemon for now
             return
 
@@ -496,7 +504,8 @@ class GalacteekApplication(QApplication):
         # Instantiate an IPFS daemon using asyncipfsd and
         # start it in a task, monitoring the initialization process
 
-        self._ipfsd = asyncipfsd.AsyncIPFSDaemon(self.ipfsDataLocation,
+        self._ipfsd = asyncipfsd.AsyncIPFSDaemon(
+            self.ipfsDataLocation, goIpfsPath=goIpfsPath,
             apiport=sManager.getInt(section, CFG_KEY_APIPORT),
             swarmport=sManager.getInt(section, CFG_KEY_SWARMPORT),
             gatewayport=sManager.getInt(section, CFG_KEY_HTTPGWPORT),
@@ -504,7 +513,7 @@ class GalacteekApplication(QApplication):
             swarmHighWater=sManager.getInt(section, CFG_KEY_SWARMHIGHWATER),
             storageMax=sManager.getInt(section, CFG_KEY_STORAGEMAX),
             pubsubEnable=pubsubEnabled, corsEnable=corsEnabled,
-            migrateRepo=migrateRepo)
+            migrateRepo=migrateRepo, debug=self.debugEnabled)
 
         self.task(self.startIpfsdTask, self.ipfsd)
 
@@ -706,7 +715,7 @@ class ManualsImporter(QObject):
 
     def importManualMain(self):
         try:
-            listing = pkg_resources.resource_listdir('docs.manual', '')
+            listing = pkg_resources.resource_listdir('galacteek.docs.manual', '')
             for entry in listing:
                 if entry.startswith('__'):
                     continue
@@ -716,7 +725,7 @@ class ManualsImporter(QObject):
 
     def importManualLang(self, lang):
         try:
-            docPath = pkg_resources.resource_filename('docs.manual',
+            docPath = pkg_resources.resource_filename('galacteek.docs.manual',
                 '{0}/html'.format(lang))
             self.app.task(self.importDocPath, docPath, lang)
         except Exception as e:
