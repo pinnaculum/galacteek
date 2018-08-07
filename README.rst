@@ -13,7 +13,8 @@ Installation
 PIP
 ---
 
-You need to have python 3.5 and pip installed, as well as go-ipfs_. Install with:
+You need to have python 3.5 and pip installed, as well as go-ipfs_.
+From a virtualenv, or as root, install with:
 
 .. code-block:: shell
 
@@ -31,6 +32,9 @@ Now just run the application with:
 .. code-block:: shell
 
     galacteek
+
+If you don't have go-ipfs_ already installed, the application will ask you
+whether you want to automatically download and install it from dist.ipfs.io_
 
 The following command-line switches and arguments can be used:
 
@@ -136,7 +140,7 @@ Requirements
 
 - go-ipfs_ (install from dist.ipfs.io_)
 - python3 >= 3.5
-- qt5 (preferrably >5.6)
+- qt5
 - PyQt5 with QtWebEngine support
 - gstreamer (on Linux) for media player support
 - quamash_

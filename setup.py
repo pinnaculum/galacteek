@@ -39,7 +39,7 @@ class build_docs(Command):
     def run(self):
         from sphinx import build_main
         build_main([sys.argv[0], '-b', 'html',
-            'docs/manual/en', 'docs/manual/en/html'])
+            'galacteek/docs/manual/en', 'galacteek/docs/manual/en/html'])
 
 class build_ui(Command):
     user_options = []
@@ -105,9 +105,9 @@ setup(
     include_package_data=True,
     cmdclass={'build': _build, 'build_ui': build_ui, 'build_docs': build_docs},
     packages=[
-        'docs',
-        'docs.manual',
         'galacteek',
+        'galacteek.docs',
+        'galacteek.docs.manual',
         'galacteek.core',
         'galacteek.ipfs',
         'galacteek.hashmarks',
@@ -128,15 +128,13 @@ setup(
         'GitPython',
         'Sphinx>=1.4.8',
         'quamash',
-        'PyQt5'
+        'PyQt5==5.10.1'
     ],
     package_data={
-        'docs': [
-             'manual/en/html/*.html',
-             'manual/en/html/_images/*',
-             'manual/en/html/_static/*',
-        ],
         'galacteek': [
+             'docs/manual/en/html/*.html',
+             'docs/manual/en/html/_images/*',
+             'docs/manual/en/html/_static/*',
             'templates/*.html',
             'hashmarks/default/*.json'
         ]

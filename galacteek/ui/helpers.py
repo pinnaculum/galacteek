@@ -34,6 +34,10 @@ def messageBox(message, title=None):
     msgBox.show()
     return msgBox.exec_()
 
+def questionBox(title, text):
+    box = QMessageBox.question(None, title, text)
+    return box == QMessageBox.Yes
+
 def directorySelect(caption=''):
     return QFileDialog.getExistingDirectory(None,
         caption, getHomePath(), QFileDialog.ShowDirsOnly)

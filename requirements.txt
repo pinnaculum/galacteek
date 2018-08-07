@@ -1,4 +1,4 @@
-PyQt5
+PyQt5==5.10.1
 quamash
 aiohttp
 aiofiles

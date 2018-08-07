@@ -577,6 +577,26 @@ p, li { white-space: pre-wrap; }
         <source>Error: Could not find go-ipfs on your system</source>
         <translation>Erreur: impossible de trouver go-ipfs sur votre système</translation>
     </message>
+    <message>
+        <location filename="../../galacteek/ui/i18n.py" line="119"/>
+        <source>go-ipfs was not found on your system: download binary from IPFS distributions website (https://dist.ipfs.io) ?</source>
+        <translation>go-ipfs n&apos;a pas été trouvé sur votre système: télécharger depuis le site de distributions IPFS (https://dist.ipfs.io) ?</translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/i18n.py" line="124"/>
+        <source>Timeout while fetching go-ipfs distribution</source>
+        <translation>Délai expiré lors du téléchargement de go-ipfs</translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/i18n.py" line="128"/>
+        <source>go-ipfs was installed successfully</source>
+        <translation>go-ipfs a été installé avec succès</translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/i18n.py" line="132"/>
+        <source>Error while fetching go-ipfs distribution</source>
+        <translation>Erreur lors du téléchargement de go-ipfs</translation>
+    </message>
 </context>
 <context>
     <name>GalacteekWindow</name>
