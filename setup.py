@@ -39,7 +39,8 @@ class build_docs(Command):
     def run(self):
         from sphinx import build_main
         build_main([sys.argv[0], '-b', 'html',
-            'galacteek/docs/manual/en', 'galacteek/docs/manual/en/html'])
+            'galacteek/docs/manual/en',
+            'galacteek/docs/manual/en/html'])
 
 class build_ui(Command):
     user_options = []
@@ -89,8 +90,11 @@ class build_ui(Command):
 class _build(build):
     sub_commands = [('build_ui', None)] + build.sub_commands
 
-with open("README.rst", "r") as fh:
+with open('README.rst', 'r') as fh:
     long_description = fh.read()
+
+with open('requirements.txt') as f:
+    install_reqs = f.read().splitlines()
 
 setup(
     name='galacteek',
@@ -101,7 +105,6 @@ setup(
     url='https://gitlab.com/galacteek/galacteek',
     description='IPFS browser',
     long_description=long_description,
-    long_description_content_type='text/x-rst',
     include_package_data=True,
     cmdclass={'build': _build, 'build_ui': build_ui, 'build_docs': build_docs},
     packages=[
@@ -114,22 +117,7 @@ setup(
         'galacteek.hashmarks.default',
         'galacteek.ui'
     ],
-    install_requires=[
-        'aioipfs',
-        'aiohttp',
-        'aiofiles',
-        'async_generator>=1.0',
-        'yarl',
-        'base58',
-        'py-multibase',
-        'py-multicodec',
-        'pymultihash',
-        'Jinja2',
-        'GitPython',
-        'Sphinx>=1.4.8',
-        'quamash',
-        'PyQt5==5.10.1'
-    ],
+    install_requires=install_reqs,
     package_data={
         'galacteek': [
              'docs/manual/en/html/*.html',

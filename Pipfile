@@ -1,0 +1,28 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+async-generator = "==1.10"
+pyqt5 = "==5.10"
+sphinx = ">=1.7.0"
+jinja2 = "==2.10"
+base58 = "==1.0.0"
+gitpython = "==2.1.11"
+py-multibase = "==0.1.2"
+py-multicodec = "==0.1.2"
+pymultihash = "==0.8.2"
+yarl = "==1.2.6"
+aiofiles = "==0.3.2"
+aiohttp = "==3.3.2"
+quamash = "==0.6.1"
+aioipfs = "==0.3"
+
+[dev-packages]
+pytest = "*"
+pytest-qt = "*"
+pytest-asyncio = "*"
+
+[requires]
+python_version = "3.6"
