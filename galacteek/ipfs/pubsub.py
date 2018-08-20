@@ -4,8 +4,10 @@ import json
 
 import aioipfs
 import asyncio
+import datetime
 
 from galacteek.ipfs.pubsubmsg import MarksBroadcastMessage
+from galacteek.core.asynclib import *
 
 class PubsubListener(object):
     """ IPFS pubsub listener for a given topic """
@@ -16,6 +18,7 @@ class PubsubListener(object):
         self.topic = topic
         self.client = client
         self.inqueue = asyncio.Queue()
+        self.errorsqueue = asyncio.Queue()
         self.lock = asyncio.Lock()
 
         self.tsServe = None
@@ -73,16 +76,18 @@ class HashmarksExchanger(PubsubListener):
         super().__init__(client, loop, ipfsCtx, topic='galacteek.ipfsmarks')
         self.marksLocal = marksLocal
         self.marksNetwork = marksNetwork
+        self.marksLocal.markAdded.connect(self.onMarksChanged)
 
-    async def periodic(self):
-        """ Very basic broadcasting for now """
-        while True:
-            await asyncio.sleep(60)
-            o = self.marksLocal.getAll(share=True)
-            if len(o.keys()) == 0:
-                continue
-            msg = MarksBroadcastMessage.make(o)
-            await self.send(str(msg))
+    @asyncify
+    async def onMarksChanged(self):
+        await self.sendMarks()
+
+    async def sendMarks(self):
+        o = self.marksLocal.getAll(share=True)
+        if len(o.keys()) == 0:
+            return
+        msg = MarksBroadcastMessage.make(o)
+        await self.send(str(msg))
 
     async def processMessages(self):
         while True:
@@ -95,6 +100,8 @@ class HashmarksExchanger(PubsubListener):
             msgType = msg.get('msgtype', None)
             if msgType == MarksBroadcastMessage.TYPE:
                 await self.processBroadcast(msg)
+            else:
+                print('Unknown msg type', msgType)
 
             await asyncio.sleep(0)
 
@@ -106,11 +113,22 @@ class HashmarksExchanger(PubsubListener):
         addedCount = 0
         for mark in marks.items():
             await asyncio.sleep(0)
-            mPath = mark[0]
-            if self.marksNetwork.search(mPath):
-                continue
-            self.marksNetwork.insertMark(mark, 'auto')
-            addedCount += 1
+
+            try:
+                mPath = mark[0]
+                if self.marksNetwork.search(mPath):
+                    continue
+                category = 'auto'
+                tsCreated = mark[1].get('tscreated', None)
+
+                if tsCreated:
+                    date = datetime.datetime.fromtimestamp(tsCreated)
+                    category = '{0}/{1}'.format(date.year, date.month)
+
+                self.marksNetwork.insertMark(mark, category)
+                addedCount += 1
+            except Exception as e:
+                await self.errorsqueue.put(str(e))
 
         if addedCount > 0:
             self.ipfsCtx.pubsubMarksReceived.emit(addedCount)

@@ -18,6 +18,8 @@ from PyQt5.QtCore import (QCoreApplication, QUrl, QStandardPaths,
         QSettings, QTranslator, QFile, pyqtSignal, QObject,
         QTemporaryDir, QDateTime, QMessageLogger, QMimeDatabase)
 
+from galacteek import pypicheck
+from galacteek.core.asynclib import asyncify
 from galacteek.ipfs import pinning, ipfsd, asyncipfsd, cidhelpers
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import *
@@ -26,6 +28,7 @@ from galacteek.ipfs.feeds import FeedFollower
 
 from galacteek.ui import mainui, galacteek_rc, downloads, browser, hashmarks
 from galacteek.ui.helpers import *
+from galacteek.ui.i18n import *
 
 from galacteek.appsettings import *
 from galacteek.core.ipfsmarks import IPFSMarks
@@ -415,7 +418,7 @@ class GalacteekApplication(QApplication):
             listenerMarks.start()
             self.pubsubListeners.append(listenerMarks)
 
-        self.feedFollower = FeedFollower(self.marksLocal)
+        self.feedFollower = FeedFollower(self, self.marksLocal)
         self.ipfsTaskOp(self.feedFollower.process)
 
     def stopIpfsServices(self):
@@ -571,6 +574,13 @@ class GalacteekApplication(QApplication):
             return None
         else:
             return tmpl
+
+    @asyncify
+    async def checkReleases(self):
+        newR = await pypicheck.newReleaseAvailable()
+        if newR:
+            self.systemTrayMessage('Galacteek',
+                iNewReleaseAvailable(), timeout=8000)
 
     def onExit(self):
         self.exit()

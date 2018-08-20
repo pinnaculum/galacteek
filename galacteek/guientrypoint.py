@@ -8,6 +8,7 @@ import os.path
 
 from PyQt5.QtWidgets import QApplication
 
+
 from galacteek.ipfs import ipfsd, distipfsfetch
 from galacteek.ui import mainui
 from galacteek.ui.helpers import *
@@ -93,6 +94,9 @@ def galacteekGui(args):
     gApp.startPinner()
     gApp.mainWindow.addHashmarksTab()
 
+    if args.noreleasecheck is False:
+        gApp.checkReleases()
+
     # Use the context manager so loop cleanup/close is automatic
     with loop:
         loop.run_forever()
@@ -110,6 +114,8 @@ def start():
         help='Application Profile')
     parser.add_argument('--migrate', action='store_true',
         dest='migrate', help = 'Activate automatic repository migration')
+    parser.add_argument('--no-release-check', action='store_true',
+        dest='noreleasecheck', help = "Don't check for new releases on PyPI")
     parser.add_argument('-d', action='store_true',
         dest='debug', help = 'Activate debugging')
     args = parser.parse_args()

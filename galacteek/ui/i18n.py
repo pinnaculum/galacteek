@@ -132,3 +132,7 @@ def iGoIpfsFetchSuccess():
 def iGoIpfsFetchError():
     return QCoreApplication.translate('Galacteek',
         'Error while fetching go-ipfs distribution')
+
+def iNewReleaseAvailable():
+    return QCoreApplication.translate('Galacteek',
+        'New release available: upgrade with pip install -U galacteek')

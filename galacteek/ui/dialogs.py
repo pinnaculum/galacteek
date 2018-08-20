@@ -85,10 +85,11 @@ class AddFeedDialog(QDialog):
 
     def accept(self):
         share = self.ui.share.isChecked()
+        autoPin = self.ui.autoPin.isChecked()
 
         self.marks.follow(self.ipfsResource, self.ui.feedName.text(),
             resolveevery=self.ui.resolve.value(),
-            share=share)
+            share=share, autoPin=autoPin)
         self.done(0)
 
 class IPFSCIDInputDialog(QDialog):
