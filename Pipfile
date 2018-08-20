@@ -18,6 +18,7 @@ aiofiles = "==0.3.2"
 aiohttp = "==3.3.2"
 quamash = "==0.6.1"
 aioipfs = "==0.3"
+wheel = "*"
 
 [dev-packages]
 pytest = "*"

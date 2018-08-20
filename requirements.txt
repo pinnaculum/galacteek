@@ -11,4 +11,5 @@ pymultihash==0.8.2
 pyqt5==5.10
 quamash==0.6.1
 sphinx>=1.7.0
+wheel
 yarl==1.2.6
