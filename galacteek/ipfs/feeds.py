@@ -15,8 +15,9 @@ class FeedFollower(object):
     resolve the hash and register the resulting object path if it's new,
     adding it as a mark inside the feed object
     """
-    def __init__(self, marks):
+    def __init__(self, app, marks):
         self.marks = marks
+        self.app = app
 
     async def process(self, op):
         while True:
@@ -29,6 +30,7 @@ class FeedFollower(object):
 
                 resolvedLast = feed.get('resolvedlast', None)
                 resolveEvery = feed.get('resolveevery', 3600)
+                autoPin = feed.get('autopin', False)
                 feedMarks = self.marks.getFeedMarks(ipnsp)
 
                 if resolvedLast and resolvedLast > (now - resolveEvery):
@@ -64,3 +66,8 @@ class FeedFollower(object):
                         share=feed['share'])
 
                 self.marks.feedAddMark(ipnsp, mark)
+
+                if autoPin:
+                    self.app.debug('Feed follower, autopinning {}'.format(
+                        resolvedPath))
+                    await self.app.pinner.enqueue(resolvedPath, True, None)

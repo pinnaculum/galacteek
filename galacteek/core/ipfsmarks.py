@@ -10,6 +10,9 @@ from datetime import datetime
 
 from async_generator import async_generator, yield_, yield_from_
 import asyncio
+import aiofiles
+
+from galacteek.core.asynclib import asyncify
 
 from PyQt5.QtCore import pyqtSignal, QUrl, QObject
 
@@ -66,8 +69,8 @@ class IPFSHashMark(collections.UserDict):
 
 class IPFSMarks(QObject):
     changed = pyqtSignal()
-    changedContent = pyqtSignal()
     markDeleted = pyqtSignal(str)
+    markAdded = pyqtSignal()
 
     def __init__(self, path, parent=None):
         super().__init__(parent)
@@ -123,6 +126,12 @@ class IPFSMarks(QObject):
     def save(self):
         # This should really be converted to async soon
         with open(self.getPath(), 'w+t') as fd:
+            self.serialize(fd)
+            self.lastsaved = time.time()
+
+    @asyncify
+    async def saveAsync(self):
+        async with aiofiles.open(self.getPath(), 'w+t') as fd:
             self.serialize(fd)
             self.lastsaved = time.time()
 
@@ -243,6 +252,7 @@ class IPFSMarks(QObject):
                 return False
 
         self.changed.emit()
+        self.markAdded.emit()
         return True
 
     def add(self, bpath, title=None, category='general', share=False, tags=[]):
@@ -269,6 +279,7 @@ class IPFSMarks(QObject):
 
         sec[marksKey].update(mark)
         self.changed.emit()
+        self.markAdded.emit()
 
         return True
 
@@ -282,7 +293,7 @@ class IPFSMarks(QObject):
                 r = self.insertMark(mark, cat)
 
     def follow(self, ipnsp, name, active=True, maxentries=4096,
-            resolveevery=3600, share=False):
+            resolveevery=3600, share=False, autoPin=False):
         if ipnsp is None:
             return
 
@@ -299,6 +310,7 @@ class IPFSMarks(QObject):
             'resolveevery': resolveevery,
             'resolvedlast': None,
             'share': share,
+            'autopin': autoPin,
             marksKey: {},
         }
         self.changed.emit()

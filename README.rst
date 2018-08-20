@@ -124,7 +124,9 @@ Platforms supported
 ===================
 
 Mainly tested on Linux. The application relies heavily on quamash_ which
-should work with most platforms.
+should work with most platforms. Things relying on HTTPs (ipfs-search engine
+queries ..) might not work on Windows due to *ProactorEventLoop* being
+incompatible with SSL.
 
 Contact and donations
 =====================

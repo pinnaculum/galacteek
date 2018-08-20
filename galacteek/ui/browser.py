@@ -13,7 +13,8 @@ from PyQt5.QtPrintSupport import *
 from PyQt5.QtCore import (QUrl, QIODevice, Qt, QCoreApplication, QObject,
     pyqtSignal, QMutex, QFile)
 from PyQt5 import QtWebEngineWidgets, QtWebEngine, QtWebEngineCore
-from PyQt5.QtWebEngineWidgets import QWebEngineDownloadItem, QWebEngineScript
+from PyQt5.QtWebEngineWidgets import (QWebEngineDownloadItem, QWebEngineScript,
+        QWebEngineSettings)
 from PyQt5.QtWebEngineCore import QWebEngineUrlRequestInterceptor
 from PyQt5.Qt import QByteArray
 from PyQt5.QtGui import QClipboard, QPixmap, QIcon, QKeySequence
@@ -128,6 +129,12 @@ class IPFSSchemeHandler(QtWebEngineCore.QWebEngineUrlSchemeHandler):
                 return None
 
             newUrl = self.app.subUrl(path)
+
+            if url.hasFragment():
+                newUrl.setFragment(url.fragment())
+            if url.hasQuery():
+                newUrl.setQuery(url.query())
+
             return request.redirect(newUrl)
 
         if scheme in [SCHEME_FS, SCHEME_IPFS, SCHEME_DWEB]:
@@ -141,11 +148,15 @@ class RequestInterceptor(QWebEngineUrlRequestInterceptor):
         url = info.requestUrl()
 
 class WebView(QtWebEngineWidgets.QWebEngineView):
-    def __init__(self, browserTab, parent = None):
+    def __init__(self, browserTab, enablePlugins=False, parent = None):
         super(QtWebEngineWidgets.QWebEngineView, self).__init__(parent = parent)
 
         self.mutex = QMutex()
         self.browserTab = browserTab
+
+        self.webSettings = self.settings()
+        self.webSettings.setAttribute(QWebEngineSettings.PluginsEnabled,
+                enablePlugins)
 
     def contextMenuEvent(self, event):
         currentPage = self.page()
@@ -223,7 +234,8 @@ class BrowserTab(GalacteekTab):
         self.webProfile = QtWebEngineWidgets.QWebEngineProfile.defaultProfile()
         self.installIpfsSchemeHandler()
 
-        self.ui.webEngineView = WebView(self)
+        self.ui.webEngineView = WebView(self,
+                enablePlugins=self.app.settingsMgr.ppApiPlugins)
         self.ui.vLayoutBrowser.addWidget(self.ui.webEngineView)
 
         self.webScripts = self.webProfile.scripts()
@@ -564,11 +576,9 @@ class BrowserTab(GalacteekTab):
 
         if scheme in [SCHEME_FS, SCHEME_IPFS, SCHEME_DWEB]:
             self.enterUrl(url)
-
         elif scheme in ['http', 'https'] and \
                 self.app.settingsMgr.allowHttpBrowsing is True:
             # Browse http urls if allowed
             self.enterUrl(url)
-
         else:
             messageBox(iInvalidUrl(inputStr))

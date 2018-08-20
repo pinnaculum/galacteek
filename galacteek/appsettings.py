@@ -26,6 +26,7 @@ CFG_KEY_GOTOHOME = 'gotohomeonnewtab'
 CFG_KEY_DLPATH = 'downloadspath'
 CFG_KEY_ALLOWHTTPBROWSING = 'httpbrowsing'
 CFG_KEY_JSAPI = 'jsapi'
+CFG_KEY_PPAPIPLUGINS = 'ppapiplugins'
 
 # IPFS
 CFG_KEY_PUBSUB = 'pubsub'
@@ -62,6 +63,7 @@ def setDefaultSettings(gApp):
     sManager.setDefaultTrue(section, CFG_KEY_GOTOHOME)
     sManager.setDefaultFalse(section, CFG_KEY_JSAPI)
     sManager.setDefaultFalse(section, CFG_KEY_ALLOWHTTPBROWSING)
+    sManager.setDefaultTrue(section, CFG_KEY_PPAPIPLUGINS)
 
     # Default IPFS connection when not spawning daemon
     section = CFG_SECTION_IPFSCONN1
@@ -183,3 +185,7 @@ class SettingsManager(object):
     @property
     def jsIpfsApi(self):
         return self.isTrue(CFG_SECTION_BROWSER, CFG_KEY_JSAPI)
+
+    @property
+    def ppApiPlugins(self):
+        return self.isTrue(CFG_SECTION_BROWSER, CFG_KEY_PPAPIPLUGINS)

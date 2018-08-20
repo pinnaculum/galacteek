@@ -9,45 +9,16 @@ import json
 import asyncio
 import aioipfs
 
+from PyQt5.QtCore import QObject, pyqtSignal
+
 from galacteek.ipfs import asyncipfsd
 from galacteek.ipfs import ipfsdconfig
+from galacteek.core.ipfsmarks import *
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.tunnel import *
+from galacteek.ipfs.pubsub import *
 
-apiport = 9005
-gwport = 9081
-swarmport = 9003
-
-@pytest.fixture()
-def ipfsdaemon(event_loop, tmpdir):
-    dir = tmpdir.mkdir('ipfsdaemon')
-    daemon = asyncipfsd.AsyncIPFSDaemon(dir,
-            apiport=apiport,
-            gatewayport=gwport,
-            swarmport=swarmport,
-            loop=event_loop,
-            pubsubEnable=False,
-            p2pStreams=True
-            )
-    return daemon
-
-@pytest.fixture()
-def ipfsdaemon2(event_loop, tmpdir):
-    dir = tmpdir.mkdir('ipfsdaemon2')
-    daemon = asyncipfsd.AsyncIPFSDaemon(dir,
-            apiport=apiport+10,
-            gatewayport=gwport+10,
-            swarmport=swarmport+10,
-            loop=event_loop,
-            pubsubEnable=False,
-            p2pStreams=True
-            )
-    return daemon
-
-@pytest.fixture()
-def iclient(event_loop):
-    c = aioipfs.AsyncIPFS(port=apiport, loop=event_loop)
-    return c
+from .daemon import *
 
 @pytest.fixture()
 def ipfsop(iclient):
@@ -101,11 +72,10 @@ class TestIPFSD:
 
     @pytest.mark.asyncio
     async def test_tunnel(self, event_loop, ipfsdaemon, ipfsdaemon2,
-            iclient, ipfsop):
+            iclient, iclient2, ipfsop):
         # Connect two nodes, create a P2P listener on the first one and make
         # the second node do the stream dial.
 
-        iclient2 = aioipfs.AsyncIPFS(port=ipfsdaemon2.apiport, loop=event_loop)
         protoF = asyncio.Future()
         proto = EchoProtocol(protoF)
         port = 10010
@@ -164,19 +134,8 @@ class TestIPFSD:
                     listenPort)
             assert stream['RemotePeer'] == id2['ID']
 
-        def cb2started(f):
-            event_loop.create_task(createTunnel(ipfsop))
-
-        def cbstarted(f):
-            ipfsdaemon2.startedFuture.add_done_callback(cb2started)
-
-        ipfsdaemon.noBootstrap = True
-        ipfsdaemon2.noBootstrap = True
-
-        started = await ipfsdaemon.start()
-        started = await ipfsdaemon2.start()
-
-        ipfsdaemon.startedFuture.add_done_callback(cbstarted)
+        await startDaemons(event_loop, ipfsdaemon, ipfsdaemon2, createTunnel,
+                ipfsop)
 
         await asyncio.wait([protoF])
         await p2pL.close()
@@ -188,6 +147,69 @@ class TestIPFSD:
 
         await iclient.close()
         await iclient2.close()
+
+    @pytest.mark.parametrize('hashmarkpath',
+            ['/ipfs/QmT1TPVjdZ9CRnqwyQ9WygDoRgRRibFrEyWufenu92SuUV'])
+    @pytest.mark.asyncio
+    async def test_hashmarks_exchange(self, event_loop, ipfsdaemon, ipfsdaemon2,
+            iclient, iclient2, ipfsop, tmpdir, hashmarkpath):
+        ipfsdaemon.pubsubEnable = True
+        ipfsdaemon2.pubsubEnable = True
+
+        async def exchange():
+            marks = IPFSMarks(str(tmpdir.join('marks1.json')))
+            marksNet = IPFSMarks(str(tmpdir.join('marks1net.json')))
+            marks2 = IPFSMarks(str(tmpdir.join('marks2.json')))
+            marks2Net = IPFSMarks(str(tmpdir.join('marks2net.json')))
+
+            m1 = IPFSHashMark.make(hashmarkpath, share=True,
+                    description='a shared hashmark',
+                    title='stuff')
+
+            def rx1(m):
+                print('RX1 >', m)
+            def rx2(m):
+                print('RX2 >>', m)
+
+            def marksReceived(count):
+                assert count == 1
+                searchR = marks2Net.search(hashmarkpath)
+                assert  searchR[0] == hashmarkpath
+
+                exchanger.stop()
+                exchanger2.stop()
+
+                stopDaemons(ipfsdaemon, ipfsdaemon2)
+
+            ctx = Ctx()
+            exchanger = HashmarksExchanger(iclient, event_loop, ctx, marks,
+                    marksNet)
+            exchanger.start()
+            ctx.pubsubMessageRx.connect(rx1)
+
+            ctx2 = Ctx()
+            ctx2.pubsubMessageRx.connect(rx2)
+            ctx2.pubsubMarksReceived.connect(marksReceived)
+            exchanger2 = HashmarksExchanger(iclient2, event_loop, ctx2, marks2,
+                    marks2Net)
+            exchanger2.start()
+            await asyncio.sleep(1)
+            marks.insertMark(m1, 'shared/hashmarks')
+
+        await startDaemons(event_loop, ipfsdaemon, ipfsdaemon2, exchange)
+        await asyncio.wait([ipfsdaemon.exitFuture, ipfsdaemon2.exitFuture])
+
+        await iclient.close()
+        await iclient2.close()
+
+class Ctx(QObject):
+    pubsubMessageRx = pyqtSignal(dict)
+    pubsubMessageTx = pyqtSignal()
+    pubsubMarksReceived = pyqtSignal(int)
+
+class Exchanger(PubsubListener):
+    def __init__(self, client, loop, ipfsCtx):
+        super().__init__(client, loop, ipfsCtx, topic='test')
 
 @pytest.fixture()
 def configD(tmpdir):
