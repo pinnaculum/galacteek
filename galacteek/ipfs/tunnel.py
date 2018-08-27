@@ -68,9 +68,12 @@ class P2PListener(object):
         else:
             # Now that the listener is registered, create the server socket
             # and return the listener's address
-            self._server = await self.loop.create_server(self.protocolFactory,
-                self.address[0], self.address[1])
+            await self.createServer()
             return addr
+
+    async def createServer(self):
+        self._server = await self.loop.create_server(self.protocolFactory,
+            self.address[0], self.address[1])
 
     async def close(self):
         ret = await self.client.p2p.listener_close(self.protocol)
