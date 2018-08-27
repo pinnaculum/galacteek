@@ -316,32 +316,32 @@
         <translation>Dialogue</translation>
     </message>
     <message>
+        <location filename="../../galacteek/ui/donatedialog.ui" line="49"/>
+        <source>Monero donation address</source>
+        <translation type="obsolete">Adresse de donation Monero</translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/donatedialog.ui" line="54"/>
+        <source>Bitcoin donation address</source>
+        <translation>Adresse de donation Bitcoin</translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/donatedialog.ui" line="111"/>
+        <source>OK</source>
+        <translation>OK</translation>
+    </message>
+    <message>
         <location filename="../../galacteek/ui/donatedialog.ui" line="34"/>
         <source>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:&apos;Sans Serif&apos;; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p align=&quot;center&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;Any donation is most welcome to help keep the project&apos;s development going. The application&apos;s translation to other languages is planned as well as new features. Donations will help support other projects like &lt;/span&gt;&lt;a href=&quot;https://ipfs-search.com&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;IPFS Search&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;p align=&quot;center&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;Any donation is welcome and will help support other projects like &lt;/span&gt;&lt;a href=&quot;https://ipfs-search.com&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;IPFS Search&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;
 &lt;p align=&quot;center&quot; style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:10pt;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;p align=&quot;center&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;You can make a donation with Monero (or bitcoin) using the addresses below.&lt;/span&gt;&lt;/p&gt;
+&lt;p align=&quot;center&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;You can make a donation with Bitcoin using the address below.&lt;/span&gt;&lt;/p&gt;
 &lt;p align=&quot;center&quot; style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:10pt;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
 &lt;p align=&quot;center&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;Thanks!&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/donatedialog.ui" line="49"/>
-        <source>Monero donation address</source>
-        <translation>Adresse de donation Monero</translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/donatedialog.ui" line="108"/>
-        <source>Bitcoin donation address</source>
-        <translation>Adresse de donation Bitcoin</translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/donatedialog.ui" line="165"/>
-        <source>OK</source>
-        <translation>OK</translation>
     </message>
 </context>
 <context>
