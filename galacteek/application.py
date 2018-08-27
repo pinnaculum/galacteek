@@ -406,17 +406,17 @@ class GalacteekApplication(QApplication):
             CFG_KEY_PUBSUB)
         if pubsubEnabled:
             # Main pubsub topic
-            listenerMain = PubsubListener(self.ipfsClient,
-                self.loop, self.ipfsCtx, topic='galacteek.main')
-            listenerMain.start()
-            self.pubsubListeners.append(listenerMain)
+            self.psListenerMain = MainListener(self.ipfsClient,
+                self.loop, self.ipfsCtx)
+            self.psListenerMain.start()
+            self.pubsubListeners.append(self.psListenerMain)
 
             # Pubsub marks exchanger
-            listenerMarks = HashmarksExchanger(self.ipfsClient,
+            self.psListenerMarks = HashmarksExchanger(self.ipfsClient,
                 self.loop, self.ipfsCtx, self.marksLocal,
                 self.marksNetwork)
-            listenerMarks.start()
-            self.pubsubListeners.append(listenerMarks)
+            self.psListenerMarks.start()
+            self.pubsubListeners.append(self.psListenerMarks)
 
         self.feedFollower = FeedFollower(self, self.marksLocal)
         self.ipfsTaskOp(self.feedFollower.process)

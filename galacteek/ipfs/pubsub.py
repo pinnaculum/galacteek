@@ -12,7 +12,7 @@ from galacteek.core.asynclib import *
 class PubsubListener(object):
     """ IPFS pubsub listener for a given topic """
 
-    def __init__(self, client, loop, ipfsCtx, topic='defaulttopic'):
+    def __init__(self, client, loop, ipfsCtx, topic='galacteek.default'):
         self.ipfsCtx = ipfsCtx
         self.loop = loop
         self.topic = topic
@@ -132,3 +132,22 @@ class HashmarksExchanger(PubsubListener):
 
         if addedCount > 0:
             self.ipfsCtx.pubsubMarksReceived.emit(addedCount)
+
+class MainListener(PubsubListener):
+    def __init__(self, client, loop, ipfsCtx):
+        super().__init__(client, loop, ipfsCtx, topic='galacteek.main')
+
+    async def processMessages(self):
+        while True:
+            data = await self.inqueue.get()
+
+            msg = self.msgDataJson(data)
+            if not msg:
+                continue
+
+            msgType = msg.get('msgtype', None)
+            if msgType == IdentMessage.TYPE:
+                # TODO
+                pass
+
+            await asyncio.sleep(0)

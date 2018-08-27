@@ -23,3 +23,14 @@ class MarksBroadcastMessage(PubsubMessage):
             'marks': marksdict
         })
         return msg
+
+class IdentMessage(PubsubMessage):
+    TYPE = 'ident'
+
+    @staticmethod
+    def make(peerid, ident):
+        msg = IdentMessage({
+            'msgtype': IdentMessage.TYPE,
+            'ident': ident
+        })
+        return msg
