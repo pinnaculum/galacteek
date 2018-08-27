@@ -185,23 +185,17 @@ class IPFSMultipleCIDInputDialog(QDialog):
         self.done(1)
 
 class DonateDialog(QDialog):
-    def __init__(self, moneroAddr, bcAddr, parent=None):
+    def __init__(self, bcAddr, parent=None):
         super().__init__(parent)
 
         self.ui = ui_donatedialog.Ui_DonateDialog()
         self.ui.setupUi(self)
-        self.ui.moneroClip.clicked.connect(self.onMoneroClip)
         self.ui.okButton.clicked.connect(self.close)
         self.ui.bitcoinClip.clicked.connect(self.onBcClip)
 
-        self._moneroAddr = moneroAddr
         self._bcAddr = bcAddr
-        self.ui.moneroAddress.setText('<b>{0}</b>'.format(self._moneroAddr))
         self.ui.bitcoinAddress.setText('<b>{0}</b>'.format(self._bcAddr))
         self.setWindowTitle('Make a donation')
-
-    def onMoneroClip(self):
-        self.toClip(self._moneroAddr)
 
     def onBcClip(self):
         self.toClip(self._bcAddr)

@@ -681,9 +681,8 @@ class MainWindow(QMainWindow):
         self.registerTab(keysTab, name, current=True)
 
     def onHelpDonate(self):
-        moneroAddress = '48oNcgpqwUNWjHeTSSH8BCaJHMR7Bc8ooGY13USYxuMuGwtXfLQ1Qf9f7rJMB9g1PWELee2cNnTWz1rJiZyPigcXRCTkhU3'
         bcAddress = '3HSsNcwzkiWGu6wB18BC6D37JHExpxZvyS'
-        runDialog(DonateDialog, moneroAddress, bcAddress)
+        runDialog(DonateDialog, bcAddress)
 
     def addBrowserTab(self, label='No page loaded'):
         icon = getIconIpfsIce()

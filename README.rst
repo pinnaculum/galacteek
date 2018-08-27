@@ -1,3 +1,4 @@
+=========
 Galacteek
 =========
 
@@ -36,6 +37,9 @@ Now just run the application with:
 If you don't have go-ipfs_ already installed, the application will ask you
 whether you want to automatically download and install it from dist.ipfs.io_
 
+For the media player to work on Linux, you will need to install the
+*gstreamer* (1.x) package and all the gstreamer plugins.
+
 The following command-line switches and arguments can be used:
 
 .. code-block:: shell
@@ -54,16 +58,7 @@ The following command-line switches and arguments can be used:
 Docker image
 ------------
 
-Pull and run the latest Docker image from the Gitlab's registry with:
-
-.. code-block:: shell
-
-    docker pull registry.gitlab.com/galacteek/galacteek:latest
-    docker run -e DISPLAY=$DISPLAY -e QTWEBENGINE_DISABLE_SANDBOX=1 -v /tmp/.X11-unix:/tmp/.X11-unix registry.gitlab.com/galacteek/galacteek
-
-Be sure to have proper permissions to the X server. If you get a
-*connection refused* message, just run *xhost +*. The media player won't work
-with the Docker image.
+See the **README.docker.rst** file.
 
 Features
 ========
@@ -113,7 +108,7 @@ Screenshots
 
 See the screenshots_ directory.
 
-.. figure:: screenshots/browse-wikipedia-small.png
+.. figure:: https://gitlab.com/galacteek/galacteek/raw/master/screenshots/browse-wikipedia-small.png
     :target: https://gitlab.com/galacteek/galacteek/raw/master/screenshots/browse-wikipedia.png
     :align: center
     :alt: Browsing the Wikipedia mirror over IPFS
@@ -126,14 +121,12 @@ Platforms supported
 Mainly tested on Linux. The application relies heavily on quamash_ which
 should work with most platforms. Things relying on HTTPs (ipfs-search engine
 queries ..) might not work on Windows due to *ProactorEventLoop* being
-incompatible with SSL.
+incompatible with SSL, and manual installation of go-ipfs_ is advised on this
+platform.
 
-Contact and donations
-=====================
+Donations
+=========
 
-Contact by email at **galacteek@gmx.co.uk**
-
-Donations are welcome and will go to support other projects like ipfs-search_.
 You can find donation details in the *Donate* section of the *Help* menu in the
 application's main window.
 
