@@ -55,11 +55,6 @@ The following command-line switches and arguments can be used:
       --migrate             Activate automatic repository migration
       -d                    Activate debugging
 
-Docker image
-------------
-
-See the **README.docker.rst** file.
-
 Features
 ========
 
