@@ -292,7 +292,8 @@ class HashmarksTab(GalacteekTab, _MarksUpdater):
                 self.loop, parent=self)
         self.ui.toolbox.addItem(self.uiFeeds, iFeeds())
         self.ui.expandButton.clicked.connect(lambda:
-                self.ui.treeMarks.expandAll())
+            self.ui.treeMarks.expandAll() if self.ui.expandButton.isChecked()
+                else self.ui.treeMarks.collapseAll())
 
         self.filter = BasicKeyFilter()
         self.filter.deletePressed.connect(self.onDeletePressed)
