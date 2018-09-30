@@ -42,6 +42,24 @@ def directorySelect(caption=''):
     return QFileDialog.getExistingDirectory(None,
         caption, getHomePath(), QFileDialog.ShowDirsOnly)
 
+def filesSelect(filter='(*.*)'):
+    result = QFileDialog.getOpenFileNames(None,
+        '', getHomePath(), filter)
+    if result:
+        return result[0]
+
+def saveFileSelect(filter='(*.*)'):
+    result = QFileDialog.getSaveFileName(None,
+        '', getHomePath(), filter)
+    if result:
+        return result[0]
+
+def disconnectSig(sig, target):
+    try:
+        sig.disconnect(target)
+    except Exception as e:
+        pass
+
 def runDialog(cls, *args, **kw):
     title = kw.pop('title', None)
     accepted = kw.pop('accepted', None)

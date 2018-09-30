@@ -4,10 +4,14 @@ import asyncio
 import sys
 import argparse
 import shutil
-import os.path
+import os, os.path
+import subprocess
+import logging
+from distutils.version import StrictVersion
 
 from PyQt5.QtWidgets import QApplication
 
+from galacteek import log as logger, ensure
 
 from galacteek.ipfs import ipfsd, distipfsfetch
 from galacteek.ui import mainui
@@ -18,6 +22,14 @@ from galacteek.appsettings import *
 
 def whichIpfs():
     return shutil.which('ipfs')
+
+def ipfsVersion():
+    try:
+        p = subprocess.Popen(['ipfs', 'version', '-n'], stdout=subprocess.PIPE)
+        out, err = p.communicate()
+        return StrictVersion(out.decode().strip())
+    except:
+        return None
 
 async def fetchGoIpfsWrapper(app, timeout=60*10):
     try:
@@ -43,6 +55,19 @@ async def fetchGoIpfsDist(app):
             app.debug(str(e))
 
 def galacteekGui(args):
+    if args.debug:
+        logger.setLevel(logging.DEBUG)
+        logFormatter = logging.Formatter(
+                '%(asctime)s %(name)s %(levelname)s: %(message)s')
+        if args.logfile:
+            fh = logging.FileHandler(args.logfile)
+            fh.setFormatter(logFormatter)
+            logger.addHandler(fh)
+        else:
+            sh = logging.StreamHandler()
+            sh.setFormatter(logFormatter)
+            logger.addHandler(sh)
+
     gApp = application.GalacteekApplication(profile=args.profile,
             debug=args.debug)
     loop = gApp.setupAsyncLoop()
@@ -80,22 +105,31 @@ def galacteekGui(args):
                             migrateRepo=enableMigrate)
 
             if fetchWanted:
-                fut = asyncio.ensure_future(fetchGoIpfsWrapper(gApp))
+                fut = ensure(fetchGoIpfsWrapper(gApp))
                 fut.add_done_callback(fetchFinished)
             else:
                 gApp.systemTrayMessage('Galacteek',
                         iGoIpfsNotFound())
         else:
+            minVersion = StrictVersion('0.4.7')
+            version = ipfsVersion()
+
+            if version < minVersion:
+                # warning here
+                log.debug('go-ipfs version found {0} is too old'.format(
+                    version))
+                gApp.systemTrayMessage('Galacteek',
+                        iGoIpfsTooOld())
+
             gApp.startIpfsDaemon(goIpfsPath=ipfsPath,
                     migrateRepo=enableMigrate)
     else:
-        gApp.updateIpfsClient()
+        ensure(gApp.updateIpfsClient())
 
-    gApp.startPinner()
     gApp.mainWindow.addHashmarksTab()
 
     if args.noreleasecheck is False:
-        gApp.checkReleases()
+        ensure(gApp.checkReleases())
 
     # Use the context manager so loop cleanup/close is automatic
     with loop:
@@ -112,6 +146,8 @@ def start():
         help='IPFS http gateway port number')
     parser.add_argument('--profile', default='main',
         help='Application Profile')
+    parser.add_argument('--logfile', default=None,
+        help='Log file')
     parser.add_argument('--migrate', action='store_true',
         dest='migrate', help = 'Activate automatic repository migration')
     parser.add_argument('--no-release-check', action='store_true',

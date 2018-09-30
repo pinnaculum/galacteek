@@ -7,7 +7,7 @@ import copy
 from PyQt5.QtWidgets import (QApplication, QMainWindow,
         QDialog, QLabel, QTextEdit, QPushButton, QVBoxLayout,
         QSystemTrayIcon, QMenu, QAction, QActionGroup, QToolButton,
-        QTreeView, QHeaderView, QInputDialog)
+        QTreeView, QHeaderView, QInputDialog, QToolTip)
 from PyQt5.QtCore import (QCoreApplication, QUrl, QBuffer, QIODevice, Qt,
     QTimer, QFile)
 from PyQt5.QtCore import pyqtSignal, QUrl, QObject, QDateTime
@@ -15,13 +15,14 @@ from PyQt5 import QtWebEngineWidgets, QtWebEngine, QtWebEngineCore
 from PyQt5.QtGui import (QClipboard, QPixmap, QIcon, QKeySequence,
         QStandardItemModel, QStandardItem)
 
+from galacteek.core.asynclib import asyncify
 from galacteek.ui import mediaplayer
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.cidhelpers import cidValid
-from . import ui_galacteek, ui_ipfsinfos
+from . import ui_galacteek, ui_ipfsinfos, ui_peersmgr
 from . import (browser, files, keys, settings, hashmarks,
-        textedit, ipfsview, dag, ipfssearchview)
+        textedit, ipfsview, dag, ipfssearchview, peers, eventlog)
 from .helpers import *
 from .modelhelpers import *
 from .widgets import GalacteekTab
@@ -41,6 +42,12 @@ def iPinningStatus():
 
 def iDagViewer():
     return QCoreApplication.translate('GalacteekWindow', 'DAG viewer')
+
+def iEventLog():
+    return QCoreApplication.translate('GalacteekWindow', 'Event Log')
+
+def iPeers():
+    return QCoreApplication.translate('GalacteekWindow', 'Peers')
 
 def iIpfsSearch(text):
     return QCoreApplication.translate('GalacteekWindow',
@@ -181,7 +188,8 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__()
 
         self.showMaximized()
-        self.app = app
+        self._app = app
+        self._allTabs = []
 
         self.ui = ui_galacteek.Ui_GalacteekWindow()
         self.ui.setupUi(self)
@@ -199,12 +207,10 @@ class MainWindow(QMainWindow):
                 self.onAboutGalacteek)
         self.ui.actionDonate.triggered.connect(
                 self.onHelpDonate)
-        self.ui.actionShowPeersInformation.triggered.connect(
-                self.onShowPeersInformation)
-        self.ui.actionShowIpfsRefs.triggered.connect(
-                self.onShowIpfsRefs)
         self.ui.actionSettings.triggered.connect(
                 self.onSettings)
+        self.ui.actionEvent_log.triggered.connect(
+                self.onOpenEventLog)
 
         self.menuManual = QMenu(iManual())
         self.ui.menuAbout.addMenu(self.menuManual)
@@ -278,6 +284,18 @@ class MainWindow(QMainWindow):
         self.ui.ipfsInfosButton.setToolTip(iIpfsInfos())
         self.ui.ipfsInfosButton.clicked.connect(self.onIpfsInfos)
 
+        self.profileMenu = QMenu()
+
+        self.profileMenu.addAction('View Homepage',
+                self.onProfileViewHomepage)
+        self.profileMenu.addSeparator()
+        self.profileMenu.addAction('Post Message',
+                self.onProfilePostMessage)
+        self.ui.profileEditButton.setEnabled(False)
+        self.ui.profileEditButton.clicked.connect(self.onProfileEditDialog)
+        self.ui.profileEditButton.setPopupMode(QToolButton.MenuButtonPopup)
+        self.ui.profileEditButton.setMenu(self.profileMenu)
+
         self.ui.statusbar.addPermanentWidget(self.ui.ipfsInfosButton)
         self.ui.statusbar.addPermanentWidget(self.ui.pinningStatusButton)
         self.ui.statusbar.addPermanentWidget(self.ui.pubsubStatusButton)
@@ -291,9 +309,10 @@ class MainWindow(QMainWindow):
         self.enableButtons(False)
 
         # Connect the IPFS context signals
+        self.app.ipfsCtx.ipfsConnectionReady.connect(self.onConnReady)
         self.app.ipfsCtx.ipfsRepositoryReady.connect(self.onRepoReady)
-        self.app.ipfsCtx.pubsubMessageRx.connect(self.onPubsubRx)
-        self.app.ipfsCtx.pubsubMessageTx.connect(self.onPubsubTx)
+        self.app.ipfsCtx.pubsub.psMessageRx.connect(self.onPubsubRx)
+        self.app.ipfsCtx.pubsub.psMessageTx.connect(self.onPubsubTx)
         self.app.ipfsCtx.profilesAvailable.connect(self.onProfilesList)
         self.app.ipfsCtx.profileChanged.connect(self.onProfileChanged)
         self.app.ipfsCtx.pinItemStatusChanged.connect(self.onPinStatusChanged)
@@ -304,22 +323,37 @@ class MainWindow(QMainWindow):
         self.app.clipTracker.clipboardHistoryChanged.connect(self.onClipboardHistory)
         self.app.manualAvailable.connect(self.onManualAvailable)
 
-        self.allTabs = []
-
         self.ui.tabWidget.removeTab(0)
 
-    def getApp(self):
-        return self.app
+    @property
+    def app(self):
+        return self._app
 
-    def onProfileChanged(self, pName):
+    @property
+    def allTabs(self):
+        return self._allTabs
+
+    def onOpenEventLog(self):
+        self.addEventLogTab(current=True)
+
+    def onProfileEditDialog(self):
+        runDialog(ProfileEditDialog, self.app.ipfsCtx.currentProfile,
+                title='Profile Edit dialog')
+
+    @asyncify
+    async def onProfileChanged(self, pName, profile):
+        self.ui.profileEditButton.setEnabled(False)
+        await profile.userInfo.loaded
+        self.ui.profileEditButton.setEnabled(True)
+
         for action in self.profilesActionGroup.actions():
             if action.data() == pName:
                 action.setChecked(True)
                 # Refresh the file manager
-                tab = self.findTabFileManager()
-                if tab:
-                    tab.setupModel()
-                    tab.pathSelectorDefault()
+                filesM = self.findTabFileManager()
+                if filesM:
+                    filesM.setupModel()
+                    filesM.pathSelectorDefault()
 
     def onUserProfile(self, action):
         if action is self.ui.actionNew_Profile:
@@ -327,12 +361,24 @@ class MainWindow(QMainWindow):
                     iNewProfile())
             profile, create = inText
             if create is True and profile:
-                self.app.task(self.app.ipfsCtx.profileNew, profile)
+                self.app.task(self.app.ipfsCtx.profileNew, profile,
+                        emitavail=True)
         else:
             pName = action.text()
             if action.isChecked() and \
                     self.app.ipfsCtx.currentProfile.name != pName:
                 rCode = self.app.ipfsCtx.profileChange(pName)
+
+    def onProfileCreateGPGKey(self):
+        pass
+
+    def onProfilePostMessage(self):
+        runDialog(ProfilePostMessageDialog, self.app.ipfsCtx.currentProfile)
+
+    def onProfileViewHomepage(self):
+        #self.addBrowserTab().browseIpnsHash(self.app.ipfsCtx.currentProfile.keyRootId)
+        self.addBrowserTab().browseFsPath(os.path.join(
+            joinIpns(self.app.ipfsCtx.currentProfile.keyRootId), 'index.html'))
 
     def onProfilesList(self, pList):
         currentList = [action.data() for action in \
@@ -360,6 +406,13 @@ class MainWindow(QMainWindow):
         self.app.task(dlg.loadInfos)
         dlg.exec_()
 
+    def onConnReady(self):
+        if self.app.debugEnabled is True:
+            self.addEventLogTab()
+
+        # Peers manager
+        self.showPeersMgr()
+
     def onPubsubRx(self):
         now = QDateTime.currentDateTime()
         self.ui.pubsubStatusButton.setIcon(getIcon('network-transmit.png'))
@@ -381,7 +434,7 @@ class MainWindow(QMainWindow):
         iconLoading = getIcon('pin-blue-loading.png')
         iconNormal = getIcon('pin-black.png')
 
-        status = copy.copy(self.app.pinner.status())
+        status = copy.copy(self.app.ipfsCtx.pinner.status)
         statusMsg = iItemsInPinningQueue(len(status))
 
         for pinPath, pinStatus in status.items():
@@ -442,7 +495,7 @@ class MainWindow(QMainWindow):
             else:
                 idx = self.ui.tabWidget.addTab(tab, name)
 
-        self.allTabs.append(tab)
+        self._allTabs.append(tab)
 
         if current is True:
             self.ui.tabWidget.setCurrentWidget(tab)
@@ -553,13 +606,9 @@ class MainWindow(QMainWindow):
         from galacteek import __version__
         QMessageBox.about(self, 'About Galacteek', iAbout())
 
-    def onShowPeersInformation(self):
-        pass
-
-    def onShowIpfsRefs(self):
-        pass
-
-    def onMainTimerStatus(self):
+    @asyncify
+    async def onMainTimerStatus(self):
+        @ipfsOpFn
         async def connectionInfo(oper):
             try:
                 info = await oper.client.core.id()
@@ -575,11 +624,15 @@ class MainWindow(QMainWindow):
                 return self.statusMessage(iCxButNoPeers(
                     nodeId, nodeAgent))
 
+            gPeers = await oper.ctx.galacteekPeers()
+
             peersCount = len(peers)
+            gPeersCount = len(gPeers)
+
             message = iConnectStatus(nodeId, nodeAgent, peersCount)
             self.statusMessage(message)
 
-        self.app.ipfsTaskOp(connectionInfo)
+        await connectionInfo()
 
     def keyPressEvent(self, event):
         # Ultimately this will be moved to configurable shortcuts
@@ -697,6 +750,16 @@ class MainWindow(QMainWindow):
 
         self.allTabs.append(tab)
         return tab
+
+    def addEventLogTab(self, current=False):
+        self.registerTab(eventlog.EventLogWidget(self), iEventLog(),
+                current=current)
+
+    def showPeersMgr(self):
+        # Peers mgr
+        self.peersTracker = peers.PeersTracker(self.app.ipfsCtx)
+        pMgr = peers.PeersManager(self, self.peersTracker)
+        self.registerTab(pMgr, iPeers())
 
     def quit(self):
         # Qt and application exit

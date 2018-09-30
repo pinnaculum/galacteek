@@ -23,10 +23,10 @@ def iCxButNoPeers(id, agent):
         'IPFS node: {0} ({1}): not connected to any peers').format(
         id, agent)
 
-def iConnectStatus(id, agent, peercount):
+def iConnectStatus(id, agent, peerscount):
     return QCoreApplication.translate('GalacteekWindow',
         'IPFS node: {0} ({1}): connected to {2} peer(s)').format(
-        id, agent, peercount)
+        id, agent, peerscount)
 
 def iItemsInPinningQueue(items):
     return QCoreApplication.translate('GalacteekWindow',
@@ -115,6 +115,10 @@ def iFsRepoMigrateNotFound():
 def iGoIpfsNotFound():
     return QCoreApplication.translate('Galacteek',
         'Error: Could not find go-ipfs on your system')
+
+def iGoIpfsTooOld():
+    return QCoreApplication.translate('Galacteek',
+        'Error: go-ipfs version found on your system is too old')
 
 def iGoIpfsFetchAsk():
     return QCoreApplication.translate('Galacteek',

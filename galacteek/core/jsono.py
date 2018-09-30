@@ -13,13 +13,16 @@ class QJSONObj(QObject):
         super().__init__()
 
         self.__dict__.update(kw)
-        self._root = data if data else self._init()
+        self._load(data)
         self.changed.connect(self.onChanged)
         self.changed.emit()
 
     @property
     def root(self):
         return self._root
+
+    def _load(self, data):
+        self._root = data if data else self._init()
 
     def prepare(self, root):
         pass
@@ -45,18 +48,18 @@ class QJSONObj(QObject):
         self.serialize(sys.stdout)
 
 class QJSONFile(QJSONObj):
-    def __init__(self, path):
+    def __init__(self, path, **kw):
         self._path = path
 
-        super(QJSONFile, self).__init__()
+        super(QJSONFile, self).__init__(**kw)
 
     def _init(self):
         try:
             root = json.load(open(self.path, 'rt'))
         except Exception as e:
             root = collections.OrderedDict()
-
         self.prepare(root)
+
         return root
 
     @property

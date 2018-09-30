@@ -43,20 +43,29 @@ class build_docs(Command):
             'galacteek/docs/manual/en/html'])
 
 class build_ui(Command):
-    user_options = []
+    user_options = [
+        ("uiforms=", None, "UI forms list to build, separated by ','"),
+    ]
 
     def initialize_options(self):
-        pass
+        self.uiforms = None
 
     def finalize_options(self):
         pass
 
     def run(self):
+        uifiles = []
         uidir = 'galacteek/ui'
         dstdir = uidir
 
-        for uifile in glob.iglob('{}/*.ui'.format(uidir)):
-            print('Updating UI:', uifile)
+        if self.uiforms:
+            uifiles = [ os.path.join(uidir, '{0}.ui'.format(form)) for form
+                    in self.uiforms.split(',') ]
+        else:
+            uifiles = glob.iglob('{}/*.ui'.format(uidir))
+
+        for uifile in uifiles:
+            print('* Building UI form:', uifile)
             base = os.path.basename(uifile).replace('.ui', '')
             out = 'ui_{}.py'.format(base)
 
