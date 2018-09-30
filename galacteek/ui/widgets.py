@@ -9,7 +9,6 @@ class GalacteekTab(QWidget):
         super().__init__(parent=parent)
 
         self.gWindow = gWindow
-        self.app.task(self.initialize)
 
     def onClose(self):
         return True
@@ -20,11 +19,11 @@ class GalacteekTab(QWidget):
 
     @property
     def app(self):
-        return self.gWindow.getApp()
+        return self.gWindow.app
 
     @property
     def loop(self):
-        return self.app.getLoop()
+        return self.app.loop
 
     @property
     def profile(self):

@@ -272,7 +272,9 @@ class MediaPlayerTab(GalacteekTab):
         if exists:
             return messageBox(iPlaylistExists())
 
-        async for ent in ipfsop.client.core.add_json(obj.root):
+        ent = await ipfsop.client.core.add_json(obj.root)
+
+        if ent:
             ret = await ipfsop.filesLinkFp(ent, objPath)
             self.playlistIpfsPath = joinIpfs(ent['Hash'])
             self.copyPathAction.setEnabled(True)

@@ -17,8 +17,12 @@ yarl = "==1.2.6"
 aiofiles = "==0.3.2"
 aiohttp = "==3.3.2"
 quamash = "==0.6.1"
-aioipfs = "==0.3"
+aioipfs = "==0.3.3"
 wheel = "*"
+jsonschema = "==2.6.0"
+json-traverse = "==0.4"
+protobuf = "==3.6.1"
+protobuf-to-dict = "==0.1.0"
 
 [dev-packages]
 pytest = "*"

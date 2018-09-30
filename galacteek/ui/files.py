@@ -693,7 +693,7 @@ class FilesTab(GalacteekTab):
             await asyncio.wait_for(
                 self.listPath(ipfsop, path, parentItem=parentItem,
                     maxdepth=maxdepth, autoexpand=autoexpand), 60)
-        except aioipfs.APIException:
+        except aioipfs.APIError:
             messageBox(iErrNoCx())
 
         self.enableButtons()

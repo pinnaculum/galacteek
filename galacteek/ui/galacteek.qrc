@@ -1,5 +1,7 @@
 <RCC>
   <qresource>
+    <file>../../share/icons/profile-user.png</file>
+    <file>../../share/icons/ipfs-cube-64.png</file>
     <file>../../share/icons/unknown-file.png</file>
     <file>../../share/icons/expand.png</file>
     <file>../../share/icons/hash.png</file>

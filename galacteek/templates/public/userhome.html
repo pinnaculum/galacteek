@@ -1,0 +1,34 @@
+<html>
+    <head>
+        <title>
+            {{ profile.userInfo.username }}'s homepage
+        </title>
+        <link rel="stylesheet" type="text/css" href="css/theme.css" />
+    </head>
+    <body>
+
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <a href='https://ipfs.io'>
+                <img width='32' height='32'  align='right' src='media/images/ipfs-cube.png'/>
+            </a>
+        </ul>
+
+        <div>
+            <h2>{{ profile.userInfo.username }}</h2>
+            <div>
+                <p><img src='media/images/avatar'/></p>
+            </div>
+        </div>
+
+        <h1>Latest messages</h1>
+
+{% for msg in boardMessages %}
+    <div class="smallbox">
+        <h4>{{ msg['title'] }}, {{ msg['date'] }}</h4>
+        <p>{{ msg['content'] }}</p>
+    </div>
+{% endfor %}
+
+    </body>
+</html>

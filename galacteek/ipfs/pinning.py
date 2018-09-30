@@ -3,59 +3,82 @@ import asyncio
 
 import aioipfs
 
+from galacteek import log
+from galacteek.ipfs.wrappers import ipfsOp
+
 class Pinner(object):
     """ Pins objects on request through an async queue """
 
-    def __init__(self, app):
-        self.pintasks = []
-        self.app = app
-        self.queue = asyncio.Queue(loop=self.app.loop)
+    def __init__(self, ctx):
+        self._pinQueue = asyncio.Queue()
+        self._ctx = ctx
         self.lock = asyncio.Lock()
-        self.pinstatus = {}
+        self._pinStatus = {}
 
+    @property
+    def pinQueue(self):
+        return self._pinQueue
+
+    @property
+    def ipfsCtx(self):
+        return self._ctx
+
+    @property
     def status(self):
-        return self.pinstatus
+        return self._pinStatus
+
+    def debug(self, msg):
+        log.debug('Pinning service: {}'.format(msg))
 
     def _emitSLength(self):
-        self.app.ipfsCtx.pinItemsCount.emit(len(self.pinstatus))
+        self.ipfsCtx.pinItemsCount.emit(len(self._pinStatus))
 
     def pathRegister(self, path):
-        self.pinstatus[path] = {}
-        self.app.ipfsCtx.pinNewItem.emit(path)
+        self._pinStatus[path] = {}
+        self.ipfsCtx.pinNewItem.emit(path)
         self._emitSLength()
 
     def pathDelete(self, path):
-        if path in self.pinstatus:
-            del self.pinstatus[path]
+        if path in self._pinStatus:
+            del self._pinStatus[path]
         self._emitSLength()
 
-    async def pin(self, path, recursive=False):
-        ipfsClient = self.app.ipfsClient
+    @ipfsOp
+    async def pin(self, op, path, recursive=False):
+        self.debug('pinning object {0}, recursive is {1}'.format(
+            path, recursive))
         self.pathRegister(path)
 
-        async for pinned in ipfsClient.pin.add(path, recursive=recursive):
+        async for pinned in op.client.pin.add(path, recursive=recursive):
+            self.debug('Pinning progress {0}: {1}'.format(path, pinned))
             await asyncio.sleep(0)
-            async with self.lock:
-                self.pinstatus[path] = pinned
-            self.app.ipfsCtx.pinItemStatusChanged.emit(path, pinned)
+            with await self.lock:
+                self._pinStatus[path] = pinned
+            self.ipfsCtx.pinItemStatusChanged.emit(path, pinned)
 
-        async with self.lock:
+        with await self.lock:
             self.pathDelete(path)
 
-        self.app.ipfsCtx.pinFinished.emit(path)
+        self.ipfsCtx.pinFinished.emit(path)
         return path
 
-    async def enqueue(self, path, recursive, onSuccess):
-        await self.queue.put((path, recursive, onSuccess))
-        self.app.ipfsCtx.pinQueueSizeChanged.emit(self.queue.qsize())
+    async def queue(self, path, recursive, onSuccess):
+        """ Queue an item for processing """
+        await self.pinQueue.put((path, recursive, onSuccess))
+        self.ipfsCtx.pinQueueSizeChanged.emit(self.pinQueue.qsize())
 
     async def process(self):
-        while True:
-            item = await self.queue.get()
-            if item is None:
-                continue
-            self.app.ipfsCtx.pinQueueSizeChanged.emit(self.queue.qsize())
-            path, recursive, callback = item
-            f = asyncio.ensure_future(self.pin(path, recursive=recursive))
-            if callback:
-                f.add_done_callback(callback)
+        try:
+            while True:
+                item = await self.pinQueue.get()
+                if item is None:
+                    self.debug('null item in queue')
+                    continue
+
+                self.ipfsCtx.pinQueueSizeChanged.emit(self.pinQueue.qsize())
+                path, recursive, callback = item
+                f = asyncio.ensure_future(self.pin(path, recursive=recursive))
+                if callback:
+                    f.add_done_callback(callback)
+        except asyncio.CancelledError as err:
+            self.debug('cancelled error: {}'.format(str(err)))

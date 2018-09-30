@@ -209,8 +209,7 @@ class NetworkMarksView(QWidget, _MarksUpdater):
         self.ui.searchButton.clicked.connect(self.onSearch)
 
         self.model = HashmarksModel()
-        self.model.setHorizontalHeaderLabels([iPath(), iTitle(), iShared(),
-            iDate(), iTimestamp()])
+        self.model.setHorizontalHeaderLabels([iTitle(), iPath(), iDate()])
 
         self.tree = self.ui.treeNetMarks
         self.tree.setModel(self.model)
@@ -219,6 +218,10 @@ class NetworkMarksView(QWidget, _MarksUpdater):
                 QHeaderView.ResizeToContents)
         self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self.onContextMenu)
+
+        self.ui.expandButton.clicked.connect(lambda:
+            self.tree.expandAll() if self.ui.expandButton.isChecked()
+                else self.tree.collapseAll())
 
         self.marks.changed.connect(self.doMarksUpdate)
 
@@ -229,7 +232,7 @@ class NetworkMarksView(QWidget, _MarksUpdater):
         if not idx.isValid():
             return
 
-        idxPath = self.model.sibling(idx.row(), 0, idx)
+        idxPath = self.model.sibling(idx.row(), 1, idx)
         dataPath = self.model.data(idxPath)
 
         localCategories = self.marksLocal.getCategories()
@@ -268,7 +271,7 @@ class NetworkMarksView(QWidget, _MarksUpdater):
             self.tree.setCurrentIndex(idx)
 
     def onDoubleClick(self, index):
-        indexPath = self.model.sibling(index.row(), 0, index)
+        indexPath = self.model.sibling(index.row(), 1, index)
         path = self.model.data(indexPath)
         if path:
             self.marksTab.gWindow.addBrowserTab().browseFsPath(path)
@@ -290,9 +293,14 @@ class HashmarksTab(GalacteekTab, _MarksUpdater):
 
         self.uiFeeds = FeedsView(self, self.marksLocal,
                 self.loop, parent=self)
+        self.uiNet = NetworkMarksView(self, self.marksNetwork,
+                self.marksLocal, self.loop, parent=self)
+
         self.ui.toolbox.addItem(self.uiFeeds, iFeeds())
+        self.ui.toolbox.addItem(self.uiNet, iNetworkMarks())
         self.ui.expandButton.clicked.connect(lambda:
-                self.ui.treeMarks.expandAll())
+            self.ui.treeMarks.expandAll() if self.ui.expandButton.isChecked()
+                else self.ui.treeMarks.collapseAll())
 
         self.filter = BasicKeyFilter()
         self.filter.deletePressed.connect(self.onDeletePressed)
@@ -301,6 +309,7 @@ class HashmarksTab(GalacteekTab, _MarksUpdater):
         icon1 = getIcon('hashmarks.png')
         self.ui.toolbox.setItemIcon(0, icon1)
         self.ui.toolbox.setItemIcon(1, icon1)
+        self.ui.toolbox.setItemIcon(2, icon1)
 
         self.modelMarks = model if model else HashmarksModel()
         self.modelMarks.setHorizontalHeaderLabels([iTitle(), iPath(), iDate()])
