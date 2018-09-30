@@ -50,7 +50,7 @@ async def getTitleDirectory(client, path):
 
     try:
         data = await client.cat(indexPath)
-    except aioipfs.APIException as exc:
+    except aioipfs.APIError as exc:
         if exc.code == 0 and exc.message.startswith('no link named'):
             return None
         if exc.code == 0 and exc.message == 'this dag node is a directory':
@@ -67,7 +67,7 @@ async def getTitle(client, path):
     """
     try:
         data = await client.cat(path)
-    except aioipfs.APIException as exc:
+    except aioipfs.APIError as exc:
         if exc.code == 0 and exc.message.startswith('no link named'):
             return None
         if exc.code == 0 and exc.message == 'this dag node is a directory':

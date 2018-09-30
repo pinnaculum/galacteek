@@ -19,3 +19,12 @@
 #
 
 __version__ = '0.2.4'
+
+import logging
+
+from galacteek.core.asynclib import *
+
+GALACTEEK_NAME = 'galacteek'
+
+log = logging.getLogger('galacteek')
+log.setLevel(logging.INFO)

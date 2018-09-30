@@ -21,6 +21,7 @@ from PyQt5.QtGui import QClipboard, QPixmap, QIcon, QKeySequence
 
 from yarl import URL
 
+from galacteek import log
 from galacteek.ipfs.wrappers import *
 
 from . import ui_browsertab
@@ -117,13 +118,17 @@ class IPFSSchemeHandler(QtWebEngineCore.QWebEngineUrlSchemeHandler):
         self.app = app
 
     def requestStarted(self, request):
-        gatewayUrl = self.app.gatewayUrl
         url = request.requestUrl()
         scheme = url.scheme()
         path = url.path()
 
+        log.debug('IPFS scheme handler request {url} {scheme} {path} {method}'.format(
+            url=url.toString(), scheme=scheme, path=path,
+            method=request.requestMethod()))
+
         def redirectIpfs(path):
             yUrl = URL(url.toString())
+
             if len(yUrl.parts) < 3:
                 messageBox(iInvalidUrl())
                 return None
@@ -135,6 +140,10 @@ class IPFSSchemeHandler(QtWebEngineCore.QWebEngineUrlSchemeHandler):
             if url.hasQuery():
                 newUrl.setQuery(url.query())
 
+            log.debug('IPFS scheme handler redirects to {redirect} {scheme} \
+                    {valid}'.format(
+                redirect=newUrl.toString(), scheme=newUrl.scheme(),
+                valid=newUrl.isValid()))
             return request.redirect(newUrl)
 
         if scheme in [SCHEME_FS, SCHEME_IPFS, SCHEME_DWEB]:
@@ -417,11 +426,11 @@ class BrowserTab(GalacteekTab):
 
     def pinPath(self, path, recursive=True, notify=True):
         async def pinCoro(client, path):
-            pinner = self.app.pinner
+            pinner = self.app.ipfsCtx.pinner
             onSuccess = None
             if notify is True:
                 onSuccess = self.onPinSuccess
-            await pinner.enqueue(path, recursive, onSuccess)
+            await pinner.queue(path, recursive, onSuccess)
 
         self.app.ipfsTask(pinCoro, path)
 

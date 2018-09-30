@@ -1,19 +1,26 @@
 
 import time
+import asyncio
 
 from PyQt5.QtWidgets import (QWidget, QApplication,
         QDialog, QLabel, QTextEdit, QPushButton, QMessageBox)
 
 from PyQt5.QtCore import QUrl, Qt, pyqtSlot, QCoreApplication
-from PyQt5.QtGui import QClipboard
+from PyQt5.QtGui import QClipboard, QPixmap, QImage
 
+from galacteek import asyncify, ensure
 from galacteek.core.ipfsmarks import *
 from galacteek.ipfs import cidhelpers
+from galacteek.ipfs.ipfsops import *
+from galacteek.ipfs.wrappers import *
 
 from . import ui_addkeydialog, ui_addhashmarkdialog
 from . import ui_addfeeddialog
 from . import ui_ipfscidinputdialog, ui_ipfsmultiplecidinputdialog
+from . import ui_profileeditdialog
 from . import ui_donatedialog
+from . import ui_profilepostmessage
+from .helpers import *
 
 import mimetypes
 
@@ -72,7 +79,7 @@ class AddHashmarkDialog(QDialog):
         self.done(0)
 
 class AddFeedDialog(QDialog):
-    def __init__(self, marks, resource, parent=None):
+    def __init__(self, marks, resource, feedName=None, parent=None):
         super().__init__(parent)
 
         self.marks = marks
@@ -82,6 +89,9 @@ class AddFeedDialog(QDialog):
         self.ui.setupUi(self)
         self.ui.resourceLabel.setText(self.ipfsResource)
         self.ui.resourceLabel.setStyleSheet(boldLabelStyle())
+
+        if isinstance(feedName, str):
+            self.ui.feedName.setText(feedName)
 
     def accept(self):
         share = self.ui.share.isChecked()
@@ -209,4 +219,106 @@ class DonateDialog(QDialog):
         self.done(1)
 
     def accept(self):
+        self.done(1)
+
+class ProfileEditDialog(QDialog):
+    def __init__(self, profile, parent=None):
+        super().__init__(parent)
+
+        self.profile = profile
+
+        self.ui = ui_profileeditdialog.Ui_ProfileEditDialog()
+        self.ui.setupUi(self)
+
+        self.ui.labelWarning.setStyleSheet('QLabel { font-weight: bold; }')
+        self.ui.username.setText(self.profile.userInfo.username)
+        self.ui.firstname.setText(self.profile.userInfo.firstname)
+        self.ui.lastname.setText(self.profile.userInfo.lastname)
+        self.ui.email.setText(self.profile.userInfo.email)
+        self.ui.org.setText(self.profile.userInfo.org)
+
+        if self.profile.userInfo.avatarCid != '':
+            self.updateAvatarCid()
+
+        self.ui.profileCryptoId.setText('<b>{}</b>'.format(
+            self.profile.userInfo.objHash))
+
+        self.ui.changeIconButton.clicked.connect(self.changeIcon)
+        self.ui.updateButton.clicked.connect(self.save)
+        self.ui.cancelButton.clicked.connect(self.close)
+
+        self.reloadIcon()
+
+    def updateAvatarCid(self):
+        self.ui.iconHash.setText('<a href="fs:{0}">{1}</a>'.format(
+            joinIpfs(self.profile.userInfo.avatarCid),
+            self.profile.userInfo.avatarCid))
+
+    def reloadIcon(self):
+        ensure(self.loadIcon())
+
+    @asyncify
+    async def loadIcon(self):
+        @ipfsOpFn
+        async def load(op, cid):
+            try:
+                imgData = await op.client.cat(cid)
+                img1 = QImage()
+                img1.loadFromData(imgData)
+                img = img1.scaledToWidth(256)
+                self.ui.iconPixmap.setPixmap(QPixmap.fromImage(img))
+            except Exception as e:
+                messageBox('Error while loading image')
+
+        if self.profile.userInfo.avatarCid != '':
+            await load(self.profile.userInfo.avatarCid)
+
+    def changeIcon(self):
+        fps = filesSelect(filter='Images (*.xpm, *.jpg, *.png)')
+        if len(fps) > 0:
+            ensure(self.setIcon(fps.pop()))
+
+    @ipfsOp
+    async def setIcon(self, op, fp):
+        entry = await op.addPath(fp, recursive=False)
+        if entry:
+            self.profile.userInfo.setAvatarCid(entry['Hash'])
+            self.reloadIcon()
+            self.updateAvatarCid()
+
+    def save(self):
+        kw = {}
+        for key in ['username', 'firstname',
+                    'lastname', 'email', 'org']:
+            val = getattr(self.ui, key).text()
+            if val is not '':
+                kw[key] = val
+
+        self.profile.userInfo.setInfos(**kw)
+        self.done(1)
+
+    def reject(self):
+        self.done(0)
+
+class ProfilePostMessageDialog(QDialog):
+    def __init__(self, profile, parent=None):
+        super().__init__(parent)
+
+        self.profile = profile
+
+        self.ui = ui_profilepostmessage.Ui_PostMessageDialog()
+        self.ui.setupUi(self)
+
+    def accept(self):
+        ensure(self.post())
+
+    async def post(self):
+        msg = self.ui.message.toPlainText()
+        title = self.ui.title.text()
+        if not title:
+            title = 'No title'
+
+        if msg:
+            ensure(self.profile.app.postMessage(title, msg))
+
         self.done(1)

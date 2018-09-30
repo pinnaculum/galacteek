@@ -28,6 +28,10 @@ def rSlash(path):
     return path.rstrip('/')
 
 class IPFSHashMark(collections.UserDict):
+    @property
+    def markData(self):
+        return self.data[self.path]
+
     def addTags(self, tags):
         self.data[self.path]['tags'] += tags
 
@@ -70,16 +74,25 @@ class IPFSHashMark(collections.UserDict):
 class IPFSMarks(QObject):
     changed = pyqtSignal()
     markDeleted = pyqtSignal(str)
-    markAdded = pyqtSignal()
+    markAdded = pyqtSignal(str, dict)
 
-    def __init__(self, path, parent=None):
+    def __init__(self, path, parent=None, autosave=True):
         super().__init__(parent)
 
-        self.path = path
+        self._path = path
+        self._autosave = autosave
         self._marks = self.load()
         self.changed.connect(self.onChanged)
         self.lastsaved = time.time()
         self.changed.emit()
+
+    @property
+    def path(self):
+        return self._path
+
+    @property
+    def autosave(self):
+        return self._autosave
 
     @property
     def asyncQ(self):
@@ -102,12 +115,9 @@ class IPFSMarks(QObject):
     def _rootFeeds(self):
         return self._root['feeds']
 
-    def getPath(self):
-        return self.path
-
     def load(self):
         try:
-            marks = json.load(open(self.getPath(), 'rt'))
+            marks = json.load(open(self.path, 'rt'))
             return marks
         except Exception as e:
             marks = collections.OrderedDict()
@@ -121,18 +131,18 @@ class IPFSMarks(QObject):
         return marks
 
     def onChanged(self):
-        self.save()
+        if self.autosave is True:
+            self.save()
 
     def save(self):
-        # This should really be converted to async soon
-        with open(self.getPath(), 'w+t') as fd:
+        """ Save synchronously """
+        with open(self.path, 'w+t') as fd:
             self.serialize(fd)
             self.lastsaved = time.time()
 
-    @asyncify
     async def saveAsync(self):
-        async with aiofiles.open(self.getPath(), 'w+t') as fd:
-            self.serialize(fd)
+        async with aiofiles.open(self.path, 'w+t') as fd:
+            await fd.write(json.dumps(self._root, indent=4, cls=MarksEncoder))
             self.lastsaved = time.time()
 
     def hasCategory(self, category, parent=None):
@@ -244,15 +254,16 @@ class IPFSMarks(QObject):
         # Handle IPFSHashMark or tuple
         if isinstance(mark, IPFSHashMark):
             sec[marksKey].update(mark)
+            self.markAdded.emit(mark.path, mark.markData)
         else:
             try:
                 mPath, mData = mark
                 sec[marksKey][mPath] = mData
+                self.markAdded.emit(mPath, mData)
             except Exception as e:
                 return False
 
         self.changed.emit()
-        self.markAdded.emit()
         return True
 
     def add(self, bpath, title=None, category='general', share=False, tags=[]):
@@ -279,7 +290,7 @@ class IPFSMarks(QObject):
 
         sec[marksKey].update(mark)
         self.changed.emit()
-        self.markAdded.emit()
+        self.markAdded.emit(path, mark.markData)
 
         return True
 
