@@ -62,7 +62,7 @@ class P2PListener(object):
         try:
             addr = await self.client.p2p.listener_open(
                 self.protocol, listenAddress)
-        except aioipfs.APIException as exc:
+        except aioipfs.APIError as exc:
             # P2P not enabled or some other reason
             return None
         else:

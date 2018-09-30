@@ -5,8 +5,10 @@ import aioipfs
 import asyncio
 import time
 
+from galacteek import log
 from galacteek.core.ipfsmarks import *
 from galacteek.ipfs.ipfsops import *
+from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs import crawl
 
 class FeedFollower(object):
@@ -19,6 +21,7 @@ class FeedFollower(object):
         self.marks = marks
         self.app = app
 
+    @ipfsOp
     async def process(self, op):
         while True:
             await asyncio.sleep(120)
@@ -68,6 +71,6 @@ class FeedFollower(object):
                 self.marks.feedAddMark(ipnsp, mark)
 
                 if autoPin:
-                    self.app.debug('Feed follower, autopinning {}'.format(
+                    log.debug('Feed follower, autopinning {}'.format(
                         resolvedPath))
-                    await self.app.pinner.enqueue(resolvedPath, True, None)
+                    await self.app.pinner.queue(resolvedPath, True, None)

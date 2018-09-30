@@ -1,10 +1,14 @@
 aiofiles==0.3.2
 aiohttp==3.3.2
-aioipfs==0.3
+aioipfs==0.3.3
 async-generator==1.10
 base58==1.0.0
 gitpython==2.1.11
 jinja2==2.10
+json-traverse==0.4
+jsonschema==2.6.0
+protobuf-to-dict==0.1.0
+protobuf==3.6.1
 py-multibase==0.1.2
 py-multicodec==0.1.2
 pymultihash==0.8.2

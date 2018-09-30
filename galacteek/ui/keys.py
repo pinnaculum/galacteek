@@ -71,6 +71,7 @@ class KeysTab(GalacteekTab):
         self.ui.verticalLayout.addWidget(self.ui.treeKeys)
 
         self.setupModel()
+        self.app.task(self.listKeys)
 
     def setupModel(self):
         self.model.clear()
@@ -91,10 +92,6 @@ class KeysTab(GalacteekTab):
 
     def onAddKeyClicked(self):
         runDialog(AddKeyDialog, self.app, parent=self)
-
-    @ipfsOp
-    async def initialize(self, ipfsop):
-        self.app.task(self.listKeys)
 
     @ipfsOp
     async def delKey(self, ipfsop, name):

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>NetworkHashmarksViewForm</class>
- <widget class="QWidget" name="NetworkHashmarksViewForm">
+ <class>PeersManager</class>
+ <widget class="QWidget" name="PeersManager">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>541</width>
-    <height>374</height>
+    <width>639</width>
+    <height>422</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,18 +17,18 @@
    <item>
     <layout class="QVBoxLayout" name="verticalLayout">
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout">
+      <layout class="QHBoxLayout" name="horizontalLayout_3">
        <item>
-        <widget class="QToolButton" name="expandButton">
+        <widget class="QLabel" name="label">
+         <property name="text">
+          <string>Peers registered</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="peersCountLabel">
          <property name="text">
           <string/>
-         </property>
-         <property name="icon">
-          <iconset resource="galacteek.qrc">
-           <normaloff>:/share/icons/expand.png</normaloff>:/share/icons/expand.png</iconset>
-         </property>
-         <property name="checkable">
-          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -46,26 +46,34 @@
         </spacer>
        </item>
        <item>
-        <widget class="QLineEdit" name="search"/>
-       </item>
-       <item>
-        <widget class="QPushButton" name="searchButton">
+        <widget class="QLabel" name="label_2">
          <property name="text">
           <string>Search</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="search">
+         <property name="maximumSize">
+          <size>
+           <width>250</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="maxLength">
+          <number>128</number>
          </property>
         </widget>
        </item>
       </layout>
      </item>
      <item>
-      <widget class="QTreeView" name="treeNetMarks"/>
+      <widget class="QTreeView" name="tree"/>
      </item>
     </layout>
    </item>
   </layout>
  </widget>
- <resources>
-  <include location="galacteek.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>

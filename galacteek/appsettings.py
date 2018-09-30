@@ -7,6 +7,7 @@ CFG_SECTION_IPFS = 'ipfs'
 CFG_SECTION_BROWSER = 'browser'
 CFG_SECTION_IPFSCONN1 = 'ipfsconn1'
 CFG_SECTION_UI = 'ui'
+CFG_SECTION_USERINFO = 'userinfo'
 
 CFG_KEY_ENABLED = 'enabled'
 
@@ -30,6 +31,7 @@ CFG_KEY_PPAPIPLUGINS = 'ppapiplugins'
 
 # IPFS
 CFG_KEY_PUBSUB = 'pubsub'
+CFG_KEY_HASHMARKSEXCH = 'hashmarksexch'
 
 # UI
 CFG_KEY_WRAPSINGLEFILES = 'wrapsinglefiles'
@@ -52,7 +54,7 @@ def setDefaultSettings(gApp):
     sManager.setDefaultSetting(section, CFG_KEY_HTTPGWPORT, 8080)
     sManager.setDefaultSetting(section, CFG_KEY_SWARMHIGHWATER, 300)
     sManager.setDefaultSetting(section, CFG_KEY_SWARMLOWWATER, 150)
-    sManager.setDefaultSetting(section, CFG_KEY_STORAGEMAX, 20)
+    sManager.setDefaultSetting(section, CFG_KEY_STORAGEMAX, 50)
     sManager.setDefaultTrue(section, CFG_KEY_CORS)
     sManager.setDefaultTrue(section, CFG_KEY_ENABLED)
 
@@ -72,13 +74,15 @@ def setDefaultSettings(gApp):
     sManager.setDefaultSetting(section, CFG_KEY_HTTPGWPORT, 8080)
 
     section = CFG_SECTION_IPFS
-    sManager.setDefaultFalse(section, CFG_KEY_PUBSUB)
+    sManager.setDefaultTrue(section, CFG_KEY_PUBSUB)
+    sManager.setDefaultTrue(section, CFG_KEY_HASHMARKSEXCH)
 
     section = CFG_SECTION_UI
     sManager.setDefaultTrue(section, CFG_KEY_WRAPSINGLEFILES)
     sManager.setDefaultFalse(section, CFG_KEY_WRAPDIRECTORIES)
     sManager.setDefaultFalse(section, CFG_KEY_HIDEHASHES)
     sManager.setDefaultSetting(section, CFG_KEY_LANG, 'en')
+
     sManager.sync()
     return True
 

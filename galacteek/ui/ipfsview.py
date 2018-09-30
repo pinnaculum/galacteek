@@ -287,7 +287,7 @@ class IPFSHashExplorerWidget(QWidget):
         self.parent = parent
 
         self.gWindow = gWindow
-        self.app = gWindow.getApp()
+        self.app = gWindow.app
         self.rootHash = hashRef
         self.rootPath = joinIpfs(self.rootHash)
         self.cid = cidhelpers.getCID(self.rootHash)
@@ -438,7 +438,7 @@ class IPFSHashExplorerWidget(QWidget):
                     dirSel)
 
     def onPin(self):
-        self.app.task(self.app.pinner.enqueue, self.rootPath, True,
+        self.app.task(self.app.ipfsCtx.pinner.queue, self.rootPath, True,
                 None)
 
     def onReturnPressed(self):
@@ -508,7 +508,7 @@ class IPFSHashExplorerWidget(QWidget):
         def pinRecursive():
             for item in items:
                 fp = item.getFullPath()
-                self.app.task(self.app.pinner.enqueue, fp, True, None)
+                self.app.task(self.app.ipfsCtx.pinner.queue, fp, True, None)
 
         def queueMedia():
             for item in items:
@@ -560,7 +560,7 @@ class IPFSHashExplorerWidget(QWidget):
                 self.setInfo(iTimeoutInvalidHash())
                 return
 
-        except aioipfs.APIException:
+        except aioipfs.APIError:
             self.setInfo(iErrNoCx())
             return
 
