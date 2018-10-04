@@ -1,5 +1,6 @@
 import pytest
 from galacteek.ipfs import asyncipfsd
+from galacteek.ipfs.ipfsops import *
 import aioipfs
 
 apiport = 9005
@@ -16,7 +17,8 @@ def ipfsdaemon(event_loop, tmpdir):
             loop=event_loop,
             pubsubEnable=False,
             p2pStreams=True,
-            noBootstrap=True
+            noBootstrap=True,
+            migrateRepo=True
             )
     return daemon
 
@@ -42,16 +44,20 @@ def iclient(event_loop):
 def iclient2(event_loop):
     return aioipfs.AsyncIPFS(port=apiport+10, loop=event_loop)
 
-async def startDaemons(loop, d1, d2, execFn, *args, **kw):
-    def cb2started(f):
-        loop.create_task(execFn(*args, **kw))
+@pytest.fixture()
+def ipfsop(iclient):
+    return IPFSOperator(iclient, debug=True)
 
-    def cbstarted(f):
-        d2.startedFuture.add_done_callback(cb2started)
+async def startDaemons(loop, d1, d2, *args, **kw):
+    started1 = await d1.start()
+    started2 = await d2.start()
 
-    started = await d1.start()
-    started = await d2.start()
-    d1.startedFuture.add_done_callback(cbstarted)
+    assert started1 is True, started2 is True
+
+    await asyncio.gather(*[
+        d1.proto.eventStarted.wait(),
+        d2.proto.eventStarted.wait()
+    ])
 
 def stopDaemons(d1, d2):
     d1.stop()

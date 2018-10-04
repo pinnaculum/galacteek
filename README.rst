@@ -2,7 +2,7 @@
 Galacteek
 =========
 
-:info: A modest IPFS_ browser
+:info: An IPFS_ browser and exchanger
 
 This is a simple application allowing you to search, browse, publish and
 hashmark content on the permanent web accessible through the IPFS_ peer-to-peer
@@ -35,25 +35,14 @@ Now just run the application with:
     galacteek
 
 If you don't have go-ipfs_ already installed, the application will ask you
-whether you want to automatically download and install it from dist.ipfs.io_
+if you want to automatically download and install it from dist.ipfs.io_
+You need a recent version of go-ipfs_ (> 0.4.7) with the new DAG API.
 
 For the media player to work on Linux, you will need to install the
 *gstreamer* (1.x) package and all the gstreamer plugins.
 
-The following command-line switches and arguments can be used:
-
-.. code-block:: shell
-
-    optional arguments:
-      -h, --help            show this help message and exit
-      --apiport APIPORT     IPFS API port number
-      --swarmport SWARMPORT
-                            IPFS swarm port number
-      --gatewayport GATEWAYPORT
-                            IPFS http gateway port number
-      --profile PROFILE     Application Profile
-      --migrate             Activate automatic repository migration
-      -d                    Activate debugging
+Use the *-d* command-line switch to enable debugging, and *--logfile* to log to
+a specific file instead of stdout. See *--help* for all options.
 
 Features
 ========
@@ -128,7 +117,7 @@ application's main window.
 Requirements
 ============
 
-- go-ipfs_ (install from dist.ipfs.io_)
+- go-ipfs_ > 0.4.7
 - python3 >= 3.5
 - qt5
 - PyQt5 with QtWebEngine support

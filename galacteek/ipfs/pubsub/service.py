@@ -317,6 +317,7 @@ class PSPeersService(JSONPubsubService):
                     await self.sendIdent(self.curProfile)
 
 __all__ = [
+        'PubsubService',
         'PSHashmarksExchanger',
         'PSMainService',
         'PSPeersService'

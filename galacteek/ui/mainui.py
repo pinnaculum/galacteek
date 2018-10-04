@@ -624,12 +624,7 @@ class MainWindow(QMainWindow):
                 return self.statusMessage(iCxButNoPeers(
                     nodeId, nodeAgent))
 
-            gPeers = await oper.ctx.galacteekPeers()
-
-            peersCount = len(peers)
-            gPeersCount = len(gPeers)
-
-            message = iConnectStatus(nodeId, nodeAgent, peersCount)
+            message = iConnectStatus(nodeId, nodeAgent, len(peers))
             self.statusMessage(message)
 
         await connectionInfo()
