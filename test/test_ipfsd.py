@@ -20,10 +20,6 @@ from galacteek.ipfs.pubsub import *
 
 from .daemon import *
 
-@pytest.fixture()
-def ipfsop(iclient):
-    return IPFSOperator(iclient, debug=True)
-
 class EchoProtocol(asyncio.Protocol):
     def __init__(self, exitF):
         super().__init__()
@@ -55,19 +51,21 @@ class TestIPFSD:
             id = await op.client.core.id()
 
             slashList = await op.filesList('/')
-            async for r in op.client.add_json({'a': 123}):
-                assert await op.filesLink(r, '/') == True
+            r = await op.client.add_json({'a': 123})
+            assert await op.filesLink(r, '/') == True
 
             await op.client.close()
-            ipfsdaemon.stop()
-            await asyncio.sleep(2)
 
         def cbstarted(f):
             event_loop.create_task(tests(ipfsop))
 
         started = await ipfsdaemon.start()
-        ipfsdaemon.proto.startedFuture.add_done_callback(cbstarted)
         assert started == True
+
+        await ipfsdaemon.proto.eventStarted.wait()
+        await tests(ipfsop)
+
+        ipfsdaemon.stop()
         await asyncio.wait([ipfsdaemon.exitFuture])
 
     @pytest.mark.asyncio
@@ -84,12 +82,9 @@ class TestIPFSD:
                 lambda: proto)
 
         async def tcpEchoClient(portdest, message, loop):
-            #reader, writer = await asyncio.open_connection('127.0.0.1', port)
+            reader, writer = await asyncio.open_connection('127.0.0.1',
+                    portdest)
             p = EchoProtocol(asyncio.Future())
-            coro = loop.create_connection(
-                    lambda: p,
-                    '127.0.0.1', portdest)
-            await coro
 
             await asyncio.sleep(2)
 
@@ -125,23 +120,21 @@ class TestIPFSD:
             streams = await iclient2.p2p.stream_ls(headers=True)
 
             assert len(streams['Streams']) > 0
-            print('streams', streams)
             stream = streams['Streams'].pop()
 
             assert stream['Protocol'] == '/p2p/{}'.format(protoName)
             assert stream['LocalPeer'] == id2['ID']
             assert stream['LocalAddress'] == '/ip4/127.0.0.1/tcp/{}'.format(
                     listenPort)
-            assert stream['RemotePeer'] == id2['ID']
+            assert stream['RemotePeer'] == id1['ID']
 
-        await startDaemons(event_loop, ipfsdaemon, ipfsdaemon2, createTunnel,
-                ipfsop)
+        await startDaemons(event_loop, ipfsdaemon, ipfsdaemon2)
+        await createTunnel(ipfsop)
 
         await asyncio.wait([protoF])
         await p2pL.close()
 
-        ipfsdaemon.stop()
-        ipfsdaemon2.stop()
+        stopDaemons(ipfsdaemon, ipfsdaemon2)
 
         await asyncio.wait([ipfsdaemon.exitFuture, ipfsdaemon2.exitFuture])
 
@@ -182,21 +175,22 @@ class TestIPFSD:
                 stopDaemons(ipfsdaemon, ipfsdaemon2)
 
             ctx = Ctx()
-            exchanger = HashmarksExchanger(iclient, event_loop, ctx, marks,
-                    marksNet)
+            ctx.loop = event_loop
+            exchanger = PSHashmarksExchanger(ctx, iclient, marks, marksNet)
             exchanger.start()
             ctx.pubsubMessageRx.connect(rx1)
 
             ctx2 = Ctx()
+            ctx2.loop = event_loop
             ctx2.pubsubMessageRx.connect(rx2)
             ctx2.pubsubMarksReceived.connect(marksReceived)
-            exchanger2 = HashmarksExchanger(iclient2, event_loop, ctx2, marks2,
-                    marks2Net)
+            exchanger2 = PSHashmarksExchanger(ctx2, iclient2, marks2, marks2Net)
             exchanger2.start()
             await asyncio.sleep(1)
             marks.insertMark(m1, 'shared/hashmarks')
 
-        await startDaemons(event_loop, ipfsdaemon, ipfsdaemon2, exchange)
+        await startDaemons(event_loop, ipfsdaemon, ipfsdaemon2)
+        await exchange()
         await asyncio.wait([ipfsdaemon.exitFuture, ipfsdaemon2.exitFuture])
 
         await iclient.close()
@@ -207,9 +201,9 @@ class Ctx(QObject):
     pubsubMessageTx = pyqtSignal()
     pubsubMarksReceived = pyqtSignal(int)
 
-class Exchanger(PubsubListener):
-    def __init__(self, client, loop, ipfsCtx):
-        super().__init__(client, loop, ipfsCtx, topic='test')
+class Exchanger(PubsubService):
+    def __init__(self, client, ipfsCtx):
+        super().__init__(client, ipfsCtx, topic='test')
 
 @pytest.fixture()
 def configD(tmpdir):

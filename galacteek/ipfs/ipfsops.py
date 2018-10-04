@@ -472,25 +472,54 @@ class IPFSOperator(object):
             self.debug(err.message)
             return None
 
-    async def whoProvides(self, key, numproviders=20, timeout=30):
+    async def findProviders(self, cid, peers, verbose, nproviders):
         """
-        Returns a list of peers which provide a given key, using the 'findprovs'
-        API call.
+        Don't call directly, use whoProvides instead
+
+        :param str cid: CID key to lookup
+        :param list peers: a list that will be updated with the peers found
+        :param int nproviders: max number of providers to look for
         """
-        async def findProviders(key, verbose, numproviders):
-            peers = []
-            async for prov in self.client.dht.findprovs(key, verbose=verbose,
-                    numproviders=numproviders):
+        try:
+            async for prov in self.client.dht.findprovs(cid, verbose=verbose,
+                    numproviders=nproviders):
                 pId = prov.get('ID', None)
                 pResponses = prov.get('Responses', None)
                 pType = prov.get('Type', None)
 
+                if pType != 4: # WTF++
+                    continue
+
                 if isinstance(pResponses, list):
                     peers += pResponses
+            return True
+        except aioipfs.APIError as err:
+            self.debug('findProviders: {}'.format(str(err.message)))
+            return False
+
+    async def whoProvides(self, key, numproviders=20, timeout=20):
+        """
+        Return a list of peers which provide a given key, using the DHT
+        'findprovs' API call.
+
+        Because go-ipfs's findprovs will keep looking on the dht until it
+        reaches the given numproviders, we use wait_for and a timeout so that
+        you always get some information about the providers.
+
+        :param int numproviders: max number of providers to look for
+        :param int timeout: timeout (seconds)
+        """
+
+        peers = []
+        try:
+            ret = await asyncio.wait_for(self.findProviders(key, peers, True,
+                numproviders), timeout)
+        except asyncio.TimeoutError as timeExc:
+            # It timed out ? Return what we got
+            self.debug('whoProvides: timed out')
             return peers
 
-        return await self.waitFor(
-                findProviders(key, True, numproviders), timeout)
+        return peers
 
     @async_generator
     async def pingWrapper(self, peer, count=3):

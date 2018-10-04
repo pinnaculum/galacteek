@@ -88,6 +88,7 @@ def makeAppNoDaemon():
 def makeApp(profile='pytest-withipfsd'):
     r = random.Random()
     gApp = application.GalacteekApplication(profile=profile, debug=True)
+    loop = gApp.setupAsyncLoop()
 
     sManager = gApp.settingsMgr
     sManager.setTrue(CFG_SECTION_IPFSD, CFG_KEY_ENABLED)
@@ -98,21 +99,23 @@ def makeApp(profile='pytest-withipfsd'):
     sManager.setSetting(CFG_SECTION_IPFSD, CFG_KEY_HTTPGWPORT,
             r.randint(15700, 15780))
     sManager.sync()
-    loop = gApp.setupAsyncLoop()
-    gApp.startIpfsDaemon()
+
     return gApp
 
 @pytest.fixture
+#@pytest.mark.asyncio
 def gApp(qtbot, tmpdir):
     gApp = makeApp()
     sManager = gApp.settingsMgr
     sManager.setSetting(CFG_SECTION_BROWSER, CFG_KEY_DLPATH, str(tmpdir))
     sManager.sync()
 
+    gApp.startIpfsDaemon()
     with qtbot.waitSignal(gApp.ipfsCtx.ipfsRepositoryReady, timeout=20000):
         print('Waiting for IPFS repository ...')
 
     yield gApp
+
     gApp.ipfsd.stop()
     gApp.stopIpfsServices()
     gApp.quit()
@@ -127,8 +130,7 @@ class TestApp:
         """
         Test the application, running the GUI and testing all components
         """
-        loop = gApp.getLoop()
-        gApp.startPinner()
+        loop = gApp.loop
 
         def leftClick(w):
             qtbot.mouseClick(w, Qt.LeftButton)
@@ -164,19 +166,19 @@ class TestApp:
             loop.run_until_complete(browse())
 
     @pytest.mark.asyncio
-    def test_ipfsview(self, qtbot, gApp, testFilesDocsAsync):
-        loop = gApp.getLoop()
-        view = ipfsview.IPFSHashExplorerToolBox(gApp.mainWindow, None)
-        gApp.mainWindow.registerTab(view, '')
+    async def test_ipfsview(self, qtbot, gApp, testFilesDocsAsync):
+        loop = gApp.loop
 
         @ipfsOpFn
         async def addAndView(ipfsop):
+            view = ipfsview.IPFSHashExplorerToolBox(gApp.mainWindow, None)
+            gApp.mainWindow.registerTab(view, '')
             root = await ipfsop.addPath(testFilesDocsAsync)
             view.viewHash(root['Hash'], autoOpenFolders=True)
-            await asyncio.sleep(2)
+            await ipfsop.sleep(2)
 
         with loop:
-            loop.run_until_complete(gApp.task(addAndView))
+            loop.run_until_complete(addAndView())
 
     @pytest.mark.parametrize('validcid0', validcid0)
     @pytest.mark.parametrize('validcid1', validcid1)
