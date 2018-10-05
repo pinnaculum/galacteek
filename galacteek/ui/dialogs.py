@@ -1,6 +1,7 @@
 
 import time
 import asyncio
+import re
 
 from PyQt5.QtWidgets import (QWidget, QApplication,
         QDialog, QLabel, QTextEdit, QPushButton, QMessageBox)
@@ -250,7 +251,7 @@ class ProfileEditDialog(QDialog):
         self.reloadIcon()
 
     def updateAvatarCid(self):
-        self.ui.iconHash.setText('<a href="fs:{0}">{1}</a>'.format(
+        self.ui.iconHash.setText('<a href="ipfs:{0}">{1}</a>'.format(
             joinIpfs(self.profile.userInfo.avatarCid),
             self.profile.userInfo.avatarCid))
 
@@ -291,7 +292,8 @@ class ProfileEditDialog(QDialog):
         for key in ['username', 'firstname',
                     'lastname', 'email', 'org']:
             val = getattr(self.ui, key).text()
-            if val is not '':
+            ma = re.search("[a-zA-Z\_\-\@\.\+\'\´0-9\s]*", val)
+            if ma:
                 kw[key] = val
 
         self.profile.userInfo.setInfos(**kw)

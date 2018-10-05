@@ -189,6 +189,46 @@ class IPFSOperator(object):
             self.debug(err.message)
             return None
 
+    async def filesWrite(self, path, data, create=False, truncate=False,
+            offset=-1, count=-1):
+        try:
+            resp = await self.client.files.write(path, data,
+                    create=create, truncate=truncate,
+                    offset=offset, count=count)
+        except aioipfs.APIError as err:
+            self.debug('filesWrite error {}'.format(err.message))
+            return None
+        else:
+            self.debug('filesWrite success {}'.format(resp))
+            return resp
+
+    async def filesWriteJsonObject(self, path, obj, create=True,
+            truncate=True):
+        try:
+            serialized = json.dumps(obj).encode()
+            resp = await self.filesWrite(path, serialized,
+                    create=create, truncate=truncate)
+        except aioipfs.APIError as err:
+            self.debug('filesWriteJson error {}'.format(err.message))
+            return None
+        else:
+            self.debug('filesWriteJson success {}'.format(resp))
+            return resp
+
+    async def filesReadJsonObject(self, path):
+        try:
+            resp = await self.client.files.read(path)
+            return json.loads(resp.decode())
+        except aioipfs.APIError as err:
+            self.debug('filesReadJson error {}'.format(err.message))
+            return None
+        except Exception as err:
+            self.debug('filesReadJson unknown error {}'.format(str(err)))
+            return None
+        else:
+            self.debug('filesReadJson success {}'.format(resp))
+            return resp
+
     async def chroot(self, path):
         self.filesChroot = path
 
@@ -293,7 +333,7 @@ class IPFSOperator(object):
         except asyncio.TimeoutError as timeExc:
             return None
         except aioipfs.APIError as e:
-            self.debug(e.message)
+            self.debug('resolve error: {}'.format(e.message))
             return None
         else:
             return resolved
@@ -306,6 +346,7 @@ class IPFSOperator(object):
                 await self.client.repo.gc()
             return True
         except aioipfs.APIError as e:
+            self.debug('purge error: {}'.format(e.message))
             return False
 
     async def isPinned(self, hashRef):
@@ -318,6 +359,7 @@ class IPFSOperator(object):
             keys = result.get('Keys', {})
             return key in keys
         except aioipfs.APIError as e:
+            self.debug('isPinned error: {}'.format(e.message))
             return False
 
     async def pinned(self, type='all'):
@@ -329,6 +371,21 @@ class IPFSOperator(object):
             return result.get('Keys', {})
         except aioipfs.APIError as e:
             return None
+
+    async def pinUpdate(self, old, new, unpin=True):
+        """
+        Update a pin
+        """
+
+        self.debug('pinUpdate: prev {0} new {1}'.format(old, new))
+        try:
+            result = await self.client.pin.update(old, new, unpin=unpin)
+        except aioipfs.APIError as e:
+            self.debug('pinUpdate error: {}'.format(e.message))
+            return None
+        else:
+            self.debug('pinUpdate success: {}'.format(result))
+            return result
 
     @async_generator
     async def list(self, path, resolve_type=True):
@@ -382,7 +439,6 @@ class IPFSOperator(object):
             async for entry in self.client.add(path, quiet=True,
                     recursive=recursive,
                     wrap_with_directory=wrap):
-                self.debug('addPath: added entry {}'.format(entry))
                 await self.sleep()
                 added = entry
                 if asyncio.iscoroutinefunction(callback):

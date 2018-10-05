@@ -25,7 +25,7 @@ class UserInfos(MutableIPFSJson):
                 'username': uid,
                 'firstname': '',
                 'lastname': '',
-                'gender': '',
+                'gender': -1,
                 'org': '',
                 'email': '',
                 'country': '',
@@ -103,10 +103,10 @@ class UserInfos(MutableIPFSJson):
     def setInfos(self, **kw):
         if self.locked:
             return
-        for key in self.root['userinfo'].keys():
-            val = kw.get(key, None)
-            if val:
-                self.root['userinfo'][key] = val
+        for key, val in kw.items():
+            if not key in self.root['userinfo'].keys():
+                continue
+            self.root['userinfo'][key] = val
         self.root['userinfo']['modified'] = datetime.now().isoformat(
             ' ', 'seconds')
         self.changed.emit()
@@ -205,6 +205,7 @@ class UserProfile(QObject):
         self._filesModel = None
 
         self._dagUser = None
+        self.userInfo = UserInfos(self.pathUserInfo)
 
     def debug(self, msg):
         log.debug('Profile {0}: {1}'.format(self.name, msg))
@@ -325,8 +326,6 @@ class UserProfile(QObject):
             self.keyRootId = key.get('Id', None)
 
         self.debug('IPNS key({0}): {1}'.format(self.keyRoot, self.keyRootId))
-
-        self.userInfo = UserInfos(self.pathUserInfo)
 
         ensure(self.userInfo.load())
         await self.userInfo.evLoaded.wait()
