@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import QApplication
 
 from galacteek import log as logger, ensure
 
-from galacteek.ipfs import ipfsd, distipfsfetch
+from galacteek.ipfs import distipfsfetch
 from galacteek.ui import mainui
 from galacteek.ui.helpers import *
 from galacteek.ui.i18n import *

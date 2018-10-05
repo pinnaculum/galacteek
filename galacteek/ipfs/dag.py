@@ -141,17 +141,20 @@ class EvolvingDAG(QObject):
     metadataEntryChanged = pyqtSignal()
     available = pyqtSignal(object)
 
-    def __init__(self, dagMetaMfsPath):
+    keyCidLatest = 'cidlatest'
+
+    def __init__(self, dagMetaMfsPath, dagMetaHistoryMax=12):
         super().__init__()
 
         self.lock = asyncio.Lock()
         self.loop = asyncio.get_event_loop()
         self.loaded = asyncio.Future()
+
+        self._curMetaEntry = None
         self._dagRoot = None
         self._dagMeta = None
         self._dagCid = None
-        self._curMetaEntry = None
-        self._entryHistory = []
+        self._dagMetaMaxHistoryItems = dagMetaHistoryMax
         self._dagMetaMfsPath = dagMetaMfsPath
 
     @property
@@ -159,8 +162,17 @@ class EvolvingDAG(QObject):
         return self._dagMetaMfsPath # path inside the mfs
 
     @property
+    def dagMetaMaxHistoryItems(self):
+        return self._dagMetaMaxHistoryItems
+
+    @property
     def curMetaEntry(self):
         return self._curMetaEntry
+
+    @curMetaEntry.setter
+    def curMetaEntry(self, value):
+        self._curMetaEntry = value
+        self.debug('Metadata entry changed to {}'.format(value))
 
     @property
     def dagCid(self):
@@ -168,24 +180,13 @@ class EvolvingDAG(QObject):
 
     @dagCid.setter
     def dagCid(self, cid):
-        self._dagMeta['latest'] = cid
+        self._dagMeta[self.keyCidLatest] = cid
         self._dagCid = cid
-        self.debug('CID now is {0}'.format(cid))
+        self.debug("DAG's CID now is {0}".format(cid))
 
     @property
     def dagMeta(self):
         return self._dagMeta
-
-    @property
-    def history(self):
-        return '\n'.join(self._entryHistory)
-
-    @curMetaEntry.setter
-    def curMetaEntry(self, value):
-        self._entryHistory.append((time.time(), value))
-        self.debug('New metadata entry: {0}'.format(value))
-        self._curMetaEntry = value
-        self.loop.call_soon(self.metadataEntryChanged.emit)
 
     @property
     def dagRoot(self):
@@ -206,6 +207,7 @@ class EvolvingDAG(QObject):
         if isinstance(cid, str):
             return {"/": cid}
         elif isinstance(cid, dict):
+            # assume it's a dict which has a 'Hash' key
             return {"/": cid['Hash']}
 
     async def load(self):
@@ -213,27 +215,26 @@ class EvolvingDAG(QObject):
 
     @ipfsOp
     async def loadDag(self, op):
-        entry = await op.filesStat(self.dagMetaMfsPath)
-        if entry is not None:
-            meta = await op.jsonLoad(entry['Hash'])
-            if meta is None:
-                self.debug('Metadata is gone, oops')
-                return
+        meta = await op.filesReadJsonObject(self.dagMetaMfsPath)
+
+        if meta is not None:
             self._dagMeta = meta
-            latest = self.dagMeta.get('latest', None)
+            latest = self.dagMeta.get(self.keyCidLatest, None)
             if latest:
                 self.dagCid = latest
                 self._dagRoot = await op.dagGet(self.dagCid)
             else:
-                self.debug('Metadata is invalid, resetting DAG')
+                # How inconvenient ..
+                # TODO: the history could be used here to recreate a DAG
+                # from previous CIDs but we really shouldn't have to enter here
+                self.debug('! Metadata is invalid: {} !'.format(meta))
                 self._dagRoot = {}
 
-            self.curMetaEntry = entry
             self.loaded.set_result(True)
         else:
             self._dagMeta = {
-                    'latest': None,
-                    'history': []
+                self.keyCidLatest: None,
+                'history': []
             }
             self._dagRoot = self.initDag()
             await self.ipfsSave()
@@ -245,28 +246,35 @@ class EvolvingDAG(QObject):
     @ipfsOp
     async def ipfsSave(self, op):
         with await self.lock:
-            oldMetadataCid = None
-            if self.curMetaEntry:
-                oldMetadataCid = self.curMetaEntry['Hash']
+            prevCid = self.dagCid
+            history = self.dagMeta.setdefault('history', [])
+            maxItems = self.dagMetaMaxHistoryItems
 
-            exists = await op.filesStat(self.dagMetaMfsPath)
+            # We always PIN the latest DAG and do a pin update using the
+            # previous item in the history
 
-            if exists:
-                await op.filesRm(self.dagMetaMfsPath)
+            cid = await op.dagPut(self.dagRoot, pin=True)
+            if cid is not None:
+                if prevCid is not None and prevCid not in history:
+                    if len(history) > maxItems:
+                        # Purge old items
+                        [history.pop() for idx in range(0,
+                            len(history) - maxItems) ]
 
-            cid = await op.dagPut(self.dagRoot, pin=False)
-            if cid:
+                    history.insert(0, prevCid)
+                    await op.pinUpdate(prevCid, cid)
+
+                # Save the new CID and update the metadata
                 self.dagCid = cid
-                ent = await op.client.add_json(self.dagMeta)
-                ret = await op.filesCp(ent['Hash'], self.dagMetaMfsPath)
-                self.curMetaEntry = ent
+                resp = await op.filesWriteJsonObject(self.dagMetaMfsPath,
+                        self.dagMeta)
+                entry = await op.filesStat(self.dagMetaMfsPath)
+                if entry:
+                    self.curMetaEntry = entry
             else:
-                self.debug('DAG could not be built ({})'.format(cid))
+                # Bummer
+                self.debug('DAG could not be built')
                 return False
-
-            if oldMetadataCid and self.curMetaEntry['Hash'] != oldMetadataCid:
-                self.debug('Purging old metadata {}'.format(oldMetadataCid))
-                await op.purge(oldMetadataCid)
 
         return True
 
@@ -350,10 +358,16 @@ class EvolvingDAG(QObject):
             await yield_((path, DAGObj(data)))
 
     async def __aenter__(self):
+        """
+        Lock is acquired on entering the async ctx manager
+        """
         await self.lock.acquire()
         return self
 
     async def __aexit__(self, *args):
+        """
+        Release the lock and save. The changed signal is emitted
+        """
         self.lock.release()
         await self.ipfsSave()
         self.loop.call_soon(self.changed.emit)

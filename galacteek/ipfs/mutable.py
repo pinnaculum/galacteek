@@ -13,8 +13,7 @@ class MutableIPFSJson(QObject):
     Mutable IPFS JSON object.
 
     As you make changes to the JSON object contained within this object, a copy
-    of that JSON is stored on IPFS and a constant link to the latest copy is
-    maintained inside the MFS.
+    of that JSON is maintained in the MFS at the given path
 
     Signals:
         changed: emit this signal when you changed the object and it will
@@ -46,6 +45,9 @@ class MutableIPFSJson(QObject):
         self.changed.connect(self.onChanged)
         self.available.connect(self.onObjAvailable)
 
+    def debug(self, msg):
+        log.debug('MFS JSON {0}: {1}'.format(self.mfsFilePath, msg))
+
     def onObjAvailable(self, r):
         self._avail = True
 
@@ -63,8 +65,6 @@ class MutableIPFSJson(QObject):
     def curEntry(self):
         """
         The current IPFS entry representing this object
-        It changes every time you flush a new copy of the object to
-        the IPFS repository
         """
         return self._curEntry
 
@@ -91,14 +91,18 @@ class MutableIPFSJson(QObject):
         Load the JSON from the MFS if it already exists or initialize a new
         object otherwise
         """
-        log.debug('Loading mutable object from {}'.format(self.mfsFilePath))
-        entry = await op.filesStat(self.mfsFilePath)
-        if entry is not None:
-            self._root = await op.jsonLoad(entry['Hash'])
-            self.curEntry = entry
+        self.debug('Loading mutable object from {}'.format(self.mfsFilePath))
+
+        obj = await op.filesReadJsonObject(self.mfsFilePath)
+
+        if obj:
+            self.debug('Successfully loaded JSON')
+            self._root = obj
+            self.curEntry = await op.filesStat(self.mfsFilePath)
             self.loaded.set_result(True)
             self.evLoaded.set()
         else:
+            self.debug('JSON empty or invalid, initializing')
             self._root = self.initObj()
             await self.ipfsSave()
             self.loaded.set_result(True)
@@ -116,25 +120,14 @@ class MutableIPFSJson(QObject):
 
     @ipfsOp
     async def ipfsSave(self, op):
-        """
-        Unpin previous copy, add the new JSON data and link it in the MFS
-        """
-
         with await self.lock:
-            if self.curEntry:
-                await op.purge(self.curEntry['Hash'])
+            resp = await op.filesWriteJsonObject(self.mfsFilePath, self.root)
 
-            exists = await op.filesStat(self.mfsFilePath)
-
-            if exists:
-                await op.filesRm(self.mfsFilePath)
-
-            entry = await op.client.core.add_json(self.root)
-            if entry:
-                ret = await op.filesLinkFp(entry, self.mfsFilePath)
-                self.curEntry = entry
-
-            return True
+            if resp is not None:
+                self.curEntry = await op.filesStat(self.mfsFilePath)
+                return True
+            else:
+                return False
 
     def upgrade(self):
         return False

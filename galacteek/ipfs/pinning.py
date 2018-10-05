@@ -49,12 +49,15 @@ class Pinner(object):
             path, recursive))
         self.pathRegister(path)
 
-        async for pinned in op.client.pin.add(path, recursive=recursive):
-            self.debug('Pinning progress {0}: {1}'.format(path, pinned))
-            await asyncio.sleep(0)
-            with await self.lock:
-                self._pinStatus[path] = pinned
-            self.ipfsCtx.pinItemStatusChanged.emit(path, pinned)
+        try:
+            async for pinned in op.client.pin.add(path, recursive=recursive):
+                self.debug('Pinning progress {0}: {1}'.format(path, pinned))
+                await asyncio.sleep(0)
+                with await self.lock:
+                    self._pinStatus[path] = pinned
+                self.ipfsCtx.pinItemStatusChanged.emit(path, pinned)
+        except aioipfs.APIError as err:
+            self.debug('Pinning error {0}: {1}'.format(path, str(err.message)))
 
         with await self.lock:
             self.pathDelete(path)
