@@ -7,6 +7,7 @@ import shutil
 import os, os.path
 import subprocess
 import logging
+import importlib
 from distutils.version import StrictVersion
 
 from PyQt5.QtWidgets import QApplication
@@ -19,6 +20,13 @@ from galacteek.ui.helpers import *
 from galacteek.ui.i18n import *
 from galacteek import application
 from galacteek.appsettings import *
+
+try:
+    import aiomonitor
+except ImportError:
+    haveAiomonitor = False
+else:
+    haveAiomonitor = True
 
 def whichIpfs():
     return shutil.which('ipfs')
@@ -55,18 +63,21 @@ async def fetchGoIpfsDist(app):
             app.debug(str(e))
 
 def galacteekGui(args):
+    logFormatter = logging.Formatter(
+            '%(asctime)s %(name)s %(levelname)s: %(message)s')
+    if args.logfile:
+        fh = logging.FileHandler(args.logfile)
+        fh.setFormatter(logFormatter)
+        logger.addHandler(fh)
+    else:
+        sh = logging.StreamHandler()
+        sh.setFormatter(logFormatter)
+        logger.addHandler(sh)
+
     if args.debug:
         logger.setLevel(logging.DEBUG)
-        logFormatter = logging.Formatter(
-                '%(asctime)s %(name)s %(levelname)s: %(message)s')
-        if args.logfile:
-            fh = logging.FileHandler(args.logfile)
-            fh.setFormatter(logFormatter)
-            logger.addHandler(fh)
-        else:
-            sh = logging.StreamHandler()
-            sh.setFormatter(logFormatter)
-            logger.addHandler(sh)
+    else:
+        logger.setLevel(logging.INFO)
 
     gApp = application.GalacteekApplication(profile=args.profile,
             debug=args.debug)
@@ -131,9 +142,16 @@ def galacteekGui(args):
     if args.noreleasecheck is False:
         ensure(gApp.checkReleases())
 
+    # Monitor event loop if aiomonitor is available
     # Use the context manager so loop cleanup/close is automatic
-    with loop:
-        loop.run_forever()
+
+    if args.monitor is True and haveAiomonitor:
+        with aiomonitor.start_monitor(loop=loop):
+            with loop:
+                loop.run_forever()
+    else:
+        with loop:
+            loop.run_forever()
 
 def start():
     parser = argparse.ArgumentParser()
@@ -148,6 +166,8 @@ def start():
         help='Application Profile')
     parser.add_argument('--logfile', default=None,
         help='Log file')
+    parser.add_argument('--monitor', action='store_true',
+        dest='monitor', help = 'Monitor application with aiomonitor')
     parser.add_argument('--migrate', action='store_true',
         dest='migrate', help = 'Activate automatic repository migration')
     parser.add_argument('--no-release-check', action='store_true',
