@@ -13,7 +13,7 @@ import shutil
 
 @async_generator
 async def distIpfsExtract(dstdir='.', software='go-ipfs', executable='ipfs',
-        site='dist.ipfs.io', version='0.4.17'):
+        site='dist.ipfs.io', version='0.4.17', loop=None):
 
     """ Fetch a distribution archive from dist.ipfs.io and extracts the
         wanted executable to dstdir. Yields progress messages """
@@ -112,6 +112,6 @@ async def distIpfsExtract(dstdir='.', software='go-ipfs', executable='ipfs',
             return False
 
     await yield_(statusMessage(0, 'Extracting distribution ..'))
-    loop = asyncio.get_event_loop()
+    loop = loop if loop else asyncio.get_event_loop()
     tarF = loop.run_in_executor(None, extract, arPath, tmpDst)
     return await tarF

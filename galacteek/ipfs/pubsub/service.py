@@ -19,7 +19,8 @@ class PubsubService(object):
     Generic IPFS pubsub service
     """
 
-    def __init__(self, ipfsCtx, client, topic='galacteek.default'):
+    def __init__(self, ipfsCtx, client, topic='galacteek.default',
+            runPeriodic=False):
         self.client = client
         self.ipfsCtx = ipfsCtx
         self.topic = topic
@@ -29,6 +30,7 @@ class PubsubService(object):
 
         self._receivedCount = 0
         self._errorsCount = 0
+        self._runPeriodic = runPeriodic
 
         self.tskServe = None
         self.tskProcess = None
@@ -42,6 +44,10 @@ class PubsubService(object):
     def errorsCount(self):
         return self._errorsCount
 
+    @property
+    def runPeriodic(self):
+        return self._runPeriodic
+
     def debug(self, msg):
         logger.debug('PS[{0}]: {1}'.format(self.topic, msg))
 
@@ -53,7 +59,9 @@ class PubsubService(object):
         """ Create the different tasks for this service """
         self.tskServe = self.ipfsCtx.loop.create_task(self.serve())
         self.tskProcess = self.ipfsCtx.loop.create_task(self.processMessages())
-        self.tskPeriodic = self.ipfsCtx.loop.create_task(self.periodic())
+
+        if self.runPeriodic:
+            self.tskPeriodic = self.ipfsCtx.loop.create_task(self.periodic())
 
     async def stop(self):
         await self.shutdown()
@@ -147,12 +155,14 @@ class JSONPubsubService(PubsubService):
                 if msg is None:
                     continue
 
-                logger.debug('Received PS message')
-                logger.debug(json.dumps(msg, indent=4))
+                logger.debug('Received Pubsub message {}'.format(
+                    json.dumps(msg, indent=4)))
 
                 try:
                     await self.processJsonMessage(data['from'].decode(), msg)
                 except Exception as exc:
+                    logger.debug(
+                            'processJsonMessage error: {}'.format(str(exc)))
                     await self.errorsQueue.put((msg, exc))
                     self._errorsCount += 1
         except asyncio.CancelledError as e:
@@ -229,14 +239,20 @@ class PSMainService(JSONPubsubService):
 
 class PSPeersService(JSONPubsubService):
     def __init__(self, ipfsCtx, client):
-        super().__init__(ipfsCtx, client, topic='galacteek.peers')
+        super().__init__(ipfsCtx, client, topic='galacteek.peers',
+                runPeriodic=True)
 
         self._curProfile = None
+        self._identEvery = 60
         self.ipfsCtx.profileChanged.connect(self.onProfileChanged)
 
     @property
     def curProfile(self):
         return self.ipfsCtx.currentProfile
+
+    @property
+    def identEvery(self):
+        return self._identEvery
 
     @asyncify
     async def onProfileChanged(self, pName, profile):
@@ -272,12 +288,11 @@ class PSPeersService(JSONPubsubService):
         if uInfo.schemaVersion is 1:
             msg = PeerIdentMessageV1.make(nodeId, uInfo.objHash,
                     uInfo.root, profile.dagUser.dagCid,
-                    profile.keyRootId)
+                    profile.keyRootId, self.ipfsCtx.p2p.servicesFormatted())
 
             await self.send(str(msg))
 
     async def processJsonMessage(self, sender, msg):
-        logger.debug(msg)
         msgType = msg.get('msgtype', None)
 
         if msgType == PeerIdentMessageV1.TYPE:
@@ -289,7 +304,7 @@ class PSPeersService(JSONPubsubService):
 
     async def handleLogoutMessage(self, sender, msg):
         lMsg = PeerLogoutMessage(msg)
-        await self.ipfsCtx.peers.unregister(lMsg.peer)
+        await self.ipfsCtx.peers.unregister(sender)
 
     async def handleIdentMessageV1(self, sender, msg):
         iMsg = PeerIdentMessageV1(msg)
@@ -309,8 +324,7 @@ class PSPeersService(JSONPubsubService):
 
     async def periodic(self):
         while True:
-            await asyncio.sleep(10)
-            self.ipfsCtx.pubsub.status()
+            await asyncio.sleep(self.identEvery)
 
             with await self.lock:
                 if self.curProfile:

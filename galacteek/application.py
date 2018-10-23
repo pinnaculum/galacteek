@@ -11,6 +11,7 @@ import collections
 import pkg_resources
 import jinja2, jinja2.exceptions
 import warnings
+import concurrent.futures
 
 from distutils.version import StrictVersion
 
@@ -27,7 +28,7 @@ from galacteek import pypicheck, GALACTEEK_NAME
 from galacteek.core.asynclib import asyncify
 from galacteek.core.softident import gSoftIdent
 from galacteek.core.ctx import IPFSContext
-from galacteek.ipfs import pinning, ipfsd, asyncipfsd, cidhelpers
+from galacteek.ipfs import pinning, asyncipfsd, cidhelpers
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.pubsub import *
@@ -126,6 +127,7 @@ class GalacteekApplication(QApplication):
 
         self._appProfile = profile
         self._loop = None
+        self._executor = None
         self._ipfsClient = None
         self._ipfsOpMain = None
         self._ipfsd = None
@@ -170,9 +172,12 @@ class GalacteekApplication(QApplication):
     def loop(self):
         return self._loop
 
+    @property
+    def executor(self):
+        return self._executor
+
     @loop.setter
     def loop(self, newLoop):
-        self.debug('AsyncIO loop now is: {}'.format(newLoop))
         self._loop = newLoop
 
     @property
@@ -280,7 +285,6 @@ class GalacteekApplication(QApplication):
             for fn in listing:
                 if fn.endswith('.json'):
                     path = pkg_resources.resource_filename(pkg, fn)
-                    log.debug('Importing hashmark file: {}'.format(path))
                     marks = IPFSMarks(path)
                     marksLocal.merge(marks)
         except Exception as e:
@@ -396,7 +400,7 @@ class GalacteekApplication(QApplication):
 
         IPFSOpRegistry.regDefault(self.ipfsOpMain)
 
-        soonish(self.ipfsCtx.ipfsConnectionReady.emit)
+        self.loop.call_soon(self.ipfsCtx.ipfsConnectionReady.emit)
 
         await self.setupRepository()
 
@@ -422,6 +426,8 @@ class GalacteekApplication(QApplication):
             warnings.simplefilter('always', BytesWarning)
             warnings.simplefilter('always', ImportWarning)
 
+        self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=5)
+
         self.loop = loop
         return loop
 
@@ -440,7 +446,8 @@ class GalacteekApplication(QApplication):
         self._ipfsBinLocation = os.path.join(qtDataLocation, 'ipfs-bin')
         self._ipfsDataLocation = os.path.join(self._dataLocation, 'ipfs')
         self.marksDataLocation = os.path.join(self._dataLocation, 'marks')
-        self.gpgDataLocation = os.path.join(self._dataLocation, 'gpg')
+        self.cryptoDataLocation = os.path.join(self._dataLocation, 'crypto')
+        self.gpgDataLocation = os.path.join(self.cryptoDataLocation, 'gpg')
         self.localMarksFileLocation = os.path.join(self.marksDataLocation,
             'ipfsmarks.local.json')
         self.networkMarksFileLocation = os.path.join(self.marksDataLocation,
@@ -456,6 +463,7 @@ class GalacteekApplication(QApplication):
         for dir in [ self._ipfsDataLocation,
                 self.ipfsBinLocation,
                 self.marksDataLocation,
+                self.cryptoDataLocation,
                 self.gpgDataLocation,
                 self.configDirLocation ]:
             if not os.path.exists(dir):
@@ -464,7 +472,7 @@ class GalacteekApplication(QApplication):
         self.defaultDownloadsLocation = QStandardPaths.writableLocation(
             QStandardPaths.DownloadLocation)
 
-        self.debug('Data {0}, config {1}, configfile {2}'.format(
+        self.debug('Datapath: {0}, config: {1}, configfile: {2}'.format(
                 self._dataLocation,
                 self.configDirLocation,
                 self.settingsFileLocation))
@@ -501,7 +509,8 @@ class GalacteekApplication(QApplication):
             swarmHighWater=sManager.getInt(section, CFG_KEY_SWARMHIGHWATER),
             storageMax=sManager.getInt(section, CFG_KEY_STORAGEMAX),
             pubsubEnable=pubsubEnabled, corsEnable=corsEnabled,
-            migrateRepo=migrateRepo, debug=self.debug)
+            migrateRepo=migrateRepo, debug=self.debug,
+            loop=self.loop)
 
         self.task(self.startIpfsdTask, self.ipfsd)
 

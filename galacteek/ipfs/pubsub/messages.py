@@ -1,10 +1,12 @@
 import json
 import collections
+import base64
 
 from jsonschema import validate
 from jsonschema.exceptions import *
 
 from galacteek.core.jtraverse import traverseParser
+from galacteek import log
 
 class Encoder(json.JSONEncoder):
     def default(self, obj):
@@ -37,7 +39,7 @@ class PubsubMessage(collections.UserDict):
         try:
             validate(self.data, sch)
         except ValidationError as verr:
-            print('Invalid JSON schema error: {}'.format(str(verr)))
+            log.debug('Invalid JSON schema error: {}'.format(str(verr)))
             return False
         else:
             return True
@@ -95,10 +97,17 @@ class PeerIdentMessageV1(PubsubMessage):
                             "firstname" : {"type": "string"},
                             "lastname" : {"type": "string"},
                             "email" : {"type": "string"},
-                            "gender" : {"type": "string"},
+                            "gender" : {"type": "integer"},
                             "org" : {"type": "string"},
-                            "country" : {"type": "string"},
+                            "country" : {
+                                "type": "object",
+                                "properties": {
+                                    "id": {"type": "string"},
+                                    "name": {"type": "string"},
+                                },
+                            },
                             "date" : {"type": "object"},
+                            "crypto": {"type": "object"},
                         },
                         "required": [
                             "username",
@@ -117,7 +126,7 @@ class PeerIdentMessageV1(PubsubMessage):
     }
 
     @staticmethod
-    def make(peerId, uInfoHash, userInfo, userDagCid, userDagIpns):
+    def make(peerId, uInfoCid, userInfo, userDagCid, userDagIpns, p2pServices):
         msg = PeerIdentMessageV1({
             'msgtype': PeerIdentMessageV1.TYPE,
             'version': 1,
@@ -130,8 +139,8 @@ class PeerIdentMessageV1(PubsubMessage):
                         'ipns': userDagIpns if userDagIpns else ''
                     },
                 },
-                'p2pservices': [],
-                'userinfoobjref': uInfoHash,
+                'p2pservices': p2pServices,
+                'userinfoobjref': uInfoCid,
             }
         })
         msg.data['msg'].update(userInfo)
@@ -151,7 +160,7 @@ class PeerIdentMessageV1(PubsubMessage):
 
     @property
     def country(self):
-        return self.parser.traverse('msg.userinfo.country')
+        return self.parser.traverse('msg.userinfo.country.name')
 
     @property
     def dateCreated(self):
@@ -170,8 +179,12 @@ class PeerIdentMessageV1(PubsubMessage):
         return self.parser.traverse('msg.user.mainpage')
 
     @property
-    def objref(self):
-        return self.msgdata['userinfoobjref']
+    def userInfoObjCid(self):
+        return self.parser.traverse('msg.userinfoobjref')
+
+    @property
+    def rsaPubKeyPem(self):
+        return self.parser.traverse('msg.userinfo.crypto.rsa.pubkeypem')
 
     @property
     def msgdata(self):

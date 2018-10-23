@@ -212,7 +212,6 @@ class IPFSOperator(object):
             self.debug('filesWriteJson error {}'.format(err.message))
             return None
         else:
-            self.debug('filesWriteJson success {}'.format(resp))
             return resp
 
     async def filesReadJsonObject(self, path):
@@ -226,7 +225,6 @@ class IPFSOperator(object):
             self.debug('filesReadJson unknown error {}'.format(str(err)))
             return None
         else:
-            self.debug('filesReadJson success {}'.format(resp))
             return resp
 
     async def chroot(self, path):
@@ -357,7 +355,7 @@ class IPFSOperator(object):
         try:
             result = await self.client.pin.ls(multihash=hashRef)
             keys = result.get('Keys', {})
-            return key in keys
+            return hashRef in keys
         except aioipfs.APIError as e:
             self.debug('isPinned error: {}'.format(e.message))
             return False
@@ -371,6 +369,20 @@ class IPFSOperator(object):
             return result.get('Keys', {})
         except aioipfs.APIError as e:
             return None
+
+    async def pin(self, path, timeout=3600):
+        async def _pin(ppath):
+            async for pinStatus in self.client.pin.add(ppath):
+                self.debug('Pin status: {0} {1}'.format(
+                    ppath, pinStatus))
+                pins = pinStatus.get('Pins', None)
+                if pins is None:
+                    continue
+                if isinstance(pins, list) and ppath in pins:
+                    # Ya estamos
+                    return True
+            return False
+        return await self.waitFor(_pin(path), timeout)
 
     async def pinUpdate(self, old, new, unpin=True):
         """
@@ -584,7 +596,7 @@ class IPFSOperator(object):
         ping functions.
 
         Items yielded are tuples of the form (time, success, text) where time
-        is the latency for the peer packet, success is boolean (True if ping
+        is the latency for the ping packet, success is boolean (True if ping
         ok) and text is the ping message
 
         :param str peer: Peer ID
