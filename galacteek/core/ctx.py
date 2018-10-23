@@ -13,6 +13,55 @@ from galacteek.ipfs.pubsub import *
 from galacteek.ipfs.ipfsops import *
 from galacteek.core.profile import UserProfile
 from galacteek.core.softident import gSoftIdent
+from galacteek.crypto.rsa import RSAExecutor
+
+class PeerCtx(QObject):
+    def __init__(self, ipfsCtx, peerId, identMsg, pinglast=0, pingavg=0):
+        self._ipfsCtx = ipfsCtx
+        self.peerId = peerId
+        self.ident = identMsg
+        self.pinglast = pinglast
+        self.pingavg = pingavg
+        self._identLast = int(time.time())
+
+    @property
+    def ipfsCtx(self):
+        return self._ipfsCtx
+
+    @property
+    def ident(self):
+        return self._ident
+
+    @property
+    def identLast(self):
+        return self._identLast
+
+    @property
+    def peerUnresponsive(self):
+        return (int(time.time()) - self.identLast) > 180
+
+    @ident.setter
+    def ident(self, v):
+        self._ident = v
+        self._identLast = int(time.time())
+
+    def debug(self, msg):
+        log.debug('Peer {0}: {1}'.format(self.peerId, msg))
+
+    @ipfsOp
+    async def update(self, op):
+        pass
+
+    @ipfsOp
+    async def getRsaPubKey(self, op):
+        pubKeyPayload = self.ident.rsaPubKeyPem
+
+        if pubKeyPayload:
+            pubKey = await self.ipfsCtx.rsaExec.importKey(
+                    pubKeyPayload)
+            return pubKey
+        else:
+            self.debug('Failed to load pubkey')
 
 class Peers(QObject):
     changed = pyqtSignal()
@@ -42,7 +91,7 @@ class Peers(QObject):
 
     @property
     def peersNicknames(self):
-        return [po['identmsg'].username for pid, po in self.byPeerId.items()]
+        return [peer.ident.username for pid, peer in self.byPeerId.items()]
 
     async def unregister(self, peerId):
         if peerId in self.byPeerId:
@@ -55,27 +104,35 @@ class Peers(QObject):
         # identMsg is a PeerIdentMessage
 
         if not iMsg.peer in self.byPeerId:
-            """ Ping the peer """
-
-            avgPing = await op.waitFor(op.pingAvg(iMsg.peer, count=2), 3)
+            now = int(time.time())
+            avgPing = await op.waitFor(op.pingAvg(iMsg.peer, count=2), 5)
 
             with await self.lock:
-                self._byPeerId[iMsg.peer] = {
-                    'pinglast': int(time.time()),
-                    'pingavg': avgPing,
-                    'identmsg': iMsg
-                }
+                pCtx = PeerCtx(self.ctx, iMsg.peer, iMsg,
+                    pingavg=avgPing if avgPing else 0,
+                    pinglast=now if avgPing else 0
+                )
+                self._byPeerId[iMsg.peer] = pCtx
             self.peerAdded.emit(iMsg.peer)
         else:
             with await self.lock:
-                log.debug('Modifying peer {}'.format(iMsg.peer))
                 self.peerModified.emit(iMsg.peer)
-                self._byPeerId[iMsg.peer]['identmsg'] = iMsg
+                self._byPeerId[iMsg.peer].ident = iMsg
 
         self.changed.emit()
 
     async def init(self):
         pass
+
+    async def watch(self):
+        while True:
+            await asyncio.sleep(60)
+
+            with await self.lock:
+                for peerId, pCtx in self.byPeerId.items():
+                    if pCtx.peerUnresponsive:
+                        log.debug('{} unresponsive ..'.format(peerId))
+                        await self.unregister(peerId)
 
     async def stop(self):
         pass
@@ -140,11 +197,18 @@ class P2PServices(QObject):
     def __init__(self, parent):
         super().__init__(parent)
         self.ctx = parent
-        self._services = {}
+        self._services = []
 
     @property
     def services(self):
         return self._services
+
+    def servicesFormatted(self):
+        return [ {
+            'name': srv.name,
+            'descr': srv.description,
+            'protocol': srv.protocolName
+        } for srv in self.services ]
 
     @ipfsOp
     async def init(self, op):
@@ -153,6 +217,10 @@ class P2PServices(QObject):
             return
 
         log.debug('P2P streams support available')
+
+    async def stop(self):
+        for srv in self.services:
+            await srv.stop()
 
 class IPFSContext(QObject):
     # signals
@@ -227,8 +295,7 @@ class IPFSContext(QObject):
 
     @softIdent.setter
     def softIdent(self, ident):
-        log.debug('Software ident changed: CID {}'.format(
-            ident['Hash']))
+        log.debug('Software ident changed: CID {}'.format(ident['Hash']))
         self._softIdent = ident
 
     def hasRsc(self, name):
@@ -236,12 +303,18 @@ class IPFSContext(QObject):
 
     @ipfsOp
     async def setup(self, ipfsop, pubsubEnable=True,
-            pubsubHashmarksExch=False):
+            pubsubHashmarksExch=False, p2pEnable=False):
+        self.rsaExec = RSAExecutor(loop=self.loop,
+                executor=self.app.executor)
         await self.importSoftIdent()
 
         await self.node.init()
         await self.peers.init()
-        await self.p2p.init()
+
+        if p2pEnable is True:
+            await self.p2p.init()
+
+        ensure(self.peers.watch())
 
         self.pinner = pinning.Pinner(self)
         self.pinnerTask = self.loop.create_task(self.pinner.process())
@@ -253,7 +326,9 @@ class IPFSContext(QObject):
         if self.pinnerTask:
             self.pinnerTask.cancel()
             await self.pinnerTask
+
         await self.peers.stop()
+        await self.p2p.stop()
         await self.pubsub.stop()
 
     def setupPubsub(self, pubsubHashmarksExch=False):

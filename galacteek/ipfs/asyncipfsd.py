@@ -66,7 +66,6 @@ class IPFSDProtocol(asyncio.SubprocessProtocol):
         # TODO: implement ipfs process supervisor independent of daemon output
 
         for line in msg.split('\n'):
-            log.debug('go-ipfs output: {}'.format(line))
             if re.search('Error: ipfs daemon is running', line):
                 self.errAlreadyRunning = True
             if re.search('Gateway.*server listening on', line):

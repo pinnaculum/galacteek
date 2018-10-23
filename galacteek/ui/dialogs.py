@@ -2,6 +2,7 @@
 import time
 import asyncio
 import re
+import os, os.path
 
 from PyQt5.QtWidgets import (QWidget, QApplication,
         QDialog, QLabel, QTextEdit, QPushButton, QMessageBox)
@@ -9,8 +10,9 @@ from PyQt5.QtWidgets import (QWidget, QApplication,
 from PyQt5.QtCore import QUrl, Qt, pyqtSlot, QCoreApplication
 from PyQt5.QtGui import QClipboard, QPixmap, QImage
 
-from galacteek import asyncify, ensure
+from galacteek import asyncify, ensure, asyncReadFile
 from galacteek.core.ipfsmarks import *
+from galacteek.core import countries
 from galacteek.ipfs import cidhelpers
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import *
@@ -222,14 +224,20 @@ class DonateDialog(QDialog):
     def accept(self):
         self.done(1)
 
+def notEmpty(v):
+    return v != ''
+
 class ProfileEditDialog(QDialog):
     def __init__(self, profile, parent=None):
         super().__init__(parent)
 
         self.profile = profile
+        self.countryList = countries.countryList
 
         self.ui = ui_profileeditdialog.Ui_ProfileEditDialog()
         self.ui.setupUi(self)
+
+        self.loadCountryData()
 
         self.ui.labelWarning.setStyleSheet('QLabel { font-weight: bold; }')
         self.ui.username.setText(self.profile.userInfo.username)
@@ -238,7 +246,12 @@ class ProfileEditDialog(QDialog):
         self.ui.email.setText(self.profile.userInfo.email)
         self.ui.org.setText(self.profile.userInfo.org)
 
-        if self.profile.userInfo.avatarCid != '':
+        if notEmpty(self.profile.userInfo.countryName):
+            self.ui.countryBox.setCurrentText(self.profile.userInfo.countryName)
+        else:
+            self.ui.countryBox.setCurrentText('Unspecified')
+
+        if notEmpty(self.profile.userInfo.avatarCid):
             self.updateAvatarCid()
 
         self.ui.profileCryptoId.setText('<b>{}</b>'.format(
@@ -257,6 +270,17 @@ class ProfileEditDialog(QDialog):
 
     def reloadIcon(self):
         ensure(self.loadIcon())
+
+    def getCountryCode(self, name):
+        for entry in self.countryList:
+            if entry['name'] == name:
+                return entry['code']
+
+    def loadCountryData(self):
+        for entry in self.countryList:
+            self.ui.countryBox.addItem(entry['name'])
+
+        self.ui.countryBox.addItem('Unspecified')
 
     @asyncify
     async def loadIcon(self):
@@ -295,6 +319,12 @@ class ProfileEditDialog(QDialog):
             ma = re.search("[a-zA-Z\_\-\@\.\+\'\´0-9\s]*", val)
             if ma:
                 kw[key] = val
+
+        country = self.ui.countryBox.currentText()
+        code = self.getCountryCode(country)
+
+        if country and code:
+            self.profile.userInfo.setCountryInfo(country, code)
 
         self.profile.userInfo.setInfos(**kw)
         self.done(1)

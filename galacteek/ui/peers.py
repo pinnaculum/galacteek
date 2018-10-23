@@ -64,40 +64,34 @@ class PeersTracker(QObject):
                 search=peerId, delete=True)
 
     def onPeerModified(self, peerId):
-        entry = self.ctx.peers.getByPeerId(peerId)
-        if not entry:
+        peerCtx = self.ctx.peers.getByPeerId(peerId)
+        if not peerCtx:
             return
 
         row = self._peersRows.get(peerId, None)
         if row:
-            row[0].setText(entry['identmsg'].username)
-
-        #ret = modelSearch(self.model,
-        #        parent=self.modelRoot.index(),
-        #        search=peerId, delete=True)
-        #self.addPeerFromEntry(peerId, entry)
+            row[0].setText(peerCtx.ident.username)
 
     def onPeerAdded(self, peerId):
-        entry = self.ctx.peers.getByPeerId(peerId)
-        if not entry:
+        peerCtx = self.ctx.peers.getByPeerId(peerId)
+        if not peerCtx:
             return
 
-        self.addPeerFromEntry(peerId, entry)
+        self.addPeerFromEntry(peerId, peerCtx)
 
-    def addPeerFromEntry(self, peerId, entry):
+    def addPeerFromEntry(self, peerId, peerCtx):
         row = [
-            UneditableItem(entry['identmsg'].username),
+            UneditableItem(peerCtx.ident.username),
             UneditableItem(peerId),
-            UneditableItem(str(entry['pingavg'])),
+            UneditableItem(str(peerCtx.pingavg)),
             UneditableItem(''),
         ]
         row2 = [
-            UneditableItem('Joined: {0}'.format(entry['identmsg'].dateCreated)),
+            UneditableItem('Joined: {0}'.format(peerCtx.ident.dateCreated)),
             UneditableItem(peerId),
         ]
 
         self.modelRoot.appendRow(row)
-        idx = self.model.indexFromItem(row[3])
 
         self._peersRows[peerId] = row
         root = row[0]
@@ -142,21 +136,21 @@ class PeersManager(GalacteekTab):
 
     def onPeerAdded(self, peerId):
         def openPeer(id):
-            entry = self.peersTracker.ctx.peers.getByPeerId(id)
-            ensure(self.explorePeerHome(entry))
+            peerCtx = self.peersTracker.ctx.peers.getByPeerId(id)
+            ensure(self.explorePeerHome(peerCtx))
 
         def followPeer(id):
-            entry = self.peersTracker.ctx.peers.getByPeerId(id)
+            peerCtx = self.peersTracker.ctx.peers.getByPeerId(id)
 
             runDialog(AddFeedDialog, self.app.marksLocal,
-                    joinIpns(entry['identmsg'].dagIpns),
-                    feedName=entry['identmsg'].username)
+                    joinIpns(peerCtx.ident.dagIpns),
+                    feedName=peerCtx.ident.username)
 
         for peerId, row in self.peersTracker.peersRows.items():
             idx = self.model.indexFromItem(row[3])
             if self.ui.tree.indexWidget(idx) != None:
                 continue
-            btnEx = QPushButton('Explore')
+            btnEx = QPushButton('Homepage')
             btnEx.setFixedSize(100, 20)
             btnEx.clicked.connect(lambda: openPeer(peerId))
 
@@ -176,17 +170,13 @@ class PeersManager(GalacteekTab):
     def onDoubleClick(self, idx):
         idxPeerId = self.model.sibling(idx.row(), 1, idx)
         peerId = self.model.data(idxPeerId)
-        entry = self.peersTracker.ctx.peers.getByPeerId(peerId)
+        peerCtx = self.peersTracker.ctx.peers.getByPeerId(peerId)
 
-        ensure(self.explorePeerHome(entry))
+        ensure(self.explorePeerHome(peerCtx))
 
     @ipfsOp
-    async def explorePeerHome(self, op, entry):
-        identMsg = entry['identmsg']
-
-        if not await op.hasDagCommand():
-            log.debug('No DAG support')
-            return
+    async def explorePeerHome(self, op, peerCtx):
+        identMsg = peerCtx.ident
 
         dagCid = identMsg.dagCid
         if not cidValid(dagCid):
@@ -195,14 +185,3 @@ class PeersManager(GalacteekTab):
 
         self.gWindow.addBrowserTab().browseFsPath(
                 os.path.join(joinIpns(identMsg.dagIpns), 'index.html'))
-        return
-
-        try:
-            async with DAGQuery(dagCid=dagCid) as q:
-                home = await q.resolve('home/index.html')
-
-                if home:
-                    self.gWindow.addBrowserTab().browseFsPath(
-                        q.path('home/index.html'))
-        except Exception as err:
-            pass

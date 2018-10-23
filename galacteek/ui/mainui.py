@@ -225,6 +225,7 @@ class MainWindow(QMainWindow):
         self.ui.mediaPlayerButton.clicked.connect(self.onOpenMediaPlayer)
         self.ui.ipfsSearchButton.clicked.connect(self.onIpfsSearch)
         self.ui.ipfsSearch.returnPressed.connect(self.onIpfsSearch)
+        self.ui.peersMgrButton.clicked.connect(self.onPeersMgrClicked)
 
         self.multiLoaderMenu = QMenu()
         self.multiLoaderHMenu = QMenu(iClipboardHistory())
@@ -479,7 +480,9 @@ class MainWindow(QMainWindow):
                 self.ui.openBrowserTabButton,
                 self.ui.hashmarksButton,
                 self.ui.mediaPlayerButton,
-                self.ui.writeNewDocumentButton ]:
+                self.ui.writeNewDocumentButton,
+                self.ui.peersMgrButton,
+                self.ui.clipboardMultiLoader ]:
             btn.setEnabled(flag)
 
     def statusMessage(self, msg):
@@ -705,6 +708,9 @@ class MainWindow(QMainWindow):
         w = textedit.AddDocumentWidget(self, parent=self.ui.tabWidget)
         self.registerTab(w, 'New document', current=True)
 
+    def onPeersMgrClicked(self):
+        self.showPeersMgr(current=True)
+
     def onFileManagerClicked(self):
         name = self.tabnFManager
 
@@ -749,11 +755,17 @@ class MainWindow(QMainWindow):
         self.registerTab(eventlog.EventLogWidget(self), iEventLog(),
                 current=current)
 
-    def showPeersMgr(self):
+    def showPeersMgr(self, current=False):
         # Peers mgr
+        name = iPeers()
+
+        ft = self.findTabWithName(name)
+        if ft:
+            return self.ui.tabWidget.setCurrentWidget(ft)
+
         self.peersTracker = peers.PeersTracker(self.app.ipfsCtx)
         pMgr = peers.PeersManager(self, self.peersTracker)
-        self.registerTab(pMgr, iPeers())
+        self.registerTab(pMgr, name, current=current)
 
     def quit(self):
         # Qt and application exit

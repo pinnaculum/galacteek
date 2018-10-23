@@ -46,13 +46,11 @@ class DAGQuery(object):
     async def load(self, op, timeout=10):
         self._dagRoot = await op.waitFor(op.dagGet(self.dagCid), timeout)
         if self.dagRoot:
-            self.debug('Loaded DAG from CID {0}'.format(self.dagCid))
             self.evLoaded.set()
             return self.dagRoot
 
     @ipfsOp
     async def get(self, op, path):
-        self.debug('Get {}'.format(os.path.join(self.dagCid, path)))
         dagNode = await op.dagGet(
             os.path.join(self.dagCid, path))
 
@@ -143,11 +141,11 @@ class EvolvingDAG(QObject):
 
     keyCidLatest = 'cidlatest'
 
-    def __init__(self, dagMetaMfsPath, dagMetaHistoryMax=12):
+    def __init__(self, dagMetaMfsPath, dagMetaHistoryMax=12, loop=None):
         super().__init__()
 
         self.lock = asyncio.Lock()
-        self.loop = asyncio.get_event_loop()
+        self.loop = loop if loop else asyncio.get_event_loop()
         self.loaded = asyncio.Future()
 
         self._curMetaEntry = None
@@ -172,7 +170,6 @@ class EvolvingDAG(QObject):
     @curMetaEntry.setter
     def curMetaEntry(self, value):
         self._curMetaEntry = value
-        self.debug('Metadata entry changed to {}'.format(value))
 
     @property
     def dagCid(self):
@@ -227,7 +224,6 @@ class EvolvingDAG(QObject):
                 # How inconvenient ..
                 # TODO: the history could be used here to recreate a DAG
                 # from previous CIDs but we really shouldn't have to enter here
-                self.debug('! Metadata is invalid: {} !'.format(meta))
                 self._dagRoot = {}
 
             self.loaded.set_result(True)

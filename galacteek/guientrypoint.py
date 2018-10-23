@@ -12,7 +12,8 @@ from distutils.version import StrictVersion
 
 from PyQt5.QtWidgets import QApplication
 
-from galacteek import log as logger, ensure
+from galacteek import log, ensure
+from galacteek.core import glogger
 
 from galacteek.ipfs import distipfsfetch
 from galacteek.ui import mainui
@@ -55,7 +56,7 @@ async def fetchGoIpfsWrapper(app, timeout=60*10):
 async def fetchGoIpfsDist(app):
     async for msg in distipfsfetch.distIpfsExtract(
             dstdir=app.ipfsBinLocation, software='go-ipfs',
-            executable='ipfs', version='0.4.17'):
+            executable='ipfs', version='0.4.17', loop=app.loop):
         try:
             code, text = msg
             app.mainWindow.statusMessage(text)
@@ -63,21 +64,10 @@ async def fetchGoIpfsDist(app):
             app.debug(str(e))
 
 def galacteekGui(args):
-    logFormatter = logging.Formatter(
-            '%(asctime)s %(name)s %(levelname)s: %(message)s')
-    if args.logfile:
-        fh = logging.FileHandler(args.logfile)
-        fh.setFormatter(logFormatter)
-        logger.addHandler(fh)
-    else:
-        sh = logging.StreamHandler()
-        sh.setFormatter(logFormatter)
-        logger.addHandler(sh)
-
     if args.debug:
-        logger.setLevel(logging.DEBUG)
+        glogger.basicConfig(level='DEBUG')
     else:
-        logger.setLevel(logging.INFO)
+        glogger.basicConfig(level='INFO')
 
     gApp = application.GalacteekApplication(profile=args.profile,
             debug=args.debug)
@@ -164,8 +154,6 @@ def start():
         help='IPFS http gateway port number')
     parser.add_argument('--profile', default='main',
         help='Application Profile')
-    parser.add_argument('--logfile', default=None,
-        help='Log file')
     parser.add_argument('--monitor', action='store_true',
         dest='monitor', help = 'Monitor application with aiomonitor')
     parser.add_argument('--migrate', action='store_true',

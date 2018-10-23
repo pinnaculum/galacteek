@@ -1,12 +1,16 @@
+
+.. image:: https://github.com/ipfs/logo/blob/master/raster-generated/ipfs-logo-text-128-ice.png?raw=true
+    :target: https://github.com/ipfs/logo/blob/master/raster-generated/ipfs-logo-text-128-ice.png?raw=true
+    :align: center
+
 =========
 Galacteek
 =========
 
-:info: An IPFS_ browser and exchanger
+:info: An async IPFS_ browser and exchanger
 
-This is a simple application allowing you to search, browse, publish and
-hashmark content on the permanent web accessible through the IPFS_ peer-to-peer
-network.
+**galacteek** is an asynchronous Qt5-based browser and toolbox for the IPFS_
+peer-to-peer network.
 
 Installation
 ============
@@ -14,8 +18,8 @@ Installation
 PIP
 ---
 
-You need to have python 3.5 and pip installed, as well as go-ipfs_.
-From a virtualenv, or as root, install with:
+You need to have python>=3.5 (python>=3.6 is recommended) and pip installed,
+as well as go-ipfs_. From a virtualenv, or as root, install with:
 
 .. code-block:: shell
 
@@ -41,8 +45,16 @@ You need a recent version of go-ipfs_ (> 0.4.7) with the new DAG API.
 For the media player to work on Linux, you will need to install the
 *gstreamer* (1.x) package and all the gstreamer plugins.
 
-Use the *-d* command-line switch to enable debugging, and *--logfile* to log to
-a specific file instead of stdout. See *--help* for all options.
+Command-line usage
+==================
+
+Use the *-d* command-line switch to enable debugging. Using *--profile* gives
+you the ability to have separate application profiles (*main* is the default
+profile). Use *--help* for all options.
+
+*Development*: Use *--monitor* to enable event-loop monitoring with aiomonitor_
+(install aiomonitor_ manually as it's not a dependency).
+Then connect to the aiomonitor_ interface with **nc localhost 50101**
 
 Features
 ========
@@ -105,7 +117,7 @@ Platforms supported
 Mainly tested on Linux. The application relies heavily on quamash_ which
 should work with most platforms. Things relying on HTTPs (ipfs-search engine
 queries ..) might not work on Windows due to *ProactorEventLoop* being
-incompatible with SSL, and manual installation of go-ipfs_ is advised on this
+incompatible with SSL. Manual installation of go-ipfs_ is advised on this
 platform.
 
 Donations
@@ -117,8 +129,9 @@ application's main window.
 Requirements
 ============
 
+- python3 >= 3.5.3 (it is strongly suggested to use python>=3.6 because asyncio
+  is more mature and stable starting with python 3.6)
 - go-ipfs_ > 0.4.7
-- python3 >= 3.5
 - qt5
 - PyQt5 with QtWebEngine support
 - gstreamer (on Linux) for media player support
@@ -136,6 +149,7 @@ from the ipfs-logo_ project's repository is included, unchanged.
 
 .. _aiohttp: https://pypi.python.org/pypi/aiohttp
 .. _aioipfs: https://gitlab.com/cipres/aioipfs
+.. _aiomonitor: https://github.com/aio-libs/aiomonitor
 .. _quamash: https://github.com/harvimt/quamash
 .. _go-ipfs: https://github.com/ipfs/go-ipfs
 .. _dist.ipfs.io: https://dist.ipfs.io

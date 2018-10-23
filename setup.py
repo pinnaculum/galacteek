@@ -141,6 +141,11 @@ setup(
             'galacteek = galacteek.guientrypoint:start',
         ]
     },
+    extras_require={
+        'docs': [
+            'sphinx>=1.7.0'
+        ]
+    },
     classifiers=[
         'Environment :: X11 Applications :: Qt',
         'Framework :: AsyncIO',

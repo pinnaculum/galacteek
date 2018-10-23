@@ -18,13 +18,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-__version__ = '0.2.4'
-
-import logging
+__version__ = '0.2.5'
 
 from galacteek.core.asynclib import *
+from galacteek.core import glogger
 
 GALACTEEK_NAME = 'galacteek'
 
-log = logging.getLogger('galacteek')
-log.setLevel(logging.INFO)
+log = glogger.loggerMain
