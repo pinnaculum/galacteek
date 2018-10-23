@@ -1,11 +1,11 @@
 
-.. image:: https://github.com/ipfs/logo/blob/master/raster-generated/ipfs-logo-128-white.png?raw=true
-    :target: https://github.com/ipfs/logo/blob/master/raster-generated/ipfs-logo-128-white.png?raw=true
-    :align: center
-
 =========
 Galacteek
 =========
+
+.. image:: https://github.com/ipfs/logo/blob/master/raster-generated/ipfs-logo-128-white.png?raw=true
+    :target: https://github.com/ipfs/logo/blob/master/raster-generated/ipfs-logo-128-white.png?raw=true
+    :align: center
 
 :info: An async IPFS_ browser and exchanger
 
