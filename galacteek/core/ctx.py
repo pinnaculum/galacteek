@@ -38,12 +38,13 @@ class PeerCtx(QObject):
 
     @property
     def peerUnresponsive(self):
-        return (int(time.time()) - self.identLast) > 180
+        return (int(time.time()) - self.identLast) > (60*10)
 
     @ident.setter
     def ident(self, v):
         self._ident = v
         self._identLast = int(time.time())
+        self.debug('Updated last ident to {}'.format(self.identLast))
 
     def debug(self, msg):
         log.debug('Peer {0}: {1}'.format(self.peerId, msg))

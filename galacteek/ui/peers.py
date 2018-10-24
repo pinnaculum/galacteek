@@ -62,6 +62,8 @@ class PeersTracker(QObject):
         ret = modelSearch(self.model,
                 parent=self.modelRoot.index(),
                 search=peerId, delete=True)
+        if peerId in self._peersRows:
+            del self._peersRows[peerId]
 
     def onPeerModified(self, peerId):
         peerCtx = self.ctx.peers.getByPeerId(peerId)

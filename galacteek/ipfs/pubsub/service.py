@@ -243,7 +243,7 @@ class PSPeersService(JSONPubsubService):
                 runPeriodic=True)
 
         self._curProfile = None
-        self._identEvery = 60
+        self._identEvery = 45
         self.ipfsCtx.profileChanged.connect(self.onProfileChanged)
 
     @property
