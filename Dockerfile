@@ -18,7 +18,7 @@ RUN tar -xvf go-ipfs_v0.4.17_linux-amd64.tar.gz
 RUN cp go-ipfs/ipfs /usr/local/bin
 
 # Add source code.
-COPY COPYING LICENSE LICENSE.go-ipfs /usr/local/galacteek/
+COPY README.rst COPYING LICENSE LICENSE.go-ipfs /usr/local/galacteek/
 COPY requirements.txt setup.py galacteek.pro \
 	/usr/local/galacteek/
 COPY docs /usr/local/galacteek/docs
