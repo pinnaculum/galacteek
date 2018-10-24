@@ -3,8 +3,7 @@
 Galacteek
 =========
 
-.. image:: https://github.com/ipfs/logo/blob/master/raster-generated/ipfs-logo-128-white.png?raw=true
-    :target: https://github.com/ipfs/logo/blob/master/raster-generated/ipfs-logo-128-white.png?raw=true
+.. image:: https://gitlab.com/galacteek/galacteek/raw/master/share/icons/ipfs-logo-128-white.png
     :align: center
 
 :info: An async IPFS_ browser and exchanger
