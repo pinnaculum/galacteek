@@ -13,13 +13,14 @@ def defaultEnv():
 @ipfsOpFn
 async def ipfsRender(op, tmplname, **kw):
     env = defaultEnv()
+    loop = kw.pop('loop', None)
 
     tmpl = env.get_template(tmplname)
     if not tmpl:
         raise Exception('template not found')
 
     try:
-        loop = asyncio.get_event_loop()
+        loop = loop if loop else asyncio.get_event_loop()
         data = await loop.run_in_executor(None, functools.partial(tmpl.render, **kw))
         ent = await op.client.add_str(data)
     except Exception as e:
