@@ -202,7 +202,8 @@ class UserApp(QObject):
     async def update(self, op):
         homeIndex = await self.profile.tmplRender('public/userhome.html',
                 boardMessages=list(reversed(
-                    self.dagRoot['board']['messages'])))
+                    self.dagRoot['board']['messages'])),
+                loop=self.profile.ctx.loop)
 
         async with self.profile.dagUser as dag:
             dag.root['index.html'] = dag.mkLink(homeIndex)
