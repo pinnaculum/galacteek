@@ -9,7 +9,6 @@ json-traverse==0.4
 jsonschema==2.6.0
 logbook==1.4.0
 multiaddr==0.0.2
-protobuf-to-dict==0.1.0
 protobuf==3.6.1
 py-multibase==0.1.2
 py-multicodec==0.1.2
