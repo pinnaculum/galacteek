@@ -139,6 +139,8 @@ setup(
              'docs/manual/en/html/_images/*',
              'docs/manual/en/html/_static/*',
             'templates/*.html',
+            'templates/public/*.html',
+            'templates/public/css/*',
             'hashmarks/default/*.json'
         ]
     },

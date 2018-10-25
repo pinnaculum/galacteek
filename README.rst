@@ -63,6 +63,11 @@ connect to an existing IPFS daemon. By default it will try to run a daemon. You
 can change the IPFS connection settings through the *Edit* -> *Settings* menu
 and restart the application afterwards.
 
+Starting with the *0.2.5* release, your user profile has a dynamic DAG
+associated (with a simple message board), and an IPNS record points to the
+latest version of the DAG. The peers manager lets you browse the homepage of
+each peer.
+
 - Browsing sessions with automatic pinning (pins every page you browse)
 - Feeds (following IPNS hashes)
 - File manager with drag-and-drop support

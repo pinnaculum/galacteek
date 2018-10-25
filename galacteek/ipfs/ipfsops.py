@@ -217,7 +217,6 @@ class IPFSOperator(object):
     async def filesReadJsonObject(self, path):
         try:
             resp = await self.client.files.read(path)
-            return json.loads(resp.decode())
         except aioipfs.APIError as err:
             self.debug('filesReadJson error {}'.format(err.message))
             return None
@@ -225,7 +224,7 @@ class IPFSOperator(object):
             self.debug('filesReadJson unknown error {}'.format(str(err)))
             return None
         else:
-            return resp
+            return json.loads(resp.decode())
 
     async def chroot(self, path):
         self.filesChroot = path

@@ -5,11 +5,10 @@ Protobuf definitions for IPFS
 from . import unixfs_pb2
 
 from google.protobuf import message
-from google.protobuf import text_format
 from google.protobuf.json_format import *
 from google.protobuf import message_factory
 
-from protobuf_to_dict import protobuf_to_dict
+from .protobuf_to_dict import protobuf_to_dict
 
 def decodeDagNode(data):
     try:
