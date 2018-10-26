@@ -1,12 +1,12 @@
 import json
 import collections
-import base64
 
 from jsonschema import validate
-from jsonschema.exceptions import *
+from jsonschema.exceptions import ValidationError
 
 from galacteek.core.jtraverse import traverseParser
 from galacteek import log
+
 
 class Encoder(json.JSONEncoder):
     def default(self, obj):
@@ -17,6 +17,7 @@ class Encoder(json.JSONEncoder):
         if isinstance(obj, PeerIdentMessageV1):
             return obj.data
         return json.JSONEncoder.default(self, obj)
+
 
 class PubsubMessage(collections.UserDict):
     def __init__(self, *args, **kw):
@@ -51,6 +52,7 @@ class PubsubMessage(collections.UserDict):
     def make(*args, **kw):
         raise Exception('Implement static method make')
 
+
 class MarksBroadcastMessage(PubsubMessage):
     TYPE = 'marksbroadcast'
 
@@ -61,6 +63,7 @@ class MarksBroadcastMessage(PubsubMessage):
             'marks': marksdict
         })
         return msg
+
 
 class PeerIdentMessageV1(PubsubMessage):
     TYPE = 'peerident.v1'
@@ -81,9 +84,9 @@ class PeerIdentMessageV1(PubsubMessage):
                             "publicdag": {
                                 "type": "object",
                                 "properties": {
-                                    "cid" : {"type": "string"},
-                                    "ipns" : {"type": "string"},
-                                    "available" : {"type": "boolean"}
+                                    "cid": {"type": "string"},
+                                    "ipns": {"type": "string"},
+                                    "available": {"type": "boolean"}
                                 }
                             }
                         },
@@ -93,20 +96,20 @@ class PeerIdentMessageV1(PubsubMessage):
                     "userinfo": {
                         "type": "object",
                         "properties": {
-                            "username" : {"type": "string"},
-                            "firstname" : {"type": "string"},
-                            "lastname" : {"type": "string"},
-                            "email" : {"type": "string"},
-                            "gender" : {"type": "integer"},
-                            "org" : {"type": "string"},
-                            "country" : {
+                            "username": {"type": "string"},
+                            "firstname": {"type": "string"},
+                            "lastname": {"type": "string"},
+                            "email": {"type": "string"},
+                            "gender": {"type": "integer"},
+                            "org": {"type": "string"},
+                            "country": {
                                 "type": "object",
                                 "properties": {
                                     "id": {"type": "string"},
                                     "name": {"type": "string"},
                                 },
                             },
-                            "date" : {"type": "object"},
+                            "date": {"type": "object"},
                             "crypto": {"type": "object"},
                         },
                         "required": [
@@ -193,17 +196,18 @@ class PeerIdentMessageV1(PubsubMessage):
     def valid(self):
         return self.validSchema(schema=PeerIdentMessageV1.schema)
 
+
 class PeerLogoutMessage(PubsubMessage):
     TYPE = 'peerlogout'
 
     schema = {
-        "type" : "object",
-        "properties" : {
-            "msgtype" : {"type" : "string"},
-            "msg" : {
-                "type" : "object",
-                "properties" : {
-                    "peerid" : {"type" : "string"},
+        "type": "object",
+        "properties": {
+            "msgtype": {"type": "string"},
+            "msg": {
+                "type": "object",
+                "properties": {
+                    "peerid": {"type": "string"},
                 },
                 "required": ["peerid"]
             },

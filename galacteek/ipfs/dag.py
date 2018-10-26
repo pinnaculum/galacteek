@@ -1,23 +1,22 @@
-
 import asyncio
-import time
 import os.path
-import base64, base58
 
 from async_generator import async_generator, yield_, yield_from_
 
 from PyQt5.QtCore import (pyqtSignal, QObject)
 
-from galacteek import log, ensure
+from galacteek import log
 from galacteek.ipfs.wrappers import ipfsOp
-from galacteek.ipfs.ipfsops import *
+from galacteek.ipfs.ipfsops import *  # noqa
 from galacteek.ipfs import pb
-from galacteek.core.asynclib import asyncify, async_enterable
+from galacteek.core.asynclib import async_enterable
 from galacteek.core.jtraverse import traverseParser
+
 
 class DAGObj:
     def __init__(self, data):
         self.data = data
+
 
 class DAGQuery(object):
     def __init__(self, dagCid=None, dagRoot=None):
@@ -98,7 +97,7 @@ class DAGQuery(object):
             await yield_((path, DAGObj(data)))
 
         elif isinstance(data, dict):
-            for objKey, objValue  in data.items():
+            for objKey, objValue in data.items():
                 if objKey == '/':
                     out = await op.client.cat(objValue)
                     await yield_((path, DAGObj(out)))
@@ -106,16 +105,16 @@ class DAGQuery(object):
                     continue
                 else:
                     await yield_from_(
-                            self.walk(op, path=os.path.join(path, objKey),
-                                maxObjSize=maxObjSize, depth=depth)
-                        )
+                        self.walk(op, path=os.path.join(path, objKey),
+                                  maxObjSize=maxObjSize, depth=depth)
+                    )
 
         elif isinstance(data, list):
             for idx, obj in enumerate(data):
                 await yield_from_(
-                        self.walk(op, path=os.path.join(path, str(idx)),
-                            maxObjSize=maxObjSize)
-                        )
+                    self.walk(op, path=os.path.join(path, str(idx)),
+                              maxObjSize=maxObjSize)
+                )
         elif isinstance(data, str):
             await yield_((path, DAGObj(data)))
 
@@ -128,6 +127,7 @@ class DAGQuery(object):
 
     async def __aexit__(self, *args):
         pass
+
 
 class EvolvingDAG(QObject):
     """
@@ -157,7 +157,7 @@ class EvolvingDAG(QObject):
 
     @property
     def dagMetaMfsPath(self):
-        return self._dagMetaMfsPath # path inside the mfs
+        return self._dagMetaMfsPath  # path inside the mfs
 
     @property
     def dagMetaMaxHistoryItems(self):
@@ -254,16 +254,16 @@ class EvolvingDAG(QObject):
                 if prevCid is not None and prevCid not in history:
                     if len(history) > maxItems:
                         # Purge old items
-                        [history.pop() for idx in range(0,
-                            len(history) - maxItems) ]
+                        [history.pop() for idx in range(
+                            0, len(history) - maxItems)]
 
                     history.insert(0, prevCid)
                     await op.pinUpdate(prevCid, cid)
 
                 # Save the new CID and update the metadata
                 self.dagCid = cid
-                resp = await op.filesWriteJsonObject(self.dagMetaMfsPath,
-                        self.dagMeta)
+                await op.filesWriteJsonObject(self.dagMetaMfsPath,
+                                              self.dagMeta)
                 entry = await op.filesStat(self.dagMetaMfsPath)
                 if entry:
                     self.curMetaEntry = entry
@@ -325,14 +325,14 @@ class EvolvingDAG(QObject):
             if not msg:
                 return
             if maxObjSize == 0 or (maxObjSize > 0 and msg['size'] <
-                    maxObjSize):
+                                   maxObjSize):
                 await yield_((path, DAGObj(msg['data'])))
 
         if not data:
             return
 
         if isinstance(data, dict):
-            for objKey, objValue  in data.items():
+            for objKey, objValue in data.items():
                 if objKey == '/':
                     out = await op.client.cat(objValue)
                     await yield_((path, DAGObj(out)))
@@ -340,16 +340,16 @@ class EvolvingDAG(QObject):
                     continue
                 else:
                     await yield_from_(
-                            self.walk(op, path=os.path.join(path, objKey),
-                                maxObjSize=maxObjSize, depth=depth)
-                        )
+                        self.walk(op, path=os.path.join(path, objKey),
+                                  maxObjSize=maxObjSize, depth=depth)
+                    )
 
         elif isinstance(data, list):
             for idx, obj in enumerate(data):
                 await yield_from_(
-                        self.walk(op, path=os.path.join(path, str(idx)),
-                            maxObjSize=maxObjSize)
-                        )
+                    self.walk(op, path=os.path.join(path, str(idx)),
+                              maxObjSize=maxObjSize)
+                )
         elif isinstance(data, str):
             await yield_((path, DAGObj(data)))
 

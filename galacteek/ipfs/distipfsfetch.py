@@ -1,29 +1,29 @@
-
 from async_generator import async_generator, yield_
 
 import aiohttp
 import aiofiles
 import sys
-import os, os.path
+import os
+import os.path
 import platform
-import tarfile, zipfile
+import tarfile
+import zipfile
 import tempfile
 import asyncio
 import shutil
 
+
 @async_generator
 async def distIpfsExtract(dstdir='.', software='go-ipfs', executable='ipfs',
-        site='dist.ipfs.io', version='0.4.17', loop=None):
+                          site='dist.ipfs.io', version='0.4.17', loop=None):
 
     """ Fetch a distribution archive from dist.ipfs.io and extracts the
         wanted executable to dstdir. Yields progress messages """
 
     arch = None
     osType = None
-    ext  = None
     exeExt = ''
 
-    pArch = platform.architecture()
     pMachine = platform.machine()
     pSystem = platform.system()
 
@@ -57,8 +57,8 @@ async def distIpfsExtract(dstdir='.', software='go-ipfs', executable='ipfs',
         software=software, version=version, arch=arch, os=osType, ext=arExt)
 
     url = 'https://{site}/{software}/v{version}/{filename}'.format(
-            software=software, site=site, version=version, arch=arch,
-            os=osType, ext=arExt, filename=fileName)
+        software=software, site=site, version=version, arch=arch,
+        os=osType, ext=arExt, filename=fileName)
 
     tmpFile = tempfile.NamedTemporaryFile(suffix=arExt, delete=False)
     arPath = tmpFile.name
@@ -73,8 +73,8 @@ async def distIpfsExtract(dstdir='.', software='go-ipfs', executable='ipfs',
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as resp:
                 if resp.status == 404:
-                    await yield_(statusMessage(0,
-                        'Error downloading (file not found)'))
+                    await yield_(statusMessage(
+                        0, 'Error downloading (file not found)'))
                     return False
                 else:
                     await yield_(statusMessage(0, 'File found!'))
@@ -84,8 +84,8 @@ async def distIpfsExtract(dstdir='.', software='go-ipfs', executable='ipfs',
                         break
                     await fd.write(data)
                     bytesRead += len(data)
-                    await yield_(statusMessage(0,
-                        'received {} bytes'.format(bytesRead)))
+                    await yield_(statusMessage(
+                        0, 'received {} bytes'.format(bytesRead)))
                     await asyncio.sleep(0)
 
     def extract(path, dest):
@@ -102,7 +102,7 @@ async def distIpfsExtract(dstdir='.', software='go-ipfs', executable='ipfs',
             execPath = os.path.join(software, executable + exeExt)
             with opener(path, mode=mode) as tf:
                 tf.extract(execPath, path=dest)
-                shutil.copy(os.path.join(dest, execPath) , dstdir)
+                shutil.copy(os.path.join(dest, execPath), dstdir)
             os.unlink(arPath)
             shutil.rmtree(dest, ignore_errors=True)
             return True

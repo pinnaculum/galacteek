@@ -1,14 +1,10 @@
-
-import sys
-import json
-
 import aioipfs
 import asyncio
-import socket
 
 from galacteek import log
-from galacteek.ipfs.wrappers import *
+from galacteek.ipfs.wrappers import *  # noqa
 from galacteek.ipfs.multi import multiAddrTcp4
+
 
 class P2PProtocol(asyncio.Protocol):
     def __init__(self):
@@ -29,6 +25,7 @@ class P2PProtocol(asyncio.Protocol):
 
     def connection_lost(self, exc):
         self.exitFuture.set_result(True)
+
 
 class P2PListener(object):
     """
@@ -74,7 +71,7 @@ class P2PListener(object):
         try:
             addr = await self.client.p2p.listener_open(
                 self.protocol, listenAddress)
-        except aioipfs.APIError as exc:
+        except aioipfs.APIError:
             # P2P not enabled or some other reason
             return None
         else:
@@ -85,33 +82,33 @@ class P2PListener(object):
 
     async def createServer(self):
         host = self.address[0]
-        for port in range(self.address[1], self.address[1]+64):
+        for port in range(self.address[1], self.address[1] + 64):
             log.debug('P2PListener: trying port {0}'.format(port))
 
             try:
                 srv = await self.loop.create_server(self.protocolFactory,
-                        host, port)
+                                                    host, port)
                 if srv:
                     self._server = srv
                     return True
-            except:
+            except BaseException:
                 continue
-
 
     async def close(self):
         log.debug('P2PListener: closing {0}'.format(self.protocol))
-        ret = await self.client.p2p.listener_close(self.protocol)
+        await self.client.p2p.listener_close(self.protocol)
 
         if self._server:
             self._server.close()
             await self._server.wait_closed()
+
 
 @ipfsOpFn
 async def dial(op, peer, protocol, address=None):
     loop = asyncio.get_event_loop()
     log.debug('Stream dial {0} {1}'.format(peer, protocol))
     resp = await op.client.p2p.stream_dial(peer, protocol,
-            address=address)
+                                           address=address)
     if resp:
         maddr = resp.get('Address', None)
         if not maddr:
@@ -123,4 +120,4 @@ async def dial(op, peer, protocol, address=None):
             return
 
         reader, writer = await loop.create_connection(
-                lambda: P2PProtocol(), '127.0.0.1', port)
+            lambda: P2PProtocol(), '127.0.0.1', port)
