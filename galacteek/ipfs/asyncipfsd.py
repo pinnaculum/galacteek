@@ -1,32 +1,32 @@
-
-import os, os.path
-import sys
+import os
+import os.path
 import asyncio
-import tempfile
-import functools
 import re
 import json
 
-from galacteek import log
 
 async def shell(arg):
     p = await asyncio.create_subprocess_shell((arg),
-        stdin=asyncio.subprocess.PIPE,
-        stdout=asyncio.subprocess.PIPE)
+                                              stdin=asyncio.subprocess.PIPE,
+                                              stdout=asyncio.subprocess.PIPE)
 
     stdout, stderr = await p.communicate()
     return stdout.decode()
+
 
 async def ipfsConfig(binPath, param, value):
     return await shell("{0} config '{1}' '{2}'".format(
         binPath, param, value))
 
+
 async def ipfsConfigJson(binPath, param, value):
     return await shell('{0} config --json {1} {2}'.format(
         binPath, param, json.dumps(value)))
 
+
 async def ipfsConfigGetJson(binPath, param):
     return await shell('{0} config --json "{1}"'.format(binPath, param))
+
 
 class IPFSDProtocol(asyncio.SubprocessProtocol):
     """
@@ -58,7 +58,7 @@ class IPFSDProtocol(asyncio.SubprocessProtocol):
     def pipe_data_received(self, fd, data):
         try:
             msg = data.decode().strip()
-        except:
+        except BaseException:
             return
 
         # The output we expect might be different in earlier versions
@@ -89,9 +89,11 @@ class IPFSDProtocol(asyncio.SubprocessProtocol):
     def process_exited(self):
         self.exitFuture.set_result(True)
 
+
 DEFAULT_APIPORT = 5001
 DEFAULT_SWARMPORT = 4001
 DEFAULT_GWPORT = 8080
+
 
 class AsyncIPFSDaemon(object):
     """
@@ -106,14 +108,15 @@ class AsyncIPFSDaemon(object):
     :param bool pubsubEnable: enable pubsub
     :param bool noBootstrap: empty bootstrap
     """
+
     def __init__(self, repopath, goIpfsPath='ipfs',
-            apiport=DEFAULT_APIPORT,
-            swarmport=DEFAULT_SWARMPORT,
-            gatewayport=DEFAULT_GWPORT, initRepo=True,
-            swarmLowWater=10, swarmHighWater=20,
-            pubsubEnable=False, noBootstrap=False, corsEnable=True,
-            p2pStreams=False, migrateRepo=False,
-            storageMax=20, debug=False, loop=None):
+                 apiport=DEFAULT_APIPORT,
+                 swarmport=DEFAULT_SWARMPORT,
+                 gatewayport=DEFAULT_GWPORT, initRepo=True,
+                 swarmLowWater=10, swarmHighWater=20,
+                 pubsubEnable=False, noBootstrap=False, corsEnable=True,
+                 p2pStreams=False, migrateRepo=False,
+                 storageMax=20, debug=False, loop=None):
 
         self.loop = loop if loop else asyncio.get_event_loop()
         self.exitFuture = asyncio.Future(loop=self.loop)
@@ -141,15 +144,15 @@ class AsyncIPFSDaemon(object):
             os.mkdir(self.repopath)
 
         if not os.path.exists(os.path.join(self.repopath, 'config')) or \
-            not os.path.isdir(os.path.join(self.repopath, 'datastore')):
+                not os.path.isdir(os.path.join(self.repopath, 'datastore')):
             # Pretty sure this is an empty repository path
-            initOutput = await shell('ipfs init')
+            await shell('ipfs init')
 
         # Change the addresses/ports we listen on
         await ipfsConfig(self.goIpfsPath, 'Addresses.API',
-                '/ip4/127.0.0.1/tcp/{0}'.format(self.apiport))
+                         '/ip4/127.0.0.1/tcp/{0}'.format(self.apiport))
         await ipfsConfig(self.goIpfsPath, 'Addresses.Gateway',
-                '/ip4/127.0.0.1/tcp/{0}'.format(self.gatewayport))
+                         '/ip4/127.0.0.1/tcp/{0}'.format(self.gatewayport))
 
         swarmAddrs = [
             "/ip4/0.0.0.0/tcp/{swarmport}".format(swarmport=self.swarmport),
@@ -157,34 +160,38 @@ class AsyncIPFSDaemon(object):
         ]
 
         await ipfsConfigJson(self.goIpfsPath, 'Addresses.Swarm',
-                json.dumps(swarmAddrs))
+                             json.dumps(swarmAddrs))
 
         # Swarm connection manager parameters
         await ipfsConfigJson(self.goIpfsPath, 'Swarm.ConnMgr.LowWater',
-                self.swarmLowWater)
+                             self.swarmLowWater)
         await ipfsConfigJson(self.goIpfsPath, 'Swarm.ConnMgr.HighWater',
-                self.swarmHighWater)
+                             self.swarmHighWater)
 
         # Maximum storage
         await ipfsConfig(self.goIpfsPath, 'Datastore.StorageMax',
-                '{0}GB'.format(self.storageMax))
+                         '{0}GB'.format(self.storageMax))
 
         # P2P
         if self.p2pStreams:
             await ipfsConfigJson(self.goIpfsPath,
-                    'Experimental.Libp2pStreamMounting',
-                    'true'
-            )
+                                 'Experimental.Libp2pStreamMounting',
+                                 'true'
+                                 )
 
         # CORS
         if self.corsEnable:
             # Setup the CORS headers, only allowing the gateway's origin
-            await ipfsConfigJson(self.goIpfsPath,
-                    'API.HTTPHeaders.Access-Control-Allow-Credentials',
-                    '["true"]')
-            await ipfsConfigJson(self.goIpfsPath,
-                    'API.HTTPHeaders.Access-Control-Allow-Origin',
-                    '["http://localhost:{0}"]'.format(self.gatewayport))
+            await ipfsConfigJson(
+                self.goIpfsPath,
+                'API.HTTPHeaders.Access-Control-Allow-Credentials',
+                '["true"]'
+            )
+            await ipfsConfigJson(
+                self.goIpfsPath,
+                'API.HTTPHeaders.Access-Control-Allow-Origin',
+                '["http://localhost:{0}"]'.format(self.gatewayport)
+            )
 
         if self.noBootstrap:
             await ipfsConfigJson(self.goIpfsPath, 'Bootstrap', '[]')
@@ -198,11 +205,11 @@ class AsyncIPFSDaemon(object):
             args.append('--migrate')
 
         f = self.loop.subprocess_exec(
-                lambda: IPFSDProtocol(self.loop, self.exitFuture,
-                    self.startedFuture),
-                *args,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE)
+            lambda: IPFSDProtocol(self.loop, self.exitFuture,
+                                  self.startedFuture),
+            *args,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE)
         self.transport, self.proto = await f
         return True
 
