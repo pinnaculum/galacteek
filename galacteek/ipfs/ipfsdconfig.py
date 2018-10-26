@@ -1,5 +1,4 @@
-
-import os, os.path
+import os
 import json
 
 defaultConfig = json.loads("""
@@ -122,12 +121,14 @@ defaultConfig = json.loads("""
 }
 """)
 
+
 class Config(object):
     def __init__(self, **kwargs):
         self.c = kwargs.pop('useconfig', defaultConfig)
 
     def __str__(self):
         return json.dumps(self.c)
+
 
 def getDefault(*args, **kw):
     return Config(useconfig=defaultConfig)

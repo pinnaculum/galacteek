@@ -1,4 +1,3 @@
-
 class P2PService:
     def __init__(self, name, description, protocolName):
         self._name = name

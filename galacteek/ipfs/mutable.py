@@ -1,12 +1,12 @@
-
 import asyncio
 import time
 
 from PyQt5.QtCore import (pyqtSignal, QObject)
 
-from galacteek import log, ensure, asyncify
+from galacteek import log, asyncify
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.core.jtraverse import traverseParser
+
 
 class MutableIPFSJson(QObject):
     """
@@ -29,7 +29,7 @@ class MutableIPFSJson(QObject):
     entryChanged = pyqtSignal()
     available = pyqtSignal(dict)
 
-    def __init__(self, mfsFilePath,  **kw):
+    def __init__(self, mfsFilePath, **kw):
         super().__init__()
 
         self.lock = asyncio.Lock()
@@ -59,7 +59,7 @@ class MutableIPFSJson(QObject):
 
     @property
     def mfsFilePath(self):
-        return self._mfsFilePath # path inside the mfs
+        return self._mfsFilePath  # path inside the mfs
 
     @property
     def curEntry(self):

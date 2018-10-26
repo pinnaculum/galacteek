@@ -1,18 +1,17 @@
-
-import sys
 import json
 
-import aioipfs
 import asyncio
 import datetime
 
 from galacteek import log as logger
 
-from galacteek.ipfs.pubsub.messages import (MarksBroadcastMessage,
-        PeerIdentMessageV1, PeerLogoutMessage)
-from galacteek.ipfs.wrappers import *
-from galacteek.ipfs.ipfsops import IPFSOperator
+from galacteek.ipfs.pubsub.messages import (
+    MarksBroadcastMessage,
+    PeerIdentMessageV1,
+    PeerLogoutMessage)
+from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.core.asynclib import asyncify
+
 
 class PubsubService(object):
     """
@@ -20,7 +19,7 @@ class PubsubService(object):
     """
 
     def __init__(self, ipfsCtx, client, topic='galacteek.default',
-            runPeriodic=False):
+                 runPeriodic=False):
         self.client = client
         self.ipfsCtx = ipfsCtx
         self.topic = topic
@@ -53,7 +52,7 @@ class PubsubService(object):
 
     def logStatus(self):
         self.debug('** Messages received: {0}, errors: {1}'.format(
-             self.receivedCount, self.errorsCount))
+            self.receivedCount, self.errorsCount))
 
     def start(self):
         """ Create the different tasks for this service """
@@ -65,14 +64,14 @@ class PubsubService(object):
 
     async def stop(self):
         await self.shutdown()
-        for tsk in [ self.tskServe, self.tskProcess, self.tskPeriodic ]:
+        for tsk in [self.tskServe, self.tskProcess, self.tskPeriodic]:
             if not tsk:
                 continue
 
             tsk.cancel()
             try:
                 await tsk
-            except asyncio.CancelledError as err:
+            except asyncio.CancelledError:
                 continue
             else:
                 self.debug('task {}: shutdown ok'.format(tsk))
@@ -106,7 +105,7 @@ class PubsubService(object):
                 await self.inQueue.put(message)
                 self._receivedCount += 1
                 await asyncio.sleep(0)
-        except asyncio.CancelledError as e:
+        except asyncio.CancelledError:
             self.debug('Cancelled, queue size was {0}'.format(
                 self.inQueue.qsize()))
             return
@@ -128,6 +127,7 @@ class PubsubService(object):
         self.ipfsCtx.pubsub.psMessageTx.emit()
         return status
 
+
 class JSONPubsubService(PubsubService):
     """
     JSON pubsub listener, handling incoming messages as JSON objects
@@ -139,7 +139,7 @@ class JSONPubsubService(PubsubService):
         """
         try:
             return json.loads(msg['data'].decode())
-        except Exception as e:
+        except Exception:
             logger.debug('Could not decode JSON message data')
             return None
 
@@ -162,17 +162,18 @@ class JSONPubsubService(PubsubService):
                     await self.processJsonMessage(data['from'].decode(), msg)
                 except Exception as exc:
                     logger.debug(
-                            'processJsonMessage error: {}'.format(str(exc)))
+                        'processJsonMessage error: {}'.format(str(exc)))
                     await self.errorsQueue.put((msg, exc))
                     self._errorsCount += 1
-        except asyncio.CancelledError as e:
+        except asyncio.CancelledError:
             return
-        except Exception as e:
+        except Exception:
             return
 
     async def processJsonMessage(self, sender, msg):
         """ Implement this method to process incoming JSON messages"""
         return True
+
 
 class PSHashmarksExchanger(JSONPubsubService):
     def __init__(self, ipfsCtx, client, marksLocal, marksNetwork):
@@ -222,7 +223,7 @@ class PSHashmarksExchanger(JSONPubsubService):
             if tsCreated:
                 date = datetime.datetime.fromtimestamp(tsCreated)
                 category = '{0}/{1}/{2}'.format(date.year, date.month,
-                        date.day)
+                                                date.day)
 
             self.marksNetwork.insertMark(mark, category)
             addedCount += 1
@@ -233,14 +234,16 @@ class PSHashmarksExchanger(JSONPubsubService):
 
             self.ipfsCtx.pubsubMarksReceived.emit(addedCount)
 
+
 class PSMainService(JSONPubsubService):
     def __init__(self, ipfsCtx, client):
         super().__init__(ipfsCtx, client, topic='galacteek.main')
 
+
 class PSPeersService(JSONPubsubService):
     def __init__(self, ipfsCtx, client):
         super().__init__(ipfsCtx, client, topic='galacteek.peers',
-                runPeriodic=True)
+                         runPeriodic=True)
 
         self._curProfile = None
         self._identEvery = 45
@@ -261,7 +264,7 @@ class PSPeersService(JSONPubsubService):
         try:
             profile.userInfo.entryChanged.disconnect(self.userInfoChanged)
             profile.userInfo.available.disconnect(self.userInfoAvail)
-        except Exception as e:
+        except Exception:
             pass
 
         self.curProfile.userInfo.entryChanged.connect(self.userInfoChanged)
@@ -286,9 +289,13 @@ class PSPeersService(JSONPubsubService):
             return
 
         if uInfo.schemaVersion is 1:
-            msg = PeerIdentMessageV1.make(nodeId, uInfo.objHash,
-                    uInfo.root, profile.dagUser.dagCid,
-                    profile.keyRootId, self.ipfsCtx.p2p.servicesFormatted())
+            msg = PeerIdentMessageV1.make(
+                nodeId,
+                uInfo.objHash,
+                uInfo.root,
+                profile.dagUser.dagCid,
+                profile.keyRootId,
+                self.ipfsCtx.p2p.servicesFormatted())
 
             await self.send(str(msg))
 
@@ -330,9 +337,10 @@ class PSPeersService(JSONPubsubService):
                 if self.curProfile:
                     await self.sendIdent(self.curProfile)
 
+
 __all__ = [
-        'PubsubService',
-        'PSHashmarksExchanger',
-        'PSMainService',
-        'PSPeersService'
+    'PubsubService',
+    'PSHashmarksExchanger',
+    'PSMainService',
+    'PSPeersService'
 ]

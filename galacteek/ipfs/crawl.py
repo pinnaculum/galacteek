@@ -1,12 +1,9 @@
-
 import os.path
-import re
-import mimetypes
-import asyncio
 
 from html.parser import HTMLParser
 
 import aioipfs
+
 
 class TitleParser(HTMLParser):
     def __init__(self):
@@ -37,13 +34,15 @@ class TitleParser(HTMLParser):
     def getTitle(self):
         return self.title
 
+
 def runTitleParser(data):
     try:
         parser = TitleParser()
         parser.feed(data.decode())
         return parser.getTitle()
-    except:
+    except BaseException:
         return None
+
 
 async def getTitleDirectory(client, path):
     indexPath = os.path.join(path, 'index.html')
@@ -58,6 +57,7 @@ async def getTitleDirectory(client, path):
             return None
     else:
         return runTitleParser(data)
+
 
 async def getTitle(client, path):
     """

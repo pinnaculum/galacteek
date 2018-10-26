@@ -1,11 +1,12 @@
 from multiaddr import Multiaddr
 
+
 def multiAddrTcp4(maddr):
     ipaddr, port = None, 0
 
     try:
         multi = Multiaddr(maddr)
-    except:
+    except BaseException:
         return ipaddr, port
 
     for proto in multi.protocols():

@@ -1,10 +1,10 @@
-
 import asyncio
 
 import aioipfs
 
 from galacteek import log
 from galacteek.ipfs.wrappers import ipfsOp
+
 
 class Pinner(object):
     """ Pins objects on request through an async queue """

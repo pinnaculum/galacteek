@@ -1,5 +1,6 @@
 import collections
 
+
 class IPFSEntryCache(object):
     def __init__(self):
         self.reset()

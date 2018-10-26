@@ -1,15 +1,13 @@
 
-import sys
-
-import aioipfs
 import asyncio
 import time
 
 from galacteek import log
-from galacteek.core.ipfsmarks import *
-from galacteek.ipfs.ipfsops import *
+from galacteek.core.ipfsmarks import *  # noqa
+from galacteek.ipfs.ipfsops import *  # noqa
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs import crawl
+
 
 class FeedFollower(object):
     """
@@ -17,6 +15,7 @@ class FeedFollower(object):
     resolve the hash and register the resulting object path if it's new,
     adding it as a mark inside the feed object
     """
+
     def __init__(self, app, marks):
         self.marks = marks
         self.app = app
@@ -61,12 +60,11 @@ class FeedFollower(object):
 
                 title = await crawl.getTitle(op.client, resolvedPath)
 
-                mark = IPFSHashMark.make(resolvedPath,
-                        title=title,
-                        datasize=objStats.get('DataSize', None),
-                        cumulativesize=objStats.get('CumulativeSize', None),
-                        numlinks=objStats.get('NumLinks', None),
-                        share=feed['share'])
+                mark = IPFSHashMark.make(
+                    resolvedPath, title=title, datasize=objStats.get(
+                        'DataSize', None), cumulativesize=objStats.get(
+                        'CumulativeSize', None), numlinks=objStats.get(
+                        'NumLinks', None), share=feed['share'])
 
                 self.marks.feedAddMark(ipnsp, mark)
 
