@@ -2,18 +2,23 @@ import asyncio
 import re
 import collections
 import time
+import os.path
 
-from PyQt5.QtCore import (QCoreApplication, pyqtSignal, QObject)
+from PyQt5.QtCore import (pyqtSignal, QObject)
 
 from galacteek import log, GALACTEEK_NAME, ensure
 
 from galacteek.ipfs import pinning
 from galacteek.ipfs.wrappers import ipfsOp
-from galacteek.ipfs.pubsub import *
+from galacteek.ipfs.pubsub import (
+        PSMainService,
+        PSHashmarksExchanger,
+        PSPeersService)
 from galacteek.ipfs.ipfsops import *
 from galacteek.core.profile import UserProfile
 from galacteek.core.softident import gSoftIdent
 from galacteek.crypto.rsa import RSAExecutor
+
 
 class PeerCtx(QObject):
     def __init__(self, ipfsCtx, peerId, identMsg, pinglast=0, pingavg=0):
@@ -38,7 +43,7 @@ class PeerCtx(QObject):
 
     @property
     def peerUnresponsive(self):
-        return (int(time.time()) - self.identLast) > (60*10)
+        return (int(time.time()) - self.identLast) > (60 * 10)
 
     @ident.setter
     def ident(self, v):
@@ -59,10 +64,11 @@ class PeerCtx(QObject):
 
         if pubKeyPayload:
             pubKey = await self.ipfsCtx.rsaExec.importKey(
-                    pubKeyPayload)
+                pubKeyPayload)
             return pubKey
         else:
             self.debug('Failed to load pubkey')
+
 
 class Peers(QObject):
     changed = pyqtSignal()
@@ -104,15 +110,15 @@ class Peers(QObject):
     async def registerFromIdent(self, op, iMsg):
         # identMsg is a PeerIdentMessage
 
-        if not iMsg.peer in self.byPeerId:
+        if iMsg.peer not in self.byPeerId:
             now = int(time.time())
             avgPing = await op.waitFor(op.pingAvg(iMsg.peer, count=2), 5)
 
             with await self.lock:
                 pCtx = PeerCtx(self.ctx, iMsg.peer, iMsg,
-                    pingavg=avgPing if avgPing else 0,
-                    pinglast=now if avgPing else 0
-                )
+                               pingavg=avgPing if avgPing else 0,
+                               pinglast=now if avgPing else 0
+                               )
                 self._byPeerId[iMsg.peer] = pCtx
             self.peerAdded.emit(iMsg.peer)
         else:
@@ -144,6 +150,7 @@ class Peers(QObject):
     def __str__(self):
         return 'Galacteek peers registered: {0}'.format(self.peersCount)
 
+
 class Node(QObject):
     def __init__(self, parent):
         super().__init__(parent)
@@ -163,6 +170,7 @@ class Node(QObject):
     async def init(self, op):
         self._idFull = await op.client.core.id()
         self._id = await op.nodeId()
+
 
 class PubsubMaster(QObject):
     psMessageRx = pyqtSignal()
@@ -194,6 +202,7 @@ class PubsubMaster(QObject):
     async def init(self, op):
         pass
 
+
 class P2PServices(QObject):
     def __init__(self, parent):
         super().__init__(parent)
@@ -205,11 +214,11 @@ class P2PServices(QObject):
         return self._services
 
     def servicesFormatted(self):
-        return [ {
+        return [{
             'name': srv.name,
             'descr': srv.description,
             'protocol': srv.protocolName
-        } for srv in self.services ]
+        } for srv in self.services]
 
     @ipfsOp
     async def init(self, op):
@@ -222,6 +231,7 @@ class P2PServices(QObject):
     async def stop(self):
         for srv in self.services:
             await srv.stop()
+
 
 class IPFSContext(QObject):
     # signals
@@ -304,9 +314,9 @@ class IPFSContext(QObject):
 
     @ipfsOp
     async def setup(self, ipfsop, pubsubEnable=True,
-            pubsubHashmarksExch=False, p2pEnable=False):
+                    pubsubHashmarksExch=False, p2pEnable=False):
         self.rsaExec = RSAExecutor(loop=self.loop,
-                executor=self.app.executor)
+                                   executor=self.app.executor)
         await self.importSoftIdent()
 
         await self.node.init()
@@ -340,8 +350,12 @@ class IPFSContext(QObject):
         self.pubsub.reg(psServicePeers)
 
         if pubsubHashmarksExch:
-            psServiceMarks = PSHashmarksExchanger(self, self.app.ipfsClient,
-                 self.app.marksLocal, self.app.marksNetwork)
+            psServiceMarks = PSHashmarksExchanger(
+                self,
+                self.app.ipfsClient,
+                self.app.marksLocal,
+                self.app.marksNetwork
+            )
             self.pubsub.reg(psServiceMarks)
 
         self.pubsub.startServices()
@@ -359,7 +373,7 @@ class IPFSContext(QObject):
         for entry in rootList:
             name = entry['Name']
             if entry['Type'] == 1 and name.startswith('profile.'):
-                ma = re.search('profile\.([a-zA-Z\.\_\-]*)$', name)
+                ma = re.search(r'profile\.([a-zA-Z\.\_\-]*)$', name)
                 if ma:
                     profileName = ma.group(1).rstrip()
                     profile = await self.profileNew(profileName)
@@ -368,7 +382,7 @@ class IPFSContext(QObject):
 
         # Create default profile if not found
         if defaultProfile not in self.profiles:
-            profile = await self.profileNew(defaultProfile)
+            await self.profileNew(defaultProfile)
 
         self.profileEmitAvail()
         self.profileChange(defaultProfile)
@@ -378,11 +392,11 @@ class IPFSContext(QObject):
 
     def profileEmitAvail(self):
         self.loop.call_soon(self.profilesAvailable.emit,
-                list(self.profiles.keys()))
+                            list(self.profiles.keys()))
 
     async def profileNew(self, pName, emitavail=False):
-        profile = UserProfile(self, pName,
-                os.path.join(GFILES_ROOT_PATH, 'profile.{}'.format(pName)))
+        profile = UserProfile(self, pName, os.path.join(
+            GFILES_ROOT_PATH, 'profile.{}'.format(pName)))
         try:
             await profile.init()
         except Exception as e:

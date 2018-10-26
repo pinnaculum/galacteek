@@ -1,4 +1,3 @@
-
 #
 # ASCII software identification banner
 #

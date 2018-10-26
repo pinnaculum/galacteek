@@ -1,6 +1,3 @@
-
-import collections
-import os.path
 import json
 import time
 import sys
@@ -12,9 +9,8 @@ from async_generator import async_generator, yield_, yield_from_
 import asyncio
 import aiofiles
 
-from galacteek.core.asynclib import asyncify
+from PyQt5.QtCore import pyqtSignal, QObject
 
-from PyQt5.QtCore import pyqtSignal, QUrl, QObject
 
 class MarksEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -22,10 +18,13 @@ class MarksEncoder(json.JSONEncoder):
             return obj.data
         return json.JSONEncoder.default(self, obj)
 
+
 marksKey = '_marks'
+
 
 def rSlash(path):
     return path.rstrip('/')
+
 
 class IPFSHashMark(collections.UserDict):
     @property
@@ -44,8 +43,8 @@ class IPFSHashMark(collections.UserDict):
 
     @staticmethod
     def make(path, title=None, datecreated=None, share=False, tags=[],
-            description='', comment='', datasize=None, cumulativesize=None,
-            numlinks=None):
+             description='', comment='', datasize=None, cumulativesize=None,
+             numlinks=None):
         if datecreated is None:
             datecreated = datetime.now().isoformat()
 
@@ -70,6 +69,7 @@ class IPFSHashMark(collections.UserDict):
 
         mData.path = path
         return mData
+
 
 class IPFSMarks(QObject):
     changed = pyqtSignal()
@@ -119,13 +119,13 @@ class IPFSMarks(QObject):
         try:
             marks = json.load(open(self.path, 'rt'))
             return marks
-        except Exception as e:
+        except Exception:
             marks = collections.OrderedDict()
 
-        if not 'ipfsmarks' in marks:
+        if 'ipfsmarks' not in marks:
             marks['ipfsmarks'] = {}
             marks['ipfsmarks']['categories'] = {}
-        if not 'feeds' in marks:
+        if 'feeds' not in marks:
             marks['feeds'] = {}
 
         return marks
@@ -156,7 +156,7 @@ class IPFSMarks(QObject):
 
     def walk(self, path, create=True):
         # Walk to a category and create intermediary parents if create
-        # is True. path is a list of category components 
+        # is True. path is a list of category components
         # e.g ['general', 'news'] for category path /general/news
         def _walk(path, parent=None):
             for p in path:
@@ -180,7 +180,7 @@ class IPFSMarks(QObject):
 
                 fullPath = path + [p]
                 yield '/'.join(fullPath)
-                yield from  _list(fullPath, parent=parent[p])
+                yield from _list(fullPath, parent=parent[p])
 
         return list(_list([], parent=self._rootCategories))
 
@@ -260,7 +260,7 @@ class IPFSMarks(QObject):
                 mPath, mData = mark
                 sec[marksKey][mPath] = mData
                 self.markAdded.emit(mPath, mData)
-            except Exception as e:
+            except Exception:
                 return False
 
         self.changed.emit()
@@ -282,11 +282,11 @@ class IPFSMarks(QObject):
             return False
 
         mark = IPFSHashMark.make(path,
-            title=title,
-            datecreated=datetime.now().isoformat(),
-            share=share,
-            tags=tags,
-        )
+                                 title=title,
+                                 datecreated=datetime.now().isoformat(),
+                                 share=share,
+                                 tags=tags,
+                                 )
 
         sec[marksKey].update(mark)
         self.changed.emit()
@@ -301,10 +301,10 @@ class IPFSMarks(QObject):
         for cat in oMarks.getCategories():
             marks = oMarks.getCategoryMarks(cat)
             for mark in marks.items():
-                r = self.insertMark(mark, cat)
+                self.insertMark(mark, cat)
 
     def follow(self, ipnsp, name, active=True, maxentries=4096,
-            resolveevery=3600, share=False, autoPin=False):
+               resolveevery=3600, share=False, autoPin=False):
         if ipnsp is None:
             return
 
@@ -329,7 +329,7 @@ class IPFSMarks(QObject):
 
     def feedAddMark(self, ipnsp, mark):
         feeds = self._rootFeeds
-        if not ipnsp in feeds:
+        if ipnsp not in feeds:
             return False
         sec = feeds[ipnsp][marksKey]
         if mark.path in sec:
@@ -357,10 +357,12 @@ class IPFSMarks(QObject):
     def norm(self, path):
         return path.rstrip('/')
 
+
 class _AsyncMarksQuery:
     """
     Class designed to make operations on the marks tree asynchronously.
     """
+
     def __init__(self, marks):
         self.m = marks
 
@@ -391,12 +393,12 @@ class _AsyncMarksQuery:
                     return marks[path]
 
     async def add(self, bpath, title=None, category='general', share=False,
-            tags=[]):
+                  tags=[]):
         if not bpath:
             return None
 
         path = rSlash(bpath)
-        sec =  self.m.enterCategory(category, create=True)
+        sec = self.m.enterCategory(category, create=True)
         if not sec:
             return False
 
@@ -405,11 +407,11 @@ class _AsyncMarksQuery:
             return False
 
         mark = IPFSHashMark.make(path,
-            title=title,
-            datecreated=datetime.now().isoformat(),
-            share=share,
-            tags=tags,
-        )
+                                 title=title,
+                                 datecreated=datetime.now().isoformat(),
+                                 share=share,
+                                 tags=tags,
+                                 )
 
         sec[marksKey].update(mark)
         self.m.changed.emit()
@@ -442,8 +444,8 @@ class _AsyncMarksQuery:
                     continue
 
                 fullPath = path + [p]
-                await yield_( '/'.join(fullPath) )
-                await yield_from_( _list(path + [p], parent=parent[p]) )
+                await yield_('/'.join(fullPath))
+                await yield_from_(_list(path + [p], parent=parent[p]))
 
         cats = []
         async for v in _list([], parent=self.m._rootCategories):

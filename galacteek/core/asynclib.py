@@ -1,8 +1,7 @@
-
 import asyncio
 import functools
-import time
 import aiofiles
+
 
 def ensure(coro, **kw):
     """ 'futcallback' should not be used in the coroutine's kwargs """
@@ -12,10 +11,12 @@ def ensure(coro, **kw):
         future.add_done_callback(callback)
     return future
 
+
 def soonish(cbk, *args, **kw):
     """ Soon. Or a bit later .. """
     loop = kw.pop('loop', asyncio.get_event_loop())
     loop.call_soon(functools.partial(cbk, *args, **kw))
+
 
 class asyncify:
     def __init__(self, wrapped):
@@ -27,15 +28,18 @@ class asyncify:
             return asyncio.ensure_future(self.wrapped(inst, *args, **kw))
         return wrapper
 
+
 def asyncifyfn(fn):
     @functools.wraps(fn)
     def ensureFn(*args, **kwargs):
         return asyncio.ensure_future(fn(*args, **kwargs))
     return ensureFn
 
+
 def callAt(loop, callback, delay, *args, **kw):
     now = loop.time()
     loop.call_at(now + delay, callback, *args)
+
 
 def async_enterable(f):
     """
@@ -93,9 +97,10 @@ def async_enterable(f):
 
     return wrapper
 
+
 async def asyncReadFile(path, mode='rb'):
     try:
         async with aiofiles.open(path, mode) as fd:
             return await fd.read()
-    except:
+    except BaseException:
         return None

@@ -1,22 +1,21 @@
-
 import os.path
 import uuid
 import pkg_resources
-import base64
 from datetime import datetime
 from io import BytesIO
 
 import aiofiles
+import aioipfs
 
-from PyQt5.QtCore import (pyqtSignal, QObject)
+from PyQt5.QtCore import QObject
 
 from galacteek import log, ensure
 from galacteek.ipfs.mutable import MutableIPFSJson
 from galacteek.ipfs.dag import EvolvingDAG
-from galacteek.ipfs.wrappers import *
-from galacteek.core.asynclib import asyncify, asyncReadFile
+from galacteek.ipfs.wrappers import ipfsOp
+from galacteek.core.asynclib import asyncReadFile
 from galacteek.web import render
-from galacteek.crypto import rsa
+
 
 class UserInfos(MutableIPFSJson):
     GENDER_MALE = 0
@@ -135,7 +134,7 @@ class UserInfos(MutableIPFSJson):
         if self.locked:
             return
         for key, val in kw.items():
-            if not key in self.root['userinfo'].keys():
+            if key not in self.root['userinfo'].keys():
                 continue
             self.root['userinfo'][key] = val
         self.root['userinfo']['modified'] = datetime.now().isoformat(
@@ -149,6 +148,7 @@ class UserInfos(MutableIPFSJson):
     def valid(self):
         return True
 
+
 class UserDAG(EvolvingDAG):
     def initDag(self):
         return {
@@ -160,6 +160,7 @@ class UserDAG(EvolvingDAG):
                 'messages': []
             }
         }
+
 
 class UserApp(QObject):
     def __init__(self, profile):
@@ -195,15 +196,16 @@ class UserApp(QObject):
     @ipfsOp
     async def init(self, op):
         cssPath = pkg_resources.resource_filename('galacteek.templates',
-                'public/css')
+                                                  'public/css')
         self.cssEntry = await op.addPath(cssPath, recursive=True)
 
     @ipfsOp
     async def update(self, op):
-        homeIndex = await self.profile.tmplRender('public/userhome.html',
-                boardMessages=list(reversed(
-                    self.dagRoot['board']['messages'])),
-                loop=self.profile.ctx.loop)
+        homeIndex = await self.profile.tmplRender(
+            'public/userhome.html',
+            boardMessages=list(reversed(self.dagRoot['board']['messages'])),
+            loop=self.profile.ctx.loop
+        )
 
         async with self.profile.dagUser as dag:
             dag.root['index.html'] = dag.mkLink(homeIndex)
@@ -212,11 +214,12 @@ class UserApp(QObject):
 
             if self.profile.userInfo.avatarCid != '':
                 dag.root['media']['images']['avatar'] = dag.mkLink(
-                        self.profile.userInfo.avatarCid)
+                    self.profile.userInfo.avatarCid)
 
             if self.profile.ctx.hasRsc('ipfs-cube-64'):
                 dag.root['media']['images']['ipfs-cube.png'] = dag.mkLink(
-                        self.profile.ctx.resources['ipfs-cube-64'])
+                    self.profile.ctx.resources['ipfs-cube-64'])
+
 
 class UserProfile(QObject):
     """ User profile object """
@@ -232,10 +235,12 @@ class UserProfile(QObject):
         self.keyRoot = 'galacteek.{}.root'.format(self.name)
         self.keyRootId = None
 
-        self._rsaPrivKeyPath = os.path.join(self.ctx.app.cryptoDataLocation,
-                'rsa_{0}_priv.key'.format(self.name))
+        self._rsaPrivKeyPath = os.path.join(
+            self.ctx.app.cryptoDataLocation,
+            'rsa_{0}_priv.key'.format(
+                self.name))
         self._rsaPubKeyPath = os.path.join(self.ctx.app.cryptoDataLocation,
-                'rsa_{0}_pub.key'.format(self.name))
+                                           'rsa_{0}_pub.key'.format(self.name))
         self._rsaPubKey = None
 
         self._filesModel = None
@@ -265,15 +270,15 @@ class UserProfile(QObject):
 
     @property
     def dagUser(self):
-        return self._dagUser # the DAG for this user
+        return self._dagUser  # the DAG for this user
 
     @property
     def root(self):
-        return self._rootDir # profile's root dir in the MFS
+        return self._rootDir  # profile's root dir in the MFS
 
     @property
     def ctx(self):
-        return self._ctx # IPFS context
+        return self._ctx  # IPFS context
 
     @property
     def name(self):
@@ -384,7 +389,8 @@ class UserProfile(QObject):
         await self.userInfo.evLoaded.wait()
 
         if self.userInfo.avatarCid == '' and self.ctx.hasRsc('ipfs-logo-ice'):
-            self.userInfo.setAvatarCid(self.ctx.resources['ipfs-logo-ice']['Hash'])
+            self.userInfo.setAvatarCid(
+                self.ctx.resources['ipfs-logo-ice']['Hash'])
 
         if self.userInfo.peerid == '':
             self.userInfo.root['userinfo']['peerid'] = self.ctx.node.id
@@ -410,7 +416,7 @@ class UserProfile(QObject):
     @ipfsOp
     async def initCrypto(self, op):
         if not os.path.isfile(self.rsaPrivKeyPath) and \
-            not os.path.isfile(self.rsaPubKeyPath):
+                not os.path.isfile(self.rsaPubKeyPath):
 
             privKey, pubKey = await self.rsa.genKeys()
             if privKey is None or pubKey is None:
@@ -438,11 +444,11 @@ class UserProfile(QObject):
         else:
             #
             # Tough decision here .. first mechanism tried for publishing the
-            # peer's public key payload was to import the PEM key in the repository
-            # and transmit the CID, which is neat and handy (other peers just
-            # pin/fetch the key..) ATM embedding the key's payload in the
-            # userinfo offers some advantages and we can always use another
-            # system later on
+            # peer's public key payload was to import the PEM key in the
+            # repository and transmit the CID, which is neat and handy (other
+            # peers just pin/fetch the key..) ATM embedding the key's payload
+            # in the userinfo offers some advantages and we can always use
+            # another system later on
             #
             rsaSection = self.userInfo.root['userinfo']['crypto'].setdefault(
                 'rsa', {})
@@ -455,8 +461,10 @@ class UserProfile(QObject):
             data = await self.rsa.encryptData(BytesIO(data), self.rsaPubKey)
             entry = await op.client.add_bytes(data)
             if entry:
-                self.debug('RSA: self-encrypt: encoded {0} bytes to {1}'.format(
-                    len(data), entry['Hash']))
+                self.debug(
+                    'RSA: self-encrypt: encoded {0} bytes to {1}'.format(
+                        len(data), entry['Hash'])
+                )
                 return entry['Hash']
         except aioipfs.APIError as err:
             self.debug('RSA: IPFS error {}'.format(err.message))
@@ -501,8 +509,10 @@ class UserProfile(QObject):
         and the DAG
         """
         return await render.ipfsRender(tmpl,
-                profile=self, ipfsCtx=self.ctx, dag=self.dagUser.dagRoot,
-                **kw)
+                                       profile=self,
+                                       ipfsCtx=self.ctx,
+                                       dag=self.dagUser.dagRoot,
+                                       **kw)
 
     @ipfsOp
     async def update(self, op):
