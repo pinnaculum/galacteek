@@ -1,44 +1,45 @@
-
-import sys
 import os.path
 import json
 import tempfile
 import uuid
 
 from async_generator import async_generator, yield_
-from yarl import cached_property
 
-from galacteek import log, ensure
+from galacteek import log
 
 import aioipfs
 import asyncio
 
 GFILES_ROOT_PATH = '/galacteek/'
 
+
 def joinIpfs(path):
     return os.path.join('/ipfs/', path)
+
 
 def stripIpfs(path):
     return path.strip('/ipfs/')
 
+
 def joinIpns(path):
     return os.path.join('/ipns/', path)
+
 
 def isDict(data):
     return isinstance(data, dict)
 
+
 class OperatorError(Exception):
     pass
+
 
 class IPFSLogWatcher(object):
     def __init__(self, operator):
         self.op = operator
 
     async def analyze(self):
-        import pprint
         async for msg in self.op.client.log.tail():
             event = msg.get('event', None)
-            time = msg.get('time', None)
 
             if not event:
                 continue
@@ -47,6 +48,7 @@ class IPFSLogWatcher(object):
                 # Handle add provider
                 if self.op.ctx:
                     self.op.ctx.logAddProvider.emit(msg)
+
 
 class IPFSOperator(object):
     """
@@ -90,7 +92,7 @@ class IPFSOperator(object):
     async def waitFor(self, fncall, timeout):
         try:
             output = await asyncio.wait_for(fncall, timeout)
-        except asyncio.TimeoutError as timeExc:
+        except asyncio.TimeoutError:
             self.debug('Timeout waiting for coroutine {0}'.format(fncall))
             return None
         except aioipfs.APIError as e:
@@ -104,7 +106,7 @@ class IPFSOperator(object):
             return self.availCommands
         try:
             self._commands = await self.client.core.commands()
-        except aioipfs.APIError as err:
+        except aioipfs.APIError:
             self.debug('Cannot find available IPFS commands')
             return None
         else:
@@ -112,9 +114,9 @@ class IPFSOperator(object):
 
     async def filesDelete(self, path, name, recursive=False):
         try:
-            ret = await self.client.files.rm(os.path.join(path, name),
-                    recursive=recursive)
-        except aioipfs.APIError as err:
+            await self.client.files.rm(os.path.join(path, name),
+                                       recursive=recursive)
+        except aioipfs.APIError:
             self.debug('Exception on removing {0} in {1}'.format(
                 name, path))
             return False
@@ -177,7 +179,7 @@ class IPFSOperator(object):
             self.debug(err.message)
             return None
 
-        if not 'Entries' in listing or listing['Entries'] is None:
+        if 'Entries' not in listing or listing['Entries'] is None:
             return []
 
         return listing['Entries']
@@ -190,11 +192,13 @@ class IPFSOperator(object):
             return None
 
     async def filesWrite(self, path, data, create=False, truncate=False,
-            offset=-1, count=-1):
+                         offset=-1, count=-1):
         try:
-            resp = await self.client.files.write(path, data,
-                    create=create, truncate=truncate,
-                    offset=offset, count=count)
+            resp = await self.client.files.write(
+                path, data,
+                create=create, truncate=truncate,
+                offset=offset, count=count
+            )
         except aioipfs.APIError as err:
             self.debug('filesWrite error {}'.format(err.message))
             return None
@@ -203,11 +207,11 @@ class IPFSOperator(object):
             return resp
 
     async def filesWriteJsonObject(self, path, obj, create=True,
-            truncate=True):
+                                   truncate=True):
         try:
             serialized = json.dumps(obj).encode()
             resp = await self.filesWrite(path, serialized,
-                    create=create, truncate=truncate)
+                                         create=create, truncate=truncate)
         except aioipfs.APIError as err:
             self.debug('filesWriteJson error {}'.format(err.message))
             return None
@@ -232,20 +236,20 @@ class IPFSOperator(object):
     async def vMkdir(self, path):
         if self.filesChroot:
             return await self.filesMkdir(os.path.join(self.filesChroot,
-                path))
+                                                      path))
 
     async def vFilesList(self, path):
         if self.filesChroot:
             return await self.filesList(os.path.join(self.filesChroot,
-                path))
+                                                     path))
         else:
             raise OperatorError('No chroot provided')
 
     async def filesCp(self, srcHash, dest):
         try:
-            resp = await self.client.files.cp(joinIpfs(srcHash),
-                    dest)
-        except aioipfs.APIError as err:
+            await self.client.files.cp(joinIpfs(srcHash),
+                                       dest)
+        except aioipfs.APIError:
             return False
 
         return True
@@ -255,9 +259,11 @@ class IPFSOperator(object):
             in dest """
 
         try:
-            resp = await self.client.files.cp(joinIpfs(entry['Hash']),
-                os.path.join(dest, name if name else entry['Name']))
-        except aioipfs.APIError as err:
+            await self.client.files.cp(
+                joinIpfs(entry['Hash']),
+                os.path.join(dest, name if name else entry['Name'])
+            )
+        except aioipfs.APIError:
             self.debug('Exception on copying entry {0} to {1}'.format(
                 entry, dest))
             return False
@@ -268,9 +274,9 @@ class IPFSOperator(object):
 
     async def filesLinkFp(self, entry, dest):
         try:
-            resp = await self.client.files.cp(joinIpfs(entry['Hash']),
-                    dest)
-        except aioipfs.APIError as err:
+            await self.client.files.cp(joinIpfs(entry['Hash']),
+                                       dest)
+        except aioipfs.APIError:
             self.debug('Exception on copying entry {0} to {1}'.format(
                 entry, dest))
             return False
@@ -280,7 +286,7 @@ class IPFSOperator(object):
     async def peersList(self):
         try:
             peers = await self.client.swarm.peers()
-        except aioipfs.APIError as err:
+        except aioipfs.APIError:
             return None
 
         if isDict(peers) and 'Peers' in peers:
@@ -296,8 +302,10 @@ class IPFSOperator(object):
         return [key['Name'] for key in keys]
 
     async def keyGen(self, keyName, type='rsa', keySize=2048):
-        return await self.waitFor(self.client.key.gen(keyName,
-                type=type, size=keySize), 30)
+        return await self.waitFor(
+            self.client.key.gen(keyName,
+                                type=type, size=keySize), 30
+        )
 
     async def keys(self):
         kList = await self.client.key.list(long=True)
@@ -321,13 +329,13 @@ class IPFSOperator(object):
 
     async def publish(self, path, key='self', timeout=90):
         return await self.waitFor(self.client.name.publish(path, key=key),
-                timeout)
+                                  timeout)
 
     async def resolve(self, path, timeout=20):
         try:
             resolved = await asyncio.wait_for(self.client.name.resolve(path),
-                    timeout)
-        except asyncio.TimeoutError as timeExc:
+                                              timeout)
+        except asyncio.TimeoutError:
             return None
         except aioipfs.APIError as e:
             self.debug('resolve error: {}'.format(e.message))
@@ -366,7 +374,7 @@ class IPFSOperator(object):
         try:
             result = await self.client.pin.ls(pintype=type)
             return result.get('Keys', {})
-        except aioipfs.APIError as e:
+        except aioipfs.APIError:
             return None
 
     async def pin(self, path, timeout=3600):
@@ -405,20 +413,20 @@ class IPFSOperator(object):
         """
         try:
             listing = await self.client.ls(path, headers=True,
-                    resolve_type=resolve_type)
+                                           resolve_type=resolve_type)
             objects = listing.get('Objects', [])
 
             for obj in objects:
                 await self.sleep()
                 await yield_(obj)
-        except:
+        except BaseException:
             pass
 
     async def objStat(self, path, timeout=30):
         try:
             stat = await asyncio.wait_for(self.client.object.stat(path),
-                    timeout)
-        except Exception as e:
+                                          timeout)
+        except Exception:
             return None
         else:
             return stat
@@ -427,14 +435,14 @@ class IPFSOperator(object):
         try:
             self.ctx.objectStats[path] = await self.objStat(path)
             return self.ctx.objectStats[path]
-        except aioipfs.APIError as e:
+        except aioipfs.APIError:
             self.ctx.objectStats[path] = None
 
     def objStatCtxGet(self, path):
         return self.ctx.objectStats.get(path, None)
 
     async def addPath(self, path, recursive=True, wrap=False,
-            callback=None):
+                      callback=None):
         """
         Add files from path in the repo, and returns the top-level entry (the
         root directory), optionally wrapping it with a directory object
@@ -448,8 +456,8 @@ class IPFSOperator(object):
         added = None
         try:
             async for entry in self.client.add(path, quiet=True,
-                    recursive=recursive,
-                    wrap_with_directory=wrap):
+                                               recursive=recursive,
+                                               wrap_with_directory=wrap):
                 await self.sleep()
                 added = entry
                 if asyncio.iscoroutinefunction(callback):
@@ -474,7 +482,7 @@ class IPFSOperator(object):
                 for resp in responses:
                     peers.append(resp['ID'])
             return peers
-        except aioipfs.APIError as e:
+        except aioipfs.APIError:
             return None
 
     async def jsonLoad(self, path):
@@ -548,13 +556,13 @@ class IPFSOperator(object):
         :param int nproviders: max number of providers to look for
         """
         try:
-            async for prov in self.client.dht.findprovs(cid, verbose=verbose,
+            async for prov in self.client.dht.findprovs(
+                    cid, verbose=verbose,
                     numproviders=nproviders):
-                pId = prov.get('ID', None)
                 pResponses = prov.get('Responses', None)
                 pType = prov.get('Type', None)
 
-                if pType != 4: # WTF++
+                if pType != 4:  # WTF++
                     continue
 
                 if isinstance(pResponses, list):
@@ -579,9 +587,10 @@ class IPFSOperator(object):
 
         peers = []
         try:
-            ret = await asyncio.wait_for(self.findProviders(key, peers, True,
-                numproviders), timeout)
-        except asyncio.TimeoutError as timeExc:
+            await asyncio.wait_for(
+                self.findProviders(key, peers, True,
+                                   numproviders), timeout)
+        except asyncio.TimeoutError:
             # It timed out ? Return what we got
             self.debug('whoProvides: timed out')
             return peers
@@ -688,6 +697,7 @@ class IPFSOperator(object):
 
     async def hasP2PCommand(self):
         return await self.hasCommand('p2p')
+
 
 class IPFSOpRegistry:
     _registry = {}
