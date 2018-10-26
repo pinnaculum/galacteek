@@ -1,5 +1,5 @@
-
 from PyQt5.QtCore import QFileSystemWatcher, QObject, pyqtSignal
+
 
 class FileWatcher(QObject):
     pathChanged = pyqtSignal(str)

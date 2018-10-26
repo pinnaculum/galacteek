@@ -1,10 +1,9 @@
-
 import collections
-import os.path
 import json
 import sys
 
 from PyQt5.QtCore import pyqtSignal, QObject
+
 
 class QJSONObj(QObject):
     changed = pyqtSignal()
@@ -47,6 +46,7 @@ class QJSONObj(QObject):
     def dump(self):
         self.serialize(sys.stdout)
 
+
 class QJSONFile(QJSONObj):
     def __init__(self, path, **kw):
         self._path = path
@@ -56,7 +56,7 @@ class QJSONFile(QJSONObj):
     def _init(self):
         try:
             root = json.load(open(self.path, 'rt'))
-        except Exception as e:
+        except Exception:
             root = collections.OrderedDict()
         self.prepare(root)
 
