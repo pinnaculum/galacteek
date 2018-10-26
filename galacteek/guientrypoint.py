@@ -1,26 +1,27 @@
 # Galacteek, GUI startup entry point
 
 import asyncio
-import sys
 import argparse
 import shutil
-import os, os.path
 import subprocess
-import logging
-import importlib
 from distutils.version import StrictVersion
-
-from PyQt5.QtWidgets import QApplication
 
 from galacteek import log, ensure
 from galacteek.core import glogger
 
 from galacteek.ipfs import distipfsfetch
-from galacteek.ui import mainui
-from galacteek.ui.helpers import *
-from galacteek.ui.i18n import *
+from galacteek.ui.helpers import *  # noqa
+from galacteek.ui.i18n import (
+        iGoIpfsFetchTimeout,
+        iGoIpfsNotFound,
+        iGoIpfsTooOld,
+        iGoIpfsFetchAsk,
+        iGoIpfsFetchError,
+        iGoIpfsFetchSuccess,
+        iFsRepoMigrateNotFound
+)
 from galacteek import application
-from galacteek.appsettings import *
+from galacteek.appsettings import *  # noqa
 
 try:
     import aiomonitor
@@ -29,29 +30,33 @@ except ImportError:
 else:
     haveAiomonitor = True
 
+
 def whichIpfs():
     return shutil.which('ipfs')
+
 
 def ipfsVersion():
     try:
         p = subprocess.Popen(['ipfs', 'version', '-n'], stdout=subprocess.PIPE)
         out, err = p.communicate()
         return StrictVersion(out.decode().strip())
-    except:
+    except BaseException:
         return None
 
-async def fetchGoIpfsWrapper(app, timeout=60*10):
+
+async def fetchGoIpfsWrapper(app, timeout=60 * 10):
     try:
         await asyncio.wait_for(fetchGoIpfsDist(app), timeout)
-    except asyncio.TimeoutError as e:
+    except asyncio.TimeoutError:
         app.mainWindow.statusMessage(iGoIpfsFetchTimeout())
         return None
-    except Exception as e:
+    except Exception:
         app.mainWindow.statusMessage(iGoIpfsFetchError())
         return None
     else:
         app.mainWindow.statusMessage(iGoIpfsFetchSuccess())
         return whichIpfs()
+
 
 async def fetchGoIpfsDist(app):
     async for msg in distipfsfetch.distIpfsExtract(
@@ -63,6 +68,7 @@ async def fetchGoIpfsDist(app):
         except Exception as e:
             app.debug(str(e))
 
+
 def galacteekGui(args):
     if args.debug:
         glogger.basicConfig(level='DEBUG')
@@ -70,7 +76,7 @@ def galacteekGui(args):
         glogger.basicConfig(level='INFO')
 
     gApp = application.GalacteekApplication(profile=args.profile,
-            debug=args.debug)
+                                            debug=args.debug)
     loop = gApp.setupAsyncLoop()
     sManager = gApp.settingsMgr
 
@@ -100,17 +106,17 @@ def galacteekGui(args):
                 path = fut.result()
                 if path is None:
                     gApp.systemTrayMessage('Galacteek',
-                            iGoIpfsFetchError())
+                                           iGoIpfsFetchError())
                 else:
                     gApp.startIpfsDaemon(goIpfsPath=path,
-                            migrateRepo=enableMigrate)
+                                         migrateRepo=enableMigrate)
 
             if fetchWanted:
                 fut = ensure(fetchGoIpfsWrapper(gApp))
                 fut.add_done_callback(fetchFinished)
             else:
                 gApp.systemTrayMessage('Galacteek',
-                        iGoIpfsNotFound())
+                                       iGoIpfsNotFound())
         else:
             minVersion = StrictVersion('0.4.7')
             version = ipfsVersion()
@@ -120,10 +126,10 @@ def galacteekGui(args):
                 log.debug('go-ipfs version found {0} is too old'.format(
                     version))
                 gApp.systemTrayMessage('Galacteek',
-                        iGoIpfsTooOld())
+                                       iGoIpfsTooOld())
 
             gApp.startIpfsDaemon(goIpfsPath=ipfsPath,
-                    migrateRepo=enableMigrate)
+                                 migrateRepo=enableMigrate)
     else:
         ensure(gApp.updateIpfsClient())
 
@@ -143,25 +149,35 @@ def galacteekGui(args):
         with loop:
             loop.run_forever()
 
+
 def start():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--apiport',  default=None,
-        help='IPFS API port number')
+    parser.add_argument('--apiport', default=None,
+                        help='IPFS API port number')
     parser.add_argument('--swarmport', default=None,
-        help='IPFS swarm port number')
+                        help='IPFS swarm port number')
     parser.add_argument('--gatewayport', default=None,
-        help='IPFS http gateway port number')
+                        help='IPFS http gateway port number')
     parser.add_argument('--profile', default='main',
-        help='Application Profile')
-    parser.add_argument('--monitor', action='store_true',
-        dest='monitor', help = 'Monitor application with aiomonitor')
-    parser.add_argument('--migrate', action='store_true',
-        dest='migrate', help = 'Activate automatic repository migration')
-    parser.add_argument('--no-release-check', action='store_true',
-        dest='noreleasecheck', help = "Don't check for new releases on PyPI")
+                        help='Application Profile')
+    parser.add_argument(
+        '--monitor',
+        action='store_true',
+        dest='monitor',
+        help='Monitor application with aiomonitor')
+    parser.add_argument(
+        '--migrate',
+        action='store_true',
+        dest='migrate',
+        help='Activate automatic repository migration')
+    parser.add_argument(
+        '--no-release-check',
+        action='store_true',
+        dest='noreleasecheck',
+        help="Don't check for new releases on PyPI")
     parser.add_argument('-d', action='store_true',
-        dest='debug', help = 'Activate debugging')
+                        dest='debug', help='Activate debugging')
     args = parser.parse_args()
 
     galacteekGui(args)

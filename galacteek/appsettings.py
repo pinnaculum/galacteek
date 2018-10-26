@@ -1,5 +1,4 @@
-
-from PyQt5.QtCore import QCoreApplication, QUrl, QStandardPaths, QSettings
+from PyQt5.QtCore import QSettings
 
 # Settings sections
 CFG_SECTION_IPFSD = 'ipfsdaemon'
@@ -18,7 +17,7 @@ CFG_KEY_HTTPGWPORT = 'httpgwport'
 CFG_KEY_HOST = 'host'
 CFG_KEY_SWARMLOWWATER = 'swarm_lowwater'
 CFG_KEY_SWARMHIGHWATER = 'swarm_highwater'
-CFG_KEY_STORAGEMAX = 'storagemax' # integer, max storage in Gb
+CFG_KEY_STORAGEMAX = 'storagemax'  # integer, max storage in Gb
 CFG_KEY_CORS = 'cors'
 
 # Browser
@@ -44,6 +43,7 @@ S_HOMEURL = (CFG_SECTION_BROWSER, CFG_KEY_HOMEURL)
 S_GOTOHOME = (CFG_SECTION_BROWSER, CFG_KEY_GOTOHOME)
 S_DOWNLOADS_PATH = (CFG_SECTION_BROWSER, CFG_KEY_DLPATH)
 
+
 def setDefaultSettings(gApp):
     # Sets the default settings
     sManager = gApp.settingsMgr
@@ -61,7 +61,7 @@ def setDefaultSettings(gApp):
     section = CFG_SECTION_BROWSER
     sManager.setDefaultSetting(section, CFG_KEY_HOMEURL, 'ipfs:/ipns/ipfs.io')
     sManager.setDefaultSetting(section, CFG_KEY_DLPATH,
-        gApp.defaultDownloadsLocation)
+                               gApp.defaultDownloadsLocation)
     sManager.setDefaultTrue(section, CFG_KEY_GOTOHOME)
     sManager.setDefaultFalse(section, CFG_KEY_JSAPI)
     sManager.setDefaultFalse(section, CFG_KEY_ALLOWHTTPBROWSING)
@@ -85,6 +85,7 @@ def setDefaultSettings(gApp):
 
     sManager.sync()
     return True
+
 
 class SettingsManager(object):
     # QSettings has its problems with pyqt5 regarding booleans

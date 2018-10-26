@@ -5,6 +5,7 @@ from distutils.version import StrictVersion
 
 from galacteek import __version__
 
+
 async def getLatestVersion(pkgname='galacteek'):
     url = 'https://pypi.org/pypi/{0}/json'.format(pkgname)
 
@@ -13,6 +14,7 @@ async def getLatestVersion(pkgname='galacteek'):
             data = await resp.json()
             return StrictVersion(data['info']['version'])
 
+
 async def newReleaseAvailable():
     try:
         latestV = await getLatestVersion()
@@ -20,5 +22,5 @@ async def newReleaseAvailable():
         return latestV > currentV
     except asyncio.TimeoutError:
         return False
-    except:
+    except BaseException:
         return False

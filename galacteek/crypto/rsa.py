@@ -1,6 +1,4 @@
-
 import asyncio
-import tempfile
 import concurrent.futures
 import functools
 
@@ -10,8 +8,10 @@ from Cryptodome.Signature import pss
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Random import get_random_bytes
 from Cryptodome.Cipher import AES, PKCS1_OAEP
+from Crypto.Hash import SHA256
 
 from galacteek import log
+
 
 class RSAExecutor(object):
     """
@@ -19,14 +19,15 @@ class RSAExecutor(object):
 
     The default executor used is a ThreadPoolExecutor
     """
+
     def __init__(self, loop=None, executor=None):
         self.loop = loop if loop else asyncio.get_event_loop()
         self.executor = executor if executor else \
             concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
     async def _exec(self, fn, *args, **kw):
-        return await self.loop.run_in_executor(self.executor,
-                functools.partial(fn, *args, **kw))
+        return await self.loop.run_in_executor(
+            self.executor, functools.partial(fn, *args, **kw))
 
     async def importKey(self, keyData):
         return await self._exec(lambda: RSA.import_key(keyData))
@@ -61,8 +62,8 @@ class RSAExecutor(object):
             ciphertext, tag = cipherAes.encrypt_and_digest(data.getvalue())
 
             fd = BytesIO()
-            [ fd.write(x) for x in (encSessionKey,
-                cipherAes.nonce, tag, ciphertext) ]
+            [fd.write(x) for x in (encSessionKey,
+                                   cipherAes.nonce, tag, ciphertext)]
             return fd.getvalue()
         except Exception as err:
             log.debug('RSA encryption error {}'.format(str(err)))
@@ -80,9 +81,9 @@ class RSAExecutor(object):
         try:
             private = RSA.import_key(privKey)
 
-            encSessionKey, nonce, tag, ciphertext = [ data.read(x)
-                                        for x in (private.size_in_bytes(),
-                                        16, 16, -1) ]
+            encSessionKey, nonce, tag, ciphertext = [
+                data.read(x) for x in (
+                    private.size_in_bytes(), 16, 16, -1)]
 
             cipherRsa = PKCS1_OAEP.new(private)
             sessionKey = cipherRsa.decrypt(encSessionKey)
@@ -94,7 +95,7 @@ class RSAExecutor(object):
         except ValueError as verr:
             log.debug('RSA decryption error: {}'.format(str(verr)))
             return None
-        except TypeError as err:
+        except TypeError:
             log.debug('Type error on decryption, check privkey')
             return None
 
@@ -112,7 +113,7 @@ class RSAExecutor(object):
             out = BytesIO()
             out.write(signature)
             return out.getvalue()
-        except Exception as e:
+        except Exception:
             log.debug('Exception on PSS sign')
             return None
 
@@ -128,6 +129,6 @@ class RSAExecutor(object):
                 log.debug('The PSS signature is not authentic')
                 return False
 
-        except Exception as e:
+        except Exception:
             log.debug('Exception on PSS verification')
             return None

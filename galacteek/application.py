@@ -23,7 +23,7 @@ from PyQt5.QtCore import (QCoreApplication, QUrl, QStandardPaths,
         QSettings, QTranslator, QFile, pyqtSignal, QObject,
         QTemporaryDir, QDateTime, QMessageLogger, QMimeDatabase)
 
-from galacteek import log, soonish
+from galacteek import log, soonish, ensure
 from galacteek import pypicheck, GALACTEEK_NAME
 from galacteek.core.asynclib import asyncify
 from galacteek.core.softident import gSoftIdent
