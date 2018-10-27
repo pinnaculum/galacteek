@@ -84,10 +84,10 @@ class KeysTab(GalacteekTab):
         self.model.setColumnCount(3)
         self.model.setHorizontalHeaderLabels([
             iKeyName(), iKeyHash(), iKeyResolve()])
-        self.ui.treeKeys.header().setSectionResizeMode(0,
-                                                       QHeaderView.ResizeToContents)
-        self.ui.treeKeys.header().setSectionResizeMode(1,
-                                                       QHeaderView.ResizeToContents)
+        self.ui.treeKeys.header().setSectionResizeMode(
+            0, QHeaderView.ResizeToContents)
+        self.ui.treeKeys.header().setSectionResizeMode(
+            1, QHeaderView.ResizeToContents)
 
     def onDelKeyClicked(self):
         idx = self.ui.treeKeys.currentIndex()

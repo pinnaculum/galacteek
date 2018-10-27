@@ -44,8 +44,8 @@ def questionBox(title, text):
 
 
 def directorySelect(caption=''):
-    return QFileDialog.getExistingDirectory(None,
-                                            caption, getHomePath(), QFileDialog.ShowDirsOnly)
+    return QFileDialog.getExistingDirectory(
+        None, caption, getHomePath(), QFileDialog.ShowDirsOnly)
 
 
 def filesSelect(filter='(*.*)'):

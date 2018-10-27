@@ -1,19 +1,25 @@
-
-import sys
-import time
 import os.path
-import mimetypes
 
-from PyQt5.QtWidgets import (QWidget, QFrame, QApplication,
-        QLabel, QPushButton, QVBoxLayout, QAction, QHBoxLayout,
-        QTreeView, QHeaderView, QShortcut, QToolBox, QTextBrowser,
-        QFileDialog, QProgressBar, QSpacerItem, QSizePolicy,
-        QToolButton, QAbstractItemView)
+from PyQt5.QtWidgets import (
+    QWidget,
+    QLabel,
+    QPushButton,
+    QVBoxLayout,
+    QHBoxLayout,
+    QTreeView,
+    QHeaderView,
+    QToolBox,
+    QTextBrowser,
+    QProgressBar,
+    QSpacerItem,
+    QSizePolicy,
+    QToolButton,
+    QAbstractItemView)
 
-from PyQt5.QtGui import QStandardItemModel, QStandardItem, QKeySequence, QIcon
+from PyQt5.QtGui import QStandardItemModel, QKeySequence
 
-from PyQt5.QtCore import (QCoreApplication, QUrl, Qt, QEvent, QObject,
-    pyqtSignal, QMimeData, QMimeDatabase)
+from PyQt5.QtCore import (QCoreApplication, Qt, QEvent, QObject,
+                          pyqtSignal)
 
 from galacteek.appsettings import *
 from galacteek.ipfs import cidhelpers
@@ -21,8 +27,6 @@ from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import ipfsOp, ipfsStatOp
 from galacteek.ipfs.cache import IPFSEntryCache
 
-from . import galacteek_rc
-from . import modelhelpers
 from .i18n import *
 from .helpers import *
 from .widgets import GalacteekTab
@@ -30,41 +34,57 @@ from .hashmarks import *
 
 import aioipfs
 
+
 def iCIDInfo(cidv, linksCount, size):
-    return QCoreApplication.translate('IPFSHashExplorer',
+    return QCoreApplication.translate(
+        'IPFSHashExplorer',
         'CID (v{0}): {1} links, total size: {2}').format(
-            cidv, linksCount, size)
+        cidv,
+        linksCount,
+        size)
+
 
 def iGitClone():
     return QCoreApplication.translate('IPFSHashExplorer',
-        'Clone repository')
+                                      'Clone repository')
+
 
 def iGitClonedRepo(path):
-    return QCoreApplication.translate('IPFSHashExplorer',
+    return QCoreApplication.translate(
+        'IPFSHashExplorer',
         'Cloned git repository: {0}').format(path)
 
+
 def iGitErrorCloning(msg):
-    return QCoreApplication.translate('IPFSHashExplorer',
+    return QCoreApplication.translate(
+        'IPFSHashExplorer',
         'Error cloning git repository: {0}').format(msg)
+
 
 def iGitInvalid():
     return QCoreApplication.translate('IPFSHashExplorer',
-        'Invalid git repository')
+                                      'Invalid git repository')
+
 
 def iLoading():
     return QCoreApplication.translate('IPFSHashExplorer', 'Loading ...')
 
+
 def iTimeout():
     return QCoreApplication.translate('IPFSHashExplorer',
-            'Timeout error')
+                                      'Timeout error')
+
 
 def iTimeoutTryNoResolve():
-    return QCoreApplication.translate('IPFSHashExplorer',
-            'Timeout error: trying without resolving nodes types ..')
+    return QCoreApplication.translate(
+        'IPFSHashExplorer',
+        'Timeout error: trying without resolving nodes types ..')
+
 
 def iTimeoutInvalidHash():
     return QCoreApplication.translate('IPFSHashExplorer',
-            'Timeout error: invalid hash')
+                                      'Timeout error: invalid hash')
+
 
 class IPFSItem(UneditableItem):
     def __init__(self, text, icon=None):
@@ -76,6 +96,7 @@ class IPFSItem(UneditableItem):
 
     def getParentHash(self):
         return self.parentHash
+
 
 class IPFSNameItem(IPFSItem):
     def __init__(self, entry, text, icon):
@@ -139,6 +160,7 @@ class IPFSNameItem(IPFSItem):
     def isUnknown(self):
         return self.entry['Type'] == -1
 
+
 class IPFSHashItemModel(QStandardItemModel):
     COL_NAME = 0
     COL_SIZE = 1
@@ -168,16 +190,18 @@ class IPFSHashItemModel(QStandardItemModel):
 
     def onRowsInserted(self, parent, first, last):
         """ Update the entry cache when rows are added """
-        for itNum in range(first, last+1):
+        for itNum in range(first, last + 1):
             itNameIdx = self.index(itNum, self.COL_NAME, parent)
             itName = self.itemFromIndex(itNameIdx)
             entry = itName.entry
             self.entryCache.register(entry)
 
+
 class IPFSHashExplorerToolBox(GalacteekTab):
     """
     Organizes IPFSHashExplorerWidgets with a QToolBox
     """
+
     def __init__(self, gWindow, hashRef, maxItems=16, parent=None):
         super(IPFSHashExplorerToolBox, self).__init__(gWindow)
 
@@ -205,8 +229,8 @@ class IPFSHashExplorerToolBox(GalacteekTab):
             return False
 
         view = IPFSHashExplorerWidget(self.gWindow, hashRef,
-                parent=self, addClose=addClose,
-                autoOpenFolders=autoOpenFolders)
+                                      parent=self, addClose=addClose,
+                                      autoOpenFolders=autoOpenFolders)
         idx = self.toolbox.addItem(view, getIconIpfsWhite(), hashRef)
         self.toolbox.setCurrentIndex(idx)
         view.reFocus()
@@ -229,6 +253,7 @@ class IPFSHashExplorerToolBox(GalacteekTab):
                     self.toolbox.setCurrentWidget(view)
                     view.reFocus()
 
+
 class TreeEventFilter(QObject):
     copyPressed = pyqtSignal()
     returnPressed = pyqtSignal()
@@ -246,6 +271,7 @@ class TreeEventFilter(QObject):
                     self.copyPressed.emit()
                     return True
         return False
+
 
 class TextView(GalacteekTab):
     def __init__(self, data, mimeType, parent=None):
@@ -271,17 +297,19 @@ class TextView(GalacteekTab):
         for enc in ['utf-8', 'latin1', 'ascii']:
             try:
                 textData = data.decode(enc)
-            except:
+            except BaseException:
                 continue
             else:
                 return textData
 
+
 class HashTreeView(QTreeView):
     pass
 
+
 class IPFSHashExplorerWidget(QWidget):
     def __init__(self, gWindow, hashRef, addClose=False,
-            autoOpenFolders=False, parent=None):
+                 autoOpenFolders=False, parent=None):
         super(IPFSHashExplorerWidget, self).__init__(parent)
 
         self.parent = parent
@@ -300,7 +328,7 @@ class IPFSHashExplorerWidget(QWidget):
         self.hLayoutCtrl = QHBoxLayout()
         self.hLayoutTop.addLayout(self.hLayoutInfo)
         spacerItem = QSpacerItem(10, 20, QSizePolicy.Expanding,
-                QSizePolicy.Minimum)
+                                 QSizePolicy.Minimum)
         self.hLayoutTop.addItem(spacerItem)
         self.hLayoutTop.addLayout(self.hLayoutCtrl)
 
@@ -347,7 +375,7 @@ class IPFSHashExplorerWidget(QWidget):
 
         self.model = IPFSHashItemModel(self)
         self.model.setHorizontalHeaderLabels(
-                [iFileName(), iFileSize(), iMimeType(), iFileHash()])
+            [iFileName(), iFileSize(), iMimeType(), iFileHash()])
         self.itemRoot = self.model.invisibleRootItem()
         self.itemRootIdx = self.model.indexFromItem(self.itemRoot)
 
@@ -384,8 +412,8 @@ class IPFSHashExplorerWidget(QWidget):
         self.gitButton.setEnabled(False)
 
         getRet = await ipfsop.client.get(entry['Hash'],
-                dstdir=self.app.tempDir.path())
-        if getRet != True:
+                                         dstdir=self.app.tempDir.path())
+        if not getRet:
             self.gitButton.setEnabled(True)
             return messageBox('Could not fetch the git repository')
 
@@ -400,7 +428,7 @@ class IPFSHashExplorerWidget(QWidget):
         # Clone it now. No need to run it in a threadpool since the git module
         # will run a git subprocess for the cloning
         try:
-            newRepo = repo.clone(dstPath)
+            repo.clone(dstPath)
         except Exception as e:
             self.gitButton.setEnabled(True)
             return messageBox(iGitErrorCloning(str(e)))
@@ -427,19 +455,19 @@ class IPFSHashExplorerWidget(QWidget):
 
     def onHashmark(self):
         addHashmark(self.app.marksLocal,
-            self.rootPath, '',
-            stats=self.app.ipfsCtx.objectStats.get(
-                self.rootPath, {}))
+                    self.rootPath, '',
+                    stats=self.app.ipfsCtx.objectStats.get(
+                        self.rootPath, {}))
 
     def onGet(self):
         dirSel = directorySelect()
         if dirSel:
             self.getTask = self.app.task(self.getResource, self.rootPath,
-                    dirSel)
+                                         dirSel)
 
     def onPin(self):
         self.app.task(self.app.ipfsCtx.pinner.queue, self.rootPath, True,
-                None)
+                      None)
 
     def onReturnPressed(self):
         currentIdx = self.tree.currentIndex()
@@ -517,27 +545,27 @@ class IPFSHashExplorerWidget(QWidget):
         def download():
             dirSel = directorySelect()
             for item in items:
-                getTask = self.app.task(self.getResource, item.getFullPath(),
-                    dirSel)
+                self.app.task(self.getResource, item.getFullPath(),
+                              dirSel)
 
         menu.addAction(getIcon('pin-black.png'), 'Pin (recursive)',
-                lambda: pinRecursive())
+                       lambda: pinRecursive())
         menu.addAction(getIcon('multimedia.png'), 'Queue in media player',
-                lambda: queueMedia())
+                       lambda: queueMedia())
         menu.addAction('Download', lambda: download())
 
         menu.exec(self.tree.mapToGlobal(point))
 
     async def timedList(self, ipfsop, objPath, parentItem, autoexpand,
-            secs, resolve_type):
+                        secs, resolve_type):
         return await asyncio.wait_for(
             self.list(ipfsop, objPath,
-                parentItem=parentItem, autoexpand=autoexpand,
-                resolve_type=resolve_type), secs)
+                      parentItem=parentItem, autoexpand=autoexpand,
+                      resolve_type=resolve_type), secs)
 
     @ipfsOp
     async def listHash(self, ipfsop, objPath, parentItem,
-            autoexpand=False):
+                       autoexpand=False):
         """ Lists contents of IPFS object referenced by objPath,
             and change the tree's model afterwards.
 
@@ -548,14 +576,14 @@ class IPFSHashExplorerWidget(QWidget):
         try:
             self.setInfo(iLoading())
             await self.timedList(ipfsop, objPath, parentItem,
-                    autoexpand, 15, True)
-        except asyncio.TimeoutError as timeoutE:
+                                 autoexpand, 15, True)
+        except asyncio.TimeoutError:
             self.setInfo(iTimeoutTryNoResolve())
 
             try:
                 await self.timedList(ipfsop, objPath, parentItem,
-                    autoexpand, 10, False)
-            except asyncio.TimeoutError as timeoutE:
+                                     autoexpand, 10, False)
+            except asyncio.TimeoutError:
                 # That's a dead end .. bury that hash please ..
                 self.setInfo(iTimeoutInvalidHash())
                 return
@@ -566,9 +594,9 @@ class IPFSHashExplorerWidget(QWidget):
 
         self.tree.setModel(self.model)
         self.tree.header().setSectionResizeMode(self.model.COL_NAME,
-                QHeaderView.ResizeToContents)
+                                                QHeaderView.ResizeToContents)
         self.tree.header().setSectionResizeMode(self.model.COL_MIME,
-                QHeaderView.ResizeToContents)
+                                                QHeaderView.ResizeToContents)
         self.tree.sortByColumn(self.model.COL_NAME, Qt.AscendingOrder)
 
         if self.app.settingsMgr.hideHashes:
@@ -578,15 +606,15 @@ class IPFSHashExplorerWidget(QWidget):
 
         if rStat:
             self.setInfo(iCIDInfo(self.cid.version,
-                rStat['NumLinks'],
-                sizeFormat(rStat['CumulativeSize'])))
+                                  rStat['NumLinks'],
+                                  sizeFormat(rStat['CumulativeSize'])))
 
     async def list(self, op, path, parentItem=None,
-            autoexpand=False, resolve_type=True):
+                   autoexpand=False, resolve_type=True):
 
         parentItemSibling = self.model.sibling(parentItem.row(),
-                self.model.COL_HASH,
-                parentItem.index())
+                                               self.model.COL_HASH,
+                                               parentItem.index())
         parentItemHash = self.model.data(parentItemSibling)
         if parentItemHash is None:
             parentItemHash = self.rootHash
@@ -619,8 +647,10 @@ class IPFSHashExplorerWidget(QWidget):
 
                 if nItemName.isDir() and self.autoOpenFolders:
                     # Automatically open sub folders. Used by unit tests
-                    self.parent.viewHash(entry['Hash'],
-                        addClose=True, autoOpenFolders=self.autoOpenFolders)
+                    self.parent.viewHash(
+                        entry['Hash'],
+                        addClose=True,
+                        autoOpenFolders=self.autoOpenFolders)
 
                 if nItemName.isDir() and entry['Name'] == '.git':
                     # If there's a git repo here, add a control button
@@ -639,14 +669,14 @@ class IPFSHashExplorerWidget(QWidget):
         cumulative = rStat['CumulativeSize']
 
         async def onGetProgress(ref, bytesRead, arg):
-            per = int((bytesRead*100) / cumulative)
+            per = int((bytesRead * 100) / cumulative)
             self.getLabel.setText('Downloaded: {0}'.format(
                 sizeFormat(bytesRead)))
             self.getProgress.setValue(per)
 
-        ret = await ipfsop.client.get(rPath, dstdir=dest,
-                progress_callback=onGetProgress,
-                chunk_size=32768)
+        await ipfsop.client.get(rPath, dstdir=dest,
+                                progress_callback=onGetProgress,
+                                chunk_size=32768)
 
         self.getLabel.setText('Download finished')
         self.getProgress.hide()
