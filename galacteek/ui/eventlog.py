@@ -1,17 +1,16 @@
-
-import time
 import json
 import asyncio
 
 from PyQt5.QtWidgets import (QTextEdit, QVBoxLayout, QHBoxLayout,
-        QCheckBox, QPushButton)
-from PyQt5.QtCore import QCoreApplication, Qt, QSaveFile, QIODevice
+                             QCheckBox, QPushButton)
+from PyQt5.QtCore import Qt, QSaveFile, QIODevice
 
 from galacteek import log
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ui.widgets import GalacteekTab
-from galacteek.ui.helpers import *
-from galacteek.core import jtraverse, asynclib
+from galacteek.ui.helpers import saveFileSelect, messageBox
+from galacteek.core import jtraverse
+
 
 class EventLogWidget(GalacteekTab):
     """
@@ -73,8 +72,8 @@ class EventLogWidget(GalacteekTab):
                 display = False
                 parser = jtraverse.traverseParser(event)
 
-                systems = [ parser.traverse('system'),
-                    parser.traverse('Tags.system') ]
+                systems = [parser.traverse('system'),
+                           parser.traverse('Tags.system')]
 
                 if ('core' in systems or 'addrutil' in systems) and \
                         self.checkCore.isChecked():
@@ -92,9 +91,9 @@ class EventLogWidget(GalacteekTab):
 
                 await op.sleep()
 
-        except asyncio.CancelledError as err:
+        except asyncio.CancelledError:
             return
-        except Exception as err:
+        except Exception:
             log.debug('Unknown error ocurred while reading ipfs log')
 
     def onClose(self):

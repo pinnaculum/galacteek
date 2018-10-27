@@ -1,11 +1,6 @@
-
-import sys
-import asyncio
-from datetime import datetime
-
 from PyQt5.QtWidgets import QWidget, QTreeView, QMenu, QHeaderView, QAction
-from PyQt5.QtGui import QStandardItemModel, QStandardItem
-from PyQt5.QtCore import QCoreApplication, QUrl, Qt, QObject, QDateTime
+from PyQt5.QtGui import QStandardItemModel
+from PyQt5.QtCore import QCoreApplication, Qt, QDateTime
 
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.cidhelpers import *
@@ -17,45 +12,60 @@ from .dialogs import *
 from .widgets import *
 from .i18n import *
 
+
 def iPath():
     return QCoreApplication.translate('HashmarksViewForm', 'Path')
+
 
 def iTitle():
     return QCoreApplication.translate('HashmarksViewForm', 'Title')
 
+
 def iShared():
     return QCoreApplication.translate('HashmarksViewForm', 'Shared')
+
 
 def iDate():
     return QCoreApplication.translate('HashmarksViewForm', 'Date')
 
+
 def iTimestamp():
     return QCoreApplication.translate('HashmarksViewForm', 'Timestamp')
 
+
 def iAlreadyHashmarked():
     return QCoreApplication.translate('HashmarksViewForm',
-        'Already Hashmarked')
+                                      'Already Hashmarked')
+
 
 def iImportHashmark():
     return QCoreApplication.translate('HashmarksViewForm',
-        'Import hashmark to')
+                                      'Import hashmark to')
+
 
 def iNetworkMarks():
     return QCoreApplication.translate('HashmarksViewForm', 'Network hashmarks')
 
+
 def iFeeds():
     return QCoreApplication.translate('HashmarksViewForm', 'Feeds')
 
-class HashmarksView(QTreeView): pass
+
+class HashmarksView(QTreeView):
+    pass
+
 
 class HashmarksModel(QStandardItemModel):
     pass
 
+
 class FeedsModel(QStandardItemModel):
     pass
 
+
 class CategoryItem(UneditableItem):
     pass
+
 
 def addHashmark(hashmarks, path, title, description='', stats={}):
     if hashmarks.search(path):
@@ -63,13 +73,14 @@ def addHashmark(hashmarks, path, title, description='', stats={}):
 
     runDialog(AddHashmarkDialog, hashmarks, path, title, description, stats)
 
+
 class _MarksUpdater:
     def __init__(self):
         self.updatingMarks = False
         self._marksCache = []
 
     async def updateMarks(self, model, marks, tree, parent=None):
-        if self.updatingMarks == True:
+        if self.updatingMarks:
             return
 
         self.updatingMarks = True
@@ -83,16 +94,14 @@ class _MarksUpdater:
         for cat in categories:
             catItem = None
             ret = await modelSearchAsync(model,
-                    parent=parent.index(),
-                    maxdepth=1,
-                    search=cat, columns=[0])
+                                         parent=parent.index(),
+                                         maxdepth=1,
+                                         search=cat, columns=[0])
             if len(ret) == 0:
                 catItem = CategoryItem(cat)
                 parent.appendRow([catItem])
             else:
                 catItem = model.itemFromIndex(ret[0])
-
-            catItemIdx = model.indexFromItem(catItem)
 
             marks = await abQuery.getCategoryMarks(cat)
             for path, bm in marks.items():
@@ -112,7 +121,6 @@ class _MarksUpdater:
                 item1.setToolTip(titleTooltip)
                 item2 = UneditableItem(path)
                 item2.setToolTip(path)
-                #item3 = UneditableItem(iYes() if bm['share'] is True else iNo())
                 dt = QDateTime.fromString(bm['datecreated'], Qt.ISODate)
                 item4 = UneditableItem(dt.toString())
                 item5 = UneditableItem(str(bm['tscreated']))
@@ -127,6 +135,7 @@ class _MarksUpdater:
         tree.setAlternatingRowColors(True)
         tree.setColumnWidth(0, tree.width() / 3)
         tree.setColumnWidth(1, tree.width() / 3)
+
 
 class FeedsView(QWidget):
     def __init__(self, marksTab, marks, loop, parent=None):
@@ -158,7 +167,7 @@ class FeedsView(QWidget):
         for fPath, fData in feeds:
             fItem = None
             ret = modelSearch(self.model, parent=parent.index(),
-                    search=fPath, columns=[0])
+                              search=fPath, columns=[0])
             if not ret:
                 feedName = fData['name']
                 if not feedName:
@@ -174,16 +183,17 @@ class FeedsView(QWidget):
             marks = self.marks.getFeedMarks(fPath)
             for mPath, mData in marks.items():
                 ret = modelSearch(self.model, parent=parent.index(),
-                        search=mPath, columns=[0])
-                if ret: continue
+                                  search=mPath, columns=[0])
+                if ret:
+                    continue
 
                 item1 = UneditableItem(mPath)
                 dt = QDateTime.fromString(mData['datecreated'],
-                        Qt.ISODate)
+                                          Qt.ISODate)
                 fItem.appendRow([item1,
-                    UneditableItem(mData['metadata']['title']),
-                    UneditableItem(dt.toString())
-                ])
+                                 UneditableItem(mData['metadata']['title']),
+                                 UneditableItem(dt.toString())
+                                 ])
 
         self.tree.sortByColumn(2, Qt.DescendingOrder)
         self.tree.setSortingEnabled(True)
@@ -193,6 +203,7 @@ class FeedsView(QWidget):
         path = self.model.data(indexPath)
         if path:
             self.marksTab.gWindow.addBrowserTab().browseFsPath(path)
+
 
 class NetworkMarksView(QWidget, _MarksUpdater):
     def __init__(self, marksTab, marks, marksLocal, loop, parent=None):
@@ -215,13 +226,13 @@ class NetworkMarksView(QWidget, _MarksUpdater):
         self.tree.setModel(self.model)
         self.tree.doubleClicked.connect(self.onDoubleClick)
         self.tree.header().setSectionResizeMode(0,
-                QHeaderView.ResizeToContents)
+                                                QHeaderView.ResizeToContents)
         self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self.onContextMenu)
 
         self.ui.expandButton.clicked.connect(lambda:
-            self.tree.expandAll() if self.ui.expandButton.isChecked()
-                else self.tree.collapseAll())
+                                             self.tree.expandAll() if self.ui.expandButton.isChecked()
+                                             else self.tree.collapseAll())
 
         self.marks.changed.connect(self.doMarksUpdate)
 
@@ -243,7 +254,7 @@ class NetworkMarksView(QWidget, _MarksUpdater):
             cat = action.data()['category']
             mark = action.data()['mark']
 
-            r = self.marksLocal.insertMark(mark, cat)
+            self.marksLocal.insertMark(mark, cat)
 
         mark = self.marks.search(dataPath)
         for cat in localCategories:
@@ -264,7 +275,7 @@ class NetworkMarksView(QWidget, _MarksUpdater):
 
     def onSearch(self):
         text = self.ui.search.text()
-        ret = modelSearch(self.model, searchre=text, columns=[0,1])
+        ret = modelSearch(self.model, searchre=text, columns=[0, 1])
         if len(ret) > 0:
             idx = ret.pop()
             self.tree.scrollTo(idx)
@@ -275,6 +286,7 @@ class NetworkMarksView(QWidget, _MarksUpdater):
         path = self.model.data(indexPath)
         if path:
             self.marksTab.gWindow.addBrowserTab().browseFsPath(path)
+
 
 class HashmarksTab(GalacteekTab, _MarksUpdater):
     def __init__(self, *args, **kw):
@@ -292,15 +304,15 @@ class HashmarksTab(GalacteekTab, _MarksUpdater):
         self.ui.setupUi(self)
 
         self.uiFeeds = FeedsView(self, self.marksLocal,
-                self.loop, parent=self)
+                                 self.loop, parent=self)
         self.uiNet = NetworkMarksView(self, self.marksNetwork,
-                self.marksLocal, self.loop, parent=self)
+                                      self.marksLocal, self.loop, parent=self)
 
         self.ui.toolbox.addItem(self.uiFeeds, iFeeds())
         self.ui.toolbox.addItem(self.uiNet, iNetworkMarks())
         self.ui.expandButton.clicked.connect(lambda:
-            self.ui.treeMarks.expandAll() if self.ui.expandButton.isChecked()
-                else self.ui.treeMarks.collapseAll())
+                                             self.ui.treeMarks.expandAll() if self.ui.expandButton.isChecked()
+                                             else self.ui.treeMarks.collapseAll())
 
         self.filter = BasicKeyFilter()
         self.filter.deletePressed.connect(self.onDeletePressed)
@@ -339,8 +351,10 @@ class HashmarksTab(GalacteekTab, _MarksUpdater):
         menu = QMenu()
 
         if dataPath:
-            act2 = menu.addAction(iDelete(), lambda:
-                    self.deleteMark(dataPath))
+            menu.addAction(
+                iDelete(),
+                lambda: self.deleteMark(dataPath)
+            )
 
         menu.exec(self.ui.treeMarks.mapToGlobal(point))
 

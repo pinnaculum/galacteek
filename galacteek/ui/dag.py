@@ -1,32 +1,34 @@
-
-import json
 import asyncio
 
-from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem
-from PyQt5.QtCore import Qt, QCoreApplication
-from PyQt5.QtGui import QBrush, QColor
+from PyQt5.QtWidgets import QTreeWidgetItem
+from PyQt5.QtCore import QCoreApplication
+from PyQt5.QtGui import QColor
 
-from galacteek.appsettings import *
+from galacteek.appsettings import *  # noqa
 from galacteek.ipfs import cidhelpers
-from galacteek.ipfs.ipfsops import *
-from galacteek.ipfs.wrappers import ipfsOp, ipfsStatOp
+from galacteek.ipfs.ipfsops import *  # noqa
+from galacteek.ipfs.wrappers import ipfsOp
 from .helpers import *
 from .i18n import *
 from .widgets import GalacteekTab
 
 from . import ui_dagview
 
+
 def iDagError(path):
-    return QCoreApplication.translate('DagViewForm',
-            'Error loading the DAG object: {0}').format(path)
+    return QCoreApplication.translate(
+        'DagViewForm', 'Error loading the DAG object: {0}').format(path)
+
 
 def iDagInfo(obj):
     return QCoreApplication.translate('DagViewForm',
-            'DAG object: <b>{0}</b>').format(obj)
+                                      'DAG object: <b>{0}</b>').format(obj)
+
 
 def iDagItem(it):
     return QCoreApplication.translate('DagViewForm',
-            'Item {0}').format(it)
+                                      'Item {0}').format(it)
+
 
 class DAGViewer(GalacteekTab):
     def __init__(self, dagHash, *args, **kw):
