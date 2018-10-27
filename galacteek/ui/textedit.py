@@ -1,8 +1,4 @@
-
-from PyQt5.QtWidgets import QWidget, QTextEdit, QAction
-from PyQt5.QtWidgets import QMessageBox
-
-from PyQt5.QtCore import QUrl, Qt, QTemporaryFile, QTemporaryDir, QSaveFile
+from PyQt5.QtCore import QTemporaryDir, QSaveFile
 from PyQt5.QtCore import QIODevice, pyqtSignal
 
 from . import ui_newdocument
@@ -13,14 +9,19 @@ from galacteek.ipfs.ipfsops import *
 from galacteek.appsettings import *
 from galacteek.ipfs.wrappers import ipfsOp
 
+
 def iImportedDocument(name, hash):
-    return QCoreApplication.translate('NewDocumentForm',
-        'Succesfully imported {0} in the Documents folder (hash reference {1})').format(
-                name, hash)
+    return QCoreApplication.translate(
+        'NewDocumentForm',
+        'Succesfully imported {0} in the Documents folder '
+        '(hash reference {1})').format(
+        name, hash)
+
 
 def iImportError():
     return QCoreApplication.translate('NewDocumentForm',
-        'File import error')
+                                      'File import error')
+
 
 class AddDocumentWidget(GalacteekTab):
     importSuccess = pyqtSignal(str, dict)

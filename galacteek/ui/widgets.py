@@ -1,8 +1,7 @@
-
-from PyQt5.QtCore import (Qt, QEvent, QObject, pyqtSignal, QFile)
-from PyQt5.QtWidgets import QWidget, QApplication
+from PyQt5.QtWidgets import QWidget
 
 from galacteek.ipfs.wrappers import ipfsOp
+
 
 class GalacteekTab(QWidget):
     def __init__(self, gWindow, parent=None, **kw):
