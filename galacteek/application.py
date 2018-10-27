@@ -1,40 +1,42 @@
-
 import sys
-import json
-import os, os.path
-import multiprocessing
+import os
+import os.path
 import time
 import logging
 import asyncio
-import re
 import collections
 import pkg_resources
-import jinja2, jinja2.exceptions
+import jinja2
+import jinja2.exceptions
 import warnings
 import concurrent.futures
-
-from distutils.version import StrictVersion
 
 from quamash import QEventLoop
 
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu
-from PyQt5.QtGui import QPixmap, QIcon, QClipboard
-from PyQt5.QtCore import (QCoreApplication, QUrl, QStandardPaths,
-        QSettings, QTranslator, QFile, pyqtSignal, QObject,
-        QTemporaryDir, QDateTime, QMessageLogger, QMimeDatabase)
+from PyQt5.QtGui import QIcon, QClipboard
+from PyQt5.QtCore import (
+    QCoreApplication,
+    QUrl,
+    QStandardPaths,
+    QTranslator,
+    QFile,
+    pyqtSignal,
+    QObject,
+    QTemporaryDir,
+    QDateTime,
+    QMimeDatabase)
 
-from galacteek import log, soonish, ensure
+from galacteek import log, ensure
 from galacteek import pypicheck, GALACTEEK_NAME
 from galacteek.core.asynclib import asyncify
-from galacteek.core.softident import gSoftIdent
 from galacteek.core.ctx import IPFSContext
-from galacteek.ipfs import pinning, asyncipfsd, cidhelpers
+from galacteek.ipfs import asyncipfsd, cidhelpers
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import *
-from galacteek.ipfs.pubsub import *
 from galacteek.ipfs.feeds import FeedFollower
 
-from galacteek.ui import mainui, galacteek_rc, downloads, browser, hashmarks
+from galacteek.ui import mainui, downloads, browser
 from galacteek.ui.helpers import *
 from galacteek.ui.i18n import *
 
@@ -49,27 +51,36 @@ import aioipfs
 
 # IPFS daemon messages
 
+
 def iIpfsDaemonStarted():
     return QCoreApplication.translate('Galacteek', 'IPFS daemon started')
 
+
 def iIpfsDaemonGwStarted():
     return QCoreApplication.translate('Galacteek',
-        "IPFS daemon's gateway started")
+                                      "IPFS daemon's gateway started")
+
 
 def iIpfsDaemonReady():
     return QCoreApplication.translate('Galacteek', 'IPFS daemon is ready')
 
+
 def iIpfsDaemonProblem():
     return QCoreApplication.translate('Galacteek',
-        'Problem starting IPFS daemon')
+                                      'Problem starting IPFS daemon')
+
 
 def iIpfsDaemonInitProblem():
-    return QCoreApplication.translate('Galacteek',
+    return QCoreApplication.translate(
+        'Galacteek',
         'Problem initializing the IPFS daemon (check the ports configuration)')
 
+
 def iIpfsDaemonWaiting(count):
-    return QCoreApplication.translate('Galacteek',
+    return QCoreApplication.translate(
+        'Galacteek',
         'IPFS daemon: waiting for connection (try {0})'.format(count))
+
 
 class IPFSConnectionParams(object):
     def __init__(self, host, apiport, gwport):
@@ -77,8 +88,11 @@ class IPFSConnectionParams(object):
         self._apiPort = apiport
         self._gatewayPort = gwport
 
-        self._gatewayUrl = URL.build(host=self.host,
-            port=self.gatewayPort, scheme='http', path='')
+        self._gatewayUrl = URL.build(
+            host=self.host,
+            port=self.gatewayPort,
+            scheme='http',
+            path='')
 
     @property
     def host(self):
@@ -96,11 +110,13 @@ class IPFSConnectionParams(object):
     def gatewayUrl(self):
         return self._gatewayUrl
 
+
 def appOperator():
     app = QApplication.instance()
     if not app:
         raise Exception('No Qt Application running')
     return app.ipfsOpMain
+
 
 class gIpfsOpMain(ipfsClassW):
     def __get__(self, inst, owner):
@@ -109,6 +125,7 @@ class gIpfsOpMain(ipfsClassW):
             if op:
                 return await self.wrapped(inst, op, *args, **kw)
         return wrapper
+
 
 class GalacteekApplication(QApplication):
     """
@@ -186,7 +203,7 @@ class GalacteekApplication(QApplication):
 
     @property
     def pendingTasks(self):
-        return [task for task in asyncio.Task.all_tasks(loop=self.loop) if \
+        return [task for task in asyncio.Task.all_tasks(loop=self.loop) if
                 not task.done()]
 
     @property
@@ -235,9 +252,9 @@ class GalacteekApplication(QApplication):
             styleSheetBa = qssFile.readAll()
             styleSheetStr = styleSheetBa.data().decode('utf-8')
             self.setStyleSheet(styleSheetStr)
-        except:
-            # that would probably occur if the QSS is not in the resources file..
-            # set some default stylesheet here?
+        except BaseException:
+            # that would probably occur if the QSS is not
+            # in the resources file..  set some default stylesheet here?
             pass
 
     def debug(self, msg):
@@ -272,7 +289,7 @@ class GalacteekApplication(QApplication):
 
         self.marksLocal.addCategory('general')
         self.marksNetwork = IPFSMarks(self.networkMarksFileLocation,
-                autosave=False)
+                                      autosave=False)
 
         self.tempDir = QTemporaryDir()
         if not self.tempDir.isValid():
@@ -316,24 +333,24 @@ class GalacteekApplication(QApplication):
             pass
 
     def systemTrayMessage(self, title, message, timeout=2000,
-            messageIcon=QSystemTrayIcon.Information):
+                          messageIcon=QSystemTrayIcon.Information):
         self.systemTray.showMessage(title, message, messageIcon, timeout)
 
     @ipfsOp
     async def setupRepository(self, op):
-        pubsubEnabled = True # mandatory now ..
+        pubsubEnabled = True  # mandatory now ..
         hExchEnabled = self.settingsMgr.isTrue(CFG_SECTION_IPFS,
-            CFG_KEY_HASHMARKSEXCH)
+                                               CFG_KEY_HASHMARKSEXCH)
 
         self.ipfsCtx.resources['ipfs-logo-ice'] = await self.importQtResource(
-               '/share/icons/ipfs-logo-128-ice.png')
+            '/share/icons/ipfs-logo-128-ice.png')
         self.ipfsCtx.resources['ipfs-cube-64'] = await self.importQtResource(
-                '/share/icons/ipfs-cube-64.png')
+            '/share/icons/ipfs-cube-64.png')
         self.ipfsCtx.resources['ipfs-logo-text'] = await self.importQtResource(
-                '/share/icons/ipfs-logo-text-128-ice-white.png')
+            '/share/icons/ipfs-logo-text-128-ice-white.png')
 
         await self.ipfsCtx.setup(pubsubEnable=pubsubEnabled,
-                pubsubHashmarksExch=hExchEnabled)
+                                 pubsubHashmarksExch=hExchEnabled)
         await self.ipfsCtx.profilesInit()
 
         ensure(self.manuals.importManualMain())
@@ -359,7 +376,7 @@ class GalacteekApplication(QApplication):
     def ipfsTask(self, fn, *args, **kw):
         """ Schedule an async IPFS task """
         return self.loop.create_task(fn(self.ipfsClient,
-            *args, **kw))
+                                        *args, **kw))
 
     def ipfsTaskOp(self, fn, *args, **kw):
         """ Schedule an async IPFS task using an IPFSOperator instance """
@@ -371,29 +388,29 @@ class GalacteekApplication(QApplication):
     def getIpfsOperator(self):
         """ Returns a new IPFSOperator with the currently active IPFS client"""
         return IPFSOperator(self.ipfsClient, ctx=self.ipfsCtx,
-            debug=self.debugEnabled)
+                            debug=self.debugEnabled)
 
     def getIpfsConnectionParams(self):
         mgr = self.settingsMgr
 
         section = CFG_SECTION_IPFSD
         if mgr.isTrue(section, CFG_KEY_ENABLED):
-            return IPFSConnectionParams('localhost',
-                    mgr.getSetting(section, CFG_KEY_APIPORT),
-                    mgr.getSetting(section, CFG_KEY_HTTPGWPORT)
-            )
+            return IPFSConnectionParams(
+                'localhost', mgr.getSetting(
+                    section, CFG_KEY_APIPORT), mgr.getSetting(
+                    section, CFG_KEY_HTTPGWPORT))
         else:
             section = CFG_SECTION_IPFSCONN1
             return IPFSConnectionParams(
-                    mgr.getSetting(section, CFG_KEY_HOST),
-                    mgr.getSetting(section, CFG_KEY_APIPORT),
-                    mgr.getSetting(section, CFG_KEY_HTTPGWPORT)
+                mgr.getSetting(section, CFG_KEY_HOST),
+                mgr.getSetting(section, CFG_KEY_APIPORT),
+                mgr.getSetting(section, CFG_KEY_HTTPGWPORT)
             )
 
     async def updateIpfsClient(self):
         connParams = self.getIpfsConnectionParams()
         client = aioipfs.AsyncIPFS(host=connParams.host,
-                port=connParams.apiPort, loop=self.loop)
+                                   port=connParams.apiPort, loop=self.loop)
         self.ipfsClient = client
         self.ipfsCtx.ipfsClient = client
         self.ipfsOpMain = self.getIpfsOperator()
@@ -435,13 +452,14 @@ class GalacteekApplication(QApplication):
         return self.loop.create_task(fn(*args, **kw))
 
     def setupPaths(self):
-        qtDataLocation = QStandardPaths.writableLocation(QStandardPaths.DataLocation)
+        qtDataLocation = QStandardPaths.writableLocation(
+            QStandardPaths.DataLocation)
 
         if not qtDataLocation:
             raise Exception('No writable data location found')
 
         self._dataLocation = os.path.join(
-                qtDataLocation, self._appProfile)
+            qtDataLocation, self._appProfile)
 
         self._ipfsBinLocation = os.path.join(qtDataLocation, 'ipfs-bin')
         self._ipfsDataLocation = os.path.join(self._dataLocation, 'ipfs')
@@ -449,23 +467,23 @@ class GalacteekApplication(QApplication):
         self.cryptoDataLocation = os.path.join(self._dataLocation, 'crypto')
         self.gpgDataLocation = os.path.join(self.cryptoDataLocation, 'gpg')
         self.localMarksFileLocation = os.path.join(self.marksDataLocation,
-            'ipfsmarks.local.json')
+                                                   'ipfsmarks.local.json')
         self.networkMarksFileLocation = os.path.join(self.marksDataLocation,
-            'ipfsmarks.network.json')
+                                                     'ipfsmarks.network.json')
 
         qtConfigLocation = QStandardPaths.writableLocation(
-                QStandardPaths.ConfigLocation)
+            QStandardPaths.ConfigLocation)
         self.configDirLocation = os.path.join(
-                qtConfigLocation, GALACTEEK_NAME, self._appProfile)
+            qtConfigLocation, GALACTEEK_NAME, self._appProfile)
         self.settingsFileLocation = os.path.join(
-                self.configDirLocation, '{}.conf'.format(GALACTEEK_NAME))
+            self.configDirLocation, '{}.conf'.format(GALACTEEK_NAME))
 
-        for dir in [ self._ipfsDataLocation,
-                self.ipfsBinLocation,
-                self.marksDataLocation,
-                self.cryptoDataLocation,
-                self.gpgDataLocation,
-                self.configDirLocation ]:
+        for dir in [self._ipfsDataLocation,
+                    self.ipfsBinLocation,
+                    self.marksDataLocation,
+                    self.cryptoDataLocation,
+                    self.gpgDataLocation,
+                    self.configDirLocation]:
             if not os.path.exists(dir):
                 os.makedirs(dir)
 
@@ -473,9 +491,9 @@ class GalacteekApplication(QApplication):
             QStandardPaths.DownloadLocation)
 
         self.debug('Datapath: {0}, config: {1}, configfile: {2}'.format(
-                self._dataLocation,
-                self.configDirLocation,
-                self.settingsFileLocation))
+            self._dataLocation,
+            self.configDirLocation,
+            self.settingsFileLocation))
 
         os.environ['PATH'] += os.pathsep + self.ipfsBinLocation
 
@@ -485,14 +503,14 @@ class GalacteekApplication(QApplication):
         self.settingsMgr.sync()
 
     def startIpfsDaemon(self, goIpfsPath='ipfs', migrateRepo=False):
-        if self.ipfsd is not None: # we only support one daemon for now
+        if self.ipfsd is not None:  # we only support one daemon for now
             return
 
-        #pubsubEnabled = self.settingsMgr.isTrue(CFG_SECTION_IPFS,
+        # pubsubEnabled = self.settingsMgr.isTrue(CFG_SECTION_IPFS,
         #    CFG_KEY_PUBSUB)
-        pubsubEnabled = True # mandatory now ..
+        pubsubEnabled = True  # mandatory now ..
         corsEnabled = self.settingsMgr.isTrue(CFG_SECTION_IPFSD,
-            CFG_KEY_CORS)
+                                              CFG_KEY_CORS)
 
         sManager = self.settingsMgr
         section = CFG_SECTION_IPFSD
@@ -524,16 +542,16 @@ class GalacteekApplication(QApplication):
         running = False
 
         self.systemTrayMessage('IPFS', iIpfsDaemonStarted(),
-            timeout=1000)
+                               timeout=1000)
 
         # Use asyncio.wait_for to wait for the proto.eventStarted
-        # event to be fired. 
+        # event to be fired.
 
         for attempt in range(1, 32):
             self.mainWindow.statusMessage(iIpfsDaemonWaiting(attempt))
             try:
                 await asyncio.wait_for(ipfsd.proto.eventStarted.wait(), 1)
-            except asyncio.TimeoutError as err:
+            except asyncio.TimeoutError:
                 # Event not set yet, wait again
                 log.debug('IPFSD: timeout occured while waiting for daemon to \
                         start (attempt: {0})'.format(attempt))
@@ -541,7 +559,7 @@ class GalacteekApplication(QApplication):
             else:
                 # Event was set, good to go
                 self.systemTrayMessage('IPFS',
-                    iIpfsDaemonReady(), timeout=2000)
+                                       iIpfsDaemonReady(), timeout=2000)
                 running = True
                 break
 
@@ -575,7 +593,7 @@ class GalacteekApplication(QApplication):
     def getJinjaTemplate(self, name):
         try:
             tmpl = self.jinjaEnv.get_template(name)
-        except jinja2.exceptions.TemplateNotFound as e:
+        except jinja2.exceptions.TemplateNotFound:
             return None
         else:
             return tmpl
@@ -586,7 +604,7 @@ class GalacteekApplication(QApplication):
         newR = await pypicheck.newReleaseAvailable()
         if newR:
             self.systemTrayMessage('Galacteek',
-                iNewReleaseAvailable(), timeout=8000)
+                                   iNewReleaseAvailable(), timeout=8000)
 
     def showTasks(self):
         for task in self.pendingTasks:
@@ -607,6 +625,7 @@ class GalacteekApplication(QApplication):
 
         self.tempDir.remove()
         self.quit()
+
 
 class ClipboardTracker(QObject):
     """
@@ -631,10 +650,11 @@ class ClipboardTracker(QObject):
 
     def clipboardProcess(self, text, clipboardMode=None):
         """
-        Process the contents of the clipboard. If it is a valid CID/path, emit a
-        signal, processed by the main window for the clipboard loader button
+        Process the contents of the clipboard. If it is a valid CID/path,
+        emit a signal, processed by the main window for the clipboard
+        loader button
         """
-        if not text or len(text) > 1024: # that shouldn't be worth handling
+        if not text or len(text) > 1024:  # that shouldn't be worth handling
             return
 
         text = text.strip()
@@ -679,7 +699,6 @@ class ClipboardTracker(QObject):
     def hRecord(self, path):
         """ Records an item in the history and emits a signal """
         now = time.time()
-        itLookup = self.hLookup(path)
         self.history[now] = {
             'path': path,
             'date': QDateTime.currentDateTime()
@@ -688,7 +707,7 @@ class ClipboardTracker(QObject):
 
     def getHistory(self):
         return collections.OrderedDict(sorted(self.history.items(),
-            key=lambda t: t[0]))
+                                              key=lambda t: t[0]))
 
     def clearHistory(self):
         self.history = {}
@@ -714,7 +733,7 @@ class ClipboardTracker(QObject):
 
     def clipboardPreferredMode(self):
         return QClipboard.Selection if self.clipboard.supportsSelection() \
-                else QClipboard.Clipboard
+            else QClipboard.Clipboard
 
     def setText(self, text):
         """ Sets the clipboard's text content """
@@ -726,6 +745,7 @@ class ClipboardTracker(QObject):
 
     def onHasIpfs(self, valid, cid, path):
         self.hasIpfs = valid
+
 
 class ManualsImporter(QObject):
     """ Imports the HTML manuals in IPFS """
@@ -739,7 +759,7 @@ class ManualsImporter(QObject):
     async def importManualMain(self):
         try:
             listing = pkg_resources.resource_listdir(
-                    'galacteek.docs.manual', '')
+                'galacteek.docs.manual', '')
             for entry in listing:
                 if entry.startswith('__'):
                     continue
@@ -750,7 +770,7 @@ class ManualsImporter(QObject):
     async def importManualLang(self, lang):
         try:
             docPath = pkg_resources.resource_filename('galacteek.docs.manual',
-                '{0}/html'.format(lang))
+                                                      '{0}/html'.format(lang))
             await self.importDocPath(docPath, lang)
         except Exception as e:
             log.debug('Failed importing manual ({0}) {1}'.format(
