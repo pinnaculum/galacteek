@@ -147,7 +147,7 @@ def iFinished():
 def iFsRepoMigrateNotFound():
     return QCoreApplication.translate(
         'Galacteek',
-        'Warning: could not find IPFS repository migration tool on your system')
+        'Warning: could not find IPFS repository migration tool')
 
 
 def iGoIpfsNotFound():

@@ -2,6 +2,8 @@
 Protobuf definitions for IPFS
 """
 
+import base64
+
 from . import unixfs_pb2
 
 from .protobuf_to_dict import protobuf_to_dict
@@ -13,7 +15,7 @@ def decodeDagNode(data):
         message.MergeFromString(
             base64.b64decode(data))
         obj = protobuf_to_dict(message)
-    except Exception as e:
+    except Exception:
         return None
 
     return {
