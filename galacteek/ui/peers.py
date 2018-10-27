@@ -1,13 +1,11 @@
-import asyncio
 import os.path
 
-from PyQt5.QtWidgets import QTreeView, QMenu, QHeaderView, QPushButton
-from PyQt5.QtGui import QStandardItemModel, QStandardItem
+from PyQt5.QtWidgets import QMenu, QHeaderView, QPushButton
+from PyQt5.QtGui import QStandardItemModel
 from PyQt5.QtCore import QObject, QCoreApplication
 
-from galacteek import asyncify, ensure
+from galacteek import ensure
 from galacteek.ipfs.wrappers import ipfsOp
-from galacteek.ipfs.dag import DAGQuery
 from galacteek.ipfs.cidhelpers import *
 from galacteek.ipfs.ipfsops import *
 
@@ -17,21 +15,27 @@ from .modelhelpers import *
 from .helpers import *
 from .dialogs import *
 
+
 def iUsername():
     return QCoreApplication.translate('PeersManager', 'Username')
+
 
 def iPeerId():
     return QCoreApplication.translate('PeersManager', 'Peer ID')
 
+
 def iPingAvg():
     return QCoreApplication.translate('PeersManager', 'Ping Average (ms)')
 
+
 def iInvalidDagCID(dagCid):
     return QCoreApplication.translate('PeersManager',
-            'Invalid DAG CID: {0}').format(dagCid)
+                                      'Invalid DAG CID: {0}').format(dagCid)
+
 
 class PeersModel(QStandardItemModel):
     pass
+
 
 class PeersTracker(QObject):
     def __init__(self, ctx):
@@ -59,9 +63,9 @@ class PeersTracker(QObject):
         return self._peersRows
 
     def onPeerLogout(self, peerId):
-        ret = modelSearch(self.model,
-                parent=self.modelRoot.index(),
-                search=peerId, delete=True)
+        modelSearch(self.model,
+                    parent=self.modelRoot.index(),
+                    search=peerId, delete=True)
         if peerId in self._peersRows:
             del self._peersRows[peerId]
 
@@ -102,6 +106,7 @@ class PeersTracker(QObject):
     def onPeersChange(self):
         pass
 
+
 class PeersManager(GalacteekTab):
     def __init__(self, gWindow, peersTracker, **kw):
         super().__init__(gWindow, **kw)
@@ -111,9 +116,12 @@ class PeersManager(GalacteekTab):
         self.ui.setupUi(self)
 
         self.ui.tree.setModel(self.peersTracker.model)
-        self.ui.tree.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
-        self.ui.tree.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
-        self.ui.tree.header().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        self.ui.tree.header().setSectionResizeMode(
+            0, QHeaderView.ResizeToContents)
+        self.ui.tree.header().setSectionResizeMode(
+            1, QHeaderView.ResizeToContents)
+        self.ui.tree.header().setSectionResizeMode(
+            2, QHeaderView.ResizeToContents)
 
         self.ui.tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.ui.tree.customContextMenuRequested.connect(self.onContextMenu)
@@ -145,12 +153,12 @@ class PeersManager(GalacteekTab):
             peerCtx = self.peersTracker.ctx.peers.getByPeerId(id)
 
             runDialog(AddFeedDialog, self.app.marksLocal,
-                    joinIpns(peerCtx.ident.dagIpns),
-                    feedName=peerCtx.ident.username)
+                      joinIpns(peerCtx.ident.dagIpns),
+                      feedName=peerCtx.ident.username)
 
         for peerId, row in self.peersTracker.peersRows.items():
             idx = self.model.indexFromItem(row[3])
-            if self.ui.tree.indexWidget(idx) != None:
+            if self.ui.tree.indexWidget(idx) is not None:
                 continue
             btnEx = QPushButton('Homepage')
             btnEx.setFixedSize(100, 20)
@@ -162,9 +170,6 @@ class PeersManager(GalacteekTab):
         idx = self.tree.indexAt(point)
         if not idx.isValid():
             return
-
-        idxPeerId = self.model.sibling(idx.row(), 1, idx)
-        peerId = self.model.data(idxPeerId)
 
         menu = QMenu()
         menu.exec(self.tree.mapToGlobal(point))
@@ -186,4 +191,4 @@ class PeersManager(GalacteekTab):
             return messageBox(iInvalidDagCID(dagCid))
 
         self.gWindow.addBrowserTab().browseFsPath(
-                os.path.join(joinIpns(identMsg.dagIpns), 'index.html'))
+            os.path.join(joinIpns(identMsg.dagIpns), 'index.html'))

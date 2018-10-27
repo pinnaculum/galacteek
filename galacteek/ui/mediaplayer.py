@@ -1,17 +1,15 @@
-
 import os.path
 
-from PyQt5.QtWidgets import (QWidget, QFrame, QApplication, QMainWindow,
-        QDialog, QLabel, QTextEdit, QPushButton, QVBoxLayout, QAction,
-        QHBoxLayout, QTabWidget, QFileDialog, QListView, QSplitter,
-        QToolButton, QStyle, QSlider, QGraphicsScene, QMenu)
+from PyQt5.QtWidgets import (QWidget,
+                             QLabel, QVBoxLayout, QAction,
+                             QHBoxLayout, QListView,
+                             QToolButton, QStyle, QSlider, QMenu)
 
-from PyQt5.QtMultimedia import (QMediaPlayer, QMediaContent, QMediaPlaylist,
-    QMediaMetaData)
-from PyQt5.QtMultimediaWidgets import QVideoWidget, QGraphicsVideoItem
+from PyQt5.QtMultimedia import (QMediaPlayer, QMediaContent, QMediaPlaylist)
+from PyQt5.QtMultimediaWidgets import QVideoWidget
 
-from PyQt5.QtCore import (QCoreApplication, QUrl, Qt, QAbstractItemModel,
-    QModelIndex, QTime, QSize)
+from PyQt5.QtCore import (QCoreApplication, Qt, QAbstractItemModel,
+                          QModelIndex, QTime)
 
 from galacteek.core.jsono import *
 from galacteek.ipfs.ipfsops import *
@@ -21,37 +19,45 @@ from . import ui_mediaplayer, ui_mediaplaylist
 from .widgets import *
 from .helpers import *
 
+
 def iPlayerError(code):
     return QCoreApplication.translate('MediaPlayer',
-            'Media player error (code: {0})').format(code)
+                                      'Media player error (code: {0})').format(code)
 
 
 def iFullScreen():
     return QCoreApplication.translate('MediaPlayer', 'Fullscreen')
 
+
 def iCopyPlaylistPath():
     return QCoreApplication.translate('MediaPlayer',
-            "Copy playlist's IPFS path to the clipboard")
+                                      "Copy playlist's IPFS path to the clipboard")
+
 
 def iLoadPlaylistFromPath():
     return QCoreApplication.translate('MediaPlayer',
-            'Load playlist from the clipboard')
+                                      'Load playlist from the clipboard')
+
 
 def iCannotLoadPlaylist():
     return QCoreApplication.translate('MediaPlayer',
-            'Cannot load playlist')
+                                      'Cannot load playlist')
+
 
 def iPlaylistExists():
     return QCoreApplication.translate('MediaPlayer',
-            'A playlist with this name already exists')
+                                      'A playlist with this name already exists')
+
 
 def iPlaylistName():
     return QCoreApplication.translate('MediaPlayer',
-            'Playlist name')
+                                      'Playlist name')
+
 
 def iAlreadyInPlaylist():
     return QCoreApplication.translate('MediaPlayer',
-            'Already queued in the current playlist')
+                                      'Already queued in the current playlist')
+
 
 class VideoWidget(QVideoWidget):
     def keyPressEvent(self, event):
@@ -60,14 +66,17 @@ class VideoWidget(QVideoWidget):
 
         super(VideoWidget, self).keyPressEvent(event)
 
+
 def durationConvert(duration):
-    return QTime((duration/3600)%60, (duration/60)%60,
-        duration%60, (duration*1000)%1000)
+    return QTime((duration / 3600) % 60, (duration / 60) % 60,
+                 duration % 60, (duration * 1000) % 1000)
+
 
 class JSONPlaylistV1(QJSONObj):
     """
     V1 JSON playlist document
     """
+
     def prepare(self, root):
         root['playlist'] = {
             'name': self.listName,
@@ -84,10 +93,11 @@ class JSONPlaylistV1(QJSONObj):
     def items(self):
         return self.root['playlist']['items']
 
+
 class MediaPlayerTab(GalacteekTab):
-    statePlaying  = QMediaPlayer.PlayingState
-    statePaused   = QMediaPlayer.PausedState
-    stateStopped  = QMediaPlayer.StoppedState
+    statePlaying = QMediaPlayer.PlayingState
+    statePaused = QMediaPlayer.PausedState
+    stateStopped = QMediaPlayer.StoppedState
 
     def __init__(self, *args, **kw):
         super(MediaPlayerTab, self).__init__(*args, **kw)
@@ -111,11 +121,11 @@ class MediaPlayerTab(GalacteekTab):
 
         self.clipMenu = QMenu()
         self.copyPathAction = QAction(getIconIpfsIce(),
-                iCopyPlaylistPath(), self,
-                triggered=self.onCopyPlaylistPath)
+                                      iCopyPlaylistPath(), self,
+                                      triggered=self.onCopyPlaylistPath)
         self.loadPathAction = QAction(getIconIpfsIce(),
-                iLoadPlaylistFromPath(), self,
-                triggered=self.onLoadPlaylistPath)
+                                      iLoadPlaylistFromPath(), self,
+                                      triggered=self.onLoadPlaylistPath)
 
         self.copyPathAction.setEnabled(False)
         self.loadPathAction.setEnabled(self.app.clipTracker.hasIpfs)
@@ -130,9 +140,9 @@ class MediaPlayerTab(GalacteekTab):
         self.uipList.nextButton.clicked.connect(self.onPlaylistNext)
         self.uipList.previousButton.clicked.connect(self.onPlaylistPrevious)
         self.uipList.nextButton.setIcon(
-                self.style().standardIcon(QStyle.SP_MediaSkipForward))
+            self.style().standardIcon(QStyle.SP_MediaSkipForward))
         self.uipList.previousButton.setIcon(
-                self.style().standardIcon(QStyle.SP_MediaSkipBackward))
+            self.style().standardIcon(QStyle.SP_MediaSkipBackward))
 
         self.pListView = self.uipList.listView
         self.pListView.setModel(self.model)
@@ -241,8 +251,8 @@ class MediaPlayerTab(GalacteekTab):
 
     @ipfsOp
     async def updatePlaylistsMenu(self, ipfsop):
-        currentList = [action.text() for action in \
-                self.playlistsMenu.actions()]
+        currentList = [action.text() for action in
+                       self.playlistsMenu.actions()]
         listing = await ipfsop.filesList(self.profile.pathPlaylists)
         for entry in listing:
             if entry['Name'] in currentList:
@@ -275,7 +285,7 @@ class MediaPlayerTab(GalacteekTab):
         ent = await ipfsop.client.core.add_json(obj.root)
 
         if ent:
-            ret = await ipfsop.filesLinkFp(ent, objPath)
+            await ipfsop.filesLinkFp(ent, objPath)
             self.playlistIpfsPath = joinIpfs(ent['Hash'])
             self.copyPathAction.setEnabled(True)
 
@@ -299,11 +309,11 @@ class MediaPlayerTab(GalacteekTab):
 
             self.playlistIpfsPath = path
             self.copyPathAction.setEnabled(True)
-        except Exception as e:
+        except Exception:
             return messageBox(iCannotLoadPlaylist())
 
     def playlistGetPaths(self):
-        return [u.path() for u in self.playlistGetUrls() ]
+        return [u.path() for u in self.playlistGetUrls()]
 
     def playlistGetUrls(self):
         urls = []
@@ -384,7 +394,7 @@ class MediaPlayerTab(GalacteekTab):
             availableKeys = self.player.availableMetaData()
 
             for key in availableKeys:
-                value = self.player.metaData(key)
+                self.player.metaData(key)
 
     def playFromUrl(self, url, mediaName=None):
         if self.isPlaying:
@@ -440,7 +450,6 @@ class MediaPlayerTab(GalacteekTab):
         return True
 
     def keyPressEvent(self, event):
-        modifiers = event.modifiers()
         mSecMove = 3000
 
         if event.key() == Qt.Key_Space:
@@ -453,7 +462,7 @@ class MediaPlayerTab(GalacteekTab):
             self.player.setPosition(pos + mSecMove)
         if event.key() == Qt.Key_Up:
             pos = self.player.position()
-            self.player.setPosition(pos + mSecMove*2)
+            self.player.setPosition(pos + mSecMove * 2)
         if event.key() == Qt.Key_Left:
             pos = self.player.position()
             if pos > mSecMove:
@@ -462,8 +471,8 @@ class MediaPlayerTab(GalacteekTab):
                 self.player.setPosition(0)
         if event.key() == Qt.Key_Down:
             pos = self.player.position()
-            if pos > mSecMove*2:
-                self.player.setPosition(pos - mSecMove*2)
+            if pos > mSecMove * 2:
+                self.player.setPosition(pos - mSecMove * 2)
             else:
                 self.player.setPosition(0)
         if event.key() == Qt.Key_F:
@@ -471,12 +480,13 @@ class MediaPlayerTab(GalacteekTab):
 
         super(MediaPlayerTab, self).keyPressEvent(event)
 
+
 class ListModel(QAbstractItemModel):
     def __init__(self, playlist, parent=None):
         super(ListModel, self).__init__(parent)
         self.playlist = playlist
         self.playlist.mediaAboutToBeInserted.connect(
-                self.beginInsertItems)
+            self.beginInsertItems)
         self.playlist.mediaInserted.connect(self.endInsertItems)
         self.playlist.mediaChanged.connect(self.changeItems)
 
