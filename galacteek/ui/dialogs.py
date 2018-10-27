@@ -1,23 +1,18 @@
-
-import time
-import asyncio
 import re
-import os, os.path
 
-from PyQt5.QtWidgets import (QWidget, QApplication,
-        QDialog, QLabel, QTextEdit, QPushButton, QMessageBox)
+from PyQt5.QtWidgets import QDialog
 
-from PyQt5.QtCore import QUrl, Qt, pyqtSlot, QCoreApplication
+from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtGui import QClipboard, QPixmap, QImage
 
-from galacteek import asyncify, ensure, asyncReadFile
+from galacteek import asyncify, ensure
 from galacteek.core.ipfsmarks import *
 from galacteek.core import countries
 from galacteek.ipfs import cidhelpers
 from galacteek.ipfs.ipfsops import *
-from galacteek.ipfs.wrappers import *
+from galacteek.ipfs.wrappers import ipfsOp, ipfsOpFn
 
-from . import ui_addkeydialog, ui_addhashmarkdialog
+from . import ui_addhashmarkdialog
 from . import ui_addfeeddialog
 from . import ui_ipfscidinputdialog, ui_ipfsmultiplecidinputdialog
 from . import ui_profileeditdialog
@@ -25,13 +20,20 @@ from . import ui_donatedialog
 from . import ui_profilepostmessage
 from .helpers import *
 
-import mimetypes
 
 def boldLabelStyle():
     return 'QLabel { font-weight: bold; }'
 
+
 class AddHashmarkDialog(QDialog):
-    def __init__(self, marks, resource, title, description, stats, parent=None):
+    def __init__(
+            self,
+            marks,
+            resource,
+            title,
+            description,
+            stats,
+            parent=None):
         super().__init__(parent)
 
         self.ipfsResource = resource
@@ -67,19 +69,26 @@ class AddHashmarkDialog(QDialog):
         else:
             category = self.ui.category.currentText()
 
-        mark = IPFSHashMark.make(self.ipfsResource,
+        mark = IPFSHashMark.make(
+            self.ipfsResource,
             title=self.ui.title.text(),
             share=share,
             comment=self.ui.comment.text(),
             description=description,
             tags=self.ui.tags.text().split(),
-            datasize=self.stats.get('DataSize', None),
-            cumulativesize=self.stats.get('CumulativeSize', None),
-            numlinks=self.stats.get('NumLinks', None)
-        )
+            datasize=self.stats.get(
+                'DataSize',
+                None),
+            cumulativesize=self.stats.get(
+                'CumulativeSize',
+                None),
+            numlinks=self.stats.get(
+                'NumLinks',
+                None))
 
         self.marks.insertMark(mark, category)
         self.done(0)
+
 
 class AddFeedDialog(QDialog):
     def __init__(self, marks, resource, feedName=None, parent=None):
@@ -101,9 +110,10 @@ class AddFeedDialog(QDialog):
         autoPin = self.ui.autoPin.isChecked()
 
         self.marks.follow(self.ipfsResource, self.ui.feedName.text(),
-            resolveevery=self.ui.resolve.value(),
-            share=share, autoPin=autoPin)
+                          resolveevery=self.ui.resolve.value(),
+                          share=share, autoPin=autoPin)
         self.done(0)
+
 
 class IPFSCIDInputDialog(QDialog):
     """ Dialog for IPFS CID input and validation """
@@ -154,12 +164,13 @@ class IPFSCIDInputDialog(QDialog):
         """ Returns the CID object corresponding to the input """
         try:
             return cidhelpers.getCID(self.ui.cid.text())
-        except:
+        except BaseException:
             return None
 
     def accept(self):
         if self.validCid is True:
             self.done(1)
+
 
 class IPFSMultipleCIDInputDialog(QDialog):
     """ Dialog for multiple IPFS CID input """
@@ -197,6 +208,7 @@ class IPFSMultipleCIDInputDialog(QDialog):
     def accept(self):
         self.done(1)
 
+
 class DonateDialog(QDialog):
     def __init__(self, bcAddr, parent=None):
         super().__init__(parent)
@@ -224,8 +236,10 @@ class DonateDialog(QDialog):
     def accept(self):
         self.done(1)
 
+
 def notEmpty(v):
     return v != ''
+
 
 class ProfileEditDialog(QDialog):
     def __init__(self, profile, parent=None):
@@ -247,14 +261,15 @@ class ProfileEditDialog(QDialog):
         self.ui.org.setText(self.profile.userInfo.org)
 
         if notEmpty(self.profile.userInfo.countryName):
-            self.ui.countryBox.setCurrentText(self.profile.userInfo.countryName)
+            self.ui.countryBox.setCurrentText(
+                self.profile.userInfo.countryName)
         else:
             self.ui.countryBox.setCurrentText('Unspecified')
 
         if notEmpty(self.profile.userInfo.avatarCid):
             self.updateAvatarCid()
 
-        self.ui.profileCryptoId.setText('<b>{}</b>'.format(
+        self.ui.profileCryptoId.setText('<b>{0}</b>'.format(
             self.profile.userInfo.objHash))
 
         self.ui.changeIconButton.clicked.connect(self.changeIcon)
@@ -292,7 +307,7 @@ class ProfileEditDialog(QDialog):
                 img1.loadFromData(imgData)
                 img = img1.scaledToWidth(256)
                 self.ui.iconPixmap.setPixmap(QPixmap.fromImage(img))
-            except Exception as e:
+            except Exception:
                 messageBox('Error while loading image')
 
         if self.profile.userInfo.avatarCid != '':
@@ -316,7 +331,7 @@ class ProfileEditDialog(QDialog):
         for key in ['username', 'firstname',
                     'lastname', 'email', 'org']:
             val = getattr(self.ui, key).text()
-            ma = re.search("[a-zA-Z\_\-\@\.\+\'\´0-9\s]*", val)
+            ma = re.search(r"[a-zA-Z\_\-\@\.\+\'\´0-9\s]*", val)
             if ma:
                 kw[key] = val
 
@@ -331,6 +346,7 @@ class ProfileEditDialog(QDialog):
 
     def reject(self):
         self.done(0)
+
 
 class ProfilePostMessageDialog(QDialog):
     def __init__(self, profile, parent=None):

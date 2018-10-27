@@ -1,8 +1,6 @@
+from PyQt5.QtWidgets import QDialog, QTreeView, QHeaderView
 
-from PyQt5.QtWidgets import QDialog, QPushButton, QVBoxLayout, QAction
-from PyQt5.QtWidgets import QTreeView, QHeaderView
-
-from PyQt5.QtGui import QStandardItemModel, QStandardItem
+from PyQt5.QtGui import QStandardItemModel
 from PyQt5.QtCore import Qt, QCoreApplication
 
 from galacteek.ipfs.wrappers import ipfsOp
@@ -13,12 +11,18 @@ from .widgets import GalacteekTab
 from .helpers import *
 from .i18n import *
 
+
 def iKeyName():
     return QCoreApplication.translate('KeysForm', 'Name')
+
+
 def iKeyHash():
     return QCoreApplication.translate('KeysForm', 'Hash')
+
+
 def iKeyResolve():
     return QCoreApplication.translate('KeysForm', 'Resolves to')
+
 
 class AddKeyDialog(QDialog):
     def __init__(self, app, parent=None):
@@ -38,19 +42,21 @@ class AddKeyDialog(QDialog):
 
     @ipfsOp
     async def createKey(self, ipfsop, keyName, keySize):
-        reply = await ipfsop.client.key.gen(keyName,
-            type='rsa', size=keySize)
+        await ipfsop.client.key.gen(keyName,
+                                    type='rsa', size=keySize)
         self.done(1)
         self.keysView.updateKeysList()
 
     def reject(self):
         self.done(0)
 
+
 class KeysView(QTreeView):
-    def mousePressEvent (self, event):
+    def mousePressEvent(self, event):
         if event.button() == Qt.RightButton:
             pass
         QTreeView.mousePressEvent(self, event)
+
 
 class KeysTab(GalacteekTab):
     def __init__(self, *args, **kw):
@@ -79,9 +85,9 @@ class KeysTab(GalacteekTab):
         self.model.setHorizontalHeaderLabels([
             iKeyName(), iKeyHash(), iKeyResolve()])
         self.ui.treeKeys.header().setSectionResizeMode(0,
-            QHeaderView.ResizeToContents)
+                                                       QHeaderView.ResizeToContents)
         self.ui.treeKeys.header().setSectionResizeMode(1,
-            QHeaderView.ResizeToContents)
+                                                       QHeaderView.ResizeToContents)
 
     def onDelKeyClicked(self):
         idx = self.ui.treeKeys.currentIndex()
