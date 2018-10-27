@@ -21,8 +21,9 @@ from .helpers import *
 
 
 def iPlayerError(code):
-    return QCoreApplication.translate('MediaPlayer',
-                                      'Media player error (code: {0})').format(code)
+    return QCoreApplication.translate(
+        'MediaPlayer',
+        'Media player error (code: {0})').format(code)
 
 
 def iFullScreen():
@@ -30,13 +31,15 @@ def iFullScreen():
 
 
 def iCopyPlaylistPath():
-    return QCoreApplication.translate('MediaPlayer',
-                                      "Copy playlist's IPFS path to the clipboard")
+    return QCoreApplication.translate(
+        'MediaPlayer',
+        "Copy playlist's IPFS path to the clipboard")
 
 
 def iLoadPlaylistFromPath():
-    return QCoreApplication.translate('MediaPlayer',
-                                      'Load playlist from the clipboard')
+    return QCoreApplication.translate(
+        'MediaPlayer',
+        'Load playlist from the clipboard')
 
 
 def iCannotLoadPlaylist():
@@ -45,13 +48,15 @@ def iCannotLoadPlaylist():
 
 
 def iPlaylistExists():
-    return QCoreApplication.translate('MediaPlayer',
-                                      'A playlist with this name already exists')
+    return QCoreApplication.translate(
+        'MediaPlayer',
+        'A playlist with this name already exists')
 
 
 def iPlaylistName():
-    return QCoreApplication.translate('MediaPlayer',
-                                      'Playlist name')
+    return QCoreApplication.translate(
+        'MediaPlayer',
+        'Playlist name')
 
 
 def iAlreadyInPlaylist():
@@ -116,7 +121,8 @@ class MediaPlayerTab(GalacteekTab):
         self.uipList = ui_mediaplaylist.Ui_MediaPlaylist()
         self.uipList.setupUi(self.pListWidget)
         self.uipList.savePlaylistButton.clicked.connect(self.onSavePlaylist)
-        self.uipList.loadPlaylistButton.setPopupMode(QToolButton.MenuButtonPopup)
+        self.uipList.loadPlaylistButton.setPopupMode(
+            QToolButton.MenuButtonPopup)
         self.uipList.loadPlaylistButton.setMenu(self.playlistsMenu)
 
         self.clipMenu = QMenu()
@@ -132,9 +138,11 @@ class MediaPlayerTab(GalacteekTab):
         self.clipMenu.addAction(self.copyPathAction)
         self.clipMenu.addAction(self.loadPathAction)
 
-        self.uipList.clipPlaylistButton.setPopupMode(QToolButton.MenuButtonPopup)
+        self.uipList.clipPlaylistButton.setPopupMode(
+            QToolButton.MenuButtonPopup)
         self.uipList.clipPlaylistButton.setMenu(self.clipMenu)
-        self.uipList.clipPlaylistButton.clicked.connect(self.onLoadPlaylistPath)
+        self.uipList.clipPlaylistButton.clicked.connect(
+            self.onLoadPlaylistPath)
         self.uipList.clearButton.clicked.connect(self.onClearPlaylist)
 
         self.uipList.nextButton.clicked.connect(self.onPlaylistNext)
@@ -167,7 +175,8 @@ class MediaPlayerTab(GalacteekTab):
         self.pListView.activated.connect(self.onListActivated)
 
         self.togglePList = QToolButton()
-        self.togglePList.setIcon(self.style().standardIcon(QStyle.SP_ArrowRight))
+        self.togglePList.setIcon(self.style().standardIcon(
+            QStyle.SP_ArrowRight))
         self.togglePList.setFixedSize(32, 128)
         self.togglePList.clicked.connect(self.onTogglePlaylist)
 
@@ -180,7 +189,8 @@ class MediaPlayerTab(GalacteekTab):
         self.playButton.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
 
         self.pauseButton = QToolButton(clicked=self.onPauseClicked)
-        self.pauseButton.setIcon(self.style().standardIcon(QStyle.SP_MediaPause))
+        self.pauseButton.setIcon(self.style().standardIcon(
+            QStyle.SP_MediaPause))
         self.pauseButton.setEnabled(False)
 
         self.stopButton = QToolButton(clicked=self.onStopClicked)

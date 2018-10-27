@@ -1,9 +1,7 @@
-
 import asyncio
 
 from PyQt5.QtWidgets import QWidget, QStackedWidget, QStyle
-from PyQt5.QtCore import (QUrl, Qt, pyqtSignal, QRegularExpression,
-        QRegularExpressionMatchIterator)
+from PyQt5.QtCore import (Qt, pyqtSignal, QRegularExpression)
 from PyQt5.QtGui import QSyntaxHighlighter, QTextCharFormat, QFont
 
 from galacteek.ipfs.cidhelpers import cidValid
@@ -11,28 +9,34 @@ from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs import ipfssearch
 
 from . import ui_ipfssearchw, ui_ipfssearchwresults
-from . import ipfsview
 from .helpers import *
 from .hashmarks import *
 from .widgets import *
 from .i18n import *
 
+
 def iResultsInfo(count, maxScore):
-    return QCoreApplication.translate('IPFSSearchResults',
+    return QCoreApplication.translate(
+        'IPFSSearchResults',
         'Results count: <b>{0}</b> (max score: <b>{1}</b>)').format(
-                count, maxScore)
+        count,
+        maxScore)
+
 
 def iNoResults():
     return QCoreApplication.translate('IPFSSearchResults',
-        '<b>No results found</b>')
+                                      '<b>No results found</b>')
+
 
 def iErrFetching():
     return QCoreApplication.translate('IPFSSearchResults',
-        '<b>Error while fetching results</b>')
+                                      '<b>Error while fetching results</b>')
+
 
 def iSearching():
     return QCoreApplication.translate('IPFSSearchResults',
-        '<b>Searching ...</b>')
+                                      '<b>Searching ...</b>')
+
 
 class IPFSSearchResultsW(QWidget):
     def __init__(self, results, template, parent=None):
@@ -55,11 +59,11 @@ class IPFSSearchResultsW(QWidget):
                 continue
 
             ctxHits.append({
-                'path':  joinIpfs(hitHash),
+                'path': joinIpfs(hitHash),
                 'title': hit.get('title', iUnknown()),
-                'size':  hit.get('size', iUnknown()),
+                'size': hit.get('size', iUnknown()),
                 'descr': hit.get('description', ''),
-                'type':  hit.get('type', iUnknown()),
+                'type': hit.get('type', iUnknown()),
                 'first-seen': hit.get('first-seen', iUnknown())
             })
 
@@ -71,7 +75,7 @@ class IPFSSearchResultsW(QWidget):
         self.ui.browser.anchorClicked.connect(self.onAnchorClicked)
 
         self.highlighter = Highlighter(self.searchW.searchQuery,
-                self.ui.browser.document())
+                                       self.ui.browser.document())
 
     def onAnchorClicked(self, url):
         fragment = url.fragment()
@@ -88,7 +92,7 @@ class IPFSSearchResultsW(QWidget):
             descr = hit.get('description', iUnknown()) if hit else ''
 
             addHashmark(self.searchW.app.marksLocal,
-                    path, title, description=descr)
+                        path, title, description=descr)
 
         elif fragment == 'explore':
             mainW = self.searchW.app.mainWindow
@@ -97,25 +101,29 @@ class IPFSSearchResultsW(QWidget):
             tab = self.searchW.gWindow.addBrowserTab()
             tab.enterUrl(url)
 
+
 class EmptyResultsW(IPFSSearchResultsW):
     def render(self):
         self.ui.browser.setHtml(iNoResults())
+
 
 class ErrorPage(IPFSSearchResultsW):
     def render(self):
         self.ui.browser.setHtml(iErrFetching())
 
+
 class Highlighter(QSyntaxHighlighter):
     """
     Highlights the search query string in the results
     """
+
     def __init__(self, highStr, doc):
         super().__init__(doc)
 
-        self.highStr =  highStr
+        self.highStr = highStr
         self.fmt = QTextCharFormat()
-        self.fmt.setFontWeight(QFont.Bold);
-        self.fmt.setForeground(Qt.red);
+        self.fmt.setFontWeight(QFont.Bold)
+        self.fmt.setForeground(Qt.red)
 
     def highlightBlock(self, text):
         rExpr = QRegularExpression(self.highStr)
@@ -129,7 +137,8 @@ class Highlighter(QSyntaxHighlighter):
             if not match.isValid():
                 break
             self.setFormat(match.capturedStart(), match.capturedLength(),
-                    self.fmt)
+                           self.fmt)
+
 
 class IPFSSearchView(GalacteekTab):
     resultsReceived = pyqtSignal(ipfssearch.IPFSSearchResults, bool)
@@ -150,9 +159,9 @@ class IPFSSearchView(GalacteekTab):
         self.ui.prevPageButton.clicked.connect(self.onPrevPage)
         self.ui.nextPageButton.clicked.connect(self.onNextPage)
         self.ui.prevPageButton.setIcon(
-                self.style().standardIcon(QStyle.SP_MediaSkipBackward))
+            self.style().standardIcon(QStyle.SP_MediaSkipBackward))
         self.ui.nextPageButton.setIcon(
-                self.style().standardIcon(QStyle.SP_MediaSkipForward))
+            self.style().standardIcon(QStyle.SP_MediaSkipForward))
         self.stack.currentChanged.connect(self.onPageChanged)
         self.resultsReceived.connect(self.onResultsRx)
 
@@ -187,15 +196,15 @@ class IPFSSearchView(GalacteekTab):
 
     def onPageChanged(self, idx):
         self.ui.prevPageButton.setEnabled(idx > 0)
-        self.ui.nextPageButton.setEnabled(self.pageCount > idx+1)
+        self.ui.nextPageButton.setEnabled(self.pageCount > idx + 1)
 
     def onPrevPage(self):
         cIdx = self.currentPage
-        self.loadPage(cIdx-1)
+        self.loadPage(cIdx - 1)
 
     def onNextPage(self):
         cIdx = self.currentPage
-        self.loadPage(cIdx+1)
+        self.loadPage(cIdx + 1)
 
     def onComboPages(self, idx):
         self.loadPage(idx)
@@ -207,7 +216,7 @@ class IPFSSearchView(GalacteekTab):
 
         if not pageData:
             self.app.task(self.runSearchPage, self.searchQuery,
-                pageNum, True)
+                          pageNum, True)
         else:
             self.displayPage(pageNum)
             self.enableCombo()
@@ -251,9 +260,9 @@ class IPFSSearchView(GalacteekTab):
 
                 self.pageCount = pageCount
 
-                for pageNum in range(1, pageCount+1):
+                for pageNum in range(1, pageCount + 1):
                     self.ui.comboPages.insertItem(pageNum,
-                        'Page {}'.format(pageNum))
+                                                  'Page {}'.format(pageNum))
 
             self.resultsReceived.emit(sr, False)
 
@@ -273,9 +282,9 @@ class IPFSSearchView(GalacteekTab):
     def onResultsRx(self, sr, display):
         idx, page = self.addResultsPage(sr)
         self.pages[sr.page] = {
-                'results': sr,
-                'stackidx': idx,
-                'stackw': page
+            'results': sr,
+            'stackidx': idx,
+            'stackw': page
         }
         if display:
             self.displayPage(sr.page)

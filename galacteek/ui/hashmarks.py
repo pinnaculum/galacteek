@@ -111,7 +111,8 @@ class _MarksUpdater:
                 bmTitle = bm['metadata']['title']
 
                 if bmTitle:
-                    title = (bmTitle[:64] + '..') if len(bmTitle) > 64 else bmTitle
+                    title = (bmTitle[:64] + '..') if \
+                        len(bmTitle) > 64 else bmTitle
                     titleTooltip = bmTitle
                 else:
                     title = iUnknown()
@@ -155,7 +156,8 @@ class FeedsView(QWidget):
         self.tree.setModel(self.model)
         self.tree.doubleClicked.connect(self.onFeedDoubleClick)
         self.tree.setSortingEnabled(True)
-        self.tree.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.tree.header().setSectionResizeMode(
+            0, QHeaderView.ResizeToContents)
         self.tree.setAlternatingRowColors(True)
 
         self.updateFeeds()
@@ -230,9 +232,9 @@ class NetworkMarksView(QWidget, _MarksUpdater):
         self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self.onContextMenu)
 
-        self.ui.expandButton.clicked.connect(lambda:
-                                             self.tree.expandAll() if self.ui.expandButton.isChecked()
-                                             else self.tree.collapseAll())
+        self.ui.expandButton.clicked.connect(
+            lambda: self.tree.expandAll() if self.ui.expandButton.isChecked()
+            else self.tree.collapseAll())
 
         self.marks.changed.connect(self.doMarksUpdate)
 
@@ -310,9 +312,10 @@ class HashmarksTab(GalacteekTab, _MarksUpdater):
 
         self.ui.toolbox.addItem(self.uiFeeds, iFeeds())
         self.ui.toolbox.addItem(self.uiNet, iNetworkMarks())
-        self.ui.expandButton.clicked.connect(lambda:
-                                             self.ui.treeMarks.expandAll() if self.ui.expandButton.isChecked()
-                                             else self.ui.treeMarks.collapseAll())
+        self.ui.expandButton.clicked.connect(
+            lambda: self.ui.treeMarks.expandAll() if
+            self.ui.expandButton.isChecked() else
+            self.ui.treeMarks.collapseAll())
 
         self.filter = BasicKeyFilter()
         self.filter.deletePressed.connect(self.onDeletePressed)
@@ -328,7 +331,8 @@ class HashmarksTab(GalacteekTab, _MarksUpdater):
 
         self.ui.treeMarks.doubleClicked.connect(self.onMarkItemDoubleClick)
         self.ui.treeMarks.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.ui.treeMarks.customContextMenuRequested.connect(self.onContextMenu)
+        self.ui.treeMarks.customContextMenuRequested.connect(
+            self.onContextMenu)
 
         self.updatingMarks = False
         self.doMarksUpdate()
