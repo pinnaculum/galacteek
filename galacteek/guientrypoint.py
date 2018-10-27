@@ -12,13 +12,13 @@ from galacteek.core import glogger
 from galacteek.ipfs import distipfsfetch
 from galacteek.ui.helpers import *  # noqa
 from galacteek.ui.i18n import (
-        iGoIpfsFetchTimeout,
-        iGoIpfsNotFound,
-        iGoIpfsTooOld,
-        iGoIpfsFetchAsk,
-        iGoIpfsFetchError,
-        iGoIpfsFetchSuccess,
-        iFsRepoMigrateNotFound
+    iGoIpfsFetchTimeout,
+    iGoIpfsNotFound,
+    iGoIpfsTooOld,
+    iGoIpfsFetchAsk,
+    iGoIpfsFetchError,
+    iGoIpfsFetchSuccess,
+    iFsRepoMigrateNotFound
 )
 from galacteek import application
 from galacteek.appsettings import *  # noqa

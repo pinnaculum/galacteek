@@ -227,3 +227,6 @@ class PeerLogoutMessage(PubsubMessage):
     @property
     def peer(self):
         return self.parser.traverse('msg.peerid')
+
+    def valid(self):
+        return self.validSchema(schema=PeerLogoutMessage.schema)

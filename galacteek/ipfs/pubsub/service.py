@@ -311,7 +311,8 @@ class PSPeersService(JSONPubsubService):
 
     async def handleLogoutMessage(self, sender, msg):
         lMsg = PeerLogoutMessage(msg)
-        await self.ipfsCtx.peers.unregister(sender)
+        if lMsg.valid():
+            await self.ipfsCtx.peers.unregister(sender)
 
     async def handleIdentMessageV1(self, sender, msg):
         iMsg = PeerIdentMessageV1(msg)
