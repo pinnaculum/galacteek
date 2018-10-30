@@ -18,7 +18,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-__version__ = '0.2.5'
+__version__ = '0.2.6'
 
 from galacteek.core.asynclib import *
 from galacteek.core import glogger
