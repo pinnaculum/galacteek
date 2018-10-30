@@ -10,11 +10,13 @@ from galacteek import log, GALACTEEK_NAME, ensure
 
 from galacteek.ipfs import pinning
 from galacteek.ipfs.wrappers import ipfsOp
-from galacteek.ipfs.pubsub import (
-        PSMainService,
-        PSHashmarksExchanger,
-        PSPeersService)
+from galacteek.ipfs.pubsub.service import (
+    PSMainService,
+    PSHashmarksExchanger,
+    PSPeersService)
 from galacteek.ipfs.ipfsops import *
+from galacteek.ipfs import tunnel
+
 from galacteek.core.profile import UserProfile
 from galacteek.core.softident import gSoftIdent
 from galacteek.crypto.rsa import RSAExecutor
@@ -207,6 +209,7 @@ class P2PServices(QObject):
     def __init__(self, parent):
         super().__init__(parent)
         self.ctx = parent
+        self._manager = tunnel.P2PTunnelsManager()
         self._services = []
 
     @property
@@ -219,6 +222,9 @@ class P2PServices(QObject):
             'descr': srv.description,
             'protocol': srv.protocolName
         } for srv in self.services]
+
+    async def listeners(self):
+        return await self._manager.getListeners()
 
     @ipfsOp
     async def init(self, op):
@@ -314,7 +320,7 @@ class IPFSContext(QObject):
 
     @ipfsOp
     async def setup(self, ipfsop, pubsubEnable=True,
-                    pubsubHashmarksExch=False, p2pEnable=False):
+                    pubsubHashmarksExch=False, p2pEnable=True):
         self.rsaExec = RSAExecutor(loop=self.loop,
                                    executor=self.app.executor)
         await self.importSoftIdent()
@@ -376,7 +382,7 @@ class IPFSContext(QObject):
                 ma = re.search(r'profile\.([a-zA-Z\.\_\-]*)$', name)
                 if ma:
                     profileName = ma.group(1).rstrip()
-                    profile = await self.profileNew(profileName)
+                    await self.profileNew(profileName)
 
         defaultProfile = 'default'
 
