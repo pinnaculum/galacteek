@@ -8,7 +8,7 @@ from Cryptodome.Signature import pss
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Random import get_random_bytes
 from Cryptodome.Cipher import AES, PKCS1_OAEP
-from Crypto.Hash import SHA256
+from Cryptodome.Hash import SHA256
 
 from galacteek import log
 
