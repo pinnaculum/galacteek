@@ -3,6 +3,7 @@ import re
 import collections
 import time
 import os.path
+import copy
 
 from PyQt5.QtCore import (pyqtSignal, QObject)
 
@@ -103,10 +104,11 @@ class Peers(QObject):
         return [peer.ident.username for pid, peer in self.byPeerId.items()]
 
     async def unregister(self, peerId):
-        if peerId in self.byPeerId:
-            del self.byPeerId[peerId]
-        self.peerLogout.emit(peerId)
-        self.changed.emit()
+        with await self.lock:
+            if peerId in self.byPeerId:
+                del self.byPeerId[peerId]
+            self.peerLogout.emit(peerId)
+            self.changed.emit()
 
     @ipfsOp
     async def registerFromIdent(self, op, iMsg):
@@ -135,13 +137,16 @@ class Peers(QObject):
 
     async def watch(self):
         while True:
-            await asyncio.sleep(60)
+            await asyncio.sleep(1800)
 
             with await self.lock:
-                for peerId, pCtx in self.byPeerId.items():
+                log.debug('Peers: clearing unresponsive peers')
+                peersList = copy.copy(self.byPeerId)
+                for peerId, pCtx in peersList.items():
                     if pCtx.peerUnresponsive:
                         log.debug('{} unresponsive ..'.format(peerId))
                         await self.unregister(peerId)
+                del peersList
 
     async def stop(self):
         pass
