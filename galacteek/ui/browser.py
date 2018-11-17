@@ -246,18 +246,26 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
 class BrowserKeyFilter(QObject):
     hashmarkPressed = pyqtSignal()
     savePagePressed = pyqtSignal()
+    reloadPressed   = pyqtSignal()
 
     def eventFilter(self, obj, event):
         if event.type() == QEvent.KeyPress:
             modifiers = event.modifiers()
 
             key = event.key()
+            if key == Qt.Key_F5:
+                self.reloadPressed.emit()
+                return True
+
             if modifiers & Qt.ControlModifier:
                 if key == Qt.Key_B:
                     self.hashmarkPressed.emit()
                     return True
                 if key == Qt.Key_S:
                     self.savePagePressed.emit()
+                    return True
+                if key == Qt.Key_R:
+                    self.reloadPressed.emit()
                     return True
         return False
 
@@ -352,6 +360,7 @@ class BrowserTab(GalacteekTab):
         # Event filter
         evfilter = BrowserKeyFilter(self)
         evfilter.hashmarkPressed.connect(self.onHashmarkPage)
+        evfilter.reloadPressed.connect(self.onReloadPage)
         self.installEventFilter(evfilter)
 
         self.app.clipTracker.clipboardHasIpfs.connect(self.onClipboardIpfs)
@@ -441,6 +450,9 @@ class BrowserTab(GalacteekTab):
 
     def onToggledPinAll(self, checked):
         pass
+
+    def onReloadPage(self):
+        self.ui.webEngineView.reload()
 
     def onSavePage(self):
         page = self.webView.page()

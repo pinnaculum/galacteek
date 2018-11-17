@@ -8,6 +8,7 @@ from PyQt5.QtGui import QClipboard, QPixmap, QImage
 from galacteek import asyncify, ensure
 from galacteek.core.ipfsmarks import *
 from galacteek.core import countries
+from galacteek.core.profile import UserInfos
 from galacteek.ipfs import cidhelpers
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import ipfsOp, ipfsOpFn
@@ -242,6 +243,11 @@ def notEmpty(v):
 
 
 class ProfileEditDialog(QDialog):
+    genderMapping = {
+        'Unspecified': UserInfos.GENDER_UNSPECIFIED,
+        'Male': UserInfos.GENDER_MALE,
+        'Female': UserInfos.GENDER_FEMALE
+    }
     def __init__(self, profile, parent=None):
         super().__init__(parent)
 
@@ -250,6 +256,7 @@ class ProfileEditDialog(QDialog):
 
         self.ui = ui_profileeditdialog.Ui_ProfileEditDialog()
         self.ui.setupUi(self)
+        self.ui.tabWidget.setCurrentIndex(0)
 
         self.loadCountryData()
 
@@ -259,6 +266,13 @@ class ProfileEditDialog(QDialog):
         self.ui.lastname.setText(self.profile.userInfo.lastname)
         self.ui.email.setText(self.profile.userInfo.email)
         self.ui.org.setText(self.profile.userInfo.org)
+        self.ui.city.setText(self.profile.userInfo.city)
+        self.ui.bio.setText(self.profile.userInfo.bio)
+
+        for gender, gvalue in self.genderMapping.items():
+            self.ui.gender.addItem(gender)
+            if self.profile.userInfo.gender == gvalue:
+                self.ui.gender.setCurrentText(gender)
 
         if notEmpty(self.profile.userInfo.countryName):
             self.ui.countryBox.setCurrentText(
@@ -329,17 +343,28 @@ class ProfileEditDialog(QDialog):
     def save(self):
         kw = {}
         for key in ['username', 'firstname',
-                    'lastname', 'email', 'org']:
+                    'lastname', 'email', 'org',
+                    'city']:
             val = getattr(self.ui, key).text()
             ma = re.search(r"[a-zA-Z\_\-\@\.\+\'\´0-9\s]*", val)
             if ma:
                 kw[key] = val
+
+        try:
+            kw['bio'] = self.ui.bio.toPlainText()
+        except:
+            pass
 
         country = self.ui.countryBox.currentText()
         code = self.getCountryCode(country)
 
         if country and code:
             self.profile.userInfo.setCountryInfo(country, code)
+
+        genderSelected = self.ui.gender.currentText()
+        for gender, gvalue in self.genderMapping.items():
+            if genderSelected == gender:
+                kw['gender'] = gvalue
 
         self.profile.userInfo.setInfos(**kw)
         self.done(1)

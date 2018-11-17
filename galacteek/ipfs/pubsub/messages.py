@@ -87,21 +87,28 @@ class PeerIdentMessageV1(PubsubMessage):
                                     "cid": {"type": "string"},
                                     "ipns": {"type": "string"},
                                     "available": {"type": "boolean"}
-                                }
+                                },
+                                "required": [
+                                    "ipns",
+                                    "cid"
+                                ],
                             }
                         },
+                        "required": [
+                            "publicdag"
+                        ],
                     },
-
-                    "userinfoobjref": {"type": "string"},
                     "userinfo": {
                         "type": "object",
                         "properties": {
                             "username": {"type": "string"},
                             "firstname": {"type": "string"},
                             "lastname": {"type": "string"},
+                            "altname": {"type": "string"},
                             "email": {"type": "string"},
                             "gender": {"type": "integer"},
                             "org": {"type": "string"},
+                            "city": {"type": "string"},
                             "country": {
                                 "type": "object",
                                 "properties": {
@@ -110,7 +117,20 @@ class PeerIdentMessageV1(PubsubMessage):
                                 },
                             },
                             "date": {"type": "object"},
-                            "crypto": {"type": "object"},
+                            "crypto": {
+                                "type": "object",
+                                "properties": {
+                                    "rsa": {
+                                        "type": "object",
+                                        "properties": {
+                                            "pubkeypem": {"type": "string"}
+                                        }
+                                    }
+                                },
+                                "required": [
+                                    "rsa"
+                                ]
+                            }
                         },
                         "required": [
                             "username",
@@ -119,6 +139,8 @@ class PeerIdentMessageV1(PubsubMessage):
                             "email",
                             "gender",
                             "org",
+                            "city",
+                            "identtoken",
                             "country"
                         ],
                     },
@@ -142,8 +164,7 @@ class PeerIdentMessageV1(PubsubMessage):
                         'ipns': userDagIpns if userDagIpns else ''
                     },
                 },
-                'p2pservices': p2pServices,
-                'userinfoobjref': uInfoCid,
+                'p2pservices': p2pServices
             }
         })
         msg.data['msg'].update(userInfo)

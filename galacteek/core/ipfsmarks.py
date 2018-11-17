@@ -9,6 +9,8 @@ from async_generator import async_generator, yield_, yield_from_
 import asyncio
 import aiofiles
 
+from galacteek import log
+
 from PyQt5.QtCore import pyqtSignal, QObject
 
 
@@ -136,9 +138,13 @@ class IPFSMarks(QObject):
 
     def save(self):
         """ Save synchronously """
-        with open(self.path, 'w+t') as fd:
-            self.serialize(fd)
-            self.lastsaved = time.time()
+        try:
+            with open(self.path, 'w+t') as fd:
+                self.serialize(fd)
+                self.lastsaved = time.time()
+        except BaseException:
+            log.debug('Could not save hashmarks ({0}'.format(
+                self.path))
 
     async def saveAsync(self):
         async with aiofiles.open(self.path, 'w+t') as fd:

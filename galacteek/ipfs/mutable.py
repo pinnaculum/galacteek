@@ -1,5 +1,6 @@
 import asyncio
 import time
+import json
 
 from PyQt5.QtCore import (pyqtSignal, QObject)
 
@@ -131,3 +132,51 @@ class MutableIPFSJson(QObject):
 
     def upgrade(self):
         return False
+
+
+class CipheredIPFSJson(MutableIPFSJson):
+    def __init__(self, mfsFilePath, rsaHelper, **kw):
+        super().__init__(mfsFilePath)
+        self.rsaHelper = rsaHelper
+
+    def initObj(self):
+        return {}
+
+    @ipfsOp
+    async def loadIpfsObj(self, op):
+        self.debug('Loading ciphered object from {}'.format(self.mfsFilePath))
+
+        obj = await self.rsaHelper.decryptMfsFile(self.mfsFilePath)
+
+        if obj:
+            self._root = json.loads(obj.decode())
+            self.debug('Successfully loaded ciphered JSON: {}'.format(
+                self.root))
+            self.curEntry = await op.filesStat(self.mfsFilePath)
+            self.loaded.set_result(True)
+            self.evLoaded.set()
+        else:
+            self.debug('JSON empty or invalid, initializing')
+            self._root = self.initObj()
+            await self.ipfsSave()
+            self.loaded.set_result(True)
+            self.evLoaded.set()
+
+        self.parser = traverseParser(self.root)
+        if self.upgrade() is True:
+            await self.ipfsSave()
+
+        self.available.emit(self.root)
+
+    @ipfsOp
+    async def ipfsSave(self, op):
+        with await self.lock:
+            serialized = json.dumps(self.root).encode()
+            resp = await self.rsaHelper.encryptToMfs(serialized,
+                                                     self.mfsFilePath)
+
+            if resp is not None:
+                self.curEntry = await op.filesStat(self.mfsFilePath)
+                return True
+            else:
+                return False

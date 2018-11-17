@@ -204,7 +204,7 @@ class IPFSOperator(object):
             return None
         else:
             self.debug('filesWrite success {}'.format(resp))
-            return resp
+            return True
 
     async def filesWriteJsonObject(self, path, obj, create=True,
                                    truncate=True):

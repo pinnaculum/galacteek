@@ -6,7 +6,7 @@ import os.path
 
 from PyQt5.QtCore import (pyqtSignal, QObject)
 
-from galacteek import log, GALACTEEK_NAME, ensure
+from galacteek import log, logUser, GALACTEEK_NAME, ensure
 
 from galacteek.ipfs import pinning
 from galacteek.ipfs.wrappers import ipfsOp
@@ -226,6 +226,13 @@ class P2PServices(QObject):
     async def listeners(self):
         return await self._manager.getListeners()
 
+    async def streamsAll(self):
+        return await self._manager.streams()
+
+    async def register(self, service):
+        service.manager = self._manager
+        self._services.append(service)
+
     @ipfsOp
     async def init(self, op):
         if not await op.hasCommand('p2p') is True:
@@ -307,12 +314,19 @@ class IPFSContext(QObject):
         self._currentProfile = p
 
     @property
+    def rsaAgent(self):
+        if self.currentProfile:
+            return self.currentProfile.rsaAgent
+
+    @property
     def softIdent(self):
         return self._softIdent
 
     @softIdent.setter
     def softIdent(self, ident):
-        log.debug('Software ident changed: CID {}'.format(ident['Hash']))
+        msg = 'Software ident changed to: CID {}'.format(ident['Hash'])
+        log.debug(msg)
+        logUser.info(msg)
         self._softIdent = ident
 
     def hasRsc(self, name):
@@ -407,7 +421,7 @@ class IPFSContext(QObject):
             await profile.init()
         except Exception as e:
             log.debug('Could not initialize profile: {}'.format(
-                str(e)))
+                str(e)), exc_info=True)
             return None
         self.profiles[pName] = profile
         if emitavail is True:
