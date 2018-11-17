@@ -187,6 +187,22 @@ class PeerIdentMessageV1(PubsubMessage):
         return self.parser.traverse('msg.userinfo.country.name')
 
     @property
+    def city(self):
+        return self.parser.traverse('msg.userinfo.city')
+
+    @property
+    def location(self):
+        if self.country != '' and self.city != '':
+            return '{city}, {country}'.format(
+                city=self.city,
+                country=self.country
+            )
+        elif self.country != '':
+            return self.country
+        else:
+            return 'Unknown'
+
+    @property
     def dateCreated(self):
         return self.parser.traverse('msg.userinfo.date.created')
 

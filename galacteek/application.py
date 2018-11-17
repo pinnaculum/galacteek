@@ -36,7 +36,7 @@ from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.feeds import FeedFollower
 
-from galacteek.ui import mainui, downloads, browser
+from galacteek.ui import mainui, downloads, browser, peers
 from galacteek.ui.helpers import *
 from galacteek.ui.i18n import *
 
@@ -159,6 +159,7 @@ class GalacteekApplication(QApplication):
         self._debugEnabled = debug
 
         self.ipfsCtx = IPFSContext(self)
+        self.peersTracker = peers.PeersTracker(self.ipfsCtx)
 
         self.setupPaths()
         self.setupClipboard()
@@ -610,9 +611,8 @@ class GalacteekApplication(QApplication):
         for task in self.pendingTasks:
             self.debug('Pending task: {}'.format(task))
 
-    @asyncify
-    async def onExit(self):
-        await self.exitApp()
+    def onExit(self):
+        ensure(self.exitApp())
 
     async def exitApp(self):
         await self.stopIpfsServices()

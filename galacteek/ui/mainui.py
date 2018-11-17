@@ -13,6 +13,7 @@ from PyQt5 import QtWebEngineWidgets
 from PyQt5.QtGui import (QKeySequence,
                          QStandardItemModel)
 
+from galacteek import ensure
 from galacteek.core.glogger import loggerUser, easyFormatString
 from galacteek.core.asynclib import asyncify
 from galacteek.ui import mediaplayer
@@ -812,13 +813,12 @@ class MainWindow(QMainWindow):
         if ft:
             return self.ui.tabWidget.setCurrentWidget(ft)
 
-        self.peersTracker = peers.PeersTracker(self.app.ipfsCtx)
-        pMgr = peers.PeersManager(self, self.peersTracker)
+        pMgr = peers.PeersManager(self, self.app.peersTracker)
         self.registerTab(pMgr, name, current=current)
 
     def quit(self):
         # Qt and application exit
-        self.app.onExit()
+        ensure(self.app.exitApp())
 
     def closeEvent(self, event):
         event.ignore()

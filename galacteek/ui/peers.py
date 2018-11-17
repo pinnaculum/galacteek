@@ -1,10 +1,11 @@
 import os.path
+import asyncio
 
-from PyQt5.QtWidgets import QMenu, QHeaderView, QPushButton
+from PyQt5.QtWidgets import QMenu, QHeaderView, QPushButton, QComboBox
 from PyQt5.QtGui import QStandardItemModel
 from PyQt5.QtCore import QObject, QCoreApplication
 
-from galacteek import ensure
+from galacteek import ensure, log
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import *
 from galacteek.ipfs.ipfsops import *
@@ -28,6 +29,10 @@ def iPingAvg():
     return QCoreApplication.translate('PeersManager', 'Ping Average (ms)')
 
 
+def iLocation():
+    return QCoreApplication.translate('PeersManager', 'Location')
+
+
 def iInvalidDagCID(dagCid):
     return QCoreApplication.translate('PeersManager',
                                       'Invalid DAG CID: {0}').format(dagCid)
@@ -45,6 +50,7 @@ class PeersTracker(QObject):
             iUsername(),
             iPeerId(),
             iPingAvg(),
+            iLocation(),
             ''
         ])
         self.ctx = ctx
@@ -77,6 +83,8 @@ class PeersTracker(QObject):
         row = self._peersRows.get(peerId, None)
         if row:
             row[0].setText(peerCtx.ident.username)
+            row[1].setText(peerId)
+            row[3].setText(peerCtx.ident.location)
 
     def onPeerAdded(self, peerId):
         peerCtx = self.ctx.peers.getByPeerId(peerId)
@@ -90,18 +98,17 @@ class PeersTracker(QObject):
             UneditableItem(peerCtx.ident.username),
             UneditableItem(peerId),
             UneditableItem(str(peerCtx.pingavg)),
+            UneditableItem(peerCtx.ident.location),
             UneditableItem(''),
         ]
-        row2 = [
+        rowStatus = [
             UneditableItem('Joined: {0}'.format(peerCtx.ident.dateCreated)),
             UneditableItem(peerId),
         ]
 
         self.modelRoot.appendRow(row)
-
+        row[0].appendRow(rowStatus)
         self._peersRows[peerId] = row
-        root = row[0]
-        root.appendRow(row2)
 
     def onPeersChange(self):
         pass
@@ -111,6 +118,7 @@ class PeersManager(GalacteekTab):
     def __init__(self, gWindow, peersTracker, **kw):
         super().__init__(gWindow, **kw)
 
+        self.lock = asyncio.Lock()
         self.peersTracker = peersTracker
         self.ui = ui_peersmgr.Ui_PeersManager()
         self.ui.setupUi(self)
@@ -131,6 +139,7 @@ class PeersManager(GalacteekTab):
 
         self.app.ipfsCtx.peers.changed.connect(self.onPeersChange)
         self.app.ipfsCtx.peers.peerAdded.connect(self.onPeerAdded)
+        ensure(self.refreshControls())
 
     @property
     def model(self):
@@ -145,9 +154,14 @@ class PeersManager(GalacteekTab):
         self.ui.peersCountLabel.setText(str(self.app.ipfsCtx.peers.peersCount))
 
     def onPeerAdded(self, peerId):
-        def openPeer(id):
+        ensure(self.refreshControls())
+
+    async def refreshControls(self):
+        def openPeerHome(idx, id):
+            log.debug('openPeerHome: {0} {1}'.format(idx, id))
+            method = 'ipns' if idx == 1 else 'direct'
             peerCtx = self.peersTracker.ctx.peers.getByPeerId(id)
-            ensure(self.explorePeerHome(peerCtx))
+            ensure(self.explorePeerHome(peerCtx, method=method))
 
         def followPeer(id):
             peerCtx = self.peersTracker.ctx.peers.getByPeerId(id)
@@ -156,15 +170,19 @@ class PeersManager(GalacteekTab):
                       joinIpns(peerCtx.ident.dagIpns),
                       feedName=peerCtx.ident.username)
 
-        for peerId, row in self.peersTracker.peersRows.items():
-            idx = self.model.indexFromItem(row[3])
-            if self.ui.tree.indexWidget(idx) is not None:
-                continue
-            btnEx = QPushButton('Homepage')
-            btnEx.setFixedSize(100, 20)
-            btnEx.clicked.connect(lambda: openPeer(peerId))
+        with await self.lock:
+            for peerId, row in self.peersTracker.peersRows.items():
+                idx = self.model.indexFromItem(row[4])
+                if self.ui.tree.indexWidget(idx) is not None:
+                    continue
 
-            self.ui.tree.setIndexWidget(idx, btnEx)
+                btnHomeCombo = QComboBox()
+                btnHomeCombo.addItem('Browse homepage (direct)')
+                btnHomeCombo.addItem('Browse homepage (IPNS)')
+                btnHomeCombo.activated.connect(
+                    lambda idx: openPeerHome(idx, peerId))
+
+                self.ui.tree.setIndexWidget(idx, btnHomeCombo)
 
     def onContextMenu(self, point):
         idx = self.tree.indexAt(point)
@@ -182,7 +200,7 @@ class PeersManager(GalacteekTab):
         ensure(self.explorePeerHome(peerCtx))
 
     @ipfsOp
-    async def explorePeerHome(self, op, peerCtx):
+    async def explorePeerHome(self, op, peerCtx, method='direct'):
         identMsg = peerCtx.ident
 
         dagCid = identMsg.dagCid
@@ -190,5 +208,9 @@ class PeersManager(GalacteekTab):
             log.debug('invalid DAG CID: {}'.format(dagCid))
             return messageBox(iInvalidDagCID(dagCid))
 
-        self.gWindow.addBrowserTab().browseFsPath(
-            os.path.join(joinIpns(identMsg.dagIpns), 'index.html'))
+        if method == 'ipns':
+            self.gWindow.addBrowserTab().browseFsPath(
+                os.path.join(joinIpns(identMsg.dagIpns), 'index.html'))
+        elif method == 'direct':
+            self.gWindow.addBrowserTab().browseFsPath(
+                os.path.join(joinIpfs(identMsg.dagCid), 'index.html'))
