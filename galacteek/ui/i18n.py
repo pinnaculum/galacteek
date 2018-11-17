@@ -24,14 +24,14 @@ def iErrNoCx():
 def iCxButNoPeers(id, agent):
     return QCoreApplication.translate(
         'GalacteekWindow',
-        'IPFS node: {0} ({1}): not connected to any peers').format(
+        'IPFS ({1}): not connected to any peers').format(
         id, agent)
 
 
 def iConnectStatus(id, agent, peerscount):
     return QCoreApplication.translate(
         'GalacteekWindow',
-        'IPFS node: {0} ({1}): connected to {2} peer(s)').format(
+        'IPFS ({1}): connected to {2} peer(s)').format(
         id, agent, peerscount)
 
 

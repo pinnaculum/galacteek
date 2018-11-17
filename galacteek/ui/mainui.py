@@ -1,3 +1,4 @@
+from logbook import Logger, StreamHandler, Handler, StringFormatterHandlerMixin
 import os.path
 import copy
 
@@ -5,13 +6,14 @@ from PyQt5.QtWidgets import (
     QMainWindow, QDialog,
     QPushButton, QVBoxLayout,
     QMenu, QAction, QActionGroup, QToolButton,
-    QTreeView, QHeaderView, QInputDialog)
+    QTreeView, QHeaderView, QInputDialog, QLabel)
 from PyQt5.QtCore import (QCoreApplication, Qt,
                           QTimer, QDateTime)
 from PyQt5 import QtWebEngineWidgets
 from PyQt5.QtGui import (QKeySequence,
                          QStandardItemModel)
 
+from galacteek.core.glogger import loggerUser, easyFormatString
 from galacteek.core.asynclib import asyncify
 from galacteek.ui import mediaplayer
 from galacteek.ipfs.wrappers import *
@@ -115,13 +117,27 @@ def iPinningItemStatus(pinPath, pinProgress):
 def iAbout():
     from galacteek import __version__
     return QCoreApplication.translate('GalacteekWindow', '''
-        <p><b>Galacteek</b> is a simple IPFS browser and content publisher
+        <p><b>Galacteek</b> is a Qt5 based IPFS browser
         </p>
         <p>Author: David Ferlier</p>
         <p>Galacteek version {0}</p>''').format(__version__)
 
 
-class InfosDialog(QDialog):
+class MainWindowLogHandler(Handler, StringFormatterHandlerMixin):
+    def __init__(self, application_name=None, address=None,
+                 facility='user', level=0, format_string=None,
+                 filter=None, bubble=False, window=None):
+        Handler.__init__(self, level, filter, bubble)
+        StringFormatterHandlerMixin.__init__(self, format_string)
+        self.application_name = application_name
+        self.window = window
+        self.format_string = easyFormatString
+
+    def emit(self, record):
+        self.window.statusMessage(self.format(record))
+
+
+class IPFSInfosDialog(QDialog):
     def __init__(self, app, parent=None):
         super().__init__(parent)
 
@@ -219,6 +235,9 @@ class MainWindow(QMainWindow):
         self.ui = ui_galacteek.Ui_GalacteekWindow()
         self.ui.setupUi(self)
 
+        loggerUser.handlers.append(
+            MainWindowLogHandler(window=self, level='DEBUG'))
+
         self.tabnFManager = iFileManager()
         self.tabnKeys = iKeys()
         self.tabnPinning = iPinningStatus()
@@ -300,6 +319,7 @@ class MainWindow(QMainWindow):
 
         self.ui.menuUser_Profile.addSeparator()
         self.ui.menuUser_Profile.triggered.connect(self.onUserProfile)
+        self.ui.actionNew_Profile.setEnabled(False)
         self.profilesActionGroup = QActionGroup(self)
 
         # Status bar setup
@@ -327,10 +347,11 @@ class MainWindow(QMainWindow):
         self.ui.profileEditButton.setPopupMode(QToolButton.MenuButtonPopup)
         self.ui.profileEditButton.setMenu(self.profileMenu)
 
+        self.ui.ipfsStatusLabel = QLabel()
+        self.ui.statusbar.addPermanentWidget(self.ui.ipfsStatusLabel)
         self.ui.statusbar.addPermanentWidget(self.ui.ipfsInfosButton)
         self.ui.statusbar.addPermanentWidget(self.ui.pinningStatusButton)
         self.ui.statusbar.addPermanentWidget(self.ui.pubsubStatusButton)
-        self.ui.statusbar.setStyleSheet('background-color: #4a9ea1')
 
         # Connection status timer
         self.timerStatus = QTimer(self)
@@ -374,6 +395,9 @@ class MainWindow(QMainWindow):
 
     @asyncify
     async def onProfileChanged(self, pName, profile):
+        if not profile.initialized:
+            return
+
         self.ui.profileEditButton.setEnabled(False)
         await profile.userInfo.loaded
         self.ui.profileEditButton.setEnabled(True)
@@ -408,7 +432,6 @@ class MainWindow(QMainWindow):
         runDialog(ProfilePostMessageDialog, self.app.ipfsCtx.currentProfile)
 
     def onProfileViewHomepage(self):
-        # self.addBrowserTab().browseIpnsHash(self.app.ipfsCtx.currentProfile.keyRootId)
         self.addBrowserTab().browseFsPath(os.path.join(
             joinIpns(self.app.ipfsCtx.currentProfile.keyRootId), 'index.html'))
 
@@ -431,7 +454,7 @@ class MainWindow(QMainWindow):
         self.enableButtons()
 
     def onIpfsInfos(self):
-        dlg = InfosDialog(self.app)
+        dlg = IPFSInfosDialog(self.app)
         dlg.setWindowTitle(iIpfsInfos())
         self.app.task(dlg.loadInfos)
         dlg.exec_()
@@ -643,7 +666,7 @@ class MainWindow(QMainWindow):
             try:
                 info = await oper.client.core.id()
             except BaseException:
-                return self.statusMessage(iErrNoCx())
+                return self.ui.ipfsStatusLabel.setText(iErrNoCx())
 
             nodeId = info.get('ID', iUnknown())
             nodeAgent = info.get('AgentVersion', iUnknownAgent())
@@ -651,11 +674,11 @@ class MainWindow(QMainWindow):
             # Get IPFS peers list
             peers = await oper.peersList()
             if not peers:
-                return self.statusMessage(iCxButNoPeers(
-                    nodeId, nodeAgent))
+                return self.ui.ipfsStatusLabel.setText(
+                    iCxButNoPeers(nodeId, nodeAgent))
 
             message = iConnectStatus(nodeId, nodeAgent, len(peers))
-            self.statusMessage(message)
+            self.ui.ipfsStatusLabel.setText(message)
 
         await connectionInfo()
 

@@ -6,10 +6,10 @@ Galacteek
 .. image:: https://gitlab.com/galacteek/galacteek/raw/master/share/icons/ipfs-logo-128-white.png
     :align: center
 
-:info: An async IPFS_ browser and exchanger
+:info: An async IPFS_ browser
 
-**galacteek** is an asynchronous Qt5-based browser and toolbox for the IPFS_
-peer-to-peer network.
+**galacteek** is an experimental asynchronous Qt5-based browser and toolbox
+for the IPFS_ peer-to-peer network.
 
 Installation
 ============
@@ -71,7 +71,7 @@ each peer.
 - Browsing sessions with automatic pinning (pins every page you browse)
 - Feeds (following IPNS hashes)
 - File manager with drag-and-drop support
-- Basic built-in media player with IPFS-stored, per-profile playlists
+- Basic built-in media player with IPFS-stored playlists
 - Search content with the ipfs-search_ search engine
 - Decentralized application development/testing with the Javascript API
   (using *window.ipfs*)
@@ -95,6 +95,7 @@ Browser keybindings:
 
 - **Ctrl+b**: Bookmark current page
 - **Ctrl+l**: Load an IPFS CID
+- **Ctrl+r** or **F5**: Reload the current page
 
 IPFS views keybindings (file manager, hash views, dag viewer):
 --------------------------------------------------------------

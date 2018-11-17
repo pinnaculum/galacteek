@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE TS><TS version="2.0" language="fr" sourcelanguage="">
+<!DOCTYPE TS>
+<TS version="2.1" language="fr">
 <context>
     <name>AddFeedDialog</name>
     <message>
@@ -610,12 +611,12 @@ p, li { white-space: pre-wrap; }
     <message>
         <location filename="../../galacteek/ui/i18n.py" line="160"/>
         <source>Error: go-ipfs version found on your system is too old</source>
-        <translation type="unfinished"></translation>
+        <translation>Erreur: votre version de go-ipfs est trop ancienne</translation>
     </message>
     <message>
         <location filename="../../galacteek/ui/i18n.py" line="148"/>
         <source>Warning: could not find IPFS repository migration tool</source>
-        <translation type="unfinished"></translation>
+        <translation>Avertissement: impossible de trouver l&apos;outil de migration de repos IPFS</translation>
     </message>
 </context>
 <context>
@@ -736,7 +737,7 @@ p, li { white-space: pre-wrap; }
         <translation>Fermer toutes les tabs</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="96"/>
+        <location filename="../../galacteek/ui/mainui.py" line="98"/>
         <source>New Profile</source>
         <translation>Nouveau profil</translation>
     </message>
@@ -746,85 +747,85 @@ p, li { white-space: pre-wrap; }
         <translation>Donations</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="31"/>
+        <location filename="../../galacteek/ui/mainui.py" line="33"/>
         <source>Hashmarks</source>
         <translation>Hashmarks</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="35"/>
+        <location filename="../../galacteek/ui/mainui.py" line="37"/>
         <source>File Manager</source>
         <translation>Gestionnaire de fichiers</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="39"/>
+        <location filename="../../galacteek/ui/mainui.py" line="41"/>
         <source>IPFS Keys</source>
         <translation>Clés IPFS</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="47"/>
+        <location filename="../../galacteek/ui/mainui.py" line="49"/>
         <source>DAG viewer</source>
         <translation>Visualisateur DAG</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="59"/>
+        <location filename="../../galacteek/ui/mainui.py" line="61"/>
         <source>Search: {0}</source>
         <translation>Recherche: {0}</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="64"/>
+        <location filename="../../galacteek/ui/mainui.py" line="66"/>
         <source>Clipboard: browse IPFS path: {0}</source>
         <translation>Presse-papiers: visiter le chemin: {0}</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="70"/>
+        <location filename="../../galacteek/ui/mainui.py" line="72"/>
         <source>No valid IPFS CID/path in the clipboard</source>
         <translation>Aucun CID/chemin IPFS valide dans le presse-papier</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="76"/>
+        <location filename="../../galacteek/ui/mainui.py" line="78"/>
         <source>Clear clipboard history</source>
         <translation>Effacer l&apos;historique du presse-papier</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="82"/>
+        <location filename="../../galacteek/ui/mainui.py" line="84"/>
         <source>Explore IPFS path: {0}</source>
         <translation>Explorer le chemin IPFS: {0}</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="87"/>
+        <location filename="../../galacteek/ui/mainui.py" line="89"/>
         <source>DAG view: {0}</source>
         <translation>Vue du DAG: {0}</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="92"/>
+        <location filename="../../galacteek/ui/mainui.py" line="94"/>
         <source>Clipboard history</source>
         <translation>Historique du presse-papier</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="100"/>
+        <location filename="../../galacteek/ui/mainui.py" line="102"/>
         <source>Successfully switched profile</source>
         <translation>Changement du profil effectué</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="105"/>
+        <location filename="../../galacteek/ui/mainui.py" line="107"/>
         <source>Browse IPFS path: {0}</source>
         <translation>Naviguer sur le chemin IPFS: {0}</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="110"/>
+        <location filename="../../galacteek/ui/mainui.py" line="112"/>
         <source>
 Path: {0}, nodes processed: {1}</source>
         <translation>
 Chemin: {0}, nodes traitées: {1}</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="117"/>
+        <location filename="../../galacteek/ui/mainui.py" line="118"/>
         <source>
         &lt;p&gt;&lt;b&gt;Galacteek&lt;/b&gt; is a simple IPFS browser and content publisher
         &lt;/p&gt;
         &lt;p&gt;Author: David Ferlier&lt;/p&gt;
         &lt;p&gt;Galacteek version {0}&lt;/p&gt;</source>
-        <translation>
+        <translation type="obsolete">
         &lt;p&gt;&lt;b&gt;Galacteek&lt;/b&gt; est un navigateur et publicateur de contenus pour IPFS
         &lt;/p&gt;
         &lt;p&gt;Auteur: David Ferlier&lt;/p&gt;
@@ -848,12 +849,12 @@ Chemin: {0}, nodes traitées: {1}</translation>
     <message>
         <location filename="../../galacteek/ui/i18n.py" line="25"/>
         <source>IPFS node: {0} ({1}): not connected to any peers</source>
-        <translation>Noeud IPFS: {0} ({1}): non connecté</translation>
+        <translation type="obsolete">Noeud IPFS: {0} ({1}): non connecté</translation>
     </message>
     <message>
         <location filename="../../galacteek/ui/i18n.py" line="32"/>
         <source>IPFS node: {0} ({1}): connected to {2} peer(s)</source>
-        <translation>Noeud IPFS: {0} ({1}): connecté a {2} pair(s)</translation>
+        <translation type="obsolete">Noeud IPFS: {0} ({1}): connecté a {2} pair(s)</translation>
     </message>
     <message>
         <location filename="../../galacteek/ui/i18n.py" line="45"/>
@@ -896,7 +897,7 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation>Media Player</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="43"/>
+        <location filename="../../galacteek/ui/mainui.py" line="45"/>
         <source>Pinning status</source>
         <translation>Statut des pins</translation>
     </message>
@@ -923,32 +924,55 @@ Chemin: {0}, nodes traitées: {1}</translation>
     <message>
         <location filename="../../galacteek/ui/galacteek.ui" line="419"/>
         <source>Tools</source>
-        <translation type="unfinished"></translation>
+        <translation>Outils</translation>
     </message>
     <message>
         <location filename="../../galacteek/ui/galacteek.ui" line="485"/>
         <source>Event log</source>
-        <translation type="unfinished"></translation>
+        <translation>Logs IPFS</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="51"/>
+        <location filename="../../galacteek/ui/mainui.py" line="53"/>
         <source>Event Log</source>
-        <translation type="unfinished"></translation>
+        <translation>Logs IPFS</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="55"/>
+        <location filename="../../galacteek/ui/mainui.py" line="57"/>
         <source>Peers</source>
-        <translation type="unfinished"></translation>
+        <translation>Pairs</translation>
     </message>
     <message>
         <location filename="../../galacteek/ui/galacteek.ui" line="236"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;User Profile&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Profil utilisateur&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
         <location filename="../../galacteek/ui/galacteek.ui" line="216"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Peers&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pairs&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/i18n.py" line="32"/>
+        <source>IPFS ({1}): connected to {2} peer(s)</source>
+        <translation>IPFS ({1}): connecté a {2} pair(s)</translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/mainui.py" line="119"/>
+        <source>
+        &lt;p&gt;&lt;b&gt;Galacteek&lt;/b&gt; is a Qt5 based IPFS browser
+        &lt;/p&gt;
+        &lt;p&gt;Author: David Ferlier&lt;/p&gt;
+        &lt;p&gt;Galacteek version {0}&lt;/p&gt;</source>
+        <translation>
+        &lt;p&gt;&lt;b&gt;Galacteek&lt;/b&gt; est un navigateur IPFS basé sur Qt5
+        &lt;/p&gt;
+        &lt;p&gt;Author: David Ferlier&lt;/p&gt;
+        &lt;p&gt;Galacteek version {0}&lt;/p&gt;</translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/i18n.py" line="25"/>
+        <source>IPFS ({1}): not connected to any peers</source>
+        <translation>IPFS ({1}): pas de connexion</translation>
     </message>
 </context>
 <context>

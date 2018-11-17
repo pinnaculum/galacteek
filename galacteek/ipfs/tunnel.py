@@ -37,7 +37,15 @@ class P2PListener(object):
     :param factory: protocol factory
     """
 
-    def __init__(self, client, protocol, addressRange, factory, loop=None):
+    def __init__(
+            self,
+            service,
+            client,
+            protocol,
+            addressRange,
+            factory,
+            loop=None):
+        self.service = service
         self.client = client
         self._protocol = protocol
         self._addressRange = addressRange
@@ -74,8 +82,8 @@ class P2PListener(object):
 
     async def open(self):
         addrSrv = await self.createServer(
-                host=self.addressRange[0],
-                portRange=self.addressRange[1]
+            host=self.addressRange[0],
+            portRange=self.addressRange[1]
         )
 
         if addrSrv is None:
@@ -141,9 +149,17 @@ class P2PTunnelsManager:
     @ipfsOp
     async def streams(self, op):
         try:
-            return await op.client.p2p.stream_ls(headers=True)
+            resp = await op.client.p2p.stream_ls(headers=True)
+            return resp['Streams']
         except aioipfs.APIError:
             return None
+
+    @ipfsOp
+    async def streamsForProtocol(self, op, protocol):
+        allStreams = await self.streams()
+        if allStreams:
+            return [stream for stream in allStreams if
+                    stream['Protocol'] == protocol]
 
 
 @ipfsOpFn
@@ -155,12 +171,13 @@ async def dial(op, peer, protocol, address=None):
     if resp:
         maddr = resp.get('Address', None)
         if not maddr:
-            return
+            return (None, 0)
 
         ipaddr, port = multiAddrTcp4(maddr)
 
         if ipaddr is None or port is 0:
-            return
+            return (None, 0)
 
-        reader, writer = await loop.create_connection(
-            lambda: P2PProtocol(), '127.0.0.1', port)
+        return (ipaddr, port)
+    else:
+        return (None, 0)

@@ -259,6 +259,9 @@ class PSPeersService(JSONPubsubService):
 
     @asyncify
     async def onProfileChanged(self, pName, profile):
+        if not profile.initialized:
+            return
+
         await profile.userInfo.loaded
 
         try:
@@ -282,6 +285,9 @@ class PSPeersService(JSONPubsubService):
 
     @ipfsOp
     async def sendIdent(self, op, profile):
+        if not profile.initialized:
+            return
+
         nodeId = op.ctx.node.id
         uInfo = profile.userInfo
 

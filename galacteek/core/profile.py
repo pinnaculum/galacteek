@@ -1,29 +1,29 @@
 import os.path
 import uuid
 import pkg_resources
+import secrets
 from datetime import datetime
 from io import BytesIO
 
 import aiofiles
 import aioipfs
+import asyncio
 
-from PyQt5.QtCore import QObject
+from PyQt5.QtCore import QObject, pyqtSignal
 
-from galacteek import log, ensure
-from galacteek.ipfs.mutable import MutableIPFSJson
+from galacteek import log, logUser, ensure
+from galacteek.ipfs.mutable import MutableIPFSJson, CipheredIPFSJson
 from galacteek.ipfs.dag import EvolvingDAG
 from galacteek.ipfs.wrappers import ipfsOp
+from galacteek.ipfs.encrypt import IpfsRSAAgent
 from galacteek.core.asynclib import asyncReadFile
 from galacteek.web import render
 
 
-class UserInfos(MutableIPFSJson):
+class UserInfos(CipheredIPFSJson):
     GENDER_MALE = 0
     GENDER_FEMALE = 1
     GENDER_UNSPECIFIED = -1
-
-    def __init__(self, ipfsFilePath, **kw):
-        super().__init__(ipfsFilePath)
 
     def initObj(self):
         uid = str(uuid.uuid4())
@@ -34,6 +34,7 @@ class UserInfos(MutableIPFSJson):
                 'firstname': '',
                 'lastname': '',
                 'altname': '',
+                'nickname': '',
                 'gender': -1,
                 'org': '',
                 'email': '',
@@ -42,16 +43,21 @@ class UserInfos(MutableIPFSJson):
                     'name': '',
                 },
                 'city': '',
+                'birthdate': '',
+                'birthplace': '',
+                'occupation': '',
+                'telephone': '',
                 'langs': [],
                 'avatar': {
                     'cid': '',
                 },
+                'bio': '',
+                'motto': '',
                 'crypto': {
-                    'rsa': {
-                        'pubkeypem': None,
-                    },
+                    'rsa': {},
                     'gpg': {},
                 },
+                'resources': [],
                 'peerid': '',
                 'date': {
                     'created': datetime.now().isoformat(' ', 'seconds'),
@@ -76,6 +82,10 @@ class UserInfos(MutableIPFSJson):
         return self.parser.traverse('userinfo.avatar.cid')
 
     @property
+    def bio(self):
+        return self.parser.traverse('userinfo.bio')
+
+    @property
     def username(self):
         return self.parser.traverse('userinfo.username')
 
@@ -92,8 +102,16 @@ class UserInfos(MutableIPFSJson):
         return self.parser.traverse('userinfo.email')
 
     @property
+    def gender(self):
+        return self.parser.traverse('userinfo.gender')
+
+    @property
     def org(self):
         return self.parser.traverse('userinfo.org')
+
+    @property
+    def city(self):
+        return self.parser.traverse('userinfo.city')
 
     @property
     def countryName(self):
@@ -108,6 +126,10 @@ class UserInfos(MutableIPFSJson):
         return self.parser.traverse('userinfo.locked')
 
     @property
+    def identToken(self):
+        return self.parser.traverse('userinfo.identtoken')
+
+    @property
     def schemaVersion(self):
         return self.parser.traverse('userinfo.schemav')
 
@@ -120,6 +142,7 @@ class UserInfos(MutableIPFSJson):
         if self.locked:
             return
         self.root['userinfo']['avatar']['cid'] = cid
+        self.updateModifiedDate()
         self.changed.emit()
 
     def setCountryInfo(self, name, code):
@@ -128,6 +151,7 @@ class UserInfos(MutableIPFSJson):
         sec = self.root['userinfo']['country']
         sec['name'] = name
         sec['code'] = code
+        self.updateModifiedDate()
         self.changed.emit()
 
     def setInfos(self, **kw):
@@ -137,9 +161,18 @@ class UserInfos(MutableIPFSJson):
             if key not in self.root['userinfo'].keys():
                 continue
             self.root['userinfo'][key] = val
-        self.root['userinfo']['modified'] = datetime.now().isoformat(
-            ' ', 'seconds')
+        self.updateModifiedDate()
         self.changed.emit()
+
+    def updateModifiedDate(self):
+        self.root['userinfo']['date']['modified'] = datetime.now().isoformat(
+            ' ', 'seconds')
+
+    def updateIdentToken(self):
+        token = self.root['userinfo'].get('identtoken', None)
+        if not token:
+            self.root['userinfo']['identtoken'] = secrets.token_hex(128)
+            self.changed.emit()
 
     def setLock(self, lock=False):
         self.root['userinfo']['locked'] = lock
@@ -221,6 +254,10 @@ class UserApp(QObject):
                     self.profile.ctx.resources['ipfs-cube-64'])
 
 
+class ProfileError(Exception):
+    pass
+
+
 class UserProfile(QObject):
     """ User profile object """
 
@@ -232,6 +269,8 @@ class UserProfile(QObject):
         self._ctx = ctx
         self._name = name
         self._rootDir = rootDir
+        self._initialized = False
+
         self.keyRoot = 'galacteek.{}.root'.format(self.name)
         self.keyRootId = None
 
@@ -246,11 +285,23 @@ class UserProfile(QObject):
         self._filesModel = None
 
         self._dagUser = None
-        self.userInfo = UserInfos(self.pathUserInfo)
-        self.rsa = self.ctx.rsaExec
+        self.userInfo = None
+
+        self.rsaAgent = None
 
     def debug(self, msg):
         log.debug('Profile {0}: {1}'.format(self.name, msg))
+
+    def userLogInfo(self, msg):
+        logUser.info('profile ({0}): {1}'.format(self.name, msg))
+
+    @property
+    def initialized(self):
+        return self._initialized
+
+    @property
+    def rsaExec(self):
+        return self.ctx.rsaExec
 
     @property
     def rsaPrivKeyPath(self):
@@ -354,7 +405,7 @@ class UserProfile(QObject):
 
     @property
     def pathUserInfo(self):
-        return os.path.join(self.pathData, 'userinfo.json')
+        return os.path.join(self.pathData, 'userinfo.json.enc')
 
     @property
     def pathUserDagMeta(self):
@@ -369,14 +420,23 @@ class UserProfile(QObject):
         Initialize the profile's filesystem
         """
 
+        self.userLogInfo('Initializing filesystem')
+
         await ipfsop.filesMkdir(self.root)
 
         for directory in self.tree:
             await ipfsop.filesMkdir(directory)
 
+        self.userLogInfo('Initializing crypto')
+
+        if not await self.cryptoInit():
+            self.userLogInfo('Error while initializing crypto')
+            raise ProfileError('Crypto init failed')
+
         keysNames = await ipfsop.keysNames()
 
         if self.keyRoot not in keysNames:
+            self.userLogInfo('Generating main IPNS key')
             await ipfsop.keyGen(self.keyRoot)
 
         key = await ipfsop.keyFind(self.keyRoot)
@@ -384,9 +444,6 @@ class UserProfile(QObject):
             self.keyRootId = key.get('Id', None)
 
         self.debug('IPNS key({0}): {1}'.format(self.keyRoot, self.keyRootId))
-
-        ensure(self.userInfo.load())
-        await self.userInfo.evLoaded.wait()
 
         if self.userInfo.avatarCid == '' and self.ctx.hasRsc('ipfs-logo-ice'):
             self.userInfo.setAvatarCid(
@@ -397,6 +454,7 @@ class UserProfile(QObject):
             self.userInfo.changed.emit()
 
         if await ipfsop.hasDagCommand():
+            self.userLogInfo('Loading DAG ..')
             self._dagUser = UserDAG(self.pathUserDagMeta, loop=self.ctx.loop)
 
             ensure(self.dagUser.load())
@@ -407,18 +465,21 @@ class UserProfile(QObject):
             self.app = UserApp(self)
             await self.app.init()
             ensure(self.update())
+            self.userLogInfo('Loaded')
         else:
             self.debug('DAG api not available !')
 
+        self._initialized = True
+        self.userLogInfo('Initialization complete')
         self.userInfo.changed.connect(self.onUserInfoChanged)
-        ensure(self.initCrypto())
 
     @ipfsOp
-    async def initCrypto(self, op):
+    async def cryptoInit(self, op):
         if not os.path.isfile(self.rsaPrivKeyPath) and \
                 not os.path.isfile(self.rsaPubKeyPath):
+            self.userLogInfo('Creating RSA keypair')
 
-            privKey, pubKey = await self.rsa.genKeys()
+            privKey, pubKey = await self.rsaExec.genKeys()
             if privKey is None or pubKey is None:
                 self.debug('RSA: keygen failed')
                 return False
@@ -431,8 +492,20 @@ class UserProfile(QObject):
                     await fd.write(pubKey)
             except Exception as err:
                 self.debug('RSA: could not save keys: {}'.format(str(err)))
+                self.userLogInfo('Error while saving RSA keys!')
                 return False
+            else:
+                self.userLogInfo('Successfully created RSA keypair')
 
+        if not await self.cryptoRegisterKeys():
+            self.debug('RSA: failed to register keys')
+            return False
+
+        return True
+
+    @ipfsOp
+    async def cryptoRegisterKeys(self, op):
+        self.userLogInfo('Registering keys')
         try:
             pubKey = await asyncReadFile(self.rsaPubKeyPath)
             if pubKey is None:
@@ -440,7 +513,8 @@ class UserProfile(QObject):
                 raise Exception('pubkey error')
             self.rsaPubKey = pubKey
         except Exception as e:
-            self.debug('RSA: error while importing {}'.format(str(e)))
+            self.debug('RSA: error while importing keys {}'.format(str(e)))
+            return False
         else:
             #
             # Tough decision here .. first mechanism tried for publishing the
@@ -450,41 +524,34 @@ class UserProfile(QObject):
             # in the userinfo offers some advantages and we can always use
             # another system later on
             #
+            self.rsaAgent = IpfsRSAAgent(self.rsaExec,
+                                         self.rsaPubKey,
+                                         self.rsaPrivKeyPath)
+
+            self.userLogInfo('Loading user information')
+            self.userInfo = UserInfos(self.pathUserInfo, self.rsaAgent)
+
+            ensure(self.userInfo.load())
+            await self.userInfo.evLoaded.wait()
+            self.userInfo.updateIdentToken()
+
             rsaSection = self.userInfo.root['userinfo']['crypto'].setdefault(
                 'rsa', {})
+            prevPem = rsaSection.get('pubkeypem', None)
             rsaSection['pubkeypem'] = self.rsaPubKey.decode()
+
+            if rsaSection['pubkeypem'] != prevPem:
+                self.userInfo.changed.emit()
+
             return True
 
     @ipfsOp
     async def rsaEncryptSelf(self, op, data):
-        try:
-            data = await self.rsa.encryptData(BytesIO(data), self.rsaPubKey)
-            entry = await op.client.add_bytes(data)
-            if entry:
-                self.debug(
-                    'RSA: self-encrypt: encoded {0} bytes to {1}'.format(
-                        len(data), entry['Hash'])
-                )
-                return entry['Hash']
-        except aioipfs.APIError as err:
-            self.debug('RSA: IPFS error {}'.format(err.message))
+        return await self.rsaAgent.storeSelf(data)
 
     @ipfsOp
     async def rsaDecryptIpfsObj(self, op, cid):
-        privKey = await self.__rsaReadPrivateKey()
-        try:
-            data = await op.client.cat(cid)
-            if data is None:
-                raise ValueError('RSA decrypt, IPFS object is invalid')
-            decrypted = await self.rsa.decryptData(BytesIO(data), privKey)
-            if decrypted:
-                self.debug('RSA: decrypted {0} bytes from {1}'.format(
-                    len(decrypted), cid))
-                return decrypted
-        except aioipfs.APIError as err:
-            self.debug('RSA: IPFS error {}'.format(err.message))
-        except Exception as e:
-            self.debug('RSA: unknown error while decrypting {}'.format(str(e)))
+        return await self.rsaAgent.decryptIpfsObject(cid)
 
     async def __rsaReadPrivateKey(self):
         log.debug('RSA: reading private key')

@@ -263,7 +263,7 @@ class GalacteekApplication(QApplication):
 
     def initSystemTray(self):
         self.systemTray = QSystemTrayIcon(self)
-        self.systemTray.setIcon(getIcon('ipfs-logo-128-ice-text.png'))
+        self.systemTray.setIcon(getIcon('galacteek.png'))
         self.systemTray.show()
         self.systemTray.activated.connect(self.onSystemTrayIconClicked)
         self.systemTray.setToolTip('Galacteek')

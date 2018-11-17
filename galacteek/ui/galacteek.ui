@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>697</width>
-    <height>446</height>
+    <width>678</width>
+    <height>459</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -21,7 +21,7 @@
   </property>
   <property name="windowIcon">
    <iconset resource="galacteek.qrc">
-    <normaloff>:/share/icons/ipfs-logo-128-ice-text.png</normaloff>:/share/icons/ipfs-logo-128-ice-text.png</iconset>
+    <normaloff>:/share/icons/galacteek.png</normaloff>:/share/icons/galacteek.png</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -383,7 +383,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>697</width>
+     <width>678</width>
      <height>20</height>
     </rect>
    </property>
