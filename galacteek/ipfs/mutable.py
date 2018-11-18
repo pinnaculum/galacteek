@@ -142,6 +142,9 @@ class CipheredIPFSJson(MutableIPFSJson):
     def initObj(self):
         return {}
 
+    def debug(self, msg):
+        log.debug('Ciphered MFS JSON {0}: {1}'.format(self.mfsFilePath, msg))
+
     @ipfsOp
     async def loadIpfsObj(self, op):
         self.debug('Loading ciphered object from {}'.format(self.mfsFilePath))
@@ -171,12 +174,16 @@ class CipheredIPFSJson(MutableIPFSJson):
     @ipfsOp
     async def ipfsSave(self, op):
         with await self.lock:
+            self.debug('Syncing to repository')
             serialized = json.dumps(self.root).encode()
             resp = await self.rsaHelper.encryptToMfs(serialized,
                                                      self.mfsFilePath)
+            await op.client.files.flush(self.mfsFilePath)
 
             if resp is not None:
+                self.debug('Flush successfull, fetching stat')
                 self.curEntry = await op.filesStat(self.mfsFilePath)
                 return True
             else:
+                self.debug('Error while syncing')
                 return False
