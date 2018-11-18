@@ -61,7 +61,8 @@ async def fetchGoIpfsWrapper(app, timeout=60 * 10):
 async def fetchGoIpfsDist(app):
     async for msg in distipfsfetch.distIpfsExtract(
             dstdir=app.ipfsBinLocation, software='go-ipfs',
-            executable='ipfs', version='0.4.17', loop=app.loop):
+            executable='ipfs', version='0.4.17', loop=app.loop,
+            sslverify=app.sslverify):
         try:
             code, text = msg
             app.mainWindow.statusMessage(text)
@@ -75,8 +76,11 @@ def galacteekGui(args):
     else:
         glogger.basicConfig(level='INFO')
 
-    gApp = application.GalacteekApplication(profile=args.profile,
-                                            debug=args.debug)
+    gApp = application.GalacteekApplication(
+        profile=args.profile,
+        debug=args.debug,
+        sslverify=False if args.nosslverify else True
+    )
     loop = gApp.setupAsyncLoop()
     sManager = gApp.settingsMgr
 
@@ -176,6 +180,11 @@ def start():
         action='store_true',
         dest='noreleasecheck',
         help="Don't check for new releases on PyPI")
+    parser.add_argument(
+        '--no-ssl-verify',
+        action='store_true',
+        dest='nosslverify',
+        help="Don't check for SSL certificate validity (ipfs-search)")
     parser.add_argument('-d', action='store_true',
                         dest='debug', help='Activate debugging')
     args = parser.parse_args()

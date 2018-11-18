@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE TS><TS version="2.0" language="fr" sourcelanguage="">
+<!DOCTYPE TS>
+<TS version="2.1" language="fr">
 <context>
     <name>AddFeedDialog</name>
     <message>
@@ -953,7 +954,7 @@ Chemin: {0}, nodes traitées: {1}</translation>
     <message>
         <location filename="../../galacteek/ui/i18n.py" line="32"/>
         <source>IPFS ({1}): connected to {2} peer(s)</source>
-        <translation>IPFS ({1}): connecté a {2} pair(s)</translation>
+        <translation>IPFS ({1}): connecté à {2} pair(s)</translation>
     </message>
     <message>
         <location filename="../../galacteek/ui/mainui.py" line="119"/>
@@ -965,7 +966,7 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation>
         &lt;p&gt;&lt;b&gt;Galacteek&lt;/b&gt; est un navigateur IPFS basé sur Qt5
         &lt;/p&gt;
-        &lt;p&gt;Author: David Ferlier&lt;/p&gt;
+        &lt;p&gt;Auteur: David Ferlier&lt;/p&gt;
         &lt;p&gt;Galacteek version {0}&lt;/p&gt;</translation>
     </message>
     <message>

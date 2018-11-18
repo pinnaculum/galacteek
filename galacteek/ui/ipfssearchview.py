@@ -144,6 +144,7 @@ class IPFSSearchView(GalacteekTab):
     resultsReceived = pyqtSignal(ipfssearch.IPFSSearchResults, bool)
 
     def __init__(self, searchQuery, *args, **kw):
+
         super(IPFSSearchView, self).__init__(*args, **kw)
 
         self.searchQuery = searchQuery
@@ -240,7 +241,8 @@ class IPFSSearchView(GalacteekTab):
         self.ui.labelInfo.setText(iSearching())
         self.ui.comboPages.clear()
 
-        async for sr in ipfssearch.search(searchQuery, preloadPages=3):
+        async for sr in ipfssearch.search(searchQuery, preloadPages=3,
+                                          sslverify=self.app.sslverify):
             await asyncio.sleep(0)
             pageCount = sr.pageCount
 
@@ -267,7 +269,8 @@ class IPFSSearchView(GalacteekTab):
             self.resultsReceived.emit(sr, False)
 
     async def runSearchPage(self, searchQuery, page, display=False):
-        sr = await ipfssearch.getPageResults(searchQuery, page)
+        sr = await ipfssearch.getPageResults(searchQuery, page,
+                                             sslverify=self.app.sslverify)
         if sr:
             self.resultsReceived.emit(sr, display)
 

@@ -15,7 +15,8 @@ import shutil
 
 @async_generator
 async def distIpfsExtract(dstdir='.', software='go-ipfs', executable='ipfs',
-                          site='dist.ipfs.io', version='0.4.17', loop=None):
+                          site='dist.ipfs.io', version='0.4.17', loop=None,
+                          sslverify=True):
 
     """ Fetch a distribution archive from dist.ipfs.io and extracts the
         wanted executable to dstdir. Yields progress messages """
@@ -71,7 +72,7 @@ async def distIpfsExtract(dstdir='.', software='go-ipfs', executable='ipfs',
     async with aiofiles.open(arPath, 'w+b') as fd:
         bytesRead = 0
         async with aiohttp.ClientSession() as session:
-            async with session.get(url) as resp:
+            async with session.get(url, verify_ssl=sslverify) as resp:
                 if resp.status == 404:
                     await yield_(statusMessage(
                         0, 'Error downloading (file not found)'))

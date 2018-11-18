@@ -23,7 +23,7 @@ class IPFSSearchResults:
 emptyResults = IPFSSearchResults(0, {})
 
 
-async def searchPage(query, page):
+async def searchPage(query, page, sslverify=True):
     params = {
         'q': query,
         'page': page
@@ -31,21 +31,22 @@ async def searchPage(query, page):
 
     async with aiohttp.ClientSession() as session:
         async with session.get('https://api.ipfs-search.com/v1/search',
-                               params=params) as resp:
+                               params=params,
+                               verify_ssl=sslverify) as resp:
             return await resp.json()
 
 
-async def getPageResults(query, page):
+async def getPageResults(query, page, sslverify=True):
     try:
-        results = await searchPage(query, page)
+        results = await searchPage(query, page, sslverify=sslverify)
         return IPFSSearchResults(page, results)
     except Exception:
         return None
 
 
 @async_generator
-async def search(query, preloadPages=0):
-    page1Results = await getPageResults(query, 0)
+async def search(query, preloadPages=0, sslverify=True):
+    page1Results = await getPageResults(query, 0, sslverify=sslverify)
     if page1Results is None:
         await yield_(emptyResults)
         return
@@ -56,6 +57,6 @@ async def search(query, preloadPages=0):
     if preloadPages > 0:
         pageLast = preloadPages if pageCount >= preloadPages else pageCount
         for page in range(page1Results.page + 1, pageLast + 1):
-            results = await getPageResults(query, page)
+            results = await getPageResults(query, page, sslverify=sslverify)
             if results:
                 await yield_(results)
