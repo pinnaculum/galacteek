@@ -97,7 +97,6 @@ class MutableIPFSJson(QObject):
         obj = await op.filesReadJsonObject(self.mfsFilePath)
 
         if obj:
-            self.debug('Successfully loaded JSON')
             self._root = obj
             self.curEntry = await op.filesStat(self.mfsFilePath)
             self.loaded.set_result(True)
@@ -147,19 +146,17 @@ class CipheredIPFSJson(MutableIPFSJson):
 
     @ipfsOp
     async def loadIpfsObj(self, op):
-        self.debug('Loading ciphered object from {}'.format(self.mfsFilePath))
-
         obj = await self.rsaHelper.decryptMfsFile(self.mfsFilePath)
 
         if obj:
             self._root = json.loads(obj.decode())
             self.debug('Successfully loaded ciphered JSON: {}'.format(
-                self.root))
+                self.mfsFilePath))
             self.curEntry = await op.filesStat(self.mfsFilePath)
             self.loaded.set_result(True)
             self.evLoaded.set()
         else:
-            self.debug('JSON empty or invalid, initializing')
+            self.debug('JSON object empty or invalid, initializing')
             self._root = self.initObj()
             await self.ipfsSave()
             self.loaded.set_result(True)
@@ -174,14 +171,13 @@ class CipheredIPFSJson(MutableIPFSJson):
     @ipfsOp
     async def ipfsSave(self, op):
         with await self.lock:
-            self.debug('Syncing to repository')
             serialized = json.dumps(self.root).encode()
             resp = await self.rsaHelper.encryptToMfs(serialized,
                                                      self.mfsFilePath)
             await op.client.files.flush(self.mfsFilePath)
 
             if resp is not None:
-                self.debug('Flush successfull, fetching stat')
+                self.debug('Sync successfull, fetching stat')
                 self.curEntry = await op.filesStat(self.mfsFilePath)
                 return True
             else:
