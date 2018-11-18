@@ -72,7 +72,7 @@ class IpfsRSAAgent:
                     len(decrypted)))
                 return decrypted
         except aioipfs.APIError as err:
-            self.debug('IPFS error {}'.format(err.message))
+            self.debug('decryptIpfsObject: IPFS error {}'.format(err.message))
         except Exception as e:
             self.debug('RSA: unknown error while decrypting {}'.format(str(e)))
 
@@ -83,7 +83,8 @@ class IpfsRSAAgent:
             if data is None:
                 raise ValueError('Invalid file')
         except aioipfs.APIError as err:
-            self.debug('IPFS error {}'.format(err.message))
+            self.debug('decryptMfsFile failed for {0}, '
+                       'IPFS error was {1}'.format(path, err.message))
         else:
             return await self.decryptIpfsObject(data)
 
