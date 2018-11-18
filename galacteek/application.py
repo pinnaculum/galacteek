@@ -118,15 +118,6 @@ def appOperator():
     return app.ipfsOpMain
 
 
-class gIpfsOpMain(ipfsClassW):
-    def __get__(self, inst, owner):
-        async def wrapper(*args, **kw):
-            op = appOperator()
-            if op:
-                return await self.wrapped(inst, op, *args, **kw)
-        return wrapper
-
-
 class GalacteekApplication(QApplication):
     """
     Galacteek application class
@@ -559,8 +550,8 @@ class GalacteekApplication(QApplication):
                 await asyncio.wait_for(ipfsd.proto.eventStarted.wait(), 1)
             except asyncio.TimeoutError:
                 # Event not set yet, wait again
-                log.debug('IPFSD: timeout occured while waiting for daemon to \
-                        start (attempt: {0})'.format(attempt))
+                log.debug('IPFSD: timeout occured while waiting for '
+                          'daemon to start (attempt: {0})'.format(attempt))
                 continue
             else:
                 # Event was set, good to go
