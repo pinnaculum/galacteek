@@ -461,10 +461,7 @@ class MainWindow(QMainWindow):
         dlg.exec_()
 
     def onConnReady(self):
-        if self.app.debugEnabled is True:
-            self.addEventLogTab()
-
-        # Peers manager
+        # Open peers manager
         self.showPeersMgr()
 
     def onPubsubRx(self):
