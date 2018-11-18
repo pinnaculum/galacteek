@@ -6,7 +6,6 @@ name = "pypi"
 [packages]
 async-generator = "==1.10"
 pyqt5 = "==5.10"
-sphinx = ">=1.7.0"
 jinja2 = "==2.10"
 base58 = "==1.0.2"
 gitpython = "==2.1.11"
