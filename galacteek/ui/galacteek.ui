@@ -189,9 +189,12 @@
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Maximum</enum>
+          </property>
           <property name="sizeHint" stdset="0">
            <size>
-            <width>40</width>
+            <width>2000</width>
             <height>20</height>
            </size>
           </property>
@@ -282,6 +285,12 @@
           </item>
           <item>
            <widget class="QLineEdit" name="ipfsSearch">
+            <property name="minimumSize">
+             <size>
+              <width>200</width>
+              <height>0</height>
+             </size>
+            </property>
             <property name="maximumSize">
              <size>
               <width>230</width>
