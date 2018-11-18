@@ -203,7 +203,6 @@ class IPFSOperator(object):
             self.debug('filesWrite error {}'.format(err.message))
             return None
         else:
-            self.debug('filesWrite success {}'.format(resp))
             return True
 
     async def filesWriteJsonObject(self, path, obj, create=True,

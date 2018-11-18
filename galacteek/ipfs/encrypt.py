@@ -44,7 +44,7 @@ class IpfsRSAAgent:
             entry = await op.client.add_bytes(encrypted)
             if entry:
                 self.debug(
-                    'self-encrypt: encoded {0} bytes to {1}'.format(
+                    'storeSelf: encoded {0} bytes to {1}'.format(
                         len(data), entry['Hash'])
                 )
                 return entry['Hash']
