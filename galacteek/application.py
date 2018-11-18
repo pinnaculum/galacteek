@@ -137,7 +137,7 @@ class GalacteekApplication(QApplication):
 
     manualAvailable = pyqtSignal(str, dict)
 
-    def __init__(self, debug=False, profile='main'):
+    def __init__(self, debug=False, profile='main', sslverify=True):
         QApplication.__init__(self, sys.argv)
 
         QCoreApplication.setApplicationName(GALACTEEK_NAME)
@@ -148,6 +148,7 @@ class GalacteekApplication(QApplication):
         self._ipfsClient = None
         self._ipfsOpMain = None
         self._ipfsd = None
+        self._sslverify = sslverify
 
         self.translator = None
 
@@ -177,6 +178,10 @@ class GalacteekApplication(QApplication):
     @property
     def debugEnabled(self):
         return self._debugEnabled
+
+    @property
+    def sslverify(self):
+        return self._sslverify
 
     @property
     def appProfile(self):
