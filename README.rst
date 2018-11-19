@@ -14,6 +14,12 @@ for the IPFS_ peer-to-peer network.
 Installation
 ============
 
+AppImage
+--------
+
+For Linux users, you can get an AppImage from the github releases_ page
+(`latest release <https://github.com/eversum/galacteek/releases/download/v0.2.8/Galacteek-0.2.8-x86_64.AppImage>`_)
+
 PIP
 ---
 
@@ -157,3 +163,4 @@ from the ipfs-logo_ project's repository is included, unchanged.
 .. _cxFreeze: https://anthony-tuininga.github.io/cx_Freeze/
 .. _screenshots: https://gitlab.com/galacteek/galacteek/tree/master/screenshots
 .. _ipfs-search: https://ipfs-search.com
+.. _releases: https://github.com/eversum/galacteek/releases
