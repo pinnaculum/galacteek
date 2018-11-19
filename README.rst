@@ -8,7 +8,7 @@ Galacteek
 
 :info: An async IPFS_ browser
 
-**galacteek** is an experimental asynchronous Qt5-based browser and toolbox
+**galacteek** is an experimental Qt5-based browser/toolbox
 for the IPFS_ peer-to-peer network.
 
 Installation
@@ -62,11 +62,6 @@ Features
 connect to an existing IPFS daemon. By default it will try to run a daemon. You
 can change the IPFS connection settings through the *Edit* -> *Settings* menu
 and restart the application afterwards.
-
-Starting with the *0.2.5* release, your user profile has a dynamic DAG
-associated (with a simple message board), and an IPNS record points to the
-latest version of the DAG. The peers manager lets you browse the homepage of
-each peer.
 
 - Browsing sessions with automatic pinning (pins every page you browse)
 - Feeds (following IPNS hashes)
@@ -134,8 +129,7 @@ application's main window.
 Requirements
 ============
 
-- python3 >= 3.5.3 (it is strongly suggested to use python>=3.6 because asyncio
-  is more mature and stable starting with python 3.6)
+- python3 >= 3.5.3 (it is strongly suggested to use python>=3.6)
 - go-ipfs_ > 0.4.7
 - qt5
 - PyQt5 with QtWebEngine support

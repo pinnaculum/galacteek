@@ -155,9 +155,6 @@ class JSONPubsubService(PubsubService):
                 if msg is None:
                     continue
 
-                logger.debug('Received Pubsub message {}'.format(
-                    json.dumps(msg, indent=4)))
-
                 try:
                     await self.processJsonMessage(data['from'].decode(), msg)
                 except Exception as exc:
@@ -259,9 +256,6 @@ class PSPeersService(JSONPubsubService):
 
     @asyncify
     async def onProfileChanged(self, pName, profile):
-        if not profile.initialized:
-            return
-
         await profile.userInfo.loaded
 
         try:
@@ -286,12 +280,14 @@ class PSPeersService(JSONPubsubService):
     @ipfsOp
     async def sendIdent(self, op, profile):
         if not profile.initialized:
+            logger.debug('Profile not initialized, ident message not sent')
             return
 
         nodeId = op.ctx.node.id
         uInfo = profile.userInfo
 
         if not uInfo.valid():
+            logger.debug('Profile info, ident message not sent')
             return
 
         if uInfo.schemaVersion is 1:
@@ -303,14 +299,19 @@ class PSPeersService(JSONPubsubService):
                 profile.keyRootId,
                 self.ipfsCtx.p2p.servicesFormatted())
 
+            logger.debug('Sending ident message')
             await self.send(str(msg))
+        else:
+            logger.debug('Unknown schema version, ident message not sent')
 
     async def processJsonMessage(self, sender, msg):
         msgType = msg.get('msgtype', None)
 
         if msgType == PeerIdentMessageV1.TYPE:
+            logger.debug('Received ident message from {}'.format(sender))
             await self.handleIdentMessageV1(sender, msg)
         elif msgType == PeerLogoutMessage.TYPE:
+            logger.debug('Received logout message from {}'.format(sender))
             await self.handleLogoutMessage(sender, msg)
 
         await asyncio.sleep(0)
@@ -323,6 +324,7 @@ class PSPeersService(JSONPubsubService):
     async def handleIdentMessageV1(self, sender, msg):
         iMsg = PeerIdentMessageV1(msg)
         if not iMsg.valid():
+            logger.debug('Received invalid ident message')
             return
 
         if sender != iMsg.peer:
