@@ -103,8 +103,13 @@ def galacteekGui(args):
 
         # Look if we can find the ipfs executable
         ipfsPath = whichIpfs()
-        if not ipfsPath:
-            fetchWanted = questionBox('go-ipfs', iGoIpfsFetchAsk())
+        minVersion = StrictVersion('0.4.7')
+
+        if ipfsPath is None or args.forcegoipfsdl:
+            if args.forcegoipfsdl:
+                fetchWanted = True
+            else:
+                fetchWanted = questionBox('go-ipfs', iGoIpfsFetchAsk())
 
             def fetchFinished(fut):
                 path = fut.result()
@@ -122,10 +127,8 @@ def galacteekGui(args):
                 gApp.systemTrayMessage('Galacteek',
                                        iGoIpfsNotFound())
         else:
-            minVersion = StrictVersion('0.4.7')
-            version = ipfsVersion()
-
-            if version < minVersion:
+            iVersion = ipfsVersion()
+            if not iVersion or iVersion < minVersion:
                 # warning here
                 log.debug('go-ipfs version found {0} is too old'.format(
                     version))
@@ -185,6 +188,11 @@ def start():
         action='store_true',
         dest='nosslverify',
         help="Don't check for SSL certificate validity (ipfs-search)")
+    parser.add_argument(
+        '--force-goipfs-download',
+        action='store_true',
+        dest='forcegoipfsdl',
+        help="Force go-ipfs download")
     parser.add_argument('-d', action='store_true',
                         dest='debug', help='Activate debugging')
     args = parser.parse_args()
