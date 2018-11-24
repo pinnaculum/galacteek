@@ -2,7 +2,22 @@
     "ipfsmarks": {
         "categories": {
             "computers": {
-                "_marks": {},
+                "_marks": {
+                    "/ipfs/QmVDWmkM87NfR85WE1LvfwfJLRcMEtfNnCBiCJQRePP7Ly": {
+                        "metadata": {
+                            "title": "A Declaration of the Independence of Cyberspace",
+                            "description": "",
+                            "datasize": 5708,
+                            "cumulativesize": 5711,
+                            "numlinks": 0
+                        },
+                        "datecreated": "2018-11-24T23:48:06.309057",
+                        "tscreated": 1543099686,
+                        "comment": "",
+                        "share": false,
+                        "tags": []
+                    }
+                },
                 "atari": {
                     "_marks": {
                         "/ipfs/QmbKxNNCxBox7Cmv3jiUZbiG3zpzmtnYzVUuKHxfAjvpyH": {

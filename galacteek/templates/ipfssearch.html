@@ -7,10 +7,10 @@
                 <a href="ipfs:{{ hit['path'] }}">{{ hit['title'] }}</a>
                 (Size {{ hit['size'] }})
 
-                <a href="ipfs:{{ hit['path'] }}#hashmark"><img src=":/share/icons/hashmarks.png" width="16" height="16"/></a>
+                <a href="ipfs:{{ hit['path'] }}#hashmark"><img src=":/share/icons/star-navy.png" width="16" height="16"/></a>
 
 {% if hit['type'] == 'directory' %}
-                <a href="ipfs:{{ hit['path'] }}#explore"><img src=":/share/icons/folder-open.png" width="16" height="16"/></a>
+                <a href="ipfs:{{ hit['path'] }}#explore"><img src=":/share/icons/folder-open-black.png" width="16" height="16"/></a>
 {% endif %}
 
             </p>

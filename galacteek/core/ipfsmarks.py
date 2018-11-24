@@ -260,11 +260,15 @@ class IPFSMarks(QObject):
 
         # Handle IPFSHashMark or tuple
         if isinstance(mark, IPFSHashMark):
+            if mark.path in sec[marksKey]:
+                return False
             sec[marksKey].update(mark)
             self.markAdded.emit(mark.path, mark.markData)
         else:
             try:
                 mPath, mData = mark
+                if mPath in sec[marksKey]:
+                    return False
                 sec[marksKey][mPath] = mData
                 self.markAdded.emit(mPath, mData)
             except Exception:
