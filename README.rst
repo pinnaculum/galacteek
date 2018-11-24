@@ -18,7 +18,7 @@ AppImage
 --------
 
 For Linux users, you can get an AppImage from the github releases_ page
-(`latest release <https://github.com/eversum/galacteek/releases/download/v0.2.8/Galacteek-0.2.8-x86_64.AppImage>`_)
+(`latest release <https://github.com/eversum/galacteek/releases/download/v0.2.9/Galacteek-0.2.9-x86_64.AppImage>`_)
 
 PIP
 ---
