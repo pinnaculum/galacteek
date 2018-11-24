@@ -301,6 +301,9 @@ class GalacteekApplication(QApplication):
                     path = pkg_resources.resource_filename(pkg, fn)
                     marks = IPFSMarks(path)
                     marksLocal.merge(marks)
+
+            # Follow ipfs.io
+            marksLocal.follow('/ipns/ipfs.io', 'ipfs.io', resolveevery=3600)
         except Exception as e:
             self.debug(str(e))
 

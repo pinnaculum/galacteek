@@ -246,7 +246,7 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
 class BrowserKeyFilter(QObject):
     hashmarkPressed = pyqtSignal()
     savePagePressed = pyqtSignal()
-    reloadPressed   = pyqtSignal()
+    reloadPressed = pyqtSignal()
 
     def eventFilter(self, obj, event):
         if event.type() == QEvent.KeyPress:
@@ -298,15 +298,15 @@ class BrowserTab(GalacteekTab):
 
         self.ui.urlZone.returnPressed.connect(self.onUrlEdit)
         self.ui.backButton.clicked.connect(self.backButtonClicked)
-        self.ui.backButton.setIcon(
-            self.style().standardIcon(
-                QStyle.SP_ArrowLeft))
         self.ui.forwardButton.clicked.connect(self.forwardButtonClicked)
-        self.ui.forwardButton.setIcon(
-            self.style().standardIcon(
-                QStyle.SP_ArrowRight))
+
         self.ui.refreshButton.clicked.connect(self.refreshButtonClicked)
         self.ui.stopButton.clicked.connect(self.stopButtonClicked)
+
+        self.ui.backButton.setEnabled(False)
+        self.ui.forwardButton.setEnabled(False)
+        self.ui.stopButton.setEnabled(False)
+
         self.ui.loadFromClipboardButton.clicked.connect(
             self.loadFromClipboardButtonClicked)
         self.ui.loadFromClipboardButton.setEnabled(
@@ -556,6 +556,7 @@ class BrowserTab(GalacteekTab):
     def stopButtonClicked(self):
         self.ui.webEngineView.stop()
         self.ui.progressBar.setValue(0)
+        self.ui.stopButton.setEnabled(False)
 
     def backButtonClicked(self):
         currentPage = self.ui.webEngineView.page()
@@ -584,9 +585,17 @@ class BrowserTab(GalacteekTab):
             self.ui.urlZone.clear()
             self.ui.urlZone.insert(url.toString())
 
+        currentPage = self.webView.page()
+
+        if currentPage:
+            history = currentPage.history()
+            self.ui.backButton.setEnabled(history.canGoBack())
+            self.ui.forwardButton.setEnabled(history.canGoForward())
+
     def onLoadFinished(self, ok):
         lenMax = 16
         pageTitle = self.ui.webEngineView.page().title()
+        self.ui.stopButton.setEnabled(False)
 
         if pageTitle.startswith(self.gatewayAuthority):
             pageTitle = iNoTitle()
@@ -607,6 +616,7 @@ class BrowserTab(GalacteekTab):
 
     def onLoadProgress(self, progress):
         self.ui.progressBar.setValue(progress)
+        self.ui.stopButton.setEnabled(progress >= 0 and progress < 100)
 
     def browseFsPath(self, path):
         self.enterUrl(QUrl('{0}:{1}'.format(SCHEME_IPFS, path)))

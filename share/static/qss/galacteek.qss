@@ -2,18 +2,26 @@
     font: 10pt "Helvetica";
 }
 
+.navy-muted {
+    color: #244e66;
+}
+
 QTabWidget::pane {
     border-top: 2px solid #C2C7CB;
 }
 
 QTreeView {
     background-color: #f6fafb;
-    alternate-background-color: #C2C7CB;
+    alternate-background-color: #d9dbe2;
     font: 10pt "Helvetica";
 }
 
 QTreeView::item:open {
     color: #0a214c;
+}
+
+QLabel {
+    color: #244e66;
 }
 
 QTreeView::item:selected {
@@ -27,7 +35,7 @@ QToolBox {
 }
 
 QToolBox::tab:hover {
-    background-color: #4a9ea1;
+    background-color: #244e66;
 }
 
 QToolBox::tab {
@@ -44,7 +52,7 @@ QTabBar::tab:selected {
 }
 
 QTabBar::tab:hover {
-    background-color: #4a9ea1;
+    background-color: #7f8491;
 }
 
 QTabBar::tab {

@@ -13,7 +13,7 @@ from PyQt5 import QtWebEngineWidgets
 from PyQt5.QtGui import (QKeySequence,
                          QStandardItemModel)
 
-from galacteek import ensure
+from galacteek import ensure, log
 from galacteek.core.glogger import loggerUser, easyFormatString
 from galacteek.core.asynclib import asyncify
 from galacteek.ui import mediaplayer
@@ -232,6 +232,7 @@ class MainWindow(QMainWindow):
         self.showMaximized()
         self._app = app
         self._allTabs = []
+        self._lastFeedMark = None
 
         self.ui = ui_galacteek.Ui_GalacteekWindow()
         self.ui.setupUi(self)
@@ -371,6 +372,10 @@ class MainWindow(QMainWindow):
         self.app.ipfsCtx.pinItemStatusChanged.connect(self.onPinStatusChanged)
         self.app.ipfsCtx.pinItemsCount.connect(self.onPinItemsCount)
 
+        # Misc signals
+        self.app.marksLocal.feedMarkAdded.connect(self.onFeedMarkAdded)
+        self.app.systemTray.messageClicked.connect(self.onSystrayMsgClicked)
+
         # Application signals
         self.app.clipTracker.clipboardHasIpfs.connect(self.onClipboardIpfs)
         self.app.clipTracker.clipboardHistoryChanged.connect(
@@ -454,6 +459,26 @@ class MainWindow(QMainWindow):
     def onRepoReady(self):
         self.enableButtons()
 
+    def onSystrayMsgClicked(self):
+        # Open last shown mark in the systray
+        if self._lastFeedMark is not None:
+            self.addBrowserTab().browseFsPath(self._lastFeedMark.path)
+
+    def onFeedMarkAdded(self, feedname, mark):
+        self._lastFeedMark = mark
+
+        metadata = mark.markData.get('metadata', None)
+        if not metadata:
+            return
+
+        message = """New entry in IPNS feed {feed}: {title}.
+                 Click the message to open it""".format(
+            feed=feedname,
+            title=metadata['title'] if metadata['title'] else 'No title'
+        )
+
+        self.app.systemTrayMessage('IPNS', message, timeout=5000)
+
     def onIpfsInfos(self):
         dlg = IPFSInfosDialog(self.app)
         dlg.setWindowTitle(iIpfsInfos())
@@ -461,8 +486,7 @@ class MainWindow(QMainWindow):
         dlg.exec_()
 
     def onConnReady(self):
-        # Open peers manager
-        self.showPeersMgr()
+        pass
 
     def onPubsubRx(self):
         now = QDateTime.currentDateTime()
@@ -645,7 +669,8 @@ class MainWindow(QMainWindow):
         current = self.app.clipTracker.getCurrent()
         if current:
             view = dag.DAGViewer(current['path'], self)
-            self.registerTab(view, iDagViewer(), current=True)
+            self.registerTab(view, iDagViewer(), current=True,
+                icon=getIcon('ipld.png'))
         else:
             messageBox(iClipboardEmpty())
 
@@ -725,7 +750,8 @@ class MainWindow(QMainWindow):
             return self.ui.tabWidget.setCurrentWidget(ft)
 
         tab = hashmarks.HashmarksTab(self)
-        self.registerTab(tab, name, current=True)
+        self.registerTab(tab, name, current=True,
+                icon=getIcon('hashmarks.png'))
 
     def onTabCloseRequest(self, idx):
         tab = self.ui.tabWidget.widget(idx)

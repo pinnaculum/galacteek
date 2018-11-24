@@ -127,32 +127,32 @@
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Charger un CID IPFS depuis le presse-papier&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browsertab.ui" line="110"/>
+        <location filename="../../galacteek/ui/browsertab.ui" line="122"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Previous&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Précédent&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browsertab.ui" line="124"/>
+        <location filename="../../galacteek/ui/browsertab.ui" line="148"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Next&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>Suivant</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browsertab.ui" line="167"/>
+        <location filename="../../galacteek/ui/browsertab.ui" line="191"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Reload page&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>Recharger la page</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browsertab.ui" line="181"/>
+        <location filename="../../galacteek/ui/browsertab.ui" line="205"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Automatically pins visited pages&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Cloue les pages visitées automatiquement&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browsertab.ui" line="207"/>
+        <location filename="../../galacteek/ui/browsertab.ui" line="231"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pin&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pin&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browsertab.ui" line="220"/>
+        <location filename="../../galacteek/ui/browsertab.ui" line="244"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Hashmark this page&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Hash-marquer cette page&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
@@ -636,7 +636,7 @@ p, li { white-space: pre-wrap; }
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clés IPFS&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="334"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="350"/>
         <source>...</source>
         <translation>...</translation>
     </message>
@@ -661,7 +661,7 @@ p, li { white-space: pre-wrap; }
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Importer un document texte&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="267"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="283"/>
         <source>Search</source>
         <translation>Recherche</translation>
     </message>
@@ -671,67 +671,67 @@ p, li { white-space: pre-wrap; }
         <translation type="obsolete">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Chercher sur IPFS&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="331"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="347"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Global automatic pinning (enables automatic pinning for all browsing sessions)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pinning automatique global&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="401"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="417"/>
         <source>File</source>
         <translation>Fichier</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="408"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="424"/>
         <source>Edit</source>
         <translation>Edition</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="412"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="428"/>
         <source>User Profile</source>
         <translation>Profil utilisateur</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="421"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="437"/>
         <source>Help</source>
         <translation>Aide</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="440"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="456"/>
         <source>Quit</source>
         <translation>Quitter</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="443"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="459"/>
         <source>Ctrl+Q</source>
         <translation>Ctrl+Q</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="451"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="467"/>
         <source>Add Profile</source>
         <translation>Ajouter un profil</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="456"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="472"/>
         <source>Show peers information</source>
         <translation>Montrer les informations des pairs</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="461"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="477"/>
         <source>Show refs</source>
         <translation>Montrer les références</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="466"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="486"/>
         <source>Settings</source>
         <translation>Paramètres</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="471"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="491"/>
         <source>About</source>
         <translation>A propos</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="476"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="496"/>
         <source>Close all tabs</source>
         <translation>Fermer toutes les tabs</translation>
     </message>
@@ -741,7 +741,7 @@ p, li { white-space: pre-wrap; }
         <translation>Nouveau profil</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="489"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="509"/>
         <source>Donate</source>
         <translation>Donations</translation>
     </message>
@@ -916,17 +916,17 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation>Terminé</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="311"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="327"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Search content on IPFS (ipfs-search.com)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Chercher du contenu sur IPFS (ipfs-search.com)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="428"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="444"/>
         <source>Tools</source>
         <translation>Outils</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/galacteek.ui" line="494"/>
+        <location filename="../../galacteek/ui/galacteek.ui" line="514"/>
         <source>Event log</source>
         <translation>Logs IPFS</translation>
     </message>
@@ -1398,112 +1398,112 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation>Paramètres</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="24"/>
+        <location filename="../../galacteek/ui/settings.ui" line="28"/>
         <source>General</source>
         <translation>Général</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="46"/>
+        <location filename="../../galacteek/ui/settings.ui" line="50"/>
         <source>Home:</source>
         <translation>Page d&apos;accueil:</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="66"/>
+        <location filename="../../galacteek/ui/settings.ui" line="70"/>
         <source>Go to home page when opening a new browser tab</source>
         <translation>Aller a la page d&apos;accueil lors de l&apos;ouverture du navigateur</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="86"/>
+        <location filename="../../galacteek/ui/settings.ui" line="90"/>
         <source>Save downloads to:</source>
         <translation>Sauvegarder les téléchargements vers:</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="102"/>
+        <location filename="../../galacteek/ui/settings.ui" line="106"/>
         <source>Change directory</source>
         <translation>Changer le répertoire</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="110"/>
+        <location filename="../../galacteek/ui/settings.ui" line="118"/>
         <source>IPFS</source>
         <translation>IPFS</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="127"/>
+        <location filename="../../galacteek/ui/settings.ui" line="135"/>
         <source>Spawn IPFS daemon and use as transport</source>
         <translation>Lancer un démon IPFS et l&apos;utiliser comme transport</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="313"/>
+        <location filename="../../galacteek/ui/settings.ui" line="321"/>
         <source>HTTP gateway port</source>
         <translation>Port de la passerelle HTTP</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="175"/>
+        <location filename="../../galacteek/ui/settings.ui" line="183"/>
         <source>Minimum swarm connections</source>
         <translation>Nombre de connexions minimum (swarm)</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="192"/>
+        <location filename="../../galacteek/ui/settings.ui" line="200"/>
         <source>Maximum swarm connections</source>
         <translation>Nombre de connexions maximum (swarm)</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="290"/>
+        <location filename="../../galacteek/ui/settings.ui" line="298"/>
         <source>API port</source>
         <translation>Port de l&apos;API</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="232"/>
+        <location filename="../../galacteek/ui/settings.ui" line="240"/>
         <source>Swarm port</source>
         <translation>Port du swarm</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="239"/>
+        <location filename="../../galacteek/ui/settings.ui" line="247"/>
         <source>Maximum storage (Gb)</source>
         <translation>Stockage maximum (Gb)</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="268"/>
+        <location filename="../../galacteek/ui/settings.ui" line="276"/>
         <source>Use a custom IPFS daemon</source>
         <translation>Utiliser un démon IPFS existant</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="283"/>
+        <location filename="../../galacteek/ui/settings.ui" line="291"/>
         <source>Host</source>
         <translation>Hôte</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="365"/>
+        <location filename="../../galacteek/ui/settings.ui" line="373"/>
         <source>Restart the application after changing the IPFS connection settings.</source>
         <translation>Redémarrez l&apos;application après avoir changé les paramètres de connexion.</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="375"/>
+        <location filename="../../galacteek/ui/settings.ui" line="387"/>
         <source>UI</source>
         <translation>Interface</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="418"/>
+        <location filename="../../galacteek/ui/settings.ui" line="430"/>
         <source>File manager</source>
         <translation>Gestionnaire de fichiers</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="430"/>
+        <location filename="../../galacteek/ui/settings.ui" line="442"/>
         <source>Wrap files with a directory (preserves filenames)</source>
         <translation>Envelopper les fichiers dans un répertoire (préserve les noms de fichiers)</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="443"/>
+        <location filename="../../galacteek/ui/settings.ui" line="455"/>
         <source>Wrap directories with a directory</source>
         <translation>Envelopper les répertoires dans un autre répertoire</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="456"/>
+        <location filename="../../galacteek/ui/settings.ui" line="468"/>
         <source>Hide IPFS hashes in tree views</source>
         <translation>Cacher les hashs IPFS dans l&apos;interface</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="397"/>
+        <location filename="../../galacteek/ui/settings.ui" line="409"/>
         <source>Language</source>
         <translation>Langage</translation>
     </message>
@@ -1518,12 +1518,12 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="obsolete">Francais</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="466"/>
+        <location filename="../../galacteek/ui/settings.ui" line="478"/>
         <source>Browser</source>
         <translation>Navigateur</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="475"/>
+        <location filename="../../galacteek/ui/settings.ui" line="487"/>
         <source>Enable Javascript IPFS API</source>
         <translation>Activer l&apos;API IPFS Javascript</translation>
     </message>

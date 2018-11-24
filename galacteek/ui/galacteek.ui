@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>678</width>
-    <height>459</height>
+    <width>843</width>
+    <height>473</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -253,6 +253,22 @@
               </property>
              </widget>
             </item>
+            <item>
+             <spacer name="horizontalSpacer_4">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Fixed</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
            </layout>
           </item>
           <item>
@@ -287,7 +303,7 @@
            <widget class="QLineEdit" name="ipfsSearch">
             <property name="minimumSize">
              <size>
-              <width>200</width>
+              <width>220</width>
               <height>0</height>
              </size>
             </property>
@@ -392,7 +408,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>678</width>
+     <width>843</width>
      <height>20</height>
     </rect>
    </property>
@@ -462,6 +478,10 @@
    </property>
   </action>
   <action name="actionSettings">
+   <property name="icon">
+    <iconset resource="galacteek.qrc">
+     <normaloff>:/share/icons/settings.png</normaloff>:/share/icons/settings.png</iconset>
+   </property>
    <property name="text">
     <string>Settings</string>
    </property>

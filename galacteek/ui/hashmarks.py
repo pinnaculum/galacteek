@@ -67,6 +67,10 @@ class CategoryItem(UneditableItem):
     pass
 
 
+class FeedItem(UneditableItem):
+    pass
+
+
 def addHashmark(hashmarks, path, title, description='', stats={}):
     if hashmarks.search(path):
         return messageBox(iAlreadyHashmarked())
@@ -167,20 +171,23 @@ class FeedsView(QWidget):
         feeds = self.marks.getFeeds()
 
         for fPath, fData in feeds:
+            fName = fData.get('name', None)
+            if not fName:
+                continue
+
             fItem = None
             ret = modelSearch(self.model, parent=parent.index(),
-                              search=fPath, columns=[0])
+                              search=fName, columns=[0])
             if not ret:
                 feedName = fData['name']
                 if not feedName:
                     feedName = fPath
-                fItem = UneditableItem(feedName)
+                fItem = FeedItem(feedName)
                 parent.appendRow([fItem])
             else:
                 fItem = self.model.itemFromIndex(ret[0])
 
             fItemIdx = self.model.indexFromItem(fItem)
-            self.ui.treeFeeds.expand(fItemIdx)
 
             marks = self.marks.getFeedMarks(fPath)
             for mPath, mData in marks.items():
@@ -203,6 +210,11 @@ class FeedsView(QWidget):
     def onFeedDoubleClick(self, index):
         indexPath = self.model.sibling(index.row(), 0, index)
         path = self.model.data(indexPath)
+        item = self.model.itemFromIndex(indexPath)
+
+        if type(item) is FeedItem:
+            return
+
         if path:
             self.marksTab.gWindow.addBrowserTab().browseFsPath(path)
 
@@ -321,10 +333,10 @@ class HashmarksTab(GalacteekTab, _MarksUpdater):
         self.filter.deletePressed.connect(self.onDeletePressed)
         self.installEventFilter(self.filter)
 
-        icon1 = getIcon('hashmarks.png')
-        self.ui.toolbox.setItemIcon(0, icon1)
-        self.ui.toolbox.setItemIcon(1, icon1)
-        self.ui.toolbox.setItemIcon(2, icon1)
+        icon = getIcon('hashmarks-black.png')
+        self.ui.toolbox.setItemIcon(0, icon)
+        self.ui.toolbox.setItemIcon(1, icon)
+        self.ui.toolbox.setItemIcon(2, icon)
 
         self.modelMarks = model if model else HashmarksModel()
         self.modelMarks.setHorizontalHeaderLabels([iTitle(), iPath(), iDate()])
