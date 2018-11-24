@@ -106,6 +106,18 @@
          </item>
          <item>
           <widget class="QToolButton" name="backButton">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>54</width>
+             <height>16777215</height>
+            </size>
+           </property>
            <property name="toolTip">
             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Previous&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
@@ -114,12 +126,24 @@
            </property>
            <property name="icon">
             <iconset resource="galacteek.qrc">
-             <normaloff>:/share/icons/go-previous.png</normaloff>:/share/icons/go-previous.png</iconset>
+             <normaloff>:/share/icons/left-arrow.png</normaloff>:/share/icons/left-arrow.png</iconset>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QToolButton" name="forwardButton">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>54</width>
+             <height>16777215</height>
+            </size>
+           </property>
            <property name="toolTip">
             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Next&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
@@ -128,7 +152,7 @@
            </property>
            <property name="icon">
             <iconset resource="galacteek.qrc">
-             <normaloff>:/share/icons/go-next.png</normaloff>:/share/icons/go-next.png</iconset>
+             <normaloff>:/share/icons/right-arrow.png</normaloff>:/share/icons/right-arrow.png</iconset>
            </property>
           </widget>
          </item>

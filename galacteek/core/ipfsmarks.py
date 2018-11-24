@@ -77,6 +77,7 @@ class IPFSMarks(QObject):
     changed = pyqtSignal()
     markDeleted = pyqtSignal(str)
     markAdded = pyqtSignal(str, dict)
+    feedMarkAdded = pyqtSignal(str, IPFSHashMark)
 
     def __init__(self, path, parent=None, autosave=True):
         super().__init__(parent)
@@ -337,11 +338,13 @@ class IPFSMarks(QObject):
         feeds = self._rootFeeds
         if ipnsp not in feeds:
             return False
-        sec = feeds[ipnsp][marksKey]
+        feed = feeds[ipnsp]
+        sec = feed[marksKey]
         if mark.path in sec:
             return False
 
-        feeds[ipnsp][marksKey].update(mark)
+        sec.update(mark)
+        self.feedMarkAdded.emit(feed['name'], mark)
         self.changed.emit()
         return True
 

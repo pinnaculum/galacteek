@@ -1,5 +1,10 @@
 <RCC>
   <qresource>
+    <file>../../share/icons/window.png</file>
+    <file>../../share/icons/ipld.png</file>
+    <file>../../share/icons/settings.png</file>
+    <file>../../share/icons/stroke-cube.png</file>
+    <file>../../share/icons/hashmarks-black.png</file>
     <file>../../share/icons/galacteek.png</file>
     <file>../../share/icons/peers.png</file>
     <file>../../share/icons/profile-user.png</file>

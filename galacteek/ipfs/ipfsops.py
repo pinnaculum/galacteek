@@ -194,7 +194,7 @@ class IPFSOperator(object):
     async def filesWrite(self, path, data, create=False, truncate=False,
                          offset=-1, count=-1):
         try:
-            resp = await self.client.files.write(
+            await self.client.files.write(
                 path, data,
                 create=create, truncate=truncate,
                 offset=offset, count=count
@@ -330,11 +330,13 @@ class IPFSOperator(object):
         return await self.waitFor(self.client.name.publish(path, key=key),
                                   timeout)
 
-    async def resolve(self, path, timeout=20):
+    async def resolve(self, path, timeout=20, recursive=False):
         try:
-            resolved = await asyncio.wait_for(self.client.name.resolve(path),
-                                              timeout)
+            resolved = await asyncio.wait_for(
+                self.client.name.resolve(path, recursive=recursive),
+                timeout)
         except asyncio.TimeoutError:
+            self.debug('resolve timeout for {0}'.format(path))
             return None
         except aioipfs.APIError as e:
             self.debug('resolve error: {}'.format(e.message))

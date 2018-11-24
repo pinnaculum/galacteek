@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>Settings</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="galacteek.qrc">
+    <normaloff>:/share/icons/settings.png</normaloff>:/share/icons/settings.png</iconset>
+  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QTabWidget" name="tabWidget">
@@ -106,6 +110,10 @@
       </layout>
      </widget>
      <widget class="QWidget" name="tab_6">
+      <attribute name="icon">
+       <iconset resource="galacteek.qrc">
+        <normaloff>:/share/icons/stroke-cube.png</normaloff>:/share/icons/stroke-cube.png</iconset>
+      </attribute>
       <attribute name="title">
        <string>IPFS</string>
       </attribute>
@@ -371,6 +379,10 @@
       </layout>
      </widget>
      <widget class="QWidget" name="tab_2">
+      <attribute name="icon">
+       <iconset resource="galacteek.qrc">
+        <normaloff>:/share/icons/window.png</normaloff>:/share/icons/window.png</iconset>
+      </attribute>
       <attribute name="title">
        <string>UI</string>
       </attribute>
@@ -495,7 +507,9 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="galacteek.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>buttonBox</sender>
