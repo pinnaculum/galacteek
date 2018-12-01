@@ -105,8 +105,12 @@ class AsyncIPFSDaemon(object):
     :param int gatewayport: HTTP GW port number to listen on
     :param int swarmLowWater: min swarm connections
     :param int swarmHighWater: max swarm connections
+    :param int storageMax: max repository storage capacity, in GB
     :param bool pubsubEnable: enable pubsub
     :param bool noBootstrap: empty bootstrap
+    :param bool corsEnable: enable CORS
+    :param bool p2pStreams: enable P2P streams support
+    :param bool gwWritable: make the HTTP gateway writable
     """
 
     def __init__(self, repopath, goIpfsPath='ipfs',
@@ -116,7 +120,7 @@ class AsyncIPFSDaemon(object):
                  swarmLowWater=10, swarmHighWater=20,
                  pubsubEnable=False, noBootstrap=False, corsEnable=True,
                  p2pStreams=False, migrateRepo=False,
-                 storageMax=20, debug=False, loop=None):
+                 gwWritable=False, storageMax=20, debug=False, loop=None):
 
         self.loop = loop if loop else asyncio.get_event_loop()
         self.exitFuture = asyncio.Future(loop=self.loop)
@@ -135,6 +139,7 @@ class AsyncIPFSDaemon(object):
         self.p2pStreams = p2pStreams
         self.noBootstrap = noBootstrap
         self.migrateRepo = migrateRepo
+        self.gwWritable = gwWritable
         self.debug = debug
 
     async def start(self):
@@ -203,6 +208,9 @@ class AsyncIPFSDaemon(object):
 
         if self.migrateRepo:
             args.append('--migrate')
+
+        if self.gwWritable:
+            args.append('--writable')
 
         f = self.loop.subprocess_exec(
             lambda: IPFSDProtocol(self.loop, self.exitFuture,

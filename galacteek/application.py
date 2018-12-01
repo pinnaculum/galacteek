@@ -526,6 +526,7 @@ class GalacteekApplication(QApplication):
             swarmLowWater=sManager.getInt(section, CFG_KEY_SWARMLOWWATER),
             swarmHighWater=sManager.getInt(section, CFG_KEY_SWARMHIGHWATER),
             storageMax=sManager.getInt(section, CFG_KEY_STORAGEMAX),
+            gwWritable=sManager.isTrue(section, CFG_KEY_HTTPGWWRITABLE),
             pubsubEnable=pubsubEnabled, corsEnable=corsEnabled,
             migrateRepo=migrateRepo, debug=self.debug,
             loop=self.loop)
