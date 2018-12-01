@@ -14,6 +14,7 @@ CFG_KEY_ENABLED = 'enabled'
 CFG_KEY_APIPORT = 'apiport'
 CFG_KEY_SWARMPORT = 'swarmport'
 CFG_KEY_HTTPGWPORT = 'httpgwport'
+CFG_KEY_HTTPGWWRITABLE = 'httpgwwritable'
 CFG_KEY_HOST = 'host'
 CFG_KEY_SWARMLOWWATER = 'swarm_lowwater'
 CFG_KEY_SWARMHIGHWATER = 'swarm_highwater'
@@ -57,6 +58,7 @@ def setDefaultSettings(gApp):
     sManager.setDefaultSetting(section, CFG_KEY_STORAGEMAX, 50)
     sManager.setDefaultTrue(section, CFG_KEY_CORS)
     sManager.setDefaultTrue(section, CFG_KEY_ENABLED)
+    sManager.setDefaultTrue(section, CFG_KEY_HTTPGWWRITABLE)
 
     section = CFG_SECTION_BROWSER
     sManager.setDefaultSetting(section, CFG_KEY_HOMEURL, 'ipfs:/ipns/ipfs.io')
