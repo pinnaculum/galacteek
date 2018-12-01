@@ -1,7 +1,7 @@
 import os.path
 import uuid
 import pkg_resources
-import secrets
+from os import urandom
 from datetime import datetime
 from io import BytesIO
 
@@ -171,7 +171,7 @@ class UserInfos(CipheredIPFSJson):
     def updateIdentToken(self):
         token = self.root['userinfo'].get('identtoken', None)
         if not token:
-            self.root['userinfo']['identtoken'] = secrets.token_hex(128)
+            self.root['userinfo']['identtoken'] = urandom(128).hex()
             self.changed.emit()
 
     def setLock(self, lock=False):
