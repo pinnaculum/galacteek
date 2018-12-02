@@ -5,13 +5,16 @@ import copy
 from PyQt5.QtWidgets import (
     QMainWindow, QDialog,
     QPushButton, QVBoxLayout,
-    QMenu, QAction, QActionGroup, QToolButton,
+    QToolBar, QMenu, QAction, QActionGroup, QToolButton,
     QTreeView, QHeaderView, QInputDialog, QLabel)
 from PyQt5.QtCore import (QCoreApplication, Qt,
                           QTimer, QDateTime)
+from PyQt5.Qt import QByteArray, QSizePolicy
 from PyQt5 import QtWebEngineWidgets
 from PyQt5.QtGui import (QKeySequence,
-                         QStandardItemModel)
+                         QStandardItemModel,
+                         QPixmap,
+                         QIcon)
 
 from galacteek import ensure, log
 from galacteek.core.glogger import loggerUser, easyFormatString
@@ -84,6 +87,11 @@ def iClipboardClearHistory():
 def iClipLoaderExplore(path):
     return QCoreApplication.translate('GalacteekWindow',
                                       'Explore IPFS path: {0}').format(path)
+
+
+def iClipLoaderIpldExplorer(path):
+    return QCoreApplication.translate('GalacteekWindow',
+                                      'Run IPLD Explorer: {0}').format(path)
 
 
 def iClipLoaderDagView(path):
@@ -225,6 +233,57 @@ class PinStatusDetails(GalacteekTab):
                 ePinS.setText(str(nodesProcessed))
 
 
+class QuickAccessToolBar(QToolBar):
+    def __init__(self, window):
+        super().__init__()
+
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.mainW = window
+
+    @ipfsOp
+    async def registerFromMarkMeta(self, op, metadata):
+        mPath, mark = self.mainW.app.marksLocal.searchByMetadata(metadata)
+        if not mark:
+            return
+
+        icon = None
+        mIcon = mark.get('icon', None)
+
+        if mIcon:
+            try:
+                iconData = await op.client.cat(mIcon)
+                pixmap = QPixmap()
+                pixmap.loadFromData(iconData)
+                icon = QIcon(pixmap)
+            except Exception as e:
+                log.debug('Error loading icon {}'.format(e))
+                icon = getIcon('unknown-file.png')
+            else:
+                # Pin the icon since it's valid
+                if not await op.isPinned(mIcon):
+                    log.debug('Pinning icon {0}'.format(mIcon))
+                    await op.ctx.pinner.queue(mIcon, False, None)
+        else:
+            icon = getIcon('unknown-file.png')
+
+        self.addAction(icon, mark['metadata'].get('title', iUnknown()),
+           lambda: self.mainW.addBrowserTab().browseFsPath(mPath))
+
+    async def init(self):
+        """
+        Add some apps and links to the quickaccess bar
+        """
+
+        await self.registerFromMarkMeta({
+            'title': 'Hardbin'})
+        await self.registerFromMarkMeta({
+            'description': 'Distributed wikipedia.*english'})
+        await self.registerFromMarkMeta({
+            'title': 'IPFessay'})
+        await self.registerFromMarkMeta({
+            'title': 'IPLD explorer'})
+
+
 class MainWindow(QMainWindow):
     def __init__(self, app):
         super(MainWindow, self).__init__()
@@ -288,17 +347,24 @@ class MainWindow(QMainWindow):
             shortcut=QKeySequence('Ctrl+e'),
             triggered=self.onExploreFromClipboard)
         self.multiDagViewAction = QAction(
-            getIconIpfsIce(),
+            getIcon('ipld-logo.png'),
             iClipboardEmpty(), self,
             shortcut=QKeySequence('Ctrl+g'),
             triggered=self.onDagViewFromClipboard)
+        self.multiIpldExplorerAction = QAction(
+            getIcon('ipld-logo.png'),
+            iClipboardEmpty(), self,
+            shortcut=QKeySequence('Ctrl+i'),
+            triggered=self.onIpldExplorerFromClipboard)
 
         self.multiExploreHashAction.setEnabled(False)
         self.multiLoadHashAction.setEnabled(False)
         self.multiDagViewAction.setEnabled(False)
+        self.multiIpldExplorerAction.setEnabled(False)
         self.multiLoaderMenu.addAction(self.multiLoadHashAction)
         self.multiLoaderMenu.addAction(self.multiExploreHashAction)
         self.multiLoaderMenu.addAction(self.multiDagViewAction)
+        self.multiLoaderMenu.addAction(self.multiIpldExplorerAction)
         self.multiLoaderMenu.addMenu(self.multiLoaderHMenu)
 
         self.ui.clipboardMultiLoader.clicked.connect(self.onLoadFromClipboard)
@@ -323,6 +389,10 @@ class MainWindow(QMainWindow):
         self.ui.menuUser_Profile.triggered.connect(self.onUserProfile)
         self.ui.actionNew_Profile.setEnabled(False)
         self.profilesActionGroup = QActionGroup(self)
+
+        # Apps/shortcuts toolbar
+        self.qaToolbar = QuickAccessToolBar(self)
+        self.ui.qaLayout.addWidget(self.qaToolbar)
 
         # Status bar setup
         self.ui.pinningStatusButton = QPushButton()
@@ -458,6 +528,7 @@ class MainWindow(QMainWindow):
 
     def onRepoReady(self):
         self.enableButtons()
+        ensure(self.qaToolbar.init())
 
     def onSystrayMsgClicked(self):
         # Open last shown mark in the systray
@@ -640,16 +711,32 @@ class MainWindow(QMainWindow):
         self.multiExploreHashAction.setEnabled(valid)
         self.multiLoadHashAction.setEnabled(valid)
         self.multiDagViewAction.setEnabled(valid)
+        self.multiIpldExplorerAction.setEnabled(valid)
         if valid:
             self.multiExploreHashAction.setText(iClipLoaderExplore(path))
             self.multiLoadHashAction.setText(iClipLoaderBrowse(path))
             self.multiDagViewAction.setText(iClipLoaderDagView(path))
+            self.multiIpldExplorerAction.setText(iClipLoaderIpldExplorer(path))
             self.ui.clipboardMultiLoader.setToolTip(iFromClipboard(path))
         else:
             self.multiExploreHashAction.setText(iClipboardEmpty())
             self.multiLoadHashAction.setText(iClipboardEmpty())
             self.multiDagViewAction.setText(iClipboardEmpty())
+            self.multiIpldExplorerAction.setText(iClipboardEmpty())
             self.ui.clipboardMultiLoader.setToolTip(iClipboardEmpty())
+
+    def onIpldExplorerFromClipboard(self):
+        """
+        Open the IPLD explorer application for the CID in the clipboard
+        """
+        current = self.app.clipTracker.getCurrent()
+        if current:
+            mPath, mark = self.app.marksLocal.searchByMetadata({
+                'title': 'IPLD explorer'})
+            if mark:
+                link = os.path.join(
+                    mPath, '#', 'explore', stripIpfs(current['path']))
+                self.addBrowserTab().browseFsPath(link)
 
     def onLoadFromClipboard(self):
         current = self.app.clipTracker.getCurrent()
@@ -670,7 +757,7 @@ class MainWindow(QMainWindow):
         if current:
             view = dag.DAGViewer(current['path'], self)
             self.registerTab(view, iDagViewer(), current=True,
-                icon=getIcon('ipld.png'))
+                             icon=getIcon('ipld.png'))
         else:
             messageBox(iClipboardEmpty())
 
@@ -731,17 +818,23 @@ class MainWindow(QMainWindow):
         if ft:
             return ft
         tab = mediaplayer.MediaPlayerTab(self)
-        self.registerTab(tab, name, icon=getIcon('multimedia.png'),
-                         current=True)
-        return tab
+
+        if tab.playerAvailable():
+            self.registerTab(tab, name, icon=getIcon('multimedia.png'),
+                             current=True)
+            return tab
+        else:
+            messageBox(mediaplayer.iPlayerUnavailable())
 
     def mediaPlayerQueue(self, path, mediaName=None):
         tab = self.addMediaPlayerTab()
-        tab.queueFromPath(path, mediaName=mediaName)
+        if tab:
+            tab.queueFromPath(path, mediaName=mediaName)
 
     def mediaPlayerPlay(self, path, mediaName=None):
         tab = self.addMediaPlayerTab()
-        tab.playFromPath(path, mediaName=mediaName)
+        if tab:
+            tab.playFromPath(path, mediaName=mediaName)
 
     def addHashmarksTab(self):
         name = iHashmarks()
@@ -751,7 +844,7 @@ class MainWindow(QMainWindow):
 
         tab = hashmarks.HashmarksTab(self)
         self.registerTab(tab, name, current=True,
-                icon=getIcon('hashmarks.png'))
+                         icon=getIcon('hashmarks.png'))
 
     def onTabCloseRequest(self, idx):
         tab = self.ui.tabWidget.widget(idx)

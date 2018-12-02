@@ -5,7 +5,8 @@ from PyQt5.QtWidgets import (QWidget,
                              QHBoxLayout, QListView,
                              QToolButton, QStyle, QSlider, QMenu)
 
-from PyQt5.QtMultimedia import (QMediaPlayer, QMediaContent, QMediaPlaylist)
+from PyQt5.QtMultimedia import (QMediaPlayer, QMediaContent, QMediaPlaylist,
+                                QMultimedia)
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 
 from PyQt5.QtCore import (QCoreApplication, Qt, QAbstractItemModel,
@@ -18,6 +19,12 @@ from . import ui_mediaplayer, ui_mediaplaylist
 
 from .widgets import *
 from .helpers import *
+
+
+def iPlayerUnavailable():
+    return QCoreApplication.translate(
+        'MediaPlayer',
+        'No media player support available on your system')
 
 
 def iPlayerError(code):
@@ -62,6 +69,13 @@ def iPlaylistName():
 def iAlreadyInPlaylist():
     return QCoreApplication.translate('MediaPlayer',
                                       'Already queued in the current playlist')
+
+
+def mediaPlayerAvailable(player=None):
+    if player is None:
+        player = QMediaPlayer()
+    availability = player.availability()
+    return availability == QMultimedia.Available
 
 
 class VideoWidget(QVideoWidget):
@@ -489,6 +503,9 @@ class MediaPlayerTab(GalacteekTab):
             self.videoWidget.setFullScreen(True)
 
         super(MediaPlayerTab, self).keyPressEvent(event)
+
+    def playerAvailable(self):
+        return mediaPlayerAvailable(player=self.player)
 
 
 class ListModel(QAbstractItemModel):

@@ -182,8 +182,9 @@ class TestApp:
 
     @pytest.mark.parametrize('validcid0', validcid0)
     @pytest.mark.parametrize('validcid1', validcid1)
+    @pytest.mark.parametrize('validcidb32', validcidb32)
     @pytest.mark.parametrize('invalidcid', invalidcids)
-    def test_clipboard(self, qtbot, modApp, validcid0, validcid1, invalidcid):
+    def test_clipboard(self, qtbot, modApp, validcid0, validcid1, validcidb32, invalidcid):
         def checkCorrect(valid, cid, path):
             item = modApp.clipTracker.getHistoryLatest()
             assert item['path'] == path

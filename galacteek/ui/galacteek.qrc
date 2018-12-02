@@ -2,6 +2,7 @@
   <qresource>
     <file>../../share/icons/star-navy.png</file>
     <file>../../share/icons/folder-open-black.png</file>
+    <file>../../share/icons/ipld-logo.png</file>
     <file>../../share/icons/window.png</file>
     <file>../../share/icons/hashmark-add.png</file>
     <file>../../share/icons/ipld.png</file>
