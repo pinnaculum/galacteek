@@ -261,7 +261,6 @@ class IPFSMarks(QObject):
     def search(
             self,
             bpath,
-            metadata=None,
             category=None,
             tags=[],
             delete=False):
@@ -275,12 +274,6 @@ class IPFSMarks(QObject):
             marks = self.getCategoryMarks(cat)
             if not marks:
                 continue
-
-            if isinstance(metadata, dict):
-                title = metadata.get('title', None)
-                for mPath, mark in marks.items():
-                    if title and re.search(title, mark['metadata']['title']):
-                        return mPath, mark
 
             if path in marks.keys():
                 if delete is True:
