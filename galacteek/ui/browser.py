@@ -1,7 +1,6 @@
 from PyQt5.QtWidgets import (
     QDialog,
     QAction,
-    QStyle,
     QMenu,
     QInputDialog,
     QToolButton,
@@ -10,7 +9,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtPrintSupport import *
 
 from PyQt5.QtCore import (QUrl, Qt, QCoreApplication, QObject,
-                          pyqtSignal, QMutex, QFile)
+                          pyqtSignal, QFile)
 from PyQt5 import QtWebEngineWidgets, QtWebEngineCore
 from PyQt5.QtWebEngineWidgets import (QWebEngineDownloadItem, QWebEngineScript,
                                       QWebEngineSettings)
@@ -188,11 +187,19 @@ class RequestInterceptor(QWebEngineUrlRequestInterceptor):
         pass
 
 
+class CustomWebPage (QtWebEngineWidgets.QWebEnginePage):
+    def javaScriptConsoleMessage(self, level, message, lineNumber, sourceId):
+        log.info('JS: level: {0}, source: {1}, line: {2}, message: {3}'.format(
+            level, sourceId, lineNumber, message))
+
+
 class WebView(QtWebEngineWidgets.QWebEngineView):
     def __init__(self, browserTab, enablePlugins=False, parent=None):
-        super(QtWebEngineWidgets.QWebEngineView, self).__init__(parent=parent)
+        super().__init__(parent=parent)
 
-        self.mutex = QMutex()
+        self.webPage = CustomWebPage(self)
+        self.setPage(self.webPage)
+
         self.browserTab = browserTab
 
         self.webSettings = self.settings()
