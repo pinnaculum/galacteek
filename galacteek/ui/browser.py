@@ -20,7 +20,7 @@ from PyQt5.QtGui import QKeySequence
 
 from yarl import URL
 
-from galacteek import log
+from galacteek import log, ensure
 from galacteek.ipfs.wrappers import *
 
 from . import ui_browsertab
@@ -476,15 +476,17 @@ class BrowserTab(GalacteekTab):
     def onPinSuccess(self, f):
         self.app.systemTrayMessage('PIN', iPinSuccess(f.result()))
 
-    def pinPath(self, path, recursive=True, notify=True):
-        async def pinCoro(client, path):
-            pinner = self.app.ipfsCtx.pinner
-            onSuccess = None
-            if notify is True:
-                onSuccess = self.onPinSuccess
-            await pinner.queue(path, recursive, onSuccess)
+    @ipfsOp
+    async def pinQueuePath(self, ipfsop, path, recursive, notify):
+        log.debug('Pinning object {0} (recursive: {1})'.format(path,
+                                                               recursive))
+        onSuccess = None
+        if notify is True:
+            onSuccess = self.onPinSuccess
+        await ipfsop.ctx.pinner.queue(path, recursive, onSuccess)
 
-        self.app.ipfsTask(pinCoro, path)
+    def pinPath(self, path, recursive=True, notify=True):
+        ensure(self.pinQueuePath(path, recursive, notify))
 
     def printButtonClicked(self):
         # TODO: reinstate the printing button
@@ -568,10 +570,13 @@ class BrowserTab(GalacteekTab):
 
     def onUrlChanged(self, url):
         if url.authority() == self.gatewayAuthority:
+            # Content loaded from IPFS gateway, this is IPFS content
             self.currentIpfsResource = url.path()
             self.ui.urlZone.clear()
-            # Content loaded from IPFS gateway, this is IPFS content
-            self.ui.urlZone.insert(fsPath(url.path()))
+
+            stripped = url.toDisplayString(
+                QUrl.RemoveAuthority | QUrl.RemoveScheme)
+            self.ui.urlZone.insert(fsPath(stripped))
             self.ipfsPathVisited.emit(self.currentIpfsResource)
 
             # Activate the follow action if this is IPNS
@@ -631,6 +636,7 @@ class BrowserTab(GalacteekTab):
         self.browseFsPath(joinIpns(ipnsHash))
 
     def enterUrl(self, url):
+        log.debug('Entering URL {}'.format(url.toString()))
         self.ui.urlZone.clear()
         self.ui.urlZone.insert(url.toString())
         self.ui.webEngineView.load(url)

@@ -53,15 +53,15 @@ def cidValid(cidstring):
 
 
 ipfsPathRe = re.compile(
-    r'^(\s*)?(?:fs:|ipfs:|dweb:)?(?P<fullpath>/ipfs/(?P<cid>[a-zA-Z0-9]{46,49}?)(?P<subpath>\/.*)?)$',  # noqa
+    r'^(\s*)?(?:fs:|ipfs:|dweb:)?(?P<fullpath>/ipfs/(?P<cid>[a-zA-Z0-9]{46,59}?)(?P<subpath>\/.*)?)$',  # noqa
     flags=re.MULTILINE)
 
 ipfsPathGwRe = re.compile(
-    r'^(\s*)?(?:https?://[a-zA-Z0-9:.]*)?(?P<fullpath>/ipfs/(?P<cid>[a-zA-Z0-9]{46,49}?)(?P<subpath>\/.*)?)$',  # noqa
+    r'^(\s*)?(?:https?://[a-zA-Z0-9:.]*)?(?P<fullpath>/ipfs/(?P<cid>[a-zA-Z0-9]{46,59}?)(?P<subpath>\/.*)?)$',  # noqa
     flags=re.MULTILINE)
 
 ipfsCidRe = re.compile(
-    r'^(\s*)?(?P<cid>[a-zA-Z0-9]{46,49})$', flags=re.MULTILINE)
+    r'^(\s*)?(?P<cid>[a-zA-Z0-9]{46,59})$', flags=re.MULTILINE)
 
 ipnsPathRe = re.compile(
     r'^(\s*)?(?:fs:|ipfs:)?(?P<fullpath>/ipns/([a-zA-Z0-9\.\-]*)(?P<subpath>\/.*)?$)',  # noqa

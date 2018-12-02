@@ -185,12 +185,12 @@ class PeersManager(GalacteekTab):
                 self.ui.tree.setIndexWidget(idx, btnHomeCombo)
 
     def onContextMenu(self, point):
-        idx = self.tree.indexAt(point)
+        idx = self.ui.tree.indexAt(point)
         if not idx.isValid():
             return
 
         menu = QMenu()
-        menu.exec(self.tree.mapToGlobal(point))
+        menu.exec(self.ui.tree.mapToGlobal(point))
 
     def onDoubleClick(self, idx):
         idxPeerId = self.model.sibling(idx.row(), 1, idx)

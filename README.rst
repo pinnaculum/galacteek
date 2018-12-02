@@ -90,6 +90,8 @@ Main window keybindings:
 - **Ctrl+o**: Browse IPFS path from the clipboard
 - **Ctrl+e**: Explore IPFS path from the clipboard
 - **Ctrl+g**: DAG view of IPFS object from the clipboard
+- **Ctrl+i**: Open the IPLD explorer for the IPFS object referenced in the
+  clipboard
 
 Browser keybindings:
 --------------------

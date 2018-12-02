@@ -18,7 +18,7 @@ def joinIpfs(path):
 
 
 def stripIpfs(path):
-    return path.strip('/ipfs/')
+    return path.lstrip('/ipfs/')
 
 
 def joinIpns(path):
@@ -361,9 +361,10 @@ class IPFSOperator(object):
         False otherwise
         """
         try:
-            result = await self.client.pin.ls(multihash=hashRef)
+            mHash = stripIpfs(hashRef)
+            result = await self.client.pin.ls(multihash=mHash)
             keys = result.get('Keys', {})
-            return hashRef in keys
+            return mHash in keys
         except aioipfs.APIError as e:
             self.debug('isPinned error: {}'.format(e.message))
             return False

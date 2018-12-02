@@ -14,6 +14,10 @@ validcid1 = [
     'zb2rhYZ4An39RKsqpKU4D9Ux6Y5fZ7HeBP5KuxZKjt24dvB6P'
 ]
 
+validcidb32 = [
+    'bafybeiczsscdsbs7ffqz55asqdf3smv6klcw3gofszvwlyarci47bgf354'
+]
+
 invalidcids = [
     'QmT1TPVjdZnu92SuUV',
     'QmT1TPajdu9CRnqwyQygfenu92Su',

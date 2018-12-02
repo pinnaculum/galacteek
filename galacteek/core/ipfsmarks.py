@@ -3,6 +3,7 @@ import time
 import sys
 import collections
 import copy
+import re
 from datetime import datetime
 
 from async_generator import async_generator, yield_, yield_from_
@@ -46,7 +47,7 @@ class IPFSHashMark(collections.UserDict):
     @staticmethod
     def make(path, title=None, datecreated=None, share=False, tags=[],
              description='', comment='', datasize=None, cumulativesize=None,
-             numlinks=None):
+             numlinks=None, icon=None):
         if datecreated is None:
             datecreated = datetime.now().isoformat()
 
@@ -64,6 +65,7 @@ class IPFSHashMark(collections.UserDict):
                 'datecreated': datecreated,
                 'tscreated': int(time.time()),
                 'comment': comment,
+                'icon': icon,
                 'share': share,
                 'tags': tags,
             }
@@ -223,7 +225,46 @@ class IPFSMarks(QObject):
                     _all[mpath] = mark
         return _all
 
-    def search(self, bpath, category=None, tags=[], delete=False):
+    def searchByMetadata(self, metadata):
+        if not isinstance(metadata, dict):
+            raise ValueError('Metadata needs to be a dictionary')
+
+        categories = self.getCategories()
+
+        title = metadata.get('title', None)
+        descr = metadata.get('description', None)
+
+        def metaMatch(mark, field, regexp):
+            try:
+                if mark['metadata'][field] and re.search(
+                        regexp, mark['metadata'][field]):
+                    return True
+            except:
+                return False
+
+        for cat in categories:
+            marks = self.getCategoryMarks(cat)
+            if not marks:
+                continue
+
+            for mPath, mark in marks.items():
+                if 'metadata' not in mark:
+                    continue
+                if title and metaMatch(mark, 'title', title):
+                    return mPath, mark
+
+                if descr and metaMatch(mark, 'description', descr):
+                    return mPath, mark
+
+        return None, None
+
+    def search(
+            self,
+            bpath,
+            metadata=None,
+            category=None,
+            tags=[],
+            delete=False):
         path = rSlash(bpath)
         categories = self.getCategories()
 
@@ -234,6 +275,12 @@ class IPFSMarks(QObject):
             marks = self.getCategoryMarks(cat)
             if not marks:
                 continue
+
+            if isinstance(metadata, dict):
+                title = metadata.get('title', None)
+                for mPath, mark in marks.items():
+                    if title and re.search(title, mark['metadata']['title']):
+                        return mPath, mark
 
             if path in marks.keys():
                 if delete is True:
@@ -261,6 +308,10 @@ class IPFSMarks(QObject):
         # Handle IPFSHashMark or tuple
         if isinstance(mark, IPFSHashMark):
             if mark.path in sec[marksKey]:
+                eMark = sec[marksKey][mark.path]
+
+                if 'icon' in mark.markData:
+                    eMark['icon'] = mark.markData['icon']
                 return False
             sec[marksKey].update(mark)
             self.markAdded.emit(mark.path, mark.markData)
@@ -268,6 +319,10 @@ class IPFSMarks(QObject):
             try:
                 mPath, mData = mark
                 if mPath in sec[marksKey]:
+                    # Patch some fields if already exists
+                    eMark = sec[marksKey][mPath]
+                    if 'icon' in mData:
+                        eMark['icon'] = mData['icon']
                     return False
                 sec[marksKey][mPath] = mData
                 self.markAdded.emit(mPath, mData)
@@ -277,7 +332,8 @@ class IPFSMarks(QObject):
         self.changed.emit()
         return True
 
-    def add(self, bpath, title=None, category='general', share=False, tags=[]):
+    def add(self, bpath, title=None, category='general', share=False, tags=[],
+            description=None, icon=None):
         if not bpath:
             return None
 
@@ -297,6 +353,8 @@ class IPFSMarks(QObject):
                                  datecreated=datetime.now().isoformat(),
                                  share=share,
                                  tags=tags,
+                                 description=description,
+                                 icon=icon
                                  )
 
         sec[marksKey].update(mark)
@@ -313,6 +371,7 @@ class IPFSMarks(QObject):
             marks = oMarks.getCategoryMarks(cat)
             for mark in marks.items():
                 self.insertMark(mark, cat)
+        self.changed.emit()
 
     def follow(self, ipnsp, name, active=True, maxentries=4096,
                resolveevery=3600, share=False, autoPin=False):

@@ -177,7 +177,7 @@ class AsyncIPFSDaemon(object):
         await ipfsConfig(self.goIpfsPath, 'Datastore.StorageMax',
                          '{0}GB'.format(self.storageMax))
 
-        # P2P
+        # P2P streams
         if self.p2pStreams:
             await ipfsConfigJson(self.goIpfsPath,
                                  'Experimental.Libp2pStreamMounting',
@@ -191,6 +191,11 @@ class AsyncIPFSDaemon(object):
                 self.goIpfsPath,
                 'API.HTTPHeaders.Access-Control-Allow-Credentials',
                 '["true"]'
+            )
+            await ipfsConfigJson(
+                self.goIpfsPath,
+                'API.HTTPHeaders.Access-Control-Allow-Methods',
+                '["GET", "POST"]'
             )
             await ipfsConfigJson(
                 self.goIpfsPath,
