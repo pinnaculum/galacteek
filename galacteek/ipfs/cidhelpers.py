@@ -26,6 +26,15 @@ def getCID(hashstring):
         return None
 
 
+def cidConvertBase32(multihash):
+    """Convert a base58-encoded CIDv1 to base32"""
+
+    cid = getCID(multihash)
+    if not cid or cid.version != 1:
+        return None
+    return cid.encode('base32').decode()
+
+
 def cidValid(cidstring):
     """
     Check if cidstring is a valid IPFS CID
