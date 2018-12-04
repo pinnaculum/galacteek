@@ -444,7 +444,7 @@ class IPFSOperator(object):
         return self.ctx.objectStats.get(path, None)
 
     async def addPath(self, path, recursive=True, wrap=False,
-                      callback=None):
+            callback=None, cidversion=1):
         """
         Add files from path in the repo, and returns the top-level entry (the
         root directory), optionally wrapping it with a directory object
@@ -459,6 +459,7 @@ class IPFSOperator(object):
         try:
             async for entry in self.client.add(path, quiet=True,
                                                recursive=recursive,
+                                               cid_version=cidversion,
                                                wrap_with_directory=wrap):
                 await self.sleep()
                 added = entry
