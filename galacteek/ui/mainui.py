@@ -442,11 +442,10 @@ class MainWindow(QMainWindow):
         self.tabnKeys = iKeys()
         self.tabnPinning = iPinningStatus()
         self.tabnMediaPlayer = iMediaPlayer()
+        self.tabnHashmarks = iHashmarks()
 
         self.ui.actionCloseAllTabs.triggered.connect(
             self.onCloseAllTabs)
-        # self.ui.actionAboutGalacteek.triggered.connect(
-        #    self.onAboutGalacteek)
         self.ui.actionSettings.triggered.connect(
             self.onSettings)
         self.ui.actionEvent_log.triggered.connect(
@@ -459,23 +458,6 @@ class MainWindow(QMainWindow):
             triggered=self.quit)
 
         self.menuManual = QMenu(iManual())
-        # self.ui.menuAbout.addMenu(self.menuManual)
-
-        """
-        self.ui.myFilesButton.clicked.connect(self.onFileManagerClicked)
-        self.ui.myFilesButton.setShortcut(QKeySequence('Ctrl+f'))
-        self.ui.manageKeysButton.clicked.connect(self.onIpfsKeysClicked)
-        self.ui.openBrowserTabButton.clicked.connect(
-            self.onOpenBrowserTabClicked)
-        self.ui.hashmarksButton.clicked.connect(self.addHashmarksTab)
-        self.ui.hashmarksButton.setShortcut(QKeySequence('Ctrl+m'))
-        self.ui.writeNewDocumentButton.clicked.connect(
-            self.onWriteNewDocumentClicked)
-        self.ui.mediaPlayerButton.clicked.connect(self.onOpenMediaPlayer)
-        """
-
-        # self.ui.ipfsSearchButton.clicked.connect(self.onIpfsSearch)
-        # self.ui.ipfsSearch.returnPressed.connect(self.onIpfsSearch)
 
         # Global pin-all button
         self.pinAllGlobalButton = QToolButton()
@@ -516,7 +498,6 @@ class MainWindow(QMainWindow):
             Qt.LeftToolBarArea | Qt.TopToolBarArea
         )
 
-        #self.toolbarMain.moved.connect(lambda orient: self.onMainToolbarMoved(orient))
         self.toolbarMain.orientationChanged.connect(
             lambda orient: self.onMainToolbarMoved(orient))
         self.toolbarTools = QToolBar()
@@ -548,7 +529,6 @@ class MainWindow(QMainWindow):
         self.menuUserProfile = QMenu()
         self.menuUserProfile.addSeparator()
         self.menuUserProfile.triggered.connect(self.onUserProfile)
-        # self.ui.actionNew_Profile.setEnabled(False)
         self.profilesActionGroup = QActionGroup(self)
 
         # Profile button
@@ -719,6 +699,10 @@ class MainWindow(QMainWindow):
         previousState = self.app.settingsMgr.mainWindowState
         if previousState:
             self.restoreState(previousState)
+
+
+        self.hashmarksPage = None
+
 
     @property
     def app(self):
@@ -1290,6 +1274,12 @@ class MainWindow(QMainWindow):
             self.ipfsSearchWidget.hide()
 
     def addHashmarksTab(self):
-        widget = DWebView(HashmarksPage(self.app.marksLocal), self)
+        ft = self.findTabWithName(self.tabnHashmarks)
+        if ft:
+            return self.ui.tabWidget.setCurrentWidget(ft)
+
+        if self.hashmarksPage is None:
+            self.hashmarksPage = HashmarksPage(self.app.marksLocal, self)
+        widget = DWebView(self.hashmarksPage, self)
         self.registerTab(WebTab(widget, self), iHashmarks(),
                 icon=getIcon('hashmarks.png'), current=True)
