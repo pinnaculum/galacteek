@@ -8,6 +8,7 @@ from galacteek import log as logger
 from galacteek.ipfs.pubsub.messages import (
     MarksBroadcastMessage,
     PeerIdentMessageV1,
+    PeerIdentMessageV2,
     PeerLogoutMessage)
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.core.asynclib import asyncify
@@ -290,14 +291,22 @@ class PSPeersService(JSONPubsubService):
             logger.debug('Profile info, ident message not sent')
             return
 
+        cfgMaps = []
+
+        if self.ipfsCtx.inOrbit:
+            if profile.orbitalCfgMap:
+                cfgMaps.append(profile.orbitalCfgMap.data)
+
         if uInfo.schemaVersion is 1:
-            msg = PeerIdentMessageV1.make(
+            msg = PeerIdentMessageV2.make(
                 nodeId,
                 uInfo.objHash,
                 uInfo.root,
                 profile.dagUser.dagCid,
                 profile.keyRootId,
-                self.ipfsCtx.p2p.servicesFormatted())
+                self.ipfsCtx.p2p.servicesFormatted(),
+                cfgMaps
+            )
 
             logger.debug('Sending ident message')
             await self.send(str(msg))
@@ -308,8 +317,11 @@ class PSPeersService(JSONPubsubService):
         msgType = msg.get('msgtype', None)
 
         if msgType == PeerIdentMessageV1.TYPE:
-            logger.debug('Received ident message from {}'.format(sender))
+            logger.debug('Received ident message (v1) from {}'.format(sender))
             await self.handleIdentMessageV1(sender, msg)
+        elif msgType == PeerIdentMessageV2.TYPE:
+            logger.debug('Received ident message (v2) from {}'.format(sender))
+            await self.handleIdentMessageV2(sender, msg)
         elif msgType == PeerLogoutMessage.TYPE:
             logger.debug('Received logout message from {}'.format(sender))
             await self.handleLogoutMessage(sender, msg)
@@ -323,6 +335,18 @@ class PSPeersService(JSONPubsubService):
 
     async def handleIdentMessageV1(self, sender, msg):
         iMsg = PeerIdentMessageV1(msg)
+        if not iMsg.valid():
+            logger.debug('Received invalid ident message')
+            return
+
+        if sender != iMsg.peer:
+            # You forging pubsub messages, son ?
+            return
+
+        await self.ipfsCtx.peers.registerFromIdent(iMsg)
+
+    async def handleIdentMessageV2(self, sender, msg):
+        iMsg = PeerIdentMessageV2(msg)
         if not iMsg.valid():
             logger.debug('Received invalid ident message')
             return

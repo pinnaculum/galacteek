@@ -296,10 +296,18 @@ class IPFSContext(QObject):
 
         self.pinner = None
         self.pinnerTask = None
+        self.orbitConnector = None
 
     @property
     def app(self):
         return self._app
+
+    @property
+    def inOrbit(self):
+        # We in orbit yet ?
+        if self.orbitConnector:
+            return self.orbitConnector.connected
+        return False
 
     @property
     def loop(self):
@@ -425,7 +433,7 @@ class IPFSContext(QObject):
         try:
             await profile.init()
         except Exception as e:
-            log.debug('Could not initialize profile: {}'.format(
+            log.info('Could not initialize profile: {}'.format(
                 str(e)), exc_info=True)
             return None
         self.profiles[pName] = profile
@@ -453,3 +461,7 @@ class IPFSContext(QObject):
             return await op.whoProvides(self.softIdent['Hash'])
         else:
             return []
+
+    async def pin(self, path, recursive=False, callback=None):
+        if self.pinner:
+            await self.pinner.queue(path, recursive, callback)

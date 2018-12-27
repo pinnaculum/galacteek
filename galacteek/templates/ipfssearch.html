@@ -1,29 +1,180 @@
 <html>
+    <head>
+        <link rel="stylesheet" type="text/css" href="qrc:///share/static/css/ipfs-ui.css"/>
+
+        <style>
+        body {
+            font: 10pt "Montserrat";
+        }
+
+        .grayscale { 
+            -webkit-filter: grayscale(100%);
+            -moz-filter: grayscale(100%);
+            -ms-filter: grayscale(100%);
+            -o-filter: grayscale(100%);
+            filter: grayscale(100%);
+            filter: gray;
+          }
+        .grayout {
+            opacity: 0.6; /* Real browsers */
+            filter: alpha(opacity = 60); /* MSIE */
+        }
+
+    ul {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+    }
+
+    .textpreview {
+        margin-left: 10px;
+        margin-top: 10px;
+        background-color: #66d9ff;
+        border: 1px solid black;
+        padding: 5px;
+        display: none;
+    }
+
+    .hitdescr {
+        margin-left: 10px;
+    }
+
+    .hit {
+        -webkit-box-shadow: 0 8px 6px -6px black;
+        -moz-box-shadow: 0 8px 6px -6px black;
+        box-shadow: 0 8px 6px -6px black;
+        background-color: #e0e0d1;
+        padding: 8px;
+        margin: 8px;
+        border-radius: 4px;
+    }
+
+    .unavailable {
+        -webkit-box-shadow: 0 8px 6px -6px black;
+        -moz-box-shadow: 0 8px 6px -6px black;
+        box-shadow: 0 8px 6px -6px black;
+        opacity: 0.6; /* Real browsers */
+        filter: alpha(opacity = 60); /* MSIE */
+        text-align: right;
+    }
+        </style>
+    </head>
 <body>
-    <ul>
-{% for hit in hits %}
-        <li>
-            <p>
-                <a href="ipfs:{{ hit['path'] }}">{{ hit['title'] }}</a>
-                (Size {{ hit['size'] }})
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
 
-                <a href="ipfs:{{ hit['path'] }}#hashmark"><img src=":/share/icons/star-navy.png" width="16" height="16"/></a>
+    <script type="text/javascript">
+        function previewFile(hash) {
+            preview = document.getElementById(hash + "_preview")
+            raw = document.getElementById(hash + "_text")
+            fetched = document.getElementById(hash + "_fetched")
 
-{% if hit['type'] == 'directory' %}
-                <a href="ipfs:{{ hit['path'] }}#explore"><img src=":/share/icons/folder-open-black.png" width="16" height="16"/></a>
-{% endif %}
+            if (!fetched) {
+                window.ipfs.cat(hash, function (err, file) {
+                    if (!raw || err) {
+                        raw.innerHTML = 'Error'
+                        throw err
+                    } else {
+                        raw.innerHTML = file.toString('utf8')
+                    }
+                })
+                document.createElement("p", hash + "_fetched")
+            }
 
-            </p>
-            <ul style="list-style-type: none">
-                <li>{{ hit['descr'] }} </li>
-            </ul>
-        </li>
-{% endfor %}
-    </ul>
+            if (preview.style.display === 'none' || !(preview.style.display)) {
+                preview.style.display = 'block'
+            } else {
+                preview.style.display = 'none'
+            }
+        }
 
+        function addResult(ul, result) {
+            let title = result['title']
+            let path = result['path']
+
+            var root = document.createElement("li");
+            var p = document.createElement("p");
+            var titleLink = document.createElement("a")
+            titleLink.setAttribute("href", "#")
+            titleLink.setAttribute("onclick",
+                'window.openIpfs("' + path + '")')
+            titleLink.appendChild(
+                document.createTextNode(title))
+
+            p.appendChild(titleLink)
+            var msg = document.createTextNode(result['title']);
+            p.appendChild(msg)
+            root.appendChild(p)
+            return root
+        }
+
+        new QWebChannel(qt.webChannelTransport, function (channel) {
+            window.ipfssearch = channel.objects.ipfssearch;
+
+            window.ipfssearch.resultsReadyDom.connect(function(results) {
+                var resDiv = document.getElementById('results')
+                resDiv.innerHTML = results
+            });
+
+            window.ipfssearch.objectStatAvailable.connect(function(cid, stat) {
+                var element = document.getElementById(cid)
+            });
+
+            window.ipfssearch.objectStatUnavailable.connect(function(cid) {
+                var element = document.getElementById(cid)
+
+                if (element) {
+                    element.setAttribute("class", "unavailable")
+                    var fields = element.getElementsByTagName('*')
+                    for(var i = 0; i < fields.length; i++) {
+                        fields[i].disabled = true
+                    }
+                }
+            })
+
+            window.ipfssearch.resultsReady.connect(function(results) {
+                window.results = results;
+                var div = document.getElementById('results')
+                div.innerHTML = ""
+                results.forEach(function(result) {
+                    var ul = document.createElement("ul");
+                    res = addResult(ul, result)
+                    ul.appendChild(res)
+                    div.appendChild(ul)
+                })
+
+            });
+        })
+
+        window.openIpfs = function (path) {
+            window.ipfssearch.openLink(path);
+        }
+
+        window.hashmark = function (path) {
+            window.ipfssearch.hashmark(path);
+        }
+
+        window.exploreIpfs = function (path) {
+            window.ipfssearch.explore(path);
+        }
+
+        window.fetchObject = function (path) {
+            alert(window.ipfs)
+        }
+    </script>
+
+    <div id="main">
+        <div id="results">
+        </div>
+    </div>
 
     <br/>
-    <p align="left">Powered by the <b>ipfs-search.com</b> search engine</p>
 
+    <div align="right">
+        <p>
+            <img src="qrc:///share/icons/ipfs-search.png"></img>
+            Powered by the <a href="https://ipfs-search.com"><b>ipfs-search.com</b></a> search engine
+        </p>
+    </div>
 </body>
 </html>

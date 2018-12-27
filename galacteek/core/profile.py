@@ -17,13 +17,32 @@ from galacteek.ipfs.dag import EvolvingDAG
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.encrypt import IpfsRSAAgent
 from galacteek.core.asynclib import asyncReadFile
-from galacteek.web import render
+from galacteek.core.orbitdb import OrbitConfigMap
+from galacteek.core.orbitdbcfg import defaultOrbitConfigMap
+from galacteek.core.jsono import QJSONFile
+from galacteek.dweb import render
+
+
+class OrbitalProfileConfig(MutableIPFSJson):
+    def configMap(self):
+        return OrbitConfigMap(self.root['config'])
+
+    @property
+    def valid(self):
+        return 'config' in self.root
+
+    def initObj(self):
+        return {
+            'config': {}
+        }
 
 
 class UserInfos(CipheredIPFSJson):
     GENDER_MALE = 0
     GENDER_FEMALE = 1
     GENDER_UNSPECIFIED = -1
+
+    usernameChanged = pyqtSignal()
 
     def initObj(self):
         uid = str(uuid.uuid4())
@@ -68,6 +87,11 @@ class UserInfos(CipheredIPFSJson):
                 'schemav': 1,
             }
         }
+
+    @property
+    def usernameSet(self):
+        return self.parser.traverse(
+            'userinfo.uid') != self.parser.traverse('userinfo.username')
 
     @property
     def uid(self):
@@ -286,6 +310,8 @@ class UserProfile(QObject):
 
         self._dagUser = None
         self.userInfo = None
+        self.orbitalConfigMfs = None
+        self.orbitalCfgMap = None
 
         self.rsaAgent = None
 
@@ -353,6 +379,7 @@ class UserProfile(QObject):
             self.pathDocuments,
             self.pathMusic,
             self.pathCode,
+            self.pathOrbital
         ]
 
     @property
@@ -398,6 +425,14 @@ class UserProfile(QObject):
     @property
     def pathData(self):
         return os.path.join(self.root, 'data')
+
+    @property
+    def pathOrbital(self):
+        return os.path.join(self.pathData, 'orbital')
+
+    @property
+    def pathOrbitalConfig(self):
+        return os.path.join(self.pathOrbital, 'config')
 
     @property
     def pathPlaylists(self):
@@ -472,6 +507,7 @@ class UserProfile(QObject):
         self._initialized = True
         self.userLogInfo('Initialization complete')
         self.userInfo.changed.connect(self.onUserInfoChanged)
+        self.userInfo.usernameChanged.connect(self.onUserNameChanged)
 
     @ipfsOp
     async def cryptoInit(self, op):
@@ -559,6 +595,69 @@ class UserProfile(QObject):
 
     def onUserInfoChanged(self):
         ensure(self.update())
+
+    def onUserNameChanged(self):
+        ensure(self.publishProfile())
+
+    def onOrbitalConfigChanged(self):
+        pass
+
+    @ipfsOp
+    async def reconfigureOrbit(self, ipfsop):
+        await ipfsop.ctx.orbitConnector.reconfigure()
+
+    def syncOrbital(self):
+        self.orbitalCfgFile.set(self.orbitalCfgMap.data)
+        self.orbitalCfgFile.changed.emit()
+
+    async def orbitalSetup(self, conn):
+        conn.useConfigMap(OrbitConfigMap(defaultOrbitConfigMap))
+
+        self.orbitalCfgFile = QJSONFile(os.path.join(
+            self.ctx.app.dataLocation, 'orbital.profile.json'))
+        self.orbitalCfgMap = OrbitConfigMap(self.orbitalCfgFile.root)
+        conn.useConfigMap(self.orbitalCfgMap)
+
+        self.orbitalCfgMap.notifier.changed.connect(
+            lambda: self.syncOrbital())
+
+        userNs = self.userInfo.uid
+
+        self.orbitalDbProfile = conn.database(userNs,
+                                              'profile', dbtype='keyvalue')
+
+        if not self.orbitalCfgMap.hasDatabase(userNs, 'profile'):
+            self.orbitalCfgMap.newDatabase(
+                self.orbitalDbProfile.ns,
+                self.orbitalDbProfile.dbname,
+                self.orbitalDbProfile.dbtype
+            )
+            await self.orbitalDbProfile.create()
+            self.orbitalCfgFile.changed.emit()
+            await self.reconfigureOrbit()
+
+        await self.reconfigureOrbit()
+        resp = await self.orbitalDbProfile.open()
+
+    async def publishProfile(self):
+        if self.ctx.inOrbit:
+            conn = self.ctx.orbitConnector
+            log.debug('Publishing username {0}'.format(self.userInfo.username))
+
+            usernames = await conn.usernamesList()
+
+            logUser.debug('Existing usernames in database: {users}'.format(
+                users=','.join(usernames)))
+
+            if self.userInfo.username not in usernames:
+                await conn.dbUsernames.add({
+                    'name': self.userInfo.username
+                })
+
+            entry = await self.orbitalDbProfile.get(self.userInfo.username)
+            if not entry:
+                resp = await self.orbitalDbProfile.set(self.userInfo.username,
+                                                       self.userInfo.root['userinfo'])
 
     def onDagChange(self):
         ensure(self.publishDag())

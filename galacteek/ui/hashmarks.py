@@ -303,8 +303,8 @@ class NetworkMarksView(QWidget, _MarksUpdater):
 
 
 class HashmarksTab(GalacteekTab, _MarksUpdater):
-    def __init__(self, *args, **kw):
-        super(HashmarksTab, self).__init__(*args, **kw)
+    def __init__(self, gWindow, **kw):
+        super(HashmarksTab, self).__init__(gWindow, **kw)
 
         model = kw.pop('model', None)
 
@@ -315,7 +315,7 @@ class HashmarksTab(GalacteekTab, _MarksUpdater):
         self.marksLocal.markDeleted.connect(self.onMarkDeleted)
 
         self.ui = ui_hashmarksmgr.Ui_HashmarksViewForm()
-        self.ui.setupUi(self)
+        self.ui.setupUi(self.mainWidget)
 
         self.uiFeeds = FeedsView(self, self.marksLocal,
                                  self.loop, parent=self)

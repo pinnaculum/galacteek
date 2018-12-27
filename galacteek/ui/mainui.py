@@ -3,12 +3,14 @@ import os.path
 import copy
 
 from PyQt5.QtWidgets import (
-    QMainWindow, QDialog,
-    QPushButton, QVBoxLayout,
+    QMainWindow, QDialog, QToolBar, QDockWidget, QLineEdit,
+    QPushButton, QVBoxLayout, QSpacerItem, QWidget, QWidget,
     QToolBar, QMenu, QAction, QActionGroup, QToolButton,
     QTreeView, QHeaderView, QInputDialog, QLabel)
+
 from PyQt5.QtCore import (QCoreApplication, Qt,
-                          QTimer, QDateTime)
+                          QTimer, QDateTime, QSize, QPoint)
+
 from PyQt5.Qt import QByteArray, QSizePolicy
 from PyQt5 import QtWebEngineWidgets
 from PyQt5.QtGui import (QKeySequence,
@@ -22,12 +24,31 @@ from galacteek.core.asynclib import asyncify
 from galacteek.ui import mediaplayer
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.ipfsops import *
-from . import ui_galacteek, ui_ipfsinfos
-from . import (browser, files, keys, settings, hashmarks,
-               textedit, ipfsview, dag, ipfssearchview, peers, eventlog)
+
+from galacteek.core.orbitdb import GalacteekOrbitConnector
+from galacteek.dweb.page import HashmarksPage, DWebView, WebTab
+
+from . import ui_galacteek
+from . import ui_ipfsinfos
+from . import ui_ipfssearchinput
+
+from . import browser
+from . import files
+from . import keys
+from . import settings
+from . import hashmarks
+from . import orbital
+from . import textedit
+from . import ipfsview
+from . import dag
+from . import ipfssearchview
+from . import peers
+from . import eventlog
+
+
 from .helpers import *
 from .modelhelpers import *
-from .widgets import GalacteekTab
+from .widgets import GalacteekTab, PopupToolButton, HashmarkMgrButton
 from .dialogs import *
 from ..appsettings import *
 from .i18n import *
@@ -190,8 +211,9 @@ class PinStatusDetails(GalacteekTab):
         super().__init__(*args, **kw)
 
         self.tree = QTreeView(self)
-        self.vLayout = QVBoxLayout(self)
-        self.vLayout.addWidget(self.tree)
+        self.boxLayout = QVBoxLayout(self)
+        self.boxLayout.addWidget(self.tree)
+        self.vLayout.addLayout(self.boxLayout)
 
         self.app.ipfsCtx.pinItemStatusChanged.connect(self.onPinStatusChanged)
         self.app.ipfsCtx.pinFinished.connect(self.onPinFinished)
@@ -237,6 +259,7 @@ class QuickAccessToolBar(QToolBar):
     def __init__(self, window):
         super().__init__()
 
+        self.setObjectName('toolbarQa')
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.mainW = window
 
@@ -262,12 +285,12 @@ class QuickAccessToolBar(QToolBar):
                 # Pin the icon since it's valid
                 if not await op.isPinned(mIcon):
                     log.debug('Pinning icon {0}'.format(mIcon))
-                    await op.ctx.pinner.queue(mIcon, False, None)
+                    await op.ctx.pin(mIcon)
         else:
             icon = getIcon('unknown-file.png')
 
         self.addAction(icon, mark['metadata'].get('title', iUnknown()),
-           lambda: self.mainW.addBrowserTab().browseFsPath(mPath))
+                       lambda: self.mainW.addBrowserTab().browseFsPath(mPath))
 
     async def init(self):
         """
@@ -284,6 +307,120 @@ class QuickAccessToolBar(QToolBar):
             'title': 'IPLD explorer'})
 
 
+class DatabasesManager(QObject):
+    def __init__(self, orbitConnector, parent=None):
+        super().__init__(parent)
+
+        self.mainW = parent
+
+        self.icon = getIcon('orbitdb.png')
+        self.connector = orbitConnector
+        self._dbButton = self.buildButton()
+
+    @property
+    def button(self):
+        return self._dbButton
+
+    def buildButton(self):
+        dbButton = QToolButton()
+        dbButton.setIconSize(QSize(24, 24))
+        dbButton.setIcon(self.icon)
+        dbButton.setPopupMode(QToolButton.MenuButtonPopup)
+
+        self.databasesMenu = QMenu()
+        self.mainFeedAction = QAction(self.icon,
+                                      'General discussions feed', self,
+                                      triggered=self.onMainFeed)
+        self.databasesMenu.addAction(self.mainFeedAction)
+        dbButton.setMenu(self.databasesMenu)
+        return dbButton
+
+    def onMainFeed(self):
+        database = self.connector.database('feeds', 'general')
+        view = orbital.OrbitFeedView(self.connector, database,
+                                     parent=self.mainW.ui.tabWidget)
+        self.mainW.registerTab(view, 'General', current=True,
+                               icon=self.icon)
+
+
+class MainToolBar(QToolBar):
+    moved = pyqtSignal(int)
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setObjectName('toolbarMain')
+
+        # Empty widget
+        self.emptySpace = QWidget()
+        self.emptySpace.setSizePolicy(
+            QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.lastPos = None
+
+    @property
+    def vertical(self):
+        return self.orientation() == Qt.Vertical
+
+    @property
+    def horizontal(self):
+        return self.orientation() == Qt.Horizontal
+
+    def dragEnterEvent(self, event):
+        event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        pass
+
+
+class ProfileButton(PopupToolButton):
+    pass
+
+
+class IPFSSearchButton(QToolButton):
+    hovered = pyqtSignal()
+
+    def enterEvent(self, ev):
+        self.hovered.emit()
+
+    def leaveEvent(self, ev):
+        pass
+
+
+class IPFSSearchWidget(QWidget):
+    runSearch = pyqtSignal(str)
+    hidden = pyqtSignal()
+
+    def __init__(
+            self,
+            icon: str,
+            parent=None,
+            f=Qt.Popup | Qt.FramelessWindowHint):
+        super(IPFSSearchWidget, self).__init__(parent, f)
+
+        self.input = ui_ipfssearchinput.Ui_SearchInput()
+        self.input.setupUi(self)
+        self.input.searchQuery.returnPressed.connect(self.onSearch)
+
+        #self.setAttribute(Qt.WA_NoSystemBackground)
+        #self.setAttribute(Qt.WA_TranslucentBackground)
+        #self.setAttribute(Qt.WA_TransparentForMouseEvents)
+
+    def focus(self):
+        self.input.searchQuery.setFocus(Qt.OtherFocusReason)
+
+    def onSearch(self):
+        text = self.input.searchQuery.text()
+        self.input.searchQuery.clear()
+        self.runSearch.emit(text)
+        self.hide()
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            self.hide()
+
+    def hideEvent(self, event):
+        self.hidden.emit()
+
+
 class MainWindow(QMainWindow):
     def __init__(self, app):
         super(MainWindow, self).__init__()
@@ -296,6 +433,8 @@ class MainWindow(QMainWindow):
         self.ui = ui_galacteek.Ui_GalacteekWindow()
         self.ui.setupUi(self)
 
+        self.menuBar().hide()
+
         loggerUser.handlers.append(
             MainWindowLogHandler(window=self, level='DEBUG'))
 
@@ -304,22 +443,25 @@ class MainWindow(QMainWindow):
         self.tabnPinning = iPinningStatus()
         self.tabnMediaPlayer = iMediaPlayer()
 
-        self.ui.actionQuit.triggered.connect(self.quit)
-
         self.ui.actionCloseAllTabs.triggered.connect(
             self.onCloseAllTabs)
-        self.ui.actionAboutGalacteek.triggered.connect(
-            self.onAboutGalacteek)
-        self.ui.actionDonate.triggered.connect(
-            self.onHelpDonate)
+        # self.ui.actionAboutGalacteek.triggered.connect(
+        #    self.onAboutGalacteek)
         self.ui.actionSettings.triggered.connect(
             self.onSettings)
         self.ui.actionEvent_log.triggered.connect(
             self.onOpenEventLog)
 
-        self.menuManual = QMenu(iManual())
-        self.ui.menuAbout.addMenu(self.menuManual)
+        self.actionQuit = QAction(
+            getIcon('quit.png'),
+            'Exit', self,
+            shortcut=QKeySequence('Ctrl+q'),
+            triggered=self.quit)
 
+        self.menuManual = QMenu(iManual())
+        # self.ui.menuAbout.addMenu(self.menuManual)
+
+        """
         self.ui.myFilesButton.clicked.connect(self.onFileManagerClicked)
         self.ui.myFilesButton.setShortcut(QKeySequence('Ctrl+f'))
         self.ui.manageKeysButton.clicked.connect(self.onIpfsKeysClicked)
@@ -330,9 +472,20 @@ class MainWindow(QMainWindow):
         self.ui.writeNewDocumentButton.clicked.connect(
             self.onWriteNewDocumentClicked)
         self.ui.mediaPlayerButton.clicked.connect(self.onOpenMediaPlayer)
-        self.ui.ipfsSearchButton.clicked.connect(self.onIpfsSearch)
-        self.ui.ipfsSearch.returnPressed.connect(self.onIpfsSearch)
-        self.ui.peersMgrButton.clicked.connect(self.onPeersMgrClicked)
+        """
+
+        # self.ui.ipfsSearchButton.clicked.connect(self.onIpfsSearch)
+        # self.ui.ipfsSearch.returnPressed.connect(self.onIpfsSearch)
+
+        # Global pin-all button
+        self.pinAllGlobalButton = QToolButton()
+        self.pinAllGlobalButton.setIcon(getIcon('pin-black.png'))
+        self.pinAllGlobalButton.setObjectName('pinGlobalButton')
+        self.pinAllGlobalButton.setToolTip(iGlobalAutoPinning())
+        self.pinAllGlobalButton.setCheckable(True)
+        self.pinAllGlobalButton.setAutoRaise(True)
+        self.pinAllGlobalChecked = False
+        self.pinAllGlobalButton.toggled.connect(self.onToggledPinAllGlobal)
 
         self.multiLoaderMenu = QMenu()
         self.multiLoaderHMenu = QMenu(iClipboardHistory())
@@ -357,6 +510,144 @@ class MainWindow(QMainWindow):
             shortcut=QKeySequence('Ctrl+i'),
             triggered=self.onIpldExplorerFromClipboard)
 
+        self.toolbarMain = MainToolBar(self)
+
+        self.toolbarMain.setAllowedAreas(
+            Qt.LeftToolBarArea | Qt.TopToolBarArea
+        )
+
+        #self.toolbarMain.moved.connect(lambda orient: self.onMainToolbarMoved(orient))
+        self.toolbarMain.orientationChanged.connect(
+            lambda orient: self.onMainToolbarMoved(orient))
+        self.toolbarTools = QToolBar()
+        self.toolbarTools.setOrientation(self.toolbarMain.orientation())
+
+        # Apps/shortcuts toolbar
+        self.qaToolbar = QuickAccessToolBar(self)
+        self.qaToolbar.setOrientation(self.toolbarMain.orientation())
+
+        # Browse button
+        self.browseButton = QToolButton()
+        self.browseButton.setPopupMode(QToolButton.MenuButtonPopup)
+        self.browseButton.setObjectName('buttonBrowseIpfs')
+        self.browseButton.clicked.connect(
+            lambda: self.onOpenBrowserTabClicked())
+        menu = QMenu()
+        menu.addAction(getIconIpfsIce(), 'Browse',
+                       self.onOpenBrowserTabClicked)
+        self.browseButton.setMenu(menu)
+        self.browseButton.setIcon(getIconIpfs64())
+
+        # File manager button
+        self.fileManagerButton = QToolButton()
+        self.fileManagerButton.setIcon(getIcon('folder-open.png'))
+        self.fileManagerButton.clicked.connect(lambda:
+                                               self.onFileManagerClicked())
+
+        # Edit-Profile button
+        self.menuUserProfile = QMenu()
+        self.menuUserProfile.addSeparator()
+        self.menuUserProfile.triggered.connect(self.onUserProfile)
+        # self.ui.actionNew_Profile.setEnabled(False)
+        self.profilesActionGroup = QActionGroup(self)
+
+        # Profile button
+        self.profileMenu = QMenu()
+        self.profileMenu.addAction('View Homepage',
+                                   self.onProfileViewHomepage)
+        self.profileMenu.addSeparator()
+        self.profileMenu.addAction('Post Message',
+                                   self.onProfilePostMessage)
+        self.profileEditButton = ProfileButton(menu=self.profileMenu)
+        self.profileEditButton.setIcon(getIcon('profile-user.png'))
+        self.profileEditButton.setEnabled(False)
+        self.profileEditButton.clicked.connect(self.onProfileEditDialog)
+
+        # Hashmarks mgr button
+        self.hashmarkMgrButton = HashmarkMgrButton(
+            marksLocal=self.app.marksLocal)
+        self.hashmarkMgrButton.clicked.connect(self.addHashmarksTab)
+
+        # Peers button
+        self.peersButton = QToolButton()
+        self.peersButton.setIcon(getIcon('peers.png'))
+        self.peersButton.clicked.connect(
+            lambda: self.onPeersMgrClicked())
+
+        # Clipboard loader button
+        self.clipboardMultiLoader = QToolButton()
+        self.clipboardMultiLoader.setIcon(getIcon('clipboard.png'))
+        self.clipboardMultiLoader.clicked.connect(self.onLoadFromClipboard)
+        self.clipboardMultiLoader.setMenu(self.multiLoaderMenu)
+        self.clipboardMultiLoader.setToolTip(iClipboardEmpty())
+        self.clipboardMultiLoader.setPopupMode(QToolButton.MenuButtonPopup)
+
+        # Settings button
+        self.settingsToolButton = QToolButton()
+        self.settingsToolButton.setIcon(getIcon('settings.png'))
+        self.settingsToolButton.setPopupMode(QToolButton.MenuButtonPopup)
+        self.settingsToolButton.clicked.connect(self.onSettings)
+        menu = QMenu()
+        menu.addAction(getIcon('settings.png'), iEventLog(),
+                       lambda: self.onOpenEventLog())
+        menu.addAction(getIcon('lock-and-key.png'), iKeys(),
+                       lambda: self.onIpfsKeysClicked())
+        self.settingsToolButton.setMenu(menu)
+
+        self.helpToolButton = QToolButton()
+        self.helpToolButton.setIcon(getIcon('information.png'))
+        self.helpToolButton.setPopupMode(QToolButton.MenuButtonPopup)
+        self.helpToolButton.clicked.connect(lambda: self.onOpenManual('en'))
+        menu = QMenu()
+        menu.addMenu(self.menuManual)
+        menu.addAction('Donate', lambda: self.onHelpDonate())
+        menu.addAction('About', lambda: self.onAboutGalacteek())
+        self.helpToolButton.setMenu(menu)
+
+        self.ipfsSearchButton = IPFSSearchButton()
+        self.ipfsSearchButton.hovered.connect(
+            lambda: self.toggleIpfsSearchWidget(True))
+        self.ipfsSearchButton.setShortcut(QKeySequence('Ctrl+s'))
+        self.ipfsSearchButton.setIcon(getIcon('search-engine.png'))
+        self.ipfsSearchButton.setCheckable(True)
+        self.ipfsSearchButton.setAutoRaise(True)
+        self.ipfsSearchButton.toggled.connect(
+            lambda: self.toggleIpfsSearchWidget())
+
+        self.ipfsSearchWidget = IPFSSearchWidget(self)
+        self.ipfsSearchWidget.runSearch.connect(
+            lambda text: self.addIpfsSearchView(text))
+        self.ipfsSearchWidget.hidden.connect(
+            lambda: self.ipfsSearchButton.setChecked(False))
+
+        self.toolbarMain.addWidget(self.browseButton)
+        self.toolbarMain.addSeparator()
+        self.toolbarMain.addWidget(self.fileManagerButton)
+
+        self.toolbarMain.addWidget(self.hashmarkMgrButton)
+        self.hashmarkMgrButton.hashmarkClicked.connect(self.onHashmarkClicked)
+        self.toolbarMain.addAction(getIcon('multimedia.png'), iMediaPlayer(),
+                                   self.onOpenMediaPlayer)
+
+        self.toolbarMain.addSeparator()
+        self.toolbarMain.addWidget(self.toolbarTools)
+        self.toolbarMain.addSeparator()
+        self.toolbarMain.addWidget(self.qaToolbar)
+
+        self.toolbarTools.addWidget(self.peersButton)
+        self.toolbarTools.addWidget(self.profileEditButton)
+
+        self.toolbarMain.addWidget(self.toolbarMain.emptySpace)
+        self.toolbarMain.addWidget(self.ipfsSearchButton)
+        self.toolbarMain.addWidget(self.clipboardMultiLoader)
+        self.toolbarMain.addWidget(self.pinAllGlobalButton)
+        self.toolbarMain.addWidget(self.settingsToolButton)
+
+        self.toolbarMain.addWidget(self.helpToolButton)
+        self.toolbarMain.addAction(self.actionQuit)
+
+        self.addToolBar(Qt.LeftToolBarArea, self.toolbarMain)
+
         self.multiExploreHashAction.setEnabled(False)
         self.multiLoadHashAction.setEnabled(False)
         self.multiDagViewAction.setEnabled(False)
@@ -367,32 +658,12 @@ class MainWindow(QMainWindow):
         self.multiLoaderMenu.addAction(self.multiIpldExplorerAction)
         self.multiLoaderMenu.addMenu(self.multiLoaderHMenu)
 
-        self.ui.clipboardMultiLoader.clicked.connect(self.onLoadFromClipboard)
-        self.ui.clipboardMultiLoader.setMenu(self.multiLoaderMenu)
-        self.ui.clipboardMultiLoader.setToolTip(iClipboardEmpty())
-        self.ui.clipboardMultiLoader.setPopupMode(QToolButton.MenuButtonPopup)
-
-        # Global pin-all button
-        self.ui.pinAllGlobalButton.setCheckable(True)
-        self.ui.pinAllGlobalButton.setAutoRaise(True)
-        self.pinAllGlobalChecked = False
-        self.ui.pinAllGlobalButton.toggled.connect(self.onToggledPinAllGlobal)
-
         self.ui.tabWidget.setTabsClosable(True)
         self.ui.tabWidget.tabCloseRequested.connect(self.onTabCloseRequest)
         self.ui.tabWidget.setElideMode(Qt.ElideMiddle)
         self.ui.tabWidget.setUsesScrollButtons(True)
 
         self.webProfile = QtWebEngineWidgets.QWebEngineProfile.defaultProfile()
-
-        self.ui.menuUser_Profile.addSeparator()
-        self.ui.menuUser_Profile.triggered.connect(self.onUserProfile)
-        self.ui.actionNew_Profile.setEnabled(False)
-        self.profilesActionGroup = QActionGroup(self)
-
-        # Apps/shortcuts toolbar
-        self.qaToolbar = QuickAccessToolBar(self)
-        self.ui.qaLayout.addWidget(self.qaToolbar)
 
         # Status bar setup
         self.ui.pinningStatusButton = QPushButton()
@@ -407,18 +678,6 @@ class MainWindow(QMainWindow):
         self.ui.ipfsInfosButton.setToolTip(iIpfsInfos())
         self.ui.ipfsInfosButton.clicked.connect(self.onIpfsInfos)
 
-        self.profileMenu = QMenu()
-
-        self.profileMenu.addAction('View Homepage',
-                                   self.onProfileViewHomepage)
-        self.profileMenu.addSeparator()
-        self.profileMenu.addAction('Post Message',
-                                   self.onProfilePostMessage)
-        self.ui.profileEditButton.setEnabled(False)
-        self.ui.profileEditButton.clicked.connect(self.onProfileEditDialog)
-        self.ui.profileEditButton.setPopupMode(QToolButton.MenuButtonPopup)
-        self.ui.profileEditButton.setMenu(self.profileMenu)
-
         self.ui.ipfsStatusLabel = QLabel()
         self.ui.statusbar.addPermanentWidget(self.ui.ipfsStatusLabel)
         self.ui.statusbar.addPermanentWidget(self.ui.ipfsInfosButton)
@@ -428,7 +687,7 @@ class MainWindow(QMainWindow):
         # Connection status timer
         self.timerStatus = QTimer(self)
         self.timerStatus.timeout.connect(self.onMainTimerStatus)
-        self.timerStatus.start(6000)
+        self.timerStatus.start(20000)
 
         self.enableButtons(False)
 
@@ -454,6 +713,13 @@ class MainWindow(QMainWindow):
 
         self.ui.tabWidget.removeTab(0)
 
+        previousGeo = self.app.settingsMgr.mainWindowGeometry
+        if previousGeo:
+            self.restoreGeometry(previousGeo)
+        previousState = self.app.settingsMgr.mainWindowState
+        if previousState:
+            self.restoreState(previousState)
+
     @property
     def app(self):
         return self._app
@@ -461,6 +727,23 @@ class MainWindow(QMainWindow):
     @property
     def allTabs(self):
         return self._allTabs
+
+    def onHashmarkClicked(self, path, title):
+        tab = self.addBrowserTab()
+        tab.browseFsPath(path)
+
+    def onMainToolbarMoved(self, orientation):
+        self.toolbarMain.lastPos = self.toolbarMain.pos()
+
+        self.toolbarTools.setOrientation(orientation)
+        self.qaToolbar.setOrientation(orientation)
+
+        if self.toolbarMain.vertical:
+            self.toolbarMain.emptySpace.setSizePolicy(
+                QSizePolicy.Minimum, QSizePolicy.Expanding)
+        elif self.toolbarMain.horizontal:
+            self.toolbarMain.emptySpace.setSizePolicy(QSizePolicy.Expanding,
+                                                      QSizePolicy.Minimum)
 
     def onOpenEventLog(self):
         self.addEventLogTab(current=True)
@@ -474,9 +757,9 @@ class MainWindow(QMainWindow):
         if not profile.initialized:
             return
 
-        self.ui.profileEditButton.setEnabled(False)
+        self.profileEditButton.setEnabled(False)
         await profile.userInfo.loaded
-        self.ui.profileEditButton.setEnabled(True)
+        self.profileEditButton.setEnabled(True)
 
         for action in self.profilesActionGroup.actions():
             if action.data() == pName:
@@ -524,11 +807,39 @@ class MainWindow(QMainWindow):
             action.setData(pName)
 
         for action in self.profilesActionGroup.actions():
-            self.ui.menuUser_Profile.addAction(action)
+           self.menuUserProfile.addAction(action)
 
     def onRepoReady(self):
+
         self.enableButtons()
         ensure(self.qaToolbar.init())
+
+        if self.app.enableOrbital and self.app.ipfsCtx.orbitConnector is None:
+            self.app.ipfsCtx.orbitConnector = GalacteekOrbitConnector(
+                orbitDataPath=self.app.orbitDataLocation,
+                servicePort=self.app.settingsMgr.getSetting(
+                    CFG_SECTION_ORBITDB,
+                    CFG_KEY_CONNECTOR_LISTENPORT
+                )
+            )
+            ensure(self.orbitStart())
+
+    @ipfsOp
+    async def orbitStart(self, ipfsop):
+        resp = await self.app.ipfsCtx.orbitConnector.start()
+
+        if resp:
+            orbitIcon = QPushButton()
+            orbitIcon.setIcon(getIcon('orbitdb.png'))
+            orbitIcon.setToolTip('OrbitDB: connected')
+            self.ui.statusbar.addPermanentWidget(orbitIcon)
+
+            self.orbitManager = DatabasesManager(
+                self.app.ipfsCtx.orbitConnector, self)
+            self.toolbarTools.addWidget(self.orbitManager.button)
+
+            await ipfsop.ctx.currentProfile.orbitalSetup(
+                self.app.ipfsCtx.orbitConnector)
 
     def onSystrayMsgClicked(self):
         # Open last shown mark in the systray
@@ -611,20 +922,20 @@ class MainWindow(QMainWindow):
 
     def onManualAvailable(self, lang, entry):
         self.menuManual.addAction(lang, lambda:
-                                  self.onOpenManual(lang, entry))
+                                  self.onOpenManual(lang))
 
-    def onOpenManual(self, lang, docEntry):
-        self.addBrowserTab().browseIpfsHash(docEntry['Hash'])
+    def onOpenManual(self, lang):
+        entry = self.app.manuals.getManualEntry(lang)
+        if entry:
+            # self.addBrowserTab().browseIpfsHash(docEntry['Hash'])
+            self.addBrowserTab().browseIpfsHash(entry['Hash'])
 
     def enableButtons(self, flag=True):
-        for btn in [self.ui.myFilesButton,
-                    self.ui.manageKeysButton,
-                    self.ui.openBrowserTabButton,
-                    self.ui.hashmarksButton,
-                    self.ui.mediaPlayerButton,
-                    self.ui.writeNewDocumentButton,
-                    self.ui.peersMgrButton,
-                    self.ui.clipboardMultiLoader]:
+        for btn in [
+                self.clipboardMultiLoader,
+                self.browseButton,
+                self.fileManagerButton]:
+
             btn.setEnabled(flag)
 
     def statusMessage(self, msg):
@@ -717,13 +1028,13 @@ class MainWindow(QMainWindow):
             self.multiLoadHashAction.setText(iClipLoaderBrowse(path))
             self.multiDagViewAction.setText(iClipLoaderDagView(path))
             self.multiIpldExplorerAction.setText(iClipLoaderIpldExplorer(path))
-            self.ui.clipboardMultiLoader.setToolTip(iFromClipboard(path))
+            self.clipboardMultiLoader.setToolTip(iFromClipboard(path))
         else:
             self.multiExploreHashAction.setText(iClipboardEmpty())
             self.multiLoadHashAction.setText(iClipboardEmpty())
             self.multiDagViewAction.setText(iClipboardEmpty())
             self.multiIpldExplorerAction.setText(iClipboardEmpty())
-            self.ui.clipboardMultiLoader.setToolTip(iClipboardEmpty())
+            self.clipboardMultiLoader.setToolTip(iClipboardEmpty())
 
     def onIpldExplorerFromClipboard(self):
         """
@@ -836,7 +1147,7 @@ class MainWindow(QMainWindow):
         if tab:
             tab.playFromPath(path, mediaName=mediaName)
 
-    def addHashmarksTab(self):
+    def addHashmarksTabOld(self):
         name = iHashmarks()
         ft = self.findTabWithName(name)
         if ft:
@@ -862,7 +1173,13 @@ class MainWindow(QMainWindow):
         if len(text) > 0:
             view = ipfssearchview.IPFSSearchView(text, self)
             self.registerTab(view, iIpfsSearch(text), current=True,
-                             icon=getIcon('ipfs-search.png'))
+                             icon=getIcon('search-engine.png'))
+
+    def addIpfsSearchView(self, text):
+        if len(text) > 0:
+            view = ipfssearchview.IPFSSearchView(text, self)
+            self.registerTab(view, iIpfsSearch(text), current=True,
+                             icon=getIcon('search-engine.png'))
 
     def onOpenMediaPlayer(self):
         self.addMediaPlayerTab()
@@ -934,9 +1251,45 @@ class MainWindow(QMainWindow):
 
     def quit(self):
         # Qt and application exit
+        self.saveUiSettings()
         ensure(self.app.exitApp())
+
+    def saveUiSettings(self):
+        self.app.settingsMgr.setSetting(
+            CFG_SECTION_UI,
+            CFG_KEY_MAINWINDOW_GEOMETRY,
+            self.saveGeometry())
+        self.app.settingsMgr.setSetting(
+            CFG_SECTION_UI,
+            CFG_KEY_MAINWINDOW_STATE,
+            self.saveState())
 
     def closeEvent(self, event):
         event.ignore()
         self.hide()
         self.app.systemTrayMessage('Galacteek', iMinimized())
+
+    def toggleIpfsSearchWidget(self, forceshow=False):
+        btnPos = self.ipfsSearchButton.mapToGlobal(QPoint(0, 0))
+
+        if self.toolbarMain.vertical:
+            popupPoint = QPoint(btnPos.x() + 32, btnPos.y())
+        elif self.toolbarMain.horizontal:
+            popupPoint = QPoint(
+                btnPos.x() - self.ipfsSearchWidget.width() - 10, btnPos.y())
+
+        self.ipfsSearchWidget.move(popupPoint)
+
+        if forceshow:
+            self.ipfsSearchButton.setChecked(True)
+
+        if self.ipfsSearchButton.isChecked() or forceshow:
+            self.ipfsSearchWidget.show()
+            self.ipfsSearchWidget.focus()
+        else:
+            self.ipfsSearchWidget.hide()
+
+    def addHashmarksTab(self):
+        widget = DWebView(HashmarksPage(self.app.marksLocal), self)
+        self.registerTab(WebTab(widget, self), iHashmarks(),
+                icon=getIcon('hashmarks.png'), current=True)

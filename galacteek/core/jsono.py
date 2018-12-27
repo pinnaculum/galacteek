@@ -23,6 +23,9 @@ class QJSONObj(QObject):
     def _load(self, data):
         self._root = data if data else self._init()
 
+    def set(self, data):
+        self._root = data
+
     def prepare(self, root):
         pass
 

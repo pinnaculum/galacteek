@@ -1,13 +1,24 @@
-from PyQt5.QtWidgets import QWidget
+import copy
+
+from PyQt5.QtWidgets import QWidget, QToolButton, QMenu, QAction, QVBoxLayout
+from PyQt5.QtCore import pyqtSignal, QObject, Qt
 
 from galacteek.ipfs.wrappers import ipfsOp
+from .helpers import getIcon
+from .i18n import iNoTitle
 
 
 class GalacteekTab(QWidget):
-    def __init__(self, gWindow, parent=None, **kw):
-        super().__init__(parent=parent)
+    def __init__(self, gWindow, **kw):
+        super().__init__(gWindow)
+        self.vLayout = QVBoxLayout()
+        self.setLayout(self.vLayout)
+
+        self.mainWidget = QWidget(self)
+        self.vLayout.addWidget(self.mainWidget)
 
         self.gWindow = gWindow
+        self.setAttribute(Qt.WA_DeleteOnClose)
 
     def onClose(self):
         return True
@@ -27,3 +38,78 @@ class GalacteekTab(QWidget):
     @property
     def profile(self):
         return self.app.ipfsCtx.currentProfile
+
+
+class PopupToolButton(QToolButton):
+    def __init__(self, icon=None, parent=None, menu=None):
+        super(PopupToolButton, self).__init__(parent)
+
+        self.menu = menu if menu else QMenu()
+        self.setPopupMode(QToolButton.MenuButtonPopup)
+        self.setMenu(self.menu)
+
+        if icon:
+            self.setIcon(icon)
+
+
+class HashmarkMgrButton(PopupToolButton):
+    hashmarkClicked = pyqtSignal(str, str)
+
+    def __init__(self, marksLocal, parent=None):
+        super(HashmarkMgrButton, self).__init__(parent=parent)
+
+        self.marks = marksLocal
+        self.marks.changed.connect(self.onChanged)
+
+        self.cMenus = {}
+        self.setIcon(getIcon('hashmarks.png'))
+        self.updateMenu()
+
+    def onChanged(self):
+        self.updateMenu()
+
+    def updateMenu(self):
+        self.menu.clear()
+
+        categories = self.marks.getCategories()
+
+        for category in categories:
+            if category not in self.cMenus:
+                self.cMenus[category] = QMenu(category)
+
+            menu = self.cMenus[category]
+            menu.setIcon(getIcon('stroke-cube.png'))
+            marks = self.marks.getCategoryMarks(category)
+
+            def exists(path):
+                for action in menu.actions():
+                    if action.data()['path'] == path:
+                        return action
+
+            for path, mark in marks.items():
+                if exists(path):
+                    continue
+
+                title = mark['metadata'].get('title', iNoTitle())
+                action = QAction(title, self)
+                action.setData({
+                    'path': path,
+                    'mark': copy.copy(mark)
+                })
+                action.setIcon(getIcon('ipfs-logo-128-white-outline.png'))
+                menu.addAction(action)
+
+            menu.triggered.connect(self.linkActivated)
+            self.menu.addMenu(menu)
+
+    def linkActivated(self, action):
+        data = action.data()
+        path, mark = data['path'], data['mark']
+
+        if mark:
+            if 'metadata' not in mark:
+                return
+            self.hashmarkClicked.emit(
+                path,
+                mark['metadata']['title']
+            )

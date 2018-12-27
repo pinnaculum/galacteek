@@ -433,9 +433,10 @@ class IPFSOperator(object):
         else:
             return stat
 
-    async def objStatCtxUpdate(self, path):
+    async def objStatCtxUpdate(self, path, timeout=30):
         try:
-            self.ctx.objectStats[path] = await self.objStat(path)
+            self.ctx.objectStats[path] = await self.objStat(path,
+                                                            timeout=timeout)
             return self.ctx.objectStats[path]
         except aioipfs.APIError:
             self.ctx.objectStats[path] = None
@@ -444,7 +445,7 @@ class IPFSOperator(object):
         return self.ctx.objectStats.get(path, None)
 
     async def addPath(self, path, recursive=True, wrap=False,
-            callback=None, cidversion=1):
+                      callback=None, cidversion=1):
         """
         Add files from path in the repo, and returns the top-level entry (the
         root directory), optionally wrapping it with a directory object
@@ -522,16 +523,15 @@ class IPFSOperator(object):
             self.debug(err.message)
             return None
 
-    async def dagGet(self, dagPath):
+    async def dagGet(self, dagPath, timeout=5):
         """
         Get the DAG object referenced by the DAG path and returns a JSON object
         """
-        try:
-            output = await self.client.dag.get(dagPath)
+
+        output = await self.waitFor(self.client.dag.get(dagPath), timeout)
+        if output is not None:
             return json.loads(output)
-        except aioipfs.APIError as err:
-            self.debug(err.message)
-            return None
+        return None
 
     async def dagResolve(self, dagPath):
         """

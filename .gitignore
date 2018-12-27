@@ -1,4 +1,5 @@
 __pycache__/
+*.orig
 *.py[cod]
 *$py.class
 ui_*.py

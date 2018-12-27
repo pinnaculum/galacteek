@@ -63,7 +63,7 @@ class KeysTab(GalacteekTab):
         super().__init__(*args, **kw)
 
         self.ui = ui_keys.Ui_KeysForm()
-        self.ui.setupUi(self)
+        self.ui.setupUi(self.mainWidget)
 
         self.ui.addKeyButton.clicked.connect(self.onAddKeyClicked)
         self.ui.deleteKeyButton.clicked.connect(self.onDelKeyClicked)

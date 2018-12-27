@@ -129,7 +129,8 @@ class GalacteekApplication(QApplication):
 
     manualAvailable = pyqtSignal(str, dict)
 
-    def __init__(self, debug=False, profile='main', sslverify=True):
+    def __init__(self, debug=False, profile='main', sslverify=True,
+            enableOrbital=False):
         QApplication.__init__(self, sys.argv)
 
         QCoreApplication.setApplicationName(GALACTEEK_NAME)
@@ -141,6 +142,9 @@ class GalacteekApplication(QApplication):
         self._ipfsOpMain = None
         self._ipfsd = None
         self._sslverify = sslverify
+
+        self.enableOrbital = enableOrbital
+        self.orbitConnector = None
 
         self.translator = None
 
@@ -234,6 +238,10 @@ class GalacteekApplication(QApplication):
         return params.gatewayUrl
 
     @property
+    def dataLocation(self):
+        return self._dataLocation
+
+    @property
     def ipfsBinLocation(self):
         return self._ipfsBinLocation
 
@@ -241,8 +249,13 @@ class GalacteekApplication(QApplication):
     def ipfsDataLocation(self):
         return self._ipfsDataLocation
 
-    def setStyle(self):
-        qssPath = ":/share/static/qss/galacteek.qss"
+    @property
+    def orbitDataLocation(self):
+        return self._orbitDataLocation
+
+    def setStyle(self, theme='default'):
+        qssPath = ":/share/static/qss/{theme}/galacteek.qss".format(
+            theme=theme)
         qssFile = QFile(qssPath)
 
         try:
@@ -464,6 +477,7 @@ class GalacteekApplication(QApplication):
 
         self._ipfsBinLocation = os.path.join(qtDataLocation, 'ipfs-bin')
         self._ipfsDataLocation = os.path.join(self._dataLocation, 'ipfs')
+        self._orbitDataLocation = os.path.join(self._dataLocation, 'orbitdb')
         self.marksDataLocation = os.path.join(self._dataLocation, 'marks')
         self.cryptoDataLocation = os.path.join(self._dataLocation, 'crypto')
         self.gpgDataLocation = os.path.join(self.cryptoDataLocation, 'gpg')
@@ -621,6 +635,9 @@ class GalacteekApplication(QApplication):
         if self.ipfsd:
             self.ipfsd.stop()
 
+        if self.ipfsCtx.inOrbit:
+            await self.ipfsCtx.orbitConnector.stop()
+
         if self.debug:
             self.showTasks()
 
@@ -636,6 +653,9 @@ class ManualsImporter(QObject):
 
         self.app = app
         self.registry = {}
+
+    def getManualEntry(self, lang):
+        return self.registry.get(lang, None)
 
     async def importManualMain(self):
         try:

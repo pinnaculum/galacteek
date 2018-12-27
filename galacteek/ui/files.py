@@ -292,7 +292,7 @@ class FilesTab(GalacteekTab):
         self.lock = asyncio.Lock()
 
         self.ui = ui_files.Ui_FileManagerForm()
-        self.ui.setupUi(self)
+        self.ui.setupUi(self.mainWidget)
         self.clipboard = self.app.appClipboard
         self.status = self.statusReady
 

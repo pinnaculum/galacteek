@@ -15,9 +15,10 @@ from PyQt5.QtWebEngineWidgets import (QWebEngineDownloadItem, QWebEngineScript,
                                       QWebEngineSettings)
 from PyQt5.QtWebEngineCore import QWebEngineUrlRequestInterceptor
 from PyQt5.Qt import QByteArray
-from PyQt5.QtGui import QKeySequence
+from PyQt5.QtGui import QKeySequence, QFont
 
 from yarl import URL
+import copy
 
 from galacteek import log, ensure
 from galacteek.ipfs.wrappers import *
@@ -133,11 +134,11 @@ def iInvalidCID(text):
 
 
 def fsPath(path):
-    return '{0}:{1}'.format(SCHEME_IPFS, path)
+    return '{0}:{1}'.format(SCHEME_DWEB, path)
 
 
 def usesIpfsNs(url):
-    return url.startswith('{0}:/'.format(SCHEME_IPFS))
+    return url.startswith('{0}:/'.format(SCHEME_DWEB))
 
 
 class IPFSSchemeHandler(QtWebEngineCore.QWebEngineUrlSchemeHandler):
@@ -189,7 +190,7 @@ class RequestInterceptor(QWebEngineUrlRequestInterceptor):
 
 class CustomWebPage (QtWebEngineWidgets.QWebEnginePage):
     def javaScriptConsoleMessage(self, level, message, lineNumber, sourceId):
-        log.info('JS: level: {0}, source: {1}, line: {2}, message: {3}'.format(
+        log.debug('JS: level: {0}, source: {1}, line: {2}, message: {3}'.format(
             level, sourceId, lineNumber, message))
 
 
@@ -276,7 +277,6 @@ class BrowserKeyFilter(QObject):
                     return True
         return False
 
-
 class BrowserTab(GalacteekTab):
     # signals
     ipfsPathVisited = pyqtSignal(str)
@@ -285,7 +285,7 @@ class BrowserTab(GalacteekTab):
         super().__init__(*args, **kw)
 
         self.ui = ui_browsertab.Ui_BrowserTabForm()
-        self.ui.setupUi(self)
+        self.ui.setupUi(self.mainWidget)
 
         # Install scheme handler early on
         self.webProfile = QtWebEngineWidgets.QWebEngineProfile.defaultProfile()
@@ -318,7 +318,14 @@ class BrowserTab(GalacteekTab):
             self.loadFromClipboardButtonClicked)
         self.ui.loadFromClipboardButton.setEnabled(
             self.app.clipTracker.hasIpfs)
-        self.ui.hashmarkPageButton.clicked.connect(self.onHashmarkPage)
+
+        self.hashmarkMgrButton = HashmarkMgrButton(
+            marksLocal=self.app.marksLocal)
+
+        self.hashmarkMgrButton.hashmarkClicked.connect(self.onHashmarkClicked)
+
+        self.hashmarkMgrButton.updateMenu()
+        self.ui.hLayoutCtrl.addWidget(self.hashmarkMgrButton)
 
         # Setup the tool button for browsing IPFS content
         self.loadIpfsMenu = QMenu()
@@ -376,6 +383,7 @@ class BrowserTab(GalacteekTab):
         self.currentUrl = None
         self.currentIpfsResource = None
         self.currentPageTitle = None
+        self.setAttribute(Qt.WA_DeleteOnClose)
 
     @property
     def webView(self):
@@ -471,6 +479,9 @@ class BrowserTab(GalacteekTab):
             return
 
         page.save(result[0], QWebEngineDownloadItem.CompleteHtmlSaveFormat)
+
+    def onHashmarkClicked(self, path, title):
+        self.browseFsPath(path)
 
     def onHashmarkPage(self):
         if self.currentIpfsResource:
@@ -631,7 +642,7 @@ class BrowserTab(GalacteekTab):
         self.ui.stopButton.setEnabled(progress >= 0 and progress < 100)
 
     def browseFsPath(self, path):
-        self.enterUrl(QUrl('{0}:{1}'.format(SCHEME_IPFS, path)))
+        self.enterUrl(QUrl('{0}:{1}'.format(SCHEME_DWEB, path)))
 
     def browseIpfsHash(self, ipfsHash):
         if not cidhelpers.cidValid(ipfsHash):

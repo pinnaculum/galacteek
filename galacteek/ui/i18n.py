@@ -142,6 +142,11 @@ def iFinished():
     return QCoreApplication.translate('GalacteekWindow', 'Finished')
 
 
+def iGlobalAutoPinning():
+    return QCoreApplication.translate('GalacteekWindow',
+                                      'Global automatic pinning')
+
+
 # IPFS daemon ui messages
 
 def iFsRepoMigrateNotFound():

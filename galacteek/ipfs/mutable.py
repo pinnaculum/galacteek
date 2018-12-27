@@ -122,6 +122,7 @@ class MutableIPFSJson(QObject):
     async def ipfsSave(self, op):
         with await self.lock:
             resp = await op.filesWriteJsonObject(self.mfsFilePath, self.root)
+            await op.client.files.flush(self.mfsFilePath)
 
             if resp is not None:
                 self.curEntry = await op.filesStat(self.mfsFilePath)

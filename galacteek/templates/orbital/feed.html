@@ -1,0 +1,183 @@
+<html>
+    <head>
+        <link rel="stylesheet" type="text/css" href="qrc:///share/static/css/ipfs-ui.css"/>
+        <link rel="stylesheet" type="text/css" href="qrc:///share/static/css/orbital.css"/>
+    </head>
+<body>
+    <style>
+        body {
+            background-color: #b3d9ff;
+            font-family: 'Georgia', serif;
+        }
+
+        ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .post {
+            border: 1px solid #34373f;
+            background-color: #e0e0d1;
+            padding: 25px;
+            margin: 25px;
+            border-radius: 8px;
+        }
+        .postcontent {
+            margin: 10px;
+
+        }
+
+        .button {
+            background-color: #ccccb3;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            border-radius: 6px 6px 6px 6px;
+        }
+
+        textarea {
+          margin-top: 10px;
+          margin-left: 50px;
+          width: 700px;
+          height: 100px;
+          -moz-border-bottom-colors: none;
+          -moz-border-left-colors: none;
+          -moz-border-right-colors: none;
+          -moz-border-top-colors: none;
+          background: none repeat scroll 0 0 rgba(0, 0, 0, 0.07);
+          border-color: -moz-use-text-color #FFFFFF #FFFFFF -moz-use-text-color;
+          border-image: none;
+          border-radius: 6px 6px 6px 6px;
+          border-style: none solid solid none;
+          border-width: medium 1px 1px medium;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12) inset;
+          color: #555555;
+          font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+          font-size: 1em;
+          line-height: 1.4em;
+          padding: 5px 8px;
+          transition: background-color 0.2s ease 0s;
+        }
+
+
+        textarea:focus {
+            background: none repeat scroll 0 0 #FFFFFF;
+            outline-width: 0;
+        }
+
+    </style>
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+
+    <script type="text/javascript">
+        function add_post(form) {
+            if (form.postmessage.value != '') {
+                window.orbitalfeed.postMessage(form.postmessage.value)
+            }
+        }
+    </script>
+
+    <div align="right" id="postmessagediv">
+        <form enabled="false" id="postmessageform" onsubmit="add_post(this);" width="100%">
+            <textarea name="postmessage" cols="100" rows="4"></textarea>
+            <input class="button" type="submit"  value="Post" />
+        </form>
+    </div>
+
+    <script type="text/javascript">
+        function displayPosts(posts) {
+			var postsList = document.getElementById("postsList")
+
+			posts.forEach(function(post) {
+				var existing = document.getElementById(post['hash'])
+				if (existing) {
+					return
+				}
+				var newPost = document.createElement("li")
+				var div = document.createElement("div")
+
+				div.setAttribute('id', post['hash'])
+				div.setAttribute('class', 'post')
+
+                var titleNode = document.createElement("p")
+                var postContentNode = document.createElement("pre")
+                postContentNode.setAttribute('class', 'postcontent')
+			
+                title = post['author'] + ' posted on ' + post['date']
+                
+				titleNode.appendChild(
+                    document.createTextNode(title)
+                )
+
+				postContentNode.appendChild(
+                    document.createTextNode(post['message'])
+                )
+
+                if ('links' in post) {
+                    postContentNode.appendChild(
+                        document.createTextNode('\nEmbedded IPFS links')
+                    )
+                    var linksList = document.createElement("u")
+                    post['links'].forEach(function(link) {
+                        elem = document.createElement("li")
+                        linkNode = document.createElement("a")
+                        linkNode.setAttribute("href", "dweb:" + link)
+                        linkNode.innerHTML = link
+                        elem.appendChild(linkNode)
+                        postContentNode.appendChild(elem)
+                    });
+                    postContentNode.appendChild(linksList)
+                }
+
+				div.appendChild(titleNode)
+				div.appendChild(postContentNode)
+
+				newPost.appendChild(div)
+				postsList.prepend(newPost)
+			})
+        }
+
+        new QWebChannel(qt.webChannelTransport, function (channel) {
+            window.orbitalfeed = channel.objects.orbitalfeed
+            window.orbitalfeed.reload()
+
+            window.orbitalfeed.newMessages.connect(function() {
+                window.orbitalfeed.reload()
+            });
+
+            window.orbitalfeed.ready.connect(function(posts) {
+                displayPosts(posts)
+            });
+
+            window.orbitalfeed.postingAllowed.connect(function(allowed) {
+                let disable
+                div = document.getElementById("postmessagediv")
+                form = document.getElementById("postmessageform")
+                if (!allowed) {
+                    var msg = document.createElement("p")
+                    msg.innerHTML = "<b>You are not allowed to post messages until you use a valid registered username</b>"
+                    div.prepend(msg)
+
+                    disable = true
+                } else {
+                    disable = false
+                }
+
+                var fields = form.getElementsByTagName('*')
+                for(var i = 0; i < fields.length; i++) {
+                    fields[i].disabled = disable
+                }
+            });
+    });
+    </script>
+
+    <ul id="postsList">
+    </ul>
+
+</body>
+</html>

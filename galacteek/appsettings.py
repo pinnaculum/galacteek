@@ -7,6 +7,7 @@ CFG_SECTION_BROWSER = 'browser'
 CFG_SECTION_IPFSCONN1 = 'ipfsconn1'
 CFG_SECTION_UI = 'ui'
 CFG_SECTION_USERINFO = 'userinfo'
+CFG_SECTION_ORBITDB = 'orbitdb'
 
 CFG_KEY_ENABLED = 'enabled'
 
@@ -39,6 +40,12 @@ CFG_KEY_WRAPDIRECTORIES = 'wrapdirectories'
 CFG_KEY_HIDEHASHES = 'hidehashes'
 CFG_KEY_LANG = 'lang'
 
+CFG_KEY_MAINWINDOW_STATE = 'mainwindow_area'
+CFG_KEY_MAINWINDOW_GEOMETRY = 'mainwindow_geometry'
+
+# OrbitDB
+CFG_KEY_CONNECTOR_LISTENPORT = 'connectorlistenport'
+
 # for fast access
 S_HOMEURL = (CFG_SECTION_BROWSER, CFG_KEY_HOMEURL)
 S_GOTOHOME = (CFG_SECTION_BROWSER, CFG_KEY_GOTOHOME)
@@ -61,7 +68,7 @@ def setDefaultSettings(gApp):
     sManager.setDefaultTrue(section, CFG_KEY_HTTPGWWRITABLE)
 
     section = CFG_SECTION_BROWSER
-    sManager.setDefaultSetting(section, CFG_KEY_HOMEURL, 'ipfs:/ipns/ipfs.io')
+    sManager.setDefaultSetting(section, CFG_KEY_HOMEURL, 'dweb:/ipns/ipfs.io')
     sManager.setDefaultSetting(section, CFG_KEY_DLPATH,
                                gApp.defaultDownloadsLocation)
     sManager.setDefaultTrue(section, CFG_KEY_GOTOHOME)
@@ -84,6 +91,9 @@ def setDefaultSettings(gApp):
     sManager.setDefaultFalse(section, CFG_KEY_WRAPDIRECTORIES)
     sManager.setDefaultFalse(section, CFG_KEY_HIDEHASHES)
     sManager.setDefaultSetting(section, CFG_KEY_LANG, 'en')
+
+    section = CFG_SECTION_ORBITDB
+    sManager.setDefaultSetting(section, CFG_KEY_CONNECTOR_LISTENPORT, 3000)
 
     sManager.sync()
     return True
@@ -196,3 +206,11 @@ class SettingsManager(object):
     @property
     def ppApiPlugins(self):
         return self.isTrue(CFG_SECTION_BROWSER, CFG_KEY_PPAPIPLUGINS)
+
+    @property
+    def mainWindowGeometry(self):
+        return self.getSetting(CFG_SECTION_UI, CFG_KEY_MAINWINDOW_GEOMETRY)
+
+    @property
+    def mainWindowState(self):
+        return self.getSetting(CFG_SECTION_UI, CFG_KEY_MAINWINDOW_STATE)

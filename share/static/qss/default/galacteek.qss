@@ -1,13 +1,28 @@
+@font-face {
+    font-family: 'Montserrat';
+    font-style: normal;
+    font-weight: 400;
+    src: url('qrc:/share/static/fonts/Montserrat-Regular.woff2') format('woff2');
+}
+
 * {
-    font: 10pt "Helvetica";
+    font: 10pt "Montserrat";
 }
 
 .navy-muted {
     color: #244e66;
 }
 
+QToolBar#toolbarMain {
+    padding: 0px;
+    margin: 0px;
+}
+
+QToolBar#toolbarMain::handle {
+}
+
 QTabWidget::pane {
-    border-top: 2px solid #C2C7CB;
+    border-top: 2px solid #c2c7cb;
 }
 
 QTreeView {
@@ -64,11 +79,27 @@ QLineEdit {
     selection-background-color: #4a9ea1;
     selection-color: black;
     border: 1px solid #244e66;
-    border-radius: 8px;
+    border-radius: 2px;
     padding: 0 8px;
 }
 
 QTextBrowser {
     background-color: #f6fafb;
     font: 10pt "Helvetica";
+}
+
+QToolButton#buttonBrowseIpfs::hover {
+    background-color: #4a9ea1;
+    image: url('qrc:/share/icons/ipfs-logo-128-black.png');
+}
+
+QToolButton#buttonBrowseIpfs {
+    image: url('qrc:/share/icons/ipfs-logo-128-ice.png');
+}
+
+QToolButton::menu-arrow:open {
+    background-color: #4a9ea1;
+}
+
+QToolButton::menu-indicator {
 }
