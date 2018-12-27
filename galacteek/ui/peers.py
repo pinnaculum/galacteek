@@ -121,7 +121,7 @@ class PeersManager(GalacteekTab):
         self.lock = asyncio.Lock()
         self.peersTracker = peersTracker
         self.ui = ui_peersmgr.Ui_PeersManager()
-        self.ui.setupUi(self)
+        self.ui.setupUi(self.mainWidget)
 
         self.ui.tree.setModel(self.peersTracker.model)
         self.ui.tree.header().setSectionResizeMode(

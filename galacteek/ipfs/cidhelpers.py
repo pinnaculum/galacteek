@@ -73,7 +73,7 @@ ipfsCidRe = re.compile(
     r'^(\s*)?(?P<cid>[a-zA-Z0-9]{46,59})$', flags=re.MULTILINE)
 
 ipnsPathRe = re.compile(
-    r'^(\s*)?(?:fs:|ipfs:)?(?P<fullpath>/ipns/([a-zA-Z0-9\.\-]*)(?P<subpath>\/.*)?$)',  # noqa
+    r'^(\s*)?(?:fs:|ipfs:|dweb:)?(?P<fullpath>/ipns/([a-zA-Z0-9\.\-]*)(?P<subpath>\/.*)?$)',  # noqa
     flags=re.MULTILINE)
 
 ipnsPathGwRe = re.compile(

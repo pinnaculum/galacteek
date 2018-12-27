@@ -48,6 +48,7 @@ class EventLogWidget(GalacteekTab):
         layout.addWidget(self.logZone)
 
         self.tskLog = self.app.task(self.logWatch)
+        self.vLayout.addLayout(layout)
 
     def onSave(self):
         fPath = saveFileSelect()

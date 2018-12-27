@@ -209,8 +209,9 @@ class IPFSHashExplorerToolBox(GalacteekTab):
         self.maxItems = maxItems
 
         self.toolbox = QToolBox()
-        self.vLayout = QVBoxLayout(self)
-        self.vLayout.addWidget(self.toolbox)
+        self.exLayout = QVBoxLayout(self)
+        self.exLayout.addWidget(self.toolbox)
+        self.vLayout.addLayout(self.exLayout)
 
         if self.rootHash:
             self.viewHash(self.rootHash)

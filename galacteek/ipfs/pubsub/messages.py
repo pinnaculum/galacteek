@@ -234,6 +234,177 @@ class PeerIdentMessageV1(PubsubMessage):
         return self.validSchema(schema=PeerIdentMessageV1.schema)
 
 
+class PeerIdentMessageV2(PubsubMessage):
+    TYPE = 'peerident.v2'
+
+    schema = {
+        "title": "Peer ident",
+        "description": "Peer identification message, V2",
+        "type": "object",
+        "properties": {
+            "msgtype": {"type": "string"},
+            "msg": {
+                "type": "object",
+                "properties": {
+                    "peerid": {"type": "string"},
+                    "user": {
+                        "type": "object",
+                        "properties": {
+                            "publicdag": {
+                                "type": "object",
+                                "properties": {
+                                    "cid": {"type": "string"},
+                                    "ipns": {"type": "string"},
+                                    "available": {"type": "boolean"}
+                                },
+                                "required": [
+                                    "ipns",
+                                    "cid"
+                                ],
+                            }
+                        },
+                        "required": [
+                            "publicdag"
+                        ],
+                    },
+                    "userinfo": {
+                        "type": "object",
+                        "properties": {
+                            "username": {"type": "string"},
+                            "firstname": {"type": "string"},
+                            "lastname": {"type": "string"},
+                            "altname": {"type": "string"},
+                            "email": {"type": "string"},
+                            "gender": {"type": "integer"},
+                            "org": {"type": "string"},
+                            "city": {"type": "string"},
+                            "country": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {"type": "string"},
+                                    "name": {"type": "string"},
+                                },
+                            },
+                            "date": {"type": "object"},
+                            "crypto": {
+                                "type": "object",
+                                "properties": {
+                                    "rsa": {
+                                        "type": "object",
+                                        "properties": {
+                                            "pubkeypem": {"type": "string"}
+                                        }
+                                    }
+                                },
+                                "required": [
+                                    "rsa"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "username",
+                            "firstname",
+                            "lastname",
+                            "email",
+                            "gender",
+                            "org",
+                            "city",
+                            "identtoken",
+                            "country"
+                        ],
+                    },
+                },
+                "required": ["peerid"]
+            },
+        },
+    }
+
+    @staticmethod
+    def make(peerId, uInfoCid, userInfo, userDagCid, userDagIpns, p2pServices,
+             orbitCfgMaps):
+        msg = PeerIdentMessageV2({
+            'msgtype': PeerIdentMessageV2.TYPE,
+            'version': 2,
+            'msg': {
+                'peerid': peerId,
+                'user': {
+                    'publicdag': {
+                        'cid': userDagCid,
+                        'available': True,
+                        'ipns': userDagIpns if userDagIpns else ''
+                    },
+                },
+                'orbitcfgmaps': orbitCfgMaps,
+                'p2pservices': p2pServices
+            }
+        })
+        msg.data['msg'].update(userInfo)
+        return msg
+
+    @property
+    def peer(self):
+        return self.parser.traverse('msg.peerid')
+
+    @property
+    def username(self):
+        return self.parser.traverse('msg.userinfo.username')
+
+    @property
+    def lastname(self):
+        return self.parser.traverse('msg.userinfo.lastname')
+
+    @property
+    def country(self):
+        return self.parser.traverse('msg.userinfo.country.name')
+
+    @property
+    def city(self):
+        return self.parser.traverse('msg.userinfo.city')
+
+    @property
+    def location(self):
+        if self.country != '' and self.city != '':
+            return '{city}, {country}'.format(
+                city=self.city,
+                country=self.country
+            )
+        elif self.country != '':
+            return self.country
+        else:
+            return 'Unknown'
+
+    @property
+    def dateCreated(self):
+        return self.parser.traverse('msg.userinfo.date.created')
+
+    @property
+    def dagCid(self):
+        return self.parser.traverse('msg.user.publicdag.cid')
+
+    @property
+    def dagIpns(self):
+        return self.parser.traverse('msg.user.publicdag.ipns')
+
+    @property
+    def mainPagePath(self):
+        return self.parser.traverse('msg.user.mainpage')
+
+    @property
+    def userInfoObjCid(self):
+        return self.parser.traverse('msg.userinfoobjref')
+
+    @property
+    def rsaPubKeyPem(self):
+        return self.parser.traverse('msg.userinfo.crypto.rsa.pubkeypem')
+
+    @property
+    def msgdata(self):
+        return self.data['msg']
+
+    def valid(self):
+        return self.validSchema(schema=PeerIdentMessageV1.schema)
+
+
 class PeerLogoutMessage(PubsubMessage):
     TYPE = 'peerlogout'
 

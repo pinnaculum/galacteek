@@ -37,7 +37,7 @@ class DAGViewer(GalacteekTab):
         self.dagHash = dagHash
 
         self.ui = ui_dagview.Ui_DagViewForm()
-        self.ui.setupUi(self)
+        self.ui.setupUi(self.mainWidget)
 
         evfilter = IPFSTreeKeyFilter(self.ui.dagTree)
         evfilter.copyHashPressed.connect(self.onCopyItemHash)

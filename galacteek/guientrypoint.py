@@ -79,6 +79,7 @@ def galacteekGui(args):
     gApp = application.GalacteekApplication(
         profile=args.profile,
         debug=args.debug,
+        enableOrbital=args.enableorbital,
         sslverify=False if args.nosslverify else True
     )
     loop = gApp.setupAsyncLoop()
@@ -193,6 +194,12 @@ def start():
         action='store_true',
         dest='forcegoipfsdl',
         help="Force go-ipfs download")
+    parser.add_argument(
+        '--enable-orbital',
+        action='store_true',
+        dest='enableorbital',
+        help="Enable orbit-db connector")
+
     parser.add_argument('-d', action='store_true',
                         dest='debug', help='Activate debugging')
     args = parser.parse_args()

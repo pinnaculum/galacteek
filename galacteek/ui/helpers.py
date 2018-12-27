@@ -18,6 +18,10 @@ def getIconIpfsWhite():
     return getIcon('ipfs-logo-128-white.png')
 
 
+def getIconIpfs64():
+    return getIcon('ipfs-cube-64.png')
+
+
 def getIconClipboard():
     return getIcon('clipboard.png')
 

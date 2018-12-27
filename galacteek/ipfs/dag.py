@@ -212,15 +212,19 @@ class EvolvingDAG(QObject):
 
     @ipfsOp
     async def loadDag(self, op):
+        self.debug('Loading DAG metadata file')
         meta = await op.filesReadJsonObject(self.dagMetaMfsPath)
 
+        self.debug('Metadata is {}'.format(meta))
         if meta is not None:
             self._dagMeta = meta
             latest = self.dagMeta.get(self.keyCidLatest, None)
             if latest:
                 self.dagCid = latest
+                self.debug('Getting DAG: {cid}'.format(cid=self.dagCid))
                 self._dagRoot = await op.dagGet(self.dagCid)
             else:
+                self.debug('No CID history, reinitializing')
                 # How inconvenient ..
                 # TODO: the history could be used here to recreate a DAG
                 # from previous CIDs but we really shouldn't have to enter here
@@ -241,6 +245,7 @@ class EvolvingDAG(QObject):
 
     @ipfsOp
     async def ipfsSave(self, op):
+        self.debug('Saving (acquiring lock)')
         with await self.lock:
             prevCid = self.dagCid
             history = self.dagMeta.setdefault('history', [])
@@ -365,7 +370,6 @@ class EvolvingDAG(QObject):
         Release the lock and save. The changed signal is emitted
         """
         self.lock.release()
-        await self.ipfsSave()
         self.loop.call_soon(self.changed.emit)
 
     @async_enterable

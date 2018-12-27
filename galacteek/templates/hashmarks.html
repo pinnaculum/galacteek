@@ -1,0 +1,123 @@
+<html>
+    <head>
+        <link rel="stylesheet" type="text/css" href="qrc:///share/static/css/ipfs-ui.css"/>
+        <style>
+            body {
+                font: 12pt "Montserrat";
+            }
+
+            .category {
+                -webkit-box-shadow: 0 8px 6px -6px black;
+                -moz-box-shadow: 0 8px 6px -6px black;
+                box-shadow: 0 8px 6px -6px black;
+                background-color: #e0e0d1;
+                padding: 5px;
+                margin: 5px;
+            }
+
+            .marks {
+                display: none;
+                margin-left: 20px;
+            }
+
+            .hashmarklink {
+                icon: url("qrc:///share/icons/ipfs-logo-128-black.png");
+                width: 16;
+            }
+
+            .catbutton {
+                font: 14pt "Montserrat";
+                icon: url("qrc:///share/icons/stroke-cube.png");
+                background-color: #e0e0d1;
+                background: none;
+                padding: 0;
+                border: none;
+                text-align: center;
+            }
+
+            .catbutton:focus {
+                outline: none;
+            }
+        </style>
+    </head>
+    <body>
+        <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+
+        <script type="text/javascript">
+            function hideShow(category) {
+                var cat = document.getElementById(category)
+                var x = document.getElementById(category + '_marks')
+                if (x.style.display === "none" || !(x.style.display)) {
+                    x.style.display = "block";
+                    cat.style.border = "2px solid navy";
+                    cat.style.margin = "10px";
+                } else {
+                    x.style.display = "none";
+                    cat.style.border = "none";
+                    cat.style.margin = "5px";
+                }
+            }
+            new QWebChannel(qt.webChannelTransport, function (channel) {
+                window.hashmarks = channel.objects.hashmarks
+                window.galacteek = channel.objects.galacteek
+            });
+        </script>
+
+    <img src="qrc:///share/icons/hashmarks.png" width="32"></img>
+
+{% set categories = marks.getCategories() %}
+
+    <div id="content" style="padding: 10px">
+        <div id="categories">
+
+{% for category in categories %}
+
+        <div class="category" id="{{ category }}">
+            <button class="catbutton" onclick="hideShow('{{ category }}');">
+                <img style="padding-right: 5px;" width="16" src="qrc:///share/icons/stroke-cube.png" />{{ category }}
+            </button>
+
+            <div class="marks" id="{{ category }}_marks">
+    {% for path, mark in marks.getCategoryMarks(category).items() %}
+                <a class="hashmarklink" href="#" onclick="window.galacteek.openIpfsLink('{{ path }}');">
+                    <p><img width="16" src="qrc:///share/icons/ipfs-logo-128-black.png" />
+                    {{ mark.metadata.title }}
+                    </p>
+                </a>
+    {% endfor %}
+            </div>
+        </div>
+
+{% endfor %}
+
+    </div>
+
+    <h3>Feeds</h3>
+
+    <div id="feeds">
+{% set feeds = marks.getFeeds() %}
+{% for feedPath, feedData in feeds %}
+        <div class="category" id="{{ feedData.name }}">
+            <button class="catbutton" onclick="hideShow('{{ feedData.name }}');">
+                <img style="padding-right: 5px;" width="16" src="qrc:///share/icons/stroke-cube.png" />{{ feedData.name }}
+            </button>
+        </div>
+
+            <div class="marks" id="{{ feedData.name }}_marks">
+    {% for path, mark in marks.getFeedMarks(feedPath).items() %}
+                <a class="hashmarklink" href="#" onclick="window.galacteek.openIpfsLink('{{ path }}');">
+                    <p style="text-align: left"><img width="16" src="qrc:///share/icons/ipfs-logo-128-black.png" />
+                    {{ mark.metadata.title }}
+
+                        <span style="float: right; width: 20%">{{ mark.tscreated|tstodate }}</span>
+                    </p>
+
+                </a>
+    {% endfor %}
+            </div>
+
+{% endfor %}
+    </div>
+
+</body>
+</html>

@@ -253,6 +253,7 @@ class ProfileEditDialog(QDialog):
 
         self.profile = profile
         self.countryList = countries.countryList
+        self.previousUsername = self.profile.userInfo.username
 
         self.ui = ui_profileeditdialog.Ui_ProfileEditDialog()
         self.ui.setupUi(self)
@@ -367,6 +368,10 @@ class ProfileEditDialog(QDialog):
                 kw['gender'] = gvalue
 
         self.profile.userInfo.setInfos(**kw)
+
+        if self.previousUsername != self.profile.userInfo.username:
+            self.profile.userInfo.usernameChanged.emit()
+
         self.done(1)
 
     def reject(self):
