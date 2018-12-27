@@ -116,7 +116,7 @@ class HashmarksHandler(BaseHandler):
         return QJsonValue.fromVariant(QVariant(marks))
 
 
-class HashmarksPage(OrbitPage):
+class HashmarksPage(BasePage):
     def __init__(self, marksLocal, parent=None):
         super(HashmarksPage, self).__init__('hashmarks.html')
 
