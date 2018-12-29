@@ -473,22 +473,22 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>Galacteek</name>
     <message>
-        <location filename="../../galacteek/application.py" line="57"/>
+        <location filename="../../galacteek/application.py" line="59"/>
         <source>IPFS daemon started</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/application.py" line="61"/>
+        <location filename="../../galacteek/application.py" line="63"/>
         <source>IPFS daemon&apos;s gateway started</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/application.py" line="66"/>
+        <location filename="../../galacteek/application.py" line="68"/>
         <source>IPFS daemon is ready</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/application.py" line="70"/>
+        <location filename="../../galacteek/application.py" line="72"/>
         <source>Problem starting IPFS daemon</source>
         <translation type="unfinished"></translation>
     </message>
@@ -498,7 +498,7 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/application.py" line="75"/>
+        <location filename="../../galacteek/application.py" line="77"/>
         <source>Problem initializing the IPFS daemon (check the ports configuration)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1071,22 +1071,22 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearchview.py" line="32"/>
+        <location filename="../../galacteek/ui/ipfssearchview.py" line="33"/>
         <source>Results count: &lt;b&gt;{0}&lt;/b&gt; (max score: &lt;b&gt;{1}&lt;/b&gt;)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearchview.py" line="40"/>
+        <location filename="../../galacteek/ui/ipfssearchview.py" line="41"/>
         <source>&lt;b&gt;No results found&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearchview.py" line="50"/>
+        <location filename="../../galacteek/ui/ipfssearchview.py" line="51"/>
         <source>&lt;b&gt;Searching ...&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearchview.py" line="45"/>
+        <location filename="../../galacteek/ui/ipfssearchview.py" line="46"/>
         <source>&lt;b&gt;Error while fetching results&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
