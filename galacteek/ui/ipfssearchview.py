@@ -328,10 +328,6 @@ class IPFSSearchHandler(QObject):
         pageData = self.pages[sr.page]
 
         if display or sr.page == 0:
-            # self.searchW.setResultsPage()
-            # self.uiCtrl.comboPages.setCurrentIndex(sr.page)
-            #rendered = self.searchW.resultsPage.renderHits(pageData['results'])
-            # self.resultsReadyDom.emit(rendered)
             self.searchW.displayPage(sr.page)
 
         self.searchW.enableCombo()
@@ -468,14 +464,6 @@ class IPFSSearchView(GalacteekTab):
         self.setLoadingPage()
         self.ui.labelInfo.setText(iSearching())
         self.ui.comboPages.clear()
-
-    def getPageData(self, page):
-        return self.pages.get(page, None)
-
-    def getPageWidget(self, page):
-        pageData = self.getPageData(page)
-        if pageData:
-            return pageData.get('page', None)
 
     def disableCombo(self):
         self.ui.comboPages.setEnabled(False)
