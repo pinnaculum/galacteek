@@ -121,8 +121,10 @@ class MediaPlayerTab(GalacteekTab):
     def __init__(self, *args, **kw):
         super(MediaPlayerTab, self).__init__(*args, **kw)
 
+        self.mWidget = QWidget()
+        self.addToLayout(self.mWidget)
         self.ui = ui_mediaplayer.Ui_MediaPlayer()
-        self.ui.setupUi(self)
+        self.ui.setupUi(self.mWidget)
 
         self.playlistIpfsPath = None
         self.playlist = QMediaPlaylist()

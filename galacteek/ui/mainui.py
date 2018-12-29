@@ -546,6 +546,7 @@ class MainWindow(QMainWindow):
         # Hashmarks mgr button
         self.hashmarkMgrButton = HashmarkMgrButton(
             marksLocal=self.app.marksLocal)
+        self.hashmarkMgrButton.setShortcut(QKeySequence('Ctrl+m'))
         self.hashmarkMgrButton.clicked.connect(self.addHashmarksTab)
 
         # Peers button
@@ -1279,7 +1280,11 @@ class MainWindow(QMainWindow):
             return self.ui.tabWidget.setCurrentWidget(ft)
 
         if self.hashmarksPage is None:
-            self.hashmarksPage = HashmarksPage(self.app.marksLocal, self)
-        widget = DWebView(self.hashmarksPage, self)
-        self.registerTab(WebTab(widget, self), iHashmarks(),
+            self.hashmarksPage = HashmarksPage(self.app.marksLocal)
+
+        tab = WebTab(self)
+        hview = DWebView(page=self.hashmarksPage)
+        tab.attach(hview)
+
+        self.registerTab(tab, iHashmarks(),
                 icon=getIcon('hashmarks.png'), current=True)

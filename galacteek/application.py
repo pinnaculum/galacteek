@@ -36,6 +36,8 @@ from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.feeds import FeedFollower
 
+from galacteek.dweb.webscripts import ipfsClientScripts
+
 from galacteek.ui import mainui, downloads, browser, peers
 from galacteek.ui.clipboard import ClipboardTracker
 from galacteek.ui.helpers import *
@@ -130,7 +132,7 @@ class GalacteekApplication(QApplication):
     manualAvailable = pyqtSignal(str, dict)
 
     def __init__(self, debug=False, profile='main', sslverify=True,
-            enableOrbital=False):
+                 enableOrbital=False):
         QApplication.__init__(self, sys.argv)
 
         QCoreApplication.setApplicationName(GALACTEEK_NAME)
@@ -305,6 +307,8 @@ class GalacteekApplication(QApplication):
         self.tempDir = QTemporaryDir()
         if not self.tempDir.isValid():
             pass
+
+        self.scriptsIpfs = ipfsClientScripts(self.getIpfsConnectionParams())
 
     def importDefaultHashmarks(self, marksLocal):
         pkg = 'galacteek.hashmarks.default'

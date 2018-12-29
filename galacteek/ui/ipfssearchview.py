@@ -5,6 +5,7 @@ from PyQt5.QtWebEngineCore import QWebEngineUrlRequestInterceptor
 from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEnginePage
 from PyQt5.QtWebEngineWidgets import QWebEngineScript
 from PyQt5.QtWebChannel import QWebChannel
+from PyQt5.QtWebChannel import QWebChannelAbstractTransport
 from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal
 from PyQt5.QtCore import QJsonValue, QUrl, QFile
 
@@ -102,8 +103,13 @@ class SearchResultsPage(QWebEnginePage):
             tmplMain,
             tmplHits,
             ipfsConnParams,
+            webchannel=None,
             parent=None):
         super(SearchResultsPage, self).__init__(parent)
+
+        if webchannel:
+            self.setWebChannel(webchannel)
+
         self.app = QApplication.instance()
         self.handler = handler
         self.template = tmplMain
@@ -119,12 +125,7 @@ class SearchResultsPage(QWebEnginePage):
         exSc = self.webScripts.findScript('ipfs-http-client')
         if self.app.settingsMgr.jsIpfsApi is True and exSc.isNull():
             log.debug('Adding ipfs-http-client scripts')
-
-            scripts = ipfsClientScripts(self.app.getIpfsConnectionParams())
-            for script in scripts:
-                self.webScripts.insert(script)
-            scripts = orbitScripts(self.app.getIpfsConnectionParams())
-            for script in scripts:
+            for script in self.app.scriptsIpfs:
                 self.webScripts.insert(script)
 
     def javaScriptConsoleMessage(self, level, message, lineNumber, sourceId):
@@ -194,22 +195,33 @@ class SearchResultsPage(QWebEnginePage):
                 self.handler.objectStatUnavailable.emit(cid)
 
 
-class Handler(QObject):
+class IPFSSearchHandler(QObject):
     ready = pyqtSignal()
-    resultsReady = pyqtSignal(list)
+
+    resultsReceived = pyqtSignal(ipfssearch.IPFSSearchResults, bool)
     resultsReadyDom = pyqtSignal(str)
+
     objectReady = pyqtSignal(str)
     objectStatAvailable = pyqtSignal(str, dict)
     objectStatUnavailable = pyqtSignal(str)
+
+    filtersChanged = pyqtSignal()
 
     def __init__(self, parent):
         super().__init__(parent)
         self.searchW = parent
         self.results = None
+        self.uiCtrl = self.searchW.ui
+        self.resultsReceived.connect(self.onResultsRx)
+        self.app = QApplication.instance()
+        self._reset()
 
-    @pyqtSlot()
-    def mimeText(self):
-        pass
+    def reload(self):
+        self.filtersChanged.emit()
+
+    def _reset(self):
+        self.pages = {}
+        self.pageCount = 0
 
     @pyqtSlot(str)
     def fetchObject(self, path):
@@ -263,12 +275,95 @@ class Handler(QObject):
             mainW = self.searchW.app.mainWindow
             mainW.exploreHash(hashV)
 
+    @pyqtSlot()
+    def search(self):
+        ensure(self.runSearch(self.uiCtrl.searchQuery.text()))
+
+    async def runSearch(self, searchQuery):
+        self.searchW.loading()
+
+        async for sr in ipfssearch.search(searchQuery, preloadPages=0,
+                                          filters=self.searchW.getFilters(),
+                                          sslverify=self.app.sslverify):
+            await asyncio.sleep(0)
+            pageCount = sr.pageCount
+
+            if pageCount == 0:
+                self.addEmptyResultsPage(sr)
+                self.enableNavArrows(False)
+                self.disableCombo()
+                break
+
+            if sr.page == 0 and self.uiCtrl.comboPages.count() == 0:
+                resCount = sr.results.get('total', iUnknown())
+                maxScore = sr.results.get('max_score', iUnknown())
+                self.uiCtrl.labelInfo.setText(iResultsInfo(resCount, maxScore))
+
+                if pageCount > 256:
+                    pageCount = 256
+
+                self.pageCount = pageCount
+
+                for pageNum in range(1, pageCount + 1):
+                    self.uiCtrl.comboPages.insertItem(
+                        pageNum, 'Page {}'.format(pageNum))
+
+            self.resultsReceived.emit(sr, True)
+
+    async def runSearchPage(self, searchQuery, page, display=True):
+        sr = await ipfssearch.getPageResults(searchQuery, page,
+                                             filters=self.searchW.getFilters(),
+                                             sslverify=self.app.sslverify)
+        if sr:
+            self.resultsReceived.emit(sr, display)
+
+    def onResultsRx(self, sr, display):
+        self.pages[sr.page] = {
+            'results': sr,
+            'time': int(time.time()),
+            'page': self.searchW.resultsPage
+        }
+
+        self.results = sr
+        pageData = self.pages[sr.page]
+
+        if display or sr.page == 0:
+            # self.searchW.setResultsPage()
+            # self.uiCtrl.comboPages.setCurrentIndex(sr.page)
+            #rendered = self.searchW.resultsPage.renderHits(pageData['results'])
+            # self.resultsReadyDom.emit(rendered)
+            self.searchW.displayPage(sr.page)
+
+        self.searchW.enableCombo()
+
+    def __displayPage(self, page):
+        self.searchW.setResultsPage()
+        pageData = self.getPageData(page)
+
+        if pageData:
+            pageW = pageData['page']
+            rendered = self.searchW.resultsPage.renderHits(pageData['results'])
+            self.uiCtrl.comboPages.setCurrentIndex(page)
+
+            self.resultsReadyDom.emit(rendered)
+
+    def getPageData(self, page):
+        return self.pages.get(page, None)
+
+    def getPageWidget(self, page):
+        pageData = self.getPageData(page)
+        if pageData:
+            return pageData.get('page', None)
+
 
 class IPFSSearchView(GalacteekTab):
     resultsReceived = pyqtSignal(ipfssearch.IPFSSearchResults, bool)
 
     def __init__(self, searchQuery, *args, **kw):
         super(IPFSSearchView, self).__init__(*args, **kw)
+
+        self.searchWidget = QWidget()
+        self.addToLayout(self.searchWidget)
 
         self.setAttribute(Qt.WA_DeleteOnClose)
 
@@ -279,15 +374,14 @@ class IPFSSearchView(GalacteekTab):
             'ipfssearch-loading.html')
 
         self.searchQuery = searchQuery
-        self.pages = {}
-        self.pageCount = 0
 
         self.ui = ui_ipfssearchw.Ui_IPFSSearchMain()
-        self.ui.setupUi(self.mainWidget)
+        self.ui.setupUi(self.searchWidget)
+        self.ui.searchQuery.setText(self.searchQuery)
 
         self.stack = QStackedWidget()
         self.channel = QWebChannel()
-        self.handler = Handler(self)
+        self.handler = IPFSSearchHandler(self)
         self.channel.registerObject('ipfssearch', self.handler)
 
         self.loadingPage = SearchInProgressPage(
@@ -300,10 +394,9 @@ class IPFSSearchView(GalacteekTab):
             self.resultsTemplate,
             self.hitsTemplate,
             self.app.getIpfsConnectionParams(),
-            self
+            parent=self,
+            webchannel=self.channel
         )
-        self.resultsPage.setWebChannel(self.channel)
-        self.setResultsPage()
 
         self.ui.comboPages.activated.connect(self.onComboPages)
         self.ui.prevPageButton.clicked.connect(self.onPrevPage)
@@ -312,18 +405,6 @@ class IPFSSearchView(GalacteekTab):
             self.style().standardIcon(QStyle.SP_MediaSkipBackward))
         self.ui.nextPageButton.setIcon(
             self.style().standardIcon(QStyle.SP_MediaSkipForward))
-        self.resultsReceived.connect(self.onResultsRx)
-
-        self.ui.searchQuery.setText(self.searchQuery)
-
-        self.ui.filenameFilter.returnPressed.connect(self.onFiltersChanged)
-        self.ui.searchQuery.returnPressed.connect(self.onFiltersChanged)
-        self.ui.searchQuery.returnPressed.connect(self.onFiltersChanged)
-        self.ui.itemTypeFilter.currentTextChanged.connect(
-            self.onFiltersChanged)
-        self.ui.contentTypeFilter.currentTextChanged.connect(
-            self.onFiltersChanged)
-        self.ui.titleFilter.returnPressed.connect(self.onFiltersChanged)
 
         self.ui.itemTypeFilter.addItem('All')
         self.ui.itemTypeFilter.addItem('Files')
@@ -341,19 +422,26 @@ class IPFSSearchView(GalacteekTab):
         self.ui.resultsPerPage.setCurrentIndex(0)
 
         self.lastSeenDays = 365
+
         self.ui.lastSeenSlider.setTickInterval(1)
         self.ui.lastSeenSlider.setMinimum(1)
         self.ui.lastSeenSlider.setMaximum(365 * 10)
-        self.ui.lastSeenSlider.setSliderPosition(self.lastSeenDays)
         self.ui.lastSeenSlider.valueChanged.connect(
             lambda v: self.ui.lastSeenLabel.setText('{0} days'.format(
                 str(v))))
+        self.ui.lastSeenSlider.setValue(self.lastSeenDays)
         self.ui.lastSeenSlider.sliderReleased.connect(self.onFiltersChanged)
+        self.setResultsPage()
 
-        if self.resultsTemplate and self.searchQuery:
-            ensure(self.runSearch(self.searchQuery))
-        else:
-            self.addErrorPage()
+        # Rerender when the filters change
+        self.ui.filenameFilter.returnPressed.connect(self.onFiltersChanged)
+        self.ui.searchQuery.returnPressed.connect(self.onFiltersChanged)
+        self.ui.searchQuery.returnPressed.connect(self.onFiltersChanged)
+        self.ui.itemTypeFilter.currentTextChanged.connect(
+            self.onFiltersChanged)
+        self.ui.contentTypeFilter.currentTextChanged.connect(
+            self.onFiltersChanged)
+        self.ui.titleFilter.returnPressed.connect(self.onFiltersChanged)
 
     @property
     def currentPage(self):
@@ -370,12 +458,16 @@ class IPFSSearchView(GalacteekTab):
         self.ui.browser.setPage(self.loadingPage)
 
     def onFiltersChanged(self):
-        self.pages = {}
-        self.pageCount = 0
+        self.handler._reset()
         self.ui.comboPages.setCurrentIndex(0)
         self.lastSeenDays = self.ui.lastSeenSlider.value()
         self.searchQuery = self.ui.searchQuery.text()
-        ensure(self.runSearch(self.searchQuery))
+        self.handler.reload()
+
+    def loading(self):
+        self.setLoadingPage()
+        self.ui.labelInfo.setText(iSearching())
+        self.ui.comboPages.clear()
 
     def getPageData(self, page):
         return self.pages.get(page, None)
@@ -397,7 +489,7 @@ class IPFSSearchView(GalacteekTab):
 
     def onPageChanged(self, idx):
         self.ui.prevPageButton.setEnabled(idx > 0)
-        self.ui.nextPageButton.setEnabled(self.pageCount > idx + 1)
+        self.ui.nextPageButton.setEnabled(self.handler.pageCount > idx + 1)
 
     def onPrevPage(self):
         cIdx = self.currentPage
@@ -412,11 +504,11 @@ class IPFSSearchView(GalacteekTab):
 
     def loadPage(self, pageNum):
         self.disableCombo()
-        pageW = self.getPageWidget(pageNum)
+        pageData = self.handler.getPageData(pageNum)
 
-        if not pageW:
-            self.app.task(self.runSearchPage, self.searchQuery,
-                          pageNum, True)
+        if not pageData:
+            ensure(self.handler.runSearchPage(self.searchQuery,
+                                              pageNum, True))
         else:
             self.displayPage(pageNum)
             self.enableCombo()
@@ -424,6 +516,7 @@ class IPFSSearchView(GalacteekTab):
     def addEmptyResultsPage(self, searchR):
         page = NoResultsPage(None, parent=self)
         self.ui.browser.setPage(page)
+        self.ui.labelInfo.setText(iNoResults())
 
     def addErrorPage(self):
         pass
@@ -464,75 +557,15 @@ class IPFSSearchView(GalacteekTab):
 
         return filters
 
-    async def runSearch(self, searchQuery):
-        self.setLoadingPage()
-        self.ui.labelInfo.setText(iSearching())
-        self.ui.comboPages.clear()
-
-        async for sr in ipfssearch.search(searchQuery, preloadPages=0,
-                                          filters=self.getFilters(),
-                                          sslverify=self.app.sslverify):
-            await asyncio.sleep(0)
-            pageCount = sr.pageCount
-
-            if pageCount == 0:
-                self.addEmptyResultsPage(sr)
-                self.enableNavArrows(False)
-                self.disableCombo()
-                break
-
-            if sr.page == 0 and self.ui.comboPages.count() == 0:
-                resCount = sr.results.get('total', iUnknown())
-                maxScore = sr.results.get('max_score', iUnknown())
-                self.ui.labelInfo.setText(iResultsInfo(resCount, maxScore))
-
-                if pageCount > 256:
-                    pageCount = 256
-
-                self.pageCount = pageCount
-
-                for pageNum in range(1, pageCount + 1):
-                    self.ui.comboPages.insertItem(pageNum,
-                                                  'Page {}'.format(pageNum))
-
-            self.resultsReceived.emit(sr, False)
-
-    async def runSearchPage(self, searchQuery, page, display=False):
-        sr = await ipfssearch.getPageResults(searchQuery, page,
-                                             filters=self.getFilters(),
-                                             sslverify=self.app.sslverify)
-        if sr:
-            self.resultsReceived.emit(sr, display)
-
-        self.enableCombo()
-
     def displayPage(self, page):
-        pageData = self.getPageData(page)
+        self.setResultsPage()
+        pageData = self.handler.getPageData(page)
 
         if pageData:
-            pageW = pageData['page']
-            self.handler.results = pageData['results']
             rendered = self.resultsPage.renderHits(pageData['results'])
             self.ui.comboPages.setCurrentIndex(page)
-            self.onPageChanged(page)
             self.handler.resultsReadyDom.emit(rendered)
-            self.setResultsPage()
-
-    def onResultsRx(self, sr, display):
-        log.debug('Results received for page {0}: {1}'.format(sr.page,
-            display))
-        if sr.page not in self.pages:
-            log.debug('Updating results for page {0}'.format(sr.page))
-            self.pages[sr.page] = {
-                'results': sr,
-                'time': int(time.time()),
-                'page': self.resultsPage
-            }
-        else:
-            self.pages[sr.page]['time'] = int(time.time())
-
-        if display or sr.page == 0:
-            self.displayPage(sr.page)
+            self.onPageChanged(page)
 
     def onClose(self):
         return True

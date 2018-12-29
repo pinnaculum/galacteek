@@ -1,4 +1,7 @@
-from PyQt5.QtWidgets import QDialog, QTreeView, QHeaderView
+from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import QTreeView
+from PyQt5.QtWidgets import QHeaderView
+from PyQt5.QtWidgets import QWidget
 
 from PyQt5.QtGui import QStandardItemModel
 from PyQt5.QtCore import Qt, QCoreApplication
@@ -62,8 +65,10 @@ class KeysTab(GalacteekTab):
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
 
+        self.keysW = QWidget()
+        self.addToLayout(self.keysW)
         self.ui = ui_keys.Ui_KeysForm()
-        self.ui.setupUi(self.mainWidget)
+        self.ui.setupUi(self.keysW)
 
         self.ui.addKeyButton.clicked.connect(self.onAddKeyClicked)
         self.ui.deleteKeyButton.clicked.connect(self.onDelKeyClicked)

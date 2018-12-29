@@ -6,7 +6,7 @@ from PyQt5.QtWebChannel import QWebChannel
 from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal
 from PyQt5.QtCore import QJsonValue, QVariant, QUrl
 
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QSizePolicy
 
 from galacteek.ui.widgets import GalacteekTab
 from galacteek import ensure
@@ -118,12 +118,16 @@ class HashmarksHandler(BaseHandler):
 
 class HashmarksPage(BasePage):
     def __init__(self, marksLocal, parent=None):
-        super(HashmarksPage, self).__init__('hashmarks.html')
+        super(HashmarksPage, self).__init__('hashmarks.html', parent=parent)
 
         self.marksLocal = marksLocal
+        self.marksLocal.changed.connect(self.onMarksChanged)
         self.hashmarks = HashmarksHandler(self.marksLocal, self)
         self.register('hashmarks', self.hashmarks)
         self.register('galacteek', GalacteekHandler(None))
+
+    def onMarksChanged(self):
+        ensure(self.render())
 
     async def render(self):
         self.setHtml(await renderTemplate(
@@ -134,9 +138,11 @@ class HashmarksPage(BasePage):
 
 class DWebView(QWebEngineView):
     def __init__(self, page=None, parent=None):
-        super().__init__(parent)
+        super(DWebView, self).__init__(parent)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.channel = QWebChannel()
         self.p = page
+        self.show()
 
     @property
     def p(self):
@@ -144,13 +150,14 @@ class DWebView(QWebEngineView):
 
     @p.setter
     def p(self, page):
-        self._currentPage = page
-        self.setPage(page)
+        if page:
+            self._currentPage = page
+            self.setPage(page)
 
 
 class WebTab(GalacteekTab):
-    def __init__(self, view, mainW):
+    def __init__(self, mainW):
         super(WebTab, self).__init__(mainW)
 
-        view.mainW = mainW
-        self.layout().addWidget(view)
+    def attach(self, view):
+        self.vLayout.addWidget(view)

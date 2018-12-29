@@ -2,6 +2,7 @@ import os.path
 import asyncio
 
 from PyQt5.QtWidgets import QMenu, QHeaderView, QPushButton, QComboBox
+from PyQt5.QtWidgets import QWidget
 from PyQt5.QtGui import QStandardItemModel
 from PyQt5.QtCore import QObject, QCoreApplication
 
@@ -120,8 +121,11 @@ class PeersManager(GalacteekTab):
 
         self.lock = asyncio.Lock()
         self.peersTracker = peersTracker
+
+        self.peersWidget = QWidget()
+        self.addToLayout(self.peersWidget)
         self.ui = ui_peersmgr.Ui_PeersManager()
-        self.ui.setupUi(self.mainWidget)
+        self.ui.setupUi(self.peersWidget)
 
         self.ui.tree.setModel(self.peersTracker.model)
         self.ui.tree.header().setSectionResizeMode(
