@@ -3,7 +3,7 @@
 Galacteek
 =========
 
-.. image:: https://gitlab.com/galacteek/galacteek/raw/master/share/icons/ipfs-logo-128-white.png
+.. image:: https://gitlab.com/galacteek/galacteek/raw/master/share/icons/galacteek.png
     :align: center
 
 :info: An async IPFS_ browser
@@ -153,6 +153,8 @@ License
 Some of the beautiful artwork (under the Creative Commons CC-BY-SA license)
 from the ipfs-logo_ project's repository is included, unchanged.
 
+Main icon made by srip_ (flaticon, CC by 3.0)
+
 .. _aiohttp: https://pypi.python.org/pypi/aiohttp
 .. _aioipfs: https://gitlab.com/cipres/aioipfs
 .. _aiomonitor: https://github.com/aio-libs/aiomonitor
@@ -165,3 +167,4 @@ from the ipfs-logo_ project's repository is included, unchanged.
 .. _screenshots: https://gitlab.com/galacteek/galacteek/tree/master/screenshots
 .. _ipfs-search: https://ipfs-search.com
 .. _releases: https://github.com/eversum/galacteek/releases
+.. _srip: https://www.flaticon.com/authors/srip
