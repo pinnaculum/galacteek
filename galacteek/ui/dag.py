@@ -1,6 +1,7 @@
 import asyncio
 
 from PyQt5.QtWidgets import QTreeWidgetItem
+from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtGui import QColor
 
@@ -36,8 +37,10 @@ class DAGViewer(GalacteekTab):
 
         self.dagHash = dagHash
 
+        self.dagWidget = QWidget()
+        self.addToLayout(self.dagWidget)
         self.ui = ui_dagview.Ui_DagViewForm()
-        self.ui.setupUi(self.mainWidget)
+        self.ui.setupUi(self.dagWidget)
 
         evfilter = IPFSTreeKeyFilter(self.ui.dagTree)
         evfilter.copyHashPressed.connect(self.onCopyItemHash)

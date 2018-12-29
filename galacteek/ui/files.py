@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import (
     QMenu,
     QAbstractItemView,
     QInputDialog,
+    QWidget,
     QFileSystemModel)
 
 from PyQt5.QtGui import QClipboard, QStandardItemModel
@@ -290,9 +291,11 @@ class FilesTab(GalacteekTab):
         super().__init__(gWindow, **kw)
 
         self.lock = asyncio.Lock()
+        self.fmWidget = QWidget()
+        self.addToLayout(self.fmWidget)
 
         self.ui = ui_files.Ui_FileManagerForm()
-        self.ui.setupUi(self.mainWidget)
+        self.ui.setupUi(self.fmWidget)
         self.clipboard = self.app.appClipboard
         self.status = self.statusReady
 

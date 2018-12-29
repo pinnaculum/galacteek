@@ -13,7 +13,6 @@ def ipfsClientScripts(connParams):
     scriptJsIpfs.setWorldId(QWebEngineScript.MainWorld)
     scriptJsIpfs.setInjectionPoint(QWebEngineScript.DocumentCreation)
     scriptJsIpfs.setRunsOnSubFrames(True)
-    #self.webScripts.insert(scriptJsIpfs)
     scripts.append(scriptJsIpfs)
 
     script = QWebEngineScript()
@@ -27,6 +26,7 @@ def ipfsClientScripts(connParams):
     script.setInjectionPoint(QWebEngineScript.DocumentCreation)
     scripts.append(script)
     return scripts
+
 
 def orbitScripts(connParams):
     scripts = []
@@ -47,5 +47,4 @@ def orbitScripts(connParams):
         "window.orbitdb = new OrbitDB(window.ipfs)",
         "})"]))
     script.setWorldId(QWebEngineScript.MainWorld)
-    #scripts.append(script)
     return scripts

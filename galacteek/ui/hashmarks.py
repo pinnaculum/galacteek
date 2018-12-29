@@ -314,8 +314,10 @@ class HashmarksTab(GalacteekTab, _MarksUpdater):
         self.marksLocal.changed.connect(self.doMarksUpdate)
         self.marksLocal.markDeleted.connect(self.onMarkDeleted)
 
+        self.hWidget = QWidget()
+        self.addToLayout(self.hWidget)
         self.ui = ui_hashmarksmgr.Ui_HashmarksViewForm()
-        self.ui.setupUi(self.mainWidget)
+        self.ui.setupUi(self.hWidget)
 
         self.uiFeeds = FeedsView(self, self.marksLocal,
                                  self.loop, parent=self)

@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import (
     QAction,
     QMenu,
     QInputDialog,
+    QWidget,
     QToolButton,
     QFileDialog)
 
@@ -284,8 +285,11 @@ class BrowserTab(GalacteekTab):
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
 
+        self.browserWidget = QWidget()
+        self.vLayout.addWidget(self.browserWidget)
+
         self.ui = ui_browsertab.Ui_BrowserTabForm()
-        self.ui.setupUi(self.mainWidget)
+        self.ui.setupUi(self.browserWidget)
 
         # Install scheme handler early on
         self.webProfile = QtWebEngineWidgets.QWebEngineProfile.defaultProfile()

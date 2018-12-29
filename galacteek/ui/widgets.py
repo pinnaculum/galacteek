@@ -10,15 +10,15 @@ from .i18n import iNoTitle
 
 class GalacteekTab(QWidget):
     def __init__(self, gWindow, **kw):
-        super().__init__(gWindow)
-        self.vLayout = QVBoxLayout()
+        super(GalacteekTab, self).__init__(gWindow)
+        self.vLayout = QVBoxLayout(self)
         self.setLayout(self.vLayout)
-
-        self.mainWidget = QWidget(self)
-        self.vLayout.addWidget(self.mainWidget)
 
         self.gWindow = gWindow
         self.setAttribute(Qt.WA_DeleteOnClose)
+
+    def addToLayout(self, widget):
+        self.vLayout.addWidget(widget)
 
     def onClose(self):
         return True

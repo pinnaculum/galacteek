@@ -1,3 +1,4 @@
+from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import QTemporaryDir, QSaveFile
 from PyQt5.QtCore import QIODevice, pyqtSignal
 
@@ -29,8 +30,11 @@ class AddDocumentWidget(GalacteekTab):
     def __init__(self, gWindow, *args, **kw):
         super(AddDocumentWidget, self).__init__(gWindow, *args, **kw)
 
+        self.docWidget = QWidget()
+        self.addToLayout(self.doncWidget)
+
         self.ui = ui_newdocument.Ui_NewDocumentForm()
-        self.ui.setupUi(self.mainWidget)
+        self.ui.setupUi(self.docWidget)
         self.ui.importButton.clicked.connect(self.onImport)
         self.importSuccess.connect(self.onSuccess)
 
