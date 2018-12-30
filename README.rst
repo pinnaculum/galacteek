@@ -17,7 +17,8 @@ Installation
 AppImage
 --------
 
-For Linux users, you can get an AppImage from the github releases_ page.
+For Linux users, you can get an AppImage from the github releases_ page
+(go-ipfs_ version *0.4.18* is included in the AppImage).
 
 PIP
 ---
@@ -131,8 +132,9 @@ platform.
 Donations
 =========
 
-You can find donation details in the *Donate* section of the *Help* menu in the
-application's main window.
+BTC: 3HSsNcwzkiWGu6wB18BC6D37JHExpxZvyS
+
+You can also find donations details in the application's information menu.
 
 Requirements
 ============

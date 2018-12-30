@@ -50,7 +50,8 @@ async def searchPage(query, page, filters={}, sslverify=True):
 
 async def getPageResults(query, page, filters={}, sslverify=True):
     try:
-        results = await searchPage(query, page, filters=filters, sslverify=sslverify)
+        results = await searchPage(query, page, filters=filters,
+                                   sslverify=sslverify)
         return IPFSSearchResults(page, results)
     except Exception:
         return None
@@ -70,7 +71,8 @@ async def getMetadata(cid, sslverify=True):
 
 @async_generator
 async def search(query, preloadPages=0, filters={}, sslverify=True):
-    page1Results = await getPageResults(query, 0, filters=filters, sslverify=sslverify)
+    page1Results = await getPageResults(query, 0, filters=filters,
+                                        sslverify=sslverify)
     if page1Results is None:
         await yield_(emptyResults)
         return
@@ -81,6 +83,7 @@ async def search(query, preloadPages=0, filters={}, sslverify=True):
     if preloadPages > 0:
         pageLast = preloadPages if pageCount >= preloadPages else pageCount
         for page in range(page1Results.page + 1, pageLast + 1):
-            results = await getPageResults(query, page, filters=filters, sslverify=sslverify)
+            results = await getPageResults(query, page, filters=filters,
+                                           sslverify=sslverify)
             if results:
                 await yield_(results)

@@ -1,15 +1,13 @@
 import time
 import collections
 
-from PyQt5.QtGui import QIcon, QClipboard
+from PyQt5.QtGui import QClipboard
 from PyQt5.QtCore import (
-    QCoreApplication,
-    QUrl,
     pyqtSignal,
     QDateTime,
     QObject)
 
-from galacteek.ipfs import asyncipfsd, cidhelpers
+from galacteek.ipfs import cidhelpers
 from galacteek.ipfs.ipfsops import joinIpfs
 
 

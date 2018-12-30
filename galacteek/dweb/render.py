@@ -30,10 +30,11 @@ def renderWrapper(tmpl, **kw):
         data = tmpl.render(**kw)
     except Exception as err:
         log.debug('Error rendering jinja template',
-            exc_info=err)
+                  exc_info=err)
         return None
     else:
         return data
+
 
 async def renderTemplate(tmplname, loop=None, env=None, **kw):
     env = env if env else defaultJinjaEnv()

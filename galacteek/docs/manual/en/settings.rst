@@ -22,7 +22,7 @@ Using low values can significantly reduce CPU usage.
 **Note**: switching from a local to custom daemon (or vice versa) will make you
 lose access to the content that you might have published using the previous
 settings, so use with care. Use separate *application profiles* with the
-**--profile** command-line switch to keep multiple profiles separately
+**--profile** command-line switch to keep multiple separate profiles.
 
 User interface settings
 -----------------------
@@ -43,5 +43,4 @@ Activate Javascript IPFS API
 
 With this setting you can activate the Javascript API in the browser, allowing
 control of your IPFS daemon from the Javascript engine. Access to the IPFS
-daemon is done through the **window.ipfs** JS attribute (which is an
-*IpfsApi* instance from the **js-ipfs-api** project).
+daemon is done through the **window.ipfs** JavaScript variable.
