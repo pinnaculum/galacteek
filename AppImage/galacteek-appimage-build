@@ -94,19 +94,12 @@ find lib/python3.7/site-packages/PyQt5/Qt/qml/ -name *.qmlc -exec rm {} \;
 
 popd
 
-# Create the AppRun
+# Copy the AppRun
 
-cat > $APPDIR/AppRun <<\EOF
-#!/bin/bash
-
-HERE=$(dirname $(readlink -f "${0}"))
-export PATH=$PATH:${HERE}/usr/bin
-"${HERE}"/usr/bin/python "${HERE}"/usr/bin/galacteek --no-ssl-verify --no-release-check "$@"
-EOF
+cp AppRun $APPDIR/AppRun
+chmod 755 $APPDIR/AppRun
 
 sed -i -e 's/#\!\/.*$/#!\//' $APPDIR/usr/bin/galacteek
-
-chmod 755 $APPDIR/AppRun
 
 echo "AppDir successfully created, running appimagetool"
 ARCH=x86_64 appimagetool-x86_64.AppImage $APPDIR Galacteek-${G_VERSION}-x86_64.AppImage
