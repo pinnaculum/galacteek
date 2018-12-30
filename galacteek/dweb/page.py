@@ -139,7 +139,6 @@ class HashmarksPage(BasePage):
 class DWebView(QWebEngineView):
     def __init__(self, page=None, parent=None):
         super(DWebView, self).__init__(parent)
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.channel = QWebChannel()
         self.p = page
         self.show()

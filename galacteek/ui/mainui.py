@@ -400,9 +400,9 @@ class IPFSSearchWidget(QWidget):
         self.input.setupUi(self)
         self.input.searchQuery.returnPressed.connect(self.onSearch)
 
-        #self.setAttribute(Qt.WA_NoSystemBackground)
-        #self.setAttribute(Qt.WA_TranslucentBackground)
-        #self.setAttribute(Qt.WA_TransparentForMouseEvents)
+        # self.setAttribute(Qt.WA_NoSystemBackground)
+        # self.setAttribute(Qt.WA_TranslucentBackground)
+        # self.setAttribute(Qt.WA_TransparentForMouseEvents)
 
     def focus(self):
         self.input.searchQuery.setFocus(Qt.OtherFocusReason)
@@ -515,7 +515,9 @@ class MainWindow(QMainWindow):
             lambda: self.onOpenBrowserTabClicked())
         menu = QMenu()
         menu.addAction(getIconIpfsIce(), 'Browse',
-                       self.onOpenBrowserTabClicked)
+                       lambda: self.onOpenBrowserTabClicked())
+        menu.addAction(getIconIpfsIce(), 'Browse (auto-pin)',
+                       lambda: self.onOpenBrowserTabClicked(pinBrowsed=True))
         self.browseButton.setMenu(menu)
         self.browseButton.setIcon(getIconIpfs64())
 
@@ -701,9 +703,7 @@ class MainWindow(QMainWindow):
         if previousState:
             self.restoreState(previousState)
 
-
         self.hashmarksPage = None
-
 
     @property
     def app(self):
@@ -792,7 +792,7 @@ class MainWindow(QMainWindow):
             action.setData(pName)
 
         for action in self.profilesActionGroup.actions():
-           self.menuUserProfile.addAction(action)
+            self.menuUserProfile.addAction(action)
 
     def onRepoReady(self):
 
@@ -1169,8 +1169,8 @@ class MainWindow(QMainWindow):
     def onOpenMediaPlayer(self):
         self.addMediaPlayerTab()
 
-    def onOpenBrowserTabClicked(self):
-        self.addBrowserTab()
+    def onOpenBrowserTabClicked(self, pinBrowsed=False):
+        self.addBrowserTab(pinBrowsed=pinBrowsed)
 
     def onWriteNewDocumentClicked(self):
         w = textedit.AddDocumentWidget(self, parent=self.ui.tabWidget)
@@ -1206,9 +1206,9 @@ class MainWindow(QMainWindow):
         bcAddress = '3HSsNcwzkiWGu6wB18BC6D37JHExpxZvyS'
         runDialog(DonateDialog, bcAddress)
 
-    def addBrowserTab(self, label='No page loaded'):
+    def addBrowserTab(self, label='No page loaded', pinBrowsed=False):
         icon = getIconIpfsIce()
-        tab = browser.BrowserTab(self, parent=self.ui.tabWidget)
+        tab = browser.BrowserTab(self, pinBrowsed=pinBrowsed)
         self.ui.tabWidget.addTab(tab, icon, label)
         self.ui.tabWidget.setCurrentWidget(tab)
 
@@ -1287,4 +1287,4 @@ class MainWindow(QMainWindow):
         tab.attach(hview)
 
         self.registerTab(tab, iHashmarks(),
-                icon=getIcon('hashmarks.png'), current=True)
+                         icon=getIcon('hashmarks.png'), current=True)

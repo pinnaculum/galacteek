@@ -44,6 +44,11 @@
         <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
 
         <script type="text/javascript">
+            function hideCat(category) {
+                var cat = document.getElementById(category)
+                cat.style.display = "none";
+            }
+
             function hideShow(category) {
                 var cat = document.getElementById(category)
                 var x = document.getElementById(category + '_marks')

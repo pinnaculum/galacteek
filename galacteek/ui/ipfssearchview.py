@@ -19,7 +19,7 @@ from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs import ipfssearch
 from galacteek.dweb.render import renderTemplate, defaultJinjaEnv
-from galacteek.dweb.webscripts import ipfsClientScripts, orbitScripts
+from galacteek.dweb.webscripts import ipfsClientScripts
 from galacteek import ensure
 
 from . import ui_ipfssearchw, ui_ipfssearchwresults, ui_ipfssearchbrowser
@@ -140,7 +140,7 @@ class SearchResultsPage(QWebEnginePage):
         self.setHtml(await renderTemplate(self.template),
                      baseUrl=QUrl('qrc:/'))
 
-    def renderHits(self, results):
+    def renderHits(self, pageNo, pageCount, results):
         ctxHits = []
 
         for hit in results.hits:
@@ -170,6 +170,8 @@ class SearchResultsPage(QWebEnginePage):
         r = self.templateHits.render(hits=ctxHits,
                                      resultsCount=results.resultsCount,
                                      pageCount=results.pageCount,
+                                     showPrevious=pageNo > 1,
+                                     showNext=pageNo < pageCount,
                                      ipfsConnParams=self.ipfsConnParams)
         return r
 
@@ -210,7 +212,7 @@ class IPFSSearchHandler(QObject):
     def __init__(self, parent):
         super().__init__(parent)
         self.searchW = parent
-        self.results = None
+        self.currentResults = None
         self.uiCtrl = self.searchW.ui
         self.resultsReceived.connect(self.onResultsRx)
         self.app = QApplication.instance()
@@ -235,6 +237,14 @@ class IPFSSearchHandler(QObject):
     async def pin(self, op, path):
         pinner = op.ctx.pinner
         await pinner.queue(path, False, None)
+
+    @pyqtSlot()
+    def previousPage(self):
+        self.searchW.onPrevPage()
+
+    @pyqtSlot()
+    def nextPage(self):
+        self.searchW.onNextPage()
 
     @ipfsOp
     async def fetch(self, op, path):
@@ -289,9 +299,8 @@ class IPFSSearchHandler(QObject):
             pageCount = sr.pageCount
 
             if pageCount == 0:
-                self.addEmptyResultsPage(sr)
-                self.enableNavArrows(False)
-                self.disableCombo()
+                self.searchW.noResults()
+
                 break
 
             if sr.page == 0 and self.uiCtrl.comboPages.count() == 0:
@@ -308,9 +317,9 @@ class IPFSSearchHandler(QObject):
                     self.uiCtrl.comboPages.insertItem(
                         pageNum, 'Page {}'.format(pageNum))
 
-            self.resultsReceived.emit(sr, True)
+            self.resultsReceived.emit(sr, False)
 
-    async def runSearchPage(self, searchQuery, page, display=True):
+    async def runSearchPage(self, searchQuery, page, display=False):
         sr = await ipfssearch.getPageResults(searchQuery, page,
                                              filters=self.searchW.getFilters(),
                                              sslverify=self.app.sslverify)
@@ -324,24 +333,11 @@ class IPFSSearchHandler(QObject):
             'page': self.searchW.resultsPage
         }
 
-        self.results = sr
+        self.currentResults = sr
         pageData = self.pages[sr.page]
 
-        if display or sr.page == 0:
-            self.searchW.displayPage(sr.page)
-
+        self.searchW.loadPage(sr.page)
         self.searchW.enableCombo()
-
-    def __displayPage(self, page):
-        self.searchW.setResultsPage()
-        pageData = self.getPageData(page)
-
-        if pageData:
-            pageW = pageData['page']
-            rendered = self.searchW.resultsPage.renderHits(pageData['results'])
-            self.uiCtrl.comboPages.setCurrentIndex(page)
-
-            self.resultsReadyDom.emit(rendered)
 
     def getPageData(self, page):
         return self.pages.get(page, None)
@@ -409,7 +405,7 @@ class IPFSSearchView(GalacteekTab):
         self.ui.contentTypeFilter.addItem('All')
         self.ui.contentTypeFilter.addItem('Images')
         self.ui.contentTypeFilter.addItem('Videos')
-        self.ui.contentTypeFilter.addItem('Code')
+        self.ui.contentTypeFilter.addItem('Text')
         self.ui.contentTypeFilter.addItem('Music')
 
         for i in range(20, 200, 10):
@@ -465,6 +461,11 @@ class IPFSSearchView(GalacteekTab):
         self.ui.labelInfo.setText(iSearching())
         self.ui.comboPages.clear()
 
+    def noResults(self):
+        self.addEmptyResultsPage()
+        self.enableNavArrows(False)
+        self.disableCombo()
+
     def disableCombo(self):
         self.ui.comboPages.setEnabled(False)
 
@@ -501,7 +502,7 @@ class IPFSSearchView(GalacteekTab):
             self.displayPage(pageNum)
             self.enableCombo()
 
-    def addEmptyResultsPage(self, searchR):
+    def addEmptyResultsPage(self):
         page = NoResultsPage(None, parent=self)
         self.ui.browser.setPage(page)
         self.ui.labelInfo.setText(iNoResults())
@@ -519,10 +520,7 @@ class IPFSSearchView(GalacteekTab):
         return objType
 
     def getFilters(self):
-        filters = {
-            'references.name': 'test*',
-
-        }
+        filters = {}
 
         filenameF = self.ui.filenameFilter.text()
         if len(filenameF) > 0:
@@ -543,6 +541,16 @@ class IPFSSearchView(GalacteekTab):
         if self.fileFilter() == 'file':
             filters['_type'] = 'file'
 
+        ctypeF = self.ui.contentTypeFilter.currentText()
+        if ctypeF == 'Images':
+            filters['metadata.Content-Type'] = 'image*'
+        if ctypeF == 'Videos':
+            filters['metadata.Content-Type'] = 'video*'
+        if ctypeF == 'Music':
+            filters['metadata.Content-Type'] = 'audio*'
+        if ctypeF == 'Text':
+            filters['metadata.Content-Type'] = 'text*'
+
         return filters
 
     def displayPage(self, page):
@@ -550,7 +558,8 @@ class IPFSSearchView(GalacteekTab):
         pageData = self.handler.getPageData(page)
 
         if pageData:
-            rendered = self.resultsPage.renderHits(pageData['results'])
+            rendered = self.resultsPage.renderHits(page,
+                self.handler.pageCount, pageData['results'])
             self.ui.comboPages.setCurrentIndex(page)
             self.handler.resultsReadyDom.emit(rendered)
             self.onPageChanged(page)
