@@ -130,7 +130,8 @@ setup(
         'galacteek.hashmarks.default',
         'galacteek.templates',
         'galacteek.dweb',
-        'galacteek.ui'
+        'galacteek.ui',
+        'galacteek.ui.orbital'
     ],
     install_requires=install_reqs,
     package_data={
