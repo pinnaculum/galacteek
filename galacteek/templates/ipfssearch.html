@@ -59,6 +59,13 @@
                 filter: alpha(opacity = 60); /* MSIE */
                 text-align: right;
             }
+            pre {
+                white-space: pre-wrap;
+                white-space: -moz-pre-wrap;
+                white-space: -pre-wrap;
+                white-space: -o-pre-wrap;
+                word-wrap: break-word;
+            }
         </style>
 
         <script type="text/javascript">
@@ -70,13 +77,20 @@
                 if (!fetched) {
                     window.ipfs.cat(hash, function (err, file) {
                         if (!raw || err) {
-                            raw.innerHTML = 'Error'
+                            raw.innerHTML = 'IPFS fetch error'
                             throw err
                         } else {
-                            raw.innerHTML = file.toString('utf8')
+                            document.createElement("p", hash + "_fetched")
+                            raw.innerHTML = ''
+                            try {
+                                var tNode = document.createTextNode(file.toString('utf8'))
+                                raw.appendChild(tNode)
+                            } catch(err) {
+                                raw.innerHTML = 'Decoding error'
+                                throw err
+                            }
                         }
                     })
-                    document.createElement("p", hash + "_fetched")
                 }
 
                 if (preview.style.display === 'none' || !(preview.style.display)) {

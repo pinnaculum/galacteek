@@ -5,6 +5,8 @@
 
 {% set preview_mimetypes = [
     'text/plain',
+    'text/css',
+    'application/xml',
     'application/x-sh',
     'application/json',
     'application/javascript' ] %}
@@ -39,7 +41,7 @@
         <img id="img" src="{{ ipfsConnParams.gatewayUrl }}/{{ hit['path'] }}" width="20%"></img>
         </a>
 
-{% elif hit.mimetype in preview_mimetypes and hit.size < preview_maxsize %}
+{% elif (hit.mimetype.startswith('text') or hit.mimetype in preview_mimetypes) and hit.size < preview_maxsize %}
         <button onclick="previewFile('{{ hit.hash }}');">Preview</button>
         <div id="{{ hit.hash }}_preview" class="textpreview">
             <pre id="{{ hit.hash }}_text"></pre>
