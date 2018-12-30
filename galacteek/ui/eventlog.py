@@ -28,8 +28,8 @@ class EventLogWidget(GalacteekTab):
         self.clearButton = QPushButton('Clear')
         self.clearButton.clicked.connect(lambda: self.logZone.clear())
 
-        layout = QVBoxLayout(self)
-        hLayout = QHBoxLayout(self)
+        layout = QVBoxLayout()
+        hLayout = QHBoxLayout()
 
         self.checkCore = QCheckBox('Core events')
         self.checkCore.setCheckState(Qt.Checked)

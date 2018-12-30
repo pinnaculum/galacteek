@@ -1,0 +1,102 @@
+#!/bin/bash
+#
+# AppImage builder with Miniconda3
+#
+
+MINICONDA_DIST="Miniconda3-4.5.11-Linux-x86_64.sh"
+
+if [ $# -lt 1 ]; then
+    echo "Pass the version number as argument"
+    exit
+fi
+
+if ! [ -e $MINICONDA_DIST ]; then
+    wget "https://repo.continuum.io/miniconda/${MINICONDA_DIST}"
+fi
+
+VERSION=$1
+APPDIR="galacteek.AppDir.${VERSION}"
+PIP=$APPDIR/usr/bin/pip
+WHEEL=../dist/galacteek-$VERSION-py3-none-any.whl
+
+if ! [ -e $WHEEL ]; then
+	echo "Wheel for version $VERSION does not exist, run make dists"
+	exit
+fi
+
+if [ -e $APPDIR ]; then
+    echo "$APPDIR already exists"
+else
+	mkdir -p $APPDIR
+	mkdir -p $APPDIR/usr/share/applications
+	mkdir -p $APPDIR/usr/share/icons/hicolor/512x512/apps
+fi
+
+if ! [ -e $PIP ]; then
+    echo "Installing miniconda"
+    bash Miniconda3-4.5.11-Linux-x86_64.sh -b -p "$APPDIR"/usr -f
+else
+    echo "Miniconda found, continuing"
+fi
+
+# Enter the venv
+. "$APPDIR"/usr/bin/activate
+
+# Install the wheel from local dists
+
+echo "Installing wheel: $WHEEL"
+$PIP install $WHEEL
+
+cp ../galacteek.desktop $APPDIR/usr/share/applications
+cp ../galacteek.desktop $APPDIR
+cp ../share/icons/galacteek.png $APPDIR
+cp ../share/icons/galacteek.png $APPDIR/usr/share/icons/hicolor/512x512/apps
+
+# Remove unnecessary stuff
+pushd "$APPDIR"/usr
+
+rm -rf pkgs
+find -type d -iname '__pycache__' -print0 | xargs -0 rm -r
+find -type f -iname '*.so*' -print -exec strip '{}' \;
+find -type f -iname '*.a' -print -delete
+
+rm -rf lib/cmake/
+rm -rf include/
+rm -rf share/{gtk-,}doc
+rm -rf bin/tcl*
+rm -rf bin/sqlite*
+rm -rf bin/lz*
+rm -rf bin/xz*
+rm -rf lib/libtcl*
+rm -rf lib/libtk*
+rm -rf lib/tk*
+rm -rf lib/tcl*
+rm -rf lib/sqlite*
+rm -rf lib/python3.7/site-packages/Cryptodome/SelfTest/*
+rm -rf lib/python3.7/site-packages/PyQt5/Qt/plugins/geoservices
+rm -rf lib/python3.7/site-packages/PyQt5/Qt/plugins/sceneparsers
+rm -rf share/man
+rm -rf share/readline
+rm -rf share/terminfo
+rm -rf ssl/man
+
+find lib/python3.7/site-packages/PyQt5/Qt/qml/ -name *.qml -exec rm {} \;
+find lib/python3.7/site-packages/PyQt5/Qt/qml/ -name *.qmlc -exec rm {} \;
+
+popd
+
+# Create the AppRun
+
+cat > $APPDIR/AppRun <<\EOF
+#!/bin/bash
+
+HERE=$(dirname $(readlink -f "${0}"))
+"${HERE}"/usr/bin/python "${HERE}"/usr/bin/galacteek --no-ssl-verify --no-release-check "$@"
+EOF
+
+sed -i -e 's/#\!\/.*$/#!\//' $APPDIR/usr/bin/galacteek
+
+chmod 755 $APPDIR/AppRun
+
+echo "AppDir successfully created, running appimagetool"
+ARCH=x86_64 appimagetool-x86_64.AppImage $APPDIR Galacteek-$VERSION-x86_64.AppImage
