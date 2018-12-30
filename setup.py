@@ -129,7 +129,7 @@ setup(
         'galacteek.hashmarks',
         'galacteek.hashmarks.default',
         'galacteek.templates',
-        'galacteek.web',
+        'galacteek.dweb',
         'galacteek.ui'
     ],
     install_requires=install_reqs,
