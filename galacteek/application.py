@@ -1,10 +1,8 @@
 import sys
 import os
 import os.path
-import time
 import logging
 import asyncio
-import collections
 import pkg_resources
 import jinja2
 import jinja2.exceptions
@@ -15,7 +13,7 @@ import re
 from quamash import QEventLoop
 
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu
-from PyQt5.QtGui import QIcon, QClipboard
+from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import (
     QCoreApplication,
     QUrl,
@@ -25,7 +23,6 @@ from PyQt5.QtCore import (
     pyqtSignal,
     QObject,
     QTemporaryDir,
-    QDateTime,
     QMimeDatabase)
 
 from galacteek import log, ensure
@@ -392,13 +389,13 @@ class GalacteekApplication(QApplication):
         # If the application's progname is a valid CID, pin it!
 
         if isinstance(self.progName, str):
-            progNameClean = re.sub('[\.\/]*', '', self.progName)
+            progNameClean = re.sub(r'[\.\/]*', '', self.progName)
             if cidhelpers.cidValid(progNameClean):
                 self._progCid = progNameClean
                 log.debug("Auto pinning program's CID: {0}".format(
                     self.progCid))
-                await self.ipfsCtx.pin(self.progCid, False,
-                        self.onAppReplication)
+                await self.ipfsCtx.pin(joinIpfs(self.progCid), False,
+                                       self.onAppReplication)
 
     def onAppReplication(self, future):
         try:
