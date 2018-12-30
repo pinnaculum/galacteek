@@ -83,6 +83,7 @@ Main window keybindings:
 ------------------------
 
 - **Ctrl+t**: Open a new IPFS browsing tab
+- **Ctrl+s**: Search with ipfs-search_
 - **Ctrl+w**: Close current tab
 - **Ctrl+m**: Open the IPFS hashmarks manager
 - **Ctrl+f**: Open the file manager

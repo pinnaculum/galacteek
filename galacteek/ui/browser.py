@@ -150,6 +150,10 @@ class IPFSSchemeHandler(QtWebEngineCore.QWebEngineUrlSchemeHandler):
 
     def requestStarted(self, request):
         url = request.requestUrl()
+
+        if url is None:
+            return
+
         scheme = url.scheme()
         path = url.path()
 
@@ -162,7 +166,6 @@ class IPFSSchemeHandler(QtWebEngineCore.QWebEngineUrlSchemeHandler):
             yUrl = URL(url.toString())
 
             if len(yUrl.parts) < 3:
-                messageBox(iInvalidUrl())
                 return None
 
             newUrl = self.app.subUrl(path)
@@ -181,8 +184,14 @@ class IPFSSchemeHandler(QtWebEngineCore.QWebEngineUrlSchemeHandler):
         if scheme in [SCHEME_FS, SCHEME_IPFS, SCHEME_DWEB]:
             # Handle scheme:/{ipfs,ipns}/path
 
+            if not isinstance(path, str):
+                return
+
             if path.startswith('/ipfs/') or path.startswith('/ipns/'):
-                return redirectIpfs(path)
+                try:
+                    return redirectIpfs(path)
+                except Exception as err:
+                    log.debug('Exception in request'.format(exc_info=err))
 
 
 class RequestInterceptor(QWebEngineUrlRequestInterceptor):
