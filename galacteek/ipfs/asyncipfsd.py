@@ -200,7 +200,7 @@ class AsyncIPFSDaemon(object):
             await ipfsConfigJson(
                 self.goIpfsPath,
                 'API.HTTPHeaders.Access-Control-Allow-Origin',
-                '["http://localhost:{0}", "qrc:/*"]'.format(self.gatewayport)
+                '["*"]'
             )
 
         if self.noBootstrap:
