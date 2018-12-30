@@ -10,6 +10,7 @@ import jinja2
 import jinja2.exceptions
 import warnings
 import concurrent.futures
+import re
 
 from quamash import QEventLoop
 
@@ -132,7 +133,7 @@ class GalacteekApplication(QApplication):
     manualAvailable = pyqtSignal(str, dict)
 
     def __init__(self, debug=False, profile='main', sslverify=True,
-                 enableOrbital=False):
+                 enableOrbital=False, progName=None):
         QApplication.__init__(self, sys.argv)
 
         QCoreApplication.setApplicationName(GALACTEEK_NAME)
@@ -144,6 +145,8 @@ class GalacteekApplication(QApplication):
         self._ipfsOpMain = None
         self._ipfsd = None
         self._sslverify = sslverify
+        self._progName = progName
+        self._progCid = None
 
         self.enableOrbital = enableOrbital
         self.orbitConnector = None
@@ -176,6 +179,14 @@ class GalacteekApplication(QApplication):
     @property
     def debugEnabled(self):
         return self._debugEnabled
+
+    @property
+    def progName(self):
+        return self._progName
+
+    @property
+    def progCid(self):
+        return self._progCid
 
     @property
     def sslverify(self):
@@ -377,6 +388,26 @@ class GalacteekApplication(QApplication):
         self.feedFollowerTask = self.task(self.feedFollower.process)
 
         self.loop.call_soon(self.ipfsCtx.ipfsRepositoryReady.emit)
+
+        # If the application's progname is a valid CID, pin it!
+
+        if isinstance(self.progName, str):
+            progNameClean = re.sub('[\.\/]*', '', self.progName)
+            if cidhelpers.cidValid(progNameClean):
+                self._progCid = progNameClean
+                log.debug("Auto pinning program's CID: {0}".format(
+                    self.progCid))
+                await self.ipfsCtx.pin(self.progCid, False,
+                        self.onAppReplication)
+
+    def onAppReplication(self, future):
+        try:
+            replResult = future.result()
+        except Exception as err:
+            log.debug('App replication: failed', exc_info=err)
+        else:
+            log.debug('App replication: success ({result})'.format(
+                result=replResult))
 
     @ipfsOp
     async def importQtResource(self, op, path):
