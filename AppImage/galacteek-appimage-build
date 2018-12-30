@@ -4,6 +4,8 @@
 #
 
 MINICONDA_DIST="Miniconda3-4.5.11-Linux-x86_64.sh"
+GOIPFS_TGZ="go-ipfs_v0.4.18_linux-amd64.tar.gz"
+GOIPFS_DISTURL="https://dist.ipfs.io/go-ipfs/v0.4.18/${GOIPFS_TGZ}"
 
 if [ $# -lt 1 ]; then
     echo "Pass the version number as argument"
@@ -14,22 +16,28 @@ if ! [ -e $MINICONDA_DIST ]; then
     wget "https://repo.continuum.io/miniconda/${MINICONDA_DIST}"
 fi
 
-VERSION=$1
-APPDIR="galacteek.AppDir.${VERSION}"
+if ! [ -e $GOIPFS_TGZ ]; then
+    wget $GOIPFS_DISTURL
+fi
+
+tar -C /tmp -xzvf ${GOIPFS_TGZ}
+
+G_VERSION=$1
+APPDIR="galacteek.AppDir.${G_VERSION}"
 PIP=$APPDIR/usr/bin/pip
-WHEEL=../dist/galacteek-$VERSION-py3-none-any.whl
+WHEEL=../dist/galacteek-$G_VERSION-py3-none-any.whl
 
 if ! [ -e $WHEEL ]; then
-	echo "Wheel for version $VERSION does not exist, run make dists"
-	exit
+    echo "Wheel for version $G_VERSION does not exist, run make dists"
+    exit
 fi
 
 if [ -e $APPDIR ]; then
     echo "$APPDIR already exists"
 else
-	mkdir -p $APPDIR
-	mkdir -p $APPDIR/usr/share/applications
-	mkdir -p $APPDIR/usr/share/icons/hicolor/512x512/apps
+    mkdir -p $APPDIR
+    mkdir -p $APPDIR/usr/share/applications
+    mkdir -p $APPDIR/usr/share/icons/hicolor/512x512/apps
 fi
 
 if ! [ -e $PIP ]; then
@@ -45,12 +53,13 @@ fi
 # Install the wheel from local dists
 
 echo "Installing wheel: $WHEEL"
-$PIP install $WHEEL
+$PIP install --force-reinstall $WHEEL
 
 cp ../galacteek.desktop $APPDIR/usr/share/applications
 cp ../galacteek.desktop $APPDIR
 cp ../share/icons/galacteek.png $APPDIR
 cp ../share/icons/galacteek.png $APPDIR/usr/share/icons/hicolor/512x512/apps
+cp /tmp/go-ipfs/ipfs $APPDIR/usr/bin
 
 # Remove unnecessary stuff
 pushd "$APPDIR"/usr
@@ -91,6 +100,7 @@ cat > $APPDIR/AppRun <<\EOF
 #!/bin/bash
 
 HERE=$(dirname $(readlink -f "${0}"))
+export PATH=$PATH:${HERE}/usr/bin
 "${HERE}"/usr/bin/python "${HERE}"/usr/bin/galacteek --no-ssl-verify --no-release-check "$@"
 EOF
 
@@ -99,4 +109,4 @@ sed -i -e 's/#\!\/.*$/#!\//' $APPDIR/usr/bin/galacteek
 chmod 755 $APPDIR/AppRun
 
 echo "AppDir successfully created, running appimagetool"
-ARCH=x86_64 appimagetool-x86_64.AppImage $APPDIR Galacteek-$VERSION-x86_64.AppImage
+ARCH=x86_64 appimagetool-x86_64.AppImage $APPDIR Galacteek-${G_VERSION}-x86_64.AppImage
