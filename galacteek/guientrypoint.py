@@ -72,7 +72,7 @@ async def fetchGoIpfsDist(app):
 
 
 def galacteekGui(args):
-    progName = sys.argv[0]
+    progName = args.binaryname if args.binaryname else sys.argv[0]
 
     if args.debug:
         glogger.basicConfig(level='DEBUG')
@@ -173,6 +173,8 @@ def start():
                         help='IPFS http gateway port number')
     parser.add_argument('--profile', default='main',
                         help='Application Profile')
+    parser.add_argument('--binary-name', default=None,
+                        help='Binary name', dest='binaryname')
     parser.add_argument(
         '--monitor',
         action='store_true',
