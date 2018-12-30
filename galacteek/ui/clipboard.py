@@ -40,6 +40,7 @@ class ClipboardTracker(QObject):
         emit a signal, processed by the main window for the clipboard
         loader button
         """
+        enableBase32 = False
         if not text or len(text) > 1024:  # that shouldn't be worth handling
             return
 
@@ -70,7 +71,7 @@ class ClipboardTracker(QObject):
                 return
 
             cidObject = cidhelpers.getCID(cid)
-            if cidObject.version == 1:
+            if cidObject.version == 1 and enableBase32:
                 cidB32 = cidhelpers.cidConvertBase32(cid)
                 if cidB32:
                     path = joinIpfs(cidB32)

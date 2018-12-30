@@ -23,6 +23,7 @@ import copy
 
 from galacteek import log, ensure
 from galacteek.ipfs.wrappers import *
+from galacteek.dweb.webscripts import ipfsClientScripts
 
 from . import ui_browsertab
 from .helpers import *
@@ -191,8 +192,9 @@ class RequestInterceptor(QWebEngineUrlRequestInterceptor):
 
 class CustomWebPage (QtWebEngineWidgets.QWebEnginePage):
     def javaScriptConsoleMessage(self, level, message, lineNumber, sourceId):
-        log.debug('JS: level: {0}, source: {1}, line: {2}, message: {3}'.format(
-            level, sourceId, lineNumber, message))
+        log.debug(
+            'JS: level: {0}, source: {1}, line: {2}, message: {3}'.format(
+                level, sourceId, lineNumber, message))
 
 
 class WebView(QtWebEngineWidgets.QWebEngineView):
@@ -278,12 +280,13 @@ class BrowserKeyFilter(QObject):
                     return True
         return False
 
+
 class BrowserTab(GalacteekTab):
     # signals
     ipfsPathVisited = pyqtSignal(str)
 
-    def __init__(self, *args, **kw):
-        super().__init__(*args, **kw)
+    def __init__(self, gWindow, pinBrowsed=False):
+        super(BrowserTab, self).__init__(gWindow)
 
         self.browserWidget = QWidget()
         self.vLayout.addWidget(self.browserWidget)
@@ -306,6 +309,7 @@ class BrowserTab(GalacteekTab):
         self.ui.webEngineView.loadFinished.connect(self.onLoadFinished)
         self.ui.webEngineView.iconChanged.connect(self.onIconChanged)
         self.ui.webEngineView.loadProgress.connect(self.onLoadProgress)
+        self.ui.webEngineView.titleChanged.connect(self.onTitleChanged)
 
         self.ui.urlZone.returnPressed.connect(self.onUrlEdit)
         self.ui.backButton.clicked.connect(self.backButtonClicked)
@@ -325,6 +329,11 @@ class BrowserTab(GalacteekTab):
 
         self.hashmarkMgrButton = HashmarkMgrButton(
             marksLocal=self.app.marksLocal)
+        self.hashmarkPageAction = QAction(getIcon('hashmarks.png'),
+                                          iHashmark(), self,
+                                          shortcut=QKeySequence('Ctrl+b'),
+                                          triggered=self.onHashmarkPage)
+        self.hashmarkMgrButton.setDefaultAction(self.hashmarkPageAction)
 
         self.hashmarkMgrButton.hashmarkClicked.connect(self.onHashmarkClicked)
 
@@ -364,7 +373,12 @@ class BrowserTab(GalacteekTab):
 
         self.ui.pinAllButton.setCheckable(True)
         self.ui.pinAllButton.setAutoRaise(True)
-        self.ui.pinAllButton.setChecked(self.gWindow.pinAllGlobalChecked)
+
+        if pinBrowsed:
+            self.ui.pinAllButton.setChecked(True)
+        else:
+            self.ui.pinAllButton.setChecked(self.gWindow.pinAllGlobalChecked)
+
         self.ui.pinAllButton.toggled.connect(self.onToggledPinAll)
 
         # Prepare the pin combo box
@@ -414,34 +428,13 @@ class BrowserTab(GalacteekTab):
         return self.ui.pinAllButton.isChecked()
 
     def installScripts(self):
-        # Install the browserified js-ipfs API
+        self.webScripts = self.webProfile.scripts()
 
-        exSc = self.webScripts.findScript('js-ipfs-api')
+        exSc = self.webScripts.findScript('ipfs-http-client')
         if self.app.settingsMgr.jsIpfsApi is True and exSc.isNull():
-            jsFile = QFile(':/share/js/js-ipfs-api/index.js')
-            if not jsFile.open(QFile.ReadOnly):
-                return
-            scriptJsIpfs = QWebEngineScript()
-            scriptJsIpfs.setName('js-ipfs-api')
-            scriptJsIpfs.setSourceCode(jsFile.readAll().data().decode('utf-8'))
-            scriptJsIpfs.setWorldId(QWebEngineScript.MainWorld)
-            scriptJsIpfs.setInjectionPoint(QWebEngineScript.DocumentCreation)
-            scriptJsIpfs.setRunsOnSubFrames(True)
-            self.webScripts.insert(scriptJsIpfs)
-
-            # Install another script creating an IpfsApi instance
-            # The API is available from Javascript as 'window.ipfs'
-
-            script = QWebEngineScript()
-            script.setSourceCode('\n'.join([
-                "document.addEventListener('DOMContentLoaded', function () {",
-                "window.ipfs = window.IpfsApi('{host}', '{port}');".format(
-                    host=self.app.getIpfsConnectionParams().host,
-                    port=self.app.getIpfsConnectionParams().apiPort),
-                "})"]))
-            script.setWorldId(QWebEngineScript.MainWorld)
-            script.setInjectionPoint(QWebEngineScript.DocumentCreation)
-            self.webScripts.insert(script)
+            log.debug('Adding ipfs-http-client scripts')
+            for script in self.app.scriptsIpfs:
+                self.webScripts.insert(script)
 
     def installIpfsSchemeHandler(self):
         baFs = QByteArray(b'fs')
@@ -619,24 +612,23 @@ class BrowserTab(GalacteekTab):
             self.ui.backButton.setEnabled(history.canGoBack())
             self.ui.forwardButton.setEnabled(history.canGoForward())
 
-    def onLoadFinished(self, ok):
-        lenMax = 16
-        pageTitle = self.ui.webEngineView.page().title()
-        self.ui.stopButton.setEnabled(False)
-
+    def onTitleChanged(self, pageTitle):
         if pageTitle.startswith(self.gatewayAuthority):
             pageTitle = iNoTitle()
 
         self.currentPageTitle = pageTitle
 
+        lenMax = 16
         if len(pageTitle) > lenMax:
             pageTitle = '{0} ...'.format(pageTitle[0:lenMax])
 
         idx = self.gWindow.ui.tabWidget.indexOf(self)
         self.gWindow.ui.tabWidget.setTabText(idx, pageTitle)
-
         self.gWindow.ui.tabWidget.setTabToolTip(idx,
                                                 self.currentPageTitle)
+
+    def onLoadFinished(self, ok):
+        self.ui.stopButton.setEnabled(False)
 
     def onIconChanged(self, icon):
         self.gWindow.ui.tabWidget.setTabIcon(self.tabPageIdx, icon)

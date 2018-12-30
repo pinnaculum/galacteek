@@ -96,10 +96,3 @@ QToolButton#buttonBrowseIpfs::hover {
 QToolButton#buttonBrowseIpfs {
     image: url('qrc:/share/icons/ipfs-logo-128-ice.png');
 }
-
-QToolButton::menu-arrow:open {
-    background-color: #4a9ea1;
-}
-
-QToolButton::menu-indicator {
-}

@@ -26,7 +26,7 @@
             </span>
         </p>
 
-<div id="{{ hit.hash }}_description" class="hitdescr">
+        <div id="{{ hit.hash }}_description" class="hitdescr">
 
 {% if hit['description'] and not hit['description'] == '' %}
     <p>{{ hit['description'] }} </p>
@@ -35,21 +35,20 @@
 {% endif %}
 
 {% if hit.mimetype.startswith('image') %}
-    <a href="#" onclick='window.openIpfs("{{ hit['path'] }}")'>
-    <img id="img" src="{{ ipfsConnParams.gatewayUrl }}/{{ hit['path'] }}" width="20%"></img>
-    </a>
+        <a href="#" onclick='window.openIpfs("{{ hit['path'] }}")'>
+        <img id="img" src="{{ ipfsConnParams.gatewayUrl }}/{{ hit['path'] }}" width="20%"></img>
+        </a>
 
 {% elif hit.mimetype in preview_mimetypes and hit.size < preview_maxsize %}
-<button onclick="previewFile('{{ hit.hash }}');">Preview</button>
-
-<div id="{{ hit.hash }}_preview" class="textpreview">
-    <pre id="{{ hit.hash }}_text"></pre>
-</div>
+        <button onclick="previewFile('{{ hit.hash }}');">Preview</button>
+        <div id="{{ hit.hash }}_preview" class="textpreview">
+            <pre id="{{ hit.hash }}_text"></pre>
+        </div>
 {% else %}
 
 {% endif %}
-</div>
-
+        </div>
     </div>
 </div>
+
 {% endfor %}
