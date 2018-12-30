@@ -6,7 +6,7 @@ File manager
     :width: 64
     :height: 64
 
-By clicking on the folder icon below the window's menu you'll get access to the
+By clicking on the folder icon in the application's toolbar you'll get access to the
 file manager for importing content in the IPFS repository. With IPFS all your
 data is addressed by its content and referenced by its cryptographic hash 
 (e.g *Qmb9uWkLmiFNEhp6PyV5iw4qh5wsv2dtJNGwUi1k15JwJd*)

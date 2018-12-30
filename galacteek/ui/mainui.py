@@ -1,17 +1,17 @@
-from logbook import Logger, StreamHandler, Handler, StringFormatterHandlerMixin
+from logbook import Handler, StringFormatterHandlerMixin
 import os.path
 import copy
 
 from PyQt5.QtWidgets import (
-    QMainWindow, QDialog, QToolBar, QDockWidget, QLineEdit,
-    QPushButton, QVBoxLayout, QSpacerItem, QWidget, QWidget,
+    QMainWindow, QDialog,
+    QPushButton, QVBoxLayout, QWidget,
     QToolBar, QMenu, QAction, QActionGroup, QToolButton,
     QTreeView, QHeaderView, QInputDialog, QLabel)
 
 from PyQt5.QtCore import (QCoreApplication, Qt,
                           QTimer, QDateTime, QSize, QPoint)
 
-from PyQt5.Qt import QByteArray, QSizePolicy
+from PyQt5.Qt import QSizePolicy
 from PyQt5 import QtWebEngineWidgets
 from PyQt5.QtGui import (QKeySequence,
                          QStandardItemModel,

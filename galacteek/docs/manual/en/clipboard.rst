@@ -18,7 +18,7 @@ The clipboard loader
     :width: 64
     :height: 64
 
-On the top-right corner of the window sits the clipboard loader button. It records
+From the application's toolbar you can access the clipboard loader button. It records
 the computer's clipboard activity and keeps an history of all the IPFS hashes
 that have been stored in it since the application was started.
 
@@ -37,8 +37,9 @@ It recognizes the following formats:
   **/ipfs/QmdjTSAM2xSVsXcusNHRoES4KqkJ5mW17u6oQARTWMuWMF/CHANGES**
 - *IPNS path* for example **/ipns/ipfs.io** or
   **/ipns/Qmef8KSNLZZfdnrxHZKhCBBynSUFLQ4RrH88wW3sTWxfwB**
-- *URLs using the fs: or ipfs: scheme* for example
-  **fs:/ipfs/QmRifA98t769dzkDv2gQocqJPXGtTySR5dPkyTaUZXtkLo**
+- *URLs using the fs: or dweb: scheme* for example
+  **fs:/ipfs/QmRifA98t769dzkDv2gQocqJPXGtTySR5dPkyTaUZXtkLo** or
+  **dweb:/ipfs/QmRifA98t769dzkDv2gQocqJPXGtTySR5dPkyTaUZXtkLo**
 - *HTTP/HTTPs URLs that use an IPFS http gateway (like ipfs.io)* for example
   **https://ipfs.io/ipfs/QmRifA98t769dzkDv2gQocqJPXGtTySR5dPkyTaUZXtkLo** or
   **http://localhost:8080/ipns/peerpad.net**.

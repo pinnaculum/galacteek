@@ -1,28 +1,24 @@
 import asyncio
 import time
 
-from PyQt5.QtWebEngineCore import QWebEngineUrlRequestInterceptor
-from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEnginePage
-from PyQt5.QtWebEngineWidgets import QWebEngineScript
+from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWebChannel import QWebChannel
-from PyQt5.QtWebChannel import QWebChannelAbstractTransport
 from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal
-from PyQt5.QtCore import QJsonValue, QUrl, QFile
+from PyQt5.QtCore import QUrl
+from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QRegularExpression
 
 from PyQt5.QtWidgets import QWidget, QStackedWidget, QStyle, QApplication
-from PyQt5.QtCore import (Qt, pyqtSignal, QRegularExpression)
 from PyQt5.QtGui import QSyntaxHighlighter, QTextCharFormat, QFont
-from PyQt5.Qt import QByteArray
 
 from galacteek.ipfs.cidhelpers import cidValid
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs import ipfssearch
-from galacteek.dweb.render import renderTemplate, defaultJinjaEnv
-from galacteek.dweb.webscripts import ipfsClientScripts
+from galacteek.dweb.render import renderTemplate
 from galacteek import ensure
 
-from . import ui_ipfssearchw, ui_ipfssearchwresults, ui_ipfssearchbrowser
+from . import ui_ipfssearchw
 from .helpers import *
 from .hashmarks import *
 from .widgets import *
@@ -334,8 +330,6 @@ class IPFSSearchHandler(QObject):
         }
 
         self.currentResults = sr
-        pageData = self.pages[sr.page]
-
         self.searchW.loadPage(sr.page)
         self.searchW.enableCombo()
 
@@ -558,8 +552,8 @@ class IPFSSearchView(GalacteekTab):
         pageData = self.handler.getPageData(page)
 
         if pageData:
-            rendered = self.resultsPage.renderHits(page,
-                self.handler.pageCount, pageData['results'])
+            rendered = self.resultsPage.renderHits(
+                page, self.handler.pageCount, pageData['results'])
             self.ui.comboPages.setCurrentIndex(page)
             self.handler.resultsReadyDom.emit(rendered)
             self.onPageChanged(page)

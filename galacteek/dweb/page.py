@@ -6,7 +6,7 @@ from PyQt5.QtWebChannel import QWebChannel
 from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal
 from PyQt5.QtCore import QJsonValue, QVariant, QUrl
 
-from PyQt5.QtWidgets import QApplication, QSizePolicy
+from PyQt5.QtWidgets import QApplication
 
 from galacteek.ui.widgets import GalacteekTab
 from galacteek import ensure
@@ -53,10 +53,12 @@ class BasePage(QWebEnginePage):
         self.setWebChannel(self.channel)
         self.webScripts = self.profile().scripts()
 
-        self.settings().setAttribute(QWebEngineSettings.LocalStorageEnabled,
-                                     True)
-        self.settings().setAttribute(QWebEngineSettings.LocalContentCanAccessFileUrls,
-                                     True)
+        self.settings().setAttribute(
+            QWebEngineSettings.LocalStorageEnabled,
+            True)
+        self.settings().setAttribute(
+            QWebEngineSettings.LocalContentCanAccessFileUrls,
+            True)
         self.installScripts()
         ensure(self.render())
 

@@ -348,16 +348,17 @@ class OrbitConnector:
     async def query(self, ns, dbname, text):
         async with aiohttp.ClientSession() as sess:
             async with sess.get(self.endpoint(
-                    os.path.join(ns, dbname, 'query')), params={'search': text}) as resp:
+                os.path.join(ns, dbname, 'query')),
+                    params={'search': text}) as resp:
                 reply = await resp.json()
                 return reply
 
     async def get(self, ns, dbname, key):
         async with aiohttp.ClientSession() as sess:
             async with sess.get(self.endpoint(
-                    os.path.join(ns, dbname, 'get')), params={'key': key}) as resp:
+                    os.path.join(ns, dbname, 'get')),
+                    params={'key': key}) as resp:
                 result = await resp.json()
-                print(key, result)
                 if result['status'] == 'success' and 'value' in result:
                     return result['value']
 
@@ -404,7 +405,8 @@ class GalacteekOrbitConnector(OrbitConnector):
                                          dbtype='eventlog')
 
     async def start(self, servicePort=None):
-        resp = await super(GalacteekOrbitConnector, self).start(servicePort=servicePort)
+        resp = await super(GalacteekOrbitConnector, self).start(
+            servicePort=servicePort)
         ensure(self.dbUsernames.open())
         return resp
 

@@ -10,20 +10,18 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtPrintSupport import *
 
 from PyQt5.QtCore import (QUrl, Qt, QCoreApplication, QObject,
-                          pyqtSignal, QFile)
+                          pyqtSignal)
 from PyQt5 import QtWebEngineWidgets, QtWebEngineCore
-from PyQt5.QtWebEngineWidgets import (QWebEngineDownloadItem, QWebEngineScript,
+from PyQt5.QtWebEngineWidgets import (QWebEngineDownloadItem,
                                       QWebEngineSettings)
 from PyQt5.QtWebEngineCore import QWebEngineUrlRequestInterceptor
 from PyQt5.Qt import QByteArray
-from PyQt5.QtGui import QKeySequence, QFont
+from PyQt5.QtGui import QKeySequence
 
 from yarl import URL
-import copy
 
 from galacteek import log, ensure
 from galacteek.ipfs.wrappers import *
-from galacteek.dweb.webscripts import ipfsClientScripts
 
 from . import ui_browsertab
 from .helpers import *

@@ -248,6 +248,7 @@ class ProfileEditDialog(QDialog):
         'Male': UserInfos.GENDER_MALE,
         'Female': UserInfos.GENDER_FEMALE
     }
+
     def __init__(self, profile, parent=None):
         super().__init__(parent)
 

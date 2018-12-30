@@ -75,6 +75,7 @@ class FeedFollower(object):
                 if autoPin:
                     log.debug('Feed follower, autopinning {}'.format(
                         resolvedPath))
-                    await self.app.ipfsCtx.pinner.queue(resolvedPath, True, None)
+                    await self.app.ipfsCtx.pinner.queue(resolvedPath,
+                                                        True, None)
 
             await asyncio.sleep(120)
