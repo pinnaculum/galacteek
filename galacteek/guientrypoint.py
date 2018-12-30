@@ -4,6 +4,7 @@ import asyncio
 import argparse
 import shutil
 import subprocess
+import sys
 from distutils.version import StrictVersion
 
 from galacteek import log, ensure
@@ -71,6 +72,8 @@ async def fetchGoIpfsDist(app):
 
 
 def galacteekGui(args):
+    progName = sys.argv[0]
+
     if args.debug:
         glogger.basicConfig(level='DEBUG')
     else:
@@ -80,7 +83,8 @@ def galacteekGui(args):
         profile=args.profile,
         debug=args.debug,
         enableOrbital=args.enableorbital,
-        sslverify=False if args.nosslverify else True
+        sslverify=False if args.nosslverify else True,
+        progName=progName
     )
     loop = gApp.setupAsyncLoop()
     sManager = gApp.settingsMgr
