@@ -18,22 +18,22 @@ AppImage
 --------
 
 For Linux users, you can get an AppImage directly from IPFS
-`here <https://ipfs.io/ipfs/Qmc9bdVkLxXmeFKZVvAEM8z69QJjoSMbU9sALtgQ7atAdU>`_
-(**~140Mb**, release CID: **Qmc9bdVkLxXmeFKZVvAEM8z69QJjoSMbU9sALtgQ7atAdU**).
+`here <https://ipfs.io/ipfs/Qmd8iWrE4WKHqHX4jJrA96sifyr79pJ8UZa6HvfnvyGL5w>`_
+(**~140Mb**, release CID: **Qmd8iWrE4WKHqHX4jJrA96sifyr79pJ8UZa6HvfnvyGL5w**).
 
 Just fetch the image (with wget for example or your favorite tool), and execute
 it afterwards::
 
-    wget https://ipfs.io/ipfs/Qmc9bdVkLxXmeFKZVvAEM8z69QJjoSMbU9sALtgQ7atAdU
-    chmod u+x Qmc9bdVkLxXmeFKZVvAEM8z69QJjoSMbU9sALtgQ7atAdU
-    ./Qmc9bdVkLxXmeFKZVvAEM8z69QJjoSMbU9sALtgQ7atAdU
+    wget https://ipfs.io/ipfs/Qmd8iWrE4WKHqHX4jJrA96sifyr79pJ8UZa6HvfnvyGL5w
+    chmod u+x Qmd8iWrE4WKHqHX4jJrA96sifyr79pJ8UZa6HvfnvyGL5w
+    ./Qmd8iWrE4WKHqHX4jJrA96sifyr79pJ8UZa6HvfnvyGL5w
 
 Running it the first time with the filename unchanged means that the
 application will automatically pin itself (it will pin through IPFS the
 AppImage that you are using). Later on (or if you don't want the autopin),
 you can rename the AppImage::
 
-    mv Qmc9bdVkLxXmeFKZVvAEM8z69QJjoSMbU9sALtgQ7atAdU Galacteek-0.3.1.AppImage
+    mv Qmd8iWrE4WKHqHX4jJrA96sifyr79pJ8UZa6HvfnvyGL5w Galacteek-0.3.1.AppImage
 
 *Note*: go-ipfs_ version *0.4.18* is included in the AppImage.
 
