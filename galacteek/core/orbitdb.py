@@ -1,24 +1,17 @@
 import os
 import os.path
 import asyncio
-import re
 import json
 import inspect
-import sys
 import collections
 import uuid
 
-from datetime import datetime
-
-from aiohttp import web
 import aiohttp
 from yarl import URL
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
-from galacteek import log, logUser, ensure
-from galacteek.core.asynclib import async_enterable
-from galacteek.core.orbitdbcfg import defaultOrbitConfigMap
+from galacteek import log, ensure
 
 
 class OrbitConnectorProtocol(asyncio.SubprocessProtocol):
@@ -219,7 +212,7 @@ class OrbitConnector:
         self._configMaps[cfgMap.mapName] = cfgMap
 
     async def syncConfig(self):
-        cfg = await self.getconfig()
+        pass
 
     async def start(self, servicePort=None):
         if self.connected:
@@ -255,7 +248,6 @@ class OrbitConnector:
             item = await protocol.eventsQueue.get()
             if not isinstance(item, dict):
                 continue
-            evtype = item.get('type', None)
 
             for listener in self.eventListeners:
                 await listener(item)
@@ -281,7 +273,7 @@ class OrbitConnector:
         return str(self.baseUrl.join(URL(path)))
 
     async def stop(self):
-        resp = await self.request('disconnect')
+        await self.request('disconnect')
         self.process.stop()
 
     async def request(self, path, method='get', params=None):

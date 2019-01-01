@@ -3,11 +3,8 @@ import uuid
 import pkg_resources
 from os import urandom
 from datetime import datetime
-from io import BytesIO
 
 import aiofiles
-import aioipfs
-import asyncio
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
@@ -637,7 +634,7 @@ class UserProfile(QObject):
             await self.reconfigureOrbit()
 
         await self.reconfigureOrbit()
-        resp = await self.orbitalDbProfile.open()
+        await self.orbitalDbProfile.open()
 
     async def publishProfile(self):
         if self.ctx.inOrbit:
@@ -656,8 +653,8 @@ class UserProfile(QObject):
 
             entry = await self.orbitalDbProfile.get(self.userInfo.username)
             if not entry:
-                resp = await self.orbitalDbProfile.set(self.userInfo.username,
-                                                       self.userInfo.root['userinfo'])
+                await self.orbitalDbProfile.set(
+                    self.userInfo.username, self.userInfo.root['userinfo'])
 
     def onDagChange(self):
         ensure(self.publishDag())
