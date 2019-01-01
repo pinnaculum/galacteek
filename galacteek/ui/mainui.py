@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QActionGroup
 from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtWidgets import QInputDialog
+from PyQt5.QtWidgets import QPushButton
 from PyQt5.QtWidgets import QLabel
 
 from PyQt5.QtCore import (QCoreApplication, Qt,
