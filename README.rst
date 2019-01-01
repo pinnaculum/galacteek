@@ -18,22 +18,23 @@ AppImage
 --------
 
 For Linux users, you can get an AppImage directly from IPFS
-`here <https://ipfs.io/ipfs/Qmd8iWrE4WKHqHX4jJrA96sifyr79pJ8UZa6HvfnvyGL5w>`_
-(**~140Mb**, release CID: **Qmd8iWrE4WKHqHX4jJrA96sifyr79pJ8UZa6HvfnvyGL5w**).
+`here <https://ipfs.io/ipfs/QmP5LvZgV2uTn1GGdQMmEEnZ41YjVVFEpL2PtGM3ZfftPU>`_
+(**~140Mb**, release CID: **QmP5LvZgV2uTn1GGdQMmEEnZ41YjVVFEpL2PtGM3ZfftPU**).
 
 Just fetch the image (with wget for example or your favorite tool), and execute
 it afterwards::
 
-    wget https://ipfs.io/ipfs/Qmd8iWrE4WKHqHX4jJrA96sifyr79pJ8UZa6HvfnvyGL5w
-    chmod u+x Qmd8iWrE4WKHqHX4jJrA96sifyr79pJ8UZa6HvfnvyGL5w
-    ./Qmd8iWrE4WKHqHX4jJrA96sifyr79pJ8UZa6HvfnvyGL5w
+    wget https://ipfs.io/ipfs/QmP5LvZgV2uTn1GGdQMmEEnZ41YjVVFEpL2PtGM3ZfftPU
+    chmod u+x QmP5LvZgV2uTn1GGdQMmEEnZ41YjVVFEpL2PtGM3ZfftPU
+    ./QmP5LvZgV2uTn1GGdQMmEEnZ41YjVVFEpL2PtGM3ZfftPU
 
-Running it the first time with the filename unchanged means that the
+Running the AppImage with the filename unchanged means that the
 application will automatically pin itself (it will pin through IPFS the
-AppImage that you are using). Later on (or if you don't want the autopin),
-you can rename the AppImage::
+AppImage that you are using). By doing so you can help redistributing the
+software faster to the nodes close to you. Renaming the binary disables the
+self-seeding feature::
 
-    mv Qmd8iWrE4WKHqHX4jJrA96sifyr79pJ8UZa6HvfnvyGL5w Galacteek-0.3.1.AppImage
+    mv QmP5LvZgV2uTn1GGdQMmEEnZ41YjVVFEpL2PtGM3ZfftPU Galacteek-0.3.2.AppImage
 
 *Note*: go-ipfs_ version *0.4.18* is included in the AppImage.
 
