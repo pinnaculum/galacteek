@@ -361,8 +361,8 @@ class IPFSContext(QObject):
 
         ensure(self.peers.watch())
 
-        self.pinner = pinning.PinningMaster(self,
-            statusFilePath=self.app.pinStatusLocation)
+        self.pinner = pinning.PinningMaster(
+            self, statusFilePath=self.app.pinStatusLocation)
         await self.pinner.start()
 
         if pubsubEnable is True:

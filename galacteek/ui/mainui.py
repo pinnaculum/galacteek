@@ -1,13 +1,16 @@
 from logbook import Handler, StringFormatterHandlerMixin
 import os.path
-import copy
-import json
 
-from PyQt5.QtWidgets import (
-    QMainWindow, QDialog, QLineEdit,
-    QPushButton, QVBoxLayout, QWidget, QHBoxLayout,
-    QToolBar, QMenu, QAction, QActionGroup, QToolButton,
-    QTreeView, QHeaderView, QInputDialog, QLabel)
+from PyQt5.QtWidgets import QMainWindow
+from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QToolBar
+from PyQt5.QtWidgets import QMenu
+from PyQt5.QtWidgets import QAction
+from PyQt5.QtWidgets import QActionGroup
+from PyQt5.QtWidgets import QToolButton
+from PyQt5.QtWidgets import QInputDialog
+from PyQt5.QtWidgets import QLabel
 
 from PyQt5.QtCore import (QCoreApplication, Qt,
                           QTimer, QDateTime, QSize, QPoint)
@@ -15,7 +18,6 @@ from PyQt5.QtCore import (QCoreApplication, Qt,
 from PyQt5.Qt import QSizePolicy
 from PyQt5 import QtWebEngineWidgets
 from PyQt5.QtGui import (QKeySequence,
-                         QStandardItemModel,
                          QPixmap,
                          QIcon)
 
@@ -50,7 +52,7 @@ from . import pin
 
 from .helpers import *
 from .modelhelpers import *
-from .widgets import GalacteekTab, PopupToolButton, HashmarkMgrButton
+from .widgets import PopupToolButton, HashmarkMgrButton
 from .dialogs import *
 from ..appsettings import *
 from .i18n import *
@@ -978,7 +980,7 @@ class MainWindow(QMainWindow):
         current = self.app.clipTracker.getCurrent()
         if current:
             ensure(self.app.ipfsCtx.pin(current['path'], True, None,
-                qname='clipboard'))
+                                        qname='clipboard'))
 
     def onIpldExplorerFromClipboard(self):
         """
