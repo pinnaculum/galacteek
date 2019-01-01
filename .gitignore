@@ -24,3 +24,5 @@ tmp/
 .buildinfo
 .doctrees/
 Pipfile.lock
+Miniconda3*
+go-ipfs*.tar.gz

@@ -386,7 +386,11 @@ class GalacteekApplication(QApplication):
 
         self.loop.call_soon(self.ipfsCtx.ipfsRepositoryReady.emit)
 
-        # If the application's progname is a valid CID, pin it!
+        #
+        # If the application's binary name is a valid CID, pin it!
+        # This happens when running the AppImage and ensures
+        # self-seeding of the image!
+        #
 
         if isinstance(self.progName, str):
             progNameClean = re.sub(r'[\.\/]*', '', self.progName)
@@ -395,7 +399,8 @@ class GalacteekApplication(QApplication):
                 log.debug("Auto pinning program's CID: {0}".format(
                     self.progCid))
                 await self.ipfsCtx.pin(joinIpfs(self.progCid), False,
-                                       self.onAppReplication)
+                                       self.onAppReplication,
+                                       qname='self-seeding')
 
     def onAppReplication(self, future):
         try:
@@ -517,6 +522,8 @@ class GalacteekApplication(QApplication):
                                                    'ipfsmarks.local.json')
         self.networkMarksFileLocation = os.path.join(self.marksDataLocation,
                                                      'ipfsmarks.network.json')
+        self.pinStatusLocation = os.path.join(self.dataLocation,
+                                                     'pinstatus.json')
 
         qtConfigLocation = QStandardPaths.writableLocation(
             QStandardPaths.ConfigLocation)

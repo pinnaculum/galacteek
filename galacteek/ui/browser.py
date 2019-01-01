@@ -505,7 +505,8 @@ class BrowserTab(GalacteekTab):
         onSuccess = None
         if notify is True:
             onSuccess = self.onPinSuccess
-        await ipfsop.ctx.pinner.queue(path, recursive, onSuccess)
+        await ipfsop.ctx.pinner.queue(path, recursive, onSuccess,
+                qname='browser')
 
     def pinPath(self, path, recursive=True, notify=True):
         ensure(self.pinQueuePath(path, recursive, notify))

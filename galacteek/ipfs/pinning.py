@@ -1,87 +1,261 @@
 import asyncio
+import collections
+import json
+import os.path
+import time
+from datetime import datetime
 
 import aioipfs
 
 from galacteek import log
+from galacteek import ensure
 from galacteek.ipfs.wrappers import ipfsOp
+from galacteek.ipfs.ipfsops import stripIpfs
 
 
-class Pinner(object):
+class Cancelled(Exception):
+    pass
+
+
+class PinningMaster(object):
     """ Pins objects on request through an async queue """
 
-    def __init__(self, ctx):
-        self._pinQueue = asyncio.Queue()
-        self._ctx = ctx
+    def __init__(self, ctx, checkPinned=False, statusFilePath=None):
         self.lock = asyncio.Lock()
+        self._ordersQueue = asyncio.Queue()
+        self._ctx = ctx
         self._pinStatus = {}
+        self._processTask = None
+        self._statusFilePath = statusFilePath
+        self._checkPinned = checkPinned
+        self._sCleanupLast = None
 
     @property
-    def pinQueue(self):
-        return self._pinQueue
+    def ordersQueue(self):
+        return self._ordersQueue
 
     @property
     def ipfsCtx(self):
         return self._ctx
 
     @property
-    def status(self):
+    def pinStatus(self):
         return self._pinStatus
 
-    def debug(self, msg):
-        log.debug('Pinning service: {}'.format(msg))
+    @property
+    def queuesNames(self):
+        return list(self.pinStatus.keys())
 
-    def _emitSLength(self):
-        self.ipfsCtx.pinItemsCount.emit(len(self._pinStatus))
+    def debug(self, msg, **kwargs):
+        log.debug('Pinning service: {}'.format(msg), **kwargs)
 
-    def pathRegister(self, path):
-        self._pinStatus[path] = {}
+    def queueStatus(self, qname):
+        return self.pinStatus.get(qname, None)
+
+    def status(self, all=False):
+        export = {}
+
+        for qname, queue in self.pinStatus.items():
+            for path, pinData in queue.items():
+                if pinData['pinned'] is True and all is False:
+                    continue
+                exportQ = export.setdefault(qname, [])
+                progress = None
+                if pinData['status']:
+                    progress = pinData['status'].get('Progress', 'Unknown')
+                exportQ.append({
+                    'path': path,
+                    'recursive': pinData['recursive'],
+                    'pinned': pinData['pinned'],
+                    'ts_queued': pinData['ts_queued'],
+                    'progress': progress
+                })
+
+        return export
+
+    def activeItemsCount(self):
+        count = 0
+        for qname, items in self.status().items():
+            count += len(items)
+        return count
+
+    async def cleanupStatus(self, pinnedExpires=60 * 30):
+        now = int(time.time())
+
+        if isinstance(self._sCleanupLast, int):
+            if now - self._sCleanupLast < 60:
+                return
+
+        toDelete = []
+        try:
+            with await self.lock:
+                for qname, queue in self.pinStatus.items():
+                    for path, pinData in queue.items():
+                        if pinData['pinned'] is False:
+                            continue
+
+                        if pinData['ts_pinned'] > 0 and \
+                                now - pinData['ts_pinned'] > pinnedExpires:
+                            toDelete.append(path)
+        except BaseException:
+            self.debug('Cleanup status error')
+        else:
+            self._sCleanupLast = now
+            for path in toDelete:
+                await self.pathDelete(path)
+
+    def _emitItemsCount(self):
+        self.ipfsCtx.pinItemsCount.emit(self.activeItemsCount())
+
+    def pathRegister(self, qname, path, recursive):
+        if qname not in self.pinStatus:
+            self._pinStatus[qname] = {}
+
+        self._pinStatus[qname][path] = {
+            'recursive': recursive,
+            'status': None,
+            'ts_queued': int(time.time()),
+            'ts_pinned': 0,
+            'pinned': False,
+            'cancel': False
+        }
+
         self.ipfsCtx.pinNewItem.emit(path)
-        self._emitSLength()
+        self._emitItemsCount()
+        return self.pinStatus[qname][path]
 
-    def pathDelete(self, path):
-        if path in self._pinStatus:
-            del self._pinStatus[path]
-        self._emitSLength()
+    def statusFromPath(self, path, qname='default'):
+        if qname in self.pinStatus:
+            return self.pinStatus[qname].get(path, None)
+
+    async def pathDelete(self, path):
+        with await self.lock:
+            for qname, queue in self.pinStatus.items():
+                if path in queue:
+                    self.debug('Deleting item {item}'.format(
+                        item=self.pinStatus[qname]))
+                    del self._pinStatus[qname][path]
+                    self.ipfsCtx.pinItemRemoved.emit(qname, path)
+        self._emitItemsCount()
 
     @ipfsOp
-    async def pin(self, op, path, recursive=False):
-        self.debug('pinning object {0}, recursive is {1}'.format(
-            path, recursive))
-        self.pathRegister(path)
+    async def pin(self, op, path, recursive=False, qname='default'):
+        self.debug('Pinning object {path} to {qname} (recursive {rec})'.format(
+            path=path, rec=recursive, qname=qname))
+
+        if self._checkPinned:
+            if await op.isPinned(path):
+                # Already pinned
+                self.debug('Already pinned: {path}'.format(path=path))
+                await self.pathDelete(path)
+                return
+
+        pItem = self.pathRegister(qname, path, recursive)
 
         try:
             async for pinned in op.client.pin.add(path, recursive=recursive):
                 self.debug('Pinning progress {0}: {1}'.format(path, pinned))
                 await asyncio.sleep(0)
+
+                if pItem['cancel'] is True:
+                    raise Cancelled()
+
                 with await self.lock:
-                    self._pinStatus[path] = pinned
-                self.ipfsCtx.pinItemStatusChanged.emit(path, pinned)
+                    pItem['status'] = pinned
+
+                self.ipfsCtx.pinItemStatusChanged.emit(qname, path, pItem)
         except aioipfs.APIError as err:
-            self.debug('Pinning error {0}: {1}'.format(path, str(err.message)))
+            self.debug('Pinning error {path}: {msg}'.format(
+                path=path, msg=err.message))
+            await self.pathDelete(path)
+        except asyncio.CancelledError:
+            self.debug('Pinning was cancelled for {path}'.format(path=path))
+            await self.pathDelete(path)
+        except Cancelled:
+            await self.pathDelete(path)
+        else:
+            self.debug('Queue {qname}: pinning success for {path}'.format(
+                qname=qname, path=path))
 
-        with await self.lock:
-            self.pathDelete(path)
+            pins = pItem['status'].get('Pins', None)
+            if pins and isinstance(pins, list):
+                # 'Pins' is a list of CIDs, mark it as pinned
+                now = int(time.time())
+                pItem['pinned'] = True
+                pItem['ts_pinned'] = now
+                self.ipfsCtx.pinFinished.emit(path)
+                self._emitItemsCount()
 
-        self.ipfsCtx.pinFinished.emit(path)
         return path
 
-    async def queue(self, path, recursive, onSuccess):
+    async def queue(self, path, recursive, onSuccess, qname='default'):
         """ Queue an item for processing """
-        await self.pinQueue.put((path, recursive, onSuccess))
-        self.ipfsCtx.pinQueueSizeChanged.emit(self.pinQueue.qsize())
+        await self.ordersQueue.put((qname, path, recursive, onSuccess))
+        self.ipfsCtx.pinQueueSizeChanged.emit(self.ordersQueue.qsize())
+
+    async def start(self):
+        self._processTask = self.ipfsCtx.loop.create_task(self.process())
+
+    async def stop(self):
+        if self._processTask:
+            self._processTask.cancel()
+            await self._processTask
+        self.saveStatus()
+
+    def restoreStatus(self, data):
+        if not isinstance(data, dict):
+            return
+
+        for qname, items in data.items():
+            for item in items:
+                path = item.get('path', None)
+                recursive = item.get('recursive', False)
+
+                if path:
+                    self.debug('Restoring item: {path} {recursive}'.format(
+                        path=path, recursive=recursive))
+                    ensure(self.queue(path, recursive, None, qname=qname))
+
+    def saveStatus(self):
+        with open(self._statusFilePath, 'w+t') as fd:
+            fd.write(json.dumps(self.status(), indent=4))
+
+    def cancel(self, qname, path):
+        status = self.statusFromPath(path, qname=qname)
+        if status:
+            status['cancel'] = True
 
     async def process(self):
+        if os.path.exists(self._statusFilePath):
+            try:
+                data = None
+                with open(self._statusFilePath, 'rt') as fd:
+                    data = json.load(fd)
+            except Exception as err:
+                self.debug('Could not load pin status file')
+            else:
+                if isinstance(data, dict):
+                    self.restoreStatus(data)
+
         try:
             while True:
-                item = await self.pinQueue.get()
+                await self.cleanupStatus()
+
+                item = await self.ordersQueue.get()
                 if item is None:
                     self.debug('null item in queue')
                     continue
 
-                self.ipfsCtx.pinQueueSizeChanged.emit(self.pinQueue.qsize())
-                path, recursive, callback = item
-                f = asyncio.ensure_future(self.pin(path, recursive=recursive))
-                if callback:
-                    f.add_done_callback(callback)
-        except asyncio.CancelledError as err:
-            self.debug('cancelled error: {}'.format(str(err)))
+                self.ipfsCtx.pinQueueSizeChanged.emit(self.ordersQueue.qsize())
+
+                try:
+                    qname, path, recursive, callback = item
+                    f = asyncio.ensure_future(
+                        self.pin(path, recursive=recursive, qname=qname))
+                    if callback:
+                        f.add_done_callback(callback)
+                except Exception:
+                    self.debug('Invalid item in queue')
+                    continue
+        except asyncio.CancelledError:
+            self.debug('Task was cancelled')
