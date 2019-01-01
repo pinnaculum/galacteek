@@ -1,6 +1,6 @@
 aiofiles==0.4.0
 aiohttp==3.4.4
-aioipfs==0.3.7
+aioipfs==0.3.8
 async-generator==1.10
 base58==1.0.2
 gitpython==2.1.11
