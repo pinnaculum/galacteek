@@ -6,6 +6,8 @@ def qtr(ctx, msg):
 
 
 # Main window messages
+
+
 def iNoStatus():
     return QCoreApplication.translate('GalacteekWindow', 'No status')
 
@@ -56,6 +58,14 @@ def iMinimized():
 
 
 # Headers used in the various tree widgets
+def iPath():
+    return QCoreApplication.translate('IPFSTreeView', 'Path')
+
+
+def iCidOrPath():
+    return QCoreApplication.translate('IPFSTreeView', 'CID or path')
+
+
 def iFileName():
     return QCoreApplication.translate('IPFSTreeView', 'Name')
 
@@ -88,6 +98,10 @@ def iHashmark():
 
 def iDownload():
     return QCoreApplication.translate('GalacteekWindow', 'Download')
+
+
+def iCancel():
+    return QCoreApplication.translate('GalacteekWindow', 'Cancel')
 
 
 def iMediaPlayer():
@@ -140,6 +154,18 @@ def iNoTitle():
 
 def iFinished():
     return QCoreApplication.translate('GalacteekWindow', 'Finished')
+
+
+def iPinned():
+    return QCoreApplication.translate('GalacteekWindow', 'Pinned')
+
+
+def iPinning():
+    return QCoreApplication.translate('GalacteekWindow', 'Pinning')
+
+
+def iPin():
+    return QCoreApplication.translate('GalacteekWindow', 'Pin')
 
 
 def iGlobalAutoPinning():

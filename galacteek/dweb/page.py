@@ -50,6 +50,7 @@ class BasePage(QWebEnginePage):
         self._handlers = {}
         self.channel = QWebChannel()
         self.url = url if url else QUrl('qrc:/')
+        self.setUrl(self.url)
         self.setWebChannel(self.channel)
         self.webScripts = self.profile().scripts()
 
@@ -78,8 +79,16 @@ class BasePage(QWebEnginePage):
                 message))
 
     async def render(self):
-        self.setHtml(await renderTemplate(self.template,
-                                          baseUrl=self.url))
+        self.setHtml(await renderTemplate(self.template), baseUrl=self.url)
+
+
+class IPFSPage(BasePage):
+    def installScripts(self):
+        exSc = self.webScripts.findScript('ipfs-http-client')
+        if exSc.isNull():
+            scripts = self.app.scriptsIpfs
+            for script in scripts:
+                self.webScripts.insert(script)
 
 
 class OrbitPage(BasePage):

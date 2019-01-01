@@ -1,10 +1,11 @@
 from logbook import Handler, StringFormatterHandlerMixin
 import os.path
 import copy
+import json
 
 from PyQt5.QtWidgets import (
-    QMainWindow, QDialog,
-    QPushButton, QVBoxLayout, QWidget,
+    QMainWindow, QDialog, QLineEdit,
+    QPushButton, QVBoxLayout, QWidget, QHBoxLayout,
     QToolBar, QMenu, QAction, QActionGroup, QToolButton,
     QTreeView, QHeaderView, QInputDialog, QLabel)
 
@@ -44,6 +45,7 @@ from . import dag
 from . import ipfssearchview
 from . import peers
 from . import eventlog
+from . import pin
 
 
 from .helpers import *
@@ -108,6 +110,11 @@ def iClipboardClearHistory():
 def iClipLoaderExplore(path):
     return QCoreApplication.translate('GalacteekWindow',
                                       'Explore IPFS path: {0}').format(path)
+
+
+def iClipLoaderPin(path):
+    return QCoreApplication.translate('GalacteekWindow',
+                                      'Pin: {0}').format(path)
 
 
 def iClipLoaderIpldExplorer(path):
@@ -204,55 +211,6 @@ class IPFSInfosDialog(QDialog):
                 'AgentVersion', iUnknown()))
             self.ui.protocolVersion.setText(idInfo.get('ProtocolVersion',
                                                        iUnknown()))
-
-
-class PinStatusDetails(GalacteekTab):
-    def __init__(self, *args, **kw):
-        super().__init__(*args, **kw)
-
-        self.tree = QTreeView(self)
-        self.boxLayout = QVBoxLayout(self)
-        self.boxLayout.addWidget(self.tree)
-        self.vLayout.addLayout(self.boxLayout)
-
-        self.app.ipfsCtx.pinItemStatusChanged.connect(self.onPinStatusChanged)
-        self.app.ipfsCtx.pinFinished.connect(self.onPinFinished)
-
-        self.model = QStandardItemModel()
-        self.model.setHorizontalHeaderLabels(
-            ['Path', 'Nodes processed'])
-
-        self.tree.setModel(self.model)
-        self.tree.header().setSectionResizeMode(0,
-                                                QHeaderView.ResizeToContents)
-
-    def findPinItems(self, path):
-        ret = modelSearch(self.model,
-                          search=path, columns=[0])
-        if len(ret) == 0:
-            return None, None
-        itemP = self.model.itemFromIndex(ret.pop())
-        idxS = self.model.index(itemP.row(), 1, itemP.index().parent())
-        itemS = self.model.itemFromIndex(idxS)
-        return itemP, itemS
-
-    def onPinFinished(self, path):
-        ePin, ePinS = self.findPinItems(path)
-        if ePinS:
-            ePinS.setText(iFinished())
-
-    def onPinStatusChanged(self, path, status):
-        nodesProcessed = status.get('Progress', None)
-        ePin, ePinS = self.findPinItems(path)
-
-        if not ePin:
-            itemP = UneditableItem(path)
-            itemS = UneditableItem(str(nodesProcessed) or iUnknown())
-            self.model.invisibleRootItem().appendRow(
-                [itemP, itemS])
-        else:
-            if nodesProcessed:
-                ePinS.setText(str(nodesProcessed))
 
 
 class QuickAccessToolBar(QToolBar):
@@ -400,10 +358,6 @@ class IPFSSearchWidget(QWidget):
         self.input.setupUi(self)
         self.input.searchQuery.returnPressed.connect(self.onSearch)
 
-        # self.setAttribute(Qt.WA_NoSystemBackground)
-        # self.setAttribute(Qt.WA_TranslucentBackground)
-        # self.setAttribute(Qt.WA_TransparentForMouseEvents)
-
     def focus(self):
         self.input.searchQuery.setFocus(Qt.OtherFocusReason)
 
@@ -491,6 +445,11 @@ class MainWindow(QMainWindow):
             iClipboardEmpty(), self,
             shortcut=QKeySequence('Ctrl+i'),
             triggered=self.onIpldExplorerFromClipboard)
+        self.multiPinAction = QAction(
+            getIcon('pin-black.png'),
+            iClipboardEmpty(), self,
+            shortcut=QKeySequence('Ctrl+p'),
+            triggered=self.onPinFromClipboard)
 
         self.toolbarMain = MainToolBar(self)
 
@@ -635,10 +594,12 @@ class MainWindow(QMainWindow):
         self.multiLoadHashAction.setEnabled(False)
         self.multiDagViewAction.setEnabled(False)
         self.multiIpldExplorerAction.setEnabled(False)
+        self.multiPinAction.setEnabled(False)
         self.multiLoaderMenu.addAction(self.multiLoadHashAction)
         self.multiLoaderMenu.addAction(self.multiExploreHashAction)
         self.multiLoaderMenu.addAction(self.multiDagViewAction)
         self.multiLoaderMenu.addAction(self.multiIpldExplorerAction)
+        self.multiLoaderMenu.addAction(self.multiPinAction)
         self.multiLoaderMenu.addMenu(self.multiLoaderHMenu)
 
         self.ui.tabWidget.setTabsClosable(True)
@@ -683,6 +644,7 @@ class MainWindow(QMainWindow):
         self.app.ipfsCtx.profileChanged.connect(self.onProfileChanged)
         self.app.ipfsCtx.pinItemStatusChanged.connect(self.onPinStatusChanged)
         self.app.ipfsCtx.pinItemsCount.connect(self.onPinItemsCount)
+        self.app.ipfsCtx.pinFinished.connect(self.onPinFinished)
 
         # Misc signals
         self.app.marksLocal.feedMarkAdded.connect(self.onFeedMarkAdded)
@@ -704,6 +666,10 @@ class MainWindow(QMainWindow):
             self.restoreState(previousState)
 
         self.hashmarksPage = None
+        self.pinStatusTab = pin.PinStatusWidget(self)
+
+        self.pinIconLoading = getIcon('pin-blue-loading.png')
+        self.pinIconNormal = getIcon('pin-black.png')
 
     @property
     def app(self):
@@ -795,7 +761,6 @@ class MainWindow(QMainWindow):
             self.menuUserProfile.addAction(action)
 
     def onRepoReady(self):
-
         self.enableButtons()
         ensure(self.qaToolbar.init())
 
@@ -869,41 +834,27 @@ class MainWindow(QMainWindow):
         ft = self.findTabWithName(name)
         if ft:
             return self.ui.tabWidget.setCurrentWidget(ft)
-        detailsTab = PinStatusDetails(self)
-        self.registerTab(detailsTab, name)
 
-    def updatePinningStatus(self):
-        status = copy.copy(self.app.ipfsCtx.pinner.status)
-        statusMsg = iItemsInPinningQueue(len(status))
+        tab = self.pinStatusTab
+        self.registerTab(tab, name, current=True,
+                         icon=getIcon('pin-black.png'))
 
-        for pinPath, pinStatus in status.items():
-            pinProgress = 'unknown'
-            if pinStatus:
-                pinProgress = pinStatus.get('Progress', 'unknown')
+    def onPinItemsCount(self, count):
+        statusMsg = iItemsInPinningQueue(count)
 
-            statusMsg += iPinningItemStatus(pinPath, pinProgress)
+        if count > 0:
+            self.ui.pinningStatusButton.setIcon(self.pinIconLoading)
+        else:
+            self.ui.pinningStatusButton.setIcon(self.pinIconNormal)
 
         self.ui.pinningStatusButton.setToolTip(statusMsg)
         self.ui.pinningStatusButton.setStatusTip(statusMsg)
 
-        del status
-
-    def onPinItemsCount(self, count):
-        iconLoading = getIcon('pin-blue-loading.png')
-        iconNormal = getIcon('pin-black.png')
-
-        if count > 0:
-            self.ui.pinningStatusButton.setIcon(iconLoading)
-        else:
-            self.ui.pinningStatusButton.setIcon(iconNormal)
-
-        self.updatePinningStatus()
-
     def onPinFinished(self, path):
-        self.app.systemTrayMessage('PIN', iPinSuccess(path))
+        pass
 
-    def onPinStatusChanged(self, path, status):
-        self.updatePinningStatus()
+    def onPinStatusChanged(self, qname, path, status):
+        pass
 
     def onManualAvailable(self, lang, entry):
         self.menuManual.addAction(lang, lambda:
@@ -912,7 +863,6 @@ class MainWindow(QMainWindow):
     def onOpenManual(self, lang):
         entry = self.app.manuals.getManualEntry(lang)
         if entry:
-            # self.addBrowserTab().browseIpfsHash(docEntry['Hash'])
             self.addBrowserTab().browseIpfsHash(entry['Hash'])
 
     def enableButtons(self, flag=True):
@@ -1008,18 +958,27 @@ class MainWindow(QMainWindow):
         self.multiLoadHashAction.setEnabled(valid)
         self.multiDagViewAction.setEnabled(valid)
         self.multiIpldExplorerAction.setEnabled(valid)
+        self.multiPinAction.setEnabled(valid)
         if valid:
             self.multiExploreHashAction.setText(iClipLoaderExplore(path))
             self.multiLoadHashAction.setText(iClipLoaderBrowse(path))
             self.multiDagViewAction.setText(iClipLoaderDagView(path))
             self.multiIpldExplorerAction.setText(iClipLoaderIpldExplorer(path))
+            self.multiPinAction.setText(iClipLoaderPin(path))
             self.clipboardMultiLoader.setToolTip(iFromClipboard(path))
         else:
             self.multiExploreHashAction.setText(iClipboardEmpty())
             self.multiLoadHashAction.setText(iClipboardEmpty())
             self.multiDagViewAction.setText(iClipboardEmpty())
+            self.multiPinAction.setText(iClipboardEmpty())
             self.multiIpldExplorerAction.setText(iClipboardEmpty())
             self.clipboardMultiLoader.setToolTip(iClipboardEmpty())
+
+    def onPinFromClipboard(self):
+        current = self.app.clipTracker.getCurrent()
+        if current:
+            ensure(self.app.ipfsCtx.pin(current['path'], True, None,
+                qname='clipboard'))
 
     def onIpldExplorerFromClipboard(self):
         """

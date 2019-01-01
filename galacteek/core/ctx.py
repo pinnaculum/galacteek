@@ -272,7 +272,8 @@ class IPFSContext(QObject):
 
     # pinning signals
     pinQueueSizeChanged = pyqtSignal(int)
-    pinItemStatusChanged = pyqtSignal(str, dict)
+    pinItemStatusChanged = pyqtSignal(str, str, dict)
+    pinItemRemoved = pyqtSignal(str, str)
     pinItemsCount = pyqtSignal(int)
     pinNewItem = pyqtSignal(str)
     pinFinished = pyqtSignal(str)
@@ -360,16 +361,16 @@ class IPFSContext(QObject):
 
         ensure(self.peers.watch())
 
-        self.pinner = pinning.Pinner(self)
-        self.pinnerTask = self.loop.create_task(self.pinner.process())
+        self.pinner = pinning.PinningMaster(self,
+            statusFilePath=self.app.pinStatusLocation)
+        await self.pinner.start()
 
         if pubsubEnable is True:
             self.setupPubsub(pubsubHashmarksExch=pubsubHashmarksExch)
 
     async def shutdown(self):
-        if self.pinnerTask:
-            self.pinnerTask.cancel()
-            await self.pinnerTask
+        if self.pinner:
+            await self.pinner.stop()
 
         await self.peers.stop()
         await self.p2p.stop()
@@ -462,6 +463,6 @@ class IPFSContext(QObject):
         else:
             return []
 
-    async def pin(self, path, recursive=False, callback=None):
+    async def pin(self, path, recursive=False, callback=None, qname='default'):
         if self.pinner:
-            await self.pinner.queue(path, recursive, callback)
+            await self.pinner.queue(path, recursive, callback, qname=qname)

@@ -232,7 +232,7 @@ class IPFSSearchHandler(QObject):
     @ipfsOp
     async def pin(self, op, path):
         pinner = op.ctx.pinner
-        await pinner.queue(path, False, None)
+        await pinner.queue(path, True, None, qname='ipfs-search')
 
     @pyqtSlot()
     def previousPage(self):
@@ -264,10 +264,14 @@ class IPFSSearchHandler(QObject):
     def hashmark(self, path):
         hashV = stripIpfs(path)
 
-        if not self.results:
+        if not self.currentResults:
             return
 
-        hit = self.results.findByHash(hashV)
+        hit = self.currentResults.findByHash(hashV)
+
+        if not hit:
+            return
+
         title = hit.get('title', iUnknown()) if hit else ''
         descr = hit.get('description', iUnknown()) if hit else ''
 
