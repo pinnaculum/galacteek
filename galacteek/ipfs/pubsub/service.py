@@ -409,6 +409,9 @@ class PSChatService(JSONPubsubService):
 
     async def handleChatMessage(self, msg):
         cMsg = ChatRoomMessage(msg)
+        if not cMsg.valid():
+            return
+
         self.ipfsCtx.pubsub.chatRoomMessageReceived.emit(cMsg)
 
 

@@ -42,9 +42,11 @@ class ChatRoomWidget(GalacteekTab):
         self.ui.chatLog.insertHtml('<br>')
 
         formatted = '<p>'
-        formatted += '<span style="color: green">#{channel}</span> '.format(
+        formatted += '<span style="color: black">({date})</span> '.format(
+            date=message.date)
+        formatted += '<span style="color: #006080">#{channel}</span> '.format(
             channel=message.channel)
-        formatted += '<span style="color: red">{sender}</span>: '.format(
+        formatted += '<span style="color: #e67300">{sender}</span>: '.format(
             sender=message.sender)
         formatted += ' {message}'.format(message=message.message)
         formatted += '</p>'
@@ -57,6 +59,9 @@ class ChatRoomWidget(GalacteekTab):
                 formatted += '</p>'
 
         self.ui.chatLog.insertHtml(formatted)
+
+        self.ui.chatLog.verticalScrollBar().setValue(
+            self.ui.chatLog.verticalScrollBar().maximum())
 
     def onSendMessage(self):
         messageText = self.ui.message.text()

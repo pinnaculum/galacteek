@@ -3,6 +3,7 @@ import collections
 
 from jsonschema import validate
 from jsonschema.exceptions import ValidationError
+from datetime import datetime
 
 from galacteek.core.jtraverse import traverseParser
 from galacteek import log
@@ -452,28 +453,42 @@ class ChatRoomMessage(PubsubMessage):
             "msg": {
                 "type": "object",
                 "properties": {
+                    "date": {"type": "string"},
                     "message": {"type": "string"},
                     "channel": {"type": "string"},
                     "sender": {"type": "string"},
+                    "level": {"type": "integer"},
                     "links": {"type": "array"},
                     "attachments": {"type": "array"}
                 },
-                "required": ["message"]
+                "required": [
+                    "message",
+                    "date",
+                    "sender",
+                    "level",
+                    "links",
+                    "attachments",
+                    "channel"
+                ]
             },
         },
     }
 
     @staticmethod
-    def make(sender, channel, message, links=[], attachments=[]):
+    def make(sender, channel, message, links=[], attachments=[], date=None,
+            level=0):
+        msgDate = date if date else datetime.now().isoformat(' ', 'minutes')
         msg = ChatRoomMessage({
             'msgtype': ChatRoomMessage.TYPE,
             'version': 1,
             'msg': {
+                'date': msgDate,
                 'sender': sender,
                 'channel': channel,
                 'message': message,
                 'links': links,
-                'attachments': attachments
+                'attachments': attachments,
+                'level': level
             }
         })
         return msg
@@ -491,8 +506,18 @@ class ChatRoomMessage(PubsubMessage):
         return self.parser.traverse('msg.channel')
 
     @property
+    def date(self):
+        return self.parser.traverse('msg.date')
+
+    @property
+    def level(self):
+        return self.parser.traverse('msg.level')
+
+    @property
     def links(self):
         return self.data['msg']['links']
 
     def valid(self):
-        return self.validSchema(schema=ChatRoomMessage.schema)
+        schemaOk = self.validSchema(schema=ChatRoomMessage.schema)
+        if schemaOk:
+            return len(self.message) < 1024
