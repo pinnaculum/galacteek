@@ -183,7 +183,7 @@ class AsyncIPFSDaemon(object):
                              self.swarmLowWater)
         await ipfsConfigJson(self.goIpfsPath, 'Swarm.ConnMgr.HighWater',
                              self.swarmHighWater)
-        await ipfsConfigJson(self.goIpfsPath, 'Swarm.ConnMgr.GracePeriod',
+        await ipfsConfig(self.goIpfsPath, 'Swarm.ConnMgr.GracePeriod',
                              '60s')
 
         await ipfsConfig(self.goIpfsPath, 'Routing.Type', self.routingMode)
