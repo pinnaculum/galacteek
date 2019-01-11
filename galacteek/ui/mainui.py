@@ -911,8 +911,9 @@ class MainWindow(QMainWindow):
         for btn in [
                 self.clipboardMultiLoader,
                 self.browseButton,
-                self.fileManagerButton]:
-
+                self.fileManagerButton,
+                self.chatRoomButton,
+                self.profileEditButton]:
             btn.setEnabled(flag)
 
     def statusMessage(self, msg):
