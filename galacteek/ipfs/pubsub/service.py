@@ -41,7 +41,6 @@ class PubsubService(object):
         self.tskProcess = None
         self.tskPeriodic = None
 
-        print(self.topic, filterSelfMessages)
         if filterSelfMessages is True:
             self.addFilter(self.filterSelf)
 
@@ -263,18 +262,6 @@ class PSMainService(JSONPubsubService):
     def __init__(self, ipfsCtx, client):
         super().__init__(ipfsCtx, client, topic='galacteek.main')
 
-    async def processJsonMessage(self, sender, msg):
-        msgType = msg.get('msgtype', None)
-
-        #if msgType == ChatRoomMessage.TYPE:
-        #    await self.handleChatMessage(msg)
-
-    async def handleChatMessage(self, msg):
-        cMsg = ChatRoomMessage(msg)
-        print(cMsg.pretty())
-        self.ipfsCtx.pubsub.chatMessageReceived.emit(
-            cMsg.sender, cMsg.channel, cMsg.message)
-
 
 class PSPeersService(JSONPubsubService):
     def __init__(self, ipfsCtx, client):
@@ -422,7 +409,6 @@ class PSChatService(JSONPubsubService):
 
     async def handleChatMessage(self, msg):
         cMsg = ChatRoomMessage(msg)
-        print(cMsg.pretty())
         self.ipfsCtx.pubsub.chatRoomMessageReceived.emit(cMsg)
 
 
