@@ -5,11 +5,15 @@ import datetime
 
 from galacteek import log as logger
 
+from galacteek.ipfs.pubsub import TOPIC_MAIN
+from galacteek.ipfs.pubsub import TOPIC_PEERS
+from galacteek.ipfs.pubsub import TOPIC_CHAT
 from galacteek.ipfs.pubsub.messages import (
     MarksBroadcastMessage,
     PeerIdentMessageV1,
     PeerIdentMessageV2,
-    PeerLogoutMessage)
+    PeerLogoutMessage,
+    ChatRoomMessage)
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.core.asynclib import asyncify
 
@@ -20,7 +24,7 @@ class PubsubService(object):
     """
 
     def __init__(self, ipfsCtx, client, topic='galacteek.default',
-                 runPeriodic=False):
+                 runPeriodic=False, filterSelfMessages=True):
         self.client = client
         self.ipfsCtx = ipfsCtx
         self.topic = topic
@@ -31,10 +35,15 @@ class PubsubService(object):
         self._receivedCount = 0
         self._errorsCount = 0
         self._runPeriodic = runPeriodic
+        self._filters = []
 
         self.tskServe = None
         self.tskProcess = None
         self.tskPeriodic = None
+
+        print(self.topic, filterSelfMessages)
+        if filterSelfMessages is True:
+            self.addFilter(self.filterSelf)
 
     @property
     def receivedCount(self):
@@ -77,6 +86,23 @@ class PubsubService(object):
             else:
                 self.debug('task {}: shutdown ok'.format(tsk))
 
+    def addFilter(self, filtercoro):
+        if asyncio.iscoroutinefunction(filtercoro):
+            self._filters.append(filtercoro)
+
+    async def filterSelf(self, msg):
+        if msg['from'].decode() == self.ipfsCtx.node.id:
+            self.debug('Filtering message sent from our node')
+            return True
+        self.debug('Not Filtering message sent from our node')
+        return False
+
+    async def filtered(self, message):
+        for filter in self._filters:
+            if await filter(message):  # That means we drop it
+                return True
+        return False
+
     async def shutdown(self):
         pass
 
@@ -98,7 +124,7 @@ class PubsubService(object):
 
         try:
             async for message in self.client.pubsub.sub(self.topic):
-                if message['from'].decode() == nodeId:
+                if await self.filtered(message):
                     continue
 
                 self.ipfsCtx.pubsub.psMessageRx.emit()
@@ -237,6 +263,18 @@ class PSMainService(JSONPubsubService):
     def __init__(self, ipfsCtx, client):
         super().__init__(ipfsCtx, client, topic='galacteek.main')
 
+    async def processJsonMessage(self, sender, msg):
+        msgType = msg.get('msgtype', None)
+
+        #if msgType == ChatRoomMessage.TYPE:
+        #    await self.handleChatMessage(msg)
+
+    async def handleChatMessage(self, msg):
+        cMsg = ChatRoomMessage(msg)
+        print(cMsg.pretty())
+        self.ipfsCtx.pubsub.chatMessageReceived.emit(
+            cMsg.sender, cMsg.channel, cMsg.message)
+
 
 class PSPeersService(JSONPubsubService):
     def __init__(self, ipfsCtx, client):
@@ -371,9 +409,27 @@ class PSPeersService(JSONPubsubService):
                     await self.sendIdent(self.curProfile)
 
 
+class PSChatService(JSONPubsubService):
+    def __init__(self, ipfsCtx, client):
+        super().__init__(ipfsCtx, client, topic=TOPIC_CHAT,
+            filterSelfMessages=False)
+
+    async def processJsonMessage(self, sender, msg):
+        msgType = msg.get('msgtype', None)
+
+        if msgType == ChatRoomMessage.TYPE:
+            await self.handleChatMessage(msg)
+
+    async def handleChatMessage(self, msg):
+        cMsg = ChatRoomMessage(msg)
+        print(cMsg.pretty())
+        self.ipfsCtx.pubsub.chatRoomMessageReceived.emit(cMsg)
+
+
 __all__ = [
     'PubsubService',
     'PSHashmarksExchanger',
     'PSMainService',
+    'PSChatService',
     'PSPeersService'
 ]

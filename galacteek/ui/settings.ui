@@ -21,7 +21,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="tab">
       <attribute name="title">
@@ -256,6 +256,27 @@
               <property name="maximum">
                <number>2048</number>
               </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_8">
+              <property name="text">
+               <string>Routing mode</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QComboBox" name="routingMode">
+              <item>
+               <property name="text">
+                <string>dht</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>dhtclient</string>
+               </property>
+              </item>
              </widget>
             </item>
            </layout>

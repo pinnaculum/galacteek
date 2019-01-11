@@ -23,6 +23,7 @@ protobuf = "==3.6.1"
 pycryptodomex = "==3.6.6"
 logbook = "==1.4.0"
 multiaddr = "==0.0.2"
+psutil = "==5.4.7"
 
 [dev-packages]
 pytest = "*"

@@ -265,6 +265,8 @@ class BrowserKeyFilter(QObject):
     hashmarkPressed = pyqtSignal()
     savePagePressed = pyqtSignal()
     reloadPressed = pyqtSignal()
+    zoominPressed = pyqtSignal()
+    zoomoutPressed = pyqtSignal()
 
     def eventFilter(self, obj, event):
         if event.type() == QEvent.KeyPress:
@@ -284,6 +286,12 @@ class BrowserKeyFilter(QObject):
                     return True
                 if key == Qt.Key_R:
                     self.reloadPressed.emit()
+                    return True
+                if key == Qt.Key_Plus:
+                    self.zoominPressed.emit()
+                    return True
+                if key == Qt.Key_Minus:
+                    self.zoomoutPressed.emit()
                     return True
         return False
 
@@ -396,10 +404,15 @@ class BrowserTab(GalacteekTab):
         self.ui.actionComboBox.setItemIcon(1, iconPin)
         self.ui.actionComboBox.activated.connect(self.actionComboClicked)
 
+        self.ui.zoomInButton.clicked.connect(self.onZoomIn)
+        self.ui.zoomOutButton.clicked.connect(self.onZoomOut)
+
         # Event filter
         evfilter = BrowserKeyFilter(self)
         evfilter.hashmarkPressed.connect(self.onHashmarkPage)
         evfilter.reloadPressed.connect(self.onReloadPage)
+        evfilter.zoominPressed.connect(self.onZoomIn)
+        evfilter.zoomoutPressed.connect(self.onZoomOut)
         self.installEventFilter(evfilter)
 
         self.app.clipTracker.clipboardHasIpfs.connect(self.onClipboardIpfs)
@@ -681,3 +694,11 @@ class BrowserTab(GalacteekTab):
             self.enterUrl(url)
         else:
             messageBox(iInvalidUrl(inputStr))
+
+    def onZoomIn(self):
+        cFactor = self.webView.zoomFactor()
+        self.webView.setZoomFactor(cFactor + 0.25)
+
+    def onZoomOut(self):
+        cFactor = self.webView.zoomFactor()
+        self.webView.setZoomFactor(cFactor - 0.25)

@@ -13,6 +13,8 @@ from galacteek.ipfs.mutable import MutableIPFSJson, CipheredIPFSJson
 from galacteek.ipfs.dag import EvolvingDAG
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.encrypt import IpfsRSAAgent
+from galacteek.ipfs.pubsub import TOPIC_CHAT
+from galacteek.ipfs.pubsub.messages import ChatRoomMessage
 from galacteek.core.asynclib import asyncReadFile
 from galacteek.core.orbitdb import OrbitConfigMap
 from galacteek.core.orbitdbcfg import defaultOrbitConfigMap
@@ -501,10 +503,18 @@ class UserProfile(QObject):
         else:
             self.debug('DAG api not available !')
 
+        ensure(self.sendChatLogin())
+
         self._initialized = True
         self.userLogInfo('Initialization complete')
         self.userInfo.changed.connect(self.onUserInfoChanged)
         self.userInfo.usernameChanged.connect(self.onUserNameChanged)
+
+    async def sendChatLogin(self):
+        msg = ChatRoomMessage.make(self.userInfo.username,
+            ChatRoomMessage.CHANNEL_GENERAL, 'logged in')
+        await self.ctx.pubsub.send(TOPIC_CHAT, msg)
+
 
     @ipfsOp
     async def cryptoInit(self, op):

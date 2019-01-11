@@ -11,8 +11,10 @@ from galacteek import log, logUser, GALACTEEK_NAME, ensure
 
 from galacteek.ipfs import pinning
 from galacteek.ipfs.wrappers import ipfsOp
+from galacteek.ipfs.pubsub.messages import ChatRoomMessage
 from galacteek.ipfs.pubsub.service import (
     PSMainService,
+    PSChatService,
     PSHashmarksExchanger,
     PSPeersService)
 from galacteek.ipfs.ipfsops import *
@@ -183,6 +185,8 @@ class PubsubMaster(QObject):
     psMessageRx = pyqtSignal()
     psMessageTx = pyqtSignal()
 
+    chatRoomMessageReceived = pyqtSignal(ChatRoomMessage)
+
     def __init__(self, parent):
         super().__init__(parent)
         self.ctx = parent
@@ -197,6 +201,10 @@ class PubsubMaster(QObject):
 
     def status(self):
         [service.logStatus() for topic, service in self.services.items()]
+
+    async def send(self, topic, message):
+        if topic in self.services:
+            await self.services[topic].send(str(message))
 
     async def stop(self):
         tsks = [service.stop() for topic, service in self.services.items()]
@@ -382,6 +390,9 @@ class IPFSContext(QObject):
 
         psServicePeers = PSPeersService(self, self.app.ipfsClient)
         self.pubsub.reg(psServicePeers)
+
+        psServiceChat = PSChatService(self, self.app.ipfsClient)
+        self.pubsub.reg(psServiceChat)
 
         if pubsubHashmarksExch:
             psServiceMarks = PSHashmarksExchanger(

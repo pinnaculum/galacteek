@@ -19,6 +19,7 @@
             <a href="#" onclick='window.openIpfs("{{ hit.path }}")' >{{ hit.title }}</a>
             <a href="#" onclick='window.hashmark("{{ hit.path }}")'><img src="qrc:///share/icons/star-navy.png" width="16" height="16"/></a>
             <a href="#" onclick='window.ipfssearch.pinObject("{{ hit.path }}")'><img src="qrc:///share/icons/pin.png" width="16" height="16"/></a>
+            <a href="#" onclick='window.ipfssearch.clipboardInput("{{ hit.path }}")'><img src="qrc:///share/icons/clipboard.png" width="16" height="16"/></a>
 
 {% if hit['type'] == 'directory' %}
             <a href="#" onclick='window.exploreIpfs("{{ hit['path'] }}")'><img src="qrc:///share/icons/folder-open-black.png" width="16" height="16"/></a>

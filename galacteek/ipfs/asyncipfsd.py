@@ -3,6 +3,10 @@ import os.path
 import asyncio
 import re
 import json
+import psutil
+import resource
+
+from galacteek import log
 
 
 async def shell(arg):
@@ -17,6 +21,11 @@ async def shell(arg):
 async def ipfsConfig(binPath, param, value):
     return await shell("{0} config '{1}' '{2}'".format(
         binPath, param, value))
+
+
+async def ipfsConfigProfileApply(binPath, profile):
+    return await shell("{0} config profile apply {1}".format(
+        binPath, profile))
 
 
 async def ipfsConfigJson(binPath, param, value):
@@ -117,9 +126,9 @@ class AsyncIPFSDaemon(object):
                  apiport=DEFAULT_APIPORT,
                  swarmport=DEFAULT_SWARMPORT,
                  gatewayport=DEFAULT_GWPORT, initRepo=True,
-                 swarmLowWater=10, swarmHighWater=20,
+                 swarmLowWater=10, swarmHighWater=20, nice=20,
                  pubsubEnable=False, noBootstrap=False, corsEnable=True,
-                 p2pStreams=False, migrateRepo=False,
+                 p2pStreams=False, migrateRepo=False, routingMode='dht',
                  gwWritable=False, storageMax=20, debug=False, loop=None):
 
         self.loop = loop if loop else asyncio.get_event_loop()
@@ -140,6 +149,8 @@ class AsyncIPFSDaemon(object):
         self.noBootstrap = noBootstrap
         self.migrateRepo = migrateRepo
         self.gwWritable = gwWritable
+        self.routingMode = routingMode
+        self.nice = nice
         self.debug = debug
 
     async def start(self):
@@ -172,6 +183,12 @@ class AsyncIPFSDaemon(object):
                              self.swarmLowWater)
         await ipfsConfigJson(self.goIpfsPath, 'Swarm.ConnMgr.HighWater',
                              self.swarmHighWater)
+        await ipfsConfigJson(self.goIpfsPath, 'Swarm.ConnMgr.GracePeriod',
+                             '60s')
+
+        await ipfsConfig(self.goIpfsPath, 'Routing.Type', self.routingMode)
+        await ipfsConfigJson(self.goIpfsPath,
+                             'Swarm.DisableBandwidthMetrics', 'true')
 
         # Maximum storage
         await ipfsConfig(self.goIpfsPath, 'Datastore.StorageMax',
@@ -224,7 +241,21 @@ class AsyncIPFSDaemon(object):
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE)
         self.transport, self.proto = await f
+
+        proc_pid = self.transport.get_pid()
+        self.setProcLimits(proc_pid, nice=self.nice)
         return True
+
+    def setProcLimits(self, pid, nice=20):
+        log.debug('Applying limits to process: {pid}'.format(pid=pid))
+
+        try:
+            proc = psutil.Process(pid)
+            proc.nice(nice)
+            if 0:
+                proc.rlimit(resource.RLIMIT_RTTIME, (10000, 12000))
+        except Exception:
+            log.debug('Could not apply limits to process {pid}'.format(pid=pid))
 
     def stop(self):
         try:

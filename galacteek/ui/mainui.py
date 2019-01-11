@@ -20,6 +20,7 @@ from PyQt5.Qt import QSizePolicy
 from PyQt5 import QtWebEngineWidgets
 from PyQt5.QtGui import (QKeySequence,
                          QPixmap,
+                         QFont,
                          QIcon)
 
 from galacteek import ensure, log
@@ -49,6 +50,7 @@ from . import ipfssearchview
 from . import peers
 from . import eventlog
 from . import pin
+from . import chat
 
 
 from .helpers import *
@@ -378,6 +380,21 @@ class IPFSSearchWidget(QWidget):
         self.hidden.emit()
 
 
+class TabWidgetKeyFilter(QObject):
+    nextPressed = pyqtSignal()
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.KeyPress:
+            modifiers = event.modifiers()
+
+            key = event.key()
+            if modifiers & Qt.ControlModifier:
+                if key == Qt.Key_J:
+                    self.nextPressed.emit()
+                    return True
+        return False
+
+
 class MainWindow(QMainWindow):
     def __init__(self, app):
         super(MainWindow, self).__init__()
@@ -400,6 +417,7 @@ class MainWindow(QMainWindow):
         self.tabnPinning = iPinningStatus()
         self.tabnMediaPlayer = iMediaPlayer()
         self.tabnHashmarks = iHashmarks()
+        self.tabnChat = 'Chat'
 
         self.ui.actionCloseAllTabs.triggered.connect(
             self.onCloseAllTabs)
@@ -425,6 +443,7 @@ class MainWindow(QMainWindow):
         self.pinAllGlobalButton.setAutoRaise(True)
         self.pinAllGlobalChecked = False
         self.pinAllGlobalButton.toggled.connect(self.onToggledPinAllGlobal)
+        self.pinAllGlobalButton.setChecked(self.app.settingsMgr.browserAutoPin)
 
         self.multiLoaderMenu = QMenu()
         self.multiLoaderHMenu = QMenu(iClipboardHistory())
@@ -488,6 +507,7 @@ class MainWindow(QMainWindow):
         self.fileManagerButton.setIcon(getIcon('folder-open.png'))
         self.fileManagerButton.clicked.connect(lambda:
                                                self.onFileManagerClicked())
+        self.fileManagerButton.setShortcut(QKeySequence('Ctrl+f'))
 
         # Edit-Profile button
         self.menuUserProfile = QMenu()
@@ -605,10 +625,22 @@ class MainWindow(QMainWindow):
         self.multiLoaderMenu.addAction(self.multiPinAction)
         self.multiLoaderMenu.addMenu(self.multiLoaderHMenu)
 
+        self.ui.tabWidget.setDocumentMode(True)
         self.ui.tabWidget.setTabsClosable(True)
         self.ui.tabWidget.tabCloseRequested.connect(self.onTabCloseRequest)
         self.ui.tabWidget.setElideMode(Qt.ElideMiddle)
         self.ui.tabWidget.setUsesScrollButtons(True)
+        kf = TabWidgetKeyFilter(self)
+        kf.nextPressed.connect(self.cycleTabs)
+
+        self.ui.tabWidget.installEventFilter(kf)
+
+        # Chat room
+        self.chatRoomWidget = chat.ChatRoomWidget(self)
+        self.chatRoomButton = QToolButton()
+        self.chatRoomButton.setIcon(getIcon('chat.png'))
+        self.chatRoomButton.clicked.connect(self.onOpenChatWidget)
+        self.toolbarTools.addWidget(self.chatRoomButton)
 
         self.webProfile = QtWebEngineWidgets.QWebEngineProfile.defaultProfile()
 
@@ -681,6 +713,13 @@ class MainWindow(QMainWindow):
     @property
     def allTabs(self):
         return self._allTabs
+
+    def cycleTabs(self):
+        curIndex = self.ui.tabWidget.currentIndex()
+        if curIndex + 1 < self.ui.tabWidget.count():
+            self.ui.tabWidget.setCurrentIndex(curIndex + 1)
+        else:
+            self.ui.tabWidget.setCurrentIndex(0)
 
     def onHashmarkClicked(self, path, title):
         tab = self.addBrowserTab()
@@ -840,7 +879,7 @@ class MainWindow(QMainWindow):
 
         tab = self.pinStatusTab
         self.registerTab(tab, name, current=True,
-                         icon=getIcon('pin-black.png'))
+                         icon=getIcon('pin-zoom.png'))
 
     def onPinItemsCount(self, count):
         statusMsg = iItemsInPinningQueue(count)
@@ -1211,6 +1250,11 @@ class MainWindow(QMainWindow):
             CFG_KEY_MAINWINDOW_STATE,
             self.saveState())
 
+        self.app.settingsMgr.setSetting(
+            CFG_SECTION_UI,
+            CFG_KEY_BROWSER_AUTOPIN,
+            self.pinAllGlobalButton.isChecked())
+
     def closeEvent(self, event):
         event.ignore()
         self.hide()
@@ -1244,9 +1288,17 @@ class MainWindow(QMainWindow):
         if self.hashmarksPage is None:
             self.hashmarksPage = HashmarksPage(self.app.marksLocal)
 
-        tab = WebTab(self)
+        tab = WebTab(self.ui.tabWidget)
         hview = DWebView(page=self.hashmarksPage)
         tab.attach(hview)
 
         self.registerTab(tab, iHashmarks(),
                          icon=getIcon('hashmarks.png'), current=True)
+
+    def onOpenChatWidget(self):
+        ft = self.findTabWithName(self.tabnChat)
+        if ft:
+            return self.ui.tabWidget.setCurrentWidget(ft)
+
+        self.registerTab(self.chatRoomWidget, self.tabnChat,
+                         icon=getIcon('chat.png'), current=True)

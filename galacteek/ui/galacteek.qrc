@@ -1,5 +1,9 @@
 <RCC>
   <qresource>
+    <file>../../share/icons/chat.png</file>
+    <file>../../share/icons/pin-zoom.png</file>
+    <file>../../share/icons/zoom-in.png</file>
+    <file>../../share/icons/zoom-out.png</file>
     <file>../../share/js/orbit-db/orbitdb.js</file>
     <file>../../share/js/ipfs-http-client/index.min.js</file>
     <file>../../share/static/fonts/Montserrat-Regular.woff2</file>

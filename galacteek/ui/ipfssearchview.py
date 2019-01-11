@@ -261,6 +261,11 @@ class IPFSSearchHandler(QObject):
         tab.browseFsPath(path)
 
     @pyqtSlot(str)
+    def clipboardInput(self, path):
+        if isinstance(path, str):
+            self.app.setClipboardText(path)
+
+    @pyqtSlot(str)
     def hashmark(self, path):
         hashV = stripIpfs(path)
 
