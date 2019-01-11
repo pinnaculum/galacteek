@@ -64,6 +64,7 @@ QToolBox::tab {
 
 QTabBar::tab:selected {
     text-align: center;
+    background-color: #bfbfbf;
 }
 
 QTabBar::tab:hover {
@@ -85,7 +86,6 @@ QLineEdit {
 
 QTextBrowser {
     background-color: #f6fafb;
-    font: 10pt "Helvetica";
 }
 
 QToolButton#buttonBrowseIpfs::hover {

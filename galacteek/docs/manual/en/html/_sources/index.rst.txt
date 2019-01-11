@@ -7,6 +7,7 @@ Galacteek's manual (english)
    :maxdepth: 2
    :name: mastertoc
 
+    Shortcuts <shortcuts>
     Settings <settings>
     File manager <filemanager>
     Using the clipboard <clipboard>

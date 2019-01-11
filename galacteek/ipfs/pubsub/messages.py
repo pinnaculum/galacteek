@@ -438,3 +438,61 @@ class PeerLogoutMessage(PubsubMessage):
 
     def valid(self):
         return self.validSchema(schema=PeerLogoutMessage.schema)
+
+
+class ChatRoomMessage(PubsubMessage):
+    TYPE = 'chatroommessage'
+
+    CHANNEL_GENERAL = 'general'
+
+    schema = {
+        "type": "object",
+        "properties": {
+            "msgtype": {"type": "string"},
+            "msg": {
+                "type": "object",
+                "properties": {
+                    "message": {"type": "string"},
+                    "channel": {"type": "string"},
+                    "sender": {"type": "string"},
+                    "links": {"type": "array"},
+                    "attachments": {"type": "array"}
+                },
+                "required": ["message"]
+            },
+        },
+    }
+
+    @staticmethod
+    def make(sender, channel, message, links=[], attachments=[]):
+        msg = ChatRoomMessage({
+            'msgtype': ChatRoomMessage.TYPE,
+            'version': 1,
+            'msg': {
+                'sender': sender,
+                'channel': channel,
+                'message': message,
+                'links': links,
+                'attachments': attachments
+            }
+        })
+        return msg
+
+    @property
+    def message(self):
+        return self.parser.traverse('msg.message')
+
+    @property
+    def sender(self):
+        return self.parser.traverse('msg.sender')
+
+    @property
+    def channel(self):
+        return self.parser.traverse('msg.channel')
+
+    @property
+    def links(self):
+        return self.data['msg']['links']
+
+    def valid(self):
+        return self.validSchema(schema=ChatRoomMessage.schema)

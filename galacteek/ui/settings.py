@@ -84,6 +84,8 @@ class SettingsDialog(QDialog):
             self.getS(section, CFG_KEY_SWARMHIGHWATER, int))
         self.ui.storageMax.setValue(
             self.getS(section, CFG_KEY_STORAGEMAX, int))
+        self.ui.routingMode.setCurrentText(
+            self.getS(section, CFG_KEY_ROUTINGMODE, str))
 
         # IPFS connection
         section = CFG_SECTION_IPFSCONN1
@@ -137,6 +139,8 @@ class SettingsDialog(QDialog):
             CFG_KEY_SWARMHIGHWATER,
             self.ui.swarmMaxConns.text())
         self.setS(section, CFG_KEY_STORAGEMAX, self.ui.storageMax.text())
+        self.setS(section, CFG_KEY_ROUTINGMODE,
+                  self.ui.routingMode.currentText())
 
         section = CFG_SECTION_IPFSCONN1
         self.setS(section, CFG_KEY_HOST, self.ui.customIpfsHost.text())

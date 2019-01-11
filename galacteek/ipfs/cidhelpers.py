@@ -1,4 +1,5 @@
 from galacteek.ipfs.cid import make_cid
+from galacteek.ipfs.ipfsops import joinIpfs
 
 import multihash
 import re
@@ -99,3 +100,16 @@ def ipnsRegSearchPath(text):
         if matched:
             return matched
     return None
+
+
+def ipfsPathExtract(text):
+    ma = ipfsRegSearchPath(text)
+    if ma:
+        return ma.group('fullpath')
+
+    ma = ipnsRegSearchPath(text)
+    if ma:
+        return ma.group('fullpath')
+
+    if ipfsRegSearchCid(text):
+        return joinIpfs(text)

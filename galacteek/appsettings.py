@@ -21,6 +21,8 @@ CFG_KEY_SWARMLOWWATER = 'swarm_lowwater'
 CFG_KEY_SWARMHIGHWATER = 'swarm_highwater'
 CFG_KEY_STORAGEMAX = 'storagemax'  # integer, max storage in Gb
 CFG_KEY_CORS = 'cors'
+CFG_KEY_ROUTINGMODE = 'routingmode'
+CFG_KEY_NICE = 'nice'
 
 # Browser
 CFG_KEY_HOMEURL = 'homeurl'
@@ -39,6 +41,7 @@ CFG_KEY_WRAPSINGLEFILES = 'wrapsinglefiles'
 CFG_KEY_WRAPDIRECTORIES = 'wrapdirectories'
 CFG_KEY_HIDEHASHES = 'hidehashes'
 CFG_KEY_LANG = 'lang'
+CFG_KEY_BROWSER_AUTOPIN = 'browserautopin'
 
 CFG_KEY_MAINWINDOW_STATE = 'mainwindow_area'
 CFG_KEY_MAINWINDOW_GEOMETRY = 'mainwindow_geometry'
@@ -63,6 +66,8 @@ def setDefaultSettings(gApp):
     sManager.setDefaultSetting(section, CFG_KEY_SWARMHIGHWATER, 150)
     sManager.setDefaultSetting(section, CFG_KEY_SWARMLOWWATER, 100)
     sManager.setDefaultSetting(section, CFG_KEY_STORAGEMAX, 50)
+    sManager.setDefaultSetting(section, CFG_KEY_ROUTINGMODE, 'dht')
+    sManager.setDefaultSetting(section, CFG_KEY_NICE, 20)
     sManager.setDefaultTrue(section, CFG_KEY_CORS)
     sManager.setDefaultTrue(section, CFG_KEY_ENABLED)
     sManager.setDefaultTrue(section, CFG_KEY_HTTPGWWRITABLE)
@@ -91,6 +96,7 @@ def setDefaultSettings(gApp):
     sManager.setDefaultFalse(section, CFG_KEY_WRAPDIRECTORIES)
     sManager.setDefaultFalse(section, CFG_KEY_HIDEHASHES)
     sManager.setDefaultSetting(section, CFG_KEY_LANG, 'en')
+    sManager.setDefaultTrue(section, CFG_KEY_BROWSER_AUTOPIN)
 
     section = CFG_SECTION_ORBITDB
     sManager.setDefaultSetting(section, CFG_KEY_CONNECTOR_LISTENPORT, 3000)
@@ -214,3 +220,7 @@ class SettingsManager(object):
     @property
     def mainWindowState(self):
         return self.getSetting(CFG_SECTION_UI, CFG_KEY_MAINWINDOW_STATE)
+
+    @property
+    def browserAutoPin(self):
+        return self.isTrue(CFG_SECTION_UI, CFG_KEY_BROWSER_AUTOPIN)

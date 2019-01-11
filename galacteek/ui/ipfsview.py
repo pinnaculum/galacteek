@@ -211,8 +211,8 @@ class IPFSHashExplorerToolBox(GalacteekTab):
         self.toolbox = QToolBox()
         self.exLayout = QVBoxLayout(self)
         self.exLayout.addWidget(self.toolbox)
-        self.vLayout.addLayout(self.exLayout)
 
+        self.vLayout.addLayout(self.exLayout)
         if self.rootHash:
             self.viewHash(self.rootHash)
 
@@ -283,7 +283,7 @@ class TextView(GalacteekTab):
         if not self.textData:
             self.textData = 'Error decoding data'
 
-        self.vLayout = QVBoxLayout(self)
+        self.textLayout = QVBoxLayout(self)
 
         self.textBrowser = QTextBrowser()
         if mimeType == 'text/html':
@@ -291,8 +291,8 @@ class TextView(GalacteekTab):
         else:
             self.textBrowser.setPlainText(self.textData)
 
-        self.vLayout.addWidget(self.textBrowser)
-        self.setLayout(self.vLayout)
+        self.textLayout.addWidget(self.textBrowser)
+        self.vLayout.addLayout(self.textLayout)
 
     def decode(self, data):
         for enc in ['utf-8', 'latin1', 'ascii']:
@@ -321,7 +321,8 @@ class IPFSHashExplorerWidget(QWidget):
         self.rootPath = joinIpfs(self.rootHash)
         self.cid = cidhelpers.getCID(self.rootHash)
 
-        self.vLayout = QVBoxLayout(self)
+        self.mainLayout = QVBoxLayout(self)
+        self.setLayout(self.mainLayout)
 
         self.autoOpenFolders = autoOpenFolders
         self.hLayoutTop = QHBoxLayout()
@@ -367,12 +368,12 @@ class IPFSHashExplorerWidget(QWidget):
         self.hLayoutCtrl.addWidget(self.getLabel)
         self.hLayoutCtrl.addWidget(self.getProgress)
 
-        self.vLayout.addLayout(self.hLayoutTop)
+        self.mainLayout.addLayout(self.hLayoutTop)
 
         self.tree = HashTreeView()
         self.tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.tree.setDragDropMode(QAbstractItemView.DragOnly)
-        self.vLayout.addWidget(self.tree)
+        self.mainLayout.addWidget(self.tree)
 
         self.model = IPFSHashItemModel(self)
         self.model.setHorizontalHeaderLabels(

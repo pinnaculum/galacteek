@@ -95,6 +95,8 @@ and restart the application afterwards.
 - Decentralized application development/testing with the Javascript API
   (using *window.ipfs*)
 
+.. include:: galacteek/docs/manual/en/shortcuts.rst
+
 Keybindings
 ===========
 
@@ -143,10 +145,8 @@ Platforms supported
 ===================
 
 Mainly tested on Linux. The application relies heavily on quamash_ which
-should work with most platforms. Things relying on HTTPs (ipfs-search engine
-queries ..) might not work on Windows due to *ProactorEventLoop* being
-incompatible with SSL. Manual installation of go-ipfs_ is advised on this
-platform.
+should work with most platforms (untested on OS X which is not officially
+supported by quamash).
 
 Donations
 =========
