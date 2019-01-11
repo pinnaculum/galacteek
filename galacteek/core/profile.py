@@ -257,6 +257,9 @@ class UserApp(QObject):
 
     @ipfsOp
     async def update(self, op):
+        if self.dagRoot is None:
+            return
+
         homeIndex = await self.profile.tmplRender(
             'public/userhome.html',
             boardMessages=list(reversed(self.dagRoot['board']['messages'])),
@@ -692,6 +695,9 @@ class UserProfile(QObject):
         """
         Update the user's DAG
         """
+
+        if not self.dagUser:
+            return
 
         await self.dagUser.loaded
         await self.app.update()
