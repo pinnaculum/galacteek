@@ -50,12 +50,26 @@
      <item row="1" column="0">
       <widget class="QLabel" name="label">
        <property name="text">
-        <string>Use title for hashmark</string>
+        <string>Title</string>
        </property>
       </widget>
      </item>
      <item row="1" column="1">
       <widget class="QLineEdit" name="title"/>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="label_7">
+       <property name="text">
+        <string>Description</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QTextEdit" name="description">
+       <property name="acceptRichText">
+        <bool>false</bool>
+       </property>
+      </widget>
      </item>
      <item row="3" column="0">
       <widget class="QLabel" name="label_2">
@@ -78,20 +92,6 @@
       <widget class="QLineEdit" name="newCategory">
        <property name="maxLength">
         <number>128</number>
-       </property>
-      </widget>
-     </item>
-     <item row="7" column="0">
-      <widget class="QLabel" name="label_3">
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
-     </item>
-     <item row="7" column="1">
-      <widget class="QCheckBox" name="share">
-       <property name="text">
-        <string>Share (public)</string>
        </property>
       </widget>
      </item>
@@ -119,17 +119,34 @@
      <item row="6" column="1">
       <widget class="QLineEdit" name="comment"/>
      </item>
-     <item row="2" column="0">
-      <widget class="QLabel" name="label_7">
+     <item row="7" column="0">
+      <widget class="QLabel" name="label_8">
        <property name="text">
-        <string>Description</string>
+        <string>Pinning</string>
        </property>
       </widget>
      </item>
-     <item row="2" column="1">
-      <widget class="QTextEdit" name="description">
-       <property name="acceptRichText">
-        <bool>false</bool>
+     <item row="7" column="1">
+      <widget class="QComboBox" name="pinCombo">
+       <property name="maximumSize">
+        <size>
+         <width>250</width>
+         <height>16777215</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="0">
+      <widget class="QLabel" name="label_3">
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="1">
+      <widget class="QCheckBox" name="share">
+       <property name="text">
+        <string>Share (public)</string>
        </property>
       </widget>
      </item>

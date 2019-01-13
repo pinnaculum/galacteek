@@ -47,7 +47,7 @@ class IPFSHashMark(collections.UserDict):
     @staticmethod
     def make(path, title=None, datecreated=None, share=False, tags=[],
              description='', comment='', datasize=None, cumulativesize=None,
-             numlinks=None, icon=None):
+             numlinks=None, icon=None, pinSingle=False, pinRecursive=False):
         if datecreated is None:
             datecreated = datetime.now().isoformat()
 
@@ -61,6 +61,11 @@ class IPFSHashMark(collections.UserDict):
                     'datasize': datasize,
                     'cumulativesize': cumulativesize,
                     'numlinks': numlinks,
+                },
+                'pin': {
+                    'single': pinSingle,
+                    'recursive': pinRecursive,
+                    'filters': []
                 },
                 'datecreated': datecreated,
                 'tscreated': int(time.time()),

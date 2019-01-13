@@ -71,11 +71,13 @@ class FeedItem(UneditableItem):
     pass
 
 
-def addHashmark(hashmarks, path, title, description='', stats={}):
+def addHashmark(hashmarks, path, title, description='', stats={},
+                pin=False, pinRecursive=False):
     if hashmarks.search(path):
         return messageBox(iAlreadyHashmarked())
 
-    runDialog(AddHashmarkDialog, hashmarks, path, title, description, stats)
+    runDialog(AddHashmarkDialog, hashmarks, path, title, description, stats,
+              pin=pin, pinRecursive=pinRecursive)
 
 
 class _MarksUpdater:

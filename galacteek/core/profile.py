@@ -514,10 +514,11 @@ class UserProfile(QObject):
         self.userInfo.usernameChanged.connect(self.onUserNameChanged)
 
     async def sendChatLogin(self):
-        msg = ChatRoomMessage.make(self.userInfo.username,
-            ChatRoomMessage.CHANNEL_GENERAL, 'logged in')
+        msg = ChatRoomMessage.make(
+            self.userInfo.username,
+            ChatRoomMessage.CHANNEL_GENERAL,
+            'logged in')
         await self.ctx.pubsub.send(TOPIC_CHAT, msg)
-
 
     @ipfsOp
     async def cryptoInit(self, op):

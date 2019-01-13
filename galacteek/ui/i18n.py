@@ -168,6 +168,18 @@ def iPin():
     return QCoreApplication.translate('GalacteekWindow', 'Pin')
 
 
+def iPinSingle():
+    return QCoreApplication.translate('GalacteekWindow', 'Pin (single)')
+
+
+def iPinRecursive():
+    return QCoreApplication.translate('GalacteekWindow', 'Pin (recursive)')
+
+
+def iDoNotPin():
+    return QCoreApplication.translate('GalacteekWindow', 'Do not pin')
+
+
 def iGlobalAutoPinning():
     return QCoreApplication.translate('GalacteekWindow',
                                       'Global automatic pinning')

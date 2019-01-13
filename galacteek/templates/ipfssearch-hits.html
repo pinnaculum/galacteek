@@ -13,16 +13,16 @@
 {% set preview_maxsize = 32 * 1024 %}
 
 {% for hit in hits %}
-<div id="{{ hit['hash'] }}" class="hit" onmouseout="this.style.background='#e0e0d1'">
-        <div class="content">
-            <p style="text-align: left">
-            <a href="#" onclick='window.openIpfs("{{ hit.path }}")' >{{ hit.title }}</a>
-            <a href="#" onclick='window.hashmark("{{ hit.path }}")'><img src="qrc:///share/icons/star-navy.png" width="16" height="16"/></a>
-            <a href="#" onclick='window.ipfssearch.pinObject("{{ hit.path }}")'><img src="qrc:///share/icons/pin.png" width="16" height="16"/></a>
-            <a href="#" onclick='window.ipfssearch.clipboardInput("{{ hit.path }}")'><img src="qrc:///share/icons/clipboard.png" width="16" height="16"/></a>
+<div id="{{ hit['hash'] }}" class="hit">
+    <div>
+        <p style="text-align: left">
+            <a href="#" onclick='event.preventDefault(); window.openIpfs("{{ hit.path }}")' >{{ hit.title }}</a>
+            <a href="#" onclick='event.preventDefault(); window.hashmark("{{ hit.path }}")'><img src="qrc:///share/icons/star-navy.png" width="16" height="16"/></a>
+            <a href="#" onclick='event.preventDefault(); window.ipfssearch.pinObject("{{ hit.path }}")'><img src="qrc:///share/icons/pin.png" width="16" height="16"/></a>
+            <a href="#" onclick='event.preventDefault(); window.ipfssearch.clipboardInput("{{ hit.path }}")'><img src="qrc:///share/icons/clipboard.png" width="16" height="16"/></a>
 
 {% if hit['type'] == 'directory' %}
-            <a href="#" onclick='window.exploreIpfs("{{ hit['path'] }}")'><img src="qrc:///share/icons/folder-open-black.png" width="16" height="16"/></a>
+            <a href="#" onclick='event.preventDefault(); window.exploreIpfs("{{ hit['path'] }}")'><img src="qrc:///share/icons/folder-open-black.png" width="16" height="16"/></a>
 {% endif %}
             <span style="float: right; width: 30%">
                 Mime type: <b>{{ hit['mimetype'] }}</b> Size: <b>{{ hit['sizeformatted'] }}</b>
@@ -38,7 +38,7 @@
 {% endif %}
 
 {% if hit.mimetype.startswith('image') %}
-        <a href="#" onclick='window.openIpfs("{{ hit['path'] }}")'>
+        <a href="#" onclick='event.preventDefault(); window.openIpfs("{{ hit['path'] }}")'>
         <img id="img" src="{{ ipfsConnParams.gatewayUrl }}/{{ hit['path'] }}" width="20%"></img>
         </a>
 

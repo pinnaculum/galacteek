@@ -279,9 +279,13 @@ class IPFSSearchHandler(QObject):
 
         title = hit.get('title', iUnknown()) if hit else ''
         descr = hit.get('description', iUnknown()) if hit else ''
+        type = hit.get('type', None)
+        pinSingle = (type == 'file')
+        pinRecursive = (type == 'directory')
 
         addHashmark(self.searchW.app.marksLocal,
-                    path, title, description=descr)
+                    path, title, description=descr,
+                    pin=pinSingle, pinRecursive=pinRecursive)
 
     @pyqtSlot(str)
     def explore(self, path):
