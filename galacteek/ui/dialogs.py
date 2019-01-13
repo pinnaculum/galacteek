@@ -3,6 +3,7 @@ import re
 from PyQt5.QtWidgets import QDialog
 
 from PyQt5.QtCore import QCoreApplication
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QClipboard, QPixmap, QImage
 
 from galacteek import asyncify, ensure
@@ -21,6 +22,10 @@ from . import ui_donatedialog
 from . import ui_profilepostmessage
 from .helpers import *
 
+from .i18n import iDoNotPin
+from .i18n import iPinSingle
+from .i18n import iPinRecursive
+
 
 def boldLabelStyle():
     return 'QLabel { font-weight: bold; }'
@@ -34,6 +39,8 @@ class AddHashmarkDialog(QDialog):
             title,
             description,
             stats,
+            pin=False,
+            pinRecursive=False,
             parent=None):
         super().__init__(parent)
 
@@ -47,6 +54,15 @@ class AddHashmarkDialog(QDialog):
         self.ui.resourceLabel.setStyleSheet(boldLabelStyle())
         self.ui.newCategory.textChanged.connect(self.onNewCatChanged)
         self.ui.title.setText(title)
+
+        self.ui.pinCombo.addItem(iDoNotPin())
+        self.ui.pinCombo.addItem(iPinSingle())
+        self.ui.pinCombo.addItem(iPinRecursive())
+
+        if pin is True:
+            self.ui.pinCombo.setCurrentIndex(1)
+        elif pinRecursive is True:
+            self.ui.pinCombo.setCurrentIndex(2)
 
         if isinstance(description, str):
             self.ui.description.insertPlainText(description)
@@ -70,6 +86,9 @@ class AddHashmarkDialog(QDialog):
         else:
             category = self.ui.category.currentText()
 
+        pSingle = (self.ui.pinCombo.currentIndex() == 1)
+        pRecursive = (self.ui.pinCombo.currentIndex() == 2)
+
         mark = IPFSHashMark.make(
             self.ipfsResource,
             title=self.ui.title.text(),
@@ -77,6 +96,8 @@ class AddHashmarkDialog(QDialog):
             comment=self.ui.comment.text(),
             description=description,
             tags=self.ui.tags.text().split(),
+            pinSingle=pSingle,
+            pinRecursive=pRecursive,
             datasize=self.stats.get(
                 'DataSize',
                 None),

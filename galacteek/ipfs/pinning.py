@@ -30,6 +30,8 @@ class PinningMaster(object):
         self._checkPinned = checkPinned
         self._sCleanupLast = None
 
+        ctx.app.marksLocal.markAdded.connect(self.onMarkAdded)
+
     @property
     def ordersQueue(self):
         return self._ordersQueue
@@ -45,6 +47,13 @@ class PinningMaster(object):
     @property
     def queuesNames(self):
         return list(self.pinStatus.keys())
+
+    def onMarkAdded(self, mPath, mData):
+        if 'pin' in mData and isinstance(mData['pin'], dict):
+            if mData['pin']['single'] is True:
+                ensure(self.queue(mPath, False, None, qname='hashmarks'))
+            elif mData['pin']['recursive'] is True:
+                ensure(self.queue(mPath, True, None, qname='hashmarks'))
 
     def debug(self, msg, **kwargs):
         log.debug('Pinning service: {}'.format(msg), **kwargs)

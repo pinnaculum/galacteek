@@ -95,8 +95,6 @@ and restart the application afterwards.
 - Decentralized application development/testing with the Javascript API
   (using *window.ipfs*)
 
-.. include:: galacteek/docs/manual/en/shortcuts.rst
-
 Keyboard shortcuts
 ==================
 
@@ -112,8 +110,8 @@ Main window keyboard shortcuts
 - **Ctrl + e**: Explore IPFS path from the clipboard
 - **Ctrl + g**: DAG view of IPFS object from the clipboard
 - **Ctrl + p**: Pin IPFS object from the clipboard
-- **Ctrl + i**: Open the IPLD explorer for the IPFS object referenced in the
-  clipboard
+- **Ctrl + i**: Open the IPLD explorer for the IPFS object referenced in the clipboard
+- **Ctrl + F12**: Show pinning status
 
 Browser keyboard shortcuts
 --------------------------
@@ -188,7 +186,7 @@ Main icon made by srip_ (flaticon, CC by 3.0)
 .. _IPFS: https://ipfs.io
 .. _ipfs-logo: https://github.com/ipfs/logo
 .. _cxFreeze: https://anthony-tuininga.github.io/cx_Freeze/
-.. _screenshots: https://gitlab.com/galacteek/galacteek/tree/master/screenshots
+.. _screenshots: https://github.com/eversum/galacteek/tree/master/screenshots
 .. _ipfs-search: https://ipfs-search.com
 .. _releases: https://github.com/eversum/galacteek/releases
 .. _srip: https://www.flaticon.com/authors/srip

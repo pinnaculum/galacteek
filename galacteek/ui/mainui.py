@@ -649,7 +649,7 @@ class MainWindow(QMainWindow):
         self.ui.pinningStatusButton.setToolTip(iNoStatus())
         self.ui.pinningStatusButton.setIcon(getIcon('pin-black.png'))
         self.ui.pinningStatusButton.clicked.connect(
-            self.onPinningStatusDetails)
+            self.showPinningStatusWidget)
         self.ui.pubsubStatusButton = QPushButton()
         self.ui.pubsubStatusButton.setIcon(getIcon('network-offline.png'))
         self.ui.ipfsInfosButton = QPushButton()
@@ -871,7 +871,7 @@ class MainWindow(QMainWindow):
     def onPubsubTx(self):
         pass
 
-    def onPinningStatusDetails(self):
+    def showPinningStatusWidget(self):
         name = self.tabnPinning
         ft = self.findTabWithName(name)
         if ft:
@@ -1097,6 +1097,8 @@ class MainWindow(QMainWindow):
         if modifiers & Qt.ControlModifier:
             if event.key() == Qt.Key_T:
                 self.addBrowserTab()
+            if event.key() == Qt.Key_F12:
+                self.showPinningStatusWidget()
             if event.key() == Qt.Key_W:
                 idx = self.ui.tabWidget.currentIndex()
                 self.onTabCloseRequest(idx)

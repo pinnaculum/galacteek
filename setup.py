@@ -111,7 +111,7 @@ setup(
     license='GPL3',
     author='David Ferlier',
     author_email='galacteek@gmx.co.uk',
-    url='https://gitlab.com/galacteek/galacteek',
+    url='https://github.com/eversum/galacteek',
     description='IPFS browser',
     long_description=long_description,
     include_package_data=True,

@@ -39,20 +39,20 @@
     <message>
         <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="53"/>
         <source>Use title for hashmark</source>
-        <translation>Utiliser ce titre pour le hashmark</translation>
+        <translation type="obsolete">Utiliser ce titre pour le hashmark</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="63"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="77"/>
         <source>Category</source>
         <translation>Catégorie</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="73"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="87"/>
         <source>or create new category, e.g news/world</source>
         <translation>ou créer une nouvelle catégorie (par ex: news/world)</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="94"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="149"/>
         <source>Share (public)</source>
         <translation>Partager (public)</translation>
     </message>
@@ -72,9 +72,19 @@
         <translation>Dialogue d&apos;ajout de hashmark</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="125"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="63"/>
         <source>Description</source>
         <translation>Description</translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="53"/>
+        <source>Title</source>
+        <translation>TItre</translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="125"/>
+        <source>Pinning</source>
+        <translation>Pinning</translation>
     </message>
 </context>
 <context>
@@ -265,12 +275,12 @@
     <message>
         <location filename="../../galacteek/ui/browsertab.ui" line="229"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Zoom out&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Zoomer&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
         <location filename="../../galacteek/ui/browsertab.ui" line="249"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Zoom in&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Dézoomer&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
 </context>
 <context>
@@ -589,42 +599,42 @@ p, li { white-space: pre-wrap; }
         <translation type="obsolete">Avertissement: impossible de trouver l&apos;outil de migration de depots IPFS</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="185"/>
+        <location filename="../../galacteek/ui/i18n.py" line="197"/>
         <source>Error: Could not find go-ipfs on your system</source>
         <translation>Erreur: impossible de trouver go-ipfs sur votre système</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="197"/>
+        <location filename="../../galacteek/ui/i18n.py" line="209"/>
         <source>go-ipfs was not found on your system: download binary from IPFS distributions website (https://dist.ipfs.io) ?</source>
         <translation>go-ipfs n&apos;a pas été trouvé sur votre système: télécharger depuis le site de distributions IPFS (https://dist.ipfs.io) ?</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="204"/>
+        <location filename="../../galacteek/ui/i18n.py" line="216"/>
         <source>Timeout while fetching go-ipfs distribution</source>
         <translation>Délai expiré lors du téléchargement de go-ipfs</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="210"/>
+        <location filename="../../galacteek/ui/i18n.py" line="222"/>
         <source>go-ipfs was installed successfully</source>
         <translation>go-ipfs a été installé avec succès</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="216"/>
+        <location filename="../../galacteek/ui/i18n.py" line="228"/>
         <source>Error while fetching go-ipfs distribution</source>
         <translation>Erreur lors du téléchargement de go-ipfs</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="222"/>
+        <location filename="../../galacteek/ui/i18n.py" line="234"/>
         <source>New release available: upgrade with pip install -U galacteek</source>
         <translation>Nouvelle version disponible: mise a jour avec &quot;pip install -U galacteek&quot;</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="191"/>
+        <location filename="../../galacteek/ui/i18n.py" line="203"/>
         <source>Error: go-ipfs version found on your system is too old</source>
         <translation>Erreur: votre version de go-ipfs est trop ancienne</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="179"/>
+        <location filename="../../galacteek/ui/i18n.py" line="191"/>
         <source>Warning: could not find IPFS repository migration tool</source>
         <translation>Avertissement: impossible de trouver l&apos;outil de migration de repos IPFS</translation>
     </message>
@@ -995,7 +1005,7 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation>Naviguer</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="172"/>
+        <location filename="../../galacteek/ui/i18n.py" line="184"/>
         <source>Global automatic pinning</source>
         <translation>Auto-pinning</translation>
     </message>
@@ -1023,6 +1033,21 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <location filename="../../galacteek/ui/mainui.py" line="121"/>
         <source>Pin: {0}</source>
         <translation>Clouer: {0}</translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/i18n.py" line="172"/>
+        <source>Pin (single)</source>
+        <translation>Clouer (simple)</translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/i18n.py" line="176"/>
+        <source>Pin (recursive)</source>
+        <translation>Clouer (récursif)</translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/i18n.py" line="180"/>
+        <source>Do not pin</source>
+        <translation>Ne pas clouer</translation>
     </message>
 </context>
 <context>

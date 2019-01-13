@@ -84,7 +84,7 @@
 
             <div class="marks" id="{{ category }}_marks">
     {% for path, mark in marks.getCategoryMarks(category).items() %}
-                <a class="hashmarklink" href="#" onclick="window.galacteek.openIpfsLink('{{ path }}');">
+    <a class="hashmarklink" title='{{ mark.metadata.description }}' href="#" onclick="event.preventDefault(); window.galacteek.openIpfsLink('{{ path }}');">
                     <p><img width="16" src="qrc:///share/icons/ipfs-logo-128-black.png" />
                     {{ mark.metadata.title }}
                     </p>
@@ -110,7 +110,7 @@
 
             <div class="marks" id="{{ feedData.name }}_marks">
     {% for path, mark in marks.getFeedMarks(feedPath).items() %}
-                <a class="hashmarklink" href="#" onclick="window.galacteek.openIpfsLink('{{ path }}');">
+    <a class="hashmarklink" href="#" onclick="event.preventDefault(); window.galacteek.openIpfsLink('{{ path }}');">
                     <p style="text-align: left"><img width="16" src="qrc:///share/icons/ipfs-logo-128-black.png" />
                     {{ mark.metadata.title }}
 
