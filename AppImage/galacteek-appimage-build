@@ -37,6 +37,7 @@ if [ -e $APPDIR ]; then
 else
     mkdir -p $APPDIR
     mkdir -p $APPDIR/usr/share/applications
+    mkdir -p $APPDIR/usr/share/metainfo
     mkdir -p $APPDIR/usr/share/icons/hicolor/512x512/apps
 fi
 
@@ -57,6 +58,7 @@ $PIP install --force-reinstall $WHEEL
 
 cp ../galacteek.desktop $APPDIR/usr/share/applications
 cp ../galacteek.desktop $APPDIR
+cp ../galacteek.appdata.xml $APPDIR/usr/share/metainfo
 cp ../share/icons/galacteek.png $APPDIR
 cp ../share/icons/galacteek.png $APPDIR/usr/share/icons/hicolor/512x512/apps
 cp /tmp/go-ipfs/ipfs $APPDIR/usr/bin
@@ -91,6 +93,7 @@ rm -rf ssl/man
 
 find lib/python3.7/site-packages/PyQt5/Qt/qml/ -name *.qml -exec rm {} \;
 find lib/python3.7/site-packages/PyQt5/Qt/qml/ -name *.qmlc -exec rm {} \;
+find lib/python3.7/site-packages/PyQt5/Qt/qml/QtQuick -exec rm {} \;
 
 popd
 
@@ -102,4 +105,4 @@ chmod 755 $APPDIR/AppRun
 sed -i -e 's/#\!\/.*$/#!\//' $APPDIR/usr/bin/galacteek
 
 echo "AppDir successfully created, running appimagetool"
-ARCH=x86_64 appimagetool-x86_64.AppImage $APPDIR Galacteek-${G_VERSION}-x86_64.AppImage
+ARCH=x86_64 appimagetool-x86_64.AppImage -n $APPDIR Galacteek-${G_VERSION}-x86_64.AppImage
