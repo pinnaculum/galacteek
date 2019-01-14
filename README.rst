@@ -18,15 +18,21 @@ AppImage
 --------
 
 For Linux users (arch: *x86_64*), you can get an AppImage directly from IPFS
-`here <https://ipfs.io/ipfs/Qme23PGVzjK37uTQGJ221Jb5QAAgvicrBPfMi5mcDAd8LV>`_
-(**~138Mb**, release CID: **Qme23PGVzjK37uTQGJ221Jb5QAAgvicrBPfMi5mcDAd8LV**).
+`here <https://ipfs.io/ipfs/QmSm7KXey1uepZV5g4W1YKJZL3a1eK3vBjmjmX7CdxM3oD>`_
+(**~138Mb**, release CID: **QmSm7KXey1uepZV5g4W1YKJZL3a1eK3vBjmjmX7CdxM3oD**).
 
 Just fetch the image (with wget for example or your favorite tool), and execute
 it afterwards::
 
-    wget https://ipfs.io/ipfs/Qme23PGVzjK37uTQGJ221Jb5QAAgvicrBPfMi5mcDAd8LV
-    chmod u+x Qme23PGVzjK37uTQGJ221Jb5QAAgvicrBPfMi5mcDAd8LV
-    ./Qme23PGVzjK37uTQGJ221Jb5QAAgvicrBPfMi5mcDAd8LV
+    wget https://ipfs.io/ipfs/QmSm7KXey1uepZV5g4W1YKJZL3a1eK3vBjmjmX7CdxM3oD
+    chmod u+x QmSm7KXey1uepZV5g4W1YKJZL3a1eK3vBjmjmX7CdxM3oD
+    ./QmSm7KXey1uepZV5g4W1YKJZL3a1eK3vBjmjmX7CdxM3oD
+
+Or if you already have an IPFS daemon installed and running::
+
+    ipfs get QmSm7KXey1uepZV5g4W1YKJZL3a1eK3vBjmjmX7CdxM3oD
+    chmod u+x QmSm7KXey1uepZV5g4W1YKJZL3a1eK3vBjmjmX7CdxM3oD
+    ./QmSm7KXey1uepZV5g4W1YKJZL3a1eK3vBjmjmX7CdxM3oD
 
 Running the AppImage with the filename unchanged means that the
 application will automatically pin itself (it will pin through IPFS the
@@ -34,9 +40,11 @@ AppImage that you are using). By doing so you can help redistributing the
 software faster to the nodes close to you. Renaming the binary disables the
 self-seeding feature::
 
-    mv Qme23PGVzjK37uTQGJ221Jb5QAAgvicrBPfMi5mcDAd8LV Galacteek-0.3.2.AppImage
+    mv QmSm7KXey1uepZV5g4W1YKJZL3a1eK3vBjmjmX7CdxM3oD Galacteek-0.3.4.AppImage
 
-*Note*: go-ipfs_ version *0.4.18* is included in the AppImage.
+**Note**: go-ipfs_ version *0.4.18* is included in the AppImage. You can use the same
+command-line arguments as with the regular *galacteek* runner script. If you are filing
+an issue, please use the *-d* switch and provide the debug output.
 
 PIP
 ---
@@ -132,8 +140,6 @@ IPFS views keyboard shortcuts (file manager, hash views, dag viewer)
 Screenshots
 ===========
 
-See the screenshots_ directory.
-
 .. figure:: https://gitlab.com/galacteek/galacteek/raw/master/screenshots/browse-wikipedia-small.png
     :target: https://gitlab.com/galacteek/galacteek/raw/master/screenshots/browse-wikipedia.png
     :align: center
@@ -172,6 +178,8 @@ License
 
 **galacteek** is offered under the GNU GPL3 license
 
+Some elements from the ipfs-css_ repository (CSS files and fonts) are included
+
 Some of the beautiful artwork (under the Creative Commons CC-BY-SA license)
 from the ipfs-logo_ project's repository is included, unchanged.
 
@@ -185,8 +193,7 @@ Main icon made by srip_ (flaticon, CC by 3.0)
 .. _dist.ipfs.io: https://dist.ipfs.io
 .. _IPFS: https://ipfs.io
 .. _ipfs-logo: https://github.com/ipfs/logo
-.. _cxFreeze: https://anthony-tuininga.github.io/cx_Freeze/
-.. _screenshots: https://github.com/eversum/galacteek/tree/master/screenshots
 .. _ipfs-search: https://ipfs-search.com
+.. _ipfs-css: https://github.com/ipfs-shipyard/ipfs-css
 .. _releases: https://github.com/eversum/galacteek/releases
 .. _srip: https://www.flaticon.com/authors/srip
