@@ -182,6 +182,33 @@
                             ]
                         }
                     }
+                },
+                "search": {
+                    "_marks": {
+                        "/ipfs/QmUW6HywFBUcMkNB1kuzSJnZodUpgNGbRh88STVsFrongr": {
+                            "metadata": {
+                                "title": "Hypatia",
+                                "description": "Keyword-searchable IPFS database prototype",
+                                "datasize": 2,
+                                "cumulativesize": 22215843,
+                                "numlinks": 4
+                            },
+                            "pin": {
+                                "single": false,
+                                "recursive": false,
+                                "filters": []
+                            },
+                            "datecreated": "2019-01-19T23:59:31.902343",
+                            "tscreated": 1547938771,
+                            "comment": "",
+                            "icon": null,
+                            "share": false,
+                            "tags": [
+                                "ipfs",
+                                "search"
+                            ]
+                        }
+                    }
                 }
             }
         }

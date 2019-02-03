@@ -5,6 +5,13 @@
     src: url('qrc:/share/static/fonts/Montserrat-Regular.woff2') format('woff2');
 }
 
+@font-face {
+    font-family: 'Inter UI';
+    font-style:  normal;
+    font-weight: 400;
+    src: url('qrc:/share/static/fonts/Inter-UI-Medium.woff2') format('woff2');
+}
+
 * {
     font: 10pt "Montserrat";
 }
@@ -28,7 +35,7 @@ QTabWidget::pane {
 QTreeView {
     background-color: #f6fafb;
     alternate-background-color: #d9dbe2;
-    font: 10pt "Helvetica";
+    font: 10pt "Montserrat";
 }
 
 QTreeView::item:open {
@@ -37,6 +44,7 @@ QTreeView::item:open {
 
 QLabel {
     color: #244e66;
+    font: 10pt "Inter UI";
 }
 
 QTreeView::item:selected {
@@ -95,4 +103,34 @@ QToolButton#buttonBrowseIpfs::hover {
 
 QToolButton#buttonBrowseIpfs {
     image: url('qrc:/share/icons/ipfs-logo-128-ice.png');
+}
+
+QLabel#linkInfos {
+    color: black;
+    font: 12pt "Inter UI";
+}
+
+QMenu#hashmarksMgrMenu {
+    font: 11pt "Inter UI";
+}
+
+QMenu::item:selected#hashmarksMgrMenu {
+    background-color: #4a9ea1;
+}
+
+
+QMenu#hashmarksLibraryMenu {
+    font: 11pt "Inter UI";
+}
+
+QMenu::item:selected#hashmarksLibraryMenu {
+    background-color: #4a9ea1;
+}
+
+QMenu {
+    font: 11pt "Inter UI";
+}
+
+QMenu::item:selected {
+    background-color: #4a9ea1;
 }

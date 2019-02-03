@@ -1,4 +1,5 @@
 import functools
+import asyncio
 
 from PyQt5.QtWidgets import QApplication
 
@@ -13,16 +14,6 @@ def _getOp():
 def appTask(fn, *args, **kw):
     app = QApplication.instance()
     app.task(fn, *args, **kw)
-
-
-def ipfsFunc(func):
-    @functools.wraps(func)
-    async def wrapper(*args, **kw):
-        app = QApplication.instance()
-        if not app:
-            raise Exception('No Application')
-        return await func(app.ipfsClient, *args, **kw)
-    return wrapper
 
 
 def ipfsOpFn(func):
@@ -40,6 +31,23 @@ class ipfsClassW:
         self.wrapped = wrapped
         self.name = wrapped.__name__
 
+    async def _operation(self, inst, op, *args, **kw):
+        try:
+            resp = await self.wrapped(inst, op, *args, **kw)
+        except GeneratorExit:
+            log.debug('GeneratorExit: {inst}'.format(
+                inst=inst))
+            return None
+        except BaseException as err:
+            log.debug('IPFSOp exception: {inst}'.format(
+                inst=inst), exc_info=True)
+            return None
+        except asyncio.CancelledError:
+            log.debug('IPFSOp cancelled: {inst}'.format(
+                inst=inst), exc_info=True)
+        else:
+            return resp
+
 
 class ipfsOp(ipfsClassW):
     """
@@ -50,7 +58,8 @@ class ipfsOp(ipfsClassW):
         async def wrapper(*args, **kw):
             op = IPFSOpRegistry.getDefault()
             if op:
-                return await self.wrapped(inst, op, *args, **kw)
+                return await self._operation(inst, op, *args, **kw)
+
         return wrapper
 
 
@@ -66,5 +75,5 @@ class ipfsStatOp(ipfsClassW):
 
             args = args + (stat,)
 
-            return await self.wrapped(inst, op, *args, **kw)
+            return await self._operation(inst, op, *args, **kw)
         return wrapper

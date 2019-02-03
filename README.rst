@@ -154,13 +154,6 @@ Mainly tested on Linux. The application relies heavily on quamash_ which
 should work with most platforms (untested on OS X which is not officially
 supported by quamash).
 
-Donations
-=========
-
-BTC: 3HSsNcwzkiWGu6wB18BC6D37JHExpxZvyS
-
-You can also find donations details in the application's information menu.
-
 Requirements
 ============
 

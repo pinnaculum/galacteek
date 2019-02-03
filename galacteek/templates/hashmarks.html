@@ -3,7 +3,21 @@
         <link rel="stylesheet" type="text/css" href="qrc:///share/static/css/ipfs-ui.css"/>
         <style>
             body {
-                font: 12pt "Montserrat";
+                font: 10pt "Montserrat";
+            }
+
+            #local {
+                margin-top: 20px;
+                padding: 5px;
+            }
+
+            #shared {
+                margin-top: 20px;
+                padding: 5px;
+            }
+
+            .categories {
+                padding: 10px;
             }
 
             .category {
@@ -17,7 +31,7 @@
 
             .marks {
                 display: none;
-                margin-left: 20px;
+                margin-left: 5px;
             }
 
             .hashmarklink {
@@ -26,7 +40,7 @@
             }
 
             .catbutton {
-                font: 14pt "Montserrat";
+                font: 12pt "Montserrat";
                 icon: url("qrc:///share/icons/stroke-cube.png");
                 background-color: #e0e0d1;
                 background: none;
@@ -49,6 +63,18 @@
                 cat.style.display = "none";
             }
 
+            function showHMarks(ns) {
+                var local = document.getElementById('local');
+                var shared = document.getElementById('shared');
+                if (ns === 'local') {
+                    shared.style.display = "none";
+                    local.style.display = "block";
+                } else if (ns === 'shared') {
+                    shared.style.display = "block";
+                    local.style.display = "none";
+                }
+            }
+
             function hideShow(category) {
                 var cat = document.getElementById(category)
                 var x = document.getElementById(category + '_marks')
@@ -62,67 +88,107 @@
                     cat.style.margin = "5px";
                 }
             }
+
+            function hideShowShared(category) {
+                var cat = document.getElementById('shared_' + category)
+                var x = document.getElementById('shared_' + category + '_marks')
+                if (x.style.display === "none" || !(x.style.display)) {
+                    x.style.display = "block";
+                    cat.style.border = "1px solid black";
+                    cat.style.margin = "10px";
+                } else {
+                    x.style.display = "none";
+                    cat.style.border = "none";
+                    cat.style.margin = "5px";
+                }
+            }
+
             new QWebChannel(qt.webChannelTransport, function (channel) {
                 window.hashmarks = channel.objects.hashmarks
                 window.galacteek = channel.objects.galacteek
             });
         </script>
 
-    <img src="qrc:///share/icons/hashmarks.png" width="32"></img>
+    <p style='text-align: left'>
+        <span>
+            <a title="Local" href="#" onclick="event.preventDefault(); showHMarks('local');">
+                <img src="qrc:///share/icons/hashmarks.png" width="32"/>
+            </a>
+        </span>
+    </p>
 
-{% set categories = marks.getCategories() %}
-
-    <div id="content" style="padding: 10px">
+    <div id="local">
         <div id="categories">
 
-{% for category in categories %}
+    {% set categories = marks.getCategories() %}
 
-        <div class="category" id="{{ category }}">
-            <button class="catbutton" onclick="hideShow('{{ category }}');">
-                <img style="padding-right: 5px;" width="16" src="qrc:///share/icons/stroke-cube.png" />{{ category }}
-            </button>
+    {% for category in categories %}
+    {% set hashmarks = marks.getCategoryMarks(category).items() %}
+    {% set hcount = hashmarks|length %}
 
-            <div class="marks" id="{{ category }}_marks">
-    {% for path, mark in marks.getCategoryMarks(category).items() %}
-    <a class="hashmarklink" title='{{ mark.metadata.description }}' href="#" onclick="event.preventDefault(); window.galacteek.openIpfsLink('{{ path }}');">
-                    <p><img width="16" src="qrc:///share/icons/ipfs-logo-128-black.png" />
-                    {{ mark.metadata.title }}
-                    </p>
-                </a>
-    {% endfor %}
+    {% if hcount > 0 %}
+            <div class="category" id="{{ category }}">
+                <button class="catbutton" onclick="hideShow('{{ category }}');">
+                    <img style="padding-right: 5px;"
+                        width="16" src="qrc:///share/icons/stroke-cube.png" />{{ category }}
+                </button>
+
+                <ul class="marks" id="{{ category }}_marks" style="list-style: none">
+        {% for path, mark in hashmarks %}
+        <li>
+                <p style="text-align: left">
+                    <img width="16" src="qrc:///share/icons/ipfs-logo-128-black.png" />
+                    <a class="hashmarklink" title='{{ mark.metadata.description }}' href="#"
+                        onclick="event.preventDefault(); window.galacteek.openIpfsLink('{{ path }}');">{{ mark.metadata.title }}</a>
+                    <span style="float: right">
+                        <a ref="#" title="Copy object path to clipboard"
+                            onclick="event.preventDefault(); window.galacteek.copyToClipboard('{{ path }}');"><img width="16" height="16" src='qrc:///share/icons/clipboard.png'/>
+                        </a>
+
+                        <a ref="#" title="Explore path"
+                                   onclick="event.preventDefault(); window.galacteek.explorePath('{{ path }}');"><img width="16" height="16" src='qrc:///share/icons/folder-open-black.png'/>
+                        </a>
+                    </span>
+                </p>
+            </li>
+
+        {% endfor %}
+                </ul>
             </div>
+    {% endif %}
+
+    {% endfor %}
+
         </div>
 
-{% endfor %}
+
+        <h3>Feeds</h3>
+
+        <div id="feeds">
+    {% set feeds = marks.getFeeds() %}
+    {% for feedPath, feedData in feeds %}
+            <div class="category" id="{{ feedData.name }}">
+                <button class="catbutton" onclick="hideShow('{{ feedData.name }}');">
+                    <img style="padding-right: 5px;" width="16" src="qrc:///share/icons/stroke-cube.png" />{{ feedData.name }}
+                </button>
+            </div>
+
+                <div class="marks" id="{{ feedData.name }}_marks">
+        {% for path, mark in marks.getFeedMarks(feedPath).items() %}
+        <a class="hashmarklink" href="#" onclick="event.preventDefault(); window.galacteek.openIpfsLink('{{ path }}');">
+                        <p style="text-align: left"><img width="16" src="qrc:///share/icons/ipfs-logo-128-black.png" />
+                        {{ mark.metadata.title }}
+
+                            <span style="float: right; width: 20%">{{ mark.tscreated|tstodate }}</span>
+                        </p>
+
+                    </a>
+        {% endfor %}
+        </div>
 
     </div>
 
-    <h3>Feeds</h3>
-
-    <div id="feeds">
-{% set feeds = marks.getFeeds() %}
-{% for feedPath, feedData in feeds %}
-        <div class="category" id="{{ feedData.name }}">
-            <button class="catbutton" onclick="hideShow('{{ feedData.name }}');">
-                <img style="padding-right: 5px;" width="16" src="qrc:///share/icons/stroke-cube.png" />{{ feedData.name }}
-            </button>
-        </div>
-
-            <div class="marks" id="{{ feedData.name }}_marks">
-    {% for path, mark in marks.getFeedMarks(feedPath).items() %}
-    <a class="hashmarklink" href="#" onclick="event.preventDefault(); window.galacteek.openIpfsLink('{{ path }}');">
-                    <p style="text-align: left"><img width="16" src="qrc:///share/icons/ipfs-logo-128-black.png" />
-                    {{ mark.metadata.title }}
-
-                        <span style="float: right; width: 20%">{{ mark.tscreated|tstodate }}</span>
-                    </p>
-
-                </a>
-    {% endfor %}
-            </div>
-
 {% endfor %}
-    </div>
 
 </body>
 </html>

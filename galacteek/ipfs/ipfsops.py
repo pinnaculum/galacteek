@@ -523,7 +523,7 @@ class IPFSOperator(object):
             self.debug(err.message)
             return None
 
-    async def dagGet(self, dagPath, timeout=5):
+    async def dagGet(self, dagPath, timeout=10):
         """
         Get the DAG object referenced by the DAG path and returns a JSON object
         """

@@ -1,13 +1,16 @@
 import json
 
 import asyncio
+import time
 import datetime
+import collections
 
 from galacteek import log as logger
 
 from galacteek.ipfs.pubsub import TOPIC_MAIN
 from galacteek.ipfs.pubsub import TOPIC_PEERS
 from galacteek.ipfs.pubsub import TOPIC_CHAT
+from galacteek.ipfs.pubsub import TOPIC_HASHMARKS
 from galacteek.ipfs.pubsub.messages import (
     MarksBroadcastMessage,
     PeerIdentMessageV1,
@@ -16,6 +19,7 @@ from galacteek.ipfs.pubsub.messages import (
     ChatRoomMessage)
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.core.asynclib import asyncify
+from galacteek.core.ipfsmarks import IPFSMarks
 
 
 class PubsubService(object):
@@ -24,7 +28,9 @@ class PubsubService(object):
     """
 
     def __init__(self, ipfsCtx, client, topic='galacteek.default',
-                 runPeriodic=False, filterSelfMessages=True):
+                 runPeriodic=False, filterSelfMessages=True,
+                 maxMsgTsDiff=None, minMsgTsDiff=None,
+                 maxMessageSize=32768 * 1024):
         self.client = client
         self.ipfsCtx = ipfsCtx
         self.topic = topic
@@ -36,13 +42,20 @@ class PubsubService(object):
         self._errorsCount = 0
         self._runPeriodic = runPeriodic
         self._filters = []
+        self._peerActivity = {}
+        self._maxMsgTsDiff = maxMsgTsDiff
+        self._minMsgTsDiff = minMsgTsDiff
+        self._maxMessageSize = maxMessageSize
 
         self.tskServe = None
         self.tskProcess = None
         self.tskPeriodic = None
 
+        self.addMessageFilter(self.filterMessageSize)
+        self.addMessageFilter(self.filterPeerActivity)
+
         if filterSelfMessages is True:
-            self.addFilter(self.filterSelf)
+            self.addMessageFilter(self.filterSelf)
 
     @property
     def receivedCount(self):
@@ -80,14 +93,38 @@ class PubsubService(object):
             tsk.cancel()
             try:
                 await tsk
-            except asyncio.CancelledError:
+            except asyncio.CancelledError as cErr:
+                self.debug('task {task}: shutdown ERR: {err}'.format(
+                    task=tsk, err=str(cErr)))
                 continue
             else:
                 self.debug('task {}: shutdown ok'.format(tsk))
 
-    def addFilter(self, filtercoro):
+    def addMessageFilter(self, filtercoro):
         if asyncio.iscoroutinefunction(filtercoro):
             self._filters.append(filtercoro)
+
+    async def filterMessageSize(self, msg):
+        if len(msg['data']) > self._maxMessageSize:
+            return True
+        return False
+
+    async def filterPeerActivity(self, msg):
+        senderNodeId = msg['from'].decode()
+        if senderNodeId not in self._peerActivity:
+            self._peerActivity[senderNodeId] = collections.deque([], 16)
+        records = self._peerActivity[senderNodeId]
+        records.append((time.time(), len(msg['data'])))
+
+        if len(records) > 2 and isinstance(self._minMsgTsDiff, int):
+            latestIdx = len(records) - 1
+            latest = records[latestIdx][0]
+            previous = records[latestIdx - 1][0]
+
+            if (latest - previous) < self._minMsgTsDiff:
+                return True
+
+        return False
 
     async def filterSelf(self, msg):
         if msg['from'].decode() == self.ipfsCtx.node.id:
@@ -200,72 +237,88 @@ class JSONPubsubService(PubsubService):
 
 class PSHashmarksExchanger(JSONPubsubService):
     def __init__(self, ipfsCtx, client, marksLocal, marksNetwork):
-        super().__init__(ipfsCtx, client, topic='galacteek.ipfsmarks')
-
+        super().__init__(
+            ipfsCtx,
+            client,
+            topic=TOPIC_HASHMARKS,
+            runPeriodic=True,
+            filterSelfMessages=True,
+            minMsgTsDiff=60*8)
         self.marksLocal = marksLocal
         self.marksNetwork = marksNetwork
         self.marksLocal.markAdded.connect(self.onMarkAdded)
+        self._sendEvery = 60*12
+        self._lastBroadcast = 0
+
+    @property
+    def curProfile(self):
+        return self.ipfsCtx.currentProfile
 
     @asyncify
     async def onMarkAdded(self, path, mark):
-        if mark['share'] is True:
-            await self.broadcastMarks({path: mark})
+        now = int(time.time())
+        if mark['share'] is True and \
+                (now - self._lastBroadcast) > self._sendEvery / 3:
+            await self.broadcastSharedMarks()
 
-    async def broadcastMarks(self, marks):
-        msg = MarksBroadcastMessage.make(marks)
-        await self.send(str(msg))
+    async def broadcastSharedMarks(self):
+        try:
+            sharedMarks = IPFSMarks(None)
+            count = sharedMarks.merge(self.marksLocal, share=True, reset=True)
 
-    async def broadcastAllSharedMarks(self):
-        all = self.marksLocal.getAll(share=True)
-        if len(all.keys()) == 0:
-            return
-        msg = MarksBroadcastMessage.make(all)
-        await self.send(str(msg))
+            if count > 0:
+                msg = MarksBroadcastMessage.make(self.ipfsCtx.node.id,
+                                                 sharedMarks._root)
+                await self.send(str(msg))
+                self._lastBroadcast = int(time.time())
+        except BaseException:
+            pass
+
+    async def periodic(self):
+        while True:
+            await asyncio.sleep(self._sendEvery)
+            await self.broadcastSharedMarks()
 
     async def processJsonMessage(self, sender, msg):
         msgType = msg.get('msgtype', None)
         if msgType == MarksBroadcastMessage.TYPE:
-            await self.processBroadcast(msg)
+            try:
+                await self.processBroadcast(sender, msg)
+            except BaseException:
+                pass
 
-    async def processBroadcast(self, msg):
-        marks = msg.get('marks', None)
-        if not marks:
+    async def processBroadcast(self, sender, msg):
+        bMsg = MarksBroadcastMessage(msg)
+
+        if not bMsg.valid():
+            self.debug('Invalid broadcast message')
             return
 
-        addedCount = 0
-        for mark in marks.items():
-            await asyncio.sleep(0)
+        if not self.ipfsCtx.peers.peerRegistered(sender):
+            self.debug('Broadcast from unregistered peer: {0}'.format(sender))
+            return
 
-            mPath = mark[0]
-            if self.marksNetwork.search(mPath):
-                continue
+        marksJson = bMsg.marks
+        if not marksJson:
+            return
 
-            category = 'auto'
-            tsCreated = mark[1].get('tscreated', None)
-
-            if tsCreated:
-                date = datetime.datetime.fromtimestamp(tsCreated)
-                category = '{0}/{1}/{2}'.format(date.year, date.month,
-                                                date.day)
-
-            self.marksNetwork.insertMark(mark, category)
-            addedCount += 1
-
-        if addedCount > 0:
-            with await self.lock:
-                await self.marksNetwork.saveAsync()
-
-            self.ipfsCtx.pubsubMarksReceived.emit(addedCount)
+        try:
+            if self.curProfile:
+                await self.curProfile.storeHashmarks(sender, marksJson)
+        except Exception:
+            self.debug('Could not store data in hashmarks library')
+        else:
+            self.debug('Stored hashmarks from: {0}'.format(sender))
 
 
 class PSMainService(JSONPubsubService):
     def __init__(self, ipfsCtx, client):
-        super().__init__(ipfsCtx, client, topic='galacteek.main')
+        super().__init__(ipfsCtx, client, topic=TOPIC_MAIN)
 
 
 class PSPeersService(JSONPubsubService):
     def __init__(self, ipfsCtx, client):
-        super().__init__(ipfsCtx, client, topic='galacteek.peers',
+        super().__init__(ipfsCtx, client, topic=TOPIC_PEERS,
                          runPeriodic=True)
 
         self._curProfile = None
@@ -399,7 +452,7 @@ class PSPeersService(JSONPubsubService):
 class PSChatService(JSONPubsubService):
     def __init__(self, ipfsCtx, client):
         super().__init__(ipfsCtx, client, topic=TOPIC_CHAT,
-            filterSelfMessages=False)
+                         filterSelfMessages=False)
 
     async def processJsonMessage(self, sender, msg):
         msgType = msg.get('msgtype', None)

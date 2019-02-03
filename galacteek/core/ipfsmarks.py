@@ -86,12 +86,12 @@ class IPFSMarks(QObject):
     markAdded = pyqtSignal(str, dict)
     feedMarkAdded = pyqtSignal(str, IPFSHashMark)
 
-    def __init__(self, path, parent=None, autosave=True):
+    def __init__(self, path, parent=None, data=None, autosave=True):
         super().__init__(parent)
 
         self._path = path
         self._autosave = autosave
-        self._marks = self.load()
+        self._marks = data if data else self.load()
         self.changed.connect(self.onChanged)
         self.lastsaved = time.time()
         self.changed.emit()
@@ -110,6 +110,10 @@ class IPFSMarks(QObject):
         return _AsyncMarksQuery(self)
 
     @property
+    def root(self):
+        return self._marks
+
+    @property
     def _root(self):
         return self._marks
 
@@ -125,7 +129,17 @@ class IPFSMarks(QObject):
     def _rootFeeds(self):
         return self._root['feeds']
 
+    def skeleton(self):
+        return {
+            'ipfsmarks': {
+                'categories': {}
+            },
+            'feeds': {}
+        }
+
     def load(self):
+        if not self.path:
+            return self.skeleton()
         try:
             marks = json.load(open(self.path, 'rt'))
             return marks
@@ -133,10 +147,7 @@ class IPFSMarks(QObject):
             marks = collections.OrderedDict()
 
         if 'ipfsmarks' not in marks:
-            marks['ipfsmarks'] = {}
-            marks['ipfsmarks']['categories'] = {}
-        if 'feeds' not in marks:
-            marks['feeds'] = {}
+            marks = self.skeleton()
 
         return marks
 
@@ -146,6 +157,8 @@ class IPFSMarks(QObject):
 
     def save(self):
         """ Save synchronously """
+        if not self.path:  # don't save
+            return
         try:
             with open(self.path, 'w+t') as fd:
                 self.serialize(fd)
@@ -169,9 +182,11 @@ class IPFSMarks(QObject):
         return self.walk(comps, create=create)
 
     def walk(self, path, create=True):
-        # Walk to a category and create intermediary parents if create
-        # is True. path is a list of category components
-        # e.g ['general', 'news'] for category path /general/news
+        """
+        Walk to a category and create intermediary parents if create
+        is True. path is a list of category components
+        e.g ['general', 'news'] for category path /general/news
+        """
         def _walk(path, parent=None):
             for p in path:
                 if p.startswith('_'):
@@ -331,7 +346,7 @@ class IPFSMarks(QObject):
         return True
 
     def add(self, bpath, title=None, category='general', share=False, tags=[],
-            description=None, icon=None):
+            description=None, icon=None, pinSingle=False, pinRecursive=False):
         if not bpath:
             return None
 
@@ -352,7 +367,9 @@ class IPFSMarks(QObject):
                                  share=share,
                                  tags=tags,
                                  description=description,
-                                 icon=icon
+                                 icon=icon,
+                                 pinSingle=pinSingle,
+                                 pinRecursive=pinRecursive
                                  )
 
         sec[marksKey].update(mark)
@@ -364,12 +381,29 @@ class IPFSMarks(QObject):
     def delete(self, path):
         return self.search(path, delete=True)
 
-    def merge(self, oMarks):
+    def merge(self, oMarks, share=None, reset=False):
+        count = 0
         for cat in oMarks.getCategories():
             marks = oMarks.getCategoryMarks(cat)
             for mark in marks.items():
-                self.insertMark(mark, cat)
+                try:
+                    mPath, mData = mark
+                    if share is True and mData['share'] == False:
+                        continue
+
+                    if 'pin' in mData and reset:
+                        mDataNew = copy.copy(mData)
+                        mDataNew['pin']['single'] = False
+                        mDataNew['pin']['recursive'] = False
+                        mDataNew['share'] = False
+                        self.insertMark((mPath, mDataNew), cat)
+                    else:
+                        self.insertMark(mark, cat)
+                    count += 1
+                except:
+                    continue
         self.changed.emit()
+        return count
 
     def follow(self, ipnsp, name, active=True, maxentries=4096,
                resolveevery=3600, share=False, autoPin=False):
@@ -530,3 +564,13 @@ class _AsyncMarksQuery:
     async def enterCategory(self, section, create=False):
         comps = section.lstrip('/').rstrip('/').split('/')
         return await self.walkAsync(comps, create=create)
+
+    async def getAll(self, share=False):
+        cats = await self.getCategories()
+        _all = {}
+        for cat in cats:
+            catMarks = await self.getCategoryMarks(cat)
+            for mpath, mark in catMarks.items():
+                if mark['share'] == share:
+                    _all[mpath] = mark
+        return _all

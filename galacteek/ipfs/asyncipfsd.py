@@ -184,7 +184,7 @@ class AsyncIPFSDaemon(object):
         await ipfsConfigJson(self.goIpfsPath, 'Swarm.ConnMgr.HighWater',
                              self.swarmHighWater)
         await ipfsConfig(self.goIpfsPath, 'Swarm.ConnMgr.GracePeriod',
-                             '60s')
+                         '60s')
 
         await ipfsConfig(self.goIpfsPath, 'Routing.Type', self.routingMode)
         await ipfsConfigJson(self.goIpfsPath,
@@ -223,6 +223,9 @@ class AsyncIPFSDaemon(object):
         if self.noBootstrap:
             await ipfsConfigJson(self.goIpfsPath, 'Bootstrap', '[]')
 
+        await ipfsConfigJson(self.goIpfsPath, 'Gateway.Writable',
+                             self.gwWritable)
+
         args = [self.goIpfsPath, 'daemon']
 
         if self.pubsubEnable:
@@ -230,9 +233,6 @@ class AsyncIPFSDaemon(object):
 
         if self.migrateRepo:
             args.append('--migrate')
-
-        if self.gwWritable:
-            args.append('--writable')
 
         f = self.loop.subprocess_exec(
             lambda: IPFSDProtocol(self.loop, self.exitFuture,
@@ -255,7 +255,9 @@ class AsyncIPFSDaemon(object):
             if 0:
                 proc.rlimit(resource.RLIMIT_RTTIME, (10000, 12000))
         except Exception:
-            log.debug('Could not apply limits to process {pid}'.format(pid=pid))
+            log.debug(
+                'Could not apply limits to process {pid}'.format(
+                    pid=pid))
 
     def stop(self):
         try:

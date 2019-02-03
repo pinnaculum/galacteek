@@ -1,6 +1,7 @@
 import os.path
 import uuid
 import pkg_resources
+import asyncio
 from os import urandom
 from datetime import datetime
 
@@ -9,17 +10,25 @@ import aiofiles
 from PyQt5.QtCore import QObject, pyqtSignal
 
 from galacteek import log, logUser, ensure
+
 from galacteek.ipfs.mutable import MutableIPFSJson, CipheredIPFSJson
 from galacteek.ipfs.dag import EvolvingDAG
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.encrypt import IpfsRSAAgent
 from galacteek.ipfs.pubsub import TOPIC_CHAT
 from galacteek.ipfs.pubsub.messages import ChatRoomMessage
+
 from galacteek.core.asynclib import asyncReadFile
 from galacteek.core.orbitdb import OrbitConfigMap
 from galacteek.core.orbitdbcfg import defaultOrbitConfigMap
 from galacteek.core.jsono import QJSONFile
+from galacteek.core.ipfsmarks import IPFSMarks
+
 from galacteek.dweb import render
+
+
+class CipheredHashmarks(CipheredIPFSJson):
+    pass
 
 
 class OrbitalProfileConfig(MutableIPFSJson):
@@ -284,6 +293,77 @@ class ProfileError(Exception):
     pass
 
 
+class SharedHashmarksManager(QObject):
+    STATE_LOADED = 0
+    STATE_NO = 1
+
+    hashmarksLoaded = pyqtSignal(IPFSMarks)
+
+    def __init__(self, parent):
+        super(SharedHashmarksManager, self).__init__(parent)
+        self._profile = parent
+        self._state = {}
+        self._loaded = []
+
+    @property
+    def profile(self):
+        return self._profile
+
+    async def loadFromPath(self, path):
+        marksCiphered = CipheredHashmarks(path, self.profile.rsaAgent)
+        await marksCiphered.load()
+        return marksCiphered
+
+    @ipfsOp
+    async def scan(self, ipfsop):
+        log.debug('Scanning hashmarks MFS library')
+
+        listing = await ipfsop.filesList(self.profile.pathHMarksLibrary)
+
+        for file in listing:
+            await asyncio.sleep(1)
+
+            uid = file['Name']
+            marksHash = file['Hash']
+            fPath = os.path.join(self.profile.pathHMarksLibrary, uid)
+
+            if marksHash in self._loaded:
+                continue
+
+            try:
+                marksCiphered = await self.loadFromPath(fPath)
+
+                marks = IPFSMarks(None, data=marksCiphered.root)
+                self.hashmarksLoaded.emit(marks)
+                self._loaded.append(marksHash)
+            except BaseException as err:
+                log.debug('Could not load hashmarks from CID {0}: {1}'.format(
+                    marksHash, str(err)))
+
+    async def store(self, ipfsop, sender, marksJson):
+        mfsPath = os.path.join(self.profile.pathHMarksLibrary, sender)
+
+        exists = await ipfsop.filesLookup(self.profile.pathHMarksLibrary,
+                                          sender)
+        if not exists:
+            marks = CipheredHashmarks(
+                mfsPath, self.profile.rsaAgent, data=marksJson)
+            await marks.ipfsSave()
+            self._state[sender] = marks
+        else:
+            if sender not in self._state:
+                self._state[sender] = CipheredHashmarks(
+                    mfsPath, self.profile.rsaAgent)
+                await self._state[sender].load()
+            else:
+                marks = self._state[sender]
+                marks._root = marksJson
+                marks.changed.emit()
+
+        await asyncio.sleep(1)
+        await self.scan()
+
+
 class UserProfile(QObject):
     """ User profile object """
 
@@ -316,6 +396,7 @@ class UserProfile(QObject):
         self.orbitalCfgMap = None
 
         self.rsaAgent = None
+        self.sharedHManager = SharedHashmarksManager(self)
 
     def debug(self, msg):
         log.debug('Profile {0}: {1}'.format(self.name, msg))
@@ -375,6 +456,7 @@ class UserProfile(QObject):
             self.pathHome,
             self.pathMedia,
             self.pathData,
+            self.pathHMarksLibrary,
             self.pathPlaylists,
             self.pathPictures,
             self.pathVideos,
@@ -427,6 +509,10 @@ class UserProfile(QObject):
     @property
     def pathData(self):
         return os.path.join(self.root, 'data')
+
+    @property
+    def pathHMarksLibrary(self):
+        return os.path.join(self.pathData, 'hmarks_library')
 
     @property
     def pathOrbital(self):
@@ -489,6 +575,8 @@ class UserProfile(QObject):
         if self.userInfo.peerid == '':
             self.userInfo.root['userinfo']['peerid'] = self.ctx.node.id
             self.userInfo.changed.emit()
+
+        ensure(self.sharedHManager.scan())
 
         if await ipfsop.hasDagCommand():
             self.userLogInfo('Loading DAG ..')
@@ -702,3 +790,7 @@ class UserProfile(QObject):
 
         await self.dagUser.loaded
         await self.app.update()
+
+    @ipfsOp
+    async def storeHashmarks(self, ipfsop, senderPeerId, marksJson):
+        await self.sharedHManager.store(ipfsop, senderPeerId, marksJson)

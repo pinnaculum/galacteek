@@ -30,13 +30,13 @@ class MutableIPFSJson(QObject):
     entryChanged = pyqtSignal()
     available = pyqtSignal(dict)
 
-    def __init__(self, mfsFilePath, **kw):
+    def __init__(self, mfsFilePath, data=None, **kw):
         super().__init__()
 
         self.lock = asyncio.Lock()
         self.loaded = asyncio.Future()
         self.evLoaded = asyncio.Event()
-        self._root = None
+        self._root = data if data else None
         self._avail = False
         self._curEntry = None
         self._entryHistory = []
@@ -112,7 +112,8 @@ class MutableIPFSJson(QObject):
         if self.upgrade() is True:
             await self.ipfsSave()
 
-        self.available.emit(self.root)
+        if isinstance(self.root, dict):
+            self.available.emit(self.root)
 
     @asyncify
     async def save(self):
@@ -167,7 +168,8 @@ class CipheredIPFSJson(MutableIPFSJson):
         if self.upgrade() is True:
             await self.ipfsSave()
 
-        self.available.emit(self.root)
+        if isinstance(self.root, dict):
+            self.available.emit(self.root)
 
     @ipfsOp
     async def ipfsSave(self, op):

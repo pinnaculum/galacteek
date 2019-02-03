@@ -55,14 +55,12 @@ from . import chat
 
 from .helpers import *
 from .modelhelpers import *
-from .widgets import PopupToolButton, HashmarkMgrButton
+from .widgets import PopupToolButton
+from .widgets import HashmarkMgrButton
+from .widgets import HashmarksLibraryButton
 from .dialogs import *
 from ..appsettings import *
 from .i18n import *
-
-
-def iHashmarks():
-    return QCoreApplication.translate('GalacteekWindow', 'Hashmarks')
 
 
 def iFileManager():
@@ -529,9 +527,13 @@ class MainWindow(QMainWindow):
 
         # Hashmarks mgr button
         self.hashmarkMgrButton = HashmarkMgrButton(
-            marksLocal=self.app.marksLocal)
+            marks=self.app.marksLocal)
         self.hashmarkMgrButton.setShortcut(QKeySequence('Ctrl+m'))
         self.hashmarkMgrButton.clicked.connect(self.addHashmarksTab)
+
+        # Shared hashmarks mgr button
+        self.sharedHashmarkMgrButton = HashmarksLibraryButton()
+        self.sharedHashmarkMgrButton.setToolTip(iSharedHashmarks())
 
         # Peers button
         self.peersButton = QToolButton()
@@ -590,7 +592,9 @@ class MainWindow(QMainWindow):
         self.toolbarMain.addWidget(self.fileManagerButton)
 
         self.toolbarMain.addWidget(self.hashmarkMgrButton)
+        self.toolbarMain.addWidget(self.sharedHashmarkMgrButton)
         self.hashmarkMgrButton.hashmarkClicked.connect(self.onHashmarkClicked)
+        self.sharedHashmarkMgrButton.hashmarkClicked.connect(self.onHashmarkClicked)
         self.toolbarMain.addAction(getIcon('multimedia.png'), iMediaPlayer(),
                                    self.onOpenMediaPlayer)
 
@@ -749,6 +753,14 @@ class MainWindow(QMainWindow):
     async def onProfileChanged(self, pName, profile):
         if not profile.initialized:
             return
+
+        def hashmarksLoaded(hmarks):
+            try:
+                self.sharedHashmarkMgrButton.updateMenu(hmarks)
+            except Exception as err:
+                log.debug(str(err))
+
+        profile.sharedHManager.hashmarksLoaded.connect(hashmarksLoaded)
 
         self.profileEditButton.setEnabled(False)
         await profile.userInfo.loaded
@@ -913,6 +925,7 @@ class MainWindow(QMainWindow):
                 self.browseButton,
                 self.fileManagerButton,
                 self.chatRoomButton,
+                self.peersButton,
                 self.profileEditButton]:
             btn.setEnabled(flag)
 
@@ -1136,16 +1149,6 @@ class MainWindow(QMainWindow):
         if tab:
             tab.playFromPath(path, mediaName=mediaName)
 
-    def addHashmarksTabOld(self):
-        name = iHashmarks()
-        ft = self.findTabWithName(name)
-        if ft:
-            return self.ui.tabWidget.setCurrentWidget(ft)
-
-        tab = hashmarks.HashmarksTab(self)
-        self.registerTab(tab, name, current=True,
-                         icon=getIcon('hashmarks.png'))
-
     def onTabCloseRequest(self, idx):
         tab = self.ui.tabWidget.widget(idx)
 
@@ -1155,14 +1158,6 @@ class MainWindow(QMainWindow):
         if tab.onClose() is True:
             self.ui.tabWidget.removeTab(idx)
             del tab
-
-    def onIpfsSearch(self):
-        text = self.ui.ipfsSearch.text()
-        self.ui.ipfsSearch.clear()
-        if len(text) > 0:
-            view = ipfssearchview.IPFSSearchView(text, self)
-            self.registerTab(view, iIpfsSearch(text), current=True,
-                             icon=getIcon('search-engine.png'))
 
     def addIpfsSearchView(self, text):
         if len(text) > 0:
@@ -1289,7 +1284,8 @@ class MainWindow(QMainWindow):
             return self.ui.tabWidget.setCurrentWidget(ft)
 
         if self.hashmarksPage is None:
-            self.hashmarksPage = HashmarksPage(self.app.marksLocal)
+            self.hashmarksPage = HashmarksPage(self.app.marksLocal,
+                                               self.app.marksNetwork)
 
         tab = WebTab(self.ui.tabWidget)
         hview = DWebView(page=self.hashmarksPage)
