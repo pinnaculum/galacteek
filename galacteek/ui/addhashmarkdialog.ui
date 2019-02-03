@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1071</width>
-    <height>390</height>
+    <height>425</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -55,7 +55,11 @@
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QLineEdit" name="title"/>
+      <widget class="QLineEdit" name="title">
+       <property name="maxLength">
+        <number>128</number>
+       </property>
+      </widget>
      </item>
      <item row="2" column="0">
       <widget class="QLabel" name="label_7">
@@ -117,7 +121,11 @@
       </widget>
      </item>
      <item row="6" column="1">
-      <widget class="QLineEdit" name="comment"/>
+      <widget class="QLineEdit" name="comment">
+       <property name="maxLength">
+        <number>128</number>
+       </property>
+      </widget>
      </item>
      <item row="7" column="0">
       <widget class="QLabel" name="label_8">

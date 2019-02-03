@@ -122,3 +122,15 @@ class TestMarks:
         for i in range(0, 16):
             await bmarks.asyncQ.add('/ipfs/' + str(i),
                                     category=str(i), title=title, tags=['dev'])
+
+    @pytest.mark.parametrize('path1,path2', [
+        (
+            '/ipfs/QmT1TPVjdZ9CRnqwyQ9WygDoRgRRibFrEyWufenu92SuUV',
+            '/ipfs/Qma1TPVjdZ9CReqwyQ9Wvv3oRgRRi5FrEyWufenu92SuUV/www'
+        )])
+    @pytest.mark.parametrize('title', ['Broken glass'])
+    @pytest.mark.asyncio
+    async def test_mergeshared(self, event_loop, bmarks, bmarks2, path1, path2, title):
+        assert bmarks.add(path1, title=title, share=True, pinSingle=True)
+        assert bmarks.add(path2, title=title, share=True, pinRecursive=True)
+        bmarks2.merge(bmarks, share=True, reset=True)

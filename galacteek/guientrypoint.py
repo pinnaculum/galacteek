@@ -145,8 +145,6 @@ def galacteekGui(args):
     else:
         ensure(gApp.updateIpfsClient())
 
-    gApp.mainWindow.addHashmarksTab()
-
     if args.noreleasecheck is False:
         ensure(gApp.checkReleases())
 

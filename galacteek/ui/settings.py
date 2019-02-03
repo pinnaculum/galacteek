@@ -86,6 +86,8 @@ class SettingsDialog(QDialog):
             self.getS(section, CFG_KEY_STORAGEMAX, int))
         self.ui.routingMode.setCurrentText(
             self.getS(section, CFG_KEY_ROUTINGMODE, str))
+        self.setChecked(self.ui.writableHttpGw,
+                        self.sManager.isTrue(section, CFG_KEY_HTTPGWWRITABLE))
 
         # IPFS connection
         section = CFG_SECTION_IPFSCONN1
@@ -141,6 +143,8 @@ class SettingsDialog(QDialog):
         self.setS(section, CFG_KEY_STORAGEMAX, self.ui.storageMax.text())
         self.setS(section, CFG_KEY_ROUTINGMODE,
                   self.ui.routingMode.currentText())
+        self.sManager.setBoolFrom(section, CFG_KEY_HTTPGWWRITABLE,
+                                  self.isChecked(self.ui.writableHttpGw))
 
         section = CFG_SECTION_IPFSCONN1
         self.setS(section, CFG_KEY_HOST, self.ui.customIpfsHost.text())

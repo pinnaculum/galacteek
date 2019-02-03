@@ -473,7 +473,11 @@ class GalacteekApplication(QApplication):
         await self.setupRepository()
 
     async def stopIpfsServices(self):
-        await self.ipfsCtx.shutdown()
+        try:
+            await self.ipfsCtx.shutdown()
+        except BaseException as err:
+            log.debug('Error shutting down context: {err}'.format(
+                err=str(err)))
 
         if self.feedFollowerTask is not None:
             self.feedFollowerTask.cancel()
@@ -560,8 +564,6 @@ class GalacteekApplication(QApplication):
         if self.ipfsd is not None:  # we only support one daemon for now
             return
 
-        # pubsubEnabled = self.settingsMgr.isTrue(CFG_SECTION_IPFS,
-        #    CFG_KEY_PUBSUB)
         pubsubEnabled = True  # mandatory now ..
         corsEnabled = self.settingsMgr.isTrue(CFG_SECTION_IPFSD,
                                               CFG_KEY_CORS)

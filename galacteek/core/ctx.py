@@ -156,6 +156,9 @@ class Peers(QObject):
     def getByPeerId(self, peerId):
         return self._byPeerId.get(peerId, None)
 
+    def peerRegistered(self, peerId):
+        return peerId in self.peersIds
+
     def __str__(self):
         return 'Galacteek peers registered: {0}'.format(self.peersCount)
 

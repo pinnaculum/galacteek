@@ -4,7 +4,12 @@ from PyQt5.QtWidgets import QDialog
 
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QClipboard, QPixmap, QImage
+from PyQt5.QtGui import QClipboard
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QImage
+
+from PyQt5.QtCore import QRegExp
+from PyQt5.QtGui import QRegExpValidator
 
 from galacteek import asyncify, ensure
 from galacteek.core.ipfsmarks import *
@@ -59,6 +64,9 @@ class AddHashmarkDialog(QDialog):
         self.ui.pinCombo.addItem(iPinSingle())
         self.ui.pinCombo.addItem(iPinRecursive())
 
+        regexp1 = QRegExp("[A-Za-z\/\_]+")
+        self.ui.newCategory.setValidator(QRegExpValidator(regexp1))
+
         if pin is True:
             self.ui.pinCombo.setCurrentIndex(1)
         elif pinRecursive is True:
@@ -82,7 +90,7 @@ class AddHashmarkDialog(QDialog):
         description = self.ui.description.toPlainText()
 
         if len(newCat) > 0:
-            category = newCat
+            category = re.sub('//', '', newCat)
         else:
             category = self.ui.category.currentText()
 

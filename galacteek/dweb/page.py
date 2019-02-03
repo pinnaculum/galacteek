@@ -5,6 +5,7 @@ from PyQt5.QtWebChannel import QWebChannel
 
 from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal
 from PyQt5.QtCore import QJsonValue, QVariant, QUrl
+from PyQt5.QtCore import QTimer
 
 from PyQt5.QtWidgets import QApplication
 
@@ -40,6 +41,20 @@ class GalacteekHandler(QObject):
     def openIpfsLink(self, path):
         tab = self.app.mainWindow.addBrowserTab()
         tab.browseFsPath(path)
+
+    @pyqtSlot(str)
+    def copyToClipboard(self, path):
+        if len(path) > 1024:
+            return
+
+        self.app.setClipboardText(path)
+
+    @pyqtSlot(str)
+    def explorePath(self, path):
+        if len(path) > 1024:
+            return
+
+        ensure(self.app.mainWindow.exploreClipboardPath(path))
 
 
 class BasePage(QWebEnginePage):
@@ -112,38 +127,51 @@ class OrbitPage(BasePage):
 class HashmarksHandler(BaseHandler):
     marksListed = pyqtSignal(str, QJsonValue)
 
-    def __init__(self, marksLocal, parent=None):
+    def __init__(self, marksLocal, marksShared, parent=None):
         super(HashmarksHandler, self).__init__(parent)
         self.marksLocal = marksLocal
+        self.marksShared = marksShared
 
-    @pyqtSlot(result=list)
-    def categories(self):
-        cats = self.marksLocal.getCategories()
-        return cats
+    @pyqtSlot(str, result=list)
+    def categories(self, ns):
+        if ns == 'local':
+            return self.marksLocal.getCategories()
+        else:
+            return self.marksShared.getCategories()
 
-    @pyqtSlot(str, result=QJsonValue)
-    def marks(self, cat):
-        marks = self.marksLocal.getCategoryMarks(cat)
+    @pyqtSlot(str, str, result=QJsonValue)
+    def marks(self, cat, ns):
+        source = self.marksLocal if ns == 'local' else self.marksShared
+        marks = source.getCategoryMarks(cat)
         return QJsonValue.fromVariant(QVariant(marks))
 
 
 class HashmarksPage(BasePage):
-    def __init__(self, marksLocal, parent=None):
+    def __init__(self, marksLocal, marksNetwork, parent=None):
         super(HashmarksPage, self).__init__('hashmarks.html', parent=parent)
 
         self.marksLocal = marksLocal
+        self.marksNetwork = marksNetwork
         self.marksLocal.changed.connect(self.onMarksChanged)
-        self.hashmarks = HashmarksHandler(self.marksLocal, self)
+        self.hashmarks = HashmarksHandler(self.marksLocal, self.marksNetwork, self)
         self.register('hashmarks', self.hashmarks)
         self.register('galacteek', GalacteekHandler(None))
+
+        self.timerRerender = QTimer()
 
     def onMarksChanged(self):
         ensure(self.render())
 
+    def onSharedMarksChanged(self):
+        if self.timerRerender.isActive():
+            self.timerRerender.stop()
+        self.timerRerender.start(2000)
+
     async def render(self):
         self.setHtml(await renderTemplate(
             self.template,
-            marks=self.marksLocal),
+            marks=self.marksLocal,
+            marksShared=self.marksNetwork),
             baseUrl=QUrl('qrc:/'))
 
 

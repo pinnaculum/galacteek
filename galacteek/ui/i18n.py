@@ -96,6 +96,32 @@ def iHashmark():
     return QCoreApplication.translate('GalacteekWindow', 'Hashmark')
 
 
+def iHashmarks():
+    return QCoreApplication.translate('GalacteekWindow', 'Hashmarks')
+
+
+def iLocalHashmarks():
+    return QCoreApplication.translate('GalacteekWindow', 'Local hashmarks')
+
+
+def iSharedHashmarks():
+    return QCoreApplication.translate('GalacteekWindow', 'Shared hashmarks')
+
+
+def iHashmarksLibraryCountAvailable(count):
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Hashmarks library: {0} hashmarks available'
+    ).format(count)
+
+
+def iLocalHashmarksCount(count):
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Local hashmarks: {0} hashmarks available'
+    ).format(count)
+
+
 def iDownload():
     return QCoreApplication.translate('GalacteekWindow', 'Download')
 

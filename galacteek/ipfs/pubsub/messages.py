@@ -55,15 +55,49 @@ class PubsubMessage(collections.UserDict):
 
 
 class MarksBroadcastMessage(PubsubMessage):
-    TYPE = 'marksbroadcast'
+    TYPE = 'hashmarks.broadcast'
+
+    schema = {
+        "title": "Hashmarks broadcast",
+        "description": "Hashmarks broadcast message",
+        "type": "object",
+        "properties": {
+            "msgtype": {"type": "string"},
+            "msg": {
+                "type": "object",
+                "properties": {
+                    "peerid": {"type": "string"},
+                    "ipfsmarks": {
+                        "type": "object",
+                        "properties": {
+                            "categories": {"type": "object"}
+                        }
+                    }
+                },
+                "required": ["peerid", "ipfsmarks"]
+            },
+        },
+        "required": ["msgtype", "msg"]
+    }
 
     @staticmethod
-    def make(marksdict):
+    def make(peerid, ipfsmarks):
         msg = MarksBroadcastMessage({
             'msgtype': MarksBroadcastMessage.TYPE,
-            'marks': marksdict
+            'msg': {
+                'peerid': peerid,
+                'ipfsmarks': ipfsmarks
+            }
         })
         return msg
+
+    @property
+    def peer(self):
+        return self.parser.traverse('msg.peerid')
+
+    @property
+    def marks(self):
+        return self.parser.traverse('msg.ipfsmarks')
 
 
 class PeerIdentMessageV1(PubsubMessage):
@@ -476,7 +510,7 @@ class ChatRoomMessage(PubsubMessage):
 
     @staticmethod
     def make(sender, channel, message, links=[], attachments=[], date=None,
-            level=0):
+             level=0):
         msgDate = date if date else datetime.now().isoformat(' ', 'minutes')
         msg = ChatRoomMessage({
             'msgtype': ChatRoomMessage.TYPE,
