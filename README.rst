@@ -17,34 +17,37 @@ Installation
 AppImage
 --------
 
-For Linux users (arch: *x86_64*), you can get an AppImage directly from IPFS
-`here <https://ipfs.io/ipfs/QmSm7KXey1uepZV5g4W1YKJZL3a1eK3vBjmjmX7CdxM3oD>`_
-(**~138Mb**, release CID: **QmSm7KXey1uepZV5g4W1YKJZL3a1eK3vBjmjmX7CdxM3oD**).
+For Linux users (arch: *x86_64*), you can get an AppImage from the IPFS network
+`here <https://ipfs.io/ipfs/QmRdNCGFkZ1aZ8ZvihCyHokXr3vG7QF8ut1GnkU2s97oP7>`_
+(**~138Mb**, release CID: **QmRdNCGFkZ1aZ8ZvihCyHokXr3vG7QF8ut1GnkU2s97oP7**).
 
 Just fetch the image (with wget for example or your favorite tool), and execute
 it afterwards::
 
-    wget https://ipfs.io/ipfs/QmSm7KXey1uepZV5g4W1YKJZL3a1eK3vBjmjmX7CdxM3oD
-    chmod u+x QmSm7KXey1uepZV5g4W1YKJZL3a1eK3vBjmjmX7CdxM3oD
-    ./QmSm7KXey1uepZV5g4W1YKJZL3a1eK3vBjmjmX7CdxM3oD
+    wget https://ipfs.io/ipfs/QmRdNCGFkZ1aZ8ZvihCyHokXr3vG7QF8ut1GnkU2s97oP7
+    chmod u+x QmRdNCGFkZ1aZ8ZvihCyHokXr3vG7QF8ut1GnkU2s97oP7
+    ./QmRdNCGFkZ1aZ8ZvihCyHokXr3vG7QF8ut1GnkU2s97oP7
 
 Or if you already have an IPFS daemon installed and running::
 
-    ipfs get QmSm7KXey1uepZV5g4W1YKJZL3a1eK3vBjmjmX7CdxM3oD
-    chmod u+x QmSm7KXey1uepZV5g4W1YKJZL3a1eK3vBjmjmX7CdxM3oD
-    ./QmSm7KXey1uepZV5g4W1YKJZL3a1eK3vBjmjmX7CdxM3oD
+    ipfs get QmRdNCGFkZ1aZ8ZvihCyHokXr3vG7QF8ut1GnkU2s97oP7
+    chmod u+x QmRdNCGFkZ1aZ8ZvihCyHokXr3vG7QF8ut1GnkU2s97oP7
+    ./QmRdNCGFkZ1aZ8ZvihCyHokXr3vG7QF8ut1GnkU2s97oP7
 
-Running the AppImage with the filename unchanged means that the
+Running the AppImage with the filename unchanged ensures that the
 application will automatically pin itself (it will pin through IPFS the
 AppImage that you are using). By doing so you can help redistributing the
 software faster to the nodes close to you. Renaming the binary disables the
 self-seeding feature::
 
-    mv QmSm7KXey1uepZV5g4W1YKJZL3a1eK3vBjmjmX7CdxM3oD Galacteek-0.3.4.AppImage
+    mv QmRdNCGFkZ1aZ8ZvihCyHokXr3vG7QF8ut1GnkU2s97oP7 Galacteek-0.3.5.AppImage
 
-**Note**: go-ipfs_ version *0.4.18* is included in the AppImage. You can use the same
-command-line arguments as with the regular *galacteek* runner script. If you are filing
-an issue, please use the *-d* switch and provide the debug output.
+**Note**: go-ipfs_ version *0.4.18* is included in the AppImage.
+For reference the AppImage is built with
+`this script <https://github.com/eversum/galacteek/blob/master/AppImage/galacteek-appimage-build>`_.
+You can use the same command-line arguments as with the regular *galacteek*
+runner script. If you are filing an issue, please use the *-d* switch and
+provide the debug output.
 
 PIP
 ---
@@ -92,11 +95,12 @@ Features
 
 **galacteek** can either spawn an IPFS daemon and use it as transport, or
 connect to an existing IPFS daemon. By default it will try to run a daemon. You
-can change the IPFS connection settings through the *Edit* -> *Settings* menu
-and restart the application afterwards.
+can change the IPFS connection settings by clicking on the settings icon in the
+toolbar and restart the application afterwards.
 
 - Browsing sessions with automatic pinning (pins every page you browse)
 - Feeds (following IPNS hashes)
+- Sharing hashmarks over pubsub
 - File manager with drag-and-drop support
 - Basic built-in media player with IPFS-stored playlists
 - Search content with the ipfs-search_ search engine
@@ -151,8 +155,8 @@ Platforms supported
 ===================
 
 Mainly tested on Linux. The application relies heavily on quamash_ which
-should work with most platforms (untested on OS X which is not officially
-supported by quamash).
+should work with most platforms (for OS X there are still some asyncio
+issues to fix).
 
 Requirements
 ============
