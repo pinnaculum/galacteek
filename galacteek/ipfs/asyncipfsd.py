@@ -19,22 +19,22 @@ async def shell(arg):
 
 
 async def ipfsConfig(binPath, param, value):
-    return await shell("{0} config '{1}' '{2}'".format(
+    return await shell("'{0}' config '{1}' '{2}'".format(
         binPath, param, value))
 
 
 async def ipfsConfigProfileApply(binPath, profile):
-    return await shell("{0} config profile apply {1}".format(
+    return await shell("'{0}' config profile apply {1}".format(
         binPath, profile))
 
 
 async def ipfsConfigJson(binPath, param, value):
-    return await shell('{0} config --json {1} {2}'.format(
+    return await shell("'{0}' config --json {1} {2}".format(
         binPath, param, json.dumps(value)))
 
 
 async def ipfsConfigGetJson(binPath, param):
-    return await shell('{0} config --json "{1}"'.format(binPath, param))
+    return await shell("'{0}' config --json '{1}'".format(binPath, param))
 
 
 class IPFSDProtocol(asyncio.SubprocessProtocol):
@@ -155,7 +155,8 @@ class AsyncIPFSDaemon(object):
 
     async def start(self):
         # Set the IPFS_PATH environment variable
-        os.putenv('IPFS_PATH', self.repopath)
+        os.environ['IPFS_PATH'] = self.repopath
+
         if not os.path.isdir(self.repopath):
             os.mkdir(self.repopath)
 
@@ -170,6 +171,7 @@ class AsyncIPFSDaemon(object):
         await ipfsConfig(self.goIpfsPath, 'Addresses.Gateway',
                          '/ip4/127.0.0.1/tcp/{0}'.format(self.gatewayport))
 
+        # Swarm multiaddrs (ipv4 and ipv6)
         swarmAddrs = [
             "/ip4/0.0.0.0/tcp/{swarmport}".format(swarmport=self.swarmport),
             "/ip6/::/tcp/{swarmport}".format(swarmport=self.swarmport)
@@ -252,12 +254,9 @@ class AsyncIPFSDaemon(object):
         try:
             proc = psutil.Process(pid)
             proc.nice(nice)
-            if 0:
-                proc.rlimit(resource.RLIMIT_RTTIME, (10000, 12000))
         except Exception:
-            log.debug(
-                'Could not apply limits to process {pid}'.format(
-                    pid=pid))
+            log.debug('Could not apply limits to process {pid}'.format(
+                pid=pid))
 
     def stop(self):
         try:

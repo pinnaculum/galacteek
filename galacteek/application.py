@@ -447,7 +447,7 @@ class GalacteekApplication(QApplication):
         section = CFG_SECTION_IPFSD
         if mgr.isTrue(section, CFG_KEY_ENABLED):
             return IPFSConnectionParams(
-                'localhost', mgr.getSetting(
+                '127.0.0.1', mgr.getSetting(
                     section, CFG_KEY_APIPORT), mgr.getSetting(
                     section, CFG_KEY_HTTPGWPORT))
         else:
