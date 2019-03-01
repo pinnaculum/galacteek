@@ -370,7 +370,7 @@ class BrowserTab(GalacteekTab):
         self.ui.backButton.clicked.connect(self.backButtonClicked)
         self.ui.forwardButton.clicked.connect(self.forwardButtonClicked)
 
-        self.ui.refreshButton.clicked.connect(self.refreshButtonClicked)
+        self.ui.reloadPageButton.clicked.connect(self.refreshButtonClicked)
         self.ui.stopButton.clicked.connect(self.stopButtonClicked)
 
         self.ui.backButton.setEnabled(False)
@@ -428,6 +428,7 @@ class BrowserTab(GalacteekTab):
         self.ui.loadIpfsButton.setPopupMode(QToolButton.MenuButtonPopup)
         self.ui.loadIpfsButton.clicked.connect(self.onLoadIpfsCID)
 
+        self.ui.pBarBrowser.setTextVisible(False)
         self.ui.pinAllButton.setCheckable(True)
         self.ui.pinAllButton.setAutoRaise(True)
 
@@ -638,7 +639,7 @@ class BrowserTab(GalacteekTab):
 
     def stopButtonClicked(self):
         self.ui.webEngineView.stop()
-        self.ui.progressBar.setValue(0)
+        self.ui.pBarBrowser.setValue(0)
         self.ui.stopButton.setEnabled(False)
 
     def backButtonClicked(self):
@@ -702,8 +703,19 @@ class BrowserTab(GalacteekTab):
         self.gWindow.ui.tabWidget.setTabIcon(self.tabPageIdx, icon)
 
     def onLoadProgress(self, progress):
-        self.ui.progressBar.setValue(progress)
+        self.ui.pBarBrowser.setValue(progress)
         self.ui.stopButton.setEnabled(progress >= 0 and progress < 100)
+
+        if progress == 100:
+            self.ui.pBarBrowser.setStyleSheet(
+                'QProgressBar::chunk#pBarBrowser { background-color: #4a9ea1; }')
+            self.loop.call_later(
+                1,
+                self.ui.pBarBrowser.setStyleSheet,
+                'QProgressBar::chunk#pBarBrowser { background-color: transparent; }')
+        else:
+            self.ui.pBarBrowser.setStyleSheet(
+                'QProgressBar::chunk#pBarBrowser { background-color: #7f8491; }')
 
     def browseFsPath(self, path):
         self.enterUrl(QUrl('{0}:{1}'.format(SCHEME_DWEB, path)))
