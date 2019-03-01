@@ -134,3 +134,14 @@ QMenu {
 QMenu::item:selected {
     background-color: #4a9ea1;
 }
+
+QProgressBar#pBarBrowser {
+    text-align: center;
+    color: black;
+    background-color: transparent;
+    border-radius: 5px;
+}
+
+QProgressBar::chunk#pBarBrowser {
+    background-color: #7f8491;
+}
