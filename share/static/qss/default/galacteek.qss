@@ -28,8 +28,28 @@ QToolBar#toolbarMain {
 QToolBar#toolbarMain::handle {
 }
 
-QTabWidget::pane {
-    border-top: 2px solid #c2c7cb;
+QTabBar::tab {
+    color: black;
+    text-align: center;
+    min-width: 170px;
+    background-color: #7f8491;
+    border-bottom: 2px solid #c2c7cb;
+    padding-left: 4px;
+    padding-right: 4px;
+    padding-top: 2px;
+}
+
+QTabBar::tab:selected {
+    margin-top: 1px;
+    background-color: #bfbfbf;
+}
+
+QTabBar::tab:!selected {
+    margin-top: 4px;
+}
+
+QTabBar::tab:hover:!selected {
+    background-color: #4a9ea1;
 }
 
 QTreeView {
@@ -68,19 +88,6 @@ QToolBox::tab {
     border-radius: 5px;
     color: black;
     font-weight: bold;
-}
-
-QTabBar::tab:selected {
-    text-align: center;
-    background-color: #bfbfbf;
-}
-
-QTabBar::tab:hover {
-    background-color: #7f8491;
-}
-
-QTabBar::tab {
-    text-align: center;
 }
 
 QLineEdit {

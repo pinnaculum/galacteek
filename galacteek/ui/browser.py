@@ -139,7 +139,7 @@ def iInvalidCID(text):
         '{0} is an invalid IPFS CID (Content IDentifier)').format(text)
 
 
-def iNotAnIpfsResource(text):
+def iNotAnIpfsResource():
     return QCoreApplication.translate(
         'BrowserTabForm',
         'Not an IPFS resource')
@@ -708,7 +708,7 @@ class BrowserTab(GalacteekTab):
 
         if progress == 100:
             self.ui.pBarBrowser.setStyleSheet(
-                'QProgressBar::chunk#pBarBrowser { background-color: #4a9ea1; }')
+                'QProgressBar::chunk#pBarBrowser { background-color: #244e66; }')
             self.loop.call_later(
                 1,
                 self.ui.pBarBrowser.setStyleSheet,
