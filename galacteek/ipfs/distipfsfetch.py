@@ -15,7 +15,7 @@ import shutil
 
 @async_generator
 async def distIpfsExtract(dstdir='.', software='go-ipfs', executable='ipfs',
-                          site='dist.ipfs.io', version='0.4.17', loop=None,
+                          site='dist.ipfs.io', version='0.4.18', loop=None,
                           sslverify=True):
 
     """ Fetch a distribution archive from dist.ipfs.io and extracts the
