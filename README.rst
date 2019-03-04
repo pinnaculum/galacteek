@@ -6,13 +6,59 @@ Galacteek
 .. image:: https://gitlab.com/galacteek/galacteek/raw/master/share/icons/galacteek.png
     :align: center
 
-:info: An async IPFS_ browser
+:info: A multi-platform IPFS_ browser
 
-**galacteek** is an experimental Qt5-based browser/toolbox
+**galacteek** is an experimental multi-platform Qt5-based browser/toolbox
 for the IPFS_ peer-to-peer network.
+
+Platforms supported
+===================
+
+- Linux
+- MacOS X
+- FreeBSD
 
 Installation
 ============
+
+On Linux systems you can either use the AppImage (recommended) or install from PyPI.
+On MacOS and other systems you can install from PyPI.
+
+PyPI
+----
+
+You need to have python>=3.5 (python>=3.6 is recommended) and pip installed.
+From a virtualenv, or as root, install with:
+
+.. code-block:: shell
+
+    pip install galacteek
+
+Upgrade with:
+
+.. code-block:: shell
+
+    pip install -U galacteek
+
+Or building it from source:
+
+.. code-block:: shell
+
+    pip install -r requirements.txt
+    python setup.py build install
+
+Now just run the application with:
+
+.. code-block:: shell
+
+    galacteek
+
+If you don't have go-ipfs_ already installed, the application will ask you
+if you want to automatically download and install it from dist.ipfs.io_
+You need a recent version of go-ipfs_ (> 0.4.7) with the new DAG API.
+
+For the media player to work on Linux, you will need to install the
+*gstreamer* (1.x) package and all the gstreamer plugins.
 
 AppImage
 --------
@@ -49,40 +95,10 @@ You can use the same command-line arguments as with the regular *galacteek*
 runner script. If you are filing an issue, please use the *-d* switch and
 provide the debug output.
 
-PIP
----
-
-You need to have python>=3.5 (python>=3.6 is recommended) and pip installed,
-as well as go-ipfs_. From a virtualenv, or as root, install with:
-
-.. code-block:: shell
-
-    pip install galacteek
-
-Or building it from source:
-
-.. code-block:: shell
-
-    pip install -r requirements.txt
-    python setup.py build install
-
-Now just run the application with:
-
-.. code-block:: shell
-
-    galacteek
-
-If you don't have go-ipfs_ already installed, the application will ask you
-if you want to automatically download and install it from dist.ipfs.io_
-You need a recent version of go-ipfs_ (> 0.4.7) with the new DAG API.
-
-For the media player to work on Linux, you will need to install the
-*gstreamer* (1.x) package and all the gstreamer plugins.
-
 Command-line usage
 ==================
 
-Use the *-d* command-line switch to enable debugging. Using *--profile* gives
+Use the *-d* command-line switch to enable debugging output. Using *--profile* gives
 you the ability to have separate application profiles (*main* is the default
 profile). Use *--help* for all options.
 
@@ -110,36 +126,38 @@ toolbar and restart the application afterwards.
 Keyboard shortcuts
 ==================
 
+*Mod* is the *Control* key on Linux and the *Command* key on MacOS X.
+
 Main window keyboard shortcuts
 ------------------------------
 
-- **Ctrl + t**: Open a new IPFS browsing tab
-- **Ctrl + s**: Search with ipfs-search
-- **Ctrl + w**: Close current tab
-- **Ctrl + m**: Open the IPFS hashmarks manager
-- **Ctrl + f**: Open the file manager
-- **Ctrl + o**: Browse IPFS path from the clipboard
-- **Ctrl + e**: Explore IPFS path from the clipboard
-- **Ctrl + g**: DAG view of IPFS object from the clipboard
-- **Ctrl + p**: Pin IPFS object from the clipboard
-- **Ctrl + i**: Open the IPLD explorer for the IPFS object referenced in the clipboard
-- **Ctrl + F12**: Show pinning status
+- **Mod + t**: Open a new IPFS browsing tab
+- **Mod + s**: Search with ipfs-search
+- **Mod + w**: Close current tab
+- **Mod + m**: Open the IPFS hashmarks manager
+- **Mod + f**: Open the file manager
+- **Mod + o**: Browse IPFS path from the clipboard
+- **Mod + e**: Explore IPFS path from the clipboard
+- **Mod + g**: DAG view of IPFS object from the clipboard
+- **Mod + p**: Pin IPFS object from the clipboard
+- **Mod + i**: Open the IPLD explorer for the IPFS object referenced in the clipboard
+- **Mod + u**: Show pinning status
 
 Browser keyboard shortcuts
 --------------------------
 
-- **Ctrl + b**: Bookmark current page
-- **Ctrl + l**: Load an IPFS CID
-- **Ctrl + r** or **F5**: Reload the current page
-- **Ctrl + +**: Zoom in
-- **Ctrl + -**: Zoom out
+- **Mod + b**: Bookmark current page
+- **Mod + l**: Load an IPFS CID
+- **Mod + r** or **F5**: Reload the current page
+- **Mod + +**: Zoom in
+- **Mod + -**: Zoom out
 
 IPFS views keyboard shortcuts (file manager, hash views, dag viewer)
 --------------------------------------------------------------------
 
-- **Ctrl + h**: Copy selected item's hash (CID) to the clipboard
-- **Ctrl + p**: Copy selected item's IPFS path to the clipboard
-- **Ctrl + w**: Close tab/hash view
+- **Mod + c** or **Mod + y**: Copy selected item's hash (CID) to the clipboard
+- **Mod + a**: Copy selected item's IPFS path to the clipboard
+- **Mod + w**: Close tab/hash view
 
 Screenshots
 ===========
@@ -150,13 +168,6 @@ Screenshots
     :alt: Browsing the Wikipedia mirror over IPFS
 
     Browsing the Wikipedia mirror over IPFS
-
-Platforms supported
-===================
-
-Mainly tested on Linux. The application relies heavily on quamash_ which
-should work with most platforms (for OS X there are still some asyncio
-issues to fix).
 
 Requirements
 ============
