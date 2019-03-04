@@ -2,7 +2,6 @@ import json
 
 import asyncio
 import time
-import datetime
 import collections
 
 from galacteek import log as logger
@@ -156,8 +155,6 @@ class PubsubService(object):
         async queue (inQueue) to be later treated in the processMessages() task
         """
 
-        nodeId = self.ipfsCtx.node.id
-
         try:
             async for message in self.client.pubsub.sub(self.topic):
                 if await self.filtered(message):
@@ -243,11 +240,11 @@ class PSHashmarksExchanger(JSONPubsubService):
             topic=TOPIC_HASHMARKS,
             runPeriodic=True,
             filterSelfMessages=True,
-            minMsgTsDiff=60*8)
+            minMsgTsDiff=60 * 8)
         self.marksLocal = marksLocal
         self.marksNetwork = marksNetwork
         self.marksLocal.markAdded.connect(self.onMarkAdded)
-        self._sendEvery = 60*12
+        self._sendEvery = 60 * 12
         self._lastBroadcast = 0
 
     @property
