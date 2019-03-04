@@ -64,21 +64,21 @@ AppImage
 --------
 
 For Linux users (arch: *x86_64*), you can get an AppImage from the IPFS network
-`here <https://ipfs.io/ipfs/QmRdNCGFkZ1aZ8ZvihCyHokXr3vG7QF8ut1GnkU2s97oP7>`_
-(**~138Mb**, release CID: **QmRdNCGFkZ1aZ8ZvihCyHokXr3vG7QF8ut1GnkU2s97oP7**).
+`here <https://ipfs.io/ipfs/QmWh9VxhMiwsZct198xAdpTgHt9mNKNWUgyquY3NFib9q9>`_
+(**~138Mb**, release CID: **QmWh9VxhMiwsZct198xAdpTgHt9mNKNWUgyquY3NFib9q9**).
 
 Just fetch the image (with wget for example or your favorite tool), and execute
 it afterwards::
 
-    wget https://ipfs.io/ipfs/QmRdNCGFkZ1aZ8ZvihCyHokXr3vG7QF8ut1GnkU2s97oP7
-    chmod u+x QmRdNCGFkZ1aZ8ZvihCyHokXr3vG7QF8ut1GnkU2s97oP7
-    ./QmRdNCGFkZ1aZ8ZvihCyHokXr3vG7QF8ut1GnkU2s97oP7
+    wget https://ipfs.io/ipfs/QmWh9VxhMiwsZct198xAdpTgHt9mNKNWUgyquY3NFib9q9
+    chmod u+x QmWh9VxhMiwsZct198xAdpTgHt9mNKNWUgyquY3NFib9q9
+    ./QmWh9VxhMiwsZct198xAdpTgHt9mNKNWUgyquY3NFib9q9
 
 Or if you already have an IPFS daemon installed and running::
 
-    ipfs get QmRdNCGFkZ1aZ8ZvihCyHokXr3vG7QF8ut1GnkU2s97oP7
-    chmod u+x QmRdNCGFkZ1aZ8ZvihCyHokXr3vG7QF8ut1GnkU2s97oP7
-    ./QmRdNCGFkZ1aZ8ZvihCyHokXr3vG7QF8ut1GnkU2s97oP7
+    ipfs get QmWh9VxhMiwsZct198xAdpTgHt9mNKNWUgyquY3NFib9q9
+    chmod u+x QmWh9VxhMiwsZct198xAdpTgHt9mNKNWUgyquY3NFib9q9
+    ./QmWh9VxhMiwsZct198xAdpTgHt9mNKNWUgyquY3NFib9q9
 
 Running the AppImage with the filename unchanged ensures that the
 application will automatically pin itself (it will pin through IPFS the
@@ -86,7 +86,7 @@ AppImage that you are using). By doing so you can help redistributing the
 software faster to the nodes close to you. Renaming the binary disables the
 self-seeding feature::
 
-    mv QmRdNCGFkZ1aZ8ZvihCyHokXr3vG7QF8ut1GnkU2s97oP7 Galacteek-0.3.5.AppImage
+    mv QmWh9VxhMiwsZct198xAdpTgHt9mNKNWUgyquY3NFib9q9 Galacteek-0.3.5.AppImage
 
 **Note**: go-ipfs_ version *0.4.18* is included in the AppImage.
 For reference the AppImage is built with
