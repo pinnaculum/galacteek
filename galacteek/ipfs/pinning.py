@@ -1,16 +1,13 @@
 import asyncio
-import collections
 import json
 import os.path
 import time
-from datetime import datetime
 
 import aioipfs
 
 from galacteek import log
 from galacteek import ensure
 from galacteek.ipfs.wrappers import ipfsOp
-from galacteek.ipfs.ipfsops import stripIpfs
 
 
 class Cancelled(Exception):
@@ -240,7 +237,7 @@ class PinningMaster(object):
                 data = None
                 with open(self._statusFilePath, 'rt') as fd:
                     data = json.load(fd)
-            except Exception as err:
+            except Exception:
                 self.debug('Could not load pin status file')
             else:
                 if isinstance(data, dict):

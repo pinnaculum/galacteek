@@ -164,7 +164,6 @@ class P2PTunnelsManager:
 
 @ipfsOpFn
 async def dial(op, peer, protocol, address=None):
-    loop = asyncio.get_event_loop()
     log.debug('Stream dial {0} {1}'.format(peer, protocol))
     resp = await op.client.p2p.stream_dial(peer, protocol,
                                            address=address)

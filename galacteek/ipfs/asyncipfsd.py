@@ -4,7 +4,6 @@ import asyncio
 import re
 import json
 import psutil
-import resource
 
 from galacteek import log
 

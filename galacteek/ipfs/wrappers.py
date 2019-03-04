@@ -38,7 +38,7 @@ class ipfsClassW:
             log.debug('GeneratorExit: {inst}'.format(
                 inst=inst))
             return None
-        except BaseException as err:
+        except BaseException:
             log.debug('IPFSOp exception: {inst}'.format(
                 inst=inst), exc_info=True)
             return None

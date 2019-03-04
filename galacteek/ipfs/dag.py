@@ -329,8 +329,8 @@ class EvolvingDAG(QObject):
             msg = pb.decodeDagNode(data['data'])
             if not msg:
                 return
-            if maxObjSize == 0 or (maxObjSize > 0 and msg['size'] <
-                                   maxObjSize):
+            if maxObjSize == 0 or \
+                    (maxObjSize > 0 and msg['size'] < maxObjSize):
                 await yield_((path, DAGObj(msg['data'])))
 
         if not data:

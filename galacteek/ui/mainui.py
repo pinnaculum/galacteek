@@ -1,5 +1,5 @@
-from logbook import Handler, StringFormatterHandlerMixin
 import os.path
+from logbook import Handler, StringFormatterHandlerMixin
 
 from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtWidgets import QDialog
@@ -13,15 +13,21 @@ from PyQt5.QtWidgets import QInputDialog
 from PyQt5.QtWidgets import QPushButton
 from PyQt5.QtWidgets import QLabel
 
-from PyQt5.QtCore import (QCoreApplication, Qt,
-                          QTimer, QDateTime, QSize, QPoint)
+from PyQt5.QtCore import QCoreApplication
+from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QDateTime
+from PyQt5.QtCore import QSize
+from PyQt5.QtCore import QPoint
 
 from PyQt5.Qt import QSizePolicy
+
+from PyQt5.QtGui import QKeySequence
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QIcon
+
 from PyQt5 import QtWebEngineWidgets
-from PyQt5.QtGui import (QKeySequence,
-                         QPixmap,
-                         QFont,
-                         QIcon)
 
 from galacteek import ensure, log
 from galacteek.core.glogger import loggerUser, easyFormatString
@@ -51,7 +57,6 @@ from . import peers
 from . import eventlog
 from . import pin
 from . import chat
-
 
 from .helpers import *
 from .modelhelpers import *
@@ -157,13 +162,20 @@ def iPinningItemStatus(pinPath, pinProgress):
 def iAbout():
     from galacteek import __version__
     return QCoreApplication.translate('GalacteekWindow', '''
-        <p><b>Galacteek</b> is a Qt5 based IPFS browser
+        <p>
+        <b>Galacteek</b> is a multi-platform Qt5-based IPFS browser
         </p>
         <p>Author: David Ferlier</p>
         <p>Galacteek version {0}</p>''').format(__version__)
 
 
 class MainWindowLogHandler(Handler, StringFormatterHandlerMixin):
+    """
+    Custom logbook handler that logs to the status bar
+
+    Should be moved to a separate module
+    """
+
     def __init__(self, application_name=None, address=None,
                  facility='user', level=0, format_string=None,
                  filter=None, bubble=False, window=None):
@@ -178,6 +190,10 @@ class MainWindowLogHandler(Handler, StringFormatterHandlerMixin):
 
 
 class IPFSInfosDialog(QDialog):
+    """
+    IPFS node/repository information dialog
+    """
+
     def __init__(self, app, parent=None):
         super().__init__(parent)
 
@@ -594,7 +610,8 @@ class MainWindow(QMainWindow):
         self.toolbarMain.addWidget(self.hashmarkMgrButton)
         self.toolbarMain.addWidget(self.sharedHashmarkMgrButton)
         self.hashmarkMgrButton.hashmarkClicked.connect(self.onHashmarkClicked)
-        self.sharedHashmarkMgrButton.hashmarkClicked.connect(self.onHashmarkClicked)
+        self.sharedHashmarkMgrButton.hashmarkClicked.connect(
+            self.onHashmarkClicked)
         self.toolbarMain.addAction(getIcon('multimedia.png'), iMediaPlayer(),
                                    self.onOpenMediaPlayer)
 
@@ -1010,11 +1027,16 @@ class MainWindow(QMainWindow):
             self.multiLoaderHMenu.addAction(action)
 
     def onClipboardIpfs(self, valid, cid, path):
-        self.multiExploreHashAction.setEnabled(valid)
-        self.multiLoadHashAction.setEnabled(valid)
-        self.multiDagViewAction.setEnabled(valid)
-        self.multiIpldExplorerAction.setEnabled(valid)
-        self.multiPinAction.setEnabled(valid)
+        actions = [
+            self.multiExploreHashAction,
+            self.multiLoadHashAction,
+            self.multiDagViewAction,
+            self.multiIpldExplorerAction,
+            self.multiPinAction
+        ]
+
+        [action.setEnabled(valid) for action in actions]
+
         if valid:
             self.multiExploreHashAction.setText(iClipLoaderExplore(path))
             self.multiLoadHashAction.setText(iClipLoaderBrowse(path))
@@ -1023,11 +1045,7 @@ class MainWindow(QMainWindow):
             self.multiPinAction.setText(iClipLoaderPin(path))
             self.clipboardMultiLoader.setToolTip(iFromClipboard(path))
         else:
-            self.multiExploreHashAction.setText(iClipboardEmpty())
-            self.multiLoadHashAction.setText(iClipboardEmpty())
-            self.multiDagViewAction.setText(iClipboardEmpty())
-            self.multiPinAction.setText(iClipboardEmpty())
-            self.multiIpldExplorerAction.setText(iClipboardEmpty())
+            [action.setText(iClipboardEmpty()) for action in actions]
             self.clipboardMultiLoader.setToolTip(iClipboardEmpty())
 
     def onPinFromClipboard(self):
@@ -1110,7 +1128,7 @@ class MainWindow(QMainWindow):
         if modifiers & Qt.ControlModifier:
             if event.key() == Qt.Key_T:
                 self.addBrowserTab()
-            if event.key() == Qt.Key_F12:
+            if event.key() == Qt.Key_U:
                 self.showPinningStatusWidget()
             if event.key() == Qt.Key_W:
                 idx = self.ui.tabWidget.currentIndex()

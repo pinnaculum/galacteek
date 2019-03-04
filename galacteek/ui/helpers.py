@@ -112,10 +112,10 @@ class IPFSTreeKeyFilter(QObject):
                 self.returnPressed.emit()
                 return True
             if modifiers & Qt.ControlModifier:
-                if key == Qt.Key_H:
+                if key == Qt.Key_C or key == Qt.Key_Y:
                     self.copyHashPressed.emit()
                     return True
-                if key == Qt.Key_P:
+                if key == Qt.Key_A:
                     self.copyPathPressed.emit()
                     return True
                 if key == Qt.Key_X:
