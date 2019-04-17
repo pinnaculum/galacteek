@@ -6,6 +6,10 @@ from galacteek.ipfs.wrappers import *  # noqa
 from galacteek.ipfs.multi import multiAddrTcp4
 
 
+def protocolFormat(proto, ns='x'):
+    return '/{ns}/{proto}'.format(ns=ns, proto=proto)
+
+
 class P2PProtocol(asyncio.Protocol):
     def __init__(self):
         super(P2PProtocol, self).__init__()
@@ -47,7 +51,7 @@ class P2PListener(object):
             loop=None):
         self.service = service
         self.client = client
-        self._protocol = protocol
+        self._protocolName = protocol
         self._addressRange = addressRange
         self._listenMultiAddr = None
         self._factory = factory
@@ -60,8 +64,8 @@ class P2PListener(object):
         return self._server
 
     @property
-    def protocol(self):
-        return self._protocol
+    def protocolName(self):
+        return self._protocolName
 
     @property
     def addressRange(self):
@@ -80,38 +84,57 @@ class P2PListener(object):
     def protocolFactory(self):
         return self._factory
 
-    async def open(self):
-        addrSrv = await self.createServer(
-            host=self.addressRange[0],
-            portRange=self.addressRange[1]
-        )
+    @ipfsOp
+    async def protocol(self, ipfsoperator):
+        async with ipfsoperator as ipfsop:
+            if await ipfsop.client.agent_version_post0418():
+                return protocolFormat(self.protocolName)
+            else:
+                return self.protocolName
 
-        if addrSrv is None:
-            return None
+    @ipfsOp
+    async def open(self, ipfsoperator):
+        async with ipfsoperator as ipfsop:
+            post0418 = await ipfsop.client.agent_version_post0418()
 
-        listenAddress = '/ip4/{addr}/tcp/{port}'.format(
-            addr=addrSrv[0],
-            port=addrSrv[1]
-        )
+            addrSrv = await self.createServer(
+                host=self.addressRange[0],
+                portRange=self.addressRange[1]
+            )
 
-        try:
-            addr = await self.client.p2p.listener_open(
-                self.protocol, listenAddress)
-        except aioipfs.APIError:
-            # P2P not enabled or some other reason
-            log.debug('P2PListener: creating listener failed')
-            return None
-        else:
-            # Verify the multiaddr
-            lAddr = addr.get('Address', None)
-            if lAddr is None:  # wtf
+            if addrSrv is None:
                 return None
 
-            ipAddr, port = multiAddrTcp4(lAddr)
+            listenAddress = '/ip4/{addr}/tcp/{port}'.format(
+                addr=addrSrv[0],
+                port=addrSrv[1]
+            )
 
-            if ipAddr == addrSrv[0] and port == addrSrv[1]:
-                self.listenMultiAddr = lAddr
-                return self.listenMultiAddr
+            try:
+                protocol = await self.protocol()
+
+                addr = await self.client.p2p.listener_open(
+                    protocol, listenAddress)
+            except aioipfs.APIError as err:
+                # P2P not enabled or some other reason
+                log.debug(
+                    'P2PListener: creating listener failed: {msg}'.format(
+                        msg=err.message))
+                return None
+            else:
+                # Verify the multiaddr
+                if post0418:  # go-ipfs>=0.4.18 doesn't return listen address
+                    lAddr = listenAddress
+                else:
+                    lAddr = addr.get('Address', None)
+                    if lAddr is None:  # wtf
+                        return None
+
+                ipAddr, port = multiAddrTcp4(lAddr)
+
+                if ipAddr == addrSrv[0] and port == addrSrv[1]:
+                    self.listenMultiAddr = lAddr
+                    return self.listenMultiAddr
 
     async def createServer(self, host='127.0.0.1', portRange=[]):
         for port in portRange:
@@ -128,8 +151,9 @@ class P2PListener(object):
         return None
 
     async def close(self):
-        log.debug('P2PListener: closing {0}'.format(self.protocol))
-        await self.client.p2p.listener_close(self.protocol)
+        protocol = await self.protocol()
+        log.debug('P2PListener: closing {0}'.format(protocol))
+        await self.client.p2p.listener_close(protocol)
 
         if self._server:
             self._server.close()
@@ -163,20 +187,30 @@ class P2PTunnelsManager:
 
 
 @ipfsOpFn
-async def dial(op, peer, protocol, address=None):
-    log.debug('Stream dial {0} {1}'.format(peer, protocol))
-    resp = await op.client.p2p.stream_dial(peer, protocol,
-                                           address=address)
-    if resp:
-        maddr = resp.get('Address', None)
-        if not maddr:
-            return (None, 0)
+async def dial(ipfsop, peer, protocol, address):
+    async with ipfsop as op:
+        if await op.client.agent_version_post0418():
+            proto = protocolFormat(protocol)
+        else:
+            proto = protocol
 
-        ipaddr, port = multiAddrTcp4(maddr)
+        log.debug('Stream dial {0} {1}'.format(peer, proto))
+        try:
+            resp = await op.client.p2p.dial(proto, address, peer)
+        except aioipfs.APIError:
+            return
 
-        if ipaddr is None or port is 0:
-            return (None, 0)
+        if resp:
+            maddr = resp.get('Address', None)
+            if not maddr:
+                return (None, 0)
 
-        return (ipaddr, port)
-    else:
-        return (None, 0)
+            ipaddr, port = multiAddrTcp4(maddr)
+
+            if ipaddr is None or port is 0:
+                return (None, 0)
+
+            return (ipaddr, port)
+        else:
+            ipaddr, port = multiAddrTcp4(address)
+            return (ipaddr, port)

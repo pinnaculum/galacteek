@@ -7,6 +7,7 @@ from PyQt5.QtCore import (pyqtSignal, QObject)
 
 from galacteek import log
 from galacteek.ipfs.wrappers import ipfsOp
+from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.ipfsops import *  # noqa
 from galacteek.ipfs import pb
 from galacteek.core.asynclib import async_enterable

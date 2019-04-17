@@ -3,21 +3,34 @@ import time
 
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWebChannel import QWebChannel
-from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal
+
+from PyQt5.QtCore import QObject
+from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import QUrl
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QRegularExpression
 
-from PyQt5.QtWidgets import QWidget, QStackedWidget, QStyle, QApplication
-from PyQt5.QtGui import QSyntaxHighlighter, QTextCharFormat, QFont
+from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QStackedWidget
+from PyQt5.QtWidgets import QStyle
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QToolButton
+
+from PyQt5.QtGui import QSyntaxHighlighter
+from PyQt5.QtGui import QTextCharFormat
+from PyQt5.QtGui import QFont
 
 from galacteek.ipfs.cidhelpers import cidValid
+from galacteek.ipfs.cidhelpers import joinIpfs
+from galacteek.ipfs.cidhelpers import stripIpfs
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs import ipfssearch
 from galacteek.dweb.render import renderTemplate
 from galacteek import ensure
 
+from . import ui_ipfssearchinput
 from . import ui_ipfssearchw
 from .helpers import *
 from .hashmarks import *
@@ -46,6 +59,53 @@ def iErrFetching():
 def iSearching():
     return QCoreApplication.translate('IPFSSearchResults',
                                       '<b>Searching ...</b>')
+
+
+class IPFSSearchButton(QToolButton):
+    hovered = pyqtSignal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.iconNormal = getIcon('search-engine.png')
+        self.iconActive = getIcon('search-engine-zoom.png')
+        self.setCheckable(True)
+        self.setAutoRaise(True)
+
+    def enterEvent(self, ev):
+        self.hovered.emit()
+
+
+class IPFSSearchWidget(QWidget):
+    runSearch = pyqtSignal(str)
+    hidden = pyqtSignal()
+
+    def __init__(
+            self,
+            icon: str,
+            parent=None,
+            f=Qt.Popup | Qt.FramelessWindowHint):
+        super(IPFSSearchWidget, self).__init__(parent, f)
+
+        self.input = ui_ipfssearchinput.Ui_SearchInput()
+        self.input.setupUi(self)
+        self.input.searchQuery.returnPressed.connect(self.onSearch)
+
+    def focus(self):
+        self.input.searchQuery.setFocus(Qt.OtherFocusReason)
+
+    def onSearch(self):
+        text = self.input.searchQuery.text()
+        self.input.searchQuery.clear()
+        self.runSearch.emit(text)
+        self.hide()
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            self.hide()
+
+    def hideEvent(self, event):
+        self.hidden.emit()
 
 
 class Highlighter(QSyntaxHighlighter):
@@ -292,7 +352,7 @@ class IPFSSearchHandler(QObject):
         hashV = stripIpfs(path)
         if hashV:
             mainW = self.searchW.app.mainWindow
-            mainW.exploreHash(hashV)
+            mainW.exploreMultihash(hashV)
 
     @pyqtSlot()
     def search(self):
@@ -539,7 +599,7 @@ class IPFSSearchView(GalacteekTab):
 
         if self.lastSeenDays in range(0, 31):
             filters['last-seen'] = '>now-{0}d'.format(self.lastSeenDays)
-        elif self.lastSeenDays in range(31, 365):
+        elif self.lastSeenDays >= 31:
             filters['last-seen'] = '>now-{0}M'.format(
                 int(self.lastSeenDays / 30))
 

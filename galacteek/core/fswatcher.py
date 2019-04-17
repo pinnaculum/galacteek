@@ -1,4 +1,6 @@
-from PyQt5.QtCore import QFileSystemWatcher, QObject, pyqtSignal
+from PyQt5.QtCore import QFileSystemWatcher
+from PyQt5.QtCore import QObject
+from PyQt5.QtCore import pyqtSignal
 
 
 class FileWatcher(QObject):

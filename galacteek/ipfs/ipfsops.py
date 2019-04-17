@@ -5,24 +5,14 @@ import uuid
 
 from async_generator import async_generator, yield_
 
+from galacteek.ipfs.cidhelpers import joinIpfs
+from galacteek.ipfs.cidhelpers import stripIpfs
 from galacteek import log
 
 import aioipfs
 import asyncio
 
 GFILES_ROOT_PATH = '/galacteek/'
-
-
-def joinIpfs(path):
-    return os.path.join('/ipfs/', path)
-
-
-def stripIpfs(path):
-    return path.lstrip('/ipfs/')
-
-
-def joinIpns(path):
-    return os.path.join('/ipns/', path)
 
 
 def isDict(data):
@@ -83,6 +73,13 @@ class IPFSOperator(object):
     def debug(self, msg):
         log.debug('IPFSOp({0}): {1}'.format(self.uid, msg))
 
+    async def __aenter__(self):
+        await self.client.agent_version_get()
+        return self
+
+    async def __aexit__(self, *args):
+        return
+
     async def sleep(self, t=0):
         await asyncio.sleep(t)
 
@@ -94,9 +91,6 @@ class IPFSOperator(object):
             output = await asyncio.wait_for(fncall, timeout)
         except asyncio.TimeoutError:
             self.debug('Timeout waiting for coroutine {0}'.format(fncall))
-            return None
-        except aioipfs.APIError as e:
-            self.debug(e.message)
             return None
         else:
             return output
@@ -327,8 +321,11 @@ class IPFSOperator(object):
         return True
 
     async def publish(self, path, key='self', timeout=90):
-        return await self.waitFor(self.client.name.publish(path, key=key),
-                                  timeout)
+        try:
+            return await self.waitFor(self.client.name.publish(path, key=key),
+                                      timeout)
+        except aioipfs.APIError:
+            return None
 
     async def resolve(self, path, timeout=20, recursive=False):
         try:

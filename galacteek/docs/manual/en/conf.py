@@ -164,6 +164,3 @@ texinfo_documents = [
      author, 'galacteek', 'One line description of project.',
      'Miscellaneous'),
 ]
-
-
-

@@ -1,31 +1,37 @@
 import os.path
 
-from PyQt5.QtWidgets import (
-    QWidget,
-    QLabel,
-    QPushButton,
-    QVBoxLayout,
-    QHBoxLayout,
-    QTreeView,
-    QHeaderView,
-    QToolBox,
-    QTextBrowser,
-    QProgressBar,
-    QSpacerItem,
-    QSizePolicy,
-    QToolButton,
-    QAbstractItemView)
+from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QLabel
+from PyQt5.QtWidgets import QPushButton
+from PyQt5.QtWidgets import QVBoxLayout
+from PyQt5.QtWidgets import QHBoxLayout
+from PyQt5.QtWidgets import QTreeView
+from PyQt5.QtWidgets import QHeaderView
+from PyQt5.QtWidgets import QToolBox
+from PyQt5.QtWidgets import QTextBrowser
+from PyQt5.QtWidgets import QProgressBar
+from PyQt5.QtWidgets import QSpacerItem
+from PyQt5.QtWidgets import QSizePolicy
+from PyQt5.QtWidgets import QToolButton
+from PyQt5.QtWidgets import QAbstractItemView
 
-from PyQt5.QtGui import QStandardItemModel, QKeySequence
+from PyQt5.QtGui import QStandardItemModel
+from PyQt5.QtGui import QKeySequence
 
-from PyQt5.QtCore import (QCoreApplication, Qt, QEvent, QObject,
-                          pyqtSignal)
+from PyQt5.QtCore import QCoreApplication
+from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QEvent
+from PyQt5.QtCore import QObject
+from PyQt5.QtCore import pyqtSignal
 
 from galacteek.appsettings import *
 from galacteek.ipfs import cidhelpers
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import ipfsOp, ipfsStatOp
 from galacteek.ipfs.cache import IPFSEntryCache
+from galacteek.ipfs.mimetype import detectMimeTypeFromBuffer
+from galacteek.ipfs.cidhelpers import joinIpfs
+from galacteek import ensure
 
 from .i18n import *
 from .helpers import *
@@ -209,7 +215,7 @@ class IPFSHashExplorerToolBox(GalacteekTab):
         self.maxItems = maxItems
 
         self.toolbox = QToolBox()
-        self.exLayout = QVBoxLayout(self)
+        self.exLayout = QVBoxLayout()
         self.exLayout.addWidget(self.toolbox)
 
         self.vLayout.addLayout(self.exLayout)
@@ -274,25 +280,34 @@ class TreeEventFilter(QObject):
         return False
 
 
-class TextView(GalacteekTab):
-    def __init__(self, data, mimeType, parent=None):
-        super(TextView, self).__init__(parent)
+class TextViewerTab(GalacteekTab):
+    def __init__(self, parent=None):
+        super(TextViewerTab, self).__init__(parent)
 
-        self.textData = self.decode(data)
-
-        if not self.textData:
-            self.textData = 'Error decoding data'
-
-        self.textLayout = QVBoxLayout(self)
-
+        self.textLayout = QVBoxLayout()
         self.textBrowser = QTextBrowser()
-        if mimeType == 'text/html':
-            self.textBrowser.setHtml(self.textData)
-        else:
-            self.textBrowser.setPlainText(self.textData)
 
         self.textLayout.addWidget(self.textBrowser)
         self.vLayout.addLayout(self.textLayout)
+
+    def show(self, ipfsPath):
+        ensure(self.showFromPath(ipfsPath))
+
+    @ipfsOp
+    async def showFromPath(self, ipfsop, ipfsPath):
+        data = await ipfsop.client.cat(ipfsPath)
+
+        if not data:
+            return messageBox('File could not be read')
+
+        textData = self.decode(data)
+
+        mType = await detectMimeTypeFromBuffer(data)
+
+        if mType == 'text/html':
+            self.textBrowser.setHtml(textData)
+        else:
+            self.textBrowser.setPlainText(textData)
 
     def decode(self, data):
         for enc in ['utf-8', 'latin1', 'ascii']:
@@ -360,7 +375,6 @@ class IPFSHashExplorerWidget(QWidget):
 
         self.pinButton = QPushButton('Pin')
         self.pinButton.clicked.connect(self.onPin)
-        self.pinButton.setShortcut(QKeySequence('Ctrl+p'))
 
         self.hLayoutCtrl.addWidget(self.getButton)
         self.hLayoutCtrl.addWidget(self.pinButton)
@@ -377,7 +391,7 @@ class IPFSHashExplorerWidget(QWidget):
 
         self.model = IPFSHashItemModel(self)
         self.model.setHorizontalHeaderLabels(
-            [iFileName(), iFileSize(), iMimeType(), iFileHash()])
+            [iFileName(), iFileSize(), iMimeType(), iMultihash()])
         self.itemRoot = self.model.invisibleRootItem()
         self.itemRootIdx = self.model.indexFromItem(self.itemRoot)
 
@@ -427,6 +441,7 @@ class IPFSHashExplorerWidget(QWidget):
 
         dstPath = '{}.git'.format(
             os.path.join(dest, self.rootHash))
+
         # Clone it now. No need to run it in a threadpool since the git module
         # will run a git subprocess for the cloning
         try:
@@ -506,26 +521,18 @@ class IPFSHashExplorerWidget(QWidget):
         if item.mimeTypeName is None or item.mimeTypeName == 'text/html':
             return self.browse(fileHash)
 
-        self.gWindow.app.task(self.openFileWithMime, item, fileHash)
+        self.gWindow.app.task(self.openWithRscOpener, item, fileHash)
 
     @ipfsOp
-    async def openFileWithMime(self, ipfsop, item, fileHash):
-        fullPath = item.getFullPath()
-
-        if item.mimeCategory == 'text':
-            data = await ipfsop.client.cat(fileHash)
-            tView = TextView(data, item.mimeTypeName, parent=self.gWindow)
-            self.gWindow.registerTab(tView, item.entry['Name'], current=True)
-        elif item.mimeCategory == 'video' or item.mimeCategory == 'audio':
-            return self.gWindow.mediaPlayerQueue(fullPath)
-        elif item.mimeCategory == 'image':
-            return self.browseFs(fullPath)
-        else:
-            # Default
-            return self.browseFs(fullPath)
+    async def openWithRscOpener(self, ipfsop, item, fileHash):
+        # Pass a null mimetype to the resource opener so that it
+        # redetects the mimetype with a full (but slower) mime detection method
+        opener = self.gWindow.app.resourceOpener
+        await opener.open(item.getFullPath(), None)
 
     def updateTree(self):
-        self.app.task(self.listHash, self.rootPath, parentItem=self.itemRoot)
+        self.app.task(self.listMultihash, self.rootPath,
+                      parentItem=self.itemRoot)
 
     def onContextMenu(self, point):
         selModel = self.tree.selectionModel()
@@ -550,11 +557,11 @@ class IPFSHashExplorerWidget(QWidget):
                 self.app.task(self.getResource, item.getFullPath(),
                               dirSel)
 
-        menu.addAction(getIcon('pin-black.png'), 'Pin (recursive)',
+        menu.addAction(getIcon('pin-black.png'), iPinRecursive(),
                        lambda: pinRecursive())
         menu.addAction(getIcon('multimedia.png'), 'Queue in media player',
                        lambda: queueMedia())
-        menu.addAction('Download', lambda: download())
+        menu.addAction(iDownload(), lambda: download())
 
         menu.exec(self.tree.mapToGlobal(point))
 
@@ -566,8 +573,8 @@ class IPFSHashExplorerWidget(QWidget):
                       resolve_type=resolve_type), secs)
 
     @ipfsOp
-    async def listHash(self, ipfsop, objPath, parentItem,
-                       autoexpand=False):
+    async def listMultihash(self, ipfsop, objPath, parentItem,
+                            autoexpand=False):
         """ Lists contents of IPFS object referenced by objPath,
             and change the tree's model afterwards.
 
@@ -606,7 +613,7 @@ class IPFSHashExplorerWidget(QWidget):
 
         rStat = await ipfsop.objStatCtxUpdate(objPath)
 
-        if rStat:
+        if rStat and self.cid:
             self.setInfo(iCIDInfo(self.cid.version,
                                   rStat['NumLinks'],
                                   sizeFormat(rStat['CumulativeSize'])))

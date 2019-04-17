@@ -1,9 +1,15 @@
 import json
 import asyncio
 
-from PyQt5.QtWidgets import (QTextEdit, QVBoxLayout, QHBoxLayout,
-                             QCheckBox, QPushButton)
-from PyQt5.QtCore import Qt, QSaveFile, QIODevice
+from PyQt5.QtWidgets import QTextEdit
+from PyQt5.QtWidgets import QVBoxLayout
+from PyQt5.QtWidgets import QHBoxLayout
+from PyQt5.QtWidgets import QCheckBox
+from PyQt5.QtWidgets import QPushButton
+
+from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QSaveFile
+from PyQt5.QtCore import QIODevice
 
 from galacteek import log
 from galacteek.ipfs.wrappers import ipfsOp

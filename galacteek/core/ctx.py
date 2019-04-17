@@ -245,7 +245,7 @@ class P2PServices(QObject):
     async def streamsAll(self):
         return await self._manager.streams()
 
-    async def register(self, service):
+    def register(self, service):
         service.manager = self._manager
         self._services.append(service)
 

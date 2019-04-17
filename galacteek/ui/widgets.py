@@ -1,5 +1,5 @@
-import copy
 import re
+import asyncio
 
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QToolButton
@@ -8,12 +8,21 @@ from PyQt5.QtWidgets import QMenu
 from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWidgets import QWidgetAction
+from PyQt5.QtWidgets import QLabel
 
-from PyQt5.QtCore import pyqtSignal, QObject, Qt
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QPoint
 
+from PyQt5.QtGui import QImage
+from PyQt5.QtGui import QPixmap
+
 from galacteek.ipfs.wrappers import ipfsOp
+from galacteek import ensure
+
 from .helpers import getIcon
+from .helpers import getIconFromIpfs
+from .helpers import disconnectSig
 from .i18n import iNoTitle
 from .i18n import iHashmarksLibraryCountAvailable
 from .i18n import iLocalHashmarksCount
@@ -52,11 +61,12 @@ class GalacteekTab(QWidget):
 
 
 class PopupToolButton(QToolButton):
-    def __init__(self, icon=None, parent=None, menu=None):
+    def __init__(self, icon=None, parent=None, menu=None,
+                 mode=QToolButton.MenuButtonPopup):
         super(PopupToolButton, self).__init__(parent)
 
         self.menu = menu if menu else QMenu()
-        self.setPopupMode(QToolButton.MenuButtonPopup)
+        self.setPopupMode(mode)
         self.setMenu(self.menu)
 
         if icon:
@@ -67,6 +77,7 @@ class _HashmarksCommon:
     def makeAction(self, path, mark):
         tLenMax = 64
         title = mark['metadata'].get('title', iNoTitle())
+        icon = mark.get('icon', None)
         fullTitle = title
 
         if len(title) > tLenMax:
@@ -76,10 +87,21 @@ class _HashmarksCommon:
         action.setToolTip(fullTitle)
         action.setData({
             'path': path,
-            'mark': mark
+            'mark': mark,
+            'iconcid': icon
         })
-        action.setIcon(getIcon('ipfs-logo-128-white-outline.png'))
+
+        if not icon:
+            # Default icon
+            action.setIcon(getIcon('ipfs-logo-128-white-outline.png'))
+
         return action
+
+    @ipfsOp
+    async def loadMarkIcon(self, ipfsop, action, iconCid):
+        icon = await getIconFromIpfs(ipfsop, iconCid)
+        if icon:
+            action.setIcon(icon)
 
 
 class HashmarkMgrButton(PopupToolButton, _HashmarksCommon):
@@ -87,8 +109,10 @@ class HashmarkMgrButton(PopupToolButton, _HashmarksCommon):
 
     def __init__(self, marks, iconFile='hashmarks.png',
                  maxItemsPerCategory=128, parent=None):
-        super(HashmarkMgrButton, self).__init__(parent=parent)
+        super(HashmarkMgrButton, self).__init__(parent=parent,
+                                                mode=QToolButton.InstantPopup)
 
+        self.setObjectName('hashmarksMgrButton')
         self.menu.setObjectName('hashmarksMgrMenu')
         self.hCount = 0
         self.marks = marks
@@ -96,16 +120,22 @@ class HashmarkMgrButton(PopupToolButton, _HashmarksCommon):
         self.maxItemsPerCategory = maxItemsPerCategory
         self.setIcon(getIcon(iconFile))
 
-        try:
-            self.marks.changed.disconnect(self.onChanged)
-        except:
-            pass
+        disconnectSig(self.marks.changed, self.onChanged)
 
         self.marks.changed.connect(self.onChanged)
-        self.updateMenu()
 
     def onChanged(self):
         self.updateMenu()
+
+    async def updateIcons(self):
+        for mName, menu in self.cMenus.items():
+            await asyncio.sleep(0)
+
+            for action in menu.actions():
+                data = action.data()
+
+                if data['iconcid']:
+                    ensure(self.loadMarkIcon(action, data['iconcid']))
 
     def updateMenu(self):
         self.hCount = 0
@@ -114,7 +144,6 @@ class HashmarkMgrButton(PopupToolButton, _HashmarksCommon):
         for category in categories:
             marks = self.marks.getCategoryMarks(category)
             mItems = marks.items()
-            mDisplayC = min(len(mItems), self.maxItemsPerCategory)
 
             if len(mItems) not in range(1, self.maxItemsPerCategory):
                 continue
@@ -164,12 +193,14 @@ class HashmarksLibraryButton(PopupToolButton, _HashmarksCommon):
 
     def __init__(self, iconFile='hashmarks-library.png',
                  maxItemsPerCategory=32, parent=None):
-        super(HashmarksLibraryButton, self).__init__(parent=parent)
+        super(HashmarksLibraryButton, self).__init__(
+            parent=parent, mode=QToolButton.InstantPopup)
 
         self.cMenus = {}
         self.hCount = 0
         self.maxItemsPerCategory = maxItemsPerCategory
         self.setIcon(getIcon(iconFile))
+        self.setObjectName('hashmarksLibraryButton')
         self.menu.setObjectName('hashmarksLibraryMenu')
         self.searchMenu = None
         self.addSearchMenu()
@@ -271,3 +302,39 @@ class HashmarksLibraryButton(PopupToolButton, _HashmarksCommon):
 
             if closeMenu:
                 self.menu.hide()
+
+
+class ImageWidget(QLabel):
+    """
+    Displays an image stored in IPFS into a QLabel
+    """
+
+    def __init__(self, scaleWidth=64, parent=None):
+        super(ImageWidget, self).__init__(parent)
+
+        self._imgPath = None
+        self._scaleWidth = scaleWidth
+
+    @property
+    def imgPath(self):
+        return self._imgPath
+
+    @ipfsOp
+    async def load(self, ipfsop, path):
+        try:
+            imgData = await ipfsop.waitFor(
+                ipfsop.client.cat(path), 8
+            )
+
+            if not imgData:
+                raise Exception('Failed to load image')
+
+            img1 = QImage()
+            img1.loadFromData(imgData)
+            img = img1.scaledToWidth(self._scaleWidth)
+
+            self.setPixmap(QPixmap.fromImage(img))
+            self._imgPath = path
+            return True
+        except Exception:
+            return False

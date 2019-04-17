@@ -48,7 +48,7 @@
 
 __version__ = '0.3.6'
 
-from galacteek.core.asynclib import *
+from galacteek.core.asynclib import *  # noqa
 from galacteek.core import glogger
 
 GALACTEEK_NAME = 'galacteek'

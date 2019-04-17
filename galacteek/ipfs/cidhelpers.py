@@ -1,8 +1,55 @@
 from galacteek.ipfs.cid import make_cid
-from galacteek.ipfs.ipfsops import joinIpfs
 
 import multihash
 import re
+import os.path
+
+
+def joinIpfs(path):
+    if isinstance(path, str):
+        return os.path.join('/ipfs/', path)
+
+
+def joinIpns(path):
+    if isinstance(path, str):
+        return os.path.join('/ipns/', path)
+
+
+def stripIpfs(path):
+    if isinstance(path, str):
+        return path.lstrip('/ipfs/')
+
+
+def isIpfsPath(path):
+    if isinstance(path, str):
+        return path.startswith('/ipfs/')
+
+
+def isIpnsPath(path):
+    if isinstance(path, str):
+        return path.startswith('/ipns/')
+
+
+def shortCidRepr(cid):
+    cidStr = str(cid)
+    if cid.version == 0:
+        return '... {0}'.format(cidStr[3 * int(len(cidStr) / 5):])
+    else:
+        return '... {0}'.format(cidStr[4 * int(len(cidStr) / 5):])
+
+
+def shortPathRepr(path):
+    if isIpfsPath(path) or isIpnsPath(path):
+        basename = os.path.basename(path)
+        if cidValid(basename):
+            cid = getCID(basename)
+            return shortCidRepr(cid)
+        else:
+            return basename
+    else:
+        cid = getCID(path)
+        if cid:
+            return shortCidRepr(cid)
 
 
 def isMultihash(hashstring):
@@ -28,7 +75,9 @@ def getCID(hashstring):
 
 
 def cidConvertBase32(multihash):
-    """Convert a base58-encoded CIDv1 to base32"""
+    """
+    Convert a base58-encoded CIDv1 to base32
+    """
 
     cid = getCID(multihash)
     if not cid or cid.version != 1:

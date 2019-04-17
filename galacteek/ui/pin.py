@@ -13,7 +13,7 @@ from PyQt5.QtGui import QBrush
 from PyQt5.QtGui import QColor
 
 from galacteek.ipfs import cidhelpers
-from galacteek.ipfs.ipfsops import joinIpfs
+from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek import ensure
 
 from .widgets import GalacteekTab

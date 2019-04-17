@@ -1,22 +1,37 @@
 import os.path
 
-from PyQt5.QtWidgets import (QWidget,
-                             QLabel, QVBoxLayout, QAction,
-                             QHBoxLayout, QListView,
-                             QToolButton, QStyle, QSlider, QMenu)
+from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QLabel
+from PyQt5.QtWidgets import QVBoxLayout
+from PyQt5.QtWidgets import QAction
+from PyQt5.QtWidgets import QHBoxLayout
+from PyQt5.QtWidgets import QListView
+from PyQt5.QtWidgets import QToolButton
+from PyQt5.QtWidgets import QStyle
+from PyQt5.QtWidgets import QSlider
+from PyQt5.QtWidgets import QMenu
 
-from PyQt5.QtMultimedia import (QMediaPlayer, QMediaContent, QMediaPlaylist,
-                                QMultimedia)
+from PyQt5.QtMultimedia import QMediaPlayer
+from PyQt5.QtMultimedia import QMediaContent
+from PyQt5.QtMultimedia import QMediaPlaylist
+from PyQt5.QtMultimedia import QMultimedia
+
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 
-from PyQt5.QtCore import (QCoreApplication, Qt, QAbstractItemModel,
-                          QModelIndex, QTime)
+from PyQt5.QtCore import QCoreApplication
+from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QAbstractItemModel
+from PyQt5.QtCore import QModelIndex
+from PyQt5.QtCore import QTime
 
 from galacteek.core.jsono import *
+from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.ipfsops import *
 
-from . import ui_mediaplayer, ui_mediaplaylist
+from . import ui_mediaplayer
+from . import ui_mediaplaylist
 
+from .clipboard import iClipboardEmpty
 from .widgets import *
 from .helpers import *
 
@@ -196,10 +211,11 @@ class MediaPlayerTab(GalacteekTab):
         self.togglePList.setFixedSize(32, 128)
         self.togglePList.clicked.connect(self.onTogglePlaylist)
 
+        self.clipboardMediaItem = None
         self.clipboardButton = QToolButton(clicked=self.onClipboardClicked)
         self.clipboardButton.setIcon(getIconClipboard())
-        self.clipboardButton.setEnabled(self.app.clipTracker.hasIpfs)
-        self.app.clipTracker.clipboardHasIpfs.connect(self.onClipboardIpfs)
+        self.clipboardButton.setEnabled(False)
+        self.app.clipTracker.currentItemChanged.connect(self.onClipItemChange)
 
         self.playButton = QToolButton(clicked=self.onPlayClicked)
         self.playButton.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
@@ -269,7 +285,7 @@ class MediaPlayerTab(GalacteekTab):
     def onLoadPlaylistPath(self):
         current = self.app.clipTracker.getCurrent()
         if current:
-            self.app.task(self.loadPlaylistFromPath, current['path'])
+            self.app.task(self.loadPlaylistFromPath, current.path)
 
     def onCopyPlaylistPath(self):
         if self.playlistIpfsPath:
@@ -348,15 +364,26 @@ class MediaPlayerTab(GalacteekTab):
             urls.append(media.canonicalUrl())
         return urls
 
-    def onClipboardIpfs(self, valid, cid, path):
-        self.clipboardButton.setEnabled(valid)
-        self.clipboardButton.setToolTip(path)
-        self.loadPathAction.setEnabled(valid)
+    def onClipItemChange(self, item):
+        def analyzeMimeType(cItem):
+            if cItem.mimeCategory in ['audio', 'video', 'image']:
+                self.clipboardMediaItem = cItem
+                self.clipboardButton.setEnabled(True)
+                self.loadPathAction.setEnabled(True)
+                self.clipboardButton.setToolTip(cItem.path)
+            else:
+                self.clipboardButton.setEnabled(False)
+                self.loadPathAction.setEnabled(False)
+                self.clipboardButton.setToolTip(iClipboardEmpty())
+
+        item.mimeTypeAvailable.connect(
+            lambda mType: analyzeMimeType(item))
 
     def onClipboardClicked(self):
-        current = self.app.clipTracker.getCurrent()
-        if current:
-            self.playFromPath(current['path'])
+        if self.clipboardMediaItem:
+            self.playFromPath(self.clipboardMediaItem.path)
+        else:
+            messageBox('Not a multimedia resource')
 
     def onPlaylistNext(self):
         self.playlist.next()

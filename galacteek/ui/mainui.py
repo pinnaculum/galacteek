@@ -1,5 +1,7 @@
 import os.path
-from logbook import Handler, StringFormatterHandlerMixin
+
+from logbook import Handler
+from logbook import StringFormatterHandlerMixin
 
 from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtWidgets import QDialog
@@ -23,36 +25,33 @@ from PyQt5.QtCore import QPoint
 from PyQt5.Qt import QSizePolicy
 
 from PyQt5.QtGui import QKeySequence
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtGui import QFont
-from PyQt5.QtGui import QIcon
 
 from PyQt5 import QtWebEngineWidgets
 
 from galacteek import ensure, log
-from galacteek.core.glogger import loggerUser, easyFormatString
+from galacteek.core.glogger import loggerUser
+from galacteek.core.glogger import easyFormatString
 from galacteek.core.asynclib import asyncify
 from galacteek.ui import mediaplayer
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.ipfsops import *
+from galacteek.ipfs.cidhelpers import ipfsPathExtract
+from galacteek.ipfs.cidhelpers import joinIpns
 
 from galacteek.core.orbitdb import GalacteekOrbitConnector
 from galacteek.dweb.page import HashmarksPage, DWebView, WebTab
 
 from . import ui_galacteek
 from . import ui_ipfsinfos
-from . import ui_ipfssearchinput
 
 from . import browser
 from . import files
 from . import keys
 from . import settings
-from . import hashmarks
 from . import orbital
 from . import textedit
 from . import ipfsview
-from . import dag
-from . import ipfssearchview
+from . import ipfssearch
 from . import peers
 from . import eventlog
 from . import pin
@@ -67,9 +66,16 @@ from .dialogs import *
 from ..appsettings import *
 from .i18n import *
 
+from .clipboard import ClipboardManager
+from .clipboard import ClipboardItemsStack
+
 
 def iFileManager():
     return QCoreApplication.translate('GalacteekWindow', 'File Manager')
+
+
+def iHashmarksManager():
+    return QCoreApplication.translate('GalacteekWindow', 'Hashmarks manager')
 
 
 def iKeys():
@@ -78,10 +84,6 @@ def iKeys():
 
 def iPinningStatus():
     return QCoreApplication.translate('GalacteekWindow', 'Pinning status')
-
-
-def iDagViewer():
-    return QCoreApplication.translate('GalacteekWindow', 'DAG viewer')
 
 
 def iEventLog():
@@ -97,48 +99,6 @@ def iIpfsSearch(text):
                                       'Search: {0}').format(text)
 
 
-def iFromClipboard(path):
-    return QCoreApplication.translate(
-        'GalacteekWindow',
-        'Clipboard: browse IPFS path: {0}').format(path)
-
-
-def iClipboardEmpty():
-    return QCoreApplication.translate(
-        'GalacteekWindow',
-        'No valid IPFS CID/path in the clipboard')
-
-
-def iClipboardClearHistory():
-    return QCoreApplication.translate(
-        'GalacteekWindow',
-        'Clear clipboard history')
-
-
-def iClipLoaderExplore(path):
-    return QCoreApplication.translate('GalacteekWindow',
-                                      'Explore IPFS path: {0}').format(path)
-
-
-def iClipLoaderPin(path):
-    return QCoreApplication.translate('GalacteekWindow',
-                                      'Pin: {0}').format(path)
-
-
-def iClipLoaderIpldExplorer(path):
-    return QCoreApplication.translate('GalacteekWindow',
-                                      'Run IPLD Explorer: {0}').format(path)
-
-
-def iClipLoaderDagView(path):
-    return QCoreApplication.translate('GalacteekWindow',
-                                      'DAG view: {0}').format(path)
-
-
-def iClipboardHistory():
-    return QCoreApplication.translate('GalacteekWindow', 'Clipboard history')
-
-
 def iNewProfile():
     return QCoreApplication.translate('GalacteekWindow', 'New Profile')
 
@@ -146,11 +106,6 @@ def iNewProfile():
 def iSwitchedProfile():
     return QCoreApplication.translate('GalacteekWindow',
                                       'Successfully switched profile')
-
-
-def iClipLoaderBrowse(path):
-    return QCoreApplication.translate('GalacteekWindow',
-                                      'Browse IPFS path: {0}').format(path)
 
 
 def iPinningItemStatus(pinPath, pinProgress):
@@ -238,7 +193,27 @@ class QuickAccessToolBar(QToolBar):
 
         self.setObjectName('toolbarQa')
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.setMinimumWidth(400)
+        self.setAcceptDrops(True)
         self.mainW = window
+        self.qaData = None
+
+    def dragEnterEvent(self, event):
+        mimeData = event.mimeData()
+
+        if mimeData.hasUrls():
+            event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        mimeData = event.mimeData()
+
+        if mimeData.hasUrls():
+            for url in mimeData.urls():
+                ex = ipfsPathExtract(url.toString())
+                if not ex:
+                    continue
+
+        event.acceptProposedAction()
 
     @ipfsOp
     async def registerFromMarkMeta(self, op, metadata):
@@ -250,16 +225,11 @@ class QuickAccessToolBar(QToolBar):
         mIcon = mark.get('icon', None)
 
         if mIcon:
-            try:
-                iconData = await op.client.cat(mIcon)
-                pixmap = QPixmap()
-                pixmap.loadFromData(iconData)
-                icon = QIcon(pixmap)
-            except Exception as e:
-                log.debug('Error loading icon {}'.format(e))
+            icon = await getIconFromIpfs(op, mIcon)
+
+            if icon is None:
                 icon = getIcon('unknown-file.png')
             else:
-                # Pin the icon since it's valid
                 if not await op.isPinned(mIcon):
                     log.debug('Pinning icon {0}'.format(mIcon))
                     await op.ctx.pin(mIcon)
@@ -352,48 +322,6 @@ class ProfileButton(PopupToolButton):
     pass
 
 
-class IPFSSearchButton(QToolButton):
-    hovered = pyqtSignal()
-
-    def enterEvent(self, ev):
-        self.hovered.emit()
-
-    def leaveEvent(self, ev):
-        pass
-
-
-class IPFSSearchWidget(QWidget):
-    runSearch = pyqtSignal(str)
-    hidden = pyqtSignal()
-
-    def __init__(
-            self,
-            icon: str,
-            parent=None,
-            f=Qt.Popup | Qt.FramelessWindowHint):
-        super(IPFSSearchWidget, self).__init__(parent, f)
-
-        self.input = ui_ipfssearchinput.Ui_SearchInput()
-        self.input.setupUi(self)
-        self.input.searchQuery.returnPressed.connect(self.onSearch)
-
-    def focus(self):
-        self.input.searchQuery.setFocus(Qt.OtherFocusReason)
-
-    def onSearch(self):
-        text = self.input.searchQuery.text()
-        self.input.searchQuery.clear()
-        self.runSearch.emit(text)
-        self.hide()
-
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Escape:
-            self.hide()
-
-    def hideEvent(self, event):
-        self.hidden.emit()
-
-
 class TabWidgetKeyFilter(QObject):
     nextPressed = pyqtSignal()
 
@@ -459,34 +387,6 @@ class MainWindow(QMainWindow):
         self.pinAllGlobalButton.toggled.connect(self.onToggledPinAllGlobal)
         self.pinAllGlobalButton.setChecked(self.app.settingsMgr.browserAutoPin)
 
-        self.multiLoaderMenu = QMenu()
-        self.multiLoaderHMenu = QMenu(iClipboardHistory())
-        self.multiLoaderHMenu.triggered.connect(self.onClipboardHistoryMenu)
-        self.multiLoadHashAction = QAction(getIconIpfsIce(),
-                                           iClipboardEmpty(), self,
-                                           shortcut=QKeySequence('Ctrl+o'),
-                                           triggered=self.onLoadFromClipboard)
-        self.multiExploreHashAction = QAction(
-            getIconIpfsIce(),
-            iClipboardEmpty(), self,
-            shortcut=QKeySequence('Ctrl+e'),
-            triggered=self.onExploreFromClipboard)
-        self.multiDagViewAction = QAction(
-            getIcon('ipld-logo.png'),
-            iClipboardEmpty(), self,
-            shortcut=QKeySequence('Ctrl+g'),
-            triggered=self.onDagViewFromClipboard)
-        self.multiIpldExplorerAction = QAction(
-            getIcon('ipld-logo.png'),
-            iClipboardEmpty(), self,
-            shortcut=QKeySequence('Ctrl+i'),
-            triggered=self.onIpldExplorerFromClipboard)
-        self.multiPinAction = QAction(
-            getIcon('pin-black.png'),
-            iClipboardEmpty(), self,
-            shortcut=QKeySequence('Ctrl+p'),
-            triggered=self.onPinFromClipboard)
-
         self.toolbarMain = MainToolBar(self)
 
         self.toolbarMain.setAllowedAreas(
@@ -545,7 +445,11 @@ class MainWindow(QMainWindow):
         self.hashmarkMgrButton = HashmarkMgrButton(
             marks=self.app.marksLocal)
         self.hashmarkMgrButton.setShortcut(QKeySequence('Ctrl+m'))
-        self.hashmarkMgrButton.clicked.connect(self.addHashmarksTab)
+        self.hashmarkMgrButton.menu.addAction(getIcon('hashmarks.png'),
+                                              iHashmarksManager(),
+                                              self.addHashmarksTab)
+        self.hashmarkMgrButton.menu.addSeparator()
+        self.hashmarkMgrButton.updateMenu()
 
         # Shared hashmarks mgr button
         self.sharedHashmarkMgrButton = HashmarksLibraryButton()
@@ -557,13 +461,16 @@ class MainWindow(QMainWindow):
         self.peersButton.clicked.connect(
             lambda: self.onPeersMgrClicked())
 
+        self.clipboardItemsStack = ClipboardItemsStack(parent=self.toolbarMain)
+
         # Clipboard loader button
-        self.clipboardMultiLoader = QToolButton()
-        self.clipboardMultiLoader.setIcon(getIcon('clipboard.png'))
-        self.clipboardMultiLoader.clicked.connect(self.onLoadFromClipboard)
-        self.clipboardMultiLoader.setMenu(self.multiLoaderMenu)
-        self.clipboardMultiLoader.setToolTip(iClipboardEmpty())
-        self.clipboardMultiLoader.setPopupMode(QToolButton.MenuButtonPopup)
+        self.clipboardManager = ClipboardManager(
+            self.app.clipTracker,
+            self.clipboardItemsStack,
+            self.app.resourceOpener,
+            icon=getIcon('clipboard.png'),
+            parent=self.toolbarMain
+        )
 
         # Settings button
         self.settingsToolButton = QToolButton()
@@ -587,28 +494,26 @@ class MainWindow(QMainWindow):
         menu.addAction('About', lambda: self.onAboutGalacteek())
         self.helpToolButton.setMenu(menu)
 
-        self.ipfsSearchButton = IPFSSearchButton()
+        self.ipfsSearchButton = ipfssearch.IPFSSearchButton()
         self.ipfsSearchButton.hovered.connect(
             lambda: self.toggleIpfsSearchWidget(True))
         self.ipfsSearchButton.setShortcut(QKeySequence('Ctrl+s'))
-        self.ipfsSearchButton.setIcon(getIcon('search-engine.png'))
-        self.ipfsSearchButton.setCheckable(True)
-        self.ipfsSearchButton.setAutoRaise(True)
-        self.ipfsSearchButton.toggled.connect(
-            lambda: self.toggleIpfsSearchWidget())
+        self.ipfsSearchButton.setIcon(self.ipfsSearchButton.iconNormal)
+        self.ipfsSearchButton.toggled.connect(self.toggleIpfsSearchWidget)
 
-        self.ipfsSearchWidget = IPFSSearchWidget(self)
+        self.ipfsSearchWidget = ipfssearch.IPFSSearchWidget(self)
         self.ipfsSearchWidget.runSearch.connect(
             lambda text: self.addIpfsSearchView(text))
         self.ipfsSearchWidget.hidden.connect(
             lambda: self.ipfsSearchButton.setChecked(False))
 
         self.toolbarMain.addWidget(self.browseButton)
+        self.toolbarMain.addWidget(self.hashmarkMgrButton)
+        self.toolbarMain.addWidget(self.sharedHashmarkMgrButton)
+
         self.toolbarMain.addSeparator()
         self.toolbarMain.addWidget(self.fileManagerButton)
 
-        self.toolbarMain.addWidget(self.hashmarkMgrButton)
-        self.toolbarMain.addWidget(self.sharedHashmarkMgrButton)
         self.hashmarkMgrButton.hashmarkClicked.connect(self.onHashmarkClicked)
         self.sharedHashmarkMgrButton.hashmarkClicked.connect(
             self.onHashmarkClicked)
@@ -625,7 +530,11 @@ class MainWindow(QMainWindow):
 
         self.toolbarMain.addWidget(self.toolbarMain.emptySpace)
         self.toolbarMain.addWidget(self.ipfsSearchButton)
-        self.toolbarMain.addWidget(self.clipboardMultiLoader)
+        self.toolbarMain.addSeparator()
+        self.toolbarMain.addWidget(self.clipboardItemsStack)
+        self.toolbarMain.addWidget(self.clipboardManager)
+        self.toolbarMain.addSeparator()
+
         self.toolbarMain.addWidget(self.pinAllGlobalButton)
         self.toolbarMain.addWidget(self.settingsToolButton)
 
@@ -634,27 +543,15 @@ class MainWindow(QMainWindow):
 
         self.addToolBar(Qt.LeftToolBarArea, self.toolbarMain)
 
-        self.multiExploreHashAction.setEnabled(False)
-        self.multiLoadHashAction.setEnabled(False)
-        self.multiDagViewAction.setEnabled(False)
-        self.multiIpldExplorerAction.setEnabled(False)
-        self.multiPinAction.setEnabled(False)
-        self.multiLoaderMenu.addAction(self.multiLoadHashAction)
-        self.multiLoaderMenu.addAction(self.multiExploreHashAction)
-        self.multiLoaderMenu.addAction(self.multiDagViewAction)
-        self.multiLoaderMenu.addAction(self.multiIpldExplorerAction)
-        self.multiLoaderMenu.addAction(self.multiPinAction)
-        self.multiLoaderMenu.addMenu(self.multiLoaderHMenu)
-
         self.ui.tabWidget.setDocumentMode(True)
         self.ui.tabWidget.setTabsClosable(True)
         self.ui.tabWidget.tabCloseRequested.connect(self.onTabCloseRequest)
         self.ui.tabWidget.setElideMode(Qt.ElideMiddle)
         self.ui.tabWidget.setUsesScrollButtons(True)
-        kf = TabWidgetKeyFilter(self)
-        kf.nextPressed.connect(self.cycleTabs)
 
-        self.ui.tabWidget.installEventFilter(kf)
+        tabKeyFilter = TabWidgetKeyFilter(self)
+        tabKeyFilter.nextPressed.connect(self.cycleTabs)
+        self.ui.tabWidget.installEventFilter(tabKeyFilter)
 
         # Chat room
         self.chatRoomWidget = chat.ChatRoomWidget(self)
@@ -707,9 +604,6 @@ class MainWindow(QMainWindow):
         self.app.systemTray.messageClicked.connect(self.onSystrayMsgClicked)
 
         # Application signals
-        self.app.clipTracker.clipboardHasIpfs.connect(self.onClipboardIpfs)
-        self.app.clipTracker.clipboardHistoryChanged.connect(
-            self.onClipboardHistory)
         self.app.manualAvailable.connect(self.onManualAvailable)
 
         self.ui.tabWidget.removeTab(0)
@@ -743,8 +637,7 @@ class MainWindow(QMainWindow):
             self.ui.tabWidget.setCurrentIndex(0)
 
     def onHashmarkClicked(self, path, title):
-        tab = self.addBrowserTab()
-        tab.browseFsPath(path)
+        ensure(self.app.resourceOpener.open(path, None))
 
     def onMainToolbarMoved(self, orientation):
         self.toolbarMain.lastPos = self.toolbarMain.pos()
@@ -755,7 +648,13 @@ class MainWindow(QMainWindow):
         if self.toolbarMain.vertical:
             self.toolbarMain.emptySpace.setSizePolicy(
                 QSizePolicy.Minimum, QSizePolicy.Expanding)
+            self.qaToolbar.setMinimumHeight(
+                self.toolbarMain.height() / 3)
+            self.qaToolbar.setMinimumWidth(32)
         elif self.toolbarMain.horizontal:
+            self.qaToolbar.setMinimumWidth(
+                self.width() / 3)
+            self.qaToolbar.setMinimumHeight(32)
             self.toolbarMain.emptySpace.setSizePolicy(QSizePolicy.Expanding,
                                                       QSizePolicy.Minimum)
 
@@ -834,6 +733,7 @@ class MainWindow(QMainWindow):
     def onRepoReady(self):
         self.enableButtons()
         ensure(self.qaToolbar.init())
+        ensure(self.hashmarkMgrButton.updateIcons())
 
         if self.app.enableOrbital and self.app.ipfsCtx.orbitConnector is None:
             self.app.ipfsCtx.orbitConnector = GalacteekOrbitConnector(
@@ -938,7 +838,7 @@ class MainWindow(QMainWindow):
 
     def enableButtons(self, flag=True):
         for btn in [
-                self.clipboardMultiLoader,
+                self.clipboardManager,
                 self.browseButton,
                 self.fileManagerButton,
                 self.chatRoomButton,
@@ -994,107 +894,6 @@ class MainWindow(QMainWindow):
     def onToggledPinAllGlobal(self, checked):
         self.pinAllGlobalChecked = checked
 
-    def onClipboardHistoryMenu(self, action):
-        aData = action.data()
-
-        if aData:
-            hItem = aData['item']
-            self.addBrowserTab().browseFsPath(hItem['path'])
-
-    def onClipboardHistory(self, history):
-        # Called when the clipboard history has changed
-        self.multiLoaderHMenu.clear()
-        hItems = history.items()
-
-        def onHistoryClear():
-            self.app.clipTracker.clearHistory()
-            self.onClipboardIpfs(False, None, None)
-
-        self.multiLoaderHMenu.addSeparator()
-        self.multiLoaderHMenu.addAction(iClipboardClearHistory(),
-                                        lambda: onHistoryClear())
-
-        for hTs, hItem in hItems:
-            action = QAction('{0} ({1})'.format(
-                hItem['path'],
-                hItem['date'].toString()),
-                self)
-            action.setIcon(getIconIpfsIce())
-            action.setData({
-                'item': hItem
-            })
-
-            self.multiLoaderHMenu.addAction(action)
-
-    def onClipboardIpfs(self, valid, cid, path):
-        actions = [
-            self.multiExploreHashAction,
-            self.multiLoadHashAction,
-            self.multiDagViewAction,
-            self.multiIpldExplorerAction,
-            self.multiPinAction
-        ]
-
-        [action.setEnabled(valid) for action in actions]
-
-        if valid:
-            self.multiExploreHashAction.setText(iClipLoaderExplore(path))
-            self.multiLoadHashAction.setText(iClipLoaderBrowse(path))
-            self.multiDagViewAction.setText(iClipLoaderDagView(path))
-            self.multiIpldExplorerAction.setText(iClipLoaderIpldExplorer(path))
-            self.multiPinAction.setText(iClipLoaderPin(path))
-            self.clipboardMultiLoader.setToolTip(iFromClipboard(path))
-        else:
-            [action.setText(iClipboardEmpty()) for action in actions]
-            self.clipboardMultiLoader.setToolTip(iClipboardEmpty())
-
-    def onPinFromClipboard(self):
-        current = self.app.clipTracker.getCurrent()
-        if current:
-            ensure(self.app.ipfsCtx.pin(current['path'], True, None,
-                                        qname='clipboard'))
-
-    def onIpldExplorerFromClipboard(self):
-        """
-        Open the IPLD explorer application for the CID in the clipboard
-        """
-        current = self.app.clipTracker.getCurrent()
-        if current:
-            mPath, mark = self.app.marksLocal.searchByMetadata({
-                'title': 'IPLD explorer'})
-            if mark:
-                link = os.path.join(
-                    mPath, '#', 'explore', stripIpfs(current['path']))
-                self.addBrowserTab().browseFsPath(link)
-
-    def onLoadFromClipboard(self):
-        current = self.app.clipTracker.getCurrent()
-        if current:
-            self.addBrowserTab().browseFsPath(current['path'])
-        else:
-            messageBox(iClipboardEmpty())
-
-    def onExploreFromClipboard(self):
-        current = self.app.clipTracker.getCurrent()
-        if current:
-            self.app.task(self.exploreClipboardPath, current['path'])
-        else:
-            messageBox(iClipboardEmpty())
-
-    def onDagViewFromClipboard(self):
-        current = self.app.clipTracker.getCurrent()
-        if current:
-            view = dag.DAGViewer(current['path'], self)
-            self.registerTab(view, iDagViewer(), current=True,
-                             icon=getIcon('ipld.png'))
-        else:
-            messageBox(iClipboardEmpty())
-
-    @ipfsStatOp
-    async def exploreClipboardPath(self, ipfsop, path, stat):
-        if stat:
-            self.exploreHash(stat['Hash'])
-
     def onAboutGalacteek(self):
         QMessageBox.about(self, 'About Galacteek', iAbout())
 
@@ -1136,7 +935,7 @@ class MainWindow(QMainWindow):
 
         super(MainWindow, self).keyPressEvent(event)
 
-    def exploreHash(self, hashV):
+    def exploreMultihash(self, hashV):
         tabName = '... {0}'.format(hashV[2 * int(len(hashV) / 3):])
         tooltip = 'Hash explorer: {0}'.format(hashV)
         view = ipfsview.IPFSHashExplorerToolBox(self, hashV)
@@ -1179,7 +978,7 @@ class MainWindow(QMainWindow):
 
     def addIpfsSearchView(self, text):
         if len(text) > 0:
-            view = ipfssearchview.IPFSSearchView(text, self)
+            view = ipfssearch.IPFSSearchView(text, self)
             self.registerTab(view, iIpfsSearch(text), current=True,
                              icon=getIcon('search-engine.png'))
 
@@ -1291,9 +1090,11 @@ class MainWindow(QMainWindow):
             self.ipfsSearchButton.setChecked(True)
 
         if self.ipfsSearchButton.isChecked() or forceshow:
+            self.ipfsSearchButton.setIcon(self.ipfsSearchButton.iconActive)
             self.ipfsSearchWidget.show()
             self.ipfsSearchWidget.focus()
         else:
+            self.ipfsSearchButton.setIcon(self.ipfsSearchButton.iconNormal)
             self.ipfsSearchWidget.hide()
 
     def addHashmarksTab(self):
