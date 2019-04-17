@@ -138,7 +138,7 @@
         <li>
                 <p style="text-align: left">
                     <img width="16" src="qrc:///share/icons/ipfs-logo-128-black.png" />
-                    <a class="hashmarklink" title='{{ mark.metadata.description }}' href="#"
+                    <a class="hashmarklink" title='{{ mark.metadata.description }}' href="dweb:{{path}}"
                         onclick="event.preventDefault(); window.galacteek.openIpfsLink('{{ path }}');">{{ mark.metadata.title }}</a>
                     <span style="float: right">
                         <a ref="#" title="Copy object path to clipboard"

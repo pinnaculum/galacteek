@@ -1,8 +1,11 @@
 import os.path
 import asyncio
 
-from PyQt5.QtWidgets import QMenu, QHeaderView, QPushButton, QComboBox
+from PyQt5.QtWidgets import QMenu
+from PyQt5.QtWidgets import QHeaderView
+from PyQt5.QtWidgets import QComboBox
 from PyQt5.QtWidgets import QWidget
+
 from PyQt5.QtGui import QStandardItemModel
 from PyQt5.QtCore import QObject, QCoreApplication
 

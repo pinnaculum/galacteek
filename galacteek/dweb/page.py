@@ -54,7 +54,7 @@ class GalacteekHandler(QObject):
         if len(path) > 1024:
             return
 
-        ensure(self.app.mainWindow.exploreClipboardPath(path))
+        self.app.mainWindow.exploreMultihash(path)
 
 
 class BasePage(QWebEnginePage):
@@ -153,7 +153,8 @@ class HashmarksPage(BasePage):
         self.marksLocal = marksLocal
         self.marksNetwork = marksNetwork
         self.marksLocal.changed.connect(self.onMarksChanged)
-        self.hashmarks = HashmarksHandler(self.marksLocal, self.marksNetwork, self)
+        self.hashmarks = HashmarksHandler(self.marksLocal,
+                                          self.marksNetwork, self)
         self.register('hashmarks', self.hashmarks)
         self.register('galacteek', GalacteekHandler(None))
 
@@ -173,6 +174,26 @@ class HashmarksPage(BasePage):
             marks=self.marksLocal,
             marksShared=self.marksNetwork),
             baseUrl=QUrl('qrc:/'))
+
+
+class PDFViewerHandler(BaseHandler):
+    marksListed = pyqtSignal(str, QJsonValue)
+
+    def __init__(self, ipfsPath, parent=None):
+        super(PDFViewerHandler, self).__init__(parent)
+        self.ipfsPath = ipfsPath
+
+    @pyqtSlot(result=str)
+    def getPdfPath(self):
+        return self.ipfsPath
+
+
+class PDFViewerPage(IPFSPage):
+    def __init__(self, ipfsPath, parent=None):
+        super(PDFViewerPage, self).__init__('pdfviewer.html', parent=parent)
+        self.ipfsPath = ipfsPath
+        self.register('galacteek', GalacteekHandler(None))
+        self.register('pdfview', PDFViewerHandler(self.ipfsPath))
 
 
 class DWebView(QWebEngineView):

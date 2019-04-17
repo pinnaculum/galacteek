@@ -7,7 +7,7 @@ from datetime import datetime
 from galacteek import ensure
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import cidValid
-from galacteek.ipfs.ipfsops import joinIpfs
+from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.dweb import render
 
 

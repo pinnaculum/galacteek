@@ -294,9 +294,6 @@ class ProfileError(Exception):
 
 
 class SharedHashmarksManager(QObject):
-    STATE_LOADED = 0
-    STATE_NO = 1
-
     hashmarksLoaded = pyqtSignal(IPFSMarks)
 
     def __init__(self, parent):

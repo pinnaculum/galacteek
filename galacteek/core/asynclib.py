@@ -38,7 +38,7 @@ def asyncifyfn(fn):
 
 def callAt(loop, callback, delay, *args, **kw):
     now = loop.time()
-    loop.call_at(now + delay, callback, *args)
+    return loop.call_at(now + delay, callback, *args)
 
 
 def async_enterable(f):

@@ -9,35 +9,46 @@ import jinja2.exceptions
 import warnings
 import concurrent.futures
 import re
+import platform
 
 from quamash import QEventLoop
 
-from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QSystemTrayIcon
+from PyQt5.QtWidgets import QMenu
+
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import (
-    QCoreApplication,
-    QUrl,
-    QStandardPaths,
-    QTranslator,
-    QFile,
-    pyqtSignal,
-    QObject,
-    QTemporaryDir,
-    QMimeDatabase)
+
+from PyQt5.QtCore import QCoreApplication
+from PyQt5.QtCore import QUrl
+from PyQt5.QtCore import QStandardPaths
+from PyQt5.QtCore import QTranslator
+from PyQt5.QtCore import QFile
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import QObject
+from PyQt5.QtCore import QTemporaryDir
+from PyQt5.QtCore import QMimeDatabase
 
 from galacteek import log, ensure
 from galacteek import pypicheck, GALACTEEK_NAME
 from galacteek.core.asynclib import asyncify
 from galacteek.core.ctx import IPFSContext
+from galacteek.core.multihashmetadb import IPFSObjectMetadataDatabase
+from galacteek.core.clipboard import ClipboardTracker
 from galacteek.ipfs import asyncipfsd, cidhelpers
+from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.feeds import FeedFollower
 
 from galacteek.dweb.webscripts import ipfsClientScripts
 
-from galacteek.ui import mainui, downloads, browser, peers
-from galacteek.ui.clipboard import ClipboardTracker
+from galacteek.ui import mainui
+from galacteek.ui import downloads
+from galacteek.ui import browser
+from galacteek.ui import peers
+from galacteek.ui.resource import IPFSResourceOpener
+
 from galacteek.ui.helpers import *
 from galacteek.ui.i18n import *
 
@@ -47,8 +58,6 @@ from galacteek.core.ipfsmarks import IPFSMarks
 from yarl import URL
 
 import aioipfs
-
-# Application's i18n messages
 
 # IPFS daemon messages
 
@@ -112,13 +121,6 @@ class IPFSConnectionParams(object):
         return self._gatewayUrl
 
 
-def appOperator():
-    app = QApplication.instance()
-    if not app:
-        raise Exception('No Qt Application running')
-    return app.ipfsOpMain
-
-
 class GalacteekApplication(QApplication):
     """
     Galacteek application class
@@ -144,6 +146,7 @@ class GalacteekApplication(QApplication):
         self._sslverify = sslverify
         self._progName = progName
         self._progCid = None
+        self._system = platform.system()
 
         self.enableOrbital = enableOrbital
         self.orbitConnector = None
@@ -172,6 +175,10 @@ class GalacteekApplication(QApplication):
 
         self.setStyle()
         self.clipboardInit()
+
+    @property
+    def system(self):
+        return self._system
 
     @property
     def debugEnabled(self):
@@ -215,8 +222,7 @@ class GalacteekApplication(QApplication):
 
     @property
     def pendingTasks(self):
-        return [task for task in asyncio.Task.all_tasks(loop=self.loop) if
-                not task.done()]
+        return [task for task in self.allTasks if not task.done()]
 
     @property
     def ipfsClient(self):
@@ -298,11 +304,15 @@ class GalacteekApplication(QApplication):
         self.systemTray.setContextMenu(systemTrayMenu)
 
     def initMisc(self):
+        self.mimeTypeIcons = preloadMimeIcons()
+        self.multihashDb = IPFSObjectMetadataDatabase(self._mHashDbLocation)
+
         self.jinjaEnv = jinja2.Environment(
             loader=jinja2.PackageLoader('galacteek', 'templates'))
 
         self.manuals = ManualsImporter(self)
         self.mimeDb = QMimeDatabase()
+        self.resourceOpener = IPFSResourceOpener(parent=self)
 
         self.downloadsManager = downloads.DownloadsManager(self)
         self.marksLocal = IPFSMarks(self.localMarksFileLocation)
@@ -447,9 +457,10 @@ class GalacteekApplication(QApplication):
         section = CFG_SECTION_IPFSD
         if mgr.isTrue(section, CFG_KEY_ENABLED):
             return IPFSConnectionParams(
-                '127.0.0.1', mgr.getSetting(
-                    section, CFG_KEY_APIPORT), mgr.getSetting(
-                    section, CFG_KEY_HTTPGWPORT))
+                '127.0.0.1',
+                mgr.getSetting(section, CFG_KEY_APIPORT),
+                mgr.getSetting(section, CFG_KEY_HTTPGWPORT)
+            )
         else:
             section = CFG_SECTION_IPFSCONN1
             return IPFSConnectionParams(
@@ -519,6 +530,7 @@ class GalacteekApplication(QApplication):
         self._ipfsBinLocation = os.path.join(qtDataLocation, 'ipfs-bin')
         self._ipfsDataLocation = os.path.join(self._dataLocation, 'ipfs')
         self._orbitDataLocation = os.path.join(self._dataLocation, 'orbitdb')
+        self._mHashDbLocation = os.path.join(self._dataLocation, 'mhashmetadb')
         self.marksDataLocation = os.path.join(self._dataLocation, 'marks')
         self.cryptoDataLocation = os.path.join(self._dataLocation, 'crypto')
         self.gpgDataLocation = os.path.join(self.cryptoDataLocation, 'gpg')
@@ -527,7 +539,7 @@ class GalacteekApplication(QApplication):
         self.networkMarksFileLocation = os.path.join(self.marksDataLocation,
                                                      'ipfsmarks.network.json')
         self.pinStatusLocation = os.path.join(self.dataLocation,
-                                                     'pinstatus.json')
+                                              'pinstatus.json')
 
         qtConfigLocation = QStandardPaths.writableLocation(
             QStandardPaths.ConfigLocation)
@@ -537,6 +549,7 @@ class GalacteekApplication(QApplication):
             self.configDirLocation, '{}.conf'.format(GALACTEEK_NAME))
 
         for dir in [self._ipfsDataLocation,
+                    self._mHashDbLocation,
                     self.ipfsBinLocation,
                     self.marksDataLocation,
                     self.cryptoDataLocation,
@@ -629,7 +642,7 @@ class GalacteekApplication(QApplication):
 
     def setupClipboard(self):
         self.appClipboard = self.clipboard()
-        self.clipTracker = ClipboardTracker(self.appClipboard)
+        self.clipTracker = ClipboardTracker(self, self.appClipboard)
 
     def clipboardInit(self):
         self.clipTracker.clipboardInit()

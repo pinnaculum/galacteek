@@ -24,5 +24,8 @@ build: FORCE
 install: build
 	python setup.py install
 
+flake:
+	@flake8 galacteek
+
 upload: dists
 	twine upload --repository-url https://upload.pypi.org/legacy/ dist/*

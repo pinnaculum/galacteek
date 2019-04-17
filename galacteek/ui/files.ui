@@ -168,20 +168,20 @@
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="statusLabel">
-         <property name="minimumSize">
-          <size>
-           <width>200</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
-       <item>
         <layout class="QHBoxLayout" name="horizontalLayout_3">
+         <item>
+          <spacer name="horizontalSpacer_3">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
          <item>
           <widget class="QLabel" name="label">
            <property name="sizePolicy">
@@ -205,7 +205,7 @@
           <widget class="QLineEdit" name="searchFiles">
            <property name="maximumSize">
             <size>
-             <width>500</width>
+             <width>200</width>
              <height>16777215</height>
             </size>
            </property>
@@ -220,13 +220,13 @@
        <item>
         <widget class="QTreeView" name="treeFiles">
          <attribute name="headerCascadingSectionResizes">
-          <bool>true</bool>
+          <bool>false</bool>
          </attribute>
          <attribute name="headerDefaultSectionSize">
-          <number>140</number>
+          <number>200</number>
          </attribute>
          <attribute name="headerStretchLastSection">
-          <bool>true</bool>
+          <bool>false</bool>
          </attribute>
         </widget>
        </item>
@@ -267,6 +267,19 @@
       </layout>
      </item>
     </layout>
+   </item>
+   <item>
+    <widget class="QLabel" name="statusLabel">
+     <property name="minimumSize">
+      <size>
+       <width>200</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>

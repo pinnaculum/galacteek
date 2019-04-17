@@ -38,10 +38,6 @@ class ipfsClassW:
             log.debug('GeneratorExit: {inst}'.format(
                 inst=inst))
             return None
-        except BaseException:
-            log.debug('IPFSOp exception: {inst}'.format(
-                inst=inst), exc_info=True)
-            return None
         except asyncio.CancelledError:
             log.debug('IPFSOp cancelled: {inst}'.format(
                 inst=inst), exc_info=True)

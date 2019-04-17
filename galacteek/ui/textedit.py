@@ -31,7 +31,7 @@ class AddDocumentWidget(GalacteekTab):
         super(AddDocumentWidget, self).__init__(gWindow, *args, **kw)
 
         self.docWidget = QWidget()
-        self.addToLayout(self.doncWidget)
+        self.addToLayout(self.docWidget)
 
         self.ui = ui_newdocument.Ui_NewDocumentForm()
         self.ui.setupUi(self.docWidget)

@@ -14,20 +14,22 @@ from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtCore import QTimer
 
-from PyQt5 import QtWebEngineWidgets, QtWebEngineCore
-from PyQt5.QtWebEngineWidgets import (
-    QWebEngineDownloadItem, QWebEngineSettings)
+from PyQt5 import QtWebEngineWidgets
+from PyQt5 import QtWebEngineCore
+from PyQt5.QtWebEngineWidgets import QWebEngineDownloadItem
+from PyQt5.QtWebEngineWidgets import QWebEngineSettings
 from PyQt5.QtWebEngineCore import QWebEngineUrlRequestInterceptor
 
 from PyQt5.Qt import QByteArray
 from PyQt5.QtGui import QKeySequence
 
 from yarl import URL
-import re
 import os.path
 
 from galacteek import log, ensure
 from galacteek.ipfs.wrappers import *
+from galacteek.ipfs.cidhelpers import joinIpfs
+from galacteek.ipfs.cidhelpers import joinIpns
 
 from . import ui_browsertab
 from .helpers import *
@@ -145,7 +147,7 @@ def iNotAnIpfsResource():
         'Not an IPFS resource')
 
 
-def fsPath(path):
+def makeDwebPath(path):
     return '{0}:{1}'.format(SCHEME_DWEB, path)
 
 
@@ -521,7 +523,7 @@ class BrowserTab(GalacteekTab):
         if self.pinAll is True:
             self.pinPath(path, recursive=False, notify=False)
 
-    def onClipboardIpfs(self, valid, cid, path):
+    def onClipboardIpfs(self, valid, path):
         self.ui.loadFromClipboardButton.setEnabled(valid)
 
     def onToggledPinAll(self, checked):
@@ -594,7 +596,7 @@ class BrowserTab(GalacteekTab):
     def loadFromClipboardButtonClicked(self):
         current = self.app.clipTracker.getCurrent()
         if current:
-            self.browseFsPath(current['path'])
+            self.browseFsPath(current.path)
 
     def onLoadIpfsCID(self):
         def onValidated(d):
@@ -660,7 +662,7 @@ class BrowserTab(GalacteekTab):
                 QUrl.RemoveAuthority | QUrl.RemoveScheme)
             self.currentIpfsUrl = stripped
 
-            self.ui.urlZone.insert(fsPath(stripped))
+            self.ui.urlZone.insert(makeDwebPath(stripped))
             self.ipfsPathVisited.emit(self.currentIpfsResource)
 
             # Activate the follow action if this is IPNS
@@ -708,14 +710,20 @@ class BrowserTab(GalacteekTab):
 
         if progress == 100:
             self.ui.pBarBrowser.setStyleSheet(
-                'QProgressBar::chunk#pBarBrowser { background-color: #244e66; }')
+                '''QProgressBar::chunk#pBarBrowser {
+                    background-color: #244e66;
+                }''')
             self.loop.call_later(
                 1,
                 self.ui.pBarBrowser.setStyleSheet,
-                'QProgressBar::chunk#pBarBrowser { background-color: transparent; }')
+                '''QProgressBar::chunk#pBarBrowser {
+                    background-color: transparent;
+                }''')
         else:
             self.ui.pBarBrowser.setStyleSheet(
-                'QProgressBar::chunk#pBarBrowser { background-color: #7f8491; }')
+                '''QProgressBar::chunk#pBarBrowser {
+                    background-color: #7f8491;
+                }''')
 
     def browseFsPath(self, path):
         self.enterUrl(QUrl('{0}:{1}'.format(SCHEME_DWEB, path)))

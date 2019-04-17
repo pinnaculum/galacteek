@@ -1,14 +1,15 @@
 import re
 
 from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import QInputDialog
 
 from PyQt5.QtCore import QCoreApplication
+from PyQt5.QtCore import QRegExp
 from PyQt5.QtCore import Qt
+
 from PyQt5.QtGui import QClipboard
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtGui import QImage
-
-from PyQt5.QtCore import QRegExp
 from PyQt5.QtGui import QRegExpValidator
 
 from galacteek import asyncify, ensure
@@ -26,10 +27,12 @@ from . import ui_profileeditdialog
 from . import ui_donatedialog
 from . import ui_profilepostmessage
 from .helpers import *
+from .widgets import ImageWidget
 
 from .i18n import iDoNotPin
 from .i18n import iPinSingle
 from .i18n import iPinRecursive
+from .i18n import iNoTitleProvided
 
 
 def boldLabelStyle():
@@ -52,19 +55,23 @@ class AddHashmarkDialog(QDialog):
         self.ipfsResource = resource
         self.marks = marks
         self.stats = stats if stats else {}
+        self.iconCid = None
 
         self.ui = ui_addhashmarkdialog.Ui_AddHashmarkDialog()
         self.ui.setupUi(self)
         self.ui.resourceLabel.setText(self.ipfsResource)
         self.ui.resourceLabel.setStyleSheet(boldLabelStyle())
         self.ui.newCategory.textChanged.connect(self.onNewCatChanged)
+        self.ui.selectIconButton.clicked.connect(self.onSelectIcon)
         self.ui.title.setText(title)
+        self.iconWidget = ImageWidget()
+        self.ui.layoutIcon.addWidget(self.iconWidget, 0, Qt.AlignCenter)
 
         self.ui.pinCombo.addItem(iDoNotPin())
         self.ui.pinCombo.addItem(iPinSingle())
         self.ui.pinCombo.addItem(iPinRecursive())
 
-        regexp1 = QRegExp("[A-Za-z\/\_]+")
+        regexp1 = QRegExp("[A-Za-z\/\_]+")  # noqa
         self.ui.newCategory.setValidator(QRegExpValidator(regexp1))
 
         if pin is True:
@@ -78,13 +85,29 @@ class AddHashmarkDialog(QDialog):
         for cat in self.marks.getCategories():
             self.ui.category.addItem(cat)
 
+    def onSelectIcon(self):
+        fps = filesSelectImages()
+        if len(fps) > 0:
+            ensure(self.setIcon(fps.pop()))
+
+    @ipfsOp
+    async def setIcon(self, op, fp):
+        entry = await op.addPath(fp, recursive=False)
+        if entry:
+            cid = entry['Hash']
+
+            if await self.iconWidget.load(cid):
+                self.iconCid = cid
+
     def onNewCatChanged(self, text):
-        if len(text) > 0:
-            self.ui.category.setEnabled(False)
-        else:
-            self.ui.category.setEnabled(True)
+        self.ui.category.setEnabled(len(text) == 0)
 
     def accept(self):
+        title = self.ui.title.text()
+
+        if len(title) == 0:
+            return messageBox(iNoTitleProvided())
+
         share = self.ui.share.isChecked()
         newCat = self.ui.newCategory.text()
         description = self.ui.description.toPlainText()
@@ -99,13 +122,14 @@ class AddHashmarkDialog(QDialog):
 
         mark = IPFSHashMark.make(
             self.ipfsResource,
-            title=self.ui.title.text(),
+            title=title,
             share=share,
             comment=self.ui.comment.text(),
             description=description,
             tags=self.ui.tags.text().split(),
             pinSingle=pSingle,
             pinRecursive=pRecursive,
+            icon=self.iconCid,
             datasize=self.stats.get(
                 'DataSize',
                 None),
@@ -325,7 +349,7 @@ class ProfileEditDialog(QDialog):
 
     def updateAvatarCid(self):
         self.ui.iconHash.setText('<a href="ipfs:{0}">{1}</a>'.format(
-            joinIpfs(self.profile.userInfo.avatarCid),
+            cidhelpers.joinIpfs(self.profile.userInfo.avatarCid),
             self.profile.userInfo.avatarCid))
 
     def reloadIcon(self):
@@ -359,7 +383,7 @@ class ProfileEditDialog(QDialog):
             await load(self.profile.userInfo.avatarCid)
 
     def changeIcon(self):
-        fps = filesSelect(filter='Images (*.xpm, *.jpg, *.png)')
+        fps = filesSelectImages()
         if len(fps) > 0:
             ensure(self.setIcon(fps.pop()))
 
@@ -430,3 +454,14 @@ class ProfilePostMessageDialog(QDialog):
             ensure(self.profile.app.postMessage(title, msg))
 
         self.done(1)
+
+
+class ChooseProgramDialog(QInputDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setWindowTitle('Choose a program')
+        self.setInputMode(QInputDialog.TextInput)
+        self.setLabelText(
+            '''Command arguments (example: <b>mupdf %f</b>).
+                <b>%f</b> is replaced with the file path''')

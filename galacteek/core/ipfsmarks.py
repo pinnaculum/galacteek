@@ -6,8 +6,6 @@ import copy
 import re
 from datetime import datetime
 
-from async_generator import async_generator, yield_, yield_from_
-import asyncio
 import aiofiles
 
 from galacteek import log
@@ -103,11 +101,6 @@ class IPFSMarks(QObject):
     @property
     def autosave(self):
         return self._autosave
-
-    @property
-    def asyncQ(self):
-        """ Async query """
-        return _AsyncMarksQuery(self)
 
     @property
     def root(self):
@@ -253,6 +246,7 @@ class IPFSMarks(QObject):
 
         title = metadata.get('title', None)
         descr = metadata.get('description', None)
+        path = metadata.get('path', None)
 
         def metaMatch(mark, field, regexp):
             try:
@@ -270,6 +264,10 @@ class IPFSMarks(QObject):
             for mPath, mark in marks.items():
                 if 'metadata' not in mark:
                     continue
+
+                if path and path == mPath:
+                    return mPath, mark
+
                 if title and metaMatch(mark, 'title', title):
                     return mPath, mark
 
@@ -388,7 +386,7 @@ class IPFSMarks(QObject):
             for mark in marks.items():
                 try:
                     mPath, mData = mark
-                    if share is True and mData['share'] == False:
+                    if share is True and mData['share'] is False:
                         continue
 
                     if 'pin' in mData and reset:
@@ -460,117 +458,3 @@ class IPFSMarks(QObject):
 
     def norm(self, path):
         return path.rstrip('/')
-
-
-class _AsyncMarksQuery:
-    """
-    Class designed to make operations on the marks tree asynchronously.
-    """
-
-    def __init__(self, marks):
-        self.m = marks
-
-    async def search(self, bpath, category=None, tags=[], delete=False):
-        path = rSlash(bpath)
-
-        getCategories = await self.getCategories()
-
-        for cat in getCategories:
-            await asyncio.sleep(0)
-            if category and cat != category:
-                continue
-
-            marks = await self.getCategoryMarks(cat)
-            if path in marks:
-                if delete is True:
-                    del marks[path]
-                    self.changed.emit()
-                    return True
-
-                tagsOk = True
-                m = marks[path]
-                for stag in tags:
-                    if stag not in m['tags']:
-                        tagsOk = False
-
-                if tagsOk:
-                    return marks[path]
-
-    async def add(self, bpath, title=None, category='general', share=False,
-                  tags=[]):
-        if not bpath:
-            return None
-
-        path = rSlash(bpath)
-        sec = self.m.enterCategory(category, create=True)
-        if not sec:
-            return False
-
-        if await self.search(path):
-            # We have already stored a mark with this path
-            return False
-
-        mark = IPFSHashMark.make(path,
-                                 title=title,
-                                 datecreated=datetime.now().isoformat(),
-                                 share=share,
-                                 tags=tags,
-                                 )
-
-        sec[marksKey].update(mark)
-        self.m.changed.emit()
-
-        return True
-
-    async def walkAsync(self, path, create=True):
-        async def _w(path, parent=None):
-            for p in path:
-                await asyncio.sleep(0)
-                if p.startswith('_'):
-                    return
-                if p in parent.keys():
-                    parent = parent[p]
-                elif p not in parent.keys() and create is True:
-                    self.addCategory(p, parent=parent)
-                    parent = parent[p]
-                else:
-                    return
-            return parent
-
-        return await _w(path, parent=self.m._rootCategories)
-
-    async def getCategories(self):
-        @async_generator
-        async def _list(path, parent=None):
-            for p in parent.keys():
-                await asyncio.sleep(0)
-                if p.startswith('_'):
-                    continue
-
-                fullPath = path + [p]
-                await yield_('/'.join(fullPath))
-                await yield_from_(_list(path + [p], parent=parent[p]))
-
-        cats = []
-        async for v in _list([], parent=self.m._rootCategories):
-            cats.append(v)
-        return cats
-
-    async def getCategoryMarks(self, category):
-        sec = self.m.enterCategory(category)
-        if sec:
-            return copy.copy(sec[marksKey])
-
-    async def enterCategory(self, section, create=False):
-        comps = section.lstrip('/').rstrip('/').split('/')
-        return await self.walkAsync(comps, create=create)
-
-    async def getAll(self, share=False):
-        cats = await self.getCategories()
-        _all = {}
-        for cat in cats:
-            catMarks = await self.getCategoryMarks(cat)
-            for mpath, mark in catMarks.items():
-                if mark['share'] == share:
-                    _all[mpath] = mark
-        return _all

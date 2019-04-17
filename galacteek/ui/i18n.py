@@ -78,6 +78,10 @@ def iFileHash():
     return QCoreApplication.translate('IPFSTreeView', 'Hash')
 
 
+def iMultihash():
+    return QCoreApplication.translate('IPFSTreeView', 'Multihash')
+
+
 def iMimeType():
     return QCoreApplication.translate('IPFSTreeView', 'Mime type')
 
@@ -113,6 +117,10 @@ def iHashmarksLibraryCountAvailable(count):
         'GalacteekWindow',
         'Hashmarks library: {0} hashmarks available'
     ).format(count)
+
+
+def iDagViewer():
+    return QCoreApplication.translate('GalacteekWindow', 'DAG viewer')
 
 
 def iLocalHashmarksCount(count):
@@ -178,6 +186,11 @@ def iNoTitle():
     return QCoreApplication.translate('GalacteekWindow', 'No title')
 
 
+def iNoTitleProvided():
+    return QCoreApplication.translate('GalacteekWindow',
+                                      'Please specify a title')
+
+
 def iFinished():
     return QCoreApplication.translate('GalacteekWindow', 'Finished')
 
@@ -209,6 +222,14 @@ def iDoNotPin():
 def iGlobalAutoPinning():
     return QCoreApplication.translate('GalacteekWindow',
                                       'Global automatic pinning')
+
+
+def iZoomIn():
+    return QCoreApplication.translate('GalacteekWindow', 'Zoom in')
+
+
+def iZoomOut():
+    return QCoreApplication.translate('GalacteekWindow', 'Zoom out')
 
 
 # IPFS daemon ui messages

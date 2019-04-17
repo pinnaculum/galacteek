@@ -20,6 +20,8 @@ from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.core.asynclib import asyncify
 from galacteek.core.ipfsmarks import IPFSMarks
 
+import aioipfs
+
 
 class PubsubService(object):
     """
@@ -183,9 +185,14 @@ class PubsubService(object):
         if topic is None:
             topic = self.topic
 
-        status = await self.client.pubsub.pub(topic, data)
-        self.ipfsCtx.pubsub.psMessageTx.emit()
-        return status
+        try:
+            status = await self.client.pubsub.pub(topic, data)
+            self.ipfsCtx.pubsub.psMessageTx.emit()
+        except aioipfs.APIError:
+            logger.debug('Could not send pubsub message to {topic}'.format(
+                topic=topic))
+        else:
+            return status
 
 
 class JSONPubsubService(PubsubService):

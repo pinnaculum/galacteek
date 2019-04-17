@@ -12,15 +12,13 @@ from . import ui_keys, ui_addkeydialog
 from .modelhelpers import *
 from .widgets import GalacteekTab
 from .helpers import *
-from .i18n import *
+
+from .i18n import iUnknown
+from .i18n import iMultihash
 
 
 def iKeyName():
     return QCoreApplication.translate('KeysForm', 'Name')
-
-
-def iKeyHash():
-    return QCoreApplication.translate('KeysForm', 'Hash')
 
 
 def iKeyResolve():
@@ -88,7 +86,7 @@ class KeysTab(GalacteekTab):
         self.model.clear()
         self.model.setColumnCount(3)
         self.model.setHorizontalHeaderLabels([
-            iKeyName(), iKeyHash(), iKeyResolve()])
+            iKeyName(), iMultihash(), iKeyResolve()])
         self.ui.treeKeys.header().setSectionResizeMode(
             0, QHeaderView.ResizeToContents)
         self.ui.treeKeys.header().setSectionResizeMode(

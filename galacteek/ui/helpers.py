@@ -1,13 +1,65 @@
 import os
 
-from PyQt5.QtGui import QPixmap, QIcon
-from PyQt5.QtCore import (QStandardPaths, Qt, QEvent, QObject, pyqtSignal)
-from PyQt5.QtWidgets import (QMessageBox, QApplication, QFileDialog,
-                             QInputDialog)
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QImage
+from PyQt5.QtGui import QIcon
+
+from PyQt5.QtCore import QStandardPaths
+from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QEvent
+from PyQt5.QtCore import QObject
+from PyQt5.QtCore import QDir
+from PyQt5.QtCore import pyqtSignal
+
+from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QInputDialog
 
 
 def getIcon(iconName):
     return QIcon(QPixmap(':/share/icons/{}'.format(iconName)))
+
+
+def getMimeIcon(mType):
+    app = QApplication.instance()
+    return app.mimeTypeIcons.get(mType)
+
+
+def preloadMimeIcons():
+    icons = {}
+    mIconsDir = QDir(':/share/icons/mimetypes')
+
+    if not mIconsDir.exists():
+        return icons
+
+    entries = mIconsDir.entryList()
+
+    for entry in entries:
+        mType = entry.replace('.png', '').replace('-', '/', 1)
+        icons[mType] = getIcon('mimetypes/{}'.format(entry))
+
+    return icons
+
+
+async def getIconFromIpfs(ipfsop, ipfsPath, scaleWidth=None):
+    try:
+        imgData = await ipfsop.waitFor(
+            ipfsop.client.cat(ipfsPath), 8
+        )
+
+        if not imgData:
+            raise Exception('Failed to load image')
+
+        img = QImage()
+        img.loadFromData(imgData)
+
+        if isinstance(scaleWidth, int):
+            img = img.scaledToWidth(scaleWidth)
+
+        return QIcon(QPixmap.fromImage(img))
+    except BaseException:
+        return None
 
 
 def getIconIpfsIce():
@@ -57,6 +109,11 @@ def filesSelect(filter='(*.*)'):
                                           '', getHomePath(), filter)
     if result:
         return result[0]
+
+
+def filesSelectImages():
+    return filesSelect(
+        filter='Images (*.xpm *.jpg *.jpeg *.png *.svg)')
 
 
 def saveFileSelect(filter='(*.*)'):
