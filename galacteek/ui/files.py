@@ -409,7 +409,7 @@ class FilesTab(GalacteekTab):
         if rootIndex.isValid():
             self.localTree.setRootIndex(rootIndex)
 
-        if self.app.system == 'Linux' or self.app.system == 'FreeBSD':
+        if self.app.system in ['Linux', 'FreeBSD', 'Darwin']:
             """
             Expand the user's home folder and its parents
             """

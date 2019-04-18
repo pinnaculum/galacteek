@@ -16,7 +16,7 @@ from PyQt5.QtCore import QUrl
 from galacteek import ensure
 from galacteek.core.clipboard import ClipboardItem
 from galacteek.ipfs.cidhelpers import stripIpfs
-from galacteek.ipfs.mimetype import isDirectoryMtype
+from galacteek.ipfs.mimetype import isDirMimeType
 from galacteek.ipfs import ipfsOp
 
 from .hashmarks import addHashmark
@@ -355,7 +355,7 @@ class ClipboardItemButton(PopupToolButton):
         self.menu.addAction(self.ipldExplorerAction)
         self.menu.addAction(self.pinAction)
 
-        if isDirectoryMtype(self.item.mimeType):
+        if isDirMimeType(self.item.mimeType):
             # It's a directory. Add the explore action and disable
             # the actions that don't apply to a folder
             self.menu.addAction(self.exploreHashAction)

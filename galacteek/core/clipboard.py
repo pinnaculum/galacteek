@@ -194,7 +194,7 @@ class ClipboardTracker(QObject):
         if not text or len(text) > 1024:  # that shouldn't be worth handling
             return
 
-        text = text.strip()
+        text = text.strip().rstrip('/')
         ma = cidhelpers.ipfsRegSearchPath(text)
 
         if ma:

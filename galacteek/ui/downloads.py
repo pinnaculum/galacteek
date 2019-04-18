@@ -4,6 +4,7 @@ from PyQt5 import QtWebEngineWidgets
 from PyQt5.QtCore import QCoreApplication, QObject
 
 from ..appsettings import *
+from .helpers import questionBox
 from .i18n import iUnknown
 
 
@@ -40,6 +41,11 @@ class DownloadsManager(QObject):
                 'Galacteek', iFinishedDownload(filename))
 
         name = os.path.basename(downItem.path())
+
+        answer = questionBox('Download', 'Download {} ?'.format(name))
+        if answer is False:
+            downItem.cancel()
+            return
 
         self.app.systemTrayMessage('Galacteek', iStartingDownload(name))
 
