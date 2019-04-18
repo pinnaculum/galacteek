@@ -22,12 +22,12 @@ def stripIpfs(path):
 
 def isIpfsPath(path):
     if isinstance(path, str):
-        return path.startswith('/ipfs/')
+        return ipfsRegSearchPath(path) is not None
 
 
 def isIpnsPath(path):
     if isinstance(path, str):
-        return path.startswith('/ipns/')
+        return ipnsRegSearchPath(path) is not None
 
 
 def shortCidRepr(cid):

@@ -6,15 +6,23 @@ import aioipfs
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QObject
 
-from galacteek.dweb.page import PDFViewerPage
-from galacteek.dweb.page import WebTab, DWebView
-from galacteek.ipfs import ipfsOp
-from galacteek.ipfs.mimetype import detectMimeType
-from galacteek.ipfs.mimetype import isDirectoryMtype
-from galacteek.ipfs.cidhelpers import isIpfsPath
-from galacteek.ipfs.cidhelpers import shortPathRepr
 from galacteek import log
 from galacteek import logUser
+from galacteek import ensure
+
+from galacteek.dweb.page import PDFViewerPage
+from galacteek.dweb.page import WebTab
+from galacteek.dweb.page import DWebView
+
+from galacteek.ipfs import ipfsOp
+from galacteek.ipfs.mimetype import detectMimeType
+from galacteek.ipfs.mimetype import isDirMimeType
+from galacteek.ipfs.mimetype import isTextMimeType
+from galacteek.ipfs.mimetype import getMimeCategory
+
+from galacteek.ipfs.cidhelpers import isIpfsPath
+from galacteek.ipfs.cidhelpers import isIpnsPath
+from galacteek.ipfs.cidhelpers import shortPathRepr
 
 from . import ipfsview
 from .helpers import getMimeIcon
@@ -37,10 +45,10 @@ class IPFSResourceOpener(QObject):
         :param str mimeType: MIME type
         """
 
-        if self.app.mainWindow.pinAllGlobalChecked:
-            await ipfsop.ctx.pinner.queue(rscPath, False,
-                                          None,
-                                          qname='default')
+        if self.app.mainWindow.pinAllGlobalChecked and not isIpnsPath(rscPath):
+            ensure(ipfsop.ctx.pinner.queue(rscPath, False,
+                                           None,
+                                           qname='default'))
 
         rscShortName = shortPathRepr(rscPath)
 
@@ -54,11 +62,11 @@ class IPFSResourceOpener(QObject):
             mimeType = await detectMimeType(rscPath)
 
         if mimeType:
-            mimeCategory = mimeType.split('/')[0]
+            mimeCategory = getMimeCategory(mimeType)
         else:
             mimeCategory = None
 
-        if mimeCategory == 'text' and mimeType != 'text/html':
+        if isTextMimeType(mimeType):
             tab = ipfsview.TextViewerTab()
             tab.show(rscPath)
             return self.app.mainWindow.registerTab(
@@ -98,16 +106,13 @@ class IPFSResourceOpener(QObject):
                 current=True
             )
 
-        if isDirectoryMtype(mimeType):
+        if isDirMimeType(mimeType) or isIpnsPath(rscPath) or mimeType in [
+                'text/html',
+                'application/xhtml+xml']:
             return self.app.mainWindow.addBrowserTab().browseFsPath(rscPath)
 
-        if mimeType == 'text/html':
-            return self.app.mainWindow.addBrowserTab().browseFsPath(rscPath)
-
-        # Use system's default application
-
-        logUser.debug('Opening {0} with preferred application'.format(
-            rscPath))
+        logUser.debug('{0}: unhandled file type ({1})'.format(
+            rscPath, mimeType if mimeType else 'null'))
         return await self.openWithSystemDefault(rscPath)
 
     @ipfsOp

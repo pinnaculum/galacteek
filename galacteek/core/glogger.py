@@ -8,8 +8,8 @@ mainFormatString = u(
     '{record.level_name}: {record.channel}/{record.module}: {record.message}')
 
 easyFormatString = u(
-    '[{record.time:%Y-%m-%d %H:%M:%S}] '
-    '{record.level_name}: {record.module}: {record.message}')
+    '[{record.time: %H:%M:%S}] '
+    '{record.module}: {record.message}')
 
 
 def basicConfig(level='INFO'):

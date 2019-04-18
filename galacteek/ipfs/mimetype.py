@@ -15,15 +15,46 @@ else:
     haveMagic = True
 
 
+# MIME types outside of the 'text' MIME category that we treat as text
+MTYPES_SUPPL_TEXT = (
+    'application/x-csh',
+    'application/x-sh',
+    'application/xml',
+    'application/x-tex',
+    'application/x-latex',
+    'application/javascript',
+    'application/json'
+)
+
+
 class MimeDecodeError(Exception):
     pass
 
 
-def isDirectoryMtype(mType):
+def isDirMimeType(mType):
     return mType == 'application/x-directory' or mType == 'inode/directory'
 
 
+def isTextMimeType(mimeType):
+    mimeCategory = getMimeCategory(mimeType)
+    return (mimeCategory == 'text' and mimeType != 'text/html') or \
+        mimeType in MTYPES_SUPPL_TEXT
+
+
+def getMimeCategory(mType):
+    if isinstance(mType, str):
+        splitted = mType.split('/')
+        if len(splitted) == 2:
+            return splitted[0]
+
+
 async def detectMimeTypeFromBuffer(buff):
+    """
+    Guess the MIME type from a bytes buffer, using either libmagic or file(1)
+
+    :param bytes buff: buffer data
+    :rtype: str
+    """
     if haveMagic:
         # Use libmagic
         # Run it in an asyncio executor
@@ -58,18 +89,21 @@ async def detectMimeTypeFromBuffer(buff):
 
 
 @ipfsOpFn
-async def detectMimeType(ipfsop, rscPath, bufferLength=1024):
+async def detectMimeType(ipfsop, rscPath, bufferSize=512, timeout=8):
     """
     Returns the MIME type of a given IPFS resource
-
     Uses either python-magic if available, or runs the 'file' command
 
-    :param ipfsop: IPFS operator
+    A chunk of the file is read and used to determine its MIME type
+
+    :param ipfsop: IPFS operator instance
     :param str rscPath: IPFS CID/path
+    :param int bufferSize: buffer size in bytes
+    :param int timeout: operation timeout (in seconds)
     """
     try:
         buff = await ipfsop.waitFor(
-            ipfsop.client.cat(rscPath, length=bufferLength), 10
+            ipfsop.client.cat(rscPath, length=bufferSize), timeout
         )
     except aioipfs.APIError as err:
         if isinstance(err.message, str) and \
@@ -83,8 +117,6 @@ async def detectMimeType(ipfsop, rscPath, bufferLength=1024):
                         if entry['Name'].startswith('index.htm'):
                             return 'text/html'
             return 'inode/directory'
-        else:
-            return None
     else:
         if not buff:
             return None
