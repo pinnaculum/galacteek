@@ -102,8 +102,16 @@ class _build(build):
 with open('README.rst', 'r') as fh:
     long_description = fh.read()
 
+deps_links = []
+install_reqs = []
 with open('requirements.txt') as f:
-    install_reqs = f.read().splitlines()
+    lines = f.read().splitlines()
+    for line in lines:
+        if line.startswith('-e'):
+            link = line.split().pop()
+            deps_links.append(link)
+        else:
+            install_reqs.append(line)
 
 setup(
     name='galacteek',
@@ -133,7 +141,8 @@ setup(
         'galacteek.ui',
         'galacteek.ui.orbital'
     ],
-    install_requires=install_reqs,
+    install_requires=install_reqs + ['qreader'],
+    dependency_links=deps_links,
     package_data={
         'galacteek': [
              'docs/manual/en/html/*.html',

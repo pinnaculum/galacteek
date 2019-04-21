@@ -2,31 +2,47 @@
 Using the clipboard
 ===================
 
-By their very nature, IPFS hashes are difficult to remember. It becomes
-quite convenient to store those valuable hashes in a temporary place, and the
-system's clipboard is a convenient buffer that will help you keep track of
-these.
+*Note*: on Unix/Linux systems, the *selection* clipboard will always be
+used as the primary clipboard, while on other platforms the system's
+clipboard will be used.
 
-On Linux systems, the **selection** clipboard will always be used as the
-primary clipboard, while on other platforms the system's clipboard will be
-used.
-
-The clipboard loader
---------------------
+The clipboard manager
+---------------------
 
 .. image:: ../../../../share/icons/clipboard.png
     :width: 64
     :height: 64
 
-From the application's toolbar you can access the clipboard loader button. It records
-the computer's clipboard activity and keeps an history of all the IPFS hashes
-that have been stored in it since the application was started.
+From the application's toolbar you can access the clipboard manager button.
+It records the computer's clipboard activity and keeps an history of all the
+IPFS multihashes/paths that have been stored in it since the application was
+started.
 
-Clicking on the arrow next to the clipboard icon will open a menu giving you
-access to the clipboard's history as well as actions to browse/explore the IPFS
-resource currently referenced in the clipboard, if any.
+Whenever the clipboard contains a new valid reference to an IPFS object, the
+clipboard tracker gathers information about this object (performing an object
+stat and determining its MIME type) and puts it on top of the clipboard stack,
+making it the current item.
 
-It recognizes the following formats:
+The current clipboard item in the stack is represented beside the clipboard
+manager button. If available, an icon matching the discovered MIME type of
+the IPFS object is set on the clipboard item button. Clicking on the clipboard
+item button opens up a menu listing the different possible actions for this
+object:
+
+- **Open**: open the IPFS resource depending on the object type
+- **Open with application**: open with custom application
+- **Open with default system application**: open with the system's default
+  application (it uses **xdg-open** on Linux or the **open** command on MacOS)
+- **Hashmark**: hashmark this object
+- **Pin**: recursively pin this object
+- **Set as homepage**
+- **DAG view**
+- **Run IPLD explorer**
+
+Supported formats
+-----------------
+
+The clipboard manager supports the following formats:
 
 - *IPFS CID (version 0)*, for example
   **QmRifA98t769dzkDv2gQocqJPXGtTySR5dPkyTaUZXtkLo**
@@ -44,17 +60,28 @@ It recognizes the following formats:
   **https://ipfs.io/ipfs/QmRifA98t769dzkDv2gQocqJPXGtTySR5dPkyTaUZXtkLo** or
   **http://localhost:8080/ipns/peerpad.net**.
 
-Passing the mouse over the clipboard button will display a tooltip message
-giving you information about the status of the clipboard.
+Keyboard shortcuts
+------------------
 
-Clipboard keyboard shortcuts
-----------------------------
+*Mod* is the *Control* key on Linux and the *Command* key on MacOS X.
 
-- **Ctrl+o** will browse the IPFS resource currently referenced in the
-  clipboard
-- **Ctrl+e** will open the explorer for the IPFS resource currently
-  referenced in the clipboard
-- **Ctrl+g** will open the DAG viewer for the IPFS resource currently
-  referenced in the clipboard
-- **Ctrl+i** will open the IPLD Explorer for the IPFS resource currently
-  referenced in the clipboard
+Each of these shortcuts will act on the current item in the clipboard
+stack:
+
+- **Mod+o** opens the IPFS resource corresponding to the current
+  item
+- **Mod+e** opens the explorer for the current clipboard item (only
+  available if the resource is a directory)
+- **Mod+g** opens the DAG viewer for the current clipboard item
+- **Mod+i** opens the IPLD Explorer application for the current
+  clipboard item
+- **Mod+p** pins (recursively) the IPFS object
+- **Mod+1** sets item number 1 in the stack as the current item
+- **Mod+2** sets item number 2 in the stack as the current item
+- **Mod+3** sets item number 3 in the stack as the current item
+- **Mod+4** sets item number 4 in the stack as the current item
+- **Mod+5** sets item number 5 in the stack as the current item
+- **Mod+6** sets item number 6 in the stack as the current item
+- **Mod+7** sets item number 7 in the stack as the current item
+- **Mod+8** sets item number 8 in the stack as the current item
+- **Mod+9** sets item number 9 in the stack as the current item

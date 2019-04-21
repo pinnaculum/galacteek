@@ -15,9 +15,16 @@ ports (API, swarm or HTTP gateway) is already being used on your system. In
 that case, change the ports configuration in the settings and restart the
 application.
 
-The *Minimum swarm connections* and *Maximum swarm connections* settings
+The **Minimum swarm connections** and **Maximum swarm connections** settings
 let you modify the number of connections to be used for the IPFS swarm.
 Using low values can significantly reduce CPU usage.
+
+The **Maximum storage** setting controls the maximum allowed IPFS repository
+size in gigabytes.
+
+The **Routing mode** setting lets you choose between *dht* (the default)
+or *dhtclient*.  Using *dhtclient* can significantly reduce CPU usage, but
+your node will not act as a full DHT node on the network.
 
 **Note**: switching from a local to custom daemon (or vice versa) will make you
 lose access to the content that you might have published using the previous

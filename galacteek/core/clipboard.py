@@ -13,11 +13,12 @@ from galacteek.ipfs import cidhelpers
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.mimetype import detectMimeType
+from galacteek.ipfs.mimetype import MIMEType
 
 
 class ClipboardItem(QObject):
-    mimeTypeDetected = pyqtSignal(str)
-    mimeTypeAvailable = pyqtSignal(str)
+    mimeTypeDetected = pyqtSignal(MIMEType)
+    mimeTypeAvailable = pyqtSignal(MIMEType)
     mimeIconAvailable = pyqtSignal()
     statRetrieved = pyqtSignal(dict)
 
@@ -62,6 +63,8 @@ class ClipboardItem(QObject):
 
     @property
     def mimeCategory(self):
+        if isinstance(self.mimeType, MIMEType):
+            return self.mimeType.category
         if isinstance(self.mimeType, str):
             return self.mimeType.split('/')[0]
 
@@ -84,7 +87,7 @@ class ClipboardItem(QObject):
 
     def setMimeType(self, mimeType):
         log.debug('Detected mime-type {type} for {path}'.format(
-            path=self.path, type=mimeType))
+            path=self.path, type=str(mimeType)))
         self._mimeType = mimeType
         self.mimeTypeAvailable.emit(mimeType)
 
@@ -111,7 +114,7 @@ class ClipboardTracker(QObject):
     """
 
     clipboardHasIpfs = pyqtSignal(bool, str)
-    clipboardHistoryChanged = pyqtSignal(list)
+    clipboardHistoryChanged = pyqtSignal()  # not used anymore
 
     itemRegister = pyqtSignal(ClipboardItem, bool)
     itemAdded = pyqtSignal(ClipboardItem)
@@ -127,7 +130,7 @@ class ClipboardTracker(QObject):
         self.history = {}
 
         self._current = None
-        self._items = collections.deque(maxlen=256)
+        self._items = collections.deque(maxlen=128)
         self.itemRegister.connect(self.addItem)
 
         self.clipboard.changed.connect(self.onClipboardChanged)
@@ -159,7 +162,6 @@ class ClipboardTracker(QObject):
             self.current = obj
 
         self.itemAdded.emit(obj)
-        self.clipboardHistoryChanged.emit(self.getHistory())
 
     def exists(self, rscPath):
         for obj in self.items:
@@ -239,7 +241,6 @@ class ClipboardTracker(QObject):
         for item in self._items:
             self.itemRemoved.emit(item)
         self._items.clear()
-        self.clipboardHistoryChanged.emit(self.getHistory())
 
     def getCurrent(self):
         """ Returns current clipboard item """
@@ -286,10 +287,11 @@ class ClipboardTracker(QObject):
         mHashMeta = await self.app.multihashDb.get(path)
 
         if mHashMeta:
-            # Already have metadata for this multihash
-            mimetype = mHashMeta.get('mimetype')
+            # Already have metadata for this object
+            mimetype = MIMEType(mHashMeta.get('mimetype'))
             statInfo = mHashMeta.get('stat')
-            obj.statRetrieved.emit(statInfo)
+            if statInfo:
+                obj.statRetrieved.emit(statInfo)
         else:
             mimetype = await detectMimeType(path)
 
@@ -298,11 +300,18 @@ class ClipboardTracker(QObject):
                 log.debug('Stat failed for {path}'.format(
                     path=path))
                 return
+            else:
+                obj.statRetrieved.emit(statInfo)
 
             await ipfsop.sleep()
-            obj.statRetrieved.emit(statInfo)
 
-            await self.app.multihashDb.store(path, mimetype, statInfo)
+            # Store retrieved information in the metadata store
+            metaMtype = mimetype.type if mimetype and mimetype.valid else None
+            await self.app.multihashDb.store(
+                path,
+                mimetype=metaMtype,
+                stat=statInfo
+            )
 
-        if mimetype:
+        if mimetype and mimetype.valid:
             obj.mimeTypeDetected.emit(mimetype)

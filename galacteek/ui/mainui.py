@@ -359,7 +359,7 @@ class MainWindow(QMainWindow):
         self.tabnPinning = iPinningStatus()
         self.tabnMediaPlayer = iMediaPlayer()
         self.tabnHashmarks = iHashmarks()
-        self.tabnChat = 'Chat'
+        self.tabnChat = iChat()
 
         self.ui.actionCloseAllTabs.triggered.connect(
             self.onCloseAllTabs)
@@ -637,7 +637,7 @@ class MainWindow(QMainWindow):
             self.ui.tabWidget.setCurrentIndex(0)
 
     def onHashmarkClicked(self, path, title):
-        ensure(self.app.resourceOpener.open(path, None))
+        ensure(self.app.resourceOpener.open(path))
 
     def onMainToolbarMoved(self, orientation):
         self.toolbarMain.lastPos = self.toolbarMain.pos()

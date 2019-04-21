@@ -48,23 +48,40 @@
             
   <div class="section" id="using-the-clipboard">
 <h1>Using the clipboard<a class="headerlink" href="#using-the-clipboard" title="Permalink to this headline">¶</a></h1>
-<p>By their very nature, IPFS hashes are difficult to remember. It becomes
-quite convenient to store those valuable hashes in a temporary place, and the
-system’s clipboard is a convenient buffer that will help you keep track of
-these.</p>
-<p>On Linux systems, the <strong>selection</strong> clipboard will always be used as the
-primary clipboard, while on other platforms the system’s clipboard will be
-used.</p>
-<div class="section" id="the-clipboard-loader">
-<h2>The clipboard loader<a class="headerlink" href="#the-clipboard-loader" title="Permalink to this headline">¶</a></h2>
+<p><em>Note</em>: on Unix/Linux systems, the <em>selection</em> clipboard will always be
+used as the primary clipboard, while on other platforms the system’s
+clipboard will be used.</p>
+<div class="section" id="the-clipboard-manager">
+<h2>The clipboard manager<a class="headerlink" href="#the-clipboard-manager" title="Permalink to this headline">¶</a></h2>
 <a class="reference internal image-reference" href="_images/clipboard.png"><img alt="_images/clipboard.png" src="_images/clipboard.png" style="width: 64px; height: 64px;" /></a>
-<p>From the application’s toolbar you can access the clipboard loader button. It records
-the computer’s clipboard activity and keeps an history of all the IPFS hashes
-that have been stored in it since the application was started.</p>
-<p>Clicking on the arrow next to the clipboard icon will open a menu giving you
-access to the clipboard’s history as well as actions to browse/explore the IPFS
-resource currently referenced in the clipboard, if any.</p>
-<p>It recognizes the following formats:</p>
+<p>From the application’s toolbar you can access the clipboard manager button.
+It records the computer’s clipboard activity and keeps an history of all the
+IPFS multihashes/paths that have been stored in it since the application was
+started.</p>
+<p>Whenever the clipboard contains a new valid reference to an IPFS object, the
+clipboard tracker gathers information about this object (performing an object
+stat and determining its MIME type) and puts it on top of the clipboard stack,
+making it the current item.</p>
+<p>The current clipboard item in the stack is represented beside the clipboard
+manager button. If available, an icon matching the discovered MIME type of
+the IPFS object is set on the clipboard item button. Clicking on the clipboard
+item button opens up a menu listing the different possible actions for this
+object:</p>
+<ul class="simple">
+<li><strong>Open</strong>: open the IPFS resource depending on the object type</li>
+<li><strong>Open with application</strong>: open with custom application</li>
+<li><strong>Open with default system application</strong>: open with the system’s default
+application (it uses <strong>xdg-open</strong> on Linux or the <strong>open</strong> command on MacOS)</li>
+<li><strong>Hashmark</strong>: hashmark this object</li>
+<li><strong>Pin</strong>: recursively pin this object</li>
+<li><strong>Set as homepage</strong></li>
+<li><strong>DAG view</strong></li>
+<li><strong>Run IPLD explorer</strong></li>
+</ul>
+</div>
+<div class="section" id="supported-formats">
+<h2>Supported formats<a class="headerlink" href="#supported-formats" title="Permalink to this headline">¶</a></h2>
+<p>The clipboard manager supports the following formats:</p>
 <ul class="simple">
 <li><em>IPFS CID (version 0)</em>, for example
 <strong>QmRifA98t769dzkDv2gQocqJPXGtTySR5dPkyTaUZXtkLo</strong></li>
@@ -82,20 +99,30 @@ resource currently referenced in the clipboard, if any.</p>
 <strong>https://ipfs.io/ipfs/QmRifA98t769dzkDv2gQocqJPXGtTySR5dPkyTaUZXtkLo</strong> or
 <strong>http://localhost:8080/ipns/peerpad.net</strong>.</li>
 </ul>
-<p>Passing the mouse over the clipboard button will display a tooltip message
-giving you information about the status of the clipboard.</p>
 </div>
-<div class="section" id="clipboard-keyboard-shortcuts">
-<h2>Clipboard keyboard shortcuts<a class="headerlink" href="#clipboard-keyboard-shortcuts" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="keyboard-shortcuts">
+<h2>Keyboard shortcuts<a class="headerlink" href="#keyboard-shortcuts" title="Permalink to this headline">¶</a></h2>
+<p><em>Mod</em> is the <em>Control</em> key on Linux and the <em>Command</em> key on MacOS X.</p>
+<p>Each of these shortcuts will act on the current item in the clipboard
+stack:</p>
 <ul class="simple">
-<li><strong>Ctrl+o</strong> will browse the IPFS resource currently referenced in the
-clipboard</li>
-<li><strong>Ctrl+e</strong> will open the explorer for the IPFS resource currently
-referenced in the clipboard</li>
-<li><strong>Ctrl+g</strong> will open the DAG viewer for the IPFS resource currently
-referenced in the clipboard</li>
-<li><strong>Ctrl+i</strong> will open the IPLD Explorer for the IPFS resource currently
-referenced in the clipboard</li>
+<li><strong>Mod+o</strong> opens the IPFS resource corresponding to the current
+item</li>
+<li><strong>Mod+e</strong> opens the explorer for the current clipboard item (only
+available if the resource is a directory)</li>
+<li><strong>Mod+g</strong> opens the DAG viewer for the current clipboard item</li>
+<li><strong>Mod+i</strong> opens the IPLD Explorer application for the current
+clipboard item</li>
+<li><strong>Mod+p</strong> pins (recursively) the IPFS object</li>
+<li><strong>Mod+1</strong> sets item number 1 in the stack as the current item</li>
+<li><strong>Mod+2</strong> sets item number 2 in the stack as the current item</li>
+<li><strong>Mod+3</strong> sets item number 3 in the stack as the current item</li>
+<li><strong>Mod+4</strong> sets item number 4 in the stack as the current item</li>
+<li><strong>Mod+5</strong> sets item number 5 in the stack as the current item</li>
+<li><strong>Mod+6</strong> sets item number 6 in the stack as the current item</li>
+<li><strong>Mod+7</strong> sets item number 7 in the stack as the current item</li>
+<li><strong>Mod+8</strong> sets item number 8 in the stack as the current item</li>
+<li><strong>Mod+9</strong> sets item number 9 in the stack as the current item</li>
 </ul>
 </div>
 </div>
