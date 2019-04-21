@@ -86,6 +86,6 @@ Keyboard shortcuts
 
 The following keyboard shortcuts are available within the files manager:
 
-- **Ctrl+h**: Copy item's hash to the clipboard
-- **Ctrl+p**: Copy item's path (full IPFS path) to the clipboard
-- **Ctrl+x**: Explore item if it is a directory
+- **Mod+c** or **Mod+y**: Copy item's multihash to the clipboard
+- **Mod+a**: Copy item's path (full IPFS path) to the clipboard
+- **Mod+x**: Explore item if it is a directory

@@ -1,5 +1,6 @@
-
 from PyQt5.QtCore import Qt
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import QCoreApplication
 
 from PyQt5.QtGui import QImage
 from PyQt5.QtGui import QPixmap
@@ -11,24 +12,33 @@ from PyQt5.Qt import QSizePolicy
 from PyQt5.QtWidgets import QLabel
 from PyQt5.QtWidgets import QScrollArea
 from PyQt5.QtWidgets import QHBoxLayout
+from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtWidgets import QSpacerItem
 
-from galacteek.ipfs.wrappers import ipfsOp
 from galacteek import ensure
 from galacteek import logUser
+from galacteek.crypto.qrcode import IPFSQrDecoder
+from galacteek.ipfs.wrappers import ipfsOp
 
 from .widgets import GalacteekTab
 from .helpers import getIcon
+from .clipboard import iCopyToClipboard
 from .i18n import iZoomIn
 from .i18n import iZoomOut
+
+
+def iImageGotQrCodes(count):
+    return QCoreApplication.translate(
+        'ImageView',
+        'This image contains {} valid IPFS QR code(s) !').format(
+            count)
 
 
 class ImageViewerTab(GalacteekTab):
     def __init__(self, imgPath, mainW):
         super().__init__(mainW)
 
-        layout = QHBoxLayout()
         self.zoomIn = QToolButton()
         self.zoomIn.setIcon(getIcon('zoom-in.png'))
         self.zoomIn.setShortcut(QKeySequence('Ctrl++'))
@@ -43,6 +53,7 @@ class ImageViewerTab(GalacteekTab):
         self.fitWindow.setToolTip('Fit to window')
         self.fitWindow.setIcon(getIcon('expand.png'))
 
+        layout = QHBoxLayout()
         layout.addItem(
             QSpacerItem(10, 10, QSizePolicy.Expanding, QSizePolicy.Minimum))
         layout.addWidget(self.zoomOut, 0, Qt.AlignLeft)
@@ -52,6 +63,8 @@ class ImageViewerTab(GalacteekTab):
         self.vLayout.addLayout(layout)
 
         self.view = ImageView(self)
+        self.view.imageLoaded.connect(self.onImageLoaded)
+        self.view.qrCodesPresent.connect(self.onQrCodesListed)
         self.vLayout.addWidget(self.view)
 
         self.zoomIn.clicked.connect(self.view.zoomIn)
@@ -61,11 +74,55 @@ class ImageViewerTab(GalacteekTab):
 
         ensure(self.view.showImage(imgPath))
 
+    def onImageLoaded(self, path):
+        pass
+
+    def onQrCodesListed(self, urls):
+        layout = QVBoxLayout()
+
+        lbl = QLabel()
+        lbl.setText(iImageGotQrCodes(len(urls)))
+        lbl.setObjectName('qrCodeCountLabel')
+        lbl.setStyleSheet('QLabel { font-size: 14pt; text-align: center; }')
+        layout.addWidget(lbl)
+        layout.addItem(
+            QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Minimum))
+
+        def onOpenItem(url):
+            ensure(self.app.resourceOpener.open(url))
+
+        for url in urls:
+            hLayout = QHBoxLayout()
+            lbl = QLabel()
+            lbl.setText('<b>{}</b>'.format(url))
+            lbl.setStyleSheet('QLabel { font-size: 12pt }')
+            clipBtn = QToolButton()
+            clipBtn.setIcon(getIcon('clipboard.png'))
+            clipBtn.setToolTip(iCopyToClipboard())
+            clipBtn.clicked.connect(
+                lambda: self.app.setClipboardText(url))
+
+            openBtn = QToolButton()
+            openBtn.setText('Open')
+            openBtn.clicked.connect(lambda: onOpenItem(url))
+
+            hLayout.addWidget(lbl)
+            hLayout.addWidget(openBtn)
+            hLayout.addWidget(clipBtn)
+            layout.addLayout(hLayout)
+
+        self.vLayout.addLayout(layout)
+
 
 class ImageView(QScrollArea):
+    imageLoaded = pyqtSignal(str)
+    qrCodesPresent = pyqtSignal(list)
+
     def __init__(self, parent=None):
         super(ImageView, self).__init__(parent)
 
+        self.setObjectName('ImageView')
+        self.qrDecoder = IPFSQrDecoder()
         self.image = QImage()
         self.labelImage = QLabel(self)
         self.setAlignment(Qt.AlignCenter)
@@ -116,6 +173,15 @@ class ImageView(QScrollArea):
             self.labelImage.setPixmap(QPixmap.fromImage(self.image))
             self.labelImage.adjustSize()
             self.resizePixmap()
+
+            self.imageLoaded.emit(imgPath)
+
+            if self.qrDecoder:
+                # See if we have any QR codes in the image
+                urls = self.qrDecoder.decode(imgData)
+                if urls:
+                    self.qrCodesPresent.emit(urls)
+
         except Exception:
             logUser.debug('Failed to load image: {path}'.format(
                 path=imgPath))

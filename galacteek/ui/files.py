@@ -666,7 +666,7 @@ class FilesTab(GalacteekTab):
                 # preserving the real file name
                 finalPath = joinIpfs(os.path.join(parentHash, fileName))
 
-            ensure(resourceOpener.open(finalPath, None))
+            ensure(resourceOpener.open(finalPath))
 
         self.app.task(self.listFiles, item.getPath(), parentItem=item,
                       autoexpand=True)

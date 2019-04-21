@@ -142,6 +142,10 @@ def iMediaPlayer():
     return QCoreApplication.translate('GalacteekWindow', 'Media Player')
 
 
+def iChat():
+    return QCoreApplication.translate('GalacteekWindow', 'Chat')
+
+
 def iLangEnglish():
     return QCoreApplication.translate('Galacteek', 'English')
 
@@ -180,6 +184,10 @@ def iMerkleLink():
 
 def iIpfsInfos():
     return QCoreApplication.translate('GalacteekWindow', 'IPFS informations')
+
+
+def iIpfsQrCodes():
+    return QCoreApplication.translate('GalacteekWindow', 'IPFS QR codes')
 
 
 def iNoTitle():

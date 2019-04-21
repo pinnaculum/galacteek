@@ -46,6 +46,9 @@
               <iconset resource="galacteek.qrc">
                <normaloff>:/share/icons/ipfs-logo-128-ice.png</normaloff>:/share/icons/ipfs-logo-128-ice.png</iconset>
              </property>
+             <property name="popupMode">
+              <enum>QToolButton::InstantPopup</enum>
+             </property>
             </widget>
            </item>
            <item>
@@ -139,7 +142,7 @@
              </property>
              <property name="sizeHint" stdset="0">
               <size>
-               <width>4</width>
+               <width>6</width>
                <height>20</height>
               </size>
              </property>
@@ -207,7 +210,7 @@
              </property>
              <property name="sizeHint" stdset="0">
               <size>
-               <width>4</width>
+               <width>6</width>
                <height>20</height>
               </size>
              </property>
@@ -251,7 +254,7 @@
              </property>
              <property name="sizeHint" stdset="0">
               <size>
-               <width>8</width>
+               <width>6</width>
                <height>20</height>
               </size>
              </property>
@@ -272,21 +275,15 @@
             </widget>
            </item>
            <item>
-            <widget class="QComboBox" name="actionComboBox">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
+            <widget class="QToolButton" name="pinToolButton">
+             <property name="text">
+              <string/>
              </property>
-             <property name="maximumSize">
-              <size>
-               <width>200</width>
-               <height>16777215</height>
-              </size>
+             <property name="popupMode">
+              <enum>QToolButton::InstantPopup</enum>
              </property>
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pin&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             <property name="toolButtonStyle">
+              <enum>Qt::ToolButtonTextBesideIcon</enum>
              </property>
             </widget>
            </item>

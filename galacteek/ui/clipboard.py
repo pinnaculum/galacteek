@@ -14,17 +14,22 @@ from PyQt5.QtCore import QSize
 from PyQt5.QtCore import QUrl
 
 from galacteek import ensure
+from galacteek import log
+from galacteek import logUser
+from galacteek.appsettings import CFG_SECTION_BROWSER
+from galacteek.appsettings import CFG_KEY_HOMEURL
 from galacteek.core.clipboard import ClipboardItem
 from galacteek.ipfs.cidhelpers import stripIpfs
-from galacteek.ipfs.mimetype import isDirMimeType
+from galacteek.ipfs.cidhelpers import isIpnsPath
+from galacteek.ipfs.cidhelpers import isIpfsPath
 from galacteek.ipfs import ipfsOp
+from galacteek.crypto.qrcode import IPFSQrDecoder
 
 from .hashmarks import addHashmark
 from .helpers import getMimeIcon
 from .helpers import getIcon
-from .helpers import getIconIpfsIce
 from .helpers import messageBox
-from .helpers import getIconFromIpfs
+from .helpers import getIconFromImageData
 from .helpers import runDialog
 from .widgets import PopupToolButton
 from .dialogs import ChooseProgramDialog
@@ -33,12 +38,32 @@ from . import dag
 
 from .i18n import iUnknown
 from .i18n import iDagViewer
+from .i18n import iHashmark
+from .i18n import iIpfsQrCodes
 
 
 def iClipboardEmpty():
     return QCoreApplication.translate(
         'clipboardManager',
         'No valid IPFS CID/path in the clipboard')
+
+
+def iClipboardStackItemsCount(count):
+    return QCoreApplication.translate(
+        'clipboardManager',
+        '{} item(s) in the clipboard stack').format(count)
+
+
+def iCopyToClipboard():
+    return QCoreApplication.translate(
+        'clipboardManager',
+        'Copy to clipboard')
+
+
+def iClipboardNoValidAddress():
+    return QCoreApplication.translate(
+        'clipboardManager',
+        'No valid address for this item')
 
 
 def iFromClipboard(path):
@@ -106,6 +131,11 @@ def iClipItemSetCurrent():
                                       'Set as current clipboard item')
 
 
+def iClipItemSetAsHome():
+    return QCoreApplication.translate('clipboardManager',
+                                      'Set as homepage')
+
+
 def iClipItemRemove():
     return QCoreApplication.translate('clipboardManager',
                                       'Remove item')
@@ -139,6 +169,7 @@ class ClipboardManager(PopupToolButton):
 
         self.tracker.currentItemChanged.connect(self.itemChanged)
         self.tracker.itemAdded.connect(self.itemAdded)
+        self.tracker.itemRemoved.connect(lambda: self.updateToolTip())
 
         self.menu.setToolTipsVisible(True)
 
@@ -175,6 +206,7 @@ class ClipboardManager(PopupToolButton):
     def onHistoryClear(self):
         self.initHistoryMenu()
         self.tracker.clearHistory()
+        self.updateToolTip()
 
     def onHistoryItemClicked(self, action):
         item = action.data()
@@ -188,9 +220,15 @@ class ClipboardManager(PopupToolButton):
                 self.tracker.removeItem(item)
 
     def itemAdded(self, item):
-        shortened = os.path.basename(item.path)
+        if isIpnsPath(item.path):
+            # Don't show itemName ipns paths, the namespace is important
+            itemName = item.path
+        elif isIpfsPath(item.path):
+            itemName = os.path.basename(item.path)
+        else:
+            itemName = item.path
 
-        nMenu = QMenu(shortened, self)
+        nMenu = QMenu(itemName, self)
         nMenu.setToolTipsVisible(True)
         nMenu.setToolTip(item.path)
         nMenu.triggered.connect(self.onHistoryItemClicked)
@@ -213,6 +251,10 @@ class ClipboardManager(PopupToolButton):
 
         item.mimeIconAvailable.connect(
             lambda: changeIcons(item, nMenu, actionOpen))
+        self.updateToolTip()
+
+    def updateToolTip(self):
+        self.setToolTip(iClipboardStackItemsCount(len(self.tracker.items)))
 
     def itemChanged(self, item):
         self.itemsStack.activateItem(item)
@@ -246,30 +288,34 @@ class ClipboardItemButton(PopupToolButton):
     """
     Represents a ClipboardItem in the clipboard stack
     """
-    def __init__(self, rscOpener, clipItem=None, *args, **kw):
-        super().__init__(*args, **kw)
 
+    def __init__(self, rscOpener, clipItem=None, parent=None):
+        super().__init__(mode=QToolButton.InstantPopup, parent=parent)
+
+        self._item = None
         self.app = QApplication.instance()
         self.setObjectName('currentClipItem')
         self.setIcon(getMimeIcon('unknown'))
         self.setIconSize(QSize(32, 32))
-        self.setToolTip(iClipboardEmpty())
+        self.setToolTip(iClipboardNoValidAddress())
         self.setEnabled(False)
         self.rscOpener = rscOpener
 
         if clipItem:
             self.setClipboardItem(clipItem)
-        else:
-            self._item = None
 
         self.clicked.connect(self.onOpen)
 
+        self.setAsHomeAction = QAction(getIcon('go-home.png'),
+                                       iClipItemSetAsHome(), self,
+                                       triggered=self.onSetAsHome)
+
         self.hashmarkAction = QAction(getIcon('hashmarks.png'),
-                                      iClipboardEmpty(), self,
+                                      iHashmark(), self,
                                       triggered=self.onHashmark)
 
         self.openAction = QAction(getIcon('terminal.png'),
-                                  iClipboardEmpty(), self,
+                                  iClipItemOpen(), self,
                                   shortcut=QKeySequence('Ctrl+o'),
                                   triggered=self.onOpen)
 
@@ -284,7 +330,7 @@ class ClipboardItemButton(PopupToolButton):
             triggered=self.onOpenWithDefaultApp)
 
         self.exploreHashAction = QAction(
-            getIconIpfsIce(),
+            getIcon('folder-open.png'),
             iClipboardEmpty(), self,
             shortcut=QKeySequence('Ctrl+e'),
             triggered=self.onExplore)
@@ -302,7 +348,7 @@ class ClipboardItemButton(PopupToolButton):
             triggered=self.onIpldExplore)
 
         self.pinAction = QAction(
-            getIcon('pin-black.png'),
+            getIcon('pin.png'),
             iClipboardEmpty(), self,
             shortcut=QKeySequence('Ctrl+p'),
             triggered=self.onPin)
@@ -328,10 +374,14 @@ class ClipboardItemButton(PopupToolButton):
             addHashmark(self.app.marksLocal, self.item.path,
                         self.item.basename)
 
+    def onSetAsHome(self):
+        self.app.settingsMgr.setSetting(CFG_SECTION_BROWSER, CFG_KEY_HOMEURL,
+                                        'dweb:{}'.format(self.item.path))
+
     def onOpenWithProgram(self):
         def onAccept(dlg):
             prgValue = dlg.textValue()
-            if len(prgValue) > 0:
+            if len(prgValue) in range(1, 512):
                 ensure(self.rscOpener.openWithExternal(
                     self.item.cid, prgValue.split()))
 
@@ -350,17 +400,11 @@ class ClipboardItemButton(PopupToolButton):
         self.menu.addAction(self.openWithAppAction)
         self.menu.addAction(self.openWithDefaultAction)
         self.menu.addSeparator()
+        self.menu.addAction(self.setAsHomeAction)
         self.menu.addAction(self.hashmarkAction)
         self.menu.addAction(self.dagViewAction)
         self.menu.addAction(self.ipldExplorerAction)
         self.menu.addAction(self.pinAction)
-
-        if isDirMimeType(self.item.mimeType):
-            # It's a directory. Add the explore action and disable
-            # the actions that don't apply to a folder
-            self.menu.addAction(self.exploreHashAction)
-            self.openWithAppAction.setEnabled(False)
-            self.openWithDefaultAction.setEnabled(False)
 
         self.exploreHashAction.setText(iClipLoaderExplore(self.item.path))
         self.openAction.setText(iClipItemOpen())
@@ -372,47 +416,92 @@ class ClipboardItemButton(PopupToolButton):
 
         self.setToolTip('{path} (type: {mimetype})'.format(
             path=self.item.path,
-            mimetype=self.item.mimeType if self.item.mimeType else iUnknown()
+            mimetype=str(self.item.mimeType) if self.item.mimeType else
+            iUnknown()
         ))
 
         if not self.item.mimeType:
             return self.setIcon(getMimeIcon('unknown'))
 
-        icon = getMimeIcon(self.item.mimeType)
+        if self.item.mimeType.isDir:
+            # It's a directory. Add the explore action and disable
+            # the actions that don't apply to a folder
+            self.menu.addAction(self.exploreHashAction)
+            self.openWithAppAction.setEnabled(False)
+            self.openWithDefaultAction.setEnabled(False)
+
+        icon = getMimeIcon(str(self.item.mimeType))
         if icon:
             self.item.mimeIcon = icon
             self.setIcon(icon)
         else:
-            mIconFile = None
+            mIcon = None
 
             if self.item.mimeType == 'application/x-directory':
-                mIconFile = 'inode/directory'
+                mIcon = 'inode/directory'
             if self.item.mimeCategory == 'text':
-                mIconFile = 'text/plain'
+                mIcon = 'text/plain'
             if self.item.mimeCategory == 'image':
-                mIconFile = 'image/x-generic'
-                ensure(self.prefetchImage())
+                mIcon = 'image/x-generic'
+                ensure(self.analyzeImage())
             if self.item.mimeCategory == 'video':
-                mIconFile = 'video/x-generic'
+                mIcon = 'video/x-generic'
             if self.item.mimeCategory == 'audio':
-                mIconFile = 'audio/x-generic'
+                mIcon = 'audio/x-generic'
 
-            icon = getMimeIcon(mIconFile if mIconFile else 'unknown')
+            icon = getMimeIcon(mIcon if mIcon else 'unknown')
             if icon:
                 self.item.mimeIcon = icon
                 self.setIcon(icon)
 
     @ipfsOp
-    async def prefetchImage(self, ipfsop):
-        try:
-            icon = await ipfsop.waitFor(
-                getIconFromIpfs(ipfsop, self.item.path), 10
-            )
-        except aioipfs.APIError:
-            pass
+    async def analyzeImage(self, ipfsop):
+        if self.item.stat:
+            size = self.item.stat.get('DataSize')
+
+            if isinstance(size, int):
+                # don't scan anything larger than 4Mb
+                if size > (1024 * 1024 * 4):
+                    log.debug('{path}: Image too large, not scanning')
+                    return
         else:
+            # Don't trust this one
+            log.debug('No object info for image, bailing out')
+            return
+
+        try:
+            data = await ipfsop.waitFor(
+                ipfsop.client.cat(self.item.path), 12
+            )
+
+            if data is None:
+                return
+
+            icon = getIconFromImageData(data)
             if icon:
                 self.setIcon(icon)
+
+            # Decode the QR codes in the image if there's any
+            qrDecoder = IPFSQrDecoder()
+            if not qrDecoder:
+                return
+
+            urls = qrDecoder.decode(data)
+            if isinstance(urls, list):
+                # Display the QR codes in a separate menu
+                menu = QMenu(iIpfsQrCodes(), self)
+
+                for url in urls:
+                    logUser.info('Detected IPFS QR code URL: {}'.format(url))
+                    menu.addAction(
+                        url, lambda: ensure(
+                            self.app.resourceOpener.open(url)))
+
+                self.menu.addSeparator()
+                self.menu.addMenu(menu)
+
+        except aioipfs.APIError:
+            pass
 
     def onOpen(self):
         if self.item:

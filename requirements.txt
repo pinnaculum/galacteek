@@ -9,6 +9,7 @@ json-traverse==0.4
 jsonschema==2.6.0
 logbook==1.4.0
 multiaddr==0.0.2
+pillow==6.0.0
 protobuf==3.6.1
 psutil==5.4.7
 py-multibase==1.0.1
@@ -19,3 +20,4 @@ pyqt5==5.11.3
 python-magic==0.4.15
 quamash==0.6.1
 yarl==1.2.6
+-e git+https://github.com/ewino/qreader#egg=qreader

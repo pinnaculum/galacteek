@@ -255,9 +255,9 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
         url = contextMenuData.linkUrl()
 
         ipfsPath = cidhelpers.ipfsPathExtract(url.toString())
-        menu = QMenu()
 
         if ipfsPath:
+            menu = QMenu()
             menu.addAction(getIcon('ipfs-logo-128-black.png'),
                            iOpenInTab(),
                            lambda: self.openInTab(ipfsPath))
@@ -273,11 +273,12 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
             openWithMenu.addAction('Media player', lambda:
                                    self.openWithMediaPlayer(contextMenuData))
             menu.addMenu(openWithMenu)
+            menu.exec(event.globalPos())
         else:
             # Non-IPFS URL
-            pass
-
-        menu.exec(event.globalPos())
+            menu = currentPage.createStandardContextMenu()
+            if menu:
+                menu.exec(event.globalPos())
 
     def hashmarkPath(self, path):
         basename = os.path.basename(path)
@@ -427,7 +428,7 @@ class BrowserTab(GalacteekTab):
         self.loadIpfsMenu.addAction(self.loadHomeAction)
 
         self.ui.loadIpfsButton.setMenu(self.loadIpfsMenu)
-        self.ui.loadIpfsButton.setPopupMode(QToolButton.MenuButtonPopup)
+        self.ui.loadIpfsButton.setPopupMode(QToolButton.InstantPopup)
         self.ui.loadIpfsButton.clicked.connect(self.onLoadIpfsCID)
 
         self.ui.pBarBrowser.setTextVisible(False)
@@ -441,13 +442,16 @@ class BrowserTab(GalacteekTab):
 
         self.ui.pinAllButton.toggled.connect(self.onToggledPinAll)
 
-        # Prepare the pin combo box
+        # PIN tool button
         iconPin = getIcon('pin.png')
-        self.ui.actionComboBox.insertItem(0, iPinThisPage())
-        self.ui.actionComboBox.setItemIcon(0, iconPin)
-        self.ui.actionComboBox.insertItem(1, iPinRecursive())
-        self.ui.actionComboBox.setItemIcon(1, iconPin)
-        self.ui.actionComboBox.activated.connect(self.actionComboClicked)
+
+        pinMenu = QMenu()
+        pinMenu.addAction(iconPin, iPinThisPage(), self.onPinSingle)
+        pinMenu.addAction(iconPin, iPinRecursive(), self.onPinRecursive)
+
+        self.ui.pinToolButton.setMenu(pinMenu)
+        self.ui.pinToolButton.setIcon(iconPin)
+        self.ui.pinToolButton.setText(iPin())
 
         self.ui.zoomInButton.clicked.connect(self.onZoomIn)
         self.ui.zoomOutButton.clicked.connect(self.onZoomOut)
@@ -585,13 +589,17 @@ class BrowserTab(GalacteekTab):
             currentPage = self.ui.webEngineView.page()
             currentPage.print(printer, success)
 
-    def actionComboClicked(self, idx):
+    def onPinSingle(self):
         if not self.currentIpfsResource:
             return messageBox(iNotAnIpfsResource())
-        if idx == 0:
-            self.pinPath(self.currentIpfsResource, recursive=False)
-        if idx == 1:
-            self.pinPath(self.currentIpfsResource, recursive=True)
+
+        self.pinPath(self.currentIpfsResource, recursive=False)
+
+    def onPinRecursive(self):
+        if not self.currentIpfsResource:
+            return messageBox(iNotAnIpfsResource())
+
+        self.pinPath(self.currentIpfsResource, recursive=True)
 
     def loadFromClipboardButtonClicked(self):
         current = self.app.clipTracker.getCurrent()

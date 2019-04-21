@@ -4,7 +4,9 @@ import asyncio
 import aioipfs
 
 from PyQt5.QtWidgets import QApplication
+from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import QObject
+from PyQt5.QtCore import pyqtSignal
 
 from galacteek import log
 from galacteek import logUser
@@ -15,10 +17,8 @@ from galacteek.dweb.page import WebTab
 from galacteek.dweb.page import DWebView
 
 from galacteek.ipfs import ipfsOp
+from galacteek.ipfs.mimetype import MIMEType
 from galacteek.ipfs.mimetype import detectMimeType
-from galacteek.ipfs.mimetype import isDirMimeType
-from galacteek.ipfs.mimetype import isTextMimeType
-from galacteek.ipfs.mimetype import getMimeCategory
 
 from galacteek.ipfs.cidhelpers import isIpfsPath
 from galacteek.ipfs.cidhelpers import isIpnsPath
@@ -26,23 +26,34 @@ from galacteek.ipfs.cidhelpers import shortPathRepr
 
 from . import ipfsview
 from .helpers import getMimeIcon
+from .helpers import messageBox
 from .imgview import ImageViewerTab
 
 
+def iResourceCannotOpen(path):
+    return QCoreApplication.translate(
+        'resourceOpener',
+        '{}: cannot determine resource type or timeout occured '
+        '(check connectivity)').format(
+            path)
+
+
 class IPFSResourceOpener(QObject):
+    objectOpened = pyqtSignal(str)
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.app = QApplication.instance()
         self.setObjectName('resourceOpener')
 
     @ipfsOp
-    async def open(self, ipfsop, rscPath, mimeType):
+    async def open(self, ipfsop, rscPath, mimeType=None):
         """
         Open the resource referenced by rscPath according
         to its MIME type
 
         :param str rscPath: IPFS CID/path
-        :param str mimeType: MIME type
+        :param MIMEType mimeType: MIME type
         """
 
         if self.app.mainWindow.pinAllGlobalChecked and not isIpnsPath(rscPath):
@@ -56,19 +67,21 @@ class IPFSResourceOpener(QObject):
             # Try to reuse metadata from the multihash store
             rscMeta = await self.app.multihashDb.get(rscPath)
             if rscMeta:
-                mimeType = rscMeta.get('mimetype')
+                mimeType = MIMEType(rscMeta.get('mimetype'))
 
         if mimeType is None:
             mimeType = await detectMimeType(rscPath)
 
-        if mimeType:
-            mimeCategory = getMimeCategory(mimeType)
+        if mimeType and mimeType.valid:
+            logUser.info('{path} ({type}): opening'.format(
+                path=rscPath, type=str(mimeType)))
         else:
-            mimeCategory = None
+            return messageBox(iResourceCannotOpen(rscPath))
 
-        if isTextMimeType(mimeType):
+        if mimeType.isText:
             tab = ipfsview.TextViewerTab()
             tab.show(rscPath)
+            self.objectOpened.emit(rscPath)
             return self.app.mainWindow.registerTab(
                 tab,
                 rscShortName,
@@ -77,8 +90,9 @@ class IPFSResourceOpener(QObject):
                 current=True
             )
 
-        if mimeCategory == 'image':
+        if mimeType.isImage:
             tab = ImageViewerTab(rscPath, self.app.mainWindow)
+            self.objectOpened.emit(rscPath)
             return self.app.mainWindow.registerTab(
                 tab,
                 rscShortName,
@@ -87,17 +101,21 @@ class IPFSResourceOpener(QObject):
                 current=True
             )
 
-        if mimeCategory == 'video' or mimeCategory == 'audio':
+        if mimeType.isVideo or mimeType.isAudio:
             tab = self.app.mainWindow.addMediaPlayerTab()
             if tab:
                 tab.playFromPath(rscPath)
             return
 
-        if mimeType == 'application/pdf' and 0:  # not usable yet
+        if mimeType == 'application/pdf':
+            return await self.openWithSystemDefault(rscPath)
+
+        if mimeType == 'application/pdf' and 0:  #  not usable yet
             tab = WebTab(self.app.mainWindow)
             tab.attach(
                 DWebView(page=PDFViewerPage(rscPath))
             )
+            self.objectOpened.emit(rscPath)
             return self.app.mainWindow.registerTab(
                 tab,
                 rscShortName,
@@ -106,14 +124,12 @@ class IPFSResourceOpener(QObject):
                 current=True
             )
 
-        if isDirMimeType(mimeType) or isIpnsPath(rscPath) or mimeType in [
-                'text/html',
-                'application/xhtml+xml']:
+        if mimeType.isDir or isIpnsPath(rscPath) or mimeType.isHtml:
+            self.objectOpened.emit(rscPath)
             return self.app.mainWindow.addBrowserTab().browseFsPath(rscPath)
 
-        logUser.debug('{0}: unhandled file type ({1})'.format(
-            rscPath, mimeType if mimeType else 'null'))
-        return await self.openWithSystemDefault(rscPath)
+        logUser.info('{path} ({type}): unhandled resource type'.format(
+            path=rscPath, type=str(mimeType)))
 
     @ipfsOp
     async def openWithExternal(self, ipfsop, rscPath, progArgs):

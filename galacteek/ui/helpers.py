@@ -45,12 +45,19 @@ def preloadMimeIcons():
 async def getIconFromIpfs(ipfsop, ipfsPath, scaleWidth=None):
     try:
         imgData = await ipfsop.waitFor(
-            ipfsop.client.cat(ipfsPath), 8
+            ipfsop.client.cat(ipfsPath), 10
         )
 
         if not imgData:
             raise Exception('Failed to load image')
 
+        return getIconFromImageData(imgData, scaleWidth=scaleWidth)
+    except BaseException:
+        return None
+
+
+def getIconFromImageData(imgData, scaleWidth=None):
+    try:
         img = QImage()
         img.loadFromData(imgData)
 

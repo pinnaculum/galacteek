@@ -39,23 +39,39 @@ class IPFSObjectMetadataDatabase:
 
         return None, None, False
 
-    async def store(self, rscPath, mimeType, statInfo):
+    async def write(self, metaPath, metadata, mode='w+t'):
+        async with aiofiles.open(metaPath, mode) as fd:
+            await fd.write(
+                json.dumps(metadata, indent=4)
+            )
+
+    async def store(self, rscPath, **data):
         containerPath, metaPath, exists = await self.path(rscPath)
         if metaPath and not exists:
-            if not os.path.isdir(containerPath):
-                os.mkdir(containerPath)
             with await self._lock:
+                if not os.path.isdir(containerPath):
+                    os.mkdir(containerPath)
                 try:
-                    async with aiofiles.open(metaPath, 'w+t') as fd:
-                        await fd.write(
-                            json.dumps({
-                                'mimetype': mimeType,
-                                'stat': statInfo
-                            }, indent=4)
-                        )
+                    await self.write(metaPath, data)
                 except BaseException:
                     log.debug('Error storing metadata for {0}'.format(
                         rscPath))
+                else:
+                    log.debug('{0}: stored metadata {1}'.format(rscPath, data))
+        elif metaPath and exists:
+            # Patch the existing metadata
+            metadata = await self.get(rscPath)
+            if not isinstance(metadata, dict):
+                return
+
+            with await self._lock:
+                for key, value in data.items():
+                    if key not in metadata:
+                        metadata[key] = value
+                try:
+                    await self.write(metaPath, metadata)
+                except BaseException:
+                    pass
 
     async def get(self, rscPath):
         containerPath, metaPath, exists = await self.path(rscPath)

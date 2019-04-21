@@ -25,6 +25,8 @@ logbook = "==1.4.0"
 multiaddr = "==0.0.2"
 psutil = "==5.4.7"
 python-magic = "==0.4.15"
+pillow = "==6.0.0"
+qreader = {editable = true, git = "https://github.com/ewino/qreader"}
 
 [dev-packages]
 pytest = "*"

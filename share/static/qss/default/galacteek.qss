@@ -120,8 +120,8 @@ QToolButton#hashmarksLibraryButton::hover {
     background-color: #4a9ea1;
 }
 
-QToolButton#buttonBrowseIpfs {
-    image: url('qrc:/share/icons/ipfs-logo-128-ice.png');
+QToolButton::hover#currentClipItem {
+    border: 1px solid black;
 }
 
 QLabel#linkInfos {

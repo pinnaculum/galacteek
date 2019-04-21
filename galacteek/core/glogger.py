@@ -5,7 +5,7 @@ from logbook.helpers import u
 
 mainFormatString = u(
     '[{record.time:%Y-%m-%d %H:%M:%S.%f%z}] '
-    '{record.level_name}: {record.channel}/{record.module}: {record.message}')
+    '{record.level_name}: {record.module}: {record.message}')
 
 easyFormatString = u(
     '[{record.time: %H:%M:%S}] '
