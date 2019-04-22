@@ -8,6 +8,8 @@ from galacteek.ipfs.cidhelpers import ipfsPathExtract
 
 try:
     from pyzbar.pyzbar import decode as zbar_decode
+    from pyzbar import zbar_library
+    zbar_library.load()
 except ImportError:
     haveZbar = False
 else:
@@ -21,10 +23,6 @@ except ImportError:
     haveQReader = False
 else:
     haveQReader = True
-
-
-def zbarDecode(image):
-    return zbar_decode(image)
 
 
 class ImageReader:
@@ -49,15 +47,26 @@ class ZbarIPFSQrDecoder(ImageReader):
             if image is None:
                 return
 
-            objects = zbarDecode(image)
+            objects = zbar_decode(image)
 
             urls = []
             for obj in objects:
-                path = ipfsPathExtract(obj.data.decode())
-                if path:
+                if not isinstance(obj.data, bytes):
+                    continue
+                try:
+                    decoded = obj.data.decode()
+                except BaseException:
+                    continue
+
+                if len(decoded) not in range(1, 1024):
+                    continue
+
+                path = ipfsPathExtract(decoded)
+                if path and path not in urls:
                     urls.append(path)
 
-            return urls
+            if len(urls) > 0: # don't return empty list
+                return urls
         except Exception:
             return None
 
@@ -96,19 +105,22 @@ class QReaderIPFSQrDecoder(ImageReader):
                     continue
 
                 path = ipfsPathExtract(obj)
-                if path:
+                if path and not path in urls:
                     urls.append(path)
 
-            return urls
+            if len(urls) > 0: # don't return empty list
+                return urls
         except Exception:
             return None
 
 
 def IPFSQrDecoder():
     # Returns a suitable QR decoder depending on the available libs
-    if haveQReader:
-        return QReaderIPFSQrDecoder()
-    elif haveZbar:
+    if haveZbar:
+        log.debug('Using pyzbar decoder')
         return ZbarIPFSQrDecoder()
+    elif haveQReader:
+        log.debug('Using qreader decoder')
+        return QReaderIPFSQrDecoder()
     else:
         return None

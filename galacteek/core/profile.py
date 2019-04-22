@@ -458,6 +458,7 @@ class UserProfile(QObject):
             self.pathPictures,
             self.pathVideos,
             self.pathDocuments,
+            self.pathQrCodes,
             self.pathMusic,
             self.pathCode,
             self.pathOrbital
@@ -474,6 +475,10 @@ class UserProfile(QObject):
     @property
     def pathDocuments(self):
         return os.path.join(self.pathFiles, 'documents')
+
+    @property
+    def pathQrCodes(self):
+        return os.path.join(self.pathMedia, 'qrcodes')
 
     @property
     def pathMedia(self):

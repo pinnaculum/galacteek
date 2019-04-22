@@ -1,6 +1,7 @@
 import os.path
 import asyncio
 
+from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtWidgets import QTreeView
@@ -20,7 +21,9 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import QMimeData
 from PyQt5.QtCore import QDir
+from PyQt5.QtCore import QFile
 
+from galacteek import ensure
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import ipfsOp
@@ -132,6 +135,10 @@ def iDocuments():
     return QCoreApplication.translate('FileManagerForm', 'Documents')
 
 
+def iQrCodes():
+    return QCoreApplication.translate('FileManagerForm', 'QR codes')
+
+
 class IPFSItem(UneditableItem):
     def __init__(self, text, path=None, parenthash=None, icon=None):
         super(IPFSItem, self).__init__(text, icon=icon)
@@ -200,6 +207,7 @@ class FilesItemModel(QStandardItemModel):
 
     def __init__(self):
         QStandardItemModel.__init__(self)
+        self.app = QApplication.instance()
 
         self.itemRoot = self.invisibleRootItem()
         self.itemRootIdx = self.indexFromItem(self.itemRoot)
@@ -208,7 +216,7 @@ class FilesItemModel(QStandardItemModel):
         self.rowsInserted.connect(self.onRowsInserted)
         self.rowsAboutToBeRemoved.connect(self.onRowsToBeRemoved)
 
-    def setupItemsFromProfile(self, profile):
+    def setupItemsFromProfile(self, profile, model, filesM):
         self.itemHome = IPFSItem(iHome(), path=profile.pathHome)
         self.itemPictures = IPFSItem(iPictures(),
                                      path=profile.pathPictures)
@@ -220,6 +228,8 @@ class FilesItemModel(QStandardItemModel):
                                  path=profile.pathCode)
         self.itemDocuments = IPFSItem(iDocuments(),
                                       path=profile.pathDocuments)
+        self.itemQrCodes = IPFSItem(iQrCodes(),
+                                    path=profile.pathQrCodes)
 
         self.itemRoot.appendRows([
             self.itemHome,
@@ -227,8 +237,33 @@ class FilesItemModel(QStandardItemModel):
             self.itemVideos,
             self.itemCode,
             self.itemMusic,
-            self.itemDocuments
+            self.itemDocuments,
+            self.itemQrCodes
         ])
+
+        ensure(self.setupQrCodesFolder(profile, model, filesM))
+
+    @ipfsOp
+    async def setupQrCodesFolder(self, ipfsop, profile, model, files):
+        """
+        Import the sample QR codes to the corresponding folder
+        Needs rewrite ..
+        """
+        for name, qrFile in sampleQrCodes():
+            await ipfsop.sleep()
+
+            if qrFile.exists():
+                path = self.app.tempDir.filePath(name)
+                if qrFile.copy(path):
+                    tmpFile = QFile(path)
+                    entry = await ipfsop.addPath(path)
+                    await ipfsop.sleep()
+
+                    if entry and not entry['Hash'] in model.entryCache:
+                        await files.linkEntry(ipfsop, entry,
+                                              model.itemQrCodes.path,
+                                              entry['Name'])
+                    tmpFile.remove()
 
     def displayItem(self, arg):
         self.itemRoot.appendRow(arg)
@@ -328,6 +363,7 @@ class FilesTab(GalacteekTab):
         self.status = self.statusReady
 
         # Build file browser
+        self.displayedItem = None
         self.createFileManager()
 
         # Connect the various buttons
@@ -356,6 +392,8 @@ class FilesTab(GalacteekTab):
         self.ui.pathSelector.insertItem(4, getIcon('code-fork.png'), iCode())
         self.ui.pathSelector.insertItem(5, getIcon('folder-documents.png'),
                                         iDocuments())
+        self.ui.pathSelector.insertItem(6, getIcon('ipfs-qrcode.png'),
+                                        iQrCodes())
         self.ui.pathSelector.activated.connect(self.onPathSelector)
 
         # Connect the event filter
@@ -388,7 +426,8 @@ class FilesTab(GalacteekTab):
 
     @property
     def displayPath(self):
-        return self.displayItem.getPath()
+        if self.displayedItem:
+            return self.displayedItem.getPath()
 
     @property
     def busy(self):
@@ -438,13 +477,15 @@ class FilesTab(GalacteekTab):
         else:
             self.model = makeFilesModel()
             self.profile.setFilesModel(self.model)
-            self.model.setupItemsFromProfile(self.profile)
+            self.model.setupItemsFromProfile(self.profile, self.model, self)
 
         self.ui.treeFiles.setModel(self.model)
         self.ui.treeFiles.header().setSectionResizeMode(
             QHeaderView.ResizeToContents)
 
-        self.changeDisplayItem(self.model.itemHome)
+        if self.displayedItem is None:
+            self.changeDisplayItem(self.model.itemHome)
+
         self.app.task(self.updateKeys)
 
         self.disconnectDropSignals()
@@ -536,12 +577,14 @@ class FilesTab(GalacteekTab):
             self.changeDisplayItem(self.model.itemCode)
         if text == iDocuments():
             self.changeDisplayItem(self.model.itemDocuments)
+        if text == iQrCodes():
+            self.changeDisplayItem(self.model.itemQrCodes)
 
     def changeDisplayItem(self, item):
-        self.displayItem = item
-        self.ui.treeFiles.setRootIndex(self.displayItem.index())
+        self.displayedItem = item
+        self.ui.treeFiles.setRootIndex(self.displayedItem.index())
         self.updateTree()
-        self.ui.treeFiles.expand(self.displayItem.index())
+        self.ui.treeFiles.expand(self.displayedItem.index())
 
     def onContextMenuVoid(self, point):
         menu = QMenu()
@@ -589,10 +632,12 @@ class FilesTab(GalacteekTab):
                        copyHashToClipboard(dataHash, QClipboard.Selection))
         menu.addAction(iCopyHashToGlobalClipboard(), lambda:
                        copyHashToClipboard(dataHash, QClipboard.Clipboard))
+        menu.addSeparator()
         menu.addAction(iUnlinkFile(), lambda:
                        unlink(dataHash))
         menu.addAction(iDeleteFile(), lambda:
                        delete(dataHash))
+        menu.addSeparator()
         menu.addAction(iHashmarkFile(), lambda:
                        hashmark(ipfsPath, nameItem.entry['Name']))
         menu.addAction(iBrowseFile(), lambda:
@@ -679,7 +724,7 @@ class FilesTab(GalacteekTab):
         dirName = QInputDialog.getText(self, 'Directory name',
                                        'Directory name')
         if dirName:
-            self.app.task(self.makeDir, self.displayItem.getPath(),
+            self.app.task(self.makeDir, self.displayedItem.getPath(),
                           dirName[0])
 
     def onRefreshClicked(self):
@@ -735,7 +780,7 @@ class FilesTab(GalacteekTab):
 
     def updateTree(self):
         self.app.task(self.listFiles, self.displayPath,
-                      parentItem=self.displayItem, maxdepth=1)
+                      parentItem=self.displayedItem, maxdepth=1)
 
     @ipfsOp
     async def updateKeys(self, ipfsop):

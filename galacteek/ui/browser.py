@@ -1,3 +1,5 @@
+import functools
+
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QMenu
@@ -18,6 +20,7 @@ from PyQt5 import QtWebEngineWidgets
 from PyQt5 import QtWebEngineCore
 from PyQt5.QtWebEngineWidgets import QWebEngineDownloadItem
 from PyQt5.QtWebEngineWidgets import QWebEngineSettings
+from PyQt5.QtWebEngineWidgets import QWebEngineContextMenuData
 from PyQt5.QtWebEngineCore import QWebEngineUrlRequestInterceptor
 
 from PyQt5.Qt import QByteArray
@@ -28,17 +31,18 @@ import os.path
 
 from galacteek import log, ensure
 from galacteek.ipfs.wrappers import *
+from galacteek.ipfs import cidhelpers
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import joinIpns
 
 from . import ui_browsertab
+from .resource import ResourceAnalyzer
 from .helpers import *
 from .dialogs import *
 from .hashmarks import *
 from .i18n import *
 from .widgets import *
 from ..appsettings import *
-from galacteek.ipfs import cidhelpers
 
 SCHEME_DWEB = 'dweb'
 SCHEME_FS = 'fs'
@@ -222,6 +226,7 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
     def __init__(self, browserTab, enablePlugins=False, parent=None):
         super().__init__(parent=parent)
 
+        self.app = QCoreApplication.instance()
         self.linkInfoTimer = QTimer()
         self.linkInfoTimer.timeout.connect(self.onLinkInfoTimeout)
 
@@ -253,8 +258,15 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
         currentPage = self.page()
         contextMenuData = currentPage.contextMenuData()
         url = contextMenuData.linkUrl()
+        mediaType = contextMenuData.mediaType()
+        mediaUrl = contextMenuData.mediaUrl()
 
         ipfsPath = cidhelpers.ipfsPathExtract(url.toString())
+
+        if mediaType != QWebEngineContextMenuData.MediaTypeNone and mediaUrl:
+            mediaIpfsPath = cidhelpers.ipfsPathExtract(mediaUrl.toString())
+        else:
+            mediaIpfsPath = None
 
         if ipfsPath:
             menu = QMenu()
@@ -273,6 +285,55 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
             openWithMenu.addAction('Media player', lambda:
                                    self.openWithMediaPlayer(contextMenuData))
             menu.addMenu(openWithMenu)
+            menu.exec(event.globalPos())
+        elif mediaIpfsPath:
+            # Needs refactor
+            analyzer = ResourceAnalyzer()
+
+            menu = QMenu()
+            menu.addAction(getIcon('ipfs-logo-128-black.png'),
+                           iOpenInTab(),
+                           functools.partial(self.openInTab, mediaIpfsPath))
+            menu.addAction(getIcon('hashmarks.png'),
+                           iHashmark(),
+                           functools.partial(self.hashmarkPath, mediaIpfsPath))
+            menu.addSeparator()
+            rscMenu = QMenu('Analyzing ..')
+            menu.addMenu(rscMenu)
+            rscMenu.setEnabled(False)
+
+            async def rscMenuEnable(rscMenu, path, mimeType, stat, analyzer):
+                rscMenu.setTitle(shortPathRepr(path))
+                rscMenu.setEnabled(True)
+
+                if mimeType.isImage:
+                    rscMenu.setIcon(getMimeIcon('image/x-generic'))
+
+                    codes = await analyzer.decodeQrCodes(path)
+                    if codes:
+                        rscMenu.setIcon(getIcon('ipfs-qrcode.png'))
+                        codesMenu = qrCodesMenuBuilder(
+                            codes, self.app.resourceOpener, parent=rscMenu)
+                        rscMenu.addMenu(codesMenu)
+
+            def rscAnalyzed(fut, path, mediaType, analyzer, rscMenu):
+                try:
+                    mimeType, stat = fut.result()
+                except Exception:
+                    rscMenu.setTitle('Cannot scan resource')
+                else:
+                    ensure(rscMenuEnable(rscMenu, path, mimeType, stat,
+                                         analyzer))
+
+            ensure(
+                analyzer(mediaIpfsPath),
+                futcallback=lambda fut: rscAnalyzed(
+                    fut,
+                    mediaIpfsPath,
+                    mediaType,
+                    analyzer,
+                    rscMenu))
+
             menu.exec(event.globalPos())
         else:
             # Non-IPFS URL

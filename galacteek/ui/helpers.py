@@ -1,4 +1,5 @@
 import os
+import functools
 
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtGui import QImage
@@ -9,12 +10,18 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QEvent
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import QDir
+from PyQt5.QtCore import QFile
 from PyQt5.QtCore import pyqtSignal
 
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtWidgets import QInputDialog
+from PyQt5.QtWidgets import QMenu
+
+from galacteek import ensure
+
+from .i18n import iIpfsQrCodes
 
 
 def getIcon(iconName):
@@ -227,3 +234,23 @@ def sizeFormat(size):
     if size == 0:
         return '0'
     return '{0} bytes'.format(size)
+
+
+def qrCodesMenuBuilder(urls, resourceOpener, parent=None):
+    if isinstance(urls, list):
+        icon = getIcon('ipfs-qrcode.png')
+        menu = QMenu(iIpfsQrCodes(), parent)
+        menu.setIcon(icon)
+
+        for url in urls:
+            menu.addAction(icon,
+                           url, functools.partial(ensure,
+                                                  resourceOpener.open(url)))
+        return menu
+
+
+def sampleQrCodes():
+    dir = QDir(':/share/qr-codes')
+    if dir.exists():
+        for entry in dir.entryList():
+            yield entry, QFile(':/share/qr-codes/{}'.format(entry))

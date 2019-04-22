@@ -15,7 +15,6 @@ from PyQt5.QtCore import QUrl
 
 from galacteek import ensure
 from galacteek import log
-from galacteek import logUser
 from galacteek.appsettings import CFG_SECTION_BROWSER
 from galacteek.appsettings import CFG_KEY_HOMEURL
 from galacteek.core.clipboard import ClipboardItem
@@ -26,6 +25,7 @@ from galacteek.ipfs import ipfsOp
 from galacteek.crypto.qrcode import IPFSQrDecoder
 
 from .hashmarks import addHashmark
+from .helpers import qrCodesMenuBuilder
 from .helpers import getMimeIcon
 from .helpers import getIcon
 from .helpers import messageBox
@@ -39,7 +39,6 @@ from . import dag
 from .i18n import iUnknown
 from .i18n import iDagViewer
 from .i18n import iHashmark
-from .i18n import iIpfsQrCodes
 
 
 def iClipboardEmpty():
@@ -489,14 +488,8 @@ class ClipboardItemButton(PopupToolButton):
             urls = qrDecoder.decode(data)
             if isinstance(urls, list):
                 # Display the QR codes in a separate menu
-                menu = QMenu(iIpfsQrCodes(), self)
-
-                for url in urls:
-                    logUser.info('Detected IPFS QR code URL: {}'.format(url))
-                    menu.addAction(
-                        url, lambda: ensure(
-                            self.app.resourceOpener.open(url)))
-
+                menu = qrCodesMenuBuilder(urls, self.app.resourceOpener,
+                                          parent=self)
                 self.menu.addSeparator()
                 self.menu.addMenu(menu)
 
