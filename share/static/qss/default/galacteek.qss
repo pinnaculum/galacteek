@@ -120,10 +120,6 @@ QToolButton#hashmarksLibraryButton::hover {
     background-color: #4a9ea1;
 }
 
-QToolButton::hover#currentClipItem {
-    border: 1px solid black;
-}
-
 QLabel#linkInfos {
     color: black;
     font: 12pt "Inter UI";
