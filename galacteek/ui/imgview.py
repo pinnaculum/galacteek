@@ -1,3 +1,5 @@
+import functools
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import QCoreApplication
@@ -100,11 +102,11 @@ class ImageViewerTab(GalacteekTab):
             clipBtn.setIcon(getIcon('clipboard.png'))
             clipBtn.setToolTip(iCopyToClipboard())
             clipBtn.clicked.connect(
-                lambda: self.app.setClipboardText(url))
+                functools.partial(self.app.setClipboardText, url))
 
             openBtn = QToolButton()
             openBtn.setText('Open')
-            openBtn.clicked.connect(lambda: onOpenItem(url))
+            openBtn.clicked.connect(functools.partial(onOpenItem, url))
 
             hLayout.addWidget(lbl)
             hLayout.addWidget(openBtn)

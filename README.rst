@@ -15,14 +15,14 @@ Platforms supported
 ===================
 
 - Linux
-- MacOS X
+- MacOS
 - FreeBSD
 
 Installation
 ============
 
-On Linux systems you can either use the AppImage (recommended) or install from PyPI.
-On MacOS and other systems you can install from PyPI.
+On Linux systems you can either use the AppImage or install from PyPI.
+On MacOS and other systems you'll need to install from PyPI.
 
 PyPI
 ----
@@ -59,6 +59,14 @@ You need a recent version of go-ipfs_ (> 0.4.7) with the new DAG API.
 
 For the media player to work on Linux, you will need to install the
 *gstreamer* (1.x) package and all the gstreamer plugins.
+
+There is experimental support for reading QR codes containing IPFS addresses,
+using either pyzbar_ or qreader_ (both are included in the application).
+pyzbar_ depends on the zbar shared library,
+so make sure it's installed on your system (on Linux look for a libzbar or
+libzbar0 package and install it, on MacOS install it with
+**brew install zbar**). It's recommended to use pyzbar as it supports
+reading multiple QR codes contained in a single image.
 
 AppImage
 --------
@@ -205,3 +213,5 @@ Main icon made by srip_ (flaticon, CC by 3.0)
 .. _ipfs-css: https://github.com/ipfs-shipyard/ipfs-css
 .. _releases: https://github.com/eversum/galacteek/releases
 .. _srip: https://www.flaticon.com/authors/srip
+.. _pyzbar: https://github.com/NaturalHistoryMuseum/pyzbar/
+.. _qreader: https://github.com/ewino/qreader/

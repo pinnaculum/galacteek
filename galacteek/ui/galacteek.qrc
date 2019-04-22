@@ -1,5 +1,7 @@
 <RCC>
   <qresource>
+    <file>../../share/qr-codes/qr.wikipedia.mezcla.png</file>
+    <file>../../share/qr-codes/qr.ipfs.io.png</file>
     <file>../../share/icons/search-engine-zoom.png</file>
     <file>../../share/icons/mimetypes/application-x-directory.png</file>
     <file>../../share/icons/mimetypes/text-css.png</file>
@@ -135,6 +137,7 @@
     <file>../../share/icons/add-file.png</file>
   </qresource>
   <qresource>
+    <file>../../share/icons/ipfs-qrcode.png</file>
     <file>../../share/translations/galacteek_en.ts</file>
     <file>../../share/translations/galacteek_en.qm</file>
     <file>../../share/static/qss/default/galacteek.qss</file>
