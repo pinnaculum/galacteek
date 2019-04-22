@@ -177,6 +177,13 @@ Screenshots
 
     Browsing the Wikipedia mirror over IPFS
 
+.. figure:: https://gitlab.com/galacteek/galacteek/raw/master/screenshots/qr-codes-mezcla.png
+    :target: https://gitlab.com/galacteek/galacteek/raw/master/screenshots/qr-codes-mezcla.png
+    :align: center
+    :alt: QR codes
+
+    IPFS QR codes
+
 Requirements
 ============
 
