@@ -128,44 +128,15 @@ toolbar and restart the application afterwards.
 - File manager with drag-and-drop support
 - Basic built-in media player with IPFS-stored playlists
 - Search content with the ipfs-search_ search engine
+- QR codes from images
 - Decentralized application development/testing with the Javascript API
   (using *window.ipfs*)
 
 Keyboard shortcuts
 ==================
 
-*Mod* is the *Control* key on Linux and the *Command* key on MacOS X.
-
-Main window keyboard shortcuts
-------------------------------
-
-- **Mod + t**: Open a new IPFS browsing tab
-- **Mod + s**: Search with ipfs-search
-- **Mod + w**: Close current tab
-- **Mod + m**: Open the IPFS hashmarks manager
-- **Mod + f**: Open the file manager
-- **Mod + o**: Browse IPFS path from the clipboard
-- **Mod + e**: Explore IPFS path from the clipboard
-- **Mod + g**: DAG view of IPFS object from the clipboard
-- **Mod + p**: Pin IPFS object from the clipboard
-- **Mod + i**: Open the IPLD explorer for the IPFS object referenced in the clipboard
-- **Mod + u**: Show pinning status
-
-Browser keyboard shortcuts
---------------------------
-
-- **Mod + b**: Bookmark current page
-- **Mod + l**: Load an IPFS CID
-- **Mod + r** or **F5**: Reload the current page
-- **Mod + +**: Zoom in
-- **Mod + -**: Zoom out
-
-IPFS views keyboard shortcuts (file manager, hash views, dag viewer)
---------------------------------------------------------------------
-
-- **Mod + c** or **Mod + y**: Copy selected item's hash (CID) to the clipboard
-- **Mod + a**: Copy selected item's IPFS path to the clipboard
-- **Mod + w**: Close tab/hash view
+Please see the shortcuts_ page (or from the application, click on the
+Information icon in the toolbar, which will open the documentation).
 
 Screenshots
 ===========
@@ -222,3 +193,4 @@ Main icon made by srip_ (flaticon, CC by 3.0)
 .. _srip: https://www.flaticon.com/authors/srip
 .. _pyzbar: https://github.com/NaturalHistoryMuseum/pyzbar/
 .. _qreader: https://github.com/ewino/qreader/
+.. _shortcuts: http://htmlpreview.github.io/?https://raw.githubusercontent.com/eversum/galacteek/master/galacteek/docs/manual/en/html/shortcuts.html
