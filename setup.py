@@ -141,7 +141,7 @@ setup(
         'galacteek.ui',
         'galacteek.ui.orbital'
     ],
-    install_requires=install_reqs + ['qreader'],
+    install_requires=install_reqs,
     dependency_links=deps_links,
     package_data={
         'galacteek': [
