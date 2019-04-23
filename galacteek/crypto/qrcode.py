@@ -65,7 +65,7 @@ class ZbarIPFSQrDecoder(ImageReader):
                 if path and path not in urls:
                     urls.append(path)
 
-            if len(urls) > 0: # don't return empty list
+            if len(urls) > 0:  # don't return empty list
                 return urls
         except Exception:
             return None
@@ -105,10 +105,10 @@ class QReaderIPFSQrDecoder(ImageReader):
                     continue
 
                 path = ipfsPathExtract(obj)
-                if path and not path in urls:
+                if path and path not in urls:
                     urls.append(path)
 
-            if len(urls) > 0: # don't return empty list
+            if len(urls) > 0:  # don't return empty list
                 return urls
         except Exception:
             return None
