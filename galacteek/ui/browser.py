@@ -41,6 +41,7 @@ from .helpers import *
 from .dialogs import *
 from .hashmarks import *
 from .i18n import *
+from .clipboard import iCopyToClipboard
 from .widgets import *
 from ..appsettings import *
 
@@ -270,33 +271,46 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
 
         if ipfsPath:
             menu = QMenu()
+            menu.addAction(getIcon('clipboard.png'),
+                           iCopyToClipboard(),
+                           functools.partial(self.app.setClipboardText,
+                                             ipfsPath
+                                             ))
+            menu.addSeparator()
             menu.addAction(getIcon('ipfs-logo-128-black.png'),
                            iOpenInTab(),
-                           lambda: self.openInTab(ipfsPath))
+                           functools.partial(self.openInTab, ipfsPath))
             menu.addAction(getIcon('hashmarks.png'),
                            iHashmark(),
-                           lambda: self.hashmarkPath(ipfsPath))
-
+                           functools.partial(self.hashmarkPath, ipfsPath))
+            menu.addSeparator()
             menu.addAction(getIcon('pin.png'), iPin(), lambda:
-                           self.pinPage(ipfsPath))
+                           self.pinPath(ipfsPath))
             menu.addAction(getIcon('pin.png'), iPinRecursive(), lambda:
-                           self.pinPage(ipfsPath, True))
-            openWithMenu = QMenu(iOpenWith())
-            openWithMenu.addAction('Media player', lambda:
-                                   self.openWithMediaPlayer(contextMenuData))
-            menu.addMenu(openWithMenu)
+                           self.pinPath(ipfsPath, True))
             menu.exec(event.globalPos())
         elif mediaIpfsPath:
             # Needs refactor
             analyzer = ResourceAnalyzer()
 
             menu = QMenu()
+            menu.addAction(getIcon('clipboard.png'),
+                           iCopyToClipboard(),
+                           functools.partial(self.app.setClipboardText,
+                                             mediaIpfsPath
+                                             ))
+            menu.addSeparator()
             menu.addAction(getIcon('ipfs-logo-128-black.png'),
                            iOpenInTab(),
                            functools.partial(self.openInTab, mediaIpfsPath))
             menu.addAction(getIcon('hashmarks.png'),
                            iHashmark(),
                            functools.partial(self.hashmarkPath, mediaIpfsPath))
+            menu.addSeparator()
+            menu.addAction(getIcon('pin.png'), iPin(), lambda:
+                           self.pinPath(mediaIpfsPath))
+            menu.addAction(getIcon('pin.png'), iPinRecursive(), lambda:
+                           self.pinPath(mediaIpfsPath, True))
             menu.addSeparator()
             rscMenu = QMenu('Analyzing ..')
             menu.addMenu(rscMenu)
@@ -308,6 +322,11 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
 
                 if mimeType.isImage:
                     rscMenu.setIcon(getMimeIcon('image/x-generic'))
+                    if stat:
+                        size = stat.get('DataSize')
+
+                        if isinstance(size, int) and size > (1024 * 1024 * 4):
+                            return
 
                     codes = await analyzer.decodeQrCodes(path)
                     if codes:
@@ -350,7 +369,7 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
         url = menudata.linkUrl()
         self.browserTab.gWindow.mediaPlayerQueue(url.path())
 
-    def pinPage(self, path, recursive=False):
+    def pinPath(self, path, recursive=False):
         self.browserTab.pinPath(path, recursive=recursive)
 
     def openInTab(self, path):

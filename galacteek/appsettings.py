@@ -96,7 +96,7 @@ def setDefaultSettings(gApp):
     sManager.setDefaultFalse(section, CFG_KEY_WRAPDIRECTORIES)
     sManager.setDefaultFalse(section, CFG_KEY_HIDEHASHES)
     sManager.setDefaultSetting(section, CFG_KEY_LANG, 'en')
-    sManager.setDefaultTrue(section, CFG_KEY_BROWSER_AUTOPIN)
+    sManager.setDefaultFalse(section, CFG_KEY_BROWSER_AUTOPIN)
 
     section = CFG_SECTION_ORBITDB
     sManager.setDefaultSetting(section, CFG_KEY_CONNECTOR_LISTENPORT, 3000)
