@@ -288,7 +288,10 @@ class ClipboardTracker(QObject):
 
         if mHashMeta:
             # Already have metadata for this object
-            mimetype = MIMEType(mHashMeta.get('mimetype'))
+            value = mHashMeta.get('mimetype')
+            if value:
+                mimetype = MIMEType(value)
+
             statInfo = mHashMeta.get('stat')
             if statInfo:
                 obj.statRetrieved.emit(statInfo)
@@ -306,12 +309,18 @@ class ClipboardTracker(QObject):
             await ipfsop.sleep()
 
             # Store retrieved information in the metadata store
-            metaMtype = mimetype.type if mimetype and mimetype.valid else None
-            await self.app.multihashDb.store(
-                path,
-                mimetype=metaMtype,
-                stat=statInfo
-            )
+            metadata = {}
+
+            if mimetype and mimetype.valid:
+                metadata['mimetype'] = str(mimetype)
+            if statInfo and isinstance(statInfo, dict):
+                metadata['stat'] = statInfo
+
+            if len(metadata) > 0:
+                await self.app.multihashDb.store(
+                    path,
+                    **metadata
+                )
 
         if mimetype and mimetype.valid:
             obj.mimeTypeDetected.emit(mimetype)

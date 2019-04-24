@@ -130,6 +130,10 @@ def iLocalHashmarksCount(count):
     ).format(count)
 
 
+def iOpen():
+    return QCoreApplication.translate('GalacteekWindow', 'Open')
+
+
 def iDownload():
     return QCoreApplication.translate('GalacteekWindow', 'Download')
 

@@ -1,5 +1,6 @@
 import os.path
 import asyncio
+import functools
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QAction
@@ -12,7 +13,6 @@ from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QFileSystemModel
 from PyQt5.QtWidgets import QHeaderView
 
-from PyQt5.QtGui import QClipboard
 from PyQt5.QtGui import QStandardItemModel
 
 from PyQt5.QtCore import QCoreApplication
@@ -36,6 +36,8 @@ from .i18n import *  # noqa
 from .helpers import *  # noqa
 from .widgets import GalacteekTab
 from .hashmarks import *  # noqa
+from .clipboard import iCopyMultihashToClipboard
+from .clipboard import iCopyPathToClipboard
 
 import aioipfs
 
@@ -45,17 +47,6 @@ import aioipfs
 def iFileImportError():
     return QCoreApplication.translate(
         'FileManagerForm', 'Error importing file {}')
-
-
-def iCopyHashToSelClipboard():
-    return QCoreApplication.translate(
-        'FileManagerForm',
-        "Copy file's hash to selection clipboard")
-
-
-def iCopyHashToGlobalClipboard():
-    return QCoreApplication.translate('FileManagerForm',
-                                      "Copy file's hash to global clipboard")
 
 
 def iAddedFile(name):
@@ -615,8 +606,8 @@ class FilesTab(GalacteekTab):
         def browse(hash):
             self.browse(hash)
 
-        def copyHashToClipboard(itemHash, clipboardType):
-            self.clipboard.setText(itemHash, clipboardType)
+        def copyHashToClipboard(itemHash):
+            self.clipboard.setText(itemHash)
 
         def openWithMediaPlayer(itemHash):
             parentHash = nameItem.getParentHash()
@@ -628,23 +619,35 @@ class FilesTab(GalacteekTab):
                 self.gWindow.mediaPlayerPlay(joinIpfs(itemHash),
                                              mediaName=name)
 
-        menu.addAction(iCopyHashToSelClipboard(), lambda:
-                       copyHashToClipboard(dataHash, QClipboard.Selection))
-        menu.addAction(iCopyHashToGlobalClipboard(), lambda:
-                       copyHashToClipboard(dataHash, QClipboard.Clipboard))
+        menu.addAction(getIcon('clipboard.png'),
+                       iCopyMultihashToClipboard(),
+                       functools.partial(self.app.setClipboardText, dataHash))
+        if nameItem.fullPath:
+            menu.addAction(getIcon('clipboard.png'),
+                           iCopyPathToClipboard(),
+                           functools.partial(self.app.setClipboardText,
+                                             nameItem.fullPath))
         menu.addSeparator()
         menu.addAction(iUnlinkFile(), lambda:
                        unlink(dataHash))
         menu.addAction(iDeleteFile(), lambda:
                        delete(dataHash))
         menu.addSeparator()
-        menu.addAction(iHashmarkFile(), lambda:
+        menu.addAction(getIcon('hashmarks.png'),
+                       iHashmarkFile(), lambda:
                        hashmark(ipfsPath, nameItem.entry['Name']))
-        menu.addAction(iBrowseFile(), lambda:
+        menu.addAction(getIconIpfs64(),
+                       iBrowseFile(), lambda:
                        browse(dataHash))
+        menu.addAction(getIcon('open.png'),
+                       iOpen(),
+                       functools.partial(ensure, self.app.resourceOpener.open(
+                                         joinIpfs(dataHash))
+                                         ))
 
         if nameItem.isDir():
-            menu.addAction(iExploreDir(), lambda:
+            menu.addAction(getIcon('folder-open.png'),
+                           iExploreDir(), lambda:
                            explore(dataHash))
 
         def publishToKey(action):
@@ -669,12 +672,8 @@ class FilesTab(GalacteekTab):
 
         publishMenu.triggered.connect(publishToKey)
 
-        openWithMenu = QMenu(iOpenWith())
-        openWithMenu.addAction(iMediaPlayer(), lambda:
-                               openWithMediaPlayer(dataHash))
-
+        menu.addSeparator()
         menu.addMenu(publishMenu)
-        menu.addMenu(openWithMenu)
         menu.exec(self.ui.treeFiles.mapToGlobal(point))
 
     def browse(self, hash):

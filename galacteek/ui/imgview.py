@@ -11,12 +11,14 @@ from PyQt5.QtGui import QKeySequence
 
 from PyQt5.Qt import QSizePolicy
 
+from PyQt5.QtWidgets import QFrame
 from PyQt5.QtWidgets import QLabel
 from PyQt5.QtWidgets import QScrollArea
 from PyQt5.QtWidgets import QHBoxLayout
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtWidgets import QSpacerItem
+from PyQt5.QtWidgets import QLayout
 
 from galacteek import ensure
 from galacteek import logUser
@@ -28,6 +30,7 @@ from .helpers import getIcon
 from .clipboard import iCopyToClipboard
 from .i18n import iZoomIn
 from .i18n import iZoomOut
+from .i18n import iOpen
 
 
 def iImageGotQrCodes(count):
@@ -80,7 +83,21 @@ class ImageViewerTab(GalacteekTab):
         pass
 
     def onQrCodesListed(self, urls):
+        # Create the scroll area and fix maximum height
+        # TODO: set maximum size on resize as well
+        scrollArea = QScrollArea()
+        scrollArea.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Expanding)
+        scrollArea.setWidgetResizable(True)
+        scrollArea.setMaximumHeight(self.height() / 3)
+
+        frame = QFrame(scrollArea)
+        frame.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Expanding)
         layout = QVBoxLayout()
+        layout.setSizeConstraint(QLayout.SetMinAndMaxSize)
+
+        scrollArea.setWidget(frame)
 
         lbl = QLabel()
         lbl.setText(iImageGotQrCodes(len(urls)))
@@ -95,9 +112,12 @@ class ImageViewerTab(GalacteekTab):
 
         for url in urls:
             hLayout = QHBoxLayout()
+            hLayout.setSizeConstraint(QLayout.SetMinAndMaxSize)
+
             lbl = QLabel()
             lbl.setText('<b>{}</b>'.format(url))
             lbl.setStyleSheet('QLabel { font-size: 12pt }')
+
             clipBtn = QToolButton()
             clipBtn.setIcon(getIcon('clipboard.png'))
             clipBtn.setToolTip(iCopyToClipboard())
@@ -105,7 +125,7 @@ class ImageViewerTab(GalacteekTab):
                 functools.partial(self.app.setClipboardText, url))
 
             openBtn = QToolButton()
-            openBtn.setText('Open')
+            openBtn.setText(iOpen())
             openBtn.clicked.connect(functools.partial(onOpenItem, url))
 
             hLayout.addWidget(lbl)
@@ -113,7 +133,8 @@ class ImageViewerTab(GalacteekTab):
             hLayout.addWidget(clipBtn)
             layout.addLayout(hLayout)
 
-        self.vLayout.addLayout(layout)
+        frame.setLayout(layout)
+        self.vLayout.addWidget(scrollArea)
 
 
 class ImageView(QScrollArea):

@@ -53,6 +53,18 @@ def iClipboardStackItemsCount(count):
         '{} item(s) in the clipboard stack').format(count)
 
 
+def iCopyMultihashToClipboard():
+    return QCoreApplication.translate(
+        'FileManagerForm',
+        "Copy multihash to clipboard")
+
+
+def iCopyPathToClipboard():
+    return QCoreApplication.translate(
+        'FileManagerForm',
+        "Copy full path to clipboard")
+
+
 def iCopyToClipboard():
     return QCoreApplication.translate(
         'clipboardManager',
