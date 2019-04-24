@@ -41,7 +41,7 @@ from .helpers import *
 from .dialogs import *
 from .hashmarks import *
 from .i18n import *
-from .clipboard import iCopyToClipboard
+from .clipboard import iCopyPathToClipboard
 from .widgets import *
 from ..appsettings import *
 
@@ -272,11 +272,13 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
         if ipfsPath:
             menu = QMenu()
             menu.addAction(getIcon('clipboard.png'),
-                           iCopyToClipboard(),
+                           iCopyPathToClipboard(),
                            functools.partial(self.app.setClipboardText,
                                              ipfsPath
                                              ))
             menu.addSeparator()
+            menu.addAction(getIcon('open'), iOpen(), functools.partial(
+                ensure, self.app.resourceOpener.open(ipfsPath)))
             menu.addAction(getIcon('ipfs-logo-128-black.png'),
                            iOpenInTab(),
                            functools.partial(self.openInTab, ipfsPath))
@@ -294,12 +296,16 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
             analyzer = ResourceAnalyzer()
 
             menu = QMenu()
+
+            menu.addSeparator()
             menu.addAction(getIcon('clipboard.png'),
-                           iCopyToClipboard(),
+                           iCopyPathToClipboard(),
                            functools.partial(self.app.setClipboardText,
                                              mediaIpfsPath
                                              ))
             menu.addSeparator()
+            menu.addAction(getIcon('open'), iOpen(), functools.partial(
+                ensure, self.app.resourceOpener.open(mediaIpfsPath)))
             menu.addAction(getIcon('ipfs-logo-128-black.png'),
                            iOpenInTab(),
                            functools.partial(self.openInTab, mediaIpfsPath))
@@ -312,16 +318,9 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
             menu.addAction(getIcon('pin.png'), iPinRecursive(), lambda:
                            self.pinPath(mediaIpfsPath, True))
             menu.addSeparator()
-            rscMenu = QMenu('Analyzing ..')
-            menu.addMenu(rscMenu)
-            rscMenu.setEnabled(False)
 
-            async def rscMenuEnable(rscMenu, path, mimeType, stat, analyzer):
-                rscMenu.setTitle(shortPathRepr(path))
-                rscMenu.setEnabled(True)
-
+            async def rscMenuEnable(mainMenu, path, mimeType, stat, analyzer):
                 if mimeType.isImage:
-                    rscMenu.setIcon(getMimeIcon('image/x-generic'))
                     if stat:
                         size = stat.get('DataSize')
 
@@ -330,18 +329,17 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
 
                     codes = await analyzer.decodeQrCodes(path)
                     if codes:
-                        rscMenu.setIcon(getIcon('ipfs-qrcode.png'))
                         codesMenu = qrCodesMenuBuilder(
-                            codes, self.app.resourceOpener, parent=rscMenu)
-                        rscMenu.addMenu(codesMenu)
+                            codes, self.app.resourceOpener, parent=mainMenu)
+                        mainMenu.addMenu(codesMenu)
 
-            def rscAnalyzed(fut, path, mediaType, analyzer, rscMenu):
+            def rscAnalyzed(fut, path, mediaType, analyzer):
                 try:
                     mimeType, stat = fut.result()
                 except Exception:
-                    rscMenu.setTitle('Cannot scan resource')
+                    pass
                 else:
-                    ensure(rscMenuEnable(rscMenu, path, mimeType, stat,
+                    ensure(rscMenuEnable(menu, path, mimeType, stat,
                                          analyzer))
 
             ensure(
@@ -350,8 +348,9 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
                     fut,
                     mediaIpfsPath,
                     mediaType,
-                    analyzer,
-                    rscMenu))
+                    analyzer
+                )
+            )
 
             menu.exec(event.globalPos())
         else:
