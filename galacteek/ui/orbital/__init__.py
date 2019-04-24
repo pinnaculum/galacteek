@@ -5,6 +5,7 @@ from PyQt5.QtWebEngineWidgets import QWebEngineView
 from datetime import datetime
 
 from galacteek import ensure
+from galacteek.core import isoformat
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import cidValid
 from galacteek.ipfs.cidhelpers import joinIpfs
@@ -91,8 +92,7 @@ class FeedHandler(QObject):
                 'author': username,
                 'post': message,
                 'links': links,
-                'date': datetime.now().isoformat(sep=' ',
-                                                 timespec='seconds')
+                'date': isoformat(datetime.now(), timespec='seconds')
             })
         self.newMessages.emit(0)
 

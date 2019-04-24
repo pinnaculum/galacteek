@@ -18,6 +18,7 @@ from galacteek.ipfs.encrypt import IpfsRSAAgent
 from galacteek.ipfs.pubsub import TOPIC_CHAT
 from galacteek.ipfs.pubsub.messages import ChatRoomMessage
 
+from galacteek.core import isoformat
 from galacteek.core.asynclib import asyncReadFile
 from galacteek.core.orbitdb import OrbitConfigMap
 from galacteek.core.orbitdbcfg import defaultOrbitConfigMap
@@ -87,8 +88,8 @@ class UserInfos(CipheredIPFSJson):
                 'resources': [],
                 'peerid': '',
                 'date': {
-                    'created': datetime.now().isoformat(' ', 'seconds'),
-                    'modified': datetime.now().isoformat(' ', 'seconds'),
+                    'created': isoformat(datetime.now()),
+                    'modified': isoformat(datetime.now()),
                 },
                 'uid': uid,
                 'locked': False,
@@ -197,8 +198,7 @@ class UserInfos(CipheredIPFSJson):
         self.changed.emit()
 
     def updateModifiedDate(self):
-        self.root['userinfo']['date']['modified'] = datetime.now().isoformat(
-            ' ', 'seconds')
+        self.root['userinfo']['date']['modified'] = isoformat(datetime.now())
 
     def updateIdentToken(self):
         token = self.root['userinfo'].get('identtoken', None)
@@ -252,7 +252,7 @@ class UserApp(QObject):
             newMsg = {
                 'content': msg,
                 'title': title,
-                'date': datetime.now().isoformat(' ', 'minutes'),
+                'date': isoformat(datetime.now()),
             }
             board['messages'].append(newMsg)
 
