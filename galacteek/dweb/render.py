@@ -5,6 +5,7 @@ import jinja2.exceptions
 from datetime import datetime
 
 from galacteek import log
+from galacteek.core import isoformat
 from galacteek.ipfs.wrappers import ipfsOpFn
 
 
@@ -14,7 +15,7 @@ def tstodate(ts):
     except TypeError:
         return ''
     else:
-        return date.isoformat(sep=' ', timespec='seconds')
+        return isoformat(date, timespec='seconds')
 
 
 def defaultJinjaEnv():

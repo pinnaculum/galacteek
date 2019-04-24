@@ -5,6 +5,7 @@ from jsonschema import validate
 from jsonschema.exceptions import ValidationError
 from datetime import datetime
 
+from galacteek.core import isoformat
 from galacteek.core.jtraverse import traverseParser
 from galacteek import log
 
@@ -511,7 +512,8 @@ class ChatRoomMessage(PubsubMessage):
     @staticmethod
     def make(sender, channel, message, links=[], attachments=[], date=None,
              level=0):
-        msgDate = date if date else datetime.now().isoformat(' ', 'minutes')
+        msgDate = date if date else isoformat(datetime.now(),
+                                              timespec='minutes')
         msg = ChatRoomMessage({
             'msgtype': ChatRoomMessage.TYPE,
             'version': 1,

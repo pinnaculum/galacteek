@@ -9,6 +9,7 @@ from datetime import datetime
 import aiofiles
 
 from galacteek import log
+from galacteek.core import isoformat
 
 from PyQt5.QtCore import pyqtSignal, QObject
 
@@ -47,7 +48,7 @@ class IPFSHashMark(collections.UserDict):
              description='', comment='', datasize=None, cumulativesize=None,
              numlinks=None, icon=None, pinSingle=False, pinRecursive=False):
         if datecreated is None:
-            datecreated = datetime.now().isoformat()
+            datecreated = isoformat(datetime.now())
 
         path = rSlash(path)
 
@@ -361,7 +362,7 @@ class IPFSMarks(QObject):
 
         mark = IPFSHashMark.make(path,
                                  title=title,
-                                 datecreated=datetime.now().isoformat(),
+                                 datecreated=isoformat(datetime.now()),
                                  share=share,
                                  tags=tags,
                                  description=description,
