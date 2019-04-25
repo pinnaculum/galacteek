@@ -101,6 +101,7 @@
             }
 
             new QWebChannel(qt.webChannelTransport, function (channel) {
+                window.galacteek = channel.objects.galacteek;
                 window.ipfssearch = channel.objects.ipfssearch;
 
                 channel.objects.ipfssearch.filtersChanged.connect(function() {

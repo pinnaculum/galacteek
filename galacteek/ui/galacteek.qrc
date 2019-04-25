@@ -1,5 +1,6 @@
 <RCC>
   <qresource>
+    <file>../../share/icons/loading.gif</file>
     <file>../../share/icons/open.png</file>
     <file>../../share/qr-codes/qr.wikipedia.mezcla.png</file>
     <file>../../share/qr-codes/qr.ipfs.io.png</file>

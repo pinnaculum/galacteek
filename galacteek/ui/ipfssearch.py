@@ -317,8 +317,7 @@ class IPFSSearchHandler(QObject):
 
     @pyqtSlot(str)
     def openLink(self, path):
-        tab = self.searchW.gWindow.addBrowserTab()
-        tab.browseFsPath(path)
+        ensure(self.app.resourceOpener.open(path))
 
     @pyqtSlot(str)
     def clipboardInput(self, path):

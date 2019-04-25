@@ -25,9 +25,6 @@ QToolBar#toolbarMain {
     margin: 0px;
 }
 
-QToolBar#toolbarMain::handle {
-}
-
 QTabBar::tab {
     color: black;
     text-align: center;

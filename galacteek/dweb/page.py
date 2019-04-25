@@ -38,6 +38,10 @@ class GalacteekHandler(QObject):
         self.app = QApplication.instance()
 
     @pyqtSlot(str)
+    def openResource(self, path):
+        ensure(self.app.resourceOpener.open(path))
+
+    @pyqtSlot(str)
     def openIpfsLink(self, path):
         tab = self.app.mainWindow.addBrowserTab()
         tab.browseFsPath(path)

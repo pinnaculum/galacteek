@@ -65,8 +65,6 @@ class ClipboardItem(QObject):
     def mimeCategory(self):
         if isinstance(self.mimeType, MIMEType):
             return self.mimeType.category
-        if isinstance(self.mimeType, str):
-            return self.mimeType.split('/')[0]
 
     @property
     def mimeIcon(self):
@@ -84,6 +82,10 @@ class ClipboardItem(QObject):
     @property
     def clipInput(self):
         return self._clipInput
+
+    @property
+    def valid(self):
+        return isinstance(self.mimeType, MIMEType) and self.stat is not None
 
     def setMimeType(self, mimeType):
         log.debug('Detected mime-type {type} for {path}'.format(
@@ -271,11 +273,11 @@ class ClipboardTracker(QObject):
         exists = self.exists(path)
 
         if exists is False:
-            obj = ClipboardItem(None, path)
-            self.itemRegister.emit(obj, True)
+            item = ClipboardItem(None, path)
+            self.itemRegister.emit(item, True)
 
             if valid is True and path:
-                ensure(self.scanResource(obj, path))
+                ensure(self.scanItem(item))
         else:
             # Find the existing item by its path and set as current item
             item = self.getByPath(path)
@@ -283,7 +285,9 @@ class ClipboardTracker(QObject):
                 self.current = item
 
     @ipfsOp
-    async def scanResource(self, ipfsop, obj, path):
+    async def scanItem(self, ipfsop, cItem):
+        mimetype = None
+        path = cItem.path
         mHashMeta = await self.app.multihashDb.get(path)
 
         if mHashMeta:
@@ -294,7 +298,7 @@ class ClipboardTracker(QObject):
 
             statInfo = mHashMeta.get('stat')
             if statInfo:
-                obj.statRetrieved.emit(statInfo)
+                cItem.statRetrieved.emit(statInfo)
         else:
             mimetype = await detectMimeType(path)
 
@@ -304,7 +308,7 @@ class ClipboardTracker(QObject):
                     path=path))
                 return
             else:
-                obj.statRetrieved.emit(statInfo)
+                cItem.statRetrieved.emit(statInfo)
 
             await ipfsop.sleep()
 
@@ -323,4 +327,4 @@ class ClipboardTracker(QObject):
                 )
 
         if mimetype and mimetype.valid:
-            obj.mimeTypeDetected.emit(mimetype)
+            cItem.mimeTypeDetected.emit(mimetype)
