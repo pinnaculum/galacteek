@@ -8,6 +8,8 @@ from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QApplication
 
 from PyQt5.QtGui import QKeySequence
+from PyQt5.QtGui import QMovie
+from PyQt5.QtGui import QIcon
 
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import QSize
@@ -31,6 +33,7 @@ from .helpers import getIcon
 from .helpers import messageBox
 from .helpers import getIconFromImageData
 from .helpers import runDialog
+from .helpers import disconnectSig
 from .widgets import PopupToolButton
 from .dialogs import ChooseProgramDialog
 
@@ -311,8 +314,10 @@ class ClipboardItemButton(PopupToolButton):
         self.setToolTip(iClipboardNoValidAddress())
         self.setEnabled(False)
         self.rscOpener = rscOpener
+        self.loadingClip = QMovie(':/share/icons/loading.gif')
+        self.loadingClip.finished.connect(lambda: self.loadingClip.start())
 
-        if clipItem:
+        if isinstance(clipItem, ClipboardItem):
             self.setClipboardItem(clipItem)
 
         self.clicked.connect(self.onOpen)
@@ -372,13 +377,21 @@ class ClipboardItemButton(PopupToolButton):
         self.setEnabled(True)
         self._item = item
 
+        self.setToolTip(item.path)
+
         if item.mimeIcon:
             # Already set icon from mimetype
             self.setIcon(item.mimeIcon)
             self.updateButton()
         else:
-            item.mimeTypeDetected.connect(
-                lambda mType: self.updateButton())
+            # MIME type undetected yet (fresh item)
+            disconnectSig(self.loadingClip.frameChanged, self.onLoadingFrame)
+            self.loadingClip.frameChanged.connect(self.onLoadingFrame)
+            self.loadingClip.start()
+            item.mimeTypeDetected.connect(self.mimeDetected)
+
+    def onLoadingFrame(self, num):
+        self.setIcon(QIcon(self.loadingClip.currentPixmap()))
 
     def onHashmark(self):
         if self.item:
@@ -401,6 +414,11 @@ class ClipboardItemButton(PopupToolButton):
     def onOpenWithDefaultApp(self):
         if self.item.cid:
             ensure(self.rscOpener.openWithSystemDefault(self.item.cid))
+
+    def mimeDetected(self, mType):
+        if self.loadingClip.state() == QMovie.Running:
+            self.loadingClip.stop()
+        self.updateButton()
 
     def updateButton(self):
         if not isinstance(self.item, ClipboardItem):
@@ -596,6 +614,9 @@ class ClipboardItemsStack(QStackedWidget):
             button = self.addItemButton(item=item)
             self.setCurrentWidget(button)
         else:
+            if btn.item and not btn.item.valid:
+                # Rescan the item
+                ensure(self.app.clipTracker.scanItem(btn.item))
             self.setCurrentWidget(btn)
 
     def popupStackItem(self, itemNo):

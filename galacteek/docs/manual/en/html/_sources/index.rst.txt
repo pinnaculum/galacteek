@@ -7,10 +7,11 @@ Galacteek's manual (english)
    :maxdepth: 2
    :name: mastertoc
 
+    Using the clipboard <clipboard>
     Shortcuts <shortcuts>
     Settings <settings>
+    Toolbar <toolbar>
     File manager <filemanager>
-    Using the clipboard <clipboard>
     Pinning <pinning>
 
 About

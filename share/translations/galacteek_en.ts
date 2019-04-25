@@ -400,108 +400,108 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="53"/>
-        <source>Copy file&apos;s hash to selection clipboard</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/files.py" line="59"/>
-        <source>Copy file&apos;s hash to global clipboard</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/files.py" line="74"/>
+        <location filename="../../galacteek/ui/files.py" line="63"/>
         <source>Loading file {0}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="79"/>
+        <location filename="../../galacteek/ui/files.py" line="68"/>
         <source>Loading {0}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="84"/>
+        <location filename="../../galacteek/ui/files.py" line="73"/>
         <source>Open with</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="88"/>
+        <location filename="../../galacteek/ui/files.py" line="77"/>
         <source>Delete file</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="92"/>
+        <location filename="../../galacteek/ui/files.py" line="81"/>
         <source>Explore directory</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="96"/>
+        <location filename="../../galacteek/ui/files.py" line="85"/>
         <source>Unlink file</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="100"/>
+        <location filename="../../galacteek/ui/files.py" line="89"/>
         <source>Hashmark</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="104"/>
+        <location filename="../../galacteek/ui/files.py" line="93"/>
         <source>Browse</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="108"/>
+        <location filename="../../galacteek/ui/files.py" line="97"/>
         <source>Select directory</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="112"/>
+        <location filename="../../galacteek/ui/files.py" line="101"/>
         <source>Select one or more files to import</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="117"/>
+        <location filename="../../galacteek/ui/files.py" line="106"/>
         <source>Music</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="121"/>
+        <location filename="../../galacteek/ui/files.py" line="110"/>
         <source>Pictures</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="125"/>
+        <location filename="../../galacteek/ui/files.py" line="114"/>
         <source>Videos</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="129"/>
+        <location filename="../../galacteek/ui/files.py" line="118"/>
         <source>Home</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="133"/>
+        <location filename="../../galacteek/ui/files.py" line="122"/>
         <source>Code</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="137"/>
+        <location filename="../../galacteek/ui/files.py" line="126"/>
         <source>Documents</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="64"/>
+        <location filename="../../galacteek/ui/files.py" line="53"/>
         <source>Added {0}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="69"/>
+        <location filename="../../galacteek/ui/files.py" line="58"/>
         <source>Imported {0} files</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="141"/>
+        <location filename="../../galacteek/ui/files.py" line="130"/>
         <source>QR codes</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/clipboard.py" line="60"/>
+        <source>Copy multihash to clipboard</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/clipboard.py" line="66"/>
+        <source>Copy full path to clipboard</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1218,7 +1218,7 @@ Path: {0}, nodes processed: {1}</source>
 <context>
     <name>ImageView</name>
     <message>
-        <location filename="../../galacteek/ui/imgview.py" line="34"/>
+        <location filename="../../galacteek/ui/imgview.py" line="37"/>
         <source>This image contains {} valid IPFS QR code(s) !</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1603,107 +1603,107 @@ Path: {0}, nodes processed: {1}</source>
 <context>
     <name>clipboardManager</name>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="45"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="48"/>
         <source>No valid IPFS CID/path in the clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="69"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="84"/>
         <source>Clipboard: browse IPFS path: {0}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="75"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="90"/>
         <source>Clear clipboard history</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="81"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="96"/>
         <source>Explore directory: {0}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="86"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="101"/>
         <source>Hashmark: {0}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="91"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="106"/>
         <source>Pin: {0}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="96"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="111"/>
         <source>Run IPLD Explorer: {0}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="101"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="116"/>
         <source>DAG view: {0}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="106"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="121"/>
         <source>Clipboard history</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="110"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="125"/>
         <source>Browse IPFS path: {0}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="115"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="130"/>
         <source>Open</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="119"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="134"/>
         <source>Open with application</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="124"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="139"/>
         <source>Open with default system application</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="129"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="144"/>
         <source>Set as current clipboard item</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="144"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="159"/>
         <source>Switch to item {} in the stack</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="150"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="165"/>
         <source>Clipboard stack</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="139"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="154"/>
         <source>Remove item</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="57"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="72"/>
         <source>Copy to clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="63"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="78"/>
         <source>No valid address for this item</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="134"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="149"/>
         <source>Set as homepage</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="51"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="54"/>
         <source>{} item(s) in the clipboard stack</source>
         <translation type="unfinished"></translation>
     </message>
