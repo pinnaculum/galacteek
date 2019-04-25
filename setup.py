@@ -118,7 +118,7 @@ setup(
     version=version,
     license='GPL3',
     author='David Ferlier',
-    author_email='galacteek@gmx.co.uk',
+    author_email='galacteek@protonmail.com',
     url='https://github.com/eversum/galacteek',
     description='IPFS browser',
     long_description=long_description,

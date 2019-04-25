@@ -21,7 +21,7 @@ Platforms supported
 Installation
 ============
 
-On Linux systems you can either use the AppImage or install from PyPI.
+On Linux systems you can use the AppImage or install from PyPI.
 On MacOS and other systems you'll need to install from PyPI.
 
 PyPI
@@ -71,37 +71,8 @@ reading multiple QR codes contained in a single image.
 AppImage
 --------
 
-For Linux users (arch: *x86_64*), you can get an AppImage from the IPFS network
-`here <https://ipfs.io/ipfs/QmWh9VxhMiwsZct198xAdpTgHt9mNKNWUgyquY3NFib9q9>`_
-(**~138Mb**, release CID: **QmWh9VxhMiwsZct198xAdpTgHt9mNKNWUgyquY3NFib9q9**).
-
-Just fetch the image (with wget for example or your favorite tool), and execute
-it afterwards::
-
-    wget https://ipfs.io/ipfs/QmWh9VxhMiwsZct198xAdpTgHt9mNKNWUgyquY3NFib9q9
-    chmod u+x QmWh9VxhMiwsZct198xAdpTgHt9mNKNWUgyquY3NFib9q9
-    ./QmWh9VxhMiwsZct198xAdpTgHt9mNKNWUgyquY3NFib9q9
-
-Or if you already have an IPFS daemon installed and running::
-
-    ipfs get QmWh9VxhMiwsZct198xAdpTgHt9mNKNWUgyquY3NFib9q9
-    chmod u+x QmWh9VxhMiwsZct198xAdpTgHt9mNKNWUgyquY3NFib9q9
-    ./QmWh9VxhMiwsZct198xAdpTgHt9mNKNWUgyquY3NFib9q9
-
-Running the AppImage with the filename unchanged ensures that the
-application will automatically pin itself (it will pin through IPFS the
-AppImage that you are using). By doing so you can help redistributing the
-software faster to the nodes close to you. Renaming the binary disables the
-self-seeding feature::
-
-    mv QmWh9VxhMiwsZct198xAdpTgHt9mNKNWUgyquY3NFib9q9 Galacteek-0.3.5.AppImage
-
-**Note**: go-ipfs_ version *0.4.18* is included in the AppImage.
-For reference the AppImage is built with
-`this script <https://github.com/eversum/galacteek/blob/master/AppImage/galacteek-appimage-build>`_.
-You can use the same command-line arguments as with the regular *galacteek*
-runner script. If you are filing an issue, please use the *-d* switch and
-provide the debug output.
+For Linux users (arch: *x86_64*), you can get an AppImage
+from the releases_ page.
 
 Command-line usage
 ==================
@@ -128,6 +99,7 @@ toolbar and restart the application afterwards.
 - File manager with drag-and-drop support
 - Basic built-in media player with IPFS-stored playlists
 - Search content with the ipfs-search_ search engine
+- Image viewer
 - QR codes from images
 - Decentralized application development/testing with the Javascript API
   (using *window.ipfs*)
@@ -194,3 +166,4 @@ Main icon made by srip_ (flaticon, CC by 3.0)
 .. _pyzbar: https://github.com/NaturalHistoryMuseum/pyzbar/
 .. _qreader: https://github.com/ewino/qreader/
 .. _shortcuts: http://htmlpreview.github.io/?https://raw.githubusercontent.com/eversum/galacteek/master/galacteek/docs/manual/en/html/shortcuts.html
+.. _releases: https://github.com/eversum/galacteek/releases

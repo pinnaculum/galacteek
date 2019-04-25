@@ -99,6 +99,7 @@ class ImageViewerTab(GalacteekTab):
 
         scrollArea.setWidget(frame)
 
+        iconOpen = getIcon('open.png')
         lbl = QLabel()
         lbl.setText(iImageGotQrCodes(len(urls)))
         lbl.setObjectName('qrCodeCountLabel')
@@ -125,6 +126,8 @@ class ImageViewerTab(GalacteekTab):
                 functools.partial(self.app.setClipboardText, url))
 
             openBtn = QToolButton()
+            openBtn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+            openBtn.setIcon(iconOpen)
             openBtn.setText(iOpen())
             openBtn.clicked.connect(functools.partial(onOpenItem, url))
 

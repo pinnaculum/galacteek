@@ -121,6 +121,10 @@ def iAbout():
         <b>Galacteek</b> is a multi-platform Qt5-based IPFS browser
         </p>
         <p>Author: David Ferlier</p>
+        <p>Contact:
+            <a href="mailto:
+            galacteek@protonmail.com">galacteek@protonmail.com</a>
+        </p>
         <p>Galacteek version {0}</p>''').format(__version__)
 
 

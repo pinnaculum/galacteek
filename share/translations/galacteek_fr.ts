@@ -1114,16 +1114,6 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation>Hashmarks locaux: {0} hashmarks disponibles</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="119"/>
-        <source>
-        &lt;p&gt;
-        &lt;b&gt;Galacteek&lt;/b&gt; is a multi-platform Qt5-based IPFS browser
-        &lt;/p&gt;
-        &lt;p&gt;Author: David Ferlier&lt;/p&gt;
-        &lt;p&gt;Galacteek version {0}&lt;/p&gt;</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <location filename="../../galacteek/ui/i18n.py" line="202"/>
         <source>Please specify a title</source>
         <translation type="unfinished"></translation>
@@ -1156,6 +1146,20 @@ Chemin: {0}, nodes traitées: {1}</translation>
     <message>
         <location filename="../../galacteek/ui/i18n.py" line="134"/>
         <source>Open</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/mainui.py" line="119"/>
+        <source>
+        &lt;p&gt;
+        &lt;b&gt;Galacteek&lt;/b&gt; is a multi-platform Qt5-based IPFS browser
+        &lt;/p&gt;
+        &lt;p&gt;Author: David Ferlier&lt;/p&gt;
+        &lt;p&gt;Contact:
+            &lt;a href=&quot;mailto:
+            galacteek@protonmail.com&quot;&gt;galacteek@protonmail.com&lt;/a&gt;
+        &lt;/p&gt;
+        &lt;p&gt;Galacteek version {0}&lt;/p&gt;</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
