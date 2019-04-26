@@ -33,9 +33,9 @@ def isIpnsPath(path):
 def shortCidRepr(cid):
     cidStr = str(cid)
     if cid.version == 0:
-        return '... {0}'.format(cidStr[3 * int(len(cidStr) / 5):])
+        return '...{0}'.format(cidStr[3 * int(len(cidStr) / 5):])
     else:
-        return '... {0}'.format(cidStr[4 * int(len(cidStr) / 5):])
+        return '...{0}'.format(cidStr[4 * int(len(cidStr) / 5):])
 
 
 def shortPathRepr(path):
@@ -50,6 +50,8 @@ def shortPathRepr(path):
         cid = getCID(path)
         if cid:
             return shortCidRepr(cid)
+        else:
+            return path
 
 
 def isMultihash(hashstring):

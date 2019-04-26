@@ -305,7 +305,8 @@ class GalacteekApplication(QApplication):
 
     def initMisc(self):
         self.mimeTypeIcons = preloadMimeIcons()
-        self.multihashDb = IPFSObjectMetadataDatabase(self._mHashDbLocation)
+        self.multihashDb = IPFSObjectMetadataDatabase(self._mHashDbLocation,
+                                                      loop=self.loop)
 
         self.jinjaEnv = jinja2.Environment(
             loader=jinja2.PackageLoader('galacteek', 'templates'))

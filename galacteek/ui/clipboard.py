@@ -1,3 +1,4 @@
+import functools
 import os.path
 import aioipfs
 
@@ -23,6 +24,7 @@ from galacteek.core.clipboard import ClipboardItem
 from galacteek.ipfs.cidhelpers import stripIpfs
 from galacteek.ipfs.cidhelpers import isIpnsPath
 from galacteek.ipfs.cidhelpers import isIpfsPath
+from galacteek.ipfs.cidhelpers import shortPathRepr
 from galacteek.ipfs import ipfsOp
 from galacteek.crypto.qrcode import IPFSQrDecoder
 
@@ -92,38 +94,43 @@ def iClipboardClearHistory():
         'Clear clipboard history')
 
 
-def iClipLoaderExplore(path):
+def iClipItemExplore():
     return QCoreApplication.translate('clipboardManager',
-                                      'Explore directory: {0}').format(path)
+                                      'Explore directory')
 
 
-def iClipLoaderHashmark(path):
+def iClipItemHashmark():
     return QCoreApplication.translate('clipboardManager',
-                                      'Hashmark: {0}').format(path)
+                                      'Hashmark')
 
 
-def iClipLoaderPin(path):
+def iClipItemPin():
     return QCoreApplication.translate('clipboardManager',
-                                      'Pin: {0}').format(path)
+                                      'Pin')
 
 
-def iClipLoaderIpldExplorer(path):
+def iClipItemIpldExplorer():
     return QCoreApplication.translate('clipboardManager',
-                                      'Run IPLD Explorer: {0}').format(path)
+                                      'Run IPLD Explorer')
 
 
-def iClipLoaderDagView(path):
+def iClipItemMarkupRocks():
     return QCoreApplication.translate('clipboardManager',
-                                      'DAG view: {0}').format(path)
+                                      'Open with Markdown editor')
+
+
+def iClipItemDagView():
+    return QCoreApplication.translate('clipboardManager',
+                                      'DAG view')
 
 
 def iClipboardHistory():
     return QCoreApplication.translate('clipboardManager', 'Clipboard history')
 
 
-def iClipLoaderBrowse(path):
+def iClipItemBrowse():
     return QCoreApplication.translate('clipboardManager',
-                                      'Browse IPFS path: {0}').format(path)
+                                      'Browse IPFS path')
 
 
 def iClipItemOpen():
@@ -183,7 +190,7 @@ class ClipboardManager(PopupToolButton):
 
         self.tracker.currentItemChanged.connect(self.itemChanged)
         self.tracker.itemAdded.connect(self.itemAdded)
-        self.tracker.itemRemoved.connect(lambda: self.updateToolTip())
+        self.tracker.itemRemoved.connect(self.itemRemoved)
 
         self.menu.setToolTipsVisible(True)
 
@@ -264,7 +271,7 @@ class ClipboardManager(PopupToolButton):
             aOpen.setIcon(item.mimeIcon)
 
         item.mimeIconAvailable.connect(
-            lambda: changeIcons(item, nMenu, actionOpen))
+            functools.partial(changeIcons, item, nMenu, actionOpen))
         self.updateToolTip()
 
     def updateToolTip(self):
@@ -272,6 +279,9 @@ class ClipboardManager(PopupToolButton):
 
     def itemChanged(self, item):
         self.itemsStack.activateItem(item)
+
+    def itemRemoved(self, item):
+        self.updateToolTip()
 
     def dragEnterEvent(self, event):
         mimeData = event.mimeData()
@@ -315,7 +325,9 @@ class ClipboardItemButton(PopupToolButton):
         self.setEnabled(False)
         self.rscOpener = rscOpener
         self.loadingClip = QMovie(':/share/icons/loading.gif')
-        self.loadingClip.finished.connect(lambda: self.loadingClip.start())
+        self.loadingClip.finished.connect(
+            functools.partial(self.loadingClip.start))
+        self.menu.setToolTipsVisible(True)
 
         if isinstance(clipItem, ClipboardItem):
             self.setClipboardItem(clipItem)
@@ -362,6 +374,11 @@ class ClipboardItemButton(PopupToolButton):
             iClipboardEmpty(), self,
             shortcut=QKeySequence('Ctrl+i'),
             triggered=self.onIpldExplore)
+
+        self.markupRocksAction = QAction(
+            getIcon('ipld-logo.png'),
+            iClipboardEmpty(), self,
+            triggered=self.onMarkdownEdit)
 
         self.pinAction = QAction(
             getIcon('pin.png'),
@@ -424,24 +441,37 @@ class ClipboardItemButton(PopupToolButton):
         if not isinstance(self.item, ClipboardItem):
             return
 
+        if self.item.path is None:
+            log.debug('Empty path')
+            return
+
+        shortened = shortPathRepr(self.item.path)
+
         self.menu.clear()
+
+        action = self.menu.addSection(shortened)
+        action.setToolTip(self.item.path)
+        self.menu.addSeparator()
+
         self.menu.addAction(self.openAction)
         self.menu.addAction(self.openWithAppAction)
         self.menu.addAction(self.openWithDefaultAction)
         self.menu.addSeparator()
         self.menu.addAction(self.setAsHomeAction)
         self.menu.addAction(self.hashmarkAction)
+        self.menu.addSeparator()
         self.menu.addAction(self.dagViewAction)
         self.menu.addAction(self.ipldExplorerAction)
+        self.menu.addSeparator()
         self.menu.addAction(self.pinAction)
 
-        self.exploreHashAction.setText(iClipLoaderExplore(self.item.path))
+        self.exploreHashAction.setText(iClipItemExplore())
         self.openAction.setText(iClipItemOpen())
-        self.dagViewAction.setText(iClipLoaderDagView(self.item.path))
-        self.hashmarkAction.setText(iClipLoaderHashmark(self.item.path))
-        self.ipldExplorerAction.setText(
-            iClipLoaderIpldExplorer(self.item.path))
-        self.pinAction.setText(iClipLoaderPin(self.item.path))
+        self.dagViewAction.setText(iClipItemDagView())
+        self.hashmarkAction.setText(iClipItemHashmark())
+        self.ipldExplorerAction.setText(iClipItemIpldExplorer())
+        self.markupRocksAction.setText(iClipItemMarkupRocks())
+        self.pinAction.setText(iClipItemPin())
 
         self.setToolTip('{path} (type: {mimetype})'.format(
             path=self.item.path,
@@ -458,6 +488,10 @@ class ClipboardItemButton(PopupToolButton):
             self.menu.addAction(self.exploreHashAction)
             self.openWithAppAction.setEnabled(False)
             self.openWithDefaultAction.setEnabled(False)
+
+        if self.item.mimeType.isText:
+            self.menu.addSeparator()
+            self.menu.addAction(self.markupRocksAction)
 
         icon = getMimeIcon(str(self.item.mimeType))
         if icon:
@@ -548,7 +582,7 @@ class ClipboardItemButton(PopupToolButton):
 
     def onIpldExplore(self):
         """
-        Open the IPLD explorer application for the CID in the clipboard
+        Open the IPLD explorer application for the current clipboard item
         """
         if self.item:
             mPath, mark = self.app.marksLocal.searchByMetadata({
@@ -556,6 +590,18 @@ class ClipboardItemButton(PopupToolButton):
             if mark:
                 link = os.path.join(
                     mPath, '#', 'explore', stripIpfs(self.item.path))
+                self.app.mainWindow.addBrowserTab().browseFsPath(link)
+
+    def onMarkdownEdit(self):
+        """
+        Open markup.rocks for the current clipboard item
+        """
+        if self.item:
+            mPath, mark = self.app.marksLocal.searchByMetadata({
+                'title': 'markup.rocks'})
+            if mark:
+                link = os.path.join(
+                    mPath, '#', self.item.path.lstrip('/'))
                 self.app.mainWindow.addBrowserTab().browseFsPath(link)
 
     def onPin(self):
