@@ -1,3 +1,4 @@
+import functools
 import os.path
 
 from logbook import Handler
@@ -37,6 +38,7 @@ from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.cidhelpers import ipfsPathExtract
 from galacteek.ipfs.cidhelpers import joinIpns
+from galacteek.ipfs.cidhelpers import isIpfsPath
 
 from galacteek.core.orbitdb import GalacteekOrbitConnector
 from galacteek.dweb.page import HashmarksPage, DWebView, WebTab
@@ -158,7 +160,7 @@ class IPFSInfosDialog(QDialog):
 
         self.ui = ui_ipfsinfos.Ui_IPFSInfosDialog()
         self.ui.setupUi(self)
-        self.ui.okButton.clicked.connect(lambda: self.done(1))
+        self.ui.okButton.clicked.connect(functools.partial(self.done, 1))
 
     @ipfsOp
     async def loadInfos(self, ipfsop):
@@ -220,23 +222,29 @@ class QuickAccessToolBar(QToolBar):
         event.acceptProposedAction()
 
     @ipfsOp
-    async def registerFromMarkMeta(self, op, metadata):
+    async def registerFromMarkMeta(self, op, metadata, maxIconSize=128 * 1024):
         mPath, mark = self.mainW.app.marksLocal.searchByMetadata(metadata)
         if not mark:
+            log.debug('Cannot find mark {}'.format(mPath))
             return
 
         icon = None
         mIcon = mark.get('icon', None)
 
-        if mIcon:
-            icon = await getIconFromIpfs(op, mIcon)
+        if mIcon and isIpfsPath(mIcon):
+            stat = await op.objStat(mIcon)
 
-            if icon is None:
-                icon = getIcon('unknown-file.png')
-            else:
-                if not await op.isPinned(mIcon):
-                    log.debug('Pinning icon {0}'.format(mIcon))
-                    await op.ctx.pin(mIcon)
+            # Check filesize from the stat on the object
+            if isinstance(stat, dict) and 'DataSize' in stat and \
+                    stat['DataSize'] < maxIconSize:
+                icon = await getIconFromIpfs(op, mIcon)
+
+                if icon is None:
+                    icon = getIcon('unknown-file.png')
+                else:
+                    if not await op.isPinned(mIcon):
+                        log.debug('Pinning icon {0}'.format(mIcon))
+                        await op.ctx.pin(mIcon)
         else:
             icon = getIcon('unknown-file.png')
 
@@ -256,6 +264,8 @@ class QuickAccessToolBar(QToolBar):
             'title': 'IPFessay'})
         await self.registerFromMarkMeta({
             'title': 'IPLD explorer'})
+        await self.registerFromMarkMeta({
+            'title': 'markup.rocks'})
 
 
 class DatabasesManager(QObject):
@@ -397,8 +407,7 @@ class MainWindow(QMainWindow):
             Qt.LeftToolBarArea | Qt.TopToolBarArea
         )
 
-        self.toolbarMain.orientationChanged.connect(
-            lambda orient: self.onMainToolbarMoved(orient))
+        self.toolbarMain.orientationChanged.connect(self.onMainToolbarMoved)
         self.toolbarTools = QToolBar()
         self.toolbarTools.setOrientation(self.toolbarMain.orientation())
 
@@ -410,21 +419,21 @@ class MainWindow(QMainWindow):
         self.browseButton = QToolButton()
         self.browseButton.setPopupMode(QToolButton.MenuButtonPopup)
         self.browseButton.setObjectName('buttonBrowseIpfs')
-        self.browseButton.clicked.connect(
-            lambda: self.onOpenBrowserTabClicked())
+        self.browseButton.clicked.connect(self.onOpenBrowserTabClicked)
         menu = QMenu()
         menu.addAction(getIconIpfsIce(), 'Browse',
-                       lambda: self.onOpenBrowserTabClicked())
+                       self.onOpenBrowserTabClicked)
         menu.addAction(getIconIpfsIce(), 'Browse (auto-pin)',
-                       lambda: self.onOpenBrowserTabClicked(pinBrowsed=True))
+                       functools.partial(self.onOpenBrowserTabClicked,
+                                         pinBrowsed=True)
+                       )
         self.browseButton.setMenu(menu)
         self.browseButton.setIcon(getIconIpfs64())
 
         # File manager button
         self.fileManagerButton = QToolButton()
         self.fileManagerButton.setIcon(getIcon('folder-open.png'))
-        self.fileManagerButton.clicked.connect(lambda:
-                                               self.onFileManagerClicked())
+        self.fileManagerButton.clicked.connect(self.onFileManagerClicked)
         self.fileManagerButton.setShortcut(QKeySequence('Ctrl+f'))
 
         # Edit-Profile button
@@ -462,8 +471,7 @@ class MainWindow(QMainWindow):
         # Peers button
         self.peersButton = QToolButton()
         self.peersButton.setIcon(getIcon('peers.png'))
-        self.peersButton.clicked.connect(
-            lambda: self.onPeersMgrClicked())
+        self.peersButton.clicked.connect(self.onPeersMgrClicked)
 
         self.clipboardItemsStack = ClipboardItemsStack(parent=self.toolbarMain)
 
@@ -483,33 +491,33 @@ class MainWindow(QMainWindow):
         self.settingsToolButton.clicked.connect(self.onSettings)
         menu = QMenu()
         menu.addAction(getIcon('settings.png'), iEventLog(),
-                       lambda: self.onOpenEventLog())
+                       self.onOpenEventLog)
         menu.addAction(getIcon('lock-and-key.png'), iKeys(),
-                       lambda: self.onIpfsKeysClicked())
+                       self.onIpfsKeysClicked)
         self.settingsToolButton.setMenu(menu)
 
         self.helpToolButton = QToolButton()
         self.helpToolButton.setIcon(getIcon('information.png'))
         self.helpToolButton.setPopupMode(QToolButton.MenuButtonPopup)
-        self.helpToolButton.clicked.connect(lambda: self.onOpenManual('en'))
+        self.helpToolButton.clicked.connect(
+            functools.partial(self.onOpenManual, 'en'))
         menu = QMenu()
         menu.addMenu(self.menuManual)
-        menu.addAction('Donate', lambda: self.onHelpDonate())
-        menu.addAction('About', lambda: self.onAboutGalacteek())
+        menu.addAction('Donate', self.onHelpDonate)
+        menu.addAction('About', self.onAboutGalacteek)
         self.helpToolButton.setMenu(menu)
 
         self.ipfsSearchButton = ipfssearch.IPFSSearchButton()
         self.ipfsSearchButton.hovered.connect(
-            lambda: self.toggleIpfsSearchWidget(True))
+            functools.partial(self.toggleIpfsSearchWidget, True))
         self.ipfsSearchButton.setShortcut(QKeySequence('Ctrl+s'))
         self.ipfsSearchButton.setIcon(self.ipfsSearchButton.iconNormal)
         self.ipfsSearchButton.toggled.connect(self.toggleIpfsSearchWidget)
 
         self.ipfsSearchWidget = ipfssearch.IPFSSearchWidget(self)
-        self.ipfsSearchWidget.runSearch.connect(
-            lambda text: self.addIpfsSearchView(text))
+        self.ipfsSearchWidget.runSearch.connect(self.addIpfsSearchView)
         self.ipfsSearchWidget.hidden.connect(
-            lambda: self.ipfsSearchButton.setChecked(False))
+            functools.partial(self.ipfsSearchButton.setChecked, False))
 
         self.toolbarMain.addWidget(self.browseButton)
         self.toolbarMain.addWidget(self.hashmarkMgrButton)
@@ -832,8 +840,8 @@ class MainWindow(QMainWindow):
         pass
 
     def onManualAvailable(self, lang, entry):
-        self.menuManual.addAction(lang, lambda:
-                                  self.onOpenManual(lang))
+        self.menuManual.addAction(lang, functools.partial(
+                                  self.onOpenManual, lang))
 
     def onOpenManual(self, lang):
         entry = self.app.manuals.getManualEntry(lang)
@@ -978,6 +986,7 @@ class MainWindow(QMainWindow):
 
         if tab.onClose() is True:
             self.ui.tabWidget.removeTab(idx)
+            self.allTabs.remove(tab)
             del tab
 
     def addIpfsSearchView(self, text):

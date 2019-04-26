@@ -54,6 +54,9 @@ S_HOMEURL = (CFG_SECTION_BROWSER, CFG_KEY_HOMEURL)
 S_GOTOHOME = (CFG_SECTION_BROWSER, CFG_KEY_GOTOHOME)
 S_DOWNLOADS_PATH = (CFG_SECTION_BROWSER, CFG_KEY_DLPATH)
 
+# Default homepage
+HOME_DEFAULT = 'dweb:/ipfs/QmXoypizjW3WknFiJnKLwHCnL72vedxjQkDDP1mXWo6uco/wiki/'  # noqa
+
 
 def setDefaultSettings(gApp):
     # Sets the default settings
@@ -73,7 +76,7 @@ def setDefaultSettings(gApp):
     sManager.setDefaultTrue(section, CFG_KEY_HTTPGWWRITABLE)
 
     section = CFG_SECTION_BROWSER
-    sManager.setDefaultSetting(section, CFG_KEY_HOMEURL, 'dweb:/ipns/ipfs.io')
+    sManager.setDefaultSetting(section, CFG_KEY_HOMEURL, HOME_DEFAULT)
     sManager.setDefaultSetting(section, CFG_KEY_DLPATH,
                                gApp.defaultDownloadsLocation)
     sManager.setDefaultTrue(section, CFG_KEY_GOTOHOME)

@@ -100,6 +100,10 @@ def iHashmark():
     return QCoreApplication.translate('GalacteekWindow', 'Hashmark')
 
 
+def iHashmarkThisPage():
+    return QCoreApplication.translate('GalacteekWindow', 'Hashmark this page')
+
+
 def iHashmarks():
     return QCoreApplication.translate('GalacteekWindow', 'Hashmarks')
 

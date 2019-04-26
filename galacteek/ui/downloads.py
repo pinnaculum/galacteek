@@ -1,3 +1,4 @@
+import functools
 import os.path
 
 from PyQt5 import QtWebEngineWidgets
@@ -44,6 +45,6 @@ class DownloadsManager(QObject):
         self.app.systemTrayMessage('Galacteek', iStartingDownload(name))
 
         downItem.setPath(os.path.join(downloadsLoc, name))
-        downItem.finished.connect(lambda: finished(downItem))
+        downItem.finished.connect(functools.partial(finished, downItem))
         downItem.downloadProgress.connect(progress)
         downItem.accept()

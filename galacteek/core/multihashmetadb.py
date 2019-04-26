@@ -14,28 +14,28 @@ class IPFSObjectMetadataDatabase:
     Basic file-based database to hold metadata about IPFS objects by path
     """
 
-    def __init__(self, metaDbPath):
+    def __init__(self, metaDbPath, loop=None):
         super().__init__()
 
         self._metaDbPath = metaDbPath
-        self._lock = asyncio.Lock()
+        self._lock = asyncio.Lock(
+            loop=loop if loop else asyncio.get_event_loop())
 
     @property
     def metaDbPath(self):
         return self._metaDbPath
 
-    async def path(self, rscPath):
-        with await self._lock:
-            if isinstance(rscPath, str) and isIpfsPath(rscPath):
-                path = stripIpfs(
-                    rscPath.rstrip('/')).replace('/', '_')
-                comps = path.split('/')
+    def path(self, rscPath):
+        if isinstance(rscPath, str) and isIpfsPath(rscPath):
+            path = stripIpfs(
+                rscPath.rstrip('/')).replace('/', '_')
+            comps = path.split('/')
 
-                if len(comps) > 0:
-                    containerId = comps[0][0:8]
-                    containerPath = os.path.join(self.metaDbPath, containerId)
-                    metaPath = os.path.join(containerPath, path)
-                    return containerPath, metaPath, os.path.exists(metaPath)
+            if len(comps) > 0:
+                containerId = comps[0][0:8]
+                containerPath = os.path.join(self.metaDbPath, containerId)
+                metaPath = os.path.join(containerPath, path)
+                return containerPath, metaPath, os.path.exists(metaPath)
 
         return None, None, False
 
@@ -46,7 +46,7 @@ class IPFSObjectMetadataDatabase:
             )
 
     async def store(self, rscPath, **data):
-        containerPath, metaPath, exists = await self.path(rscPath)
+        containerPath, metaPath, exists = self.path(rscPath)
         if metaPath and not exists:
             with await self._lock:
                 if not os.path.isdir(containerPath):
@@ -74,7 +74,7 @@ class IPFSObjectMetadataDatabase:
                     pass
 
     async def get(self, rscPath):
-        containerPath, metaPath, exists = await self.path(rscPath)
+        containerPath, metaPath, exists = self.path(rscPath)
         if metaPath and exists:
             with await self._lock:
                 try:

@@ -41,6 +41,7 @@ class GalacteekTab(QWidget):
         self.vLayout.addWidget(widget)
 
     def onClose(self):
+        self.deleteLater()
         return True
 
     @ipfsOp

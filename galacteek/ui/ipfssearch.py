@@ -180,7 +180,6 @@ class SearchResultsPage(QWebEnginePage):
 
         exSc = self.webScripts.findScript('ipfs-http-client')
         if self.app.settingsMgr.jsIpfsApi is True and exSc.isNull():
-            log.debug('Adding ipfs-http-client scripts')
             for script in self.app.scriptsIpfs:
                 self.webScripts.insert(script)
 
@@ -483,10 +482,8 @@ class IPFSSearchView(GalacteekTab):
 
         self.ui.lastSeenSlider.setTickInterval(1)
         self.ui.lastSeenSlider.setMinimum(1)
-        self.ui.lastSeenSlider.setMaximum(365 * 10)
-        self.ui.lastSeenSlider.valueChanged.connect(
-            lambda v: self.ui.lastSeenLabel.setText('{0} days'.format(
-                str(v))))
+        self.ui.lastSeenSlider.setMaximum(365 * 7)
+        self.ui.lastSeenSlider.valueChanged.connect(self.onSliderChanged)
         self.ui.lastSeenSlider.setValue(self.lastSeenDays)
         self.ui.lastSeenSlider.sliderReleased.connect(self.onFiltersChanged)
         self.setResultsPage()
@@ -514,6 +511,9 @@ class IPFSSearchView(GalacteekTab):
 
     def setLoadingPage(self):
         self.ui.browser.setPage(self.loadingPage)
+
+    def onSliderChanged(self, value):
+        self.ui.lastSeenLabel.setText('{0} days'.format(str(value)))
 
     def onFiltersChanged(self):
         self.handler._reset()
@@ -629,6 +629,3 @@ class IPFSSearchView(GalacteekTab):
             self.ui.comboPages.setCurrentIndex(page)
             self.handler.resultsReadyDom.emit(rendered)
             self.onPageChanged(page)
-
-    def onClose(self):
-        return True

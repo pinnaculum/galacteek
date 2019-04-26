@@ -53,7 +53,12 @@ SCHEME_IPFS = 'ipfs'
 
 
 def iOpenInTab():
-    return QCoreApplication.translate('BrowserTabForm', 'Open link in tab')
+    return QCoreApplication.translate('BrowserTabForm', 'Open link in new tab')
+
+
+def iOpenHttpInTab():
+    return QCoreApplication.translate('BrowserTabForm',
+                                      'Open http/https link in new tab')
 
 
 def iOpenWith():
@@ -192,10 +197,6 @@ class IPFSSchemeHandler(QtWebEngineCore.QWebEngineUrlSchemeHandler):
             if url.hasQuery():
                 newUrl.setQuery(url.query())
 
-            log.debug('IPFS scheme handler redirects to {redirect} {scheme} \
-                    {valid}'.format(
-                redirect=newUrl.toString(), scheme=newUrl.scheme(),
-                valid=newUrl.isValid()))
             return request.redirect(newUrl)
 
         if scheme in [SCHEME_FS, SCHEME_IPFS, SCHEME_DWEB]:
@@ -286,10 +287,10 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
                            iHashmark(),
                            functools.partial(self.hashmarkPath, ipfsPath))
             menu.addSeparator()
-            menu.addAction(getIcon('pin.png'), iPin(), lambda:
-                           self.pinPath(ipfsPath))
-            menu.addAction(getIcon('pin.png'), iPinRecursive(), lambda:
-                           self.pinPath(ipfsPath, True))
+            menu.addAction(getIcon('pin.png'), iPin(),
+                           functools.partial(self.pinPath, ipfsPath))
+            menu.addAction(getIcon('pin.png'), iPinRecursive(),
+                           functools.partial(self.pinPath, ipfsPath, True))
             menu.exec(event.globalPos())
         elif mediaIpfsPath:
             # Needs refactor
@@ -313,10 +314,11 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
                            iHashmark(),
                            functools.partial(self.hashmarkPath, mediaIpfsPath))
             menu.addSeparator()
-            menu.addAction(getIcon('pin.png'), iPin(), lambda:
-                           self.pinPath(mediaIpfsPath))
-            menu.addAction(getIcon('pin.png'), iPinRecursive(), lambda:
-                           self.pinPath(mediaIpfsPath, True))
+            menu.addAction(getIcon('pin.png'), iPin(),
+                           functools.partial(self.pinPath, mediaIpfsPath))
+            menu.addAction(getIcon('pin.png'), iPinRecursive(),
+                           functools.partial(self.pinPath, mediaIpfsPath,
+                                             True))
             menu.addSeparator()
 
             async def rscMenuEnable(mainMenu, path, mimeType, stat, analyzer):
@@ -355,9 +357,16 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
             menu.exec(event.globalPos())
         else:
             # Non-IPFS URL
-            menu = currentPage.createStandardContextMenu()
-            if menu:
-                menu.exec(event.globalPos())
+            menu = QMenu()
+            scheme = url.scheme()
+
+            if scheme == 'http' or scheme == 'https':
+                menu.addAction(
+                    iOpenHttpInTab(),
+                    functools.partial(self.openHttpInTab, url)
+                )
+
+            menu.exec(event.globalPos())
 
     def hashmarkPath(self, path):
         basename = os.path.basename(path)
@@ -374,6 +383,10 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
     def openInTab(self, path):
         tab = self.browserTab.gWindow.addBrowserTab()
         tab.browseFsPath(path)
+
+    def openHttpInTab(self, url):
+        tab = self.browserTab.gWindow.addBrowserTab()
+        tab.enterUrl(url)
 
     def downloadLink(self, menudata):
         url = menudata.linkUrl()
@@ -426,6 +439,7 @@ class BrowserTab(GalacteekTab):
         super(BrowserTab, self).__init__(gWindow)
 
         self.browserWidget = QWidget()
+        self.browserWidget.setAttribute(Qt.WA_DeleteOnClose)
         self.vLayout.addWidget(self.browserWidget)
 
         self.ui = ui_browsertab.Ui_BrowserTabForm()
@@ -436,7 +450,9 @@ class BrowserTab(GalacteekTab):
         self.installIpfsSchemeHandler()
 
         self.ui.webEngineView = WebView(
-            self, enablePlugins=self.app.settingsMgr.ppApiPlugins)
+            self, enablePlugins=self.app.settingsMgr.ppApiPlugins,
+            parent=self
+        )
         self.ui.vLayoutBrowser.addWidget(self.ui.webEngineView)
 
         self.webScripts = self.webProfile.scripts()
@@ -468,11 +484,11 @@ class BrowserTab(GalacteekTab):
 
         self.hashmarkMgrButton = HashmarkMgrButton(
             marks=self.app.marksLocal)
-        self.hashmarkPageAction = QAction(getIcon('hashmarks.png'),
-                                          iHashmark(), self,
+        self.hashmarkPageAction = QAction(getIcon('hashmark-black.png'),
+                                          iHashmarkThisPage(), self,
                                           shortcut=QKeySequence('Ctrl+b'),
                                           triggered=self.onHashmarkPage)
-        self.hashmarkMgrButton.setDefaultAction(self.hashmarkPageAction)
+        self.ui.hashmarkThisPage.setDefaultAction(self.hashmarkPageAction)
 
         self.hashmarkMgrButton.hashmarkClicked.connect(self.onHashmarkClicked)
 
@@ -550,7 +566,6 @@ class BrowserTab(GalacteekTab):
         self.currentIpfsResource = None
         self.currentIpfsUrl = None
         self.currentPageTitle = None
-        self.setAttribute(Qt.WA_DeleteOnClose)
 
     @property
     def webView(self):

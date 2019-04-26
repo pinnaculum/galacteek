@@ -49,14 +49,14 @@ def preloadMimeIcons():
     return icons
 
 
-async def getIconFromIpfs(ipfsop, ipfsPath, scaleWidth=None):
+async def getIconFromIpfs(ipfsop, ipfsPath, scaleWidth=None, timeout=10):
     try:
         imgData = await ipfsop.waitFor(
-            ipfsop.client.cat(ipfsPath), 10
+            ipfsop.client.cat(ipfsPath), timeout
         )
 
         if not imgData:
-            raise Exception('Failed to load image')
+            return None
 
         return getIconFromImageData(imgData, scaleWidth=scaleWidth)
     except BaseException:
