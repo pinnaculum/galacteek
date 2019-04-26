@@ -228,7 +228,7 @@ class QuickAccessToolBar(QToolBar):
             log.debug('Cannot find mark {}'.format(mPath))
             return
 
-        icon = None
+        icon = getIcon('unknown-file.png')
         mIcon = mark.get('icon', None)
 
         if mIcon and isIpfsPath(mIcon):
@@ -245,8 +245,6 @@ class QuickAccessToolBar(QToolBar):
                     if not await op.isPinned(mIcon):
                         log.debug('Pinning icon {0}'.format(mIcon))
                         await op.ctx.pin(mIcon)
-        else:
-            icon = getIcon('unknown-file.png')
 
         self.addAction(icon, mark['metadata'].get('title', iUnknown()),
                        lambda: self.mainW.addBrowserTab().browseFsPath(mPath))
