@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Disable sandboxing
+export QTWEBENGINE_DISABLE_SANDBOX=1
+
 HERE=$(dirname $(readlink -f "${0}"))
 export PATH=$PATH:${HERE}/usr/bin
 
