@@ -632,7 +632,7 @@ class GalacteekApplication(QApplication):
             else:
                 # Event was set, good to go
                 self.systemTrayMessage('IPFS',
-                                       iIpfsDaemonReady(), timeout=2000)
+                                       iIpfsDaemonReady(), timeout=400)
                 running = True
                 break
 
