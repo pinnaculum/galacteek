@@ -86,7 +86,7 @@ def galacteekGui(args):
         sslverify=False if args.nosslverify else True,
         progName=progName
     )
-    loop = gApp.setupAsyncLoop()
+    loop = gApp.loop
     sManager = gApp.settingsMgr
 
     section = CFG_SECTION_IPFSD

@@ -135,7 +135,8 @@ class IPFSMarks(QObject):
         if not self.path:
             return self.skeleton()
         try:
-            marks = json.load(open(self.path, 'rt'))
+            with open(self.path, 'rt') as fd:
+                marks = json.load(fd)
             return marks
         except Exception:
             marks = collections.OrderedDict()

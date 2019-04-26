@@ -163,6 +163,8 @@ class GalacteekApplication(QApplication):
         self.ipfsCtx = IPFSContext(self)
         self.peersTracker = peers.PeersTracker(self.ipfsCtx)
 
+        self.setupAsyncLoop()
+
         self.setupPaths()
         self.setupClipboard()
         self.setupSchemeHandlers()
