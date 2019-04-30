@@ -1,5 +1,6 @@
 <RCC>
   <qresource>
+    <file>../../share/icons/download.png</file>
     <file>../../share/icons/hashmark-black.png</file>
     <file>../../share/icons/loading.gif</file>
     <file>../../share/icons/open.png</file>

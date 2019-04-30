@@ -15,9 +15,14 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import QSize
 from PyQt5.QtCore import QUrl
+from PyQt5.QtCore import QFile
+from PyQt5.QtCore import QFileInfo
+from PyQt5.QtCore import QIODevice
 
 from galacteek import ensure
 from galacteek import log
+from galacteek import logUser
+
 from galacteek.appsettings import CFG_SECTION_BROWSER
 from galacteek.appsettings import CFG_KEY_HOMEURL
 from galacteek.core.clipboard import ClipboardItem
@@ -37,6 +42,7 @@ from .helpers import getIconFromImageData
 from .helpers import runDialog
 from .helpers import disconnectSig
 from .widgets import PopupToolButton
+from .widgets import DownloadProgressButton
 from .dialogs import ChooseProgramDialog
 
 from . import dag
@@ -107,6 +113,11 @@ def iClipItemHashmark():
 def iClipItemPin():
     return QCoreApplication.translate('clipboardManager',
                                       'Pin')
+
+
+def iClipItemDownload():
+    return QCoreApplication.translate('clipboardManager',
+                                      'Download')
 
 
 def iClipItemIpldExplorer():
@@ -234,7 +245,7 @@ class ClipboardManager(PopupToolButton):
 
         if item:
             if action.text() == iClipItemOpen():
-                ensure(self.rscOpener.open(item.path, item.mimeType))
+                ensure(self.rscOpener.open(item.ipfsPath, item.mimeType))
             elif action.text() == iClipItemSetCurrent():
                 self.tracker.current = item
             elif action.text() == iClipItemRemove():
@@ -242,8 +253,8 @@ class ClipboardManager(PopupToolButton):
 
     def itemAdded(self, item):
         if isIpnsPath(item.path):
-            # Don't show itemName ipns paths, the namespace is important
             itemName = item.path
+
         elif isIpfsPath(item.path):
             itemName = os.path.basename(item.path)
         else:
@@ -293,7 +304,9 @@ class ClipboardManager(PopupToolButton):
         """
         Process drag-and-drops of URLs pointing to an IPFS resource
 
-        Remove the query & fragment in the URL before passing it to the
+        We can also process URLs with the file:// scheme
+
+        Remove the query in the URL before passing it to the
         clipboard processor
         """
 
@@ -301,11 +314,52 @@ class ClipboardManager(PopupToolButton):
 
         if mimeData.hasUrls():
             for url in mimeData.urls():
-                self.tracker.clipboardProcess(url.toString(
-                    QUrl.RemoveQuery | QUrl.RemoveFragment
-                ))
+                if not url.isValid():
+                    continue
+
+                if url.scheme() == 'file':
+                    ensure(self.dropEventLocalFile(url))
+                else:
+                    self.tracker.clipboardProcess(
+                        url.toString(QUrl.RemoveQuery))
 
         event.acceptProposedAction()
+
+    @ipfsOp
+    async def dropEventLocalFile(self, ipfsop, url):
+        """
+        Handle a drop event with a file:// URL
+        """
+
+        maxFileSize = (64 * 1024 * 1024)
+        try:
+            path = url.toLocalFile()
+            fileInfo = QFileInfo(path)
+
+            if fileInfo.isFile():
+                file = QFile(path)
+
+                if file.open(QIODevice.ReadOnly):
+                    size = file.size()
+
+                    if size and size < maxFileSize:
+                        logUser.info('Importing file: {0}'.format(path))
+                        entry = await ipfsop.addPath(path)
+                        if entry:
+                            self.tracker.clipboardProcess(entry['Hash'])
+
+                    file.close()
+            if fileInfo.isDir():
+                # Don't check for directory size
+                async def entryAdded(entry):
+                    logUser.info('{path}: imported'.format(
+                        path=entry.get('Name')))
+
+                entry = await ipfsop.addPath(path, callback=entryAdded)
+                if entry:
+                    self.tracker.clipboardProcess(entry['Hash'])
+        except Exception:
+            pass
 
 
 class ClipboardItemButton(PopupToolButton):
@@ -363,6 +417,11 @@ class ClipboardItemButton(PopupToolButton):
             shortcut=QKeySequence('Ctrl+e'),
             triggered=self.onExplore)
 
+        self.downloadAction = QAction(
+            getIcon('download.png'),
+            iClipboardEmpty(), self,
+            triggered=self.onDownload)
+
         self.dagViewAction = QAction(
             getIcon('ipld-logo.png'),
             iClipboardEmpty(), self,
@@ -412,12 +471,12 @@ class ClipboardItemButton(PopupToolButton):
 
     def onHashmark(self):
         if self.item:
-            addHashmark(self.app.marksLocal, self.item.path,
+            addHashmark(self.app.marksLocal, self.item.fullPath,
                         self.item.basename)
 
     def onSetAsHome(self):
         self.app.settingsMgr.setSetting(CFG_SECTION_BROWSER, CFG_KEY_HOMEURL,
-                                        'dweb:{}'.format(self.item.path))
+                                        'dweb:{}'.format(self.item.fullPath))
 
     def onOpenWithProgram(self):
         def onAccept(dlg):
@@ -450,7 +509,7 @@ class ClipboardItemButton(PopupToolButton):
         self.menu.clear()
 
         action = self.menu.addSection(shortened)
-        action.setToolTip(self.item.path)
+        action.setToolTip(self.item.fullPath)
         self.menu.addSeparator()
 
         self.menu.addAction(self.openAction)
@@ -459,6 +518,7 @@ class ClipboardItemButton(PopupToolButton):
         self.menu.addSeparator()
         self.menu.addAction(self.setAsHomeAction)
         self.menu.addAction(self.hashmarkAction)
+        self.menu.addAction(self.downloadAction)
         self.menu.addSeparator()
         self.menu.addAction(self.dagViewAction)
         self.menu.addAction(self.ipldExplorerAction)
@@ -469,12 +529,13 @@ class ClipboardItemButton(PopupToolButton):
         self.openAction.setText(iClipItemOpen())
         self.dagViewAction.setText(iClipItemDagView())
         self.hashmarkAction.setText(iClipItemHashmark())
+        self.downloadAction.setText(iClipItemDownload())
         self.ipldExplorerAction.setText(iClipItemIpldExplorer())
         self.markupRocksAction.setText(iClipItemMarkupRocks())
         self.pinAction.setText(iClipItemPin())
 
         self.setToolTip('{path} (type: {mimetype})'.format(
-            path=self.item.path,
+            path=self.item.fullPath,
             mimetype=str(self.item.mimeType) if self.item.mimeType else
             iUnknown()
         ))
@@ -562,7 +623,7 @@ class ClipboardItemButton(PopupToolButton):
 
     def onOpen(self):
         if self.item:
-            ensure(self.rscOpener.open(self.item.path, self.item.mimeType))
+            ensure(self.rscOpener.open(self.item.ipfsPath, self.item.mimeType))
 
     def onExplore(self):
         if self.item and self.item.cid:
@@ -608,6 +669,42 @@ class ClipboardItemButton(PopupToolButton):
         if self.item:
             ensure(self.app.ipfsCtx.pin(self.item.path, True, None,
                                         qname='clipboard'))
+
+    def onDownload(self):
+        if self.item:
+            ensure(self.downloadItem(self.item))
+
+    @ipfsOp
+    async def downloadItem(self, ipfsop, item):
+        toolbarMain = self.app.mainWindow.toolbarMain
+        button = DownloadProgressButton(item.path, item.stat,
+                                        parent=self)
+        button.show()
+
+        action = toolbarMain.insertWidget(
+            toolbarMain.actionStatuses, button)
+
+        button.task = self.app.ipfsTaskOp(self.downloadItemTask,
+                                          item, button, action)
+        button.cancelled.connect(lambda: toolbarMain.removeAction(action))
+        button.downloadFinished.connect(
+            lambda: toolbarMain.removeAction(action))
+
+    async def downloadItemTask(self, ipfsop, item, progButton, action):
+        downloadsDir = self.app.settingsMgr.downloadsDir
+
+        async def progress(path, read, progButton):
+            progButton.downloadProgress.emit(read)
+
+        try:
+            await ipfsop.client.get(
+                item.path, dstdir=downloadsDir,
+                progress_callback=progress,
+                progress_callback_arg=progButton)
+        except aioipfs.APIError:
+            pass
+        else:
+            progButton.downloadFinished.emit()
 
 
 class ClipboardItemsStack(QStackedWidget):

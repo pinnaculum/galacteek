@@ -21,8 +21,9 @@ Platforms supported
 Installation
 ============
 
-On Linux systems you can use the AppImage or install from PyPI.
-On MacOS and other systems you'll need to install from PyPI.
+On Linux systems you can use the AppImage (from the releases_ page)
+or install from PyPI. On MacOS and other systems you'll need to
+install from PyPI.
 
 PyPI
 ----
@@ -72,7 +73,8 @@ AppImage
 --------
 
 For Linux users (arch: *x86_64*), you can get an AppImage
-from the releases_ page.
+from the releases_ page. The script used to build the image can be found
+`here <https://github.com/eversum/galacteek/blob/master/AppImage/galacteek-appimage-build>`_
 
 Command-line usage
 ==================

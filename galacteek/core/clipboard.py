@@ -9,9 +9,8 @@ from PyQt5.QtCore import QDateTime
 
 from galacteek import ensure
 from galacteek import log
-from galacteek.ipfs import cidhelpers
 from galacteek.ipfs import ipfsOp
-from galacteek.ipfs.cidhelpers import joinIpfs
+from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.mimetype import detectMimeType
 from galacteek.ipfs.mimetype import MIMEType
 
@@ -22,11 +21,10 @@ class ClipboardItem(QObject):
     mimeIconAvailable = pyqtSignal()
     statRetrieved = pyqtSignal(dict)
 
-    def __init__(self, input, rscPath, mimeType=None, parent=None):
+    def __init__(self, ipfsPath, mimeType=None, parent=None):
         super(ClipboardItem, self).__init__(parent)
 
-        self._clipInput = input
-        self._path = rscPath
+        self._ipfsPath = ipfsPath
         self._mimeType = mimeType
         self._statInfo = None
         self._cid = None
@@ -47,7 +45,21 @@ class ClipboardItem(QObject):
 
     @property
     def path(self):
-        return self._path
+        # Object path (without fragment)
+        return self._ipfsPath.objPath
+
+    @property
+    def fullPath(self):
+        # Full path (with fragment)
+        return self._ipfsPath.fullPath
+
+    @property
+    def ipfsPath(self):
+        return self._ipfsPath
+
+    @property
+    def fragment(self):
+        return self._ipfsPath.fragment
 
     @property
     def basename(self):
@@ -81,7 +93,7 @@ class ClipboardItem(QObject):
 
     @property
     def clipInput(self):
-        return self._clipInput
+        return self._ipfsPath.input
 
     @property
     def valid(self):
@@ -115,7 +127,7 @@ class ClipboardTracker(QObject):
     depending on whether or not the clipboard contains an IPFS CID or path
     """
 
-    clipboardHasIpfs = pyqtSignal(bool, str)
+    clipboardPathProcessed = pyqtSignal(IPFSPath)
     clipboardHistoryChanged = pyqtSignal()  # not used anymore
 
     itemRegister = pyqtSignal(ClipboardItem, bool)
@@ -123,20 +135,18 @@ class ClipboardTracker(QObject):
     itemRemoved = pyqtSignal(ClipboardItem)
     currentItemChanged = pyqtSignal(ClipboardItem)
 
-    def __init__(self, app, clipboard):
+    def __init__(self, app, clipboard, maxItems=256):
         super(ClipboardTracker, self).__init__()
 
         self.app = app
         self.clipboard = clipboard
-        self.hasIpfs = False
-        self.history = {}
 
         self._current = None
-        self._items = collections.deque(maxlen=128)
+        self._items = collections.deque(maxlen=maxItems)
         self.itemRegister.connect(self.addItem)
 
         self.clipboard.changed.connect(self.onClipboardChanged)
-        self.clipboardHasIpfs.connect(self.onHasIpfs)
+        self.clipboardPathProcessed.connect(self.onValidPath)
 
     @property
     def items(self):
@@ -165,15 +175,17 @@ class ClipboardTracker(QObject):
 
         self.itemAdded.emit(obj)
 
-    def exists(self, rscPath):
-        for obj in self.items:
-            if obj.path == rscPath:
-                return True
-        return False
+    def exists(self, ipfsPath):
+        """
+        :param IPFSPath ipfsPath: path object
+        :rtype: bool
+        """
 
-    def getByPath(self, rscPath):
+        return self.getByPath(ipfsPath) is not None
+
+    def getByPath(self, ipfsPath):
         for obj in self.items:
-            if obj.path == rscPath:
+            if obj.ipfsPath == ipfsPath:
                 return obj
 
     def removeItem(self, item):
@@ -192,49 +204,17 @@ class ClipboardTracker(QObject):
         """
         Process the contents of the clipboard. If it is a valid CID/path,
         emit a signal, processed by the main window for the clipboard
-        loader button
+        manager
         """
-        enableBase32 = False
-        if not text or len(text) > 1024:  # that shouldn't be worth handling
+
+        if not isinstance(text, str) or len(text) > 1024:
             return
 
         text = text.strip().rstrip('/')
-        ma = cidhelpers.ipfsRegSearchPath(text)
 
-        if ma:
-            # The clipboard contains a full IPFS path
-            cid = ma.group('cid')
-            if not cidhelpers.cidValid(cid):
-                return
-            path = ma.group('fullpath')
-            return self.clipboardHasIpfs.emit(True, path)
-
-        ma = cidhelpers.ipnsRegSearchPath(text)
-        if ma:
-            # The clipboard contains a full IPNS path
-            path = ma.group('fullpath')
-            return self.clipboardHasIpfs.emit(True, path)
-
-        ma = cidhelpers.ipfsRegSearchCid(text)
-        if ma:
-            # The clipboard simply contains a CID
-            cid = ma.group('cid')
-            if not cidhelpers.cidValid(cid):
-                return
-
-            cidObject = cidhelpers.getCID(cid)
-            if cidObject.version == 1 and enableBase32:
-                cidB32 = cidhelpers.cidConvertBase32(cid)
-                if cidB32:
-                    path = joinIpfs(cidB32)
-            else:
-                path = joinIpfs(cid)
-
-            return self.clipboardHasIpfs.emit(True, path)
-
-        # Not a CID/path
-        if clipboardMode == self.clipboardPreferredMode():
-            self.clipboardHasIpfs.emit(False, None)
+        path = IPFSPath(text)
+        if path.valid:
+            self.clipboardPathProcessed.emit(path)
 
     def getHistory(self):
         return list(self.items)
@@ -265,24 +245,16 @@ class ClipboardTracker(QObject):
         """ Returns clipboard's text content from the preferred source """
         return self.clipboard.text(self.clipboardPreferredMode())
 
-    def onHasIpfs(self, valid, path):
-        self.hasIpfs = valid
-        if not valid:
-            return
+    def onValidPath(self, ipfsPath):
+        existing = self.getByPath(ipfsPath)
 
-        exists = self.exists(path)
-
-        if exists is False:
-            item = ClipboardItem(None, path)
+        if not existing:
+            item = ClipboardItem(ipfsPath, parent=self)
             self.itemRegister.emit(item, True)
-
-            if valid is True and path:
-                ensure(self.scanItem(item))
+            ensure(self.scanItem(item))
         else:
-            # Find the existing item by its path and set as current item
-            item = self.getByPath(path)
-            if item:
-                self.current = item
+            # Set existing item as current item
+            self.current = existing
 
     @ipfsOp
     async def scanItem(self, ipfsop, cItem):

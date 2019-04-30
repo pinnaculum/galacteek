@@ -11,6 +11,7 @@ Galacteek's manual (english)
     Shortcuts <shortcuts>
     Settings <settings>
     Toolbar <toolbar>
+    Hashmarks <hashmarks>
     File manager <filemanager>
     Pinning <pinning>
 

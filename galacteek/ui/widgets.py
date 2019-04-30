@@ -23,7 +23,10 @@ from galacteek import ensure
 from .helpers import getIcon
 from .helpers import getIconFromIpfs
 from .helpers import disconnectSig
+from .helpers import sizeFormat
 from .i18n import iNoTitle
+from .i18n import iCancel
+from .i18n import iUnknown
 from .i18n import iHashmarksLibraryCountAvailable
 from .i18n import iLocalHashmarksCount
 
@@ -41,7 +44,6 @@ class GalacteekTab(QWidget):
         self.vLayout.addWidget(widget)
 
     def onClose(self):
-        self.deleteLater()
         return True
 
     @ipfsOp
@@ -339,3 +341,45 @@ class ImageWidget(QLabel):
             return True
         except Exception:
             return False
+
+
+class DownloadProgressButton(PopupToolButton):
+    downloadProgress = pyqtSignal(int)
+    downloadFinished = pyqtSignal()
+    cancelled = pyqtSignal()
+
+    def __init__(self, path, stat, parent=None):
+        super(DownloadProgressButton, self).__init__(
+            icon=getIcon('download.png'),
+            parent=parent, mode=QToolButton.InstantPopup)
+        self.downloadProgress.connect(self.onProgress)
+        self.downloadFinished.connect(self.onFinished)
+        self.path = path
+        self.stat = stat
+        self.readBytes = 0
+        self.task = None
+
+        self.menu.addAction(iCancel(), self.onCancel)
+
+    def onCancel(self):
+        if self.task:
+            try:
+                self.task.cancel()
+            except:
+                pass
+
+            self.cancelled.emit()
+
+    def onProgress(self, read):
+        self.readBytes = read
+        size = sizeFormat(self.stat.get('CumulativeSize')) if self.stat else \
+            iUnknown()
+
+        self.setToolTip('{path} (size: {size}): downloaded {dl}'.format(
+            path=self.path,
+            size=size,
+            dl=sizeFormat(self.readBytes))
+        )
+
+    def onFinished(self):
+        self.setToolTip('{path}: download finished'.format(path=self.path))

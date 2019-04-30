@@ -10,6 +10,7 @@
 
 body {
     font: 12pt "Montserrat";
+    background-color: #b7bbc8;
 }
 
 /* ---- font ----- */
@@ -152,8 +153,3 @@ body {
 .border-snow-muted, .b--snow-muted { border-color: #f7f8fa; }
 
 .ipfs-gradient-0 { background-image: linear-gradient(to top, #041727 0%,#043b55 100%); }
-
-body {
-    background-color: #b7bbc8;
-    font-family: 'Georgia', serif;
-}

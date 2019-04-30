@@ -227,3 +227,7 @@ class SettingsManager(object):
     @property
     def browserAutoPin(self):
         return self.isTrue(CFG_SECTION_UI, CFG_KEY_BROWSER_AUTOPIN)
+
+    @property
+    def downloadsDir(self):
+        return self.getSetting(CFG_SECTION_BROWSER, CFG_KEY_DLPATH)

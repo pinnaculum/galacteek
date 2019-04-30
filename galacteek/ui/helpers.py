@@ -243,9 +243,9 @@ def qrCodesMenuBuilder(urls, resourceOpener, parent=None):
         menu.setIcon(icon)
 
         for url in urls:
-            menu.addAction(icon,
-                           url, functools.partial(ensure,
-                                                  resourceOpener.open(url)))
+            menu.addAction(
+                icon, str(url), functools.partial(
+                    ensure, resourceOpener.open(url)))
         return menu
 
 

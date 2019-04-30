@@ -27,11 +27,11 @@ from PyQt5.Qt import QByteArray
 from PyQt5.QtGui import QKeySequence
 
 from yarl import URL
-import os.path
 
 from galacteek import log, ensure
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs import cidhelpers
+from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import joinIpns
 
@@ -249,9 +249,9 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
         if not isinstance(url, str):
             return
 
-        ipfsPath = cidhelpers.ipfsPathExtract(url)
-        if ipfsPath:
-            self.browserTab.ui.linkInfosLabel.setText(ipfsPath)
+        ipfsPath = IPFSPath(url)
+        if ipfsPath.valid:
+            self.browserTab.ui.linkInfosLabel.setText(ipfsPath.fullPath)
             if self.linkInfoTimer.isActive():
                 self.linkInfoTimer.stop()
             self.linkInfoTimer.start(2200)
@@ -263,38 +263,44 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
         mediaType = contextMenuData.mediaType()
         mediaUrl = contextMenuData.mediaUrl()
 
-        ipfsPath = cidhelpers.ipfsPathExtract(url.toString())
+        ipfsPath = IPFSPath(url.toString())
 
         if mediaType != QWebEngineContextMenuData.MediaTypeNone and mediaUrl:
-            mediaIpfsPath = cidhelpers.ipfsPathExtract(mediaUrl.toString())
+            mediaIpfsPath = IPFSPath(mediaUrl.toString())
         else:
             mediaIpfsPath = None
 
-        if ipfsPath:
+        if ipfsPath.valid:
             menu = QMenu()
             menu.addAction(getIcon('clipboard.png'),
                            iCopyPathToClipboard(),
                            functools.partial(self.app.setClipboardText,
-                                             ipfsPath
+                                             str(ipfsPath)
                                              ))
             menu.addSeparator()
-            menu.addAction(getIcon('open'), iOpen(), functools.partial(
+            menu.addAction(getIcon('open.png'), iOpen(), functools.partial(
                 ensure, self.app.resourceOpener.open(ipfsPath)))
             menu.addAction(getIcon('ipfs-logo-128-black.png'),
                            iOpenInTab(),
                            functools.partial(self.openInTab, ipfsPath))
             menu.addAction(getIcon('hashmarks.png'),
                            iHashmark(),
-                           functools.partial(self.hashmarkPath, ipfsPath))
+                           functools.partial(self.hashmarkPath, str(ipfsPath)))
             menu.addSeparator()
             menu.addAction(getIcon('pin.png'), iPin(),
-                           functools.partial(self.pinPath, ipfsPath))
-            menu.addAction(getIcon('pin.png'), iPinRecursive(),
-                           functools.partial(self.pinPath, ipfsPath, True))
+                           functools.partial(self.browserTab.pinPath,
+                                             ipfsPath.objPath))
+            menu.addAction(
+                getIcon('pin.png'),
+                iPinRecursive(),
+                functools.partial(
+                    self.browserTab.pinPath,
+                    ipfsPath.objPath,
+                    True))
             menu.exec(event.globalPos())
-        elif mediaIpfsPath:
+        elif mediaIpfsPath and mediaIpfsPath.valid:
             # Needs refactor
-            analyzer = ResourceAnalyzer()
+            analyzer = ResourceAnalyzer(parent=self)
 
             menu = QMenu()
 
@@ -302,23 +308,28 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
             menu.addAction(getIcon('clipboard.png'),
                            iCopyPathToClipboard(),
                            functools.partial(self.app.setClipboardText,
-                                             mediaIpfsPath
+                                             str(mediaIpfsPath)
                                              ))
             menu.addSeparator()
-            menu.addAction(getIcon('open'), iOpen(), functools.partial(
-                ensure, self.app.resourceOpener.open(mediaIpfsPath)))
-            menu.addAction(getIcon('ipfs-logo-128-black.png'),
-                           iOpenInTab(),
-                           functools.partial(self.openInTab, mediaIpfsPath))
+            menu.addAction(getIcon('open.png'), iOpen(), functools.partial(
+                ensure, self.app.resourceOpener.open(str(mediaIpfsPath))))
+            menu.addAction(
+                getIcon('ipfs-logo-128-black.png'),
+                iOpenInTab(),
+                functools.partial(
+                    self.openInTab,
+                    mediaIpfsPath))
             menu.addAction(getIcon('hashmarks.png'),
                            iHashmark(),
-                           functools.partial(self.hashmarkPath, mediaIpfsPath))
+                           functools.partial(self.hashmarkPath,
+                                             str(mediaIpfsPath)))
             menu.addSeparator()
             menu.addAction(getIcon('pin.png'), iPin(),
-                           functools.partial(self.pinPath, mediaIpfsPath))
+                           functools.partial(self.browserTab.pinPath,
+                                             mediaIpfsPath.objPath))
             menu.addAction(getIcon('pin.png'), iPinRecursive(),
-                           functools.partial(self.pinPath, mediaIpfsPath,
-                                             True))
+                           functools.partial(self.browserTab.pinPath,
+                                             mediaIpfsPath.objPath, True))
             menu.addSeparator()
 
             async def rscMenuEnable(mainMenu, path, mimeType, stat, analyzer):
@@ -329,7 +340,7 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
                         if isinstance(size, int) and size > (1024 * 1024 * 4):
                             return
 
-                    codes = await analyzer.decodeQrCodes(path)
+                    codes = await analyzer.decodeQrCodes(str(path))
                     if codes:
                         codesMenu = qrCodesMenuBuilder(
                             codes, self.app.resourceOpener, parent=mainMenu)
@@ -369,16 +380,11 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
             menu.exec(event.globalPos())
 
     def hashmarkPath(self, path):
-        basename = os.path.basename(path)
-        addHashmark(self.browserTab.app.marksLocal,
-                    path, basename if basename else '')
-
-    def openWithMediaPlayer(self, menudata):
-        url = menudata.linkUrl()
-        self.browserTab.gWindow.mediaPlayerQueue(url.path())
-
-    def pinPath(self, path, recursive=False):
-        self.browserTab.pinPath(path, recursive=recursive)
+        ipfsPath = IPFSPath(path)
+        if ipfsPath.valid:
+            addHashmark(self.browserTab.app.marksLocal,
+                        ipfsPath.fullPath,
+                        ipfsPath.basename if ipfsPath.basename else iUnknown())
 
     def openInTab(self, path):
         tab = self.browserTab.gWindow.addBrowserTab()
@@ -433,7 +439,7 @@ class BrowserKeyFilter(QObject):
 
 class BrowserTab(GalacteekTab):
     # signals
-    ipfsPathVisited = pyqtSignal(str)
+    ipfsObjectVisited = pyqtSignal(IPFSPath)
 
     def __init__(self, gWindow, pinBrowsed=False):
         super(BrowserTab, self).__init__(gWindow)
@@ -479,8 +485,6 @@ class BrowserTab(GalacteekTab):
 
         self.ui.loadFromClipboardButton.clicked.connect(
             self.loadFromClipboardButtonClicked)
-        self.ui.loadFromClipboardButton.setEnabled(
-            self.app.clipTracker.hasIpfs)
 
         self.hashmarkMgrButton = HashmarkMgrButton(
             marks=self.app.marksLocal)
@@ -489,6 +493,7 @@ class BrowserTab(GalacteekTab):
                                           shortcut=QKeySequence('Ctrl+b'),
                                           triggered=self.onHashmarkPage)
         self.ui.hashmarkThisPage.setDefaultAction(self.hashmarkPageAction)
+        self.ui.hashmarkThisPage.setEnabled(False)
 
         self.hashmarkMgrButton.hashmarkClicked.connect(self.onHashmarkClicked)
 
@@ -559,12 +564,11 @@ class BrowserTab(GalacteekTab):
         evfilter.zoomoutPressed.connect(self.onZoomOut)
         self.installEventFilter(evfilter)
 
-        self.app.clipTracker.clipboardHasIpfs.connect(self.onClipboardIpfs)
-        self.ipfsPathVisited.connect(self.onPathVisited)
+        self.app.clipTracker.clipboardPathProcessed.connect(
+            self.onClipboardIpfs)
+        self.ipfsObjectVisited.connect(self.onPathVisited)
 
-        self.currentUrl = None
-        self.currentIpfsResource = None
-        self.currentIpfsUrl = None
+        self._currentIpfsResource = None
         self.currentPageTitle = None
 
     @property
@@ -591,6 +595,10 @@ class BrowserTab(GalacteekTab):
     def pinAll(self):
         return self.ui.pinAllButton.isChecked()
 
+    @property
+    def currentIpfsResource(self):
+        return self._currentIpfsResource
+
     def installScripts(self):
         self.webScripts = self.webProfile.scripts()
 
@@ -611,9 +619,9 @@ class BrowserTab(GalacteekTab):
                 self.webProfile.installUrlSchemeHandler(
                     scheme, self.app.ipfsSchemeHandler)
 
-    def onPathVisited(self, path):
+    def onPathVisited(self, ipfsPath):
         # Called after a new IPFS object has been loaded in this tab
-        self.app.task(self.tsVisitPath, path)
+        ensure(self.tsVisitPath(ipfsPath.objPath))
 
     @ipfsStatOp
     async def tsVisitPath(self, ipfsop, path, stat):
@@ -621,8 +629,8 @@ class BrowserTab(GalacteekTab):
         if self.pinAll is True:
             self.pinPath(path, recursive=False, notify=False)
 
-    def onClipboardIpfs(self, valid, path):
-        self.ui.loadFromClipboardButton.setEnabled(valid)
+    def onClipboardIpfs(self, pathObj):
+        self.ui.loadFromClipboardButton.setEnabled(True)
 
     def onToggledPinAll(self, checked):
         pass
@@ -642,15 +650,18 @@ class BrowserTab(GalacteekTab):
         page.save(result[0], QWebEngineDownloadItem.CompleteHtmlSaveFormat)
 
     def onHashmarkClicked(self, path, title):
-        self.browseFsPath(path)
+        ipfsPath = IPFSPath(path)
+
+        if ipfsPath.valid:
+            self.browseFsPath(ipfsPath)
 
     def onHashmarkPage(self):
-        if self.currentIpfsResource:
+        if self.currentIpfsResource and self.currentIpfsResource.valid:
             addHashmark(self.app.marksLocal,
-                        self.currentIpfsUrl,
+                        self.currentIpfsResource.fullPath,
                         self.currentPageTitle,
                         stats=self.app.ipfsCtx.objectStats.get(
-                            self.currentIpfsResource, {}))
+                            self.currentIpfsResource.path, {}))
         else:
             messageBox(iNotAnIpfsResource())
 
@@ -668,7 +679,10 @@ class BrowserTab(GalacteekTab):
                                       qname='browser')
 
     def pinPath(self, path, recursive=True, notify=True):
-        ensure(self.pinQueuePath(path, recursive, notify))
+        if isinstance(path, str):
+            ensure(self.pinQueuePath(path, recursive, notify))
+        elif isinstance(path, IPFSPath):
+            ensure(self.pinQueuePath(path.objPath, recursive, notify))
 
     def printButtonClicked(self):
         # TODO: reinstate the printing button
@@ -687,18 +701,18 @@ class BrowserTab(GalacteekTab):
         if not self.currentIpfsResource:
             return messageBox(iNotAnIpfsResource())
 
-        self.pinPath(self.currentIpfsResource, recursive=False)
+        self.pinPath(self.currentIpfsResource.objPath, recursive=False)
 
     def onPinRecursive(self):
         if not self.currentIpfsResource:
             return messageBox(iNotAnIpfsResource())
 
-        self.pinPath(self.currentIpfsResource, recursive=True)
+        self.pinPath(self.currentIpfsResource.objPath, recursive=True)
 
     def loadFromClipboardButtonClicked(self):
         current = self.app.clipTracker.getCurrent()
         if current:
-            self.browseFsPath(current.path)
+            self.browseFsPath(IPFSPath(current.fullPath))
 
     def onLoadIpfsCID(self):
         def onValidated(d):
@@ -727,7 +741,7 @@ class BrowserTab(GalacteekTab):
 
     def onFollowIpns(self):
         runDialog(AddFeedDialog, self.app.marksLocal,
-                  self.currentIpfsResource,
+                  self.currentIpfsResource.objPath,
                   title=iFollowIpnsDialog())
 
     def onLoadHome(self):
@@ -757,24 +771,29 @@ class BrowserTab(GalacteekTab):
     def onUrlChanged(self, url):
         if url.authority() == self.gatewayAuthority:
             # Content loaded from IPFS gateway, this is IPFS content
-            self.currentIpfsResource = url.path()
-            self.ui.urlZone.clear()
-
-            stripped = url.toDisplayString(
+            urlString = url.toDisplayString(
                 QUrl.RemoveAuthority | QUrl.RemoveScheme)
-            self.currentIpfsUrl = stripped
 
-            self.ui.urlZone.insert(makeDwebPath(stripped))
-            self.ipfsPathVisited.emit(self.currentIpfsResource)
+            self._currentIpfsResource = IPFSPath(urlString)
 
-            # Activate the follow action if this is IPNS
-            # todo: better check on ipns path validity
-            if self.currentIpfsResource.startswith('/ipns/'):
-                self.followIpnsAction.setEnabled(True)
+            if self.currentIpfsResource.valid:
+                log.debug('Current IPFS object: {0}'.format(
+                    repr(self.currentIpfsResource)))
             else:
-                self.followIpnsAction.setEnabled(False)
+                log.debug('Invalid IPFS path: {0}'.format(urlString))
+
+            self.ui.hashmarkThisPage.setEnabled(self.currentIpfsResource.valid)
+            self.ui.pinToolButton.setEnabled(self.currentIpfsResource.valid)
+
+            self.ui.urlZone.clear()
+            self.ui.urlZone.insert(makeDwebPath(urlString))
+            self.ipfsObjectVisited.emit(self.currentIpfsResource)
+
+            # Activate the follow action if this is a root IPNS address
+            self.followIpnsAction.setEnabled(
+                self.currentIpfsResource.isIpnsRoot)
         else:
-            self.currentIpfsResource = None
+            self._currentIpfsResource = None
             self.ui.urlZone.clear()
             self.ui.urlZone.insert(url.toString())
 
@@ -828,16 +847,23 @@ class BrowserTab(GalacteekTab):
                 }''')
 
     def browseFsPath(self, path):
-        self.enterUrl(QUrl('{0}:{1}'.format(SCHEME_DWEB, path)))
+        if isinstance(path, str):
+            self.enterUrl(QUrl('{0}:{1}'.format(SCHEME_DWEB, path)))
+        elif isinstance(path, IPFSPath):
+            if path.valid:
+                self.enterUrl(QUrl('{0}:{1}'.format(SCHEME_DWEB,
+                                                    path.fullPath)))
+            else:
+                messageBox(iInvalidUrl(path.fullPath))
 
     def browseIpfsHash(self, ipfsHash):
         if not cidhelpers.cidValid(ipfsHash):
             return messageBox(iInvalidCID(ipfsHash))
 
-        self.browseFsPath(joinIpfs(ipfsHash))
+        self.browseFsPath(IPFSPath(joinIpfs(ipfsHash)))
 
     def browseIpnsHash(self, ipnsHash):
-        self.browseFsPath(joinIpns(ipnsHash))
+        self.browseFsPath(IPFSPath(joinIpns(ipnsHash)))
 
     def enterUrl(self, url):
         log.debug('Entering URL {}'.format(url.toString()))

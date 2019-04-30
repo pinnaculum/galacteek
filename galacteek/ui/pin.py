@@ -12,8 +12,7 @@ from PyQt5.QtGui import QStandardItemModel
 from PyQt5.QtGui import QBrush
 from PyQt5.QtGui import QColor
 
-from galacteek.ipfs import cidhelpers
-from galacteek.ipfs.cidhelpers import joinIpfs
+from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek import ensure
 
 from .widgets import GalacteekTab
@@ -96,21 +95,12 @@ class PinStatusWidget(GalacteekTab):
         text = self.pathEdit.text()
         self.pathEdit.clear()
 
-        ma = cidhelpers.ipfsRegSearchPath(text)
-        if ma:
-            return ensure(self.app.ipfsCtx.pinner.queue(
-                ma.group('fullpath'), True, None))
-
-        ma = cidhelpers.ipnsRegSearchPath(text)
-        if ma:
-            return ensure(self.app.ipfsCtx.pinner.queue(
-                ma.group('fullpath'), True, None))
-
-        if cidhelpers.ipfsRegSearchCid(text):
-            return ensure(self.app.ipfsCtx.pinner.queue(
-                joinIpfs(text), True, None))
-
-        messageBox(iInvalidInput())
+        path = IPFSPath(text)
+        if path.valid:
+            ensure(self.app.ipfsCtx.pinner.queue(
+                path.objPath, True, None))
+        else:
+            messageBox(iInvalidInput())
 
     def removeItem(self, path):
         modelSearch(self.model,

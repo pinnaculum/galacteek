@@ -16,16 +16,23 @@ The clipboard manager
 From the application's toolbar you can access the clipboard manager button.
 It records the computer's clipboard activity and keeps an history of all the
 IPFS multihashes/paths that have been stored in it since the application was
-started. It supports **drag and drop**, so drag-and-dropping a link to an IPFS
+started.
+
+It supports **drag and drop**, so drag-and-dropping a link to an IPFS
 object on the clipboard manager button will register this object in the
 history.
+
+It is also possible to drag and drop local files and directories
+(URLs with the file:// prefix) to the clipboard manager (from the browser,
+file manager, or from another application). For files, their size has to
+be inferior to 64Mb. There is no size limit for directories, so use with care.
 
 Whenever the clipboard contains a new valid reference to an IPFS object, the
 clipboard tracker gathers information about this object (performing an object
 stat and determining its MIME type) and puts it on top of the clipboard stack,
 making it the current item.
 
-The current clipboard item in the stack is represented beside the clipboard
+The current clipboard item in the stack is represented next to the clipboard
 manager button. If available, an icon matching the discovered MIME type of
 the IPFS object is set on the clipboard item button. Clicking on the clipboard
 item button opens up a menu listing the different possible actions for this
@@ -37,9 +44,11 @@ object:
   application (it uses **xdg-open** on Linux or the **open** command on MacOS)
 - **Hashmark**: hashmark this object
 - **Pin**: recursively pin this object
+- **Download**: download this object to the downloads folder
 - **Set as homepage**
 - **DAG view**
 - **Run IPLD explorer**
+- **Open with Markdown editor**
 
 Supported formats
 -----------------
@@ -48,11 +57,14 @@ The clipboard manager supports the following formats:
 
 - *IPFS CID (version 0)*, for example
   **QmRifA98t769dzkDv2gQocqJPXGtTySR5dPkyTaUZXtkLo**
-- *IPFS CID (version 1)*, for example
+- *IPFS CID (version 1, base58-encoded)*, for example
   **zb2rhd4c97sLJwmnVvUjW5movikNJaYBMfpfpGP7hktYtt8Bo**
+- *IPFS CID (version 1, base32-encoded)*, for example
+  **bafkreic7mf6cvjyxbrabxkswgpel2ebcjfxj35zmmzgyi6cf35bz7mstgy**
 - *IPFS path* for example
   **/ipfs/QmWzhNYvNaxz41qitbqMaTDbViFoES1NgTuoYC7dAAMJw3/src/tools** or 
-  **/ipfs/QmdjTSAM2xSVsXcusNHRoES4KqkJ5mW17u6oQARTWMuWMF/CHANGES**
+  **/ipfs/QmdjTSAM2xSVsXcusNHRoES4KqkJ5mW17u6oQARTWMuWMF/CHANGES** or
+  **/ipfs/bafkreic7mf6cvjyxbrabxkswgpel2ebcjfxj35zmmzgyi6cf35bz7mstgy**
 - *IPNS path* for example **/ipns/ipfs.io** or
   **/ipns/Qmef8KSNLZZfdnrxHZKhCBBynSUFLQ4RrH88wW3sTWxfwB**
 - *URLs using the fs: or dweb: scheme* for example

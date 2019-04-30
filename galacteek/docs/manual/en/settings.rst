@@ -2,7 +2,9 @@
 Application settings
 ====================
 
-The **Edit** -> **Settings** dialog lets you change the application settings.
+.. image:: ../../../../share/icons/settings.png
+    :width: 64
+    :height: 64
 
 IPFS settings
 -------------

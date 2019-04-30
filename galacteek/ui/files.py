@@ -25,6 +25,7 @@ from PyQt5.QtCore import QFile
 
 from galacteek import ensure
 from galacteek.ipfs.cidhelpers import joinIpfs
+from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cache import IPFSEntryCache
@@ -603,9 +604,6 @@ class FilesTab(GalacteekTab):
         def hashmark(mPath, name):
             addHashmark(self.app.marksLocal, mPath, name)
 
-        def browse(hash):
-            self.browse(hash)
-
         def copyHashToClipboard(itemHash):
             self.clipboard.setText(itemHash)
 
@@ -628,17 +626,16 @@ class FilesTab(GalacteekTab):
                            functools.partial(self.app.setClipboardText,
                                              nameItem.fullPath))
         menu.addSeparator()
-        menu.addAction(iUnlinkFile(), lambda:
-                       unlink(dataHash))
-        menu.addAction(iDeleteFile(), lambda:
-                       delete(dataHash))
+        menu.addAction(iUnlinkFile(), functools.partial(unlink, dataHash))
+        menu.addAction(iDeleteFile(), functools.partial(delete, dataHash))
         menu.addSeparator()
         menu.addAction(getIcon('hashmarks.png'),
-                       iHashmarkFile(), lambda:
-                       hashmark(ipfsPath, nameItem.entry['Name']))
+                       iHashmarkFile(),
+                       functools.partial(hashmark, ipfsPath,
+                                         nameItem.entry['Name']))
         menu.addAction(getIconIpfs64(),
-                       iBrowseFile(), lambda:
-                       browse(dataHash))
+                       iBrowseFile(),
+                       functools.partial(self.browse, dataHash))
         menu.addAction(getIcon('open.png'),
                        iOpen(),
                        functools.partial(ensure, self.app.resourceOpener.open(
@@ -647,8 +644,8 @@ class FilesTab(GalacteekTab):
 
         if nameItem.isDir():
             menu.addAction(getIcon('folder-open.png'),
-                           iExploreDir(), lambda:
-                           explore(dataHash))
+                           iExploreDir(),
+                           functools.partial(explore, dataHash))
 
         def publishToKey(action):
             key = action.data()['key']['Name']
@@ -676,11 +673,9 @@ class FilesTab(GalacteekTab):
         menu.addMenu(publishMenu)
         menu.exec(self.ui.treeFiles.mapToGlobal(point))
 
-    def browse(self, hash):
-        self.gWindow.addBrowserTab().browseIpfsHash(hash)
-
-    def browseFs(self, path):
-        self.gWindow.addBrowserTab().browseFsPath(path)
+    def browse(self, path):
+        self.gWindow.addBrowserTab().browseFsPath(
+            IPFSPath(path))
 
     def onExploreItem(self):
         current = self.currentItem()

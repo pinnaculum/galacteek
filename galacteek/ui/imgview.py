@@ -27,6 +27,7 @@ from galacteek.ipfs.wrappers import ipfsOp
 
 from .widgets import GalacteekTab
 from .helpers import getIcon
+from .helpers import messageBox
 from .clipboard import iCopyToClipboard
 from .i18n import iZoomIn
 from .i18n import iZoomOut
@@ -38,6 +39,12 @@ def iImageGotQrCodes(count):
         'ImageView',
         'This image contains {} valid IPFS QR code(s) !').format(
             count)
+
+
+def iImageCannotLoad(path):
+    return QCoreApplication.translate(
+        'ImageView',
+        'Cannot load image {}').format(path)
 
 
 class ImageViewerTab(GalacteekTab):
@@ -123,7 +130,7 @@ class ImageViewerTab(GalacteekTab):
             clipBtn.setIcon(getIcon('clipboard.png'))
             clipBtn.setToolTip(iCopyToClipboard())
             clipBtn.clicked.connect(
-                functools.partial(self.app.setClipboardText, url))
+                functools.partial(self.app.setClipboardText, str(url)))
 
             openBtn = QToolButton()
             openBtn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
@@ -179,8 +186,13 @@ class ImageView(QScrollArea):
         self.resizePixmap()
 
     def resizePixmap(self):
+        pixmap = self.labelImage.pixmap()
+
+        if pixmap == 0 or pixmap is None:
+            return
+
         self.labelImage.resize(
-            self.scaleFactor * self.labelImage.pixmap().size())
+            self.scaleFactor * pixmap.size())
 
     @ipfsOp
     async def showImage(self, ipfsop, imgPath):
@@ -211,3 +223,4 @@ class ImageView(QScrollArea):
         except Exception:
             logUser.debug('Failed to load image: {path}'.format(
                 path=imgPath))
+            messageBox(iImageCannotLoad(imgPath))
