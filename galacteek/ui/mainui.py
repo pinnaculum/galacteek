@@ -36,9 +36,11 @@ from galacteek.core.asynclib import asyncify
 from galacteek.ui import mediaplayer
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.ipfsops import *
-from galacteek.ipfs.cidhelpers import ipfsPathExtract
+from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import joinIpns
 from galacteek.ipfs.cidhelpers import isIpfsPath
+from galacteek.ipfs.cidhelpers import shortPathRepr
+from galacteek.ipfs.cidhelpers import cidValid
 
 from galacteek.core.orbitdb import GalacteekOrbitConnector
 from galacteek.dweb.page import HashmarksPage, DWebView, WebTab
@@ -70,44 +72,6 @@ from .i18n import *
 
 from .clipboard import ClipboardManager
 from .clipboard import ClipboardItemsStack
-
-
-def iFileManager():
-    return QCoreApplication.translate('GalacteekWindow', 'File Manager')
-
-
-def iHashmarksManager():
-    return QCoreApplication.translate('GalacteekWindow', 'Hashmarks manager')
-
-
-def iKeys():
-    return QCoreApplication.translate('GalacteekWindow', 'IPFS Keys')
-
-
-def iPinningStatus():
-    return QCoreApplication.translate('GalacteekWindow', 'Pinning status')
-
-
-def iEventLog():
-    return QCoreApplication.translate('GalacteekWindow', 'Event Log')
-
-
-def iPeers():
-    return QCoreApplication.translate('GalacteekWindow', 'Peers')
-
-
-def iIpfsSearch(text):
-    return QCoreApplication.translate('GalacteekWindow',
-                                      'Search: {0}').format(text)
-
-
-def iNewProfile():
-    return QCoreApplication.translate('GalacteekWindow', 'New Profile')
-
-
-def iSwitchedProfile():
-    return QCoreApplication.translate('GalacteekWindow',
-                                      'Successfully switched profile')
 
 
 def iPinningItemStatus(pinPath, pinProgress):
@@ -197,6 +161,7 @@ class QuickAccessToolBar(QToolBar):
     def __init__(self, window):
         super().__init__()
 
+        self.app = QCoreApplication.instance()
         self.setObjectName('toolbarQa')
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.setMinimumWidth(400)
@@ -215,8 +180,10 @@ class QuickAccessToolBar(QToolBar):
 
         if mimeData.hasUrls():
             for url in mimeData.urls():
-                ex = ipfsPathExtract(url.toString())
-                if not ex:
+                if not url.isValid():
+                    continue
+                path = IPFSPath(url.toString())
+                if not path.valid:
                     continue
 
         event.acceptProposedAction()
@@ -442,15 +409,22 @@ class MainWindow(QMainWindow):
 
         # Profile button
         self.profileMenu = QMenu()
-        self.profileMenu.addAction('View Homepage',
+        iconProfile = getIcon('profile-user.png')
+        self.profileMenu.addAction(iconProfile,
+                                   'Edit profile',
+                                   self.onProfileEditDialog)
+        self.profileMenu.addAction(getIcon('go-home.png'),
+                                   'View homepage',
                                    self.onProfileViewHomepage)
         self.profileMenu.addSeparator()
         self.profileMenu.addAction('Post Message',
                                    self.onProfilePostMessage)
-        self.profileEditButton = ProfileButton(menu=self.profileMenu)
-        self.profileEditButton.setIcon(getIcon('profile-user.png'))
+        self.profileEditButton = ProfileButton(
+            menu=self.profileMenu,
+            mode=QToolButton.InstantPopup,
+            icon=iconProfile
+        )
         self.profileEditButton.setEnabled(False)
-        self.profileEditButton.clicked.connect(self.onProfileEditDialog)
 
         # Hashmarks mgr button
         self.hashmarkMgrButton = HashmarkMgrButton(
@@ -483,12 +457,15 @@ class MainWindow(QMainWindow):
         )
 
         # Settings button
+        settingsIcon = getIcon('settings.png')
         self.settingsToolButton = QToolButton()
-        self.settingsToolButton.setIcon(getIcon('settings.png'))
-        self.settingsToolButton.setPopupMode(QToolButton.MenuButtonPopup)
-        self.settingsToolButton.clicked.connect(self.onSettings)
+        self.settingsToolButton.setIcon(settingsIcon)
+        self.settingsToolButton.setPopupMode(QToolButton.InstantPopup)
         menu = QMenu()
-        menu.addAction(getIcon('settings.png'), iEventLog(),
+        menu.addAction(settingsIcon, iSettings(),
+                       self.onSettings)
+        menu.addSeparator()
+        menu.addAction(settingsIcon, iEventLog(),
                        self.onOpenEventLog)
         menu.addAction(getIcon('lock-and-key.png'), iKeys(),
                        self.onIpfsKeysClicked)
@@ -538,7 +515,12 @@ class MainWindow(QMainWindow):
         self.toolbarTools.addWidget(self.peersButton)
         self.toolbarTools.addWidget(self.profileEditButton)
 
+        self.toolbarMain.actionStatuses = self.toolbarMain.addAction(
+            'Statuses')
+        self.toolbarMain.actionStatuses.setVisible(False)
+
         self.toolbarMain.addWidget(self.toolbarMain.emptySpace)
+        self.toolbarMain.addSeparator()
         self.toolbarMain.addWidget(self.ipfsSearchButton)
         self.toolbarMain.addSeparator()
         self.toolbarMain.addWidget(self.clipboardItemsStack)
@@ -551,7 +533,7 @@ class MainWindow(QMainWindow):
         self.toolbarMain.addWidget(self.helpToolButton)
         self.toolbarMain.addAction(self.actionQuit)
 
-        self.addToolBar(Qt.LeftToolBarArea, self.toolbarMain)
+        self.addToolBar(Qt.TopToolBarArea, self.toolbarMain)
 
         self.ui.tabWidget.setDocumentMode(True)
         self.ui.tabWidget.setTabsClosable(True)
@@ -647,7 +629,10 @@ class MainWindow(QMainWindow):
             self.ui.tabWidget.setCurrentIndex(0)
 
     def onHashmarkClicked(self, path, title):
-        ensure(self.app.resourceOpener.open(path))
+        ipfsPath = IPFSPath(path)
+
+        if ipfsPath.valid:
+            ensure(self.app.resourceOpener.open(ipfsPath))
 
     def onMainToolbarMoved(self, orientation):
         self.toolbarMain.lastPos = self.toolbarMain.pos()
@@ -715,9 +700,6 @@ class MainWindow(QMainWindow):
                     self.app.ipfsCtx.currentProfile.name != pName:
                 self.app.ipfsCtx.profileChange(pName)
 
-    def onProfileCreateGPGKey(self):
-        pass
-
     def onProfilePostMessage(self):
         runDialog(ProfilePostMessageDialog, self.app.ipfsCtx.currentProfile)
 
@@ -742,6 +724,8 @@ class MainWindow(QMainWindow):
 
     def onRepoReady(self):
         self.enableButtons()
+
+        ensure(self.displayConnectionInfo())
         ensure(self.qaToolbar.init())
         ensure(self.hashmarkMgrButton.updateIcons())
 
@@ -859,15 +843,13 @@ class MainWindow(QMainWindow):
     def statusMessage(self, msg):
         self.ui.statusbar.showMessage(msg)
 
-    def registerTab(self, tab, name, icon=None, current=False, add=True,
+    def registerTab(self, tab, name, icon=None, current=False,
                     tooltip=None):
         idx = None
-
-        if add is True:
-            if icon:
-                idx = self.ui.tabWidget.addTab(tab, icon, name)
-            else:
-                idx = self.ui.tabWidget.addTab(tab, name)
+        if icon:
+            idx = self.ui.tabWidget.addTab(tab, icon, name)
+        else:
+            idx = self.ui.tabWidget.addTab(tab, name)
 
         self._allTabs.append(tab)
 
@@ -907,28 +889,27 @@ class MainWindow(QMainWindow):
     def onAboutGalacteek(self):
         QMessageBox.about(self, 'About Galacteek', iAbout())
 
-    @asyncify
-    async def onMainTimerStatus(self):
-        @ipfsOpFn
-        async def connectionInfo(oper):
-            try:
-                info = await oper.client.core.id()
-            except BaseException:
-                return self.ui.ipfsStatusLabel.setText(iErrNoCx())
+    @ipfsOp
+    async def displayConnectionInfo(self, ipfsop):
+        try:
+            info = await ipfsop.client.core.id()
+        except BaseException:
+            return self.ui.ipfsStatusLabel.setText(iErrNoCx())
 
-            nodeId = info.get('ID', iUnknown())
-            nodeAgent = info.get('AgentVersion', iUnknownAgent())
+        nodeId = info.get('ID', iUnknown())
+        nodeAgent = info.get('AgentVersion', iUnknownAgent())
 
-            # Get IPFS peers list
-            peers = await oper.peersList()
-            if not peers:
-                return self.ui.ipfsStatusLabel.setText(
-                    iCxButNoPeers(nodeId, nodeAgent))
+        # Get IPFS peers list
+        peers = await ipfsop.peersList()
+        if not peers:
+            return self.ui.ipfsStatusLabel.setText(
+                iCxButNoPeers(nodeId, nodeAgent))
 
-            message = iConnectStatus(nodeId, nodeAgent, len(peers))
-            self.ui.ipfsStatusLabel.setText(message)
+        message = iConnectStatus(nodeId, nodeAgent, len(peers))
+        self.ui.ipfsStatusLabel.setText(message)
 
-        await connectionInfo()
+    def onMainTimerStatus(self):
+        ensure(self.displayConnectionInfo())
 
     def keyPressEvent(self, event):
         # Ultimately this will be moved to configurable shortcuts
@@ -945,10 +926,13 @@ class MainWindow(QMainWindow):
 
         super(MainWindow, self).keyPressEvent(event)
 
-    def exploreMultihash(self, hashV):
-        tabName = '... {0}'.format(hashV[2 * int(len(hashV) / 3):])
-        tooltip = 'Hash explorer: {0}'.format(hashV)
-        view = ipfsview.IPFSHashExplorerToolBox(self, hashV)
+    def exploreMultihash(self, multihash):
+        if not cidValid(multihash):
+            return messageBox(iInvalidInput())
+
+        tabName = shortPathRepr(multihash)
+        tooltip = 'Multihash explorer: {0}'.format(multihash)
+        view = ipfsview.IPFSHashExplorerToolBox(self, multihash)
         self.registerTab(view, tabName, current=True,
                          icon=getIcon('hash.png'), tooltip=tooltip)
 
@@ -1033,17 +1017,15 @@ class MainWindow(QMainWindow):
         bcAddress = '3HSsNcwzkiWGu6wB18BC6D37JHExpxZvyS'
         runDialog(DonateDialog, bcAddress)
 
-    def addBrowserTab(self, label='No page loaded', pinBrowsed=False):
+    def addBrowserTab(self, label='No page loaded', pinBrowsed=False,
+                      current=True):
         icon = getIconIpfsIce()
         tab = browser.BrowserTab(self, pinBrowsed=pinBrowsed)
-        self.ui.tabWidget.addTab(tab, icon, label)
-        self.ui.tabWidget.setCurrentWidget(tab)
+        self.registerTab(tab, label, icon=icon, current=current)
 
-        mgr = self.app.settingsMgr
-        if mgr.isTrue(CFG_SECTION_BROWSER, CFG_KEY_GOTOHOME):
+        if self.app.settingsMgr.isTrue(CFG_SECTION_BROWSER, CFG_KEY_GOTOHOME):
             tab.loadHomePage()
 
-        self.allTabs.append(tab)
         return tab
 
     def addEventLogTab(self, current=False):

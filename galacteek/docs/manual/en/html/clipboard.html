@@ -57,14 +57,19 @@ clipboard will be used.</p>
 <p>From the application’s toolbar you can access the clipboard manager button.
 It records the computer’s clipboard activity and keeps an history of all the
 IPFS multihashes/paths that have been stored in it since the application was
-started. It supports <strong>drag and drop</strong>, so drag-and-dropping a link to an IPFS
+started.</p>
+<p>It supports <strong>drag and drop</strong>, so drag-and-dropping a link to an IPFS
 object on the clipboard manager button will register this object in the
 history.</p>
+<p>It is also possible to drag and drop local files and directories
+(URLs with the <a class="reference external" href="file://">file://</a> prefix) to the clipboard manager (from the browser,
+file manager, or from another application). For files, their size has to
+be inferior to 64Mb. There is no size limit for directories, so use with care.</p>
 <p>Whenever the clipboard contains a new valid reference to an IPFS object, the
 clipboard tracker gathers information about this object (performing an object
 stat and determining its MIME type) and puts it on top of the clipboard stack,
 making it the current item.</p>
-<p>The current clipboard item in the stack is represented beside the clipboard
+<p>The current clipboard item in the stack is represented next to the clipboard
 manager button. If available, an icon matching the discovered MIME type of
 the IPFS object is set on the clipboard item button. Clicking on the clipboard
 item button opens up a menu listing the different possible actions for this
@@ -76,9 +81,11 @@ object:</p>
 application (it uses <strong>xdg-open</strong> on Linux or the <strong>open</strong> command on MacOS)</li>
 <li><strong>Hashmark</strong>: hashmark this object</li>
 <li><strong>Pin</strong>: recursively pin this object</li>
+<li><strong>Download</strong>: download this object to the downloads folder</li>
 <li><strong>Set as homepage</strong></li>
 <li><strong>DAG view</strong></li>
 <li><strong>Run IPLD explorer</strong></li>
+<li><strong>Open with Markdown editor</strong></li>
 </ul>
 </div>
 <div class="section" id="supported-formats">
@@ -87,11 +94,14 @@ application (it uses <strong>xdg-open</strong> on Linux or the <strong>open</str
 <ul class="simple">
 <li><em>IPFS CID (version 0)</em>, for example
 <strong>QmRifA98t769dzkDv2gQocqJPXGtTySR5dPkyTaUZXtkLo</strong></li>
-<li><em>IPFS CID (version 1)</em>, for example
+<li><em>IPFS CID (version 1, base58-encoded)</em>, for example
 <strong>zb2rhd4c97sLJwmnVvUjW5movikNJaYBMfpfpGP7hktYtt8Bo</strong></li>
+<li><em>IPFS CID (version 1, base32-encoded)</em>, for example
+<strong>bafkreic7mf6cvjyxbrabxkswgpel2ebcjfxj35zmmzgyi6cf35bz7mstgy</strong></li>
 <li><em>IPFS path</em> for example
 <strong>/ipfs/QmWzhNYvNaxz41qitbqMaTDbViFoES1NgTuoYC7dAAMJw3/src/tools</strong> or
-<strong>/ipfs/QmdjTSAM2xSVsXcusNHRoES4KqkJ5mW17u6oQARTWMuWMF/CHANGES</strong></li>
+<strong>/ipfs/QmdjTSAM2xSVsXcusNHRoES4KqkJ5mW17u6oQARTWMuWMF/CHANGES</strong> or
+<strong>/ipfs/bafkreic7mf6cvjyxbrabxkswgpel2ebcjfxj35zmmzgyi6cf35bz7mstgy</strong></li>
 <li><em>IPNS path</em> for example <strong>/ipns/ipfs.io</strong> or
 <strong>/ipns/Qmef8KSNLZZfdnrxHZKhCBBynSUFLQ4RrH88wW3sTWxfwB</strong></li>
 <li><em>URLs using the fs: or dweb: scheme</em> for example

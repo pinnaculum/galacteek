@@ -324,7 +324,9 @@ class IPFSOperator(object):
         try:
             return await self.waitFor(self.client.name.publish(path, key=key),
                                       timeout)
-        except aioipfs.APIError:
+        except aioipfs.APIError as err:
+            self.debug('Error publishing {path} to {key}: {msg}'.format(
+                path=path, key=key, msg=err.message))
             return None
 
     async def resolve(self, path, timeout=20, recursive=False):

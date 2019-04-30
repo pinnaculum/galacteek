@@ -149,6 +149,10 @@ class HashmarksHandler(BaseHandler):
         marks = source.getCategoryMarks(cat)
         return QJsonValue.fromVariant(QVariant(marks))
 
+    @pyqtSlot(str, result=bool)
+    def deleteHashmark(self, path):
+        return self.marksLocal.search(path, delete=True)
+
 
 class HashmarksPage(BasePage):
     def __init__(self, marksLocal, marksNetwork, parent=None):

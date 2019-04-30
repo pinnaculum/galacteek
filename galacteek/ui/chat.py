@@ -13,13 +13,6 @@ from . import ui_chatroom
 
 
 class ChatRoomWidget(GalacteekTab):
-    COL_TS = 0
-    COL_QUEUE = 1
-    COL_PATH = 2
-    COL_STATUS = 3
-    COL_PROGRESS = 4
-    COL_CTRL = 5
-
     def __init__(self, gWindow):
         super(ChatRoomWidget, self).__init__(gWindow)
 
@@ -75,9 +68,9 @@ class ChatRoomWidget(GalacteekTab):
         links = []
         words = msgText.split()
         for word in words:
-            path = cidhelpers.ipfsPathExtract(word)
-            if path:
-                links.append(path)
+            path = cidhelpers.IPFSPath(word)
+            if path.valid:
+                links.append(str(path))
 
         msg = ChatRoomMessage.make(
             profile.userInfo.username,

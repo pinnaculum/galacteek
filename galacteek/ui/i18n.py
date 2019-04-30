@@ -123,6 +123,48 @@ def iHashmarksLibraryCountAvailable(count):
     ).format(count)
 
 
+def iFileManager():
+    return QCoreApplication.translate('GalacteekWindow', 'File Manager')
+
+
+def iHashmarksManager():
+    return QCoreApplication.translate('GalacteekWindow', 'Hashmarks manager')
+
+
+def iKeys():
+    return QCoreApplication.translate('GalacteekWindow', 'IPFS Keys')
+
+
+def iSettings():
+    return QCoreApplication.translate('GalacteekWindow', 'Settings')
+
+
+def iPinningStatus():
+    return QCoreApplication.translate('GalacteekWindow', 'Pinning status')
+
+
+def iEventLog():
+    return QCoreApplication.translate('GalacteekWindow', 'Event Log')
+
+
+def iPeers():
+    return QCoreApplication.translate('GalacteekWindow', 'Peers')
+
+
+def iIpfsSearch(text):
+    return QCoreApplication.translate('GalacteekWindow',
+                                      'Search: {0}').format(text)
+
+
+def iNewProfile():
+    return QCoreApplication.translate('GalacteekWindow', 'New Profile')
+
+
+def iSwitchedProfile():
+    return QCoreApplication.translate('GalacteekWindow',
+                                      'Successfully switched profile')
+
+
 def iDagViewer():
     return QCoreApplication.translate('GalacteekWindow', 'DAG viewer')
 

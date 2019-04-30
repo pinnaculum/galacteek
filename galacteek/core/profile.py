@@ -587,7 +587,7 @@ class UserProfile(QObject):
             ensure(self.dagUser.load())
             await self.dagUser.loaded
 
-            self.dagUser.changed.connect(self.onDagChange)
+            self.dagUser.dagCidChanged.connect(self.onDagChange)
 
             self.app = UserApp(self)
             await self.app.init()
@@ -765,10 +765,14 @@ class UserProfile(QObject):
 
     @ipfsOp
     async def publishDag(self, op):
+        self.debug('Publishing DAG CID {}'.format(self.dagUser.dagCid))
+
         result = await op.publish(self.dagUser.dagCid, key=self.keyRoot)
 
         if result is None:
             self.debug('DAG publish failed: {}'.format(result))
+        else:
+            self.debug('DAG publish success: {}'.format(result))
 
     async def tmplRender(self, tmpl, **kw):
         """

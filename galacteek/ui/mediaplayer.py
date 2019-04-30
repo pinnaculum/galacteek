@@ -165,7 +165,6 @@ class MediaPlayerTab(GalacteekTab):
                                       triggered=self.onLoadPlaylistPath)
 
         self.copyPathAction.setEnabled(False)
-        self.loadPathAction.setEnabled(self.app.clipTracker.hasIpfs)
         self.clipMenu.addAction(self.copyPathAction)
         self.clipMenu.addAction(self.loadPathAction)
 
@@ -215,6 +214,8 @@ class MediaPlayerTab(GalacteekTab):
         self.clipboardButton = QToolButton(clicked=self.onClipboardClicked)
         self.clipboardButton.setIcon(getIconClipboard())
         self.clipboardButton.setEnabled(False)
+
+        self.processClipboardItem(self.app.clipTracker.current)
         self.app.clipTracker.currentItemChanged.connect(self.onClipItemChange)
 
         self.playButton = QToolButton(clicked=self.onPlayClicked)
@@ -365,6 +366,12 @@ class MediaPlayerTab(GalacteekTab):
         return urls
 
     def onClipItemChange(self, item):
+        self.processClipboardItem(item)
+
+    def processClipboardItem(self, item):
+        if not item:
+            return
+
         def analyzeMimeType(cItem):
             if cItem.mimeCategory in ['audio', 'video', 'image']:
                 self.clipboardMediaItem = cItem

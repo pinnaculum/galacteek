@@ -367,7 +367,6 @@ class IPFSSearchHandler(QObject):
 
             if pageCount == 0:
                 self.searchW.noResults()
-
                 break
 
             if sr.page == 0 and self.uiCtrl.comboPages.count() == 0:

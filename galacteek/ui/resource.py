@@ -20,8 +20,7 @@ from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.mimetype import MIMEType
 from galacteek.ipfs.mimetype import detectMimeType
 
-from galacteek.ipfs.cidhelpers import isIpfsPath
-from galacteek.ipfs.cidhelpers import isIpnsPath
+from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import shortPathRepr
 
 from galacteek.crypto.qrcode import IPFSQrDecoder
@@ -41,7 +40,7 @@ def iResourceCannotOpen(path):
 
 
 class IPFSResourceOpener(QObject):
-    objectOpened = pyqtSignal(str)
+    objectOpened = pyqtSignal(IPFSPath)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -49,23 +48,36 @@ class IPFSResourceOpener(QObject):
         self.setObjectName('resourceOpener')
 
     @ipfsOp
-    async def open(self, ipfsop, rscPath, mimeType=None):
+    async def open(self, ipfsop, pathRef, mimeType=None):
         """
         Open the resource referenced by rscPath according
         to its MIME type
 
-        :param str rscPath: IPFS CID/path
+        :param pathRef: IPFS path (can be str or IPFSPath)
         :param MIMEType mimeType: MIME type
         """
 
-        if self.app.mainWindow.pinAllGlobalChecked and not isIpnsPath(rscPath):
+        ipfsPath = None
+        if isinstance(pathRef, IPFSPath):
+            ipfsPath = pathRef
+        elif isinstance(pathRef, str):
+            ipfsPath = IPFSPath(pathRef)
+        else:
+            raise ValueError('Invalid input value')
+
+        if not ipfsPath.valid:
+            return False
+
+        rscPath = ipfsPath.objPath
+
+        if self.app.mainWindow.pinAllGlobalChecked and not ipfsPath.isIpns:
             ensure(ipfsop.ctx.pinner.queue(rscPath, False,
                                            None,
                                            qname='default'))
 
         rscShortName = shortPathRepr(rscPath)
 
-        if isIpfsPath(rscPath):
+        if ipfsPath.isIpfs:
             # Try to reuse metadata from the multihash store
             rscMeta = await self.app.multihashDb.get(rscPath)
             if rscMeta:
@@ -85,7 +97,7 @@ class IPFSResourceOpener(QObject):
         if mimeType.isText:
             tab = ipfsview.TextViewerTab()
             tab.show(rscPath)
-            self.objectOpened.emit(rscPath)
+            self.objectOpened.emit(ipfsPath)
             return self.app.mainWindow.registerTab(
                 tab,
                 rscShortName,
@@ -96,7 +108,7 @@ class IPFSResourceOpener(QObject):
 
         if mimeType.isImage:
             tab = ImageViewerTab(rscPath, self.app.mainWindow)
-            self.objectOpened.emit(rscPath)
+            self.objectOpened.emit(ipfsPath)
             return self.app.mainWindow.registerTab(
                 tab,
                 rscShortName,
@@ -119,7 +131,7 @@ class IPFSResourceOpener(QObject):
             tab.attach(
                 DWebView(page=PDFViewerPage(rscPath))
             )
-            self.objectOpened.emit(rscPath)
+            self.objectOpened.emit(ipfsPath)
             return self.app.mainWindow.registerTab(
                 tab,
                 rscShortName,
@@ -128,9 +140,9 @@ class IPFSResourceOpener(QObject):
                 current=True
             )
 
-        if mimeType.isDir or isIpnsPath(rscPath) or mimeType.isHtml:
-            self.objectOpened.emit(rscPath)
-            return self.app.mainWindow.addBrowserTab().browseFsPath(rscPath)
+        if mimeType.isDir or ipfsPath.isIpns or mimeType.isHtml:
+            self.objectOpened.emit(ipfsPath)
+            return self.app.mainWindow.addBrowserTab().browseFsPath(ipfsPath)
 
         logUser.info('{path} ({type}): unhandled resource type'.format(
             path=rscPath, type=str(mimeType)))
@@ -183,7 +195,12 @@ class ResourceAnalyzer(QObject):
         self.app = QApplication.instance()
 
     @ipfsOp
-    async def __call__(self, ipfsop, path):
+    async def __call__(self, ipfsop, ipfsPath):
+        """
+        :param IPFSPath ipfsPath
+        """
+
+        path = ipfsPath.objPath
         mHashMeta = await self.app.multihashDb.get(path)
 
         if mHashMeta:

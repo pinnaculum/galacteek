@@ -31,7 +31,7 @@
 
             .marks {
                 display: none;
-                margin-left: 5px;
+                margin-left: 2px;
             }
 
             .hashmarklink {
@@ -141,13 +141,14 @@
                     <a class="hashmarklink" title='{{ mark.metadata.description }}' href="dweb:{{path}}"
                         onclick="event.preventDefault(); window.galacteek.openResource('{{ path }}');">{{ mark.metadata.title }}</a>
                     <span style="float: right">
-                        <a ref="#" title="Copy object path to clipboard"
+                        <a href="#" style="margin: 2px" title="Copy object path to clipboard"
                             onclick="event.preventDefault(); window.galacteek.copyToClipboard('{{ path }}');"><img width="16" height="16" src='qrc:///share/icons/clipboard.png'/>
                         </a>
 
-                        <a ref="#" title="Explore path"
+                        <a href="#" style="margin: 2px" title="Explore path"
                                    onclick="event.preventDefault(); window.galacteek.explorePath('{{ path }}');"><img width="16" height="16" src='qrc:///share/icons/folder-open-black.png'/>
                         </a>
+                        <a href="#" style="margin: 2px" title="Delete" onclick="event.preventDefault(); window.hashmarks.deleteHashmark('{{ path }}');">Delete</a>
                     </span>
                 </p>
             </li>
@@ -171,24 +172,22 @@
                 <button class="catbutton" onclick="hideShow('{{ feedData.name }}');">
                     <img style="padding-right: 5px;" width="16" src="qrc:///share/icons/stroke-cube.png" />{{ feedData.name }}
                 </button>
-            </div>
 
                 <div class="marks" id="{{ feedData.name }}_marks">
         {% for path, mark in marks.getFeedMarks(feedPath).items() %}
-        <a class="hashmarklink" href="#" onclick="event.preventDefault(); window.galacteek.openResource('{{ path }}');">
-                        <p style="text-align: left"><img width="16" src="qrc:///share/icons/ipfs-logo-128-black.png" />
+                <a class="hashmarklink" href="#" onclick="event.preventDefault(); window.galacteek.openResource('{{ path }}');">
+                    <p style="text-align: left"><img width="16" src="qrc:///share/icons/ipfs-logo-128-black.png" />
                         {{ mark.metadata.title }}
 
-                            <span style="float: right; width: 20%">{{ mark.tscreated|tstodate }}</span>
-                        </p>
-
-                    </a>
+                        <span style="float: right; width: 20%">{{ mark.tscreated|tstodate }}</span>
+                    </p>
+                </a>
         {% endfor %}
-        </div>
-
+                </div>
+            </div>
     </div>
 
 {% endfor %}
 
-</body>
+    </body>
 </html>

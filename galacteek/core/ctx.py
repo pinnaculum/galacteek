@@ -12,11 +12,11 @@ from galacteek import log, logUser, GALACTEEK_NAME, ensure
 from galacteek.ipfs import pinning
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.pubsub.messages import ChatRoomMessage
-from galacteek.ipfs.pubsub.service import (
-    PSMainService,
-    PSChatService,
-    PSHashmarksExchanger,
-    PSPeersService)
+from galacteek.ipfs.pubsub.service import PSMainService
+from galacteek.ipfs.pubsub.service import PSChatService
+from galacteek.ipfs.pubsub.service import PSHashmarksExchanger
+from galacteek.ipfs.pubsub.service import PSPeersService
+
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs import tunnel
 

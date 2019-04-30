@@ -3,7 +3,7 @@ import io
 from PIL import Image
 
 from galacteek import log
-from galacteek.ipfs.cidhelpers import ipfsPathExtract
+from galacteek.ipfs.cidhelpers import IPFSPath
 
 
 try:
@@ -61,8 +61,8 @@ class ZbarIPFSQrDecoder(ImageReader):
                 if len(decoded) not in range(1, 1024):
                     continue
 
-                path = ipfsPathExtract(decoded)
-                if path and path not in urls:
+                path = IPFSPath(decoded)
+                if path.valid and path not in urls:
                     urls.append(path)
 
             if len(urls) > 0:  # don't return empty list
@@ -104,8 +104,8 @@ class QReaderIPFSQrDecoder(ImageReader):
                 if len(obj) not in range(1, 1024):
                     continue
 
-                path = ipfsPathExtract(obj)
-                if path and path not in urls:
+                path = IPFSPath(obj)
+                if path.valid and path not in urls:
                     urls.append(path)
 
             if len(urls) > 0:  # don't return empty list
