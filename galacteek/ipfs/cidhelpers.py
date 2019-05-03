@@ -116,14 +116,14 @@ def cidValid(cidstring):
 
 
 ipfsPathRe = re.compile(
-    r'^(\s*)?(?:fs:|ipfs:|dweb:|https?://[a-zA-Z0-9:.]*)?(?P<fullpath>/ipfs/(?P<rootcid>[a-zA-Z0-9]{46,59})\/?(?P<subpath>[a-zA-Z0-9\/\.\-\_\'\\\+\(\)]{1,1024})?)(?P<fragment>\#[a-zA-Z0-9\-\_\.\/]{1,256})?$',  # noqa
+    r'^(\s*)?(?:fs:|ipfs:|dweb:|https?://[a-zA-Z0-9:.]*)?(?P<fullpath>/ipfs/(?P<rootcid>[a-zA-Z0-9]{46,59})\/?(?P<subpath>[a-zA-Z0-9<>\"\*:;,\\\?\!\%&=@$~\/\s\.\-\_\'\\\+\(\)]{1,1024})?)(?P<fragment>\#[a-zA-Z0-9\-\+\_\.\/]{1,256})?$', # noqa
     flags=re.MULTILINE)
 
 ipfsCidRe = re.compile(
     r'^(\s*)?(?P<cid>[a-zA-Z0-9]{46,59})$', flags=re.MULTILINE)
 
 ipnsPathRe = re.compile(
-    r'^(\s*)?(?:fs:|ipfs:|dweb:|https?://[a-zA-Z0-9:.]*)?(?P<fullpath>/ipns/([a-zA-Z0-9\.\-\_]{1,128})\/?(?P<subpath>[a-zA-Z0-9\/\.\-\_\'\\\+\(\)]{1,1024})?)(?P<fragment>\#[a-zA-Z0-9\-\_\.\/]{1,256})?$',  # noqa
+    r'^(\s*)?(?:fs:|ipfs:|dweb:|https?://[a-zA-Z0-9:.]*)?(?P<fullpath>/ipns/([a-zA-Z0-9\.\-\_]{1,128})\/?(?P<subpath>[a-zA-Z0-9<>\"\*:;,\\\?\!\%&=@$~\/\s\.\-\_\'\\\+\(\)]{1,1024})?)(?P<fragment>\#[a-zA-Z0-9\+\-\_\.\/]{1,256})?$',  # noqa
     flags=re.MULTILINE)
 
 
@@ -245,6 +245,13 @@ class IPFSPath:
             return True
 
         return False
+
+    def child(self, path):
+        if not isinstance(path, str):
+            raise ValueError('Need string')
+
+        childPath = IPFSPath(os.path.join(self.objPath, path))
+        return childPath
 
     def __str__(self):
         return self.fullPath if self.valid else 'Invalid path: {}'.format(

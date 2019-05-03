@@ -14,7 +14,6 @@ from PyQt5.QtGui import QIcon
 
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import QSize
-from PyQt5.QtCore import QUrl
 from PyQt5.QtCore import QFile
 from PyQt5.QtCore import QFileInfo
 from PyQt5.QtCore import QIODevice
@@ -31,16 +30,21 @@ from galacteek.ipfs.cidhelpers import isIpnsPath
 from galacteek.ipfs.cidhelpers import isIpfsPath
 from galacteek.ipfs.cidhelpers import shortPathRepr
 from galacteek.ipfs import ipfsOp
+from galacteek.ipfs import StatInfo
+from galacteek.ipfs import megabytes
 from galacteek.crypto.qrcode import IPFSQrDecoder
 
 from .hashmarks import addHashmark
 from .helpers import qrCodesMenuBuilder
 from .helpers import getMimeIcon
+from .helpers import getFavIconFromDir
+from .helpers import getIconFromMimeType
 from .helpers import getIcon
 from .helpers import messageBox
 from .helpers import getIconFromImageData
 from .helpers import runDialog
 from .helpers import disconnectSig
+from .helpers import sizeFormat
 from .widgets import PopupToolButton
 from .widgets import DownloadProgressButton
 from .dialogs import ChooseProgramDialog
@@ -188,7 +192,8 @@ class ClipboardManager(PopupToolButton):
     def __init__(self, clipTracker, itemsStack, rscOpener,
                  icon=None, menu=None, parent=None):
         super().__init__(icon=icon, menu=menu, parent=parent,
-                         mode=QToolButton.InstantPopup)
+                         mode=QToolButton.InstantPopup,
+                         acceptDrops=True)
 
         self.app = QApplication.instance()
         self.tracker = clipTracker
@@ -198,6 +203,9 @@ class ClipboardManager(PopupToolButton):
         self.setAcceptDrops(True)
         self.setObjectName('clipboardManager')
         self.setToolTip(iClipboardEmpty())
+
+        self.ipfsObjectDropped.connect(self.onIpfsObjectDropped)
+        self.fileDropped.connect(self.onFileDropped)
 
         self.tracker.currentItemChanged.connect(self.itemChanged)
         self.tracker.itemAdded.connect(self.itemAdded)
@@ -294,36 +302,16 @@ class ClipboardManager(PopupToolButton):
     def itemRemoved(self, item):
         self.updateToolTip()
 
-    def dragEnterEvent(self, event):
-        mimeData = event.mimeData()
-
-        if mimeData.hasUrls():
-            event.acceptProposedAction()
-
-    def dropEvent(self, event):
+    def onIpfsObjectDropped(self, path):
         """
         Process drag-and-drops of URLs pointing to an IPFS resource
 
-        We can also process URLs with the file:// scheme
-
-        Remove the query in the URL before passing it to the
-        clipboard processor
+        :param IPFSPath path:
         """
+        self.tracker.clipboardProcess(str(path))
 
-        mimeData = event.mimeData()
-
-        if mimeData.hasUrls():
-            for url in mimeData.urls():
-                if not url.isValid():
-                    continue
-
-                if url.scheme() == 'file':
-                    ensure(self.dropEventLocalFile(url))
-                else:
-                    self.tracker.clipboardProcess(
-                        url.toString(QUrl.RemoveQuery))
-
-        event.acceptProposedAction()
+    def onFileDropped(self, url):
+        ensure(self.dropEventLocalFile(url))
 
     @ipfsOp
     async def dropEventLocalFile(self, ipfsop, url):
@@ -458,7 +446,7 @@ class ClipboardItemButton(PopupToolButton):
         if item.mimeIcon:
             # Already set icon from mimetype
             self.setIcon(item.mimeIcon)
-            self.updateButton()
+            ensure(self.updateButton())
         else:
             # MIME type undetected yet (fresh item)
             disconnectSig(self.loadingClip.frameChanged, self.onLoadingFrame)
@@ -494,9 +482,31 @@ class ClipboardItemButton(PopupToolButton):
     def mimeDetected(self, mType):
         if self.loadingClip.state() == QMovie.Running:
             self.loadingClip.stop()
-        self.updateButton()
+        ensure(self.updateButton())
 
-    def updateButton(self):
+    def tooltipMessage(self):
+        statInfo = StatInfo(self.item.stat)
+        message = '{path} (type: {mimetype})'.format(
+            path=self.item.fullPath,
+            mimetype=str(self.item.mimeType) if self.item.mimeType else
+            iUnknown()
+        )
+        if statInfo.valid:
+            if self.item.mimeType and self.item.mimeType.isDir:
+                message += '\n\nTotal size: {total}, links: {links}'.format(
+                    total=sizeFormat(statInfo.totalSize),
+                    links=statInfo.numLinks
+                )
+            else:
+                message += '\n\nTotal size: {total}'.format(
+                    total=sizeFormat(statInfo.totalSize)
+                )
+        else:
+            message += '\n\nNo information on object'
+        return message
+
+    @ipfsOp
+    async def updateButton(self, ipfsop):
         if not isinstance(self.item, ClipboardItem):
             return
 
@@ -534,15 +544,12 @@ class ClipboardItemButton(PopupToolButton):
         self.markupRocksAction.setText(iClipItemMarkupRocks())
         self.pinAction.setText(iClipItemPin())
 
-        self.setToolTip('{path} (type: {mimetype})'.format(
-            path=self.item.fullPath,
-            mimetype=str(self.item.mimeType) if self.item.mimeType else
-            iUnknown()
-        ))
+        self.setToolTip(self.tooltipMessage())
 
         if not self.item.mimeType:
-            return self.setIcon(getMimeIcon('unknown'))
+            return self.updateIcon(getMimeIcon('unknown'))
 
+        icon = None
         if self.item.mimeType.isDir:
             # It's a directory. Add the explore action and disable
             # the actions that don't apply to a folder
@@ -550,42 +557,38 @@ class ClipboardItemButton(PopupToolButton):
             self.openWithAppAction.setEnabled(False)
             self.openWithDefaultAction.setEnabled(False)
 
-        if self.item.mimeType.isText:
+            # Look for a favicon
+            icon = await getFavIconFromDir(ipfsop, self.item.ipfsPath)
+            if icon:
+                return self.updateIcon(icon)
+
+        elif self.item.mimeType.isText:
             self.menu.addSeparator()
             self.menu.addAction(self.markupRocksAction)
 
-        icon = getMimeIcon(str(self.item.mimeType))
-        if icon:
-            self.item.mimeIcon = icon
-            self.setIcon(icon)
-        else:
-            mIcon = None
+        elif self.item.mimeType.isImage:
+            self.updateIcon(getMimeIcon('image/x-generic'))
+            ensure(self.analyzeImage())
 
-            if self.item.mimeType == 'application/x-directory':
-                mIcon = 'inode/directory'
-            if self.item.mimeCategory == 'text':
-                mIcon = 'text/plain'
-            if self.item.mimeCategory == 'image':
-                mIcon = 'image/x-generic'
-                ensure(self.analyzeImage())
-            if self.item.mimeCategory == 'video':
-                mIcon = 'video/x-generic'
-            if self.item.mimeCategory == 'audio':
-                mIcon = 'audio/x-generic'
+        mIcon = getIconFromMimeType(self.item.mimeType)
 
-            icon = getMimeIcon(mIcon if mIcon else 'unknown')
-            if icon:
-                self.item.mimeIcon = icon
-                self.setIcon(icon)
+        if mIcon:
+            self.updateIcon(mIcon)
+
+    def updateIcon(self, icon):
+        self.item.mimeIcon = icon
+        self.setIcon(icon)
 
     @ipfsOp
     async def analyzeImage(self, ipfsop):
-        if self.item.stat:
-            size = self.item.stat.get('DataSize')
+        statInfo = StatInfo(self.item.stat)
+
+        if statInfo.valid:
+            size = statInfo.dataSize
 
             if isinstance(size, int):
                 # don't scan anything larger than 4Mb
-                if size > (1024 * 1024 * 4):
+                if statInfo.dataLargerThan(megabytes(4)):
                     log.debug('{path}: Image too large, not scanning')
                     return
         else:
@@ -603,7 +606,7 @@ class ClipboardItemButton(PopupToolButton):
 
             icon = getIconFromImageData(data)
             if icon:
-                self.setIcon(icon)
+                self.updateIcon(icon)
 
             # Decode the QR codes in the image if there's any
             qrDecoder = IPFSQrDecoder()
@@ -646,11 +649,11 @@ class ClipboardItemButton(PopupToolButton):
         Open the IPLD explorer application for the current clipboard item
         """
         if self.item:
-            mPath, mark = self.app.marksLocal.searchByMetadata({
+            mark = self.app.marksLocal.searchByMetadata({
                 'title': 'IPLD explorer'})
             if mark:
                 link = os.path.join(
-                    mPath, '#', 'explore', stripIpfs(self.item.path))
+                    mark.path, '#', 'explore', stripIpfs(self.item.path))
                 self.app.mainWindow.addBrowserTab().browseFsPath(link)
 
     def onMarkdownEdit(self):
@@ -658,11 +661,11 @@ class ClipboardItemButton(PopupToolButton):
         Open markup.rocks for the current clipboard item
         """
         if self.item:
-            mPath, mark = self.app.marksLocal.searchByMetadata({
+            mark = self.app.marksLocal.searchByMetadata({
                 'title': 'markup.rocks'})
             if mark:
                 link = os.path.join(
-                    mPath, '#', self.item.path.lstrip('/'))
+                    mark.path, '#', self.item.path.lstrip('/'))
                 self.app.mainWindow.addBrowserTab().browseFsPath(link)
 
     def onPin(self):

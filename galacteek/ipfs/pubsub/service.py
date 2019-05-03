@@ -10,12 +10,13 @@ from galacteek.ipfs.pubsub import TOPIC_MAIN
 from galacteek.ipfs.pubsub import TOPIC_PEERS
 from galacteek.ipfs.pubsub import TOPIC_CHAT
 from galacteek.ipfs.pubsub import TOPIC_HASHMARKS
-from galacteek.ipfs.pubsub.messages import (
-    MarksBroadcastMessage,
-    PeerIdentMessageV1,
-    PeerIdentMessageV2,
-    PeerLogoutMessage,
-    ChatRoomMessage)
+
+from galacteek.ipfs.pubsub.messages import MarksBroadcastMessage
+from galacteek.ipfs.pubsub.messages import PeerIdentMessageV1
+from galacteek.ipfs.pubsub.messages import PeerIdentMessageV2
+from galacteek.ipfs.pubsub.messages import PeerLogoutMessage
+from galacteek.ipfs.pubsub.messages import ChatRoomMessage
+
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.core.asynclib import asyncify
 from galacteek.core.ipfsmarks import IPFSMarks
@@ -31,7 +32,7 @@ class PubsubService(object):
     def __init__(self, ipfsCtx, client, topic='galacteek.default',
                  runPeriodic=False, filterSelfMessages=True,
                  maxMsgTsDiff=None, minMsgTsDiff=None,
-                 maxMessageSize=32768 * 1024):
+                 maxMessageSize=32768):
         self.client = client
         self.ipfsCtx = ipfsCtx
         self.topic = topic
@@ -113,7 +114,8 @@ class PubsubService(object):
     async def filterPeerActivity(self, msg):
         senderNodeId = msg['from'].decode()
         if senderNodeId not in self._peerActivity:
-            self._peerActivity[senderNodeId] = collections.deque([], 16)
+            self._peerActivity[senderNodeId] = collections.deque([], 10)
+
         records = self._peerActivity[senderNodeId]
         records.append((time.time(), len(msg['data'])))
 
@@ -247,7 +249,8 @@ class PSHashmarksExchanger(JSONPubsubService):
             topic=TOPIC_HASHMARKS,
             runPeriodic=True,
             filterSelfMessages=True,
-            minMsgTsDiff=60 * 8)
+            maxMessageSize=131072,
+            minMsgTsDiff=8 * 12)
         self.marksLocal = marksLocal
         self.marksNetwork = marksNetwork
         self.marksLocal.markAdded.connect(self.onMarkAdded)

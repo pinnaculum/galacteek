@@ -7,9 +7,7 @@ File manager
     :height: 64
 
 By clicking on the folder icon in the application's toolbar you'll get access to the
-file manager for importing content in the IPFS repository. With IPFS all your
-data is addressed by its content and referenced by its cryptographic hash 
-(e.g *Qmb9uWkLmiFNEhp6PyV5iw4qh5wsv2dtJNGwUi1k15JwJd*)
+filemanager for importing content in the IPFS repository.
 
 Selecting the working directory
 -------------------------------
@@ -60,7 +58,7 @@ Drag-and-dropping content from other applications is supported as well.
 Double-clicking items
 ---------------------
 
-Double-clicking a file will open a browser tab, while double-clicking a directory
+Double-clicking a file will open the file, while double-clicking a directory
 will expand it.
 
 Right-clicking items
@@ -69,16 +67,16 @@ Right-clicking items
 Right-clicking an entry in the file manager will popup a menu giving you a few
 options:
 
-- *Copy the selected file's IPFS hash to the clipboard*
+- *Copy multihash to the clipboard*
+- *Copy full path to the clipboard*
 - *Unlink*: this will dereference the item but not delete it (i.e. the
   content will still be available through your IPFS node)
 - *Delete*: purge from your IPFS node (**note**: if others have *pinned* this
   data on their node, it will still be available)
-- *Hashmark*: bookmark the IPFS hash associated with the file
-- *Browse*: open a browser tab for this file 
+- *Hashmark*: hashmark this item
+- *Browse*: open a browser tab for this item
+- *Open*: open this item with the resource opener
 - *Explore*: for directories, open an explorer tab for this entry
-- *Open with*: use specific application/method to open this file (mediaplayer,
-  ebook..)
 - *Publish to IPNS key*: this will link this file to the given IPNS key
 
 Keyboard shortcuts
@@ -86,6 +84,6 @@ Keyboard shortcuts
 
 The following keyboard shortcuts are available within the files manager:
 
-- **Mod+c** or **Mod+y**: Copy item's multihash to the clipboard
-- **Mod+a**: Copy item's path (full IPFS path) to the clipboard
+- **Mod + c** or **Mod + y**: Copy selected item's IPFS path to the clipboard
+- **Mod + a**: Copy selected item's multihash (CID) to the clipboard
 - **Mod+x**: Explore item if it is a directory

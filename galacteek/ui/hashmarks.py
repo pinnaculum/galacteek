@@ -50,7 +50,7 @@ def iFeeds():
 
 def addHashmark(hashmarks, path, title, description='', stats={},
                 pin=False, pinRecursive=False):
-    if hashmarks.search(path):
+    if hashmarks.find(path):
         messageBox(iAlreadyHashmarked())
         return False
 

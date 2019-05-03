@@ -311,6 +311,11 @@ class SharedHashmarksManager(QObject):
         await marksCiphered.load()
         return marksCiphered
 
+    async def scanningTask(self):
+        while True:
+            await self.scan()
+            await asyncio.sleep(180)
+
     @ipfsOp
     async def scan(self, ipfsop):
         log.debug('Scanning hashmarks MFS library')
@@ -318,14 +323,15 @@ class SharedHashmarksManager(QObject):
         listing = await ipfsop.filesList(self.profile.pathHMarksLibrary)
 
         for file in listing:
-            await asyncio.sleep(1)
+            await ipfsop.sleep()
 
             uid = file['Name']
             marksHash = file['Hash']
-            fPath = os.path.join(self.profile.pathHMarksLibrary, uid)
 
             if marksHash in self._loaded:
                 continue
+
+            fPath = os.path.join(self.profile.pathHMarksLibrary, uid)
 
             try:
                 marksCiphered = await self.loadFromPath(fPath)
@@ -336,6 +342,9 @@ class SharedHashmarksManager(QObject):
             except BaseException as err:
                 log.debug('Could not load hashmarks from CID {0}: {1}'.format(
                     marksHash, str(err)))
+            else:
+                logUser.info('Loaded hashmarks from peer {0}'.format(uid))
+                await asyncio.sleep(2)
 
     async def store(self, ipfsop, sender, marksJson):
         mfsPath = os.path.join(self.profile.pathHMarksLibrary, sender)
@@ -349,16 +358,18 @@ class SharedHashmarksManager(QObject):
             self._state[sender] = marks
         else:
             if sender not in self._state:
-                self._state[sender] = CipheredHashmarks(
+                marks = CipheredHashmarks(
                     mfsPath, self.profile.rsaAgent)
-                await self._state[sender].load()
+                await marks.load()
+                marks._root = marksJson
+                marks.changed.emit()
+                self._state[sender] = marks
             else:
                 marks = self._state[sender]
                 marks._root = marksJson
                 marks.changed.emit()
 
         await asyncio.sleep(1)
-        await self.scan()
 
 
 class UserProfile(QObject):
@@ -578,8 +589,6 @@ class UserProfile(QObject):
             self.userInfo.root['userinfo']['peerid'] = self.ctx.node.id
             self.userInfo.changed.emit()
 
-        ensure(self.sharedHManager.scan())
-
         if await ipfsop.hasDagCommand():
             self.userLogInfo('Loading DAG ..')
             self._dagUser = UserDAG(self.pathUserDagMeta, loop=self.ctx.loop)
@@ -602,6 +611,9 @@ class UserProfile(QObject):
         self.userLogInfo('Initialization complete')
         self.userInfo.changed.connect(self.onUserInfoChanged)
         self.userInfo.usernameChanged.connect(self.onUserNameChanged)
+
+        ensure(self.sharedHManager.scanningTask())
+        ensure(self.ctx.app.manuals.importManuals(self))
 
     async def sendChatLogin(self):
         msg = ChatRoomMessage.make(

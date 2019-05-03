@@ -10,6 +10,7 @@ import aiofiles
 
 from galacteek import log
 from galacteek.core import isoformat
+from galacteek.ipfs.cidhelpers import IPFSPath
 
 from PyQt5.QtCore import pyqtSignal, QObject
 
@@ -40,8 +41,13 @@ class IPFSHashMark(collections.UserDict):
         print(json.dumps(self.data, indent=4))
 
     @staticmethod
-    def fromJson(data):
-        return IPFSHashMark(data)
+    def fromJson(mPath, metadata):
+        if not IPFSPath(mPath).valid or not isinstance(metadata, dict):
+            return None
+
+        hmark = IPFSHashMark({mPath: metadata})
+        hmark.path = mPath
+        return hmark
 
     @staticmethod
     def make(path, title=None, datecreated=None, share=False, tags=[],
@@ -230,6 +236,11 @@ class IPFSMarks(QObject):
             else:
                 return sec[marksKey]
 
+    def isInCategory(self, category, path):
+        sec = self.enterCategory(category)
+        if sec:
+            return path in sec[marksKey]
+
     def getAll(self, share=False):
         cats = self.getCategories()
         _all = {}
@@ -268,15 +279,40 @@ class IPFSMarks(QObject):
                     continue
 
                 if path and path == mPath:
-                    return mPath, mark
+                    return IPFSHashMark.fromJson(mPath, mark)
 
                 if title and metaMatch(mark, 'title', title):
-                    return mPath, mark
+                    return IPFSHashMark.fromJson(mPath, mark)
 
                 if descr and metaMatch(mark, 'description', descr):
-                    return mPath, mark
+                    return IPFSHashMark.fromJson(mPath, mark)
 
-        return None, None
+        return None
+
+    def find(self, bpath, category=None, delete=False):
+        ipfsPath = IPFSPath(bpath)
+        if not ipfsPath.valid:
+            return
+
+        path = rSlash(bpath)
+        categories = self.getCategories()
+
+        for cat in categories:
+            if category and cat != category:
+                continue
+
+            if self.isInCategory(cat, path):
+                marks = self.getCategoryMarks(cat)
+                if not marks:
+                    continue
+
+                if delete is True:
+                    del marks[path]
+                    self.markDeleted.emit(path)
+                    self.changed.emit()
+                    continue
+
+                return IPFSHashMark.fromJson(path, marks[path])
 
     def search(
             self,

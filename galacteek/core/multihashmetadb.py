@@ -15,8 +15,6 @@ class IPFSObjectMetadataDatabase:
     """
 
     def __init__(self, metaDbPath, loop=None):
-        super().__init__()
-
         self._metaDbPath = metaDbPath
         self._lock = asyncio.Lock(
             loop=loop if loop else asyncio.get_event_loop())
@@ -48,6 +46,7 @@ class IPFSObjectMetadataDatabase:
     async def store(self, rscPath, **data):
         containerPath, metaPath, exists = self.path(rscPath)
         if metaPath and not exists:
+            await asyncio.sleep(0)
             with await self._lock:
                 if not os.path.isdir(containerPath):
                     os.mkdir(containerPath)
@@ -60,6 +59,8 @@ class IPFSObjectMetadataDatabase:
                     log.debug('{0}: stored metadata {1}'.format(rscPath, data))
         elif metaPath and exists:
             # Patch the existing metadata
+            await asyncio.sleep(0)
+
             metadata = await self.get(rscPath)
             if not isinstance(metadata, dict):
                 return
@@ -76,6 +77,7 @@ class IPFSObjectMetadataDatabase:
     async def get(self, rscPath):
         containerPath, metaPath, exists = self.path(rscPath)
         if metaPath and exists:
+            await asyncio.sleep(0)
             with await self._lock:
                 try:
                     async with aiofiles.open(metaPath, 'rt') as fd:
@@ -83,6 +85,6 @@ class IPFSObjectMetadataDatabase:
                         return json.loads(data)
                 except BaseException as err:
                     # Error reading metadata
-                    log.debug('Error reading rscPath info for {0}: {1}'.format(
+                    log.debug('Error reading metadata for {0}: {1}'.format(
                         rscPath, str(err)))
                     os.unlink(metaPath)

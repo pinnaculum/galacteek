@@ -13,11 +13,14 @@ from PyQt5.QtWidgets import QLabel
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QPoint
+from PyQt5.QtCore import QUrl
 
 from PyQt5.QtGui import QImage
 from PyQt5.QtGui import QPixmap
 
+from galacteek.ipfs import StatInfo
 from galacteek.ipfs.wrappers import ipfsOp
+from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek import ensure
 
 from .helpers import getIcon
@@ -63,17 +66,100 @@ class GalacteekTab(QWidget):
         return self.app.ipfsCtx.currentProfile
 
 
-class PopupToolButton(QToolButton):
+class URLDragAndDropProcessor:
+    fileDropped = pyqtSignal(QUrl)
+    ipfsObjectDropped = pyqtSignal(IPFSPath)
+
+    def dragEnterEvent(self, event):
+        mimeData = event.mimeData()
+
+        if mimeData.hasUrls() or mimeData.hasText():
+            event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        mimeData = event.mimeData()
+
+        if mimeData is None:
+            return
+
+        if mimeData.hasUrls():
+            for url in mimeData.urls():
+                if not url.isValid():
+                    continue
+
+                if url.scheme() == 'file' and url.isValid():
+                    self.fileDropped.emit(url)
+                else:
+                    path = IPFSPath(url.toString())
+                    if path.valid:
+                        self.ipfsObjectDropped.emit(path)
+        elif mimeData.hasText():
+            text = mimeData.text()
+            path = IPFSPath(text)
+
+            if path.valid:
+                self.ipfsObjectDropped.emit(path)
+
+        event.acceptProposedAction()
+
+
+class PopupToolButton(QToolButton, URLDragAndDropProcessor):
     def __init__(self, icon=None, parent=None, menu=None,
-                 mode=QToolButton.MenuButtonPopup):
+                 mode=QToolButton.MenuButtonPopup, acceptDrops=False):
         super(PopupToolButton, self).__init__(parent)
 
         self.menu = menu if menu else QMenu()
         self.setPopupMode(mode)
         self.setMenu(self.menu)
+        self.setAcceptDrops(acceptDrops)
 
         if icon:
             self.setIcon(icon)
+
+
+class IPFSObjectToolButton(QToolButton):
+    deleteRequest = pyqtSignal()
+
+    def __init__(self, ipfsPath, icon=None, parent=None):
+        super(IPFSObjectToolButton, self).__init__(parent=parent)
+        if icon:
+            self.setIcon(icon)
+
+    def mousePressEvent(self, event):
+        button = event.button()
+
+        if button == Qt.RightButton:
+            menu = QMenu()
+            menu.addAction('Remove', lambda: self.deleteRequest.emit())
+            menu.exec(self.mapToGlobal(event.pos()))
+
+        super().mousePressEvent(event)
+
+
+class HashmarkToolButton(QToolButton):
+    deleteRequest = pyqtSignal()
+
+    def __init__(self, mark, icon=None, parent=None):
+        super(HashmarkToolButton, self).__init__(icon=icon,
+                                                 parent=parent)
+        if icon:
+            self.setIcon(icon)
+
+        self._hashmark = mark
+
+    @property
+    def hashmark(self):
+        return self._hashmark
+
+    def mousePressEvent(self, event):
+        button = event.button()
+
+        if button == Qt.RightButton:
+            menu = QMenu()
+            menu.addAction('Remove', lambda: self.deleteRequest.emit())
+            menu.exec(self.mapToGlobal(event.pos()))
+
+        super().mousePressEvent(event)
 
 
 class _HashmarksCommon:
@@ -195,7 +281,7 @@ class HashmarksLibraryButton(PopupToolButton, _HashmarksCommon):
     hashmarkClicked = pyqtSignal(str, str)
 
     def __init__(self, iconFile='hashmarks-library.png',
-                 maxItemsPerCategory=32, parent=None):
+                 maxItemsPerCategory=128, parent=None):
         super(HashmarksLibraryButton, self).__init__(
             parent=parent, mode=QToolButton.InstantPopup)
 
@@ -279,12 +365,12 @@ class HashmarksLibraryButton(PopupToolButton, _HashmarksCommon):
                         return action
 
             for path, mark in mItems:
-                self.hCount += 1
                 if exists(path):
                     continue
 
                 action = self.makeAction(path, mark)
                 menu.addAction(action)
+                self.hCount += 1
 
         self.setToolTip(iHashmarksLibraryCountAvailable(self.hCount))
         if self.hCount > 0:
@@ -371,8 +457,10 @@ class DownloadProgressButton(PopupToolButton):
             self.cancelled.emit()
 
     def onProgress(self, read):
+        statInfo = StatInfo(self.stat)
+
         self.readBytes = read
-        size = sizeFormat(self.stat.get('CumulativeSize')) if self.stat else \
+        size = sizeFormat(statInfo.totalSize) if statInfo.valid else \
             iUnknown()
 
         self.setToolTip('{path} (size: {size}): downloaded {dl}'.format(

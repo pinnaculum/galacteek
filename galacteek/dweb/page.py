@@ -151,7 +151,7 @@ class HashmarksHandler(BaseHandler):
 
     @pyqtSlot(str, result=bool)
     def deleteHashmark(self, path):
-        return self.marksLocal.search(path, delete=True)
+        return self.marksLocal.delete(path)
 
 
 class HashmarksPage(BasePage):

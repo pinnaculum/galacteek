@@ -10,7 +10,7 @@ Galacteek's manual (english)
     Using the clipboard <clipboard>
     Shortcuts <shortcuts>
     Settings <settings>
-    Toolbar <toolbar>
+    Toolbars <toolbars>
     Hashmarks <hashmarks>
     File manager <filemanager>
     Pinning <pinning>

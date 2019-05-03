@@ -496,6 +496,18 @@ class IPFSOperator(object):
             self.debug(err.message)
             return None
 
+    async def catObject(self, path, offset=None, length=None, timeout=30):
+        try:
+            data = await self.waitFor(
+                self.client.cat(path, offset=offset, length=length),
+                timeout
+            )
+        except aioipfs.APIError as err:
+            self.debug(err.message)
+            return None
+        else:
+            return data
+
     async def dagPut(self, data, pin=False):
         """
         Create a new DAG object from data and returns the root CID of the DAG

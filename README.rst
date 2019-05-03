@@ -93,7 +93,8 @@ Features
 **galacteek** can either spawn an IPFS daemon and use it as transport, or
 connect to an existing IPFS daemon. By default it will try to run a daemon. You
 can change the IPFS connection settings by clicking on the settings icon in the
-toolbar and restart the application afterwards.
+toolbar and restart the application afterwards. If using a custom daemon, you
+should enable pubsub or some features won't be available.
 
 - Browsing sessions with automatic pinning (pins every page you browse)
 - Feeds (following IPNS hashes)
@@ -146,7 +147,9 @@ License
 
 **galacteek** is offered under the GNU GPL3 license
 
-Some elements from the ipfs-css_ repository (CSS files and fonts) are included
+Some elements from the ipfs-css_ repository (CSS files and fonts) are included.
+
+Some icons from the "Oxygen" icons set are included.
 
 Some of the beautiful artwork (under the Creative Commons CC-BY-SA license)
 from the ipfs-logo_ project's repository is included, unchanged.

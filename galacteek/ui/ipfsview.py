@@ -23,9 +23,12 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QEvent
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import QMimeData
+from PyQt5.QtCore import QUrl
 
 from galacteek.appsettings import *
 from galacteek.ipfs import cidhelpers
+from galacteek.ipfs import StatInfo
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import ipfsOp, ipfsStatOp
 from galacteek.ipfs.cache import IPFSEntryCache
@@ -179,8 +182,25 @@ class IPFSHashItemModel(QStandardItemModel):
         self.entryCache = IPFSEntryCache()
         self.rowsInserted.connect(self.onRowsInserted)
 
+    def mimeData(self, indexes):
+        mimedata = QMimeData()
+
+        urls = []
+        for idx in indexes:
+            if not idx.isValid():
+                continue
+
+            nameItem = self.getNameItemFromIdx(idx)
+
+            if nameItem:
+                url = QUrl('dweb:{}'.format(nameItem.getFullPath()))
+                urls.append(url)
+
+        mimedata.setUrls(urls)
+        return mimedata
+
     def canDropMimeData(self, data, action, row, column, parent):
-        return False
+        return True
 
     def getHashFromIdx(self, idx):
         idxHash = self.index(idx.row(), self.COL_HASH, idx.parent())
@@ -496,8 +516,9 @@ class IPFSHashExplorerWidget(QWidget):
         self.app.setClipboardText(dataHash)
 
     def onCopyItemPath(self):
-        dataHash = self.model.getHashFromIdx(self.tree.currentIndex())
-        self.app.setClipboardText(joinIpfs(dataHash))
+        nameItem = self.model.getNameItemFromIdx(self.tree.currentIndex())
+        if nameItem:
+            self.app.setClipboardText(nameItem.getFullPath())
 
     def onCloseView(self):
         self.parent.remove(self)
@@ -611,12 +632,13 @@ class IPFSHashExplorerWidget(QWidget):
         if self.app.settingsMgr.hideHashes:
             self.tree.hideColumn(self.model.COL_HASH)
 
-        rStat = await ipfsop.objStatCtxUpdate(objPath)
+        rStat = await ipfsop.objStat(objPath)
+        statInfo = StatInfo(rStat)
 
-        if rStat and self.cid:
+        if statInfo.valid and self.cid:
             self.setInfo(iCIDInfo(self.cid.version,
-                                  rStat['NumLinks'],
-                                  sizeFormat(rStat['CumulativeSize'])))
+                                  statInfo.numLinks,
+                                  sizeFormat(statInfo.totalSize)))
 
     async def list(self, op, path, parentItem=None,
                    autoexpand=False, resolve_type=True):
@@ -671,14 +693,14 @@ class IPFSHashExplorerWidget(QWidget):
         Get the resource referenced by rPath to directory dest
         """
 
-        if rStat is None:
+        statInfo = StatInfo(rStat)
+        if not statInfo.valid:
             return
 
         self.getProgress.show()
-        cumulative = rStat['CumulativeSize']
 
         async def onGetProgress(ref, bytesRead, arg):
-            per = int((bytesRead * 100) / cumulative)
+            per = int((bytesRead * 100) / statInfo.totalSize)
             self.getLabel.setText('Downloaded: {0}'.format(
                 sizeFormat(bytesRead)))
             self.getProgress.setValue(per)
