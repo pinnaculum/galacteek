@@ -55,11 +55,11 @@ Supported formats
 
 The clipboard manager supports the following formats:
 
-- *IPFS CID (version 0)*, for example
+- *IPFS CID version 0*, for example
   **QmRifA98t769dzkDv2gQocqJPXGtTySR5dPkyTaUZXtkLo**
-- *IPFS CID (version 1, base58-encoded)*, for example
+- *IPFS CID version 1 (base58-encoded)*, for example
   **zb2rhd4c97sLJwmnVvUjW5movikNJaYBMfpfpGP7hktYtt8Bo**
-- *IPFS CID (version 1, base32-encoded)*, for example
+- *IPFS CID version 1 (base32-encoded)*, for example
   **bafkreic7mf6cvjyxbrabxkswgpel2ebcjfxj35zmmzgyi6cf35bz7mstgy**
 - *IPFS path* for example
   **/ipfs/QmWzhNYvNaxz41qitbqMaTDbViFoES1NgTuoYC7dAAMJw3/src/tools** or 

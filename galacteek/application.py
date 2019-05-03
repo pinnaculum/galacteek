@@ -137,6 +137,7 @@ class GalacteekApplication(QApplication):
 
         QCoreApplication.setApplicationName(GALACTEEK_NAME)
 
+        self._debugEnabled = debug
         self._appProfile = profile
         self._loop = None
         self._executor = None
@@ -147,18 +148,14 @@ class GalacteekApplication(QApplication):
         self._progName = progName
         self._progCid = None
         self._system = platform.system()
+        self._icons = {}
 
         self.enableOrbital = enableOrbital
         self.orbitConnector = None
 
         self.translator = None
-
         self.mainWindow = None
-        self.gWindows = []
-
         self.feedFollowerTask = None
-
-        self._debugEnabled = debug
 
         self.ipfsCtx = IPFSContext(self)
         self.peersTracker = peers.PeersTracker(self.ipfsCtx)
@@ -311,7 +308,7 @@ class GalacteekApplication(QApplication):
                                                       loop=self.loop)
 
         self.jinjaEnv = jinja2.Environment(
-            loader=jinja2.PackageLoader('galacteek', 'templates'))
+            loader=jinja2.PackageLoader(GALACTEEK_NAME, 'templates'))
 
         self.manuals = ManualsImporter(self)
         self.mimeDb = QMimeDatabase()
@@ -391,8 +388,6 @@ class GalacteekApplication(QApplication):
         await self.ipfsCtx.setup(pubsubEnable=pubsubEnabled,
                                  pubsubHashmarksExch=hExchEnabled)
         await self.ipfsCtx.profilesInit()
-
-        ensure(self.manuals.importManualMain())
 
         self.feedFollower = FeedFollower(self, self.marksLocal)
         self.feedFollowerTask = self.task(self.feedFollower.process)
@@ -535,6 +530,7 @@ class GalacteekApplication(QApplication):
         self._orbitDataLocation = os.path.join(self._dataLocation, 'orbitdb')
         self._mHashDbLocation = os.path.join(self._dataLocation, 'mhashmetadb')
         self.marksDataLocation = os.path.join(self._dataLocation, 'marks')
+        self.uiDataLocation = os.path.join(self._dataLocation, 'ui')
         self.cryptoDataLocation = os.path.join(self._dataLocation, 'crypto')
         self.gpgDataLocation = os.path.join(self.cryptoDataLocation, 'gpg')
         self.localMarksFileLocation = os.path.join(self.marksDataLocation,
@@ -557,6 +553,7 @@ class GalacteekApplication(QApplication):
                     self.marksDataLocation,
                     self.cryptoDataLocation,
                     self.gpgDataLocation,
+                    self.uiDataLocation,
                     self.configDirLocation]:
             if not os.path.exists(dir):
                 os.makedirs(dir)
@@ -716,25 +713,59 @@ class ManualsImporter(QObject):
     def getManualEntry(self, lang):
         return self.registry.get(lang, None)
 
-    async def importManualMain(self):
+    @ipfsOp
+    async def importManuals(self, ipfsop, profile):
+        from galacteek.docs.manual import __manual_en_version__
+
+        documentsList = await ipfsop.filesList(profile.pathDocuments)
+
         try:
             listing = pkg_resources.resource_listdir(
                 'galacteek.docs.manual', '')
-            for entry in listing:
-                if entry.startswith('__'):
+            for dir in listing:
+                await ipfsop.sleep()
+
+                if dir.startswith('__'):
                     continue
-                await self.importManualLang(entry)
+
+                manualAlreadyImported = False
+                lang = dir
+
+                if lang == 'en':
+                    manualLinkName = '{name}.manual.{lang}.{ver}'.format(
+                        name=GALACTEEK_NAME, lang=lang,
+                        ver=__manual_en_version__)
+                else:
+                    # Just english manual for now
+                    continue
+
+                for entry in documentsList:
+                    if entry['Name'] == manualLinkName:
+                        self.registry[lang] = entry
+                        self.app.manualAvailable.emit(lang, entry)
+                        manualAlreadyImported = True
+                        break
+
+                if manualAlreadyImported:
+                    continue
+
+                entry = await self.importManualLang(lang)
+                if entry:
+                    await ipfsop.filesLink(entry, profile.pathDocuments,
+                                           name=manualLinkName)
         except Exception as e:
-            log.debug('Failed importing manuals {0}'.format(str(e)))
+            log.debug('Failed importing manuals: {0}'.format(str(e)))
 
     async def importManualLang(self, lang):
         try:
             docPath = pkg_resources.resource_filename('galacteek.docs.manual',
                                                       '{0}/html'.format(lang))
-            await self.importDocPath(docPath, lang)
+            entry = await self.importDocPath(docPath, lang)
         except Exception as e:
             log.debug('Failed importing manual ({0}) {1}'.format(
                 lang, str(e)))
+        else:
+            return entry
 
     @ipfsOp
     async def importDocPath(self, ipfsop, docPath, lang):
@@ -742,3 +773,4 @@ class ManualsImporter(QObject):
         if docEntry:
             self.registry[lang] = docEntry
             self.app.manualAvailable.emit(lang, docEntry)
+            return docEntry

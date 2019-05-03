@@ -7,7 +7,11 @@ from PyQt5.QtWidgets import QComboBox
 from PyQt5.QtWidgets import QWidget
 
 from PyQt5.QtGui import QStandardItemModel
-from PyQt5.QtCore import QObject, QCoreApplication
+from PyQt5.QtCore import QObject
+from PyQt5.QtCore import QMimeData
+from PyQt5.QtCore import QCoreApplication
+from PyQt5.QtCore import QUrl
+from PyQt5.QtWidgets import QAbstractItemView
 
 from galacteek import ensure, log
 from galacteek.ipfs.wrappers import ipfsOp
@@ -43,7 +47,24 @@ def iInvalidDagCID(dagCid):
 
 
 class PeersModel(QStandardItemModel):
-    pass
+    def mimeData(self, indexes):
+        mimedata = QMimeData()
+
+        for idx in indexes:
+            idxPeer = self.index(idx.row(), 1, idx.parent())
+            if idxPeer.isValid():
+                peer = self.data(idxPeer)
+                mimedata.setUrls([QUrl('galacteekpeer:{}'.format(peer))])
+                break
+
+        return mimedata
+
+    def canDropMimeData(self, data, action, row, column, parent):
+        return True
+
+    def dropMimeData(self, data, action, row, column, parent):
+        if data.hasUrls():
+            return True
 
 
 class PeersTracker(QObject):
@@ -141,6 +162,7 @@ class PeersManager(GalacteekTab):
         self.ui.tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.ui.tree.customContextMenuRequested.connect(self.onContextMenu)
         self.ui.tree.doubleClicked.connect(self.onDoubleClick)
+        self.ui.tree.setDragDropMode(QAbstractItemView.DragOnly)
 
         self.ui.search.returnPressed.connect(self.onSearch)
 

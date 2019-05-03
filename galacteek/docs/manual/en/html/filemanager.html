@@ -15,8 +15,8 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Using the clipboard" href="clipboard.html" />
-    <link rel="prev" title="Application settings" href="settings.html" />
+    <link rel="next" title="Pinning content" href="pinning.html" />
+    <link rel="prev" title="Hashmarks" href="hashmarks.html" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Neuton&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nobile:regular,italic,bold,bolditalic&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
 <!--[if lte IE 6]>
@@ -32,10 +32,10 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="clipboard.html" title="Using the clipboard"
+          <a href="pinning.html" title="Pinning content"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="settings.html" title="Application settings"
+          <a href="hashmarks.html" title="Hashmarks"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">galacteek  documentation</a> &#187;</li> 
       </ul>
@@ -50,9 +50,7 @@
 <h1>File manager<a class="headerlink" href="#file-manager" title="Permalink to this headline">¶</a></h1>
 <a class="reference internal image-reference" href="_images/folder-open.png"><img alt="_images/folder-open.png" src="_images/folder-open.png" style="width: 64px; height: 64px;" /></a>
 <p>By clicking on the folder icon in the application’s toolbar you’ll get access to the
-file manager for importing content in the IPFS repository. With IPFS all your
-data is addressed by its content and referenced by its cryptographic hash
-(e.g <em>Qmb9uWkLmiFNEhp6PyV5iw4qh5wsv2dtJNGwUi1k15JwJd</em>)</p>
+filemanager for importing content in the IPFS repository.</p>
 <div class="section" id="selecting-the-working-directory">
 <h2>Selecting the working directory<a class="headerlink" href="#selecting-the-working-directory" title="Permalink to this headline">¶</a></h2>
 <p>The path selector menu lets you select the current working directory. <em>Home</em> is
@@ -86,7 +84,7 @@ keys.</p>
 </div>
 <div class="section" id="double-clicking-items">
 <h2>Double-clicking items<a class="headerlink" href="#double-clicking-items" title="Permalink to this headline">¶</a></h2>
-<p>Double-clicking a file will open a browser tab, while double-clicking a directory
+<p>Double-clicking a file will open the file, while double-clicking a directory
 will expand it.</p>
 </div>
 <div class="section" id="right-clicking-items">
@@ -94,16 +92,16 @@ will expand it.</p>
 <p>Right-clicking an entry in the file manager will popup a menu giving you a few
 options:</p>
 <ul class="simple">
-<li><em>Copy the selected file’s IPFS hash to the clipboard</em></li>
+<li><em>Copy multihash to the clipboard</em></li>
+<li><em>Copy full path to the clipboard</em></li>
 <li><em>Unlink</em>: this will dereference the item but not delete it (i.e. the
 content will still be available through your IPFS node)</li>
 <li><em>Delete</em>: purge from your IPFS node (<strong>note</strong>: if others have <em>pinned</em> this
 data on their node, it will still be available)</li>
-<li><em>Hashmark</em>: bookmark the IPFS hash associated with the file</li>
-<li><em>Browse</em>: open a browser tab for this file</li>
+<li><em>Hashmark</em>: hashmark this item</li>
+<li><em>Browse</em>: open a browser tab for this item</li>
+<li><em>Open</em>: open this item with the resource opener</li>
 <li><em>Explore</em>: for directories, open an explorer tab for this entry</li>
-<li><em>Open with</em>: use specific application/method to open this file (mediaplayer,
-ebook..)</li>
 <li><em>Publish to IPNS key</em>: this will link this file to the given IPNS key</li>
 </ul>
 </div>
@@ -111,8 +109,8 @@ ebook..)</li>
 <h2>Keyboard shortcuts<a class="headerlink" href="#keyboard-shortcuts" title="Permalink to this headline">¶</a></h2>
 <p>The following keyboard shortcuts are available within the files manager:</p>
 <ul class="simple">
-<li><strong>Mod+c</strong> or <strong>Mod+y</strong>: Copy item’s multihash to the clipboard</li>
-<li><strong>Mod+a</strong>: Copy item’s path (full IPFS path) to the clipboard</li>
+<li><strong>Mod + c</strong> or <strong>Mod + y</strong>: Copy selected item’s IPFS path to the clipboard</li>
+<li><strong>Mod + a</strong>: Copy selected item’s multihash (CID) to the clipboard</li>
 <li><strong>Mod+x</strong>: Explore item if it is a directory</li>
 </ul>
 </div>
@@ -125,11 +123,11 @@ ebook..)</li>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
   <h4>Previous topic</h4>
-  <p class="topless"><a href="settings.html"
-                        title="previous chapter">Application settings</a></p>
+  <p class="topless"><a href="hashmarks.html"
+                        title="previous chapter">Hashmarks</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="clipboard.html"
-                        title="next chapter">Using the clipboard</a></p>
+  <p class="topless"><a href="pinning.html"
+                        title="next chapter">Pinning content</a></p>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <div class="searchformwrapper">
@@ -153,16 +151,16 @@ ebook..)</li>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="clipboard.html" title="Using the clipboard"
+          <a href="pinning.html" title="Pinning content"
              >next</a> |</li>
         <li class="right" >
-          <a href="settings.html" title="Application settings"
+          <a href="hashmarks.html" title="Hashmarks"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">galacteek  documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2018, galacteek.
+        &#169; Copyright 2019, galacteek.
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.7.
     </div>
   </body>

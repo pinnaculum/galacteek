@@ -31,6 +31,8 @@ from yarl import URL
 from galacteek import log, ensure
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs import cidhelpers
+from galacteek.ipfs import megabytes
+from galacteek.ipfs import StatInfo
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import joinIpns
@@ -334,11 +336,11 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
 
             async def rscMenuEnable(mainMenu, path, mimeType, stat, analyzer):
                 if mimeType.isImage:
-                    if stat:
-                        size = stat.get('DataSize')
+                    statInfo = StatInfo(stat)
 
-                        if isinstance(size, int) and size > (1024 * 1024 * 4):
-                            return
+                    if statInfo.valid and statInfo.dataLargerThan(
+                            megabytes(4)):
+                        return
 
                     codes = await analyzer.decodeQrCodes(str(path))
                     if codes:
@@ -470,6 +472,7 @@ class BrowserTab(GalacteekTab):
         self.ui.webEngineView.loadProgress.connect(self.onLoadProgress)
         self.ui.webEngineView.titleChanged.connect(self.onTitleChanged)
 
+        self.ui.urlZone.setDragEnabled(True)
         self.ui.urlZone.returnPressed.connect(self.onUrlEdit)
         self.ui.backButton.clicked.connect(self.backButtonClicked)
         self.ui.forwardButton.clicked.connect(self.forwardButtonClicked)

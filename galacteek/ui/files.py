@@ -288,11 +288,10 @@ class FilesItemModel(QStandardItemModel):
             if not idx.isValid():
                 continue
 
-            multihash = self.getHashFromIdx(idx)
+            nameItem = self.getNameItemFromIdx(idx)
 
-            if multihash:
-                # Take first valid multihash
-                url = QUrl('dweb:{}'.format(joinIpfs(multihash)))
+            if nameItem:
+                url = QUrl('dweb:{}'.format(nameItem.fullPath))
                 mimedata.setUrls([url])
                 break
 

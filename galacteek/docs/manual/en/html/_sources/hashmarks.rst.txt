@@ -1,3 +1,4 @@
+.. _hashmarks:
 
 Hashmarks
 =========

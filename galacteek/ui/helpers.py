@@ -25,7 +25,13 @@ from .i18n import iIpfsQrCodes
 
 
 def getIcon(iconName):
-    return QIcon(QPixmap(':/share/icons/{}'.format(iconName)))
+    app = QApplication.instance()
+    if iconName in app._icons:
+        return app._icons[iconName]
+
+    icon = app._icons[iconName] = QIcon(QPixmap(
+        ':/share/icons/{}'.format(iconName)))
+    return icon
 
 
 def getMimeIcon(mType):
@@ -63,6 +69,23 @@ async def getIconFromIpfs(ipfsop, ipfsPath, scaleWidth=None, timeout=10):
         return None
 
 
+async def getFavIconFromDir(ipfsop, ipfsPath, timeout=10):
+    """
+    If a favicon.ico file exists inside the given directory,
+    return it in the form of a QIcon
+    """
+
+    faviconPath = ipfsPath.child('favicon.ico')
+    try:
+        stat = await ipfsop.objStat(str(faviconPath))
+
+        if stat:
+            # favicon exists
+            return await getIconFromIpfs(ipfsop, str(faviconPath))
+    except BaseException:
+        return None
+
+
 def getIconFromImageData(imgData, scaleWidth=None):
     try:
         img = QImage()
@@ -90,6 +113,28 @@ def getIconIpfs64():
 
 def getIconClipboard():
     return getIcon('clipboard.png')
+
+
+def getIconFromMimeType(mimeType):
+    mIcon = None
+
+    if mimeType.isDir:
+        mIcon = 'inode/directory'
+    elif mimeType.isHtml:
+        mIcon = 'text/html'
+    elif mimeType.isText:
+        mIcon = 'text/plain'
+    elif mimeType.isImage:
+        mIcon = 'image/x-generic'
+    elif mimeType.isVideo:
+        mIcon = 'video/x-generic'
+    elif mimeType.isAudio:
+        mIcon = 'audio/x-generic'
+    else:
+        mIcon = mimeType.type
+
+    icon = getMimeIcon(mIcon if mIcon else 'unknown')
+    return icon if icon else getMimeIcon('unknown')
 
 
 def getHomePath():
@@ -184,10 +229,10 @@ class IPFSTreeKeyFilter(QObject):
                 return True
             if modifiers & Qt.ControlModifier:
                 if key == Qt.Key_C or key == Qt.Key_Y:
-                    self.copyHashPressed.emit()
+                    self.copyPathPressed.emit()
                     return True
                 if key == Qt.Key_A:
-                    self.copyPathPressed.emit()
+                    self.copyHashPressed.emit()
                     return True
                 if key == Qt.Key_X:
                     self.explorePressed.emit()

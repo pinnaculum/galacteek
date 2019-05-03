@@ -38,7 +38,6 @@ from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import joinIpns
-from galacteek.ipfs.cidhelpers import isIpfsPath
 from galacteek.ipfs.cidhelpers import shortPathRepr
 from galacteek.ipfs.cidhelpers import cidValid
 
@@ -61,6 +60,7 @@ from . import eventlog
 from . import pin
 from . import chat
 
+from .quickaccess import QuickAccessToolBar
 from .helpers import *
 from .modelhelpers import *
 from .widgets import PopupToolButton
@@ -157,82 +157,6 @@ class IPFSInfosDialog(QDialog):
                                                        iUnknown()))
 
 
-class QuickAccessToolBar(QToolBar):
-    def __init__(self, window):
-        super().__init__()
-
-        self.app = QCoreApplication.instance()
-        self.setObjectName('toolbarQa')
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
-        self.setMinimumWidth(400)
-        self.setAcceptDrops(True)
-        self.mainW = window
-        self.qaData = None
-
-    def dragEnterEvent(self, event):
-        mimeData = event.mimeData()
-
-        if mimeData.hasUrls():
-            event.acceptProposedAction()
-
-    def dropEvent(self, event):
-        mimeData = event.mimeData()
-
-        if mimeData.hasUrls():
-            for url in mimeData.urls():
-                if not url.isValid():
-                    continue
-                path = IPFSPath(url.toString())
-                if not path.valid:
-                    continue
-
-        event.acceptProposedAction()
-
-    @ipfsOp
-    async def registerFromMarkMeta(self, op, metadata, maxIconSize=128 * 1024):
-        mPath, mark = self.mainW.app.marksLocal.searchByMetadata(metadata)
-        if not mark:
-            log.debug('Cannot find mark {}'.format(mPath))
-            return
-
-        icon = getIcon('unknown-file.png')
-        mIcon = mark.get('icon', None)
-
-        if mIcon and isIpfsPath(mIcon):
-            stat = await op.objStat(mIcon)
-
-            # Check filesize from the stat on the object
-            if isinstance(stat, dict) and 'DataSize' in stat and \
-                    stat['DataSize'] < maxIconSize:
-                icon = await getIconFromIpfs(op, mIcon)
-
-                if icon is None:
-                    icon = getIcon('unknown-file.png')
-                else:
-                    if not await op.isPinned(mIcon):
-                        log.debug('Pinning icon {0}'.format(mIcon))
-                        await op.ctx.pin(mIcon)
-
-        self.addAction(icon, mark['metadata'].get('title', iUnknown()),
-                       lambda: self.mainW.addBrowserTab().browseFsPath(mPath))
-
-    async def init(self):
-        """
-        Add some apps and links to the quickaccess bar
-        """
-
-        await self.registerFromMarkMeta({
-            'title': 'Hardbin'})
-        await self.registerFromMarkMeta({
-            'description': 'Distributed wikipedia.*english'})
-        await self.registerFromMarkMeta({
-            'title': 'IPFessay'})
-        await self.registerFromMarkMeta({
-            'title': 'IPLD explorer'})
-        await self.registerFromMarkMeta({
-            'title': 'markup.rocks'})
-
-
 class DatabasesManager(QObject):
     def __init__(self, orbitConnector, parent=None):
         super().__init__(parent)
@@ -269,12 +193,29 @@ class DatabasesManager(QObject):
                                icon=self.icon)
 
 
+class MiscToolBar(QToolBar):
+    moved = pyqtSignal(int)
+
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.setObjectName('toolbarMisc')
+        self.setAllowedAreas(
+            Qt.RightToolBarArea
+        )
+
+
 class MainToolBar(QToolBar):
     moved = pyqtSignal(int)
 
     def __init__(self, parent):
         super().__init__(parent)
         self.setObjectName('toolbarMain')
+
+        self.setFloatable(False)
+        self.setAllowedAreas(
+            Qt.LeftToolBarArea | Qt.TopToolBarArea
+        )
 
         # Empty widget
         self.emptySpace = QWidget()
@@ -368,10 +309,6 @@ class MainWindow(QMainWindow):
 
         self.toolbarMain = MainToolBar(self)
 
-        self.toolbarMain.setAllowedAreas(
-            Qt.LeftToolBarArea | Qt.TopToolBarArea
-        )
-
         self.toolbarMain.orientationChanged.connect(self.onMainToolbarMoved)
         self.toolbarTools = QToolBar()
         self.toolbarTools.setOrientation(self.toolbarMain.orientation())
@@ -397,6 +334,7 @@ class MainWindow(QMainWindow):
 
         # File manager button
         self.fileManagerButton = QToolButton()
+        self.fileManagerButton.setToolTip(iFileManager())
         self.fileManagerButton.setIcon(getIcon('folder-open.png'))
         self.fileManagerButton.clicked.connect(self.onFileManagerClicked)
         self.fileManagerButton.setShortcut(QKeySequence('Ctrl+f'))
