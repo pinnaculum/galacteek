@@ -31,6 +31,15 @@ from .hashmarks import addHashmark
 from .i18n import iUnknown
 
 
+def iQuickAccess():
+    return QCoreApplication.translate(
+        'toolbarQa',
+        '''<p><b>Quick Access</b> toolbar</p>
+           <p>Drag and drop hashmarks and IPFS objects that
+           you want to have to easy access to</p>
+        ''')
+
+
 class QuickAccessToolBar(QToolBar, URLDragAndDropProcessor):
     """
     Quick Access toolbar, child of the main toolbar
@@ -44,7 +53,7 @@ class QuickAccessToolBar(QToolBar, URLDragAndDropProcessor):
         self.configFilePath = os.path.join(
             self.app.uiDataLocation, '{}.json'.format(configName))
         self.setObjectName('toolbarQa')
-        self.setToolTip('Quick Access toolbar')
+        self.setToolTip(iQuickAccess())
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.setMinimumWidth(400)
         self.setAcceptDrops(True)

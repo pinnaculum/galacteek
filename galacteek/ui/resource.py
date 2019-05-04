@@ -164,13 +164,12 @@ class IPFSResourceOpener(QObject):
             # Bummer
             return
 
-        for idx, value in enumerate(progArgs):
-            if value == '%f':
-                progArgs[idx] = filePath
+        args = progArgs.replace('%f', filePath)
+        log.debug('Executing: {}'.format(args))
 
         try:
-            proc = await asyncio.create_subprocess_exec(
-                *progArgs,
+            proc = await asyncio.create_subprocess_shell(
+                args,
                 stdout=asyncio.subprocess.PIPE
             )
             stdout, stderr = await proc.communicate()
@@ -184,9 +183,9 @@ class IPFSResourceOpener(QObject):
     async def openWithSystemDefault(self, ipfsop, rscPath):
         # Use xdg-open or open depending on the platform
         if self.app.system == 'Linux':
-            await self.openWithExternal(rscPath, ['xdg-open', '%f'])
+            await self.openWithExternal(rscPath, "xdg-open '%f'")
         elif self.app.system == 'Darwin':
-            await self.openWithExternal(rscPath, ['open', '%f'])
+            await self.openWithExternal(rscPath, "open '%f'")
 
 
 class ResourceAnalyzer(QObject):
