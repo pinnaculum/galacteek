@@ -16,7 +16,7 @@
 <div id="{{ hit['hash'] }}" class="hit">
     <div>
         <p style="text-align: left">
-            <a href="#" onclick='event.preventDefault(); window.openIpfs("{{ hit.path }}")' >{{ hit.title }}</a>
+            <a href="dweb:{{hit.path}}" onclick='event.preventDefault(); window.openIpfs("{{ hit.path }}")' >{{ hit.title }}</a>
             <a href="#" onclick='event.preventDefault(); window.hashmark("{{ hit.path }}")'><img src="qrc:///share/icons/star-navy.png" width="16" height="16"/></a>
             <a href="#" onclick='event.preventDefault(); window.ipfssearch.pinObject("{{ hit.path }}")'><img src="qrc:///share/icons/pin.png" width="16" height="16"/></a>
             <a href="#" onclick='event.preventDefault(); window.ipfssearch.clipboardInput("{{ hit.path }}")'><img src="qrc:///share/icons/clipboard.png" width="16" height="16"/></a>

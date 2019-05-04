@@ -130,6 +130,12 @@ Screenshots
 
     IPFS QR codes
 
+Contributions and contact
+=========================
+
+Contributions and ideas are more than welcome!
+Contact by mail at: galacteek AT protonmail DOT com
+
 Requirements
 ============
 
