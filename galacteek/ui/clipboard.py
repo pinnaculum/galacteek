@@ -471,7 +471,7 @@ class ClipboardItemButton(PopupToolButton):
             prgValue = dlg.textValue()
             if len(prgValue) in range(1, 512):
                 ensure(self.rscOpener.openWithExternal(
-                    self.item.cid, prgValue.split()))
+                    self.item.cid, prgValue))
 
         runDialog(ChooseProgramDialog, accepted=onAccept)
 
