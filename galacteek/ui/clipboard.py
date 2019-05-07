@@ -1,6 +1,7 @@
 import functools
 import os.path
 import aioipfs
+import time
 
 from PyQt5.QtWidgets import QStackedWidget
 from PyQt5.QtWidgets import QToolButton
@@ -227,6 +228,9 @@ class ClipboardManager(PopupToolButton):
 
         self.initHistoryMenu()
 
+        self.menu.addAction('QR codes: encode clipboard stack to image',
+                            self.onQrEncodeStack)
+
     def onItemSwitch(self, action):
         num = action.data()
 
@@ -348,6 +352,30 @@ class ClipboardManager(PopupToolButton):
                     self.tracker.clipboardProcess(entry['Hash'])
         except Exception:
             pass
+
+    def onQrEncodeStack(self):
+        from galacteek.crypto.qrcode import IPFSQrEncoder
+        encoder = IPFSQrEncoder()
+
+        for item in self.tracker.items:
+            encoder.add(str(item.ipfsPath))
+
+        ensure(self.encodeClipboardItems(encoder))
+
+    @ipfsOp
+    async def encodeClipboardItems(self, ipfsop, encoder):
+        imgPath = self.app.tempDir.filePath(str(time.time()) + '.png')
+
+        try:
+            image = await encoder.encodeAll(loop=self.app.loop,
+                executor=self.app.executor)
+            image.save(imgPath)
+        except:
+            # :-/
+            return
+
+        if ipfsop.ctx.currentProfile:
+            ipfsop.ctx.currentProfile.qrImageEncoded.emit(imgPath)
 
 
 class ClipboardItemButton(PopupToolButton):

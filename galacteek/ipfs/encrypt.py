@@ -35,7 +35,10 @@ class IpfsRSAAgent:
     async def storeSelf(self, op, data):
         """
         Encrypt some data with our pubkey and store it in IPFS
-        Returns the CID of the encrypted file
+
+        Returns the IPFS entry (returned by 'add') of the file
+
+        :rtype: dict
         """
         try:
             encrypted = await self.encrypt(data, self.pubKeyPem)
@@ -47,7 +50,7 @@ class IpfsRSAAgent:
                     'storeSelf: encoded {0} bytes to {1}'.format(
                         len(data), entry['Hash'])
                 )
-                return entry['Hash']
+                return entry
         except aioipfs.APIError as err:
             self.debug('IPFS error {}'.format(err.message))
 

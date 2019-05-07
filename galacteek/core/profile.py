@@ -2,15 +2,19 @@ import os.path
 import uuid
 import pkg_resources
 import asyncio
+import io
 from os import urandom
 from datetime import datetime
 
 import aiofiles
 
 from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QFile
+from PyQt5.QtCore import QIODevice
 
 from galacteek import log, logUser, ensure
 
+from galacteek.ipfs import ipfsOpFn
 from galacteek.ipfs.mutable import MutableIPFSJson, CipheredIPFSJson
 from galacteek.ipfs.dag import EvolvingDAG
 from galacteek.ipfs.wrappers import ipfsOp
@@ -373,9 +377,13 @@ class SharedHashmarksManager(QObject):
 
 
 class UserProfile(QObject):
-    """ User profile object """
+    """
+    User profile object
+    """
 
     P_FILES = 'files'
+
+    qrImageEncoded = pyqtSignal(str)
 
     def __init__(self, ctx, name, rootDir):
         super(UserProfile, self).__init__()
@@ -405,6 +413,8 @@ class UserProfile(QObject):
 
         self.rsaAgent = None
         self.sharedHManager = SharedHashmarksManager(self)
+
+        self.qrImageEncoded.connect(self.onQrImageEncoded)
 
     def debug(self, msg):
         log.debug('Profile {0}: {1}'.format(self.name, msg))
@@ -812,3 +822,24 @@ class UserProfile(QObject):
     @ipfsOp
     async def storeHashmarks(self, ipfsop, senderPeerId, marksJson):
         await self.sharedHManager.store(ipfsop, senderPeerId, marksJson)
+
+    def onQrImageEncoded(self, imgPath):
+        @ipfsOpFn
+        async def storeQrImage(ipfsop, path):
+            basename = os.path.basename(path)
+            file = QFile(path)
+
+            if not file.open(QIODevice.ReadOnly):
+                return
+
+            data = file.readAll().data()
+            #entry = await ipfsop.addPath(path)
+            entry = await self.rsaEncryptSelf(data)
+            print(entry)
+
+            if entry:
+                # Link it, open it
+                await ipfsop.filesLink(entry, self.pathQrCodes, name=basename)
+                ensure(self.ctx.app.resourceOpener.open(entry['Hash']))
+
+        ensure(storeQrImage(imgPath))
