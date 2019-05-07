@@ -1,5 +1,8 @@
 <RCC>
   <qresource>
+    <file>../../share/icons/pyramid-aqua.png</file>
+    <file>../../share/icons/pyramid-stack.png</file>
+    <file>../../share/icons/pyramid-blue.png</file>
     <file>../../share/icons/download.png</file>
     <file>../../share/icons/hashmark-black.png</file>
     <file>../../share/icons/loading.gif</file>

@@ -20,11 +20,13 @@ class ClipboardItem(QObject):
     mimeTypeAvailable = pyqtSignal(MIMEType)
     mimeIconAvailable = pyqtSignal()
     statRetrieved = pyqtSignal(dict)
+    ipnsNameResolved = pyqtSignal(IPFSPath)
 
     def __init__(self, ipfsPath, mimeType=None, parent=None):
         super(ClipboardItem, self).__init__(parent)
 
         self._ipfsPath = ipfsPath
+        self._resolvedPath = None
         self._mimeType = mimeType
         self._statInfo = None
         self._cid = None
@@ -56,6 +58,10 @@ class ClipboardItem(QObject):
     @property
     def ipfsPath(self):
         return self._ipfsPath
+
+    @property
+    def resolvedPath(self):
+        return self._resolvedPath
 
     @property
     def fragment(self):
@@ -257,10 +263,31 @@ class ClipboardTracker(QObject):
             self.current = existing
 
     @ipfsOp
+    async def streamResolve(self, ipfsop, item, count=2):
+        matches = []
+        async for entry in ipfsop.nameResolveStream(
+                item.ipfsPath.objPath, timeout='10s'):
+            matches.append(entry.get('Path'))
+            if len(matches) > count:
+                break
+
+        if len(matches) > 0:
+            latest = matches[-1]
+            if isinstance(latest, str):
+                item._resolvedPath = IPFSPath(latest)
+                item.ipnsNameResolved.emit(item.resolvedPath)
+                return item.resolvedPath
+
+    @ipfsOp
     async def scanItem(self, ipfsop, cItem):
         mimetype = None
         path = cItem.path
         mHashMeta = await self.app.multihashDb.get(path)
+
+        if cItem.ipfsPath.isIpns:
+            rPath = await self.streamResolve(cItem)
+            if rPath:
+                path = str(rPath)
 
         if mHashMeta:
             # Already have metadata for this object

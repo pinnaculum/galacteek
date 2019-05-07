@@ -39,6 +39,9 @@ class AddKeyDialog(QDialog):
         keyName = self.ui.keyName.text()
         keySizeText = self.ui.keySize.currentText()
 
+        if len(keyName) == 0:
+            return messageBox('Key name is empty')
+
         self.app.task(self.createKey, keyName, int(keySizeText))
 
     @ipfsOp

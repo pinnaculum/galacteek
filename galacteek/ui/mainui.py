@@ -60,6 +60,7 @@ from . import eventlog
 from . import pin
 from . import chat
 
+from .pyramids import MultihashPyramidsToolBar
 from .quickaccess import QuickAccessToolBar
 from .helpers import *
 from .modelhelpers import *
@@ -204,6 +205,9 @@ class MiscToolBar(QToolBar):
             Qt.RightToolBarArea
         )
 
+        self.pyramidsToolbar = MultihashPyramidsToolBar(self)
+        self.addWidget(self.pyramidsToolbar)
+
 
 class MainToolBar(QToolBar):
     moved = pyqtSignal(int)
@@ -216,6 +220,7 @@ class MainToolBar(QToolBar):
         self.setAllowedAreas(
             Qt.LeftToolBarArea | Qt.TopToolBarArea
         )
+        self.setContextMenuPolicy(Qt.NoContextMenu)
 
         # Empty widget
         self.emptySpace = QWidget()
@@ -308,6 +313,7 @@ class MainWindow(QMainWindow):
         self.pinAllGlobalButton.setChecked(self.app.settingsMgr.browserAutoPin)
 
         self.toolbarMain = MainToolBar(self)
+        self.toolbarMisc = MiscToolBar(self)
 
         self.toolbarMain.orientationChanged.connect(self.onMainToolbarMoved)
         self.toolbarTools = QToolBar()
@@ -472,6 +478,7 @@ class MainWindow(QMainWindow):
         self.toolbarMain.addAction(self.actionQuit)
 
         self.addToolBar(Qt.TopToolBarArea, self.toolbarMain)
+        self.addToolBar(Qt.RightToolBarArea, self.toolbarMisc)
 
         self.ui.tabWidget.setDocumentMode(True)
         self.ui.tabWidget.setTabsClosable(True)
@@ -666,6 +673,8 @@ class MainWindow(QMainWindow):
         ensure(self.displayConnectionInfo())
         ensure(self.qaToolbar.init())
         ensure(self.hashmarkMgrButton.updateIcons())
+
+        self.app.marksLocal.pyramidsInit()
 
         if self.app.enableOrbital and self.app.ipfsCtx.orbitConnector is None:
             self.app.ipfsCtx.orbitConnector = GalacteekOrbitConnector(
