@@ -2,6 +2,7 @@ import os
 import os.path
 import asyncio
 import aioipfs
+import aiofiles
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QCoreApplication
@@ -17,8 +18,10 @@ from galacteek.dweb.page import WebTab
 from galacteek.dweb.page import DWebView
 
 from galacteek.ipfs import ipfsOp
+from galacteek.ipfs import StatInfo
 from galacteek.ipfs.mimetype import MIMEType
 from galacteek.ipfs.mimetype import detectMimeType
+from galacteek.ipfs.mimetype import detectMimeTypeFromBuffer
 
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import shortPathRepr
@@ -58,6 +61,8 @@ class IPFSResourceOpener(QObject):
         """
 
         ipfsPath = None
+        statInfo = None
+
         if isinstance(pathRef, IPFSPath):
             ipfsPath = pathRef
         elif isinstance(pathRef, str):
@@ -81,9 +86,12 @@ class IPFSResourceOpener(QObject):
             # Try to reuse metadata from the multihash store
             rscMeta = await self.app.multihashDb.get(rscPath)
             if rscMeta:
-                value = rscMeta.get('mimetype')
-                if value:
-                    mimeType = MIMEType(value)
+                cachedMime = rscMeta.get('mimetype')
+                cachedStat = rscMeta.get('stat')
+                if cachedMime:
+                    mimeType = MIMEType(cachedMime)
+                if cachedStat:
+                    statInfo = StatInfo(cachedStat)
 
         if mimeType is None:
             mimeType = await detectMimeType(rscPath)
@@ -94,7 +102,56 @@ class IPFSResourceOpener(QObject):
         else:
             return messageBox(iResourceCannotOpen(rscPath))
 
-        if mimeType.isText:
+        if mimeType.type == 'application/octet-stream':
+            # Try to decode the
+            logUser.info('{path} ({type}): RSA-encoded data! Trying ..'.format(
+                path=rscPath, type=str(mimeType)))
+
+            if statInfo is None:
+                statInfo = StatInfo(await ipfsop.objStat(rscPath, timeout=5))
+
+            profile = ipfsop.ctx.currentProfile
+            if profile and statInfo and statInfo.dataSmallerThan(1000000):
+                logUser.info('{path}: RSA on the way ..')
+
+                data = await ipfsop.catObject(ipfsPath.objPath, timeout=5)
+                if not data:
+                    # XXX
+                    return
+
+                decrypted = await profile.rsaAgent.decrypt(data)
+
+                if decrypted:
+                    # "Good evening, 007"
+                    #
+                    # Create a short-lived IPFS block that will be burned
+                    # by the resource opener after opening
+                    # 
+                    # We know it's wrong
+                    #
+
+                    # Write the deciphered data to a temp file
+                    encFpath = self.app.tempDir.filePath('onetoomany.enc')
+                    async with aiofiles.open(encFpath, 'w+b') as fd:
+                        await ipfsop.sleep()
+                        await fd.write(decrypted)
+
+                    # Burn it in a block
+                    entry = await ipfsop.client.block.put(encFpath)
+                    #entry = await ipfsop.client.add_bytes(decrypted)
+                    if not entry:
+                        # XXX
+                        return
+
+                    if 0:
+                        logUser.info(
+                            '{path}: RSA OK! spawning child: {child}'.format(
+                                child=entry['Hash']))
+
+                    # Open the data from the block!
+                    ensure(self.openBlock(entry['Key']))
+
+        elif mimeType.isText:
             tab = ipfsview.TextViewerTab()
             tab.show(rscPath)
             self.objectOpened.emit(ipfsPath)
@@ -107,7 +164,8 @@ class IPFSResourceOpener(QObject):
             )
 
         if mimeType.isImage:
-            tab = ImageViewerTab(rscPath, self.app.mainWindow)
+            tab = ImageViewerTab(self.app.mainWindow)
+            ensure(tab.view.showImage(rscPath))
             self.objectOpened.emit(ipfsPath)
             return self.app.mainWindow.registerTab(
                 tab,
@@ -146,6 +204,61 @@ class IPFSResourceOpener(QObject):
 
         logUser.info('{path} ({type}): unhandled resource type'.format(
             path=rscPath, type=str(mimeType)))
+
+    @ipfsOp
+    async def openBlock(self, ipfsop, pathRef, mimeType=None):
+        ipfsPath = None
+        statInfo = None
+
+        if isinstance(pathRef, IPFSPath):
+            ipfsPath = pathRef
+        elif isinstance(pathRef, str):
+            ipfsPath = IPFSPath(pathRef)
+        else:
+            raise ValueError('Invalid input value')
+
+        if not ipfsPath.valid:
+            return False
+
+        blockStat = await ipfsop.waitFor(
+            ipfsop.client.block.stat(pathRef), 5
+        )
+
+        if not blockStat or not isinstance(blockStat, dict):
+            messageBox('Block is bad')
+
+        blockSize = blockStat.get('Size')
+
+        if blockSize > (1024 * 1024 * 16):
+            # XXX
+            return
+
+        logUser.info('Block {path}: Opening'.format(path=pathRef))
+
+        blockData = await ipfsop.client.block.get(pathRef)
+
+        rscPath = ipfsPath.objPath
+        rscShortName = rscPath
+        mimeType = await detectMimeTypeFromBuffer(blockData[:1024])
+
+        if mimeType and mimeType.valid:
+            logUser.info('Block: {path} ({type}): opening'.format(
+                path=rscPath, type=str(mimeType)))
+        else:
+            return messageBox(iResourceCannotOpen(rscPath))
+
+        if mimeType.isImage:
+            tab = ImageViewerTab(self.app.mainWindow)
+            ensure(tab.view.showImage(rscPath, fromBlock=True))
+            self.objectOpened.emit(ipfsPath)
+            return self.app.mainWindow.registerTab(
+                tab,
+                rscShortName,
+                icon=getMimeIcon('image/x-generic'),
+                tooltip=rscPath,
+                current=True
+            )
+
 
     @ipfsOp
     async def openWithExternal(self, ipfsop, rscPath, progArgs):

@@ -48,7 +48,7 @@ def iImageCannotLoad(path):
 
 
 class ImageViewerTab(GalacteekTab):
-    def __init__(self, imgPath, mainW):
+    def __init__(self, mainW):
         super().__init__(mainW)
 
         self.zoomIn = QToolButton()
@@ -83,8 +83,6 @@ class ImageViewerTab(GalacteekTab):
         self.zoomOut.clicked.connect(self.view.zoomOut)
         self.fitWindow.clicked.connect(
             lambda: self.view.fitWindow(self.fitWindow.isChecked()))
-
-        ensure(self.view.showImage(imgPath))
 
     def onImageLoaded(self, path):
         pass
@@ -121,9 +119,16 @@ class ImageViewerTab(GalacteekTab):
         for url in urls:
             hLayout = QHBoxLayout()
             hLayout.setSizeConstraint(QLayout.SetMinAndMaxSize)
+            urlString = str(url)
+
+            if len(urlString) > 92:
+                urlText = urlString[0:92] + '...'
+            else:
+                urlText = urlString
 
             lbl = QLabel()
-            lbl.setText('<b>{}</b>'.format(url))
+            lbl.setText('<b>{}</b>'.format(urlText))
+            lbl.setToolTip(urlString)
             lbl.setStyleSheet('QLabel { font-size: 12pt }')
 
             clipBtn = QToolButton()
@@ -195,11 +200,16 @@ class ImageView(QScrollArea):
             self.scaleFactor * pixmap.size())
 
     @ipfsOp
-    async def showImage(self, ipfsop, imgPath):
+    async def showImage(self, ipfsop, imgPath, fromBlock=False):
         try:
-            imgData = await ipfsop.waitFor(
-                ipfsop.client.cat(imgPath), 8
-            )
+            if fromBlock is True:
+                imgData = await ipfsop.waitFor(
+                    ipfsop.client.block.get(imgPath), 8
+                )
+            else:
+                imgData = await ipfsop.waitFor(
+                    ipfsop.client.cat(imgPath), 8
+                )
 
             if not imgData:
                 raise Exception('Failed to load image')

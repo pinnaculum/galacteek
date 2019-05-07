@@ -30,6 +30,7 @@ qreader = {editable = true, git = "https://github.com/ewino/qreader"}
 pyzbar = "==0.1.8"
 python-dateutil = "==2.8.0"
 reedsolo = "==0.3"
+qrcode = "==6.1"
 
 [dev-packages]
 pytest = "*"
