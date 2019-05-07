@@ -4,6 +4,7 @@ import sys
 import collections
 import copy
 import re
+import os.path
 from datetime import datetime
 
 import aiofiles
@@ -23,6 +24,8 @@ class MarksEncoder(json.JSONEncoder):
 
 
 marksKey = '_marks'
+pyramidsKey = '_pyramids'
+pyramidsMarksKey = '_pyramidmarks'
 
 
 def rSlash(path):
@@ -85,11 +88,75 @@ class IPFSHashMark(collections.UserDict):
         return mData
 
 
+class MultihashPyramid(collections.UserDict):
+    TYPE_STANDARD = 0
+
+    FLAG_MODIFIABLE_BYUSER = 0x01
+
+    @property
+    def p(self):
+        return self.data[self.name]
+
+    @property
+    def marks(self):
+        return self.p[pyramidsMarksKey]
+
+    @property
+    def marksCount(self):
+        return len(self.marks)
+
+    @property
+    def latest(self):
+        return self.p['latest']
+
+    @latest.setter
+    def latest(self, value):
+        print('Updating latest to', value)
+        self.p['latest'] = value
+
+    @property
+    def icon(self):
+        return self.p['icon']
+
+    @property
+    def ipnsKey(self):
+        return self.p['ipns']['publishtokey']
+
+    @staticmethod
+    def make(name, description='Pyramid', icon=None, ipnskey=None,
+             internal=False, publishdelay=0, comment=None, flags=0):
+        pyramid = MultihashPyramid({
+            name: {
+                'ipns': {
+                    'publishtokey': ipnskey,
+                    'publishdelay': publishdelay
+                },
+                'icon': icon,
+                'latest': None,
+                'description': description,
+                'comment': comment,
+                'type': MultihashPyramid.TYPE_STANDARD,
+                'internal': internal,
+                'flags': flags,
+                pyramidsMarksKey: []  # list of hashmarks in the pyramid
+            }
+        })
+
+        pyramid.name = name
+        return pyramid
+
+
 class IPFSMarks(QObject):
     changed = pyqtSignal()
     markDeleted = pyqtSignal(str)
     markAdded = pyqtSignal(str, dict)
     feedMarkAdded = pyqtSignal(str, IPFSHashMark)
+
+    pyramidConfigured = pyqtSignal(str, str)
+    pyramidAddedMark = pyqtSignal(str, IPFSHashMark)
+    pyramidCapstoned = pyqtSignal(str)
+    pyramidNeedsPublish = pyqtSignal(str, IPFSHashMark)
+    pyramidChanged = pyqtSignal(str)
 
     def __init__(self, path, parent=None, data=None, autosave=True):
         super().__init__(parent)
@@ -100,6 +167,8 @@ class IPFSMarks(QObject):
         self.changed.connect(self.onChanged)
         self.lastsaved = time.time()
         self.changed.emit()
+
+        self.pyramidCapstoned.connect(self.onPyramidCapstone)
 
     @property
     def path(self):
@@ -223,7 +292,8 @@ class IPFSMarks(QObject):
 
         if not self.hasCategory(category, parent=parent):
             parent[category] = {
-                marksKey: {}
+                marksKey: {},
+                pyramidsKey: {}
             }
             self.changed.emit()
             return parent[category]
@@ -496,3 +566,149 @@ class IPFSMarks(QObject):
 
     def norm(self, path):
         return path.rstrip('/')
+
+    def pyramidGetLatestHashmark(self, pyramidPath):
+        pyramid = self.pyramidGet(pyramidPath)
+        if not pyramid:
+            return None
+
+        if pyramid.marksCount > 0:
+            try:
+                latest = pyramid.marks[-1]
+                (mPath, mark), = latest.items()
+                return IPFSHashMark.fromJson(mPath, mark)
+            except:
+                return None
+
+    def onPyramidCapstone(self, pyramidPath):
+        pyramid = self.pyramidGet(pyramidPath)
+        latest = pyramid.latest
+
+        if latest:
+            mark = self.pyramidGetLatestHashmark(pyramidPath)
+            if mark:
+                self.pyramidNeedsPublish.emit(pyramidPath, mark)
+
+    def pyramidNew(self, name, category, icon, description=None, ipnskey=None):
+        sec = self.enterCategory(category, create=True)
+
+        if not sec:
+            return False
+
+        if pyramidsKey not in sec:
+            # Update the schema
+            sec[pyramidsKey] = {}
+
+        if name not in sec[pyramidsKey]:
+            pyramid = MultihashPyramid.make(
+                name, description=description,
+                ipnskey=ipnskey, icon=icon,
+                flags=MultihashPyramid.FLAG_MODIFIABLE_BYUSER
+            )
+            sec[pyramidsKey].update(pyramid)
+            self.pyramidConfigured.emit(category, name)
+            self.changed.emit()
+            return sec[pyramidsKey][name]
+
+    def pyramidAccess(self, pyramidPath):
+        category = os.path.dirname(pyramidPath)
+        name = os.path.basename(pyramidPath)
+        sec = self.enterCategory(category, create=False)
+        if sec:
+            if pyramidsKey not in sec:
+                # Update the schema
+                sec[pyramidsKey] = {}
+            return sec, category, name
+        return None, None, None
+
+    def pyramidGet(self, pyramidPath):
+        sec, category, name = self.pyramidAccess(pyramidPath)
+        if not sec:
+            return None
+
+        if name in sec[pyramidsKey]:
+            pyramid = sec[pyramidsKey][name]
+            _p = MultihashPyramid({name: pyramid})
+            _p.name = name
+            _p.path = pyramidPath
+            return _p
+
+    def pyramidDrop(self, pyramidPath):
+        sec, category, name = self.pyramidAccess(pyramidPath)
+
+        if not sec or pyramidsKey not in sec:
+            return
+
+        if name in sec[pyramidsKey]:
+            del sec[pyramidsKey][name]
+            self.changed.emit()
+
+    def pyramidAdd(self, pyramidPath, path):
+        path = self.norm(path)
+        sec, category, name = self.pyramidAccess(pyramidPath)
+
+        if not sec:
+            return False
+
+        if name in sec[pyramidsKey]:
+            pyramid = sec[pyramidsKey][name]
+            count = len(pyramid[pyramidsMarksKey])
+            exmark = self.find(path)
+
+            if exmark:
+                mark = copy.copy(exmark)
+            else:
+                mark = IPFSHashMark.make(path,
+                                         title='{0}: #{1}'.format(
+                                             name, count + 1),
+                                         description=pyramid['description'],
+                                         datecreated=isoformat(datetime.now()),
+                                         share=False,
+                                         pinSingle=True,
+                                         icon=pyramid['icon'],
+                                         )
+            pyramid[pyramidsMarksKey].append(mark.data)
+            pyramid['latest'] = path
+
+            self.pyramidAddedMark.emit(pyramidPath, mark)
+            self.pyramidChanged.emit(pyramidPath)
+            self.pyramidCapstoned.emit(pyramidPath)
+            self.changed.emit()
+
+            return True
+
+        return False
+
+    def pyramidPop(self, pyramidPath):
+        # Pop a hashmark off the list and republish
+
+        pyramid = self.pyramidGet(pyramidPath)
+        if not pyramid:
+            return False
+
+        if pyramid.marksCount > 0:
+            pyramid.marks.pop()
+
+            # Republish if there's a hashmark available
+            mark = self.pyramidGetLatestHashmark(pyramidPath)
+            if mark:
+                pyramid.latest = mark.path
+                self.pyramidNeedsPublish.emit(pyramidPath, mark)
+            else:
+                pyramid.latest = None
+
+            self.pyramidChanged.emit(pyramidPath)
+
+            self.changed.emit()
+            return True
+
+    def pyramidsInit(self):
+        categories = self.getCategories()
+        for cat in categories:
+            sec = self.enterCategory(cat)
+            if not sec or pyramidsKey not in sec:
+                continue
+
+            pyramids = sec[pyramidsKey]
+            for name, pyramid in pyramids.items():
+                self.pyramidConfigured.emit(cat, name)
