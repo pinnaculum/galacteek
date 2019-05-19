@@ -2,7 +2,7 @@ import os.path
 import uuid
 import pkg_resources
 import asyncio
-import io
+import time
 from os import urandom
 from datetime import datetime
 
@@ -383,7 +383,8 @@ class UserProfile(QObject):
 
     P_FILES = 'files'
 
-    qrImageEncoded = pyqtSignal(str)
+    qrImageEncoded = pyqtSignal(bool, str)
+    webPageSaved = pyqtSignal(dict, str)
 
     def __init__(self, ctx, name, rootDir):
         super(UserProfile, self).__init__()
@@ -415,6 +416,7 @@ class UserProfile(QObject):
         self.sharedHManager = SharedHashmarksManager(self)
 
         self.qrImageEncoded.connect(self.onQrImageEncoded)
+        self.webPageSaved.connect(self.onWebPageSaved)
 
     def debug(self, msg):
         log.debug('Profile {0}: {1}'.format(self.name, msg))
@@ -480,9 +482,11 @@ class UserProfile(QObject):
             self.pathVideos,
             self.pathDocuments,
             self.pathQrCodes,
+            self.pathQrCodesEncrypted,
             self.pathMusic,
             self.pathCode,
-            self.pathOrbital
+            self.pathWebPages,
+            self.pathImages
         ]
 
     @property
@@ -502,12 +506,24 @@ class UserProfile(QObject):
         return os.path.join(self.pathMedia, 'qrcodes')
 
     @property
+    def pathQrCodesEncrypted(self):
+        return os.path.join(self.pathQrCodes, 'encrypted')
+
+    @property
     def pathMedia(self):
         return os.path.join(self.pathFiles, 'multimedia')
 
     @property
     def pathPictures(self):
         return os.path.join(self.pathMedia, 'pictures')
+
+    @property
+    def pathImages(self):
+        return os.path.join(self.pathMedia, 'images')
+
+    @property
+    def pathWebPages(self):
+        return os.path.join(self.pathFiles, 'webpages')
 
     @property
     def pathVideos(self):
@@ -705,8 +721,8 @@ class UserProfile(QObject):
             return True
 
     @ipfsOp
-    async def rsaEncryptSelf(self, op, data):
-        return await self.rsaAgent.storeSelf(data)
+    async def rsaEncryptSelf(self, op, data, offline=False):
+        return await self.rsaAgent.storeSelf(data, offline=offline)
 
     @ipfsOp
     async def rsaDecryptIpfsObj(self, op, cid):
@@ -823,23 +839,35 @@ class UserProfile(QObject):
     async def storeHashmarks(self, ipfsop, senderPeerId, marksJson):
         await self.sharedHManager.store(ipfsop, senderPeerId, marksJson)
 
-    def onQrImageEncoded(self, imgPath):
+    def onQrImageEncoded(self, encrypt, imgPath):
         @ipfsOpFn
-        async def storeQrImage(ipfsop, path):
+        async def storeQrImage(ipfsop, encrypt, path):
             basename = os.path.basename(path)
             file = QFile(path)
 
-            if not file.open(QIODevice.ReadOnly):
-                return
-
-            data = file.readAll().data()
-            #entry = await ipfsop.addPath(path)
-            entry = await self.rsaEncryptSelf(data)
-            print(entry)
+            if encrypt:
+                if not file.open(QIODevice.ReadOnly):
+                    return
+                data = file.readAll().data()
+                entry = await self.rsaEncryptSelf(data)
+            else:
+                entry = await ipfsop.addPath(path)
 
             if entry:
                 # Link it, open it
-                await ipfsop.filesLink(entry, self.pathQrCodes, name=basename)
+                dst = self.pathQrCodesEncrypted if encrypt is True else \
+                    self.pathQrCodes
+                await ipfsop.filesLink(entry, dst, name=basename)
                 ensure(self.ctx.app.resourceOpener.open(entry['Hash']))
 
-        ensure(storeQrImage(imgPath))
+        ensure(storeQrImage(encrypt, imgPath))
+
+    def onWebPageSaved(self, entry, title):
+        @ipfsOpFn
+        async def linkWebPage(ipfsop, wEntry, pageTitle):
+            if not pageTitle:
+                pageTitle = 'Unknown.{}'.format(int(time.time()))
+
+            await ipfsop.filesLink(wEntry, self.pathWebPages, name=pageTitle)
+
+        ensure(linkWebPage(entry, title))

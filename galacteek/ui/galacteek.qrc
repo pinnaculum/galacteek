@@ -1,5 +1,9 @@
 <RCC>
   <qresource>
+    <file>../../share/icons/text-editor.png</file>
+    <file>../../share/icons/mimetypes/ipfs-dag-pb.png</file>
+    <file>../../share/icons/save-file.png</file>
+    <file>../../share/icons/document-preview.png</file>
     <file>../../share/icons/download.png</file>
     <file>../../share/icons/hashmark-black.png</file>
     <file>../../share/icons/loading.gif</file>

@@ -148,6 +148,9 @@ class MIMEType(object):
             return self.type == value.type
 
 
+mimeTypeDag = MIMEType('ipfs/dag-pb')
+
+
 async def detectMimeTypeFromBuffer(buff):
     """
     Guess the MIME type from a bytes buffer, using either libmagic or file(1)
@@ -196,6 +199,10 @@ async def detectMimeType(ipfsop, rscPath, bufferSize=512, timeout=12):
     Returns the MIME type of a given IPFS resource
     Uses either python-magic if available, or runs the 'file' command
 
+    Special cases:
+        * for directories it will return 'inode/directory'
+        * for IPFS DAG nodes it will return 'ipfs/dag-pb'
+
     A chunk of the file is read and used to determine its MIME type
 
     Returns a MIMEType object
@@ -213,15 +220,10 @@ async def detectMimeType(ipfsop, rscPath, bufferSize=512, timeout=12):
     except aioipfs.APIError as err:
         if isinstance(err.message, str) and \
                 err.message.lower() == 'this dag node is a directory':
-            if 0:
-                # This could serve later on, right now treat it
-                # always as a directory
-                async for obj in ipfsop.list(rscPath, resolve_type=False):
-                    for entry in obj['Links']:
-                        await ipfsop.sleep()
-                        if entry['Name'].startswith('index.htm'):
-                            return 'text/html'
             return MIMEType('inode/directory')
+        elif err.message.lower() == 'unknown node type':
+            # Unknown kind of node, let the caller analyze the DAG
+            return mimeTypeDag
     else:
         if not buff:
             return None

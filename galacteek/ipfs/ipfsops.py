@@ -7,6 +7,7 @@ from async_generator import async_generator, yield_
 
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import stripIpfs
+from galacteek.core.asynclib import async_enterable
 from galacteek import log
 
 import aioipfs
@@ -40,14 +41,32 @@ class IPFSLogWatcher(object):
                     self.op.ctx.logAddProvider.emit(msg)
 
 
+class IPFSOperatorOfflineContext(object):
+    def __init__(self, operator):
+        self.operator = operator
+        self.prevOff = self.operator.offline
+
+    async def __aenter__(self):
+        self.operator.offline = True
+        log.debug('IPFS Operator in offline mode: {}'.format(
+            self.operator.offline))
+        return self.operator
+
+    async def __aexit__(self, *args):
+        self.operator.offline = self.prevOff
+        log.debug('IPFS Operator in online mode')
+
+
 class IPFSOperator(object):
     """
     IPFS operator, for your daily operations!
     """
 
-    def __init__(self, client, ctx=None, debug=False):
+    def __init__(self, client, ctx=None, debug=False, offline=False):
         self._id = uuid.uuid1()
         self._cache = {}
+        self._offline = offline
+
         self.client = client
         self.debugInfo = debug
         self.ctx = ctx
@@ -56,6 +75,14 @@ class IPFSOperator(object):
         self._commands = None
 
         self.evReady = asyncio.Event()
+
+    @property
+    def offline(self):
+        return self._offline
+
+    @offline.setter
+    def offline(self, v):
+        self._offline = v
 
     @property
     def uid(self):
@@ -72,6 +99,11 @@ class IPFSOperator(object):
 
     def debug(self, msg):
         log.debug('IPFSOp({0}): {1}'.format(self.uid, msg))
+
+    @async_enterable
+    async def offlineMode(self):
+        clone = IPFSOperator(self.client, ctx=self.ctx)
+        return IPFSOperatorOfflineContext(clone)
 
     async def __aenter__(self):
         await self.client.agent_version_get()
@@ -329,10 +361,24 @@ class IPFSOperator(object):
                 path=path, key=key, msg=err.message))
             return None
 
-    async def resolve(self, path, timeout=20, recursive=False):
+    async def nameResolve(self, path, timeout=20, recursive=False):
         try:
             resolved = await asyncio.wait_for(
                 self.client.name.resolve(path, recursive=recursive),
+                timeout)
+        except asyncio.TimeoutError:
+            self.debug('resolve timeout for {0}'.format(path))
+            return None
+        except aioipfs.APIError as e:
+            self.debug('resolve error: {}'.format(e.message))
+            return None
+        else:
+            return resolved
+
+    async def resolve(self, path, timeout=20, recursive=False):
+        try:
+            resolved = await asyncio.wait_for(
+                self.client.core.resolve(path, recursive=recursive),
                 timeout)
         except asyncio.TimeoutError:
             self.debug('resolve timeout for {0}'.format(path))
@@ -353,6 +399,8 @@ class IPFSOperator(object):
         except aioipfs.APIError as e:
             self.debug('purge error: {}'.format(e.message))
             return False
+        else:
+            self.debug('purge OK: {}'.format(hashRef))
 
     async def isPinned(self, hashRef):
         """
@@ -444,7 +492,8 @@ class IPFSOperator(object):
         return self.ctx.objectStats.get(path, None)
 
     async def addPath(self, path, recursive=True, wrap=False,
-                      callback=None, cidversion=1):
+                      callback=None, cidversion=1, offline=False,
+                      hidden=False):
         """
         Add files from path in the repo, and returns the top-level entry (the
         root directory), optionally wrapping it with a directory object
@@ -452,18 +501,21 @@ class IPFSOperator(object):
         :param str path: the path to the directory/file to import
         :param bool wrap: add a wrapping directory
         :param bool recursive: recursive import
+        :param bool offline: offline mode
         :return: the IPFS top-level entry
         :rtype: dict
         """
         added = None
+        callbackvalid = asyncio.iscoroutinefunction(callback)
         try:
             async for entry in self.client.add(path, quiet=True,
                                                recursive=recursive,
                                                cid_version=cidversion,
+                                               offline=offline, hidden=hidden,
                                                wrap_with_directory=wrap):
                 await self.sleep()
                 added = entry
-                if asyncio.iscoroutinefunction(callback):
+                if callbackvalid:
                     await callback(entry)
         except aioipfs.APIError as err:
             self.debug(err.message)
@@ -508,7 +560,7 @@ class IPFSOperator(object):
         else:
             return data
 
-    async def dagPut(self, data, pin=False):
+    async def dagPut(self, data, pin=False, offline=False):
         """
         Create a new DAG object from data and returns the root CID of the DAG
         """
@@ -523,9 +575,10 @@ class IPFSOperator(object):
 
         dagFile.seek(0, 0)
         try:
-            output = await self.client.dag.put(dagFile.name, pin=pin)
+            output = await self.client.dag.put(
+                dagFile.name, pin=pin, offline=offline)
 
-            if 'Cid' in output:
+            if isinstance(output, dict) and 'Cid' in output:
                 return output['Cid'].get('/', None)
             else:
                 self.debug('dagPut: no CID in output')
@@ -533,6 +586,12 @@ class IPFSOperator(object):
         except aioipfs.APIError as err:
             self.debug(err.message)
             return None
+
+    async def dagPutOffline(self, data, pin=False):
+        """
+        Offline DAG put operation
+        """
+        return await self.dagPut(data, pin=pin, offline=True)
 
     async def dagGet(self, dagPath, timeout=10):
         """

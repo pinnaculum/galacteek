@@ -229,9 +229,7 @@ class ClipboardTracker(QObject):
         return self.current
 
     def clipboardInit(self):
-        """ Used to process the clipboard's content on application's init """
-        text = self.getText()
-        self.clipboardProcess(text)
+        pass
 
     def clipboardPreferredMode(self):
         return QClipboard.Selection if self.clipboard.supportsSelection() \
@@ -267,6 +265,8 @@ class ClipboardTracker(QObject):
             value = mHashMeta.get('mimetype')
             if value:
                 mimetype = MIMEType(value)
+            else:
+                mimetype = await detectMimeType(path)
 
             statInfo = mHashMeta.get('stat')
             if statInfo:

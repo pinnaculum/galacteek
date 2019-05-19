@@ -2,7 +2,6 @@ import os
 import os.path
 import asyncio
 import aioipfs
-import aiofiles
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QCoreApplication
@@ -17,6 +16,7 @@ from galacteek.dweb.page import PDFViewerPage
 from galacteek.dweb.page import WebTab
 from galacteek.dweb.page import DWebView
 
+from galacteek.ipfs import megabytes
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs import StatInfo
 from galacteek.ipfs.mimetype import MIMEType
@@ -28,7 +28,7 @@ from galacteek.ipfs.cidhelpers import shortPathRepr
 
 from galacteek.crypto.qrcode import IPFSQrDecoder
 
-from . import ipfsview
+from .textedit import TextEditorTab
 from .helpers import getMimeIcon
 from .helpers import messageBox
 from .imgview import ImageViewerTab
@@ -103,7 +103,7 @@ class IPFSResourceOpener(QObject):
             return messageBox(iResourceCannotOpen(rscPath))
 
         if mimeType.type == 'application/octet-stream':
-            # Try to decode the
+            # Try to decode it with our key if it's a small file
             logUser.info('{path} ({type}): RSA-encoded data! Trying ..'.format(
                 path=rscPath, type=str(mimeType)))
 
@@ -111,9 +111,8 @@ class IPFSResourceOpener(QObject):
                 statInfo = StatInfo(await ipfsop.objStat(rscPath, timeout=5))
 
             profile = ipfsop.ctx.currentProfile
-            if profile and statInfo and statInfo.dataSmallerThan(1000000):
-                logUser.info('{path}: RSA on the way ..')
-
+            if profile and statInfo.valid and statInfo.dataSmallerThan(
+                    megabytes(8)):
                 data = await ipfsop.catObject(ipfsPath.objPath, timeout=5)
                 if not data:
                     # XXX
@@ -122,38 +121,30 @@ class IPFSResourceOpener(QObject):
                 decrypted = await profile.rsaAgent.decrypt(data)
 
                 if decrypted:
+                    #
                     # "Good evening, 007"
                     #
-                    # Create a short-lived IPFS block that will be burned
-                    # by the resource opener after opening
-                    # 
-                    # We know it's wrong
+                    # Create a short-lived IPFS offline file (not announced)
+                    # with the decrypted content and open it
                     #
 
-                    # Write the deciphered data to a temp file
-                    encFpath = self.app.tempDir.filePath('onetoomany.enc')
-                    async with aiofiles.open(encFpath, 'w+b') as fd:
-                        await ipfsop.sleep()
-                        await fd.write(decrypted)
+                    logUser.info('{path}: RSA OK'.format(path=rscPath))
 
-                    # Burn it in a block
-                    entry = await ipfsop.client.block.put(encFpath)
-                    #entry = await ipfsop.client.add_bytes(decrypted)
+                    # This one won't be announced
+                    entry = await ipfsop.client.add_bytes(decrypted,
+                                                          offline=True)
                     if not entry:
-                        # XXX
+                        logUser.info(
+                            '{path}: cannot import decrypted file'.format(
+                                path=rscPath))
                         return
 
-                    if 0:
-                        logUser.info(
-                            '{path}: RSA OK! spawning child: {child}'.format(
-                                child=entry['Hash']))
-
-                    # Open the data from the block!
-                    ensure(self.openBlock(entry['Key']))
+                    # Open the decrypted file
+                    ensure(self.open(entry['Hash']))
 
         elif mimeType.isText:
-            tab = ipfsview.TextViewerTab()
-            tab.show(rscPath)
+            tab = TextEditorTab(parent=self.app.mainWindow)
+            tab.editor.display(ipfsPath)
             self.objectOpened.emit(ipfsPath)
             return self.app.mainWindow.registerTab(
                 tab,
@@ -207,8 +198,13 @@ class IPFSResourceOpener(QObject):
 
     @ipfsOp
     async def openBlock(self, ipfsop, pathRef, mimeType=None):
+        """
+        Open the raw block referenced by pathRef
+
+        XXX: needs improvements, this only works for images for now
+        """
+
         ipfsPath = None
-        statInfo = None
 
         if isinstance(pathRef, IPFSPath):
             ipfsPath = pathRef
@@ -229,8 +225,7 @@ class IPFSResourceOpener(QObject):
 
         blockSize = blockStat.get('Size')
 
-        if blockSize > (1024 * 1024 * 16):
-            # XXX
+        if blockSize > megabytes(16):
             return
 
         logUser.info('Block {path}: Opening'.format(path=pathRef))
@@ -258,7 +253,6 @@ class IPFSResourceOpener(QObject):
                 tooltip=rscPath,
                 current=True
             )
-
 
     @ipfsOp
     async def openWithExternal(self, ipfsop, rscPath, progArgs):

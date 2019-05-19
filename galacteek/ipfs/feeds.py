@@ -36,7 +36,8 @@ class FeedFollower(object):
                     log.debug('{0} was resolved recently'.format(ipnsp))
                     continue
 
-                resolved = await op.resolve(ipnsp, timeout=15, recursive=True)
+                resolved = await op.nameResolve(ipnsp, timeout=15,
+                                                recursive=True)
                 if not resolved:
                     log.debug('Could not resolve {0}'.format(ipnsp))
                     continue

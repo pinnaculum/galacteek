@@ -200,15 +200,15 @@ class ImageView(QScrollArea):
             self.scaleFactor * pixmap.size())
 
     @ipfsOp
-    async def showImage(self, ipfsop, imgPath, fromBlock=False):
+    async def showImage(self, ipfsop, imgPath, fromBlock=False, timeout=10):
         try:
             if fromBlock is True:
                 imgData = await ipfsop.waitFor(
-                    ipfsop.client.block.get(imgPath), 8
+                    ipfsop.client.block.get(imgPath), timeout
                 )
             else:
                 imgData = await ipfsop.waitFor(
-                    ipfsop.client.cat(imgPath), 8
+                    ipfsop.client.cat(imgPath), timeout
                 )
 
             if not imgData:

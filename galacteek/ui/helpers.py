@@ -20,6 +20,7 @@ from PyQt5.QtWidgets import QInputDialog
 from PyQt5.QtWidgets import QMenu
 
 from galacteek import ensure
+from galacteek.ipfs.mimetype import mimeTypeDag
 
 from .i18n import iIpfsQrCodes
 
@@ -130,6 +131,8 @@ def getIconFromMimeType(mimeType):
         mIcon = 'video/x-generic'
     elif mimeType.isAudio:
         mIcon = 'audio/x-generic'
+    elif mimeType == mimeTypeDag:
+        mIcon = mimeTypeDag.type
     else:
         mIcon = mimeType.type
 
@@ -218,6 +221,7 @@ class IPFSTreeKeyFilter(QObject):
     copyPathPressed = pyqtSignal()
     explorePressed = pyqtSignal()
     returnPressed = pyqtSignal()
+    backspacePressed = pyqtSignal()
 
     def eventFilter(self, obj, event):
         if event.type() == QEvent.KeyPress:
@@ -226,6 +230,9 @@ class IPFSTreeKeyFilter(QObject):
             key = event.key()
             if key == Qt.Key_Return:
                 self.returnPressed.emit()
+                return True
+            if key == Qt.Key_Backspace:
+                self.backspacePressed.emit()
                 return True
             if modifiers & Qt.ControlModifier:
                 if key == Qt.Key_C or key == Qt.Key_Y:

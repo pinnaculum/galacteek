@@ -5,10 +5,13 @@ from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtGui import QColor
 
+from galacteek import ensure
+from galacteek import log
 from galacteek.appsettings import *  # noqa
 from galacteek.ipfs import cidhelpers
 from galacteek.ipfs.ipfsops import *  # noqa
-from galacteek.ipfs.wrappers import ipfsOp
+from galacteek.ipfs import ipfsOp
+from galacteek.ipfs.dag import DAGPortal
 from .helpers import *
 from .i18n import *
 from .widgets import GalacteekTab
@@ -62,10 +65,9 @@ class DAGViewer(GalacteekTab):
     def onItemDoubleClicked(self, item, col):
         if col == 1:
             text = item.text(col)
-            if text.startswith('/ipfs/'):
-                self.gWindow.addBrowserTab().browseFsPath(text)
-            elif cidhelpers.cidValid(text):
-                self.gWindow.addBrowserTab().browseIpfsHash(text)
+            path = cidhelpers.IPFSPath(text)
+            if path.valid:
+                ensure(self.app.resourceOpener.open(path))
 
     @ipfsOp
     async def loadDag(self, ipfsop, hashRef, item=None):
@@ -115,3 +117,35 @@ class DAGViewer(GalacteekTab):
                 listItem.setText(0, iDagItem(i))
                 listItem.setExpanded(True)
                 await self.displayItem(data[i], listItem)
+
+
+class DAGBuildingWidget(QWidget):
+    """
+    You would inherit this class if you have a widget that's gonna
+    build a DAG from scratch or refine an existing DAG
+    """
+
+    def __init__(self, dagCid=None, offline=True, parent=None):
+        super().__init__(parent)
+        self.dagOffline = offline
+
+        self._dagCid = dagCid
+        self._dag = None
+
+    @ipfsOp
+    async def dagInit(self, ipfsop):
+        log.debug('Creating new DAG')
+        try:
+            # Create empty DAG
+            cid = await ipfsop.dagPut({}, offline=self.dagOffline, pin=False)
+        except aioipfs.APIError:
+            # 911
+            log.debug('Cannot create DAG ?')
+        else:
+            if cidhelpers.cidValid(cid):
+                self.dagCid = cid
+                self._dag = DAGPortal(self.dagCid)
+
+                await ipfsop.sleep()
+                await self.dag.load()
+                await self.dag.waitLoaded()
