@@ -1,4 +1,5 @@
 import functools
+import os.path
 
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QAction
@@ -6,7 +7,6 @@ from PyQt5.QtWidgets import QMenu
 from PyQt5.QtWidgets import QInputDialog
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QToolButton
-from PyQt5.QtWidgets import QFileDialog
 
 from PyQt5.QtPrintSupport import *
 
@@ -69,6 +69,11 @@ def iOpenWith():
 
 def iDownload():
     return QCoreApplication.translate('BrowserTabForm', 'Download')
+
+
+def iSaveWebPage():
+    return QCoreApplication.translate(
+        'BrowserTabForm', 'Save page to the "Web Pages" folder')
 
 
 def iPin():
@@ -489,6 +494,17 @@ class BrowserTab(GalacteekTab):
         self.ui.loadFromClipboardButton.clicked.connect(
             self.loadFromClipboardButtonClicked)
 
+        # Save page button, visible when non-IPFS content is displayed
+        saveIcon = getMimeIcon('text/html')
+        self.savePageButton = PopupToolButton(
+            saveIcon, mode=QToolButton.InstantPopup, parent=self
+        )
+        self.savePageButton.setToolTip(iSaveWebPage())
+        self.savePageButton.menu.addAction(saveIcon,
+                                           iSaveWebPage(),
+                                           self.onSavePage)
+        self.savePageButton.setEnabled(False)
+
         self.hashmarkMgrButton = HashmarkMgrButton(
             marks=self.app.marksLocal)
         self.hashmarkPageAction = QAction(getIcon('hashmark-black.png'),
@@ -501,6 +517,8 @@ class BrowserTab(GalacteekTab):
         self.hashmarkMgrButton.hashmarkClicked.connect(self.onHashmarkClicked)
 
         self.hashmarkMgrButton.updateMenu()
+
+        self.ui.hLayoutCtrl.addWidget(self.savePageButton)
         self.ui.hLayoutCtrl.addWidget(self.hashmarkMgrButton)
 
         # Setup the tool button for browsing IPFS content
@@ -642,15 +660,20 @@ class BrowserTab(GalacteekTab):
         self.ui.webEngineView.reload()
 
     def onSavePage(self):
+        tmpd = self.app.tempDirCreate(self.app.tempDirWeb)
+        if tmpd is None:
+            return messageBox('Cannot create temporary directory')
+
         page = self.webView.page()
 
-        result = QFileDialog.getSaveFileName(
-            None, 'Select file', self.app.settingsMgr.getSetting(
-                CFG_SECTION_BROWSER, CFG_KEY_DLPATH), '(*.*)')
-        if not result:
-            return
+        url = page.url()
+        filename = url.fileName()
 
-        page.save(result[0], QWebEngineDownloadItem.CompleteHtmlSaveFormat)
+        if filename == '' or cidValid(filename):
+            filename = 'index.html'
+
+        path = os.path.join(tmpd, filename)
+        page.save(path, QWebEngineDownloadItem.CompleteHtmlSaveFormat)
 
     def onHashmarkClicked(self, path, title):
         ipfsPath = IPFSPath(path)
@@ -824,6 +847,7 @@ class BrowserTab(GalacteekTab):
 
     def onLoadFinished(self, ok):
         self.ui.stopButton.setEnabled(False)
+        self.savePageButton.setEnabled(True)
 
     def onIconChanged(self, icon):
         self.gWindow.ui.tabWidget.setTabIcon(self.tabPageIdx, icon)
@@ -869,6 +893,7 @@ class BrowserTab(GalacteekTab):
         self.browseFsPath(IPFSPath(joinIpns(ipnsHash)))
 
     def enterUrl(self, url):
+        self.savePageButton.setEnabled(False)
         log.debug('Entering URL {}'.format(url.toString()))
         self.ui.urlZone.clear()
         self.ui.urlZone.insert(url.toString())

@@ -33,7 +33,9 @@ from galacteek.ipfs.cidhelpers import shortPathRepr
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs import StatInfo
 from galacteek.ipfs import megabytes
+from galacteek.ipfs.mimetype import mimeTypeDag
 from galacteek.crypto.qrcode import IPFSQrDecoder
+from galacteek.crypto.qrcode import IPFSQrEncoder
 
 from .hashmarks import addHashmark
 from .helpers import qrCodesMenuBuilder
@@ -55,6 +57,7 @@ from . import dag
 from .i18n import iUnknown
 from .i18n import iDagViewer
 from .i18n import iHashmark
+from .i18n import iIpfsQrEncode
 
 
 def iClipboardEmpty():
@@ -189,6 +192,18 @@ def iClipboardStack():
                                       'Clipboard stack')
 
 
+def iClipStackQrEncrypted():
+    return QCoreApplication.translate(
+        'clipboardManager',
+        'QR codes: encode clipboard stack to image (encrypted)')
+
+
+def iClipStackQrPublic():
+    return QCoreApplication.translate(
+        'clipboardManager',
+        'QR codes: encode clipboard stack to image (clear)')
+
+
 class ClipboardManager(PopupToolButton):
     def __init__(self, clipTracker, itemsStack, rscOpener,
                  icon=None, menu=None, parent=None):
@@ -217,6 +232,16 @@ class ClipboardManager(PopupToolButton):
         self.itSwitchMenu = QMenu(iClipboardStack())
         self.itSwitchMenu.triggered.connect(self.onItemSwitch)
 
+        self.qrMenu = QMenu(iIpfsQrEncode())
+        qrIcon = getIcon('ipfs-qrcode.png')
+        self.qrMenu.setIcon(qrIcon)
+        self.qrMenu.addAction(qrIcon,
+                              iClipStackQrEncrypted(),
+                              self.onQrEncodeStackEncrypted)
+        self.qrMenu.addAction(qrIcon,
+                              iClipStackQrPublic(),
+                              self.onQrEncodeStackPublic)
+
         for num in range(1, 10):
             action = QAction(getIcon('clipboard.png'),
                              iClipItemSwitch(num),
@@ -228,9 +253,6 @@ class ClipboardManager(PopupToolButton):
 
         self.initHistoryMenu()
 
-        self.menu.addAction('QR codes: encode clipboard stack to image',
-                            self.onQrEncodeStack)
-
     def onItemSwitch(self, action):
         num = action.data()
 
@@ -241,10 +263,15 @@ class ClipboardManager(PopupToolButton):
 
     def initHistoryMenu(self):
         self.menu.clear()
+
+        self.menu.addMenu(self.qrMenu)
+
+        self.menu.addSeparator()
         self.menu.addAction(iClipboardClearHistory(),
                             self.onHistoryClear)
         self.menu.addSeparator()
         self.menu.addMenu(self.itSwitchMenu)
+
         self.menu.addSeparator()
 
     def onHistoryClear(self):
@@ -353,29 +380,49 @@ class ClipboardManager(PopupToolButton):
         except Exception:
             pass
 
-    def onQrEncodeStack(self):
-        from galacteek.crypto.qrcode import IPFSQrEncoder
+    def onQrEncodeStackPublic(self):
+        if len(self.tracker.items) == 0:
+            return messageBox('Clipboard stack is empty')
+
+        ensure(self.encodeClipboardItems(encrypt=False))
+
+    def onQrEncodeStackEncrypted(self):
+        if len(self.tracker.items) == 0:
+            return messageBox('Clipboard stack is empty')
+
+        ensure(self.encodeClipboardItems(encrypt=True))
+
+    @ipfsOp
+    async def encodeClipboardItems(self, ipfsop, encrypt=False):
+        logUser.info('QR: encoding clipboard stack (encrypted: {enc})'.format(
+            enc=encrypt))
+
         encoder = IPFSQrEncoder()
 
         for item in self.tracker.items:
-            encoder.add(str(item.ipfsPath))
+            if item.ipfsPath.valid:
+                logUser.info('QR: adding item: {item}'.format(
+                    item=str(item.ipfsPath)))
+                encoder.add(str(item.ipfsPath))
 
-        ensure(self.encodeClipboardItems(encoder))
+        logUser.info('QR: encoding ..')
 
-    @ipfsOp
-    async def encodeClipboardItems(self, ipfsop, encoder):
-        imgPath = self.app.tempDir.filePath(str(time.time()) + '.png')
+        qrName = 'ipfsqr.{}.png'.format(int(time.time()))
+        imgPath = self.app.tempDir.filePath(qrName)
 
         try:
             image = await encoder.encodeAll(loop=self.app.loop,
-                executor=self.app.executor)
+                                            executor=self.app.executor)
             image.save(imgPath)
         except:
             # :-/
+            logUser.info('QR: encoding error ..')
             return
+        else:
+            logUser.info('QR: encoding successfull!')
 
         if ipfsop.ctx.currentProfile:
-            ipfsop.ctx.currentProfile.qrImageEncoded.emit(imgPath)
+            ipfsop.ctx.currentProfile.qrImageEncoded.emit(encrypt, imgPath)
 
 
 class ClipboardItemButton(PopupToolButton):
@@ -578,7 +625,7 @@ class ClipboardItemButton(PopupToolButton):
             return self.updateIcon(getMimeIcon('unknown'))
 
         icon = None
-        if self.item.mimeType.isDir:
+        if self.item.mimeType.isDir or self.item.mimeType == mimeTypeDag:
             # It's a directory. Add the explore action and disable
             # the actions that don't apply to a folder
             self.menu.addAction(self.exploreHashAction)

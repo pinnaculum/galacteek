@@ -32,11 +32,14 @@ class IpfsRSAAgent:
                                               await self.__rsaReadPrivateKey())
 
     @ipfsOp
-    async def storeSelf(self, op, data):
+    async def storeSelf(self, op, data, offline=False):
         """
         Encrypt some data with our pubkey and store it in IPFS
 
         Returns the IPFS entry (returned by 'add') of the file
+
+        :param bytes data: data to encrypt
+        :param bool offline: offline mode (no announce)
 
         :rtype: dict
         """
@@ -44,7 +47,8 @@ class IpfsRSAAgent:
             encrypted = await self.encrypt(data, self.pubKeyPem)
             if encrypted is None:
                 return
-            entry = await op.client.add_bytes(encrypted)
+
+            entry = await op.client.add_bytes(encrypted, offline=offline)
             if entry:
                 self.debug(
                     'storeSelf: encoded {0} bytes to {1}'.format(

@@ -9,6 +9,7 @@ from galacteek import log
 from galacteek import ensure
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import joinIpfs
+from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.ipfsops import *  # noqa
 from galacteek.ipfs import pb
 from galacteek.core.asynclib import async_enterable
@@ -20,18 +21,60 @@ class DAGObj:
         self.data = data
 
 
-class DAGQuery(object):
-    def __init__(self, dagCid=None, dagRoot=None):
+class DAGEditor(object):
+    def __init__(self, dag):
+        self.dag = dag
+
+    @property
+    def d(self):
+        return self.dag.d
+
+    async def __aenter__(self):
+        log.debug('Editing DAG: {cid}'.format(cid=self.dag.dagCid))
+        return self
+
+    async def __aexit__(self, *args):
+        await self.dag.sync()
+
+
+class DAGPortal(QObject):
+    """
+    Don't ask me about the name
+    """
+
+    cidChanged = pyqtSignal(str)
+    loaded = pyqtSignal(str)
+
+    def __init__(self, dagCid=None, dagRoot=None, offline=True,
+                 parent=None):
+        super().__init__(parent)
         self._dagCid = dagCid
         self._dagRoot = dagRoot
+        self._dagPath = IPFSPath(self._dagCid)
         self.evLoaded = asyncio.Event()
+        self.offline = offline
+
+    @property
+    def d(self):
+        return self._dagRoot
 
     def debug(self, msg):
-        log.debug('DAG query: {}'.format(msg))
+        log.debug('DAGPortal({cid}): {msg}'.format(
+            cid=self.dagCid, msg=msg))
 
     @property
     def dagCid(self):
         return self._dagCid
+
+    @dagCid.setter
+    def dagCid(self, val):
+        self._dagCid = val
+        self._dagPath = IPFSPath(self._dagCid)
+        self.cidChanged.emit(val)
+
+    @property
+    def dagPath(self):
+        return self._dagPath
 
     @property
     def dagRoot(self):
@@ -39,6 +82,10 @@ class DAGQuery(object):
 
     def path(self, subpath):
         return os.path.join(joinIpfs(self.dagCid), subpath)
+
+    def child(self, subpath):
+        if self.dagPath.valid:
+            return self.dagPath.child(subpath)
 
     async def waitLoaded(self, timeout=15):
         return asyncio.wait_for(self.evLoaded.wait(), timeout)
@@ -48,12 +95,27 @@ class DAGQuery(object):
         self._dagRoot = await op.waitFor(op.dagGet(self.dagCid), timeout)
         if self.dagRoot:
             self.evLoaded.set()
+            self.loaded.emit(self.dagCid)
             return self.dagRoot
 
     @ipfsOp
+    async def sync(self, op, timeout=10):
+        try:
+            cid = await op.waitFor(
+                op.dagPut(self.dagRoot, offline=self.offline), timeout)
+        except aioipfs.APIError:
+            pass
+        else:
+            self.dagCid = cid
+
+    @ipfsOp
     async def get(self, op, path):
-        dagNode = await op.dagGet(
-            os.path.join(self.dagCid, path))
+        try:
+            dagNode = await op.dagGet(
+                os.path.join(self.dagCid, path))
+        except aioipfs.APIError as err:
+            log.debug(err.message)
+            return None
 
         if isinstance(dagNode, dict) and 'data' in dagNode and \
                 'links' in dagNode:
@@ -127,8 +189,18 @@ class DAGQuery(object):
                 raise Exception('Cannot load dag')
         return self
 
+    @async_enterable
+    async def edit(self):
+        return DAGEditor(self)
+
     async def __aexit__(self, *args):
         pass
+
+    def link(self, cid):
+        if isinstance(cid, str):
+            return {"/": cid}
+        elif isinstance(cid, dict) and 'Hash' in cid:
+            return {"/": cid['Hash']}
 
 
 class EvolvingDAG(QObject):
@@ -379,4 +451,4 @@ class EvolvingDAG(QObject):
 
     @async_enterable
     async def query(self):
-        return DAGQuery(dagCid=self.dagCid, dagRoot=self.dagRoot)
+        return DAGPortal(dagCid=self.dagCid, dagRoot=self.dagRoot)

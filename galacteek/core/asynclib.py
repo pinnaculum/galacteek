@@ -104,3 +104,11 @@ async def asyncReadFile(path, mode='rb'):
             return await fd.read()
     except BaseException:
         return None
+
+
+async def asyncWriteFile(path, data, mode='w+b'):
+    try:
+        async with aiofiles.open(path, mode) as fd:
+            await fd.write(data)
+    except BaseException:
+        return None

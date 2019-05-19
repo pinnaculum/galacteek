@@ -9,11 +9,13 @@ from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWidgets import QWidgetAction
 from PyQt5.QtWidgets import QLabel
+from PyQt5.QtWidgets import QApplication
 
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QPoint
 from PyQt5.QtCore import QUrl
+from PyQt5.QtCore import QMimeData
 
 from PyQt5.QtGui import QImage
 from PyQt5.QtGui import QPixmap
@@ -42,6 +44,14 @@ class GalacteekTab(QWidget):
 
         self.gWindow = gWindow
         self.setAttribute(Qt.WA_DeleteOnClose)
+
+    def tabIndex(self, w=None):
+        return self.gWindow.ui.tabWidget.indexOf(w if w else self)
+
+    def setTabName(self, name, widget=None):
+        idx = self.tabIndex(w=widget)
+        if idx >= 0:
+            self.gWindow.ui.tabWidget.setTabText(idx, name)
 
     def addToLayout(self, widget):
         self.vLayout.addWidget(widget)
@@ -103,6 +113,81 @@ class URLDragAndDropProcessor:
         event.acceptProposedAction()
 
 
+class CheckableToolButton(QToolButton):
+    def __init__(self, toggled=None, icon=None, parent=None):
+        super(CheckableToolButton, self).__init__(parent)
+        self.setCheckable(True)
+        self.setAutoRaise(True)
+
+        if toggled:
+            self.toggled.connect(toggled)
+
+        if icon:
+            self.setIcon(icon)
+
+
+class IPFSPathClipboardButton(QToolButton):
+    def __init__(self, ipfsPath, parent=None):
+        super(IPFSPathClipboardButton, self).__init__(parent)
+
+        self.setEnabled(False)
+        self.setIcon(getIcon('clipboard.png'))
+        self.app = QApplication.instance()
+        self.path = ipfsPath
+        self.clicked.connect(self.onClicked)
+
+    @property
+    def path(self):
+        return self._path
+
+    @path.setter
+    def path(self, path):
+        if isinstance(path, IPFSPath) and path.valid:
+            self.setEnabled(True)
+            self.setToolTip('Copy to clipboard: {}'.format(str(path)))
+            self._path = path
+
+    def onClicked(self):
+        if isinstance(self.path, IPFSPath) and self.path.valid:
+            self.app.setClipboardText(str(self.path))
+
+
+class IPFSUrlLabel(QLabel):
+    def __init__(self, ipfsPath, invalidPathLabel='Invalid path', parent=None):
+        super(IPFSUrlLabel, self).__init__(parent)
+
+        self.invalidPathMessage = invalidPathLabel
+        self.path = ipfsPath
+        self.setTextInteractionFlags(Qt.TextSelectableByMouse)
+
+    @property
+    def path(self):
+        return self._path
+
+    @path.setter
+    def path(self, val):
+        self._path = val
+
+        if self.path and self.path.valid:
+            self.url = QUrl('dweb:' + str(self.path))
+            self.setText('<a href="{url}">{url}</a>'.format(
+                url=self.url.toString()))
+        else:
+            self.url = None
+            self.setText(self.invalidPathMessage)
+
+    def dragEnterEvent(self, event):
+        mimeData = event.mimeData()
+
+        if mimeData.hasUrls() or mimeData.hasText():
+            event.acceptProposedAction()
+
+    def mimeData(self, indexes):
+        mimedata = QMimeData()
+        mimedata.setUrls([self.url])
+        return mimedata
+
+
 class PopupToolButton(QToolButton, URLDragAndDropProcessor):
     def __init__(self, icon=None, parent=None, menu=None,
                  mode=QToolButton.MenuButtonPopup, acceptDrops=False):
@@ -118,6 +203,9 @@ class PopupToolButton(QToolButton, URLDragAndDropProcessor):
 
 
 class IPFSObjectToolButton(QToolButton):
+    """
+    Used in the quickaccess toolbar
+    """
     deleteRequest = pyqtSignal()
 
     def __init__(self, ipfsPath, icon=None, parent=None):
@@ -137,6 +225,9 @@ class IPFSObjectToolButton(QToolButton):
 
 
 class HashmarkToolButton(QToolButton):
+    """
+    Used in the quickaccess toolbar
+    """
     deleteRequest = pyqtSignal()
 
     def __init__(self, mark, icon=None, parent=None):

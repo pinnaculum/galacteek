@@ -1,6 +1,7 @@
 import sys
 import os
 import os.path
+import uuid
 import logging
 import asyncio
 import pkg_resources
@@ -27,6 +28,7 @@ from PyQt5.QtCore import QFile
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import QTemporaryDir
+from PyQt5.QtCore import QDir
 from PyQt5.QtCore import QMimeDatabase
 
 from galacteek import log, ensure
@@ -323,10 +325,22 @@ class GalacteekApplication(QApplication):
                                       autosave=False)
 
         self.tempDir = QTemporaryDir()
-        if not self.tempDir.isValid():
-            pass
+        self.tempDirWeb = self.tempDirCreate(
+            self.tempDir.path(), 'webdownloads')
 
         self.scriptsIpfs = ipfsClientScripts(self.getIpfsConnectionParams())
+
+    def tempDirCreate(self, basedir, name=None):
+        tmpdir = QDir(basedir)
+
+        if not tmpdir.exists():
+            return
+
+        uid = name if name else str(uuid.uuid4())
+
+        path = tmpdir.absoluteFilePath(uid)
+        if tmpdir.mkpath(path):
+            return path
 
     def importDefaultHashmarks(self, marksLocal):
         pkg = 'galacteek.hashmarks.default'

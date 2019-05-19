@@ -60,6 +60,7 @@ from . import eventlog
 from . import pin
 from . import chat
 
+from .textedit import TextEditorTab
 from .quickaccess import QuickAccessToolBar
 from .helpers import *
 from .modelhelpers import *
@@ -339,6 +340,12 @@ class MainWindow(QMainWindow):
         self.fileManagerButton.clicked.connect(self.onFileManagerClicked)
         self.fileManagerButton.setShortcut(QKeySequence('Ctrl+f'))
 
+        # Text editor button
+        self.textEditorButton = QToolButton()
+        self.textEditorButton.setToolTip(iTextEditor())
+        self.textEditorButton.setIcon(getIcon('text-editor.png'))
+        self.textEditorButton.clicked.connect(self.addEditorTab)
+
         # Edit-Profile button
         self.menuUserProfile = QMenu()
         self.menuUserProfile.addSeparator()
@@ -438,6 +445,7 @@ class MainWindow(QMainWindow):
 
         self.toolbarMain.addSeparator()
         self.toolbarMain.addWidget(self.fileManagerButton)
+        self.toolbarMain.addWidget(self.textEditorButton)
 
         self.hashmarkMgrButton.hashmarkClicked.connect(self.onHashmarkClicked)
         self.sharedHashmarkMgrButton.hashmarkClicked.connect(
@@ -775,6 +783,7 @@ class MainWindow(QMainWindow):
                 self.fileManagerButton,
                 self.chatRoomButton,
                 self.peersButton,
+                self.textEditorButton,
                 self.profileEditButton]:
             btn.setEnabled(flag)
 
@@ -851,6 +860,7 @@ class MainWindow(QMainWindow):
 
     def keyPressEvent(self, event):
         # Ultimately this will be moved to configurable shortcuts
+
         modifiers = event.modifiers()
 
         if modifiers & Qt.ControlModifier:
@@ -908,6 +918,15 @@ class MainWindow(QMainWindow):
             self.ui.tabWidget.removeTab(idx)
             self.allTabs.remove(tab)
             del tab
+
+    def addEditorTab(self, path=None, editing=True):
+        tab = TextEditorTab(editing=editing, parent=self)
+
+        if isinstance(path, IPFSPath) and path.valid:
+            tab.editor.display(path)
+
+        self.registerTab(tab, iTextEditor(),
+                         icon=getIcon('text-editor.png'), current=True)
 
     def addIpfsSearchView(self, text):
         if len(text) > 0:

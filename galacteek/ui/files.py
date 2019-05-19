@@ -28,7 +28,6 @@ from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import ipfsOp
-from galacteek.ipfs.cache import IPFSEntryCache
 from galacteek.appsettings import *
 
 from . import ui_files
@@ -127,6 +126,10 @@ def iDocuments():
     return QCoreApplication.translate('FileManagerForm', 'Documents')
 
 
+def iWebPages():
+    return QCoreApplication.translate('FileManagerForm', 'Web Pages')
+
+
 def iQrCodes():
     return QCoreApplication.translate('FileManagerForm', 'QR codes')
 
@@ -134,20 +137,43 @@ def iQrCodes():
 class IPFSItem(UneditableItem):
     def __init__(self, text, path=None, parenthash=None, icon=None):
         super(IPFSItem, self).__init__(text, icon=icon)
-        self.path = path
-        self.setParentHash(parenthash)
+        self._path = path
+        self._parentHash = parenthash
+
+    @property
+    def path(self):
+        return self._path
+
+    @path.setter
+    def path(self, v):
+        self._path = v
+
+    @property
+    def parentHash(self):
+        return self._parentHash
 
     def setParentHash(self, pHash):
-        self.parentHash = pHash
+        self._parentHash = pHash
 
-    def getParentHash(self):
-        return self.parentHash
+    def childrenItems(self):
+        for row in range(0, self.rowCount()):
+            child = self.child(row, 0)
+            if child:
+                yield child
 
-    def setPath(self, path):
-        self.path = path
+    def findChildByMultihash(self, multihash):
+        for item in self.childrenItems():
+            if not isinstance(item, IPFSNameItem):
+                continue
+            if item.entry['Hash'] == multihash:
+                return item
 
-    def getPath(self):
-        return self.path
+    def findChildByName(self, name):
+        for item in self.childrenItems():
+            if not isinstance(item, IPFSNameItem):
+                continue
+            if item.entry['Name'] == name:
+                return item
 
 
 class IPFSNameItem(IPFSItem):
@@ -160,6 +186,14 @@ class IPFSNameItem(IPFSItem):
     @property
     def entry(self):
         return self._entry
+
+    @property
+    def ipfsPath(self):
+        return IPFSPath(self.fullPath)
+
+    @property
+    def dwebUrl(self):
+        return QUrl('dweb:{}'.format(self.fullPath))
 
     @property
     def mimeType(self):
@@ -180,7 +214,7 @@ class IPFSNameItem(IPFSItem):
 
     @property
     def fullPath(self):
-        parentHash = self.getParentHash()
+        parentHash = self.parentHash
         if parentHash:
             return joinIpfs(os.path.join(parentHash, self.entry['Name']))
         else:
@@ -203,10 +237,6 @@ class FilesItemModel(QStandardItemModel):
 
         self.itemRoot = self.invisibleRootItem()
         self.itemRootIdx = self.indexFromItem(self.itemRoot)
-        self.entryCache = IPFSEntryCache()
-
-        self.rowsInserted.connect(self.onRowsInserted)
-        self.rowsAboutToBeRemoved.connect(self.onRowsToBeRemoved)
 
     def setupItemsFromProfile(self, profile, model, filesM):
         self.itemHome = IPFSItem(iHome(), path=profile.pathHome)
@@ -220,6 +250,8 @@ class FilesItemModel(QStandardItemModel):
                                  path=profile.pathCode)
         self.itemDocuments = IPFSItem(iDocuments(),
                                       path=profile.pathDocuments)
+        self.itemWebPages = IPFSItem(iWebPages(),
+                                     path=profile.pathWebPages)
         self.itemQrCodes = IPFSItem(iQrCodes(),
                                     path=profile.pathQrCodes)
 
@@ -230,6 +262,7 @@ class FilesItemModel(QStandardItemModel):
             self.itemCode,
             self.itemMusic,
             self.itemDocuments,
+            self.itemWebPages,
             self.itemQrCodes
         ])
 
@@ -251,31 +284,22 @@ class FilesItemModel(QStandardItemModel):
                     entry = await ipfsop.addPath(path)
                     await ipfsop.sleep()
 
-                    if entry and not entry['Hash'] in model.entryCache:
+                    if not entry:
+                        tmpFile.remove()
+                        continue
+
+                    exists = await ipfsop.filesLookupHash(
+                        model.itemQrCodes.path, entry['Hash'])
+
+                    if not exists:
                         await files.linkEntry(ipfsop, entry,
                                               model.itemQrCodes.path,
                                               entry['Name'])
+
                     tmpFile.remove()
 
     def displayItem(self, arg):
         self.itemRoot.appendRow(arg)
-
-    def onRowsInserted(self, parent, first, last):
-        for itNum in range(first, last + 1):
-            itNameIdx = self.index(itNum, 0, parent)
-            item = self.itemFromIndex(itNameIdx)
-
-            if type(item) is IPFSNameItem:
-                self.entryCache.register(item.entry)
-
-    def onRowsToBeRemoved(self, parent, first, last):
-        for itNum in range(first, last + 1):
-            itNameIdx = self.index(itNum, 0, parent)
-            item = self.itemFromIndex(itNameIdx)
-
-            if type(item) is IPFSNameItem:
-                entry = item.entry
-                self.entryCache.purge(entry['Hash'])
 
     def supportedDropActions(self):
         return Qt.CopyAction | Qt.MoveAction | \
@@ -291,8 +315,7 @@ class FilesItemModel(QStandardItemModel):
             nameItem = self.getNameItemFromIdx(idx)
 
             if nameItem:
-                url = QUrl('dweb:{}'.format(nameItem.fullPath))
-                mimedata.setUrls([url])
+                mimedata.setUrls([nameItem.dwebUrl])
                 break
 
         return mimedata
@@ -383,7 +406,9 @@ class FilesTab(GalacteekTab):
         self.ui.pathSelector.insertItem(4, getIcon('code-fork.png'), iCode())
         self.ui.pathSelector.insertItem(5, getIcon('folder-documents.png'),
                                         iDocuments())
-        self.ui.pathSelector.insertItem(6, getIcon('ipfs-qrcode.png'),
+        self.ui.pathSelector.insertItem(6, getMimeIcon('text/html'),
+                                        iWebPages())
+        self.ui.pathSelector.insertItem(7, getIcon('ipfs-qrcode.png'),
                                         iQrCodes())
         self.ui.pathSelector.activated.connect(self.onPathSelector)
 
@@ -418,7 +443,7 @@ class FilesTab(GalacteekTab):
     @property
     def displayPath(self):
         if self.displayedItem:
-            return self.displayedItem.getPath()
+            return self.displayedItem.path
 
     @property
     def busy(self):
@@ -568,6 +593,8 @@ class FilesTab(GalacteekTab):
             self.changeDisplayItem(self.model.itemCode)
         if text == iDocuments():
             self.changeDisplayItem(self.model.itemDocuments)
+        if text == iWebPages():
+            self.changeDisplayItem(self.model.itemWebPages)
         if text == iQrCodes():
             self.changeDisplayItem(self.model.itemQrCodes)
 
@@ -591,14 +618,8 @@ class FilesTab(GalacteekTab):
         ipfsPath = joinIpfs(dataHash)
         menu = QMenu()
 
-        def unlink(hash):
-            self.scheduleUnlink(hash)
-
-        def explore(hash):
-            self.gWindow.exploreMultihash(hash)
-
-        def delete(hash):
-            self.scheduleDelete(hash)
+        def explore(multihash):
+            self.gWindow.exploreMultihash(multihash)
 
         def hashmark(mPath, name):
             addHashmark(self.app.marksLocal, mPath, name)
@@ -607,7 +628,7 @@ class FilesTab(GalacteekTab):
             self.clipboard.setText(itemHash)
 
         def openWithMediaPlayer(itemHash):
-            parentHash = nameItem.getParentHash()
+            parentHash = nameItem.parentHash
             name = nameItem.entry['Name']
             if parentHash:
                 fp = joinIpfs(os.path.join(parentHash, name))
@@ -625,8 +646,10 @@ class FilesTab(GalacteekTab):
                            functools.partial(self.app.setClipboardText,
                                              nameItem.fullPath))
         menu.addSeparator()
-        menu.addAction(iUnlinkFile(), functools.partial(unlink, dataHash))
-        menu.addAction(iDeleteFile(), functools.partial(delete, dataHash))
+        menu.addAction(iUnlinkFile(), functools.partial(
+            self.scheduleUnlink, nameItem, dataHash))
+        menu.addAction(iDeleteFile(), functools.partial(
+            self.scheduleDelete, nameItem, dataHash))
         menu.addSeparator()
         menu.addAction(getIcon('hashmarks.png'),
                        iHashmarkFile(),
@@ -640,6 +663,11 @@ class FilesTab(GalacteekTab):
                        functools.partial(ensure, self.app.resourceOpener.open(
                                          joinIpfs(dataHash))
                                          ))
+        if nameItem.isFile():
+            menu.addAction(getIcon('text-editor.png'),
+                           'Edit',
+                           functools.partial(self.editFile,
+                                             nameItem.ipfsPath))
 
         if nameItem.isDir():
             menu.addAction(getIcon('folder-open.png'),
@@ -676,6 +704,9 @@ class FilesTab(GalacteekTab):
         self.gWindow.addBrowserTab().browseFsPath(
             IPFSPath(path))
 
+    def editFile(self, ipfsPath):
+        self.gWindow.addEditorTab(path=ipfsPath)
+
     def onExploreItem(self):
         current = self.currentItem()
 
@@ -698,7 +729,7 @@ class FilesTab(GalacteekTab):
             finalPath = joinIpfs(dataHash)
 
             # Find the parent hash
-            parentHash = nameItem.getParentHash()
+            parentHash = nameItem.parentHash
             if parentHash:
                 # We have the parent hash, so use it to build a file path
                 # preserving the real file name
@@ -706,8 +737,9 @@ class FilesTab(GalacteekTab):
 
             ensure(resourceOpener.open(finalPath))
 
-        self.app.task(self.listFiles, item.getPath(), parentItem=item,
-                      autoexpand=True)
+        elif nameItem.isDir():
+            self.app.task(self.listFiles, item.path, parentItem=item,
+                          autoexpand=True)
 
     def onSearchFiles(self):
         search = self.ui.searchFiles.text()
@@ -717,7 +749,7 @@ class FilesTab(GalacteekTab):
         dirName = QInputDialog.getText(self, 'Directory name',
                                        'Directory name')
         if dirName:
-            self.app.task(self.makeDir, self.displayedItem.getPath(),
+            self.app.task(self.makeDir, self.displayedItem.path,
                           dirName[0])
 
     def onRefreshClicked(self):
@@ -765,11 +797,19 @@ class FilesTab(GalacteekTab):
             return
         return self.app.task(self.addDirectory, path)
 
-    def scheduleUnlink(self, hash):
-        return self.app.task(self.unlinkFileFromHash, hash)
+    def scheduleUnlink(self, item, multihash):
+        reply = questionBox('Unlink',
+                            'Do you really want to unlink this item ?')
+        if reply:
+            ensure(self.unlinkFileFromHash(item, multihash))
 
-    def scheduleDelete(self, hash):
-        return self.app.task(self.deleteFromHash, hash)
+    def scheduleDelete(self, item, multihash):
+        reply = questionBox(
+            'Delete',
+            'Do you really want to delete: <b>{}</b>'.format(multihash)
+        )
+        if reply:
+            ensure(self.deleteFromMultihash(item, multihash))
 
     def updateTree(self):
         self.app.task(self.listFiles, self.displayPath,
@@ -794,7 +834,7 @@ class FilesTab(GalacteekTab):
 
         try:
             await asyncio.wait_for(
-                self.listPath(ipfsop, path, parentItem=parentItem,
+                self.listPath(ipfsop, path, parentItem,
                               maxdepth=maxdepth, autoexpand=autoexpand), 60)
         except aioipfs.APIError:
             messageBox(iErrNoCx())
@@ -802,9 +842,9 @@ class FilesTab(GalacteekTab):
         self.enableButtons()
         self.status = self.statusReady
 
-    async def listPath(self, op, path, parentItem=None, depth=0, maxdepth=1,
+    async def listPath(self, op, path, parentItem, depth=0, maxdepth=1,
                        autoexpand=False):
-        if not parentItem.getPath():
+        if not parentItem or not parentItem.path:
             return
 
         listing = await op.filesList(path)
@@ -818,7 +858,22 @@ class FilesTab(GalacteekTab):
         for entry in listing:
             await asyncio.sleep(0)
 
-            if entry['Hash'] == '' or entry['Hash'] in self.model.entryCache:
+            found = False
+            for child in parentItem.childrenItems():
+                if child.entry['Name'] == entry['Name']:
+                    if entry['Hash'] != child.entry['Hash']:
+                        # The parent has a child item with the same
+                        # filename but a different multihash: this item
+                        # was deleted and needs to be purged from the model
+                        # to let the new entry show up
+                        await modelhelpers.modelDeleteAsync(
+                            self.model, child.entry['Hash'])
+                        break
+                if child.entry['Hash'] == entry['Hash']:
+                    found = True
+                    break
+
+            if found:
                 continue
 
             if entry['Type'] == 1:  # directory
@@ -838,8 +893,8 @@ class FilesTab(GalacteekTab):
                 if mIcon:
                     nItemName.setIcon(mIcon)
 
-            nItemName.setPath(os.path.join(parentItem.getPath(),
-                                           entry['Name']))
+            # Set its path in the MFS
+            nItemName.path = os.path.join(parentItem.path, entry['Name'])
 
             nItem = [nItemName, nItemSize, nItemHash]
 
@@ -852,8 +907,8 @@ class FilesTab(GalacteekTab):
                 if maxdepth > depth:
                     depth += 1
                     await self.listPath(op,
-                                        nItemName.getPath(),
-                                        parentItem=nItemName,
+                                        nItemName.path,
+                                        nItemName,
                                         maxdepth=maxdepth, depth=depth)
                     depth -= 1
 
@@ -861,24 +916,41 @@ class FilesTab(GalacteekTab):
             self.ui.treeFiles.expand(parentItem.index())
 
     @ipfsOp
-    async def deleteFromHash(self, ipfsop, hash):
-        entry = await ipfsop.filesLookupHash(self.displayPath, hash)
+    async def deleteFromMultihash(self, ipfsop, item, multihash):
+        _dir = os.path.dirname(item.path)
+
+        entry = await ipfsop.filesLookupHash(_dir, multihash)
 
         if entry:
-            await ipfsop.purge(hash)
-            await ipfsop.filesDelete(self.displayPath,
+            # Delete the entry in the MFS directory
+            await ipfsop.filesDelete(_dir,
                                      entry['Name'], recursive=True)
-            await modelhelpers.modelDeleteAsync(self.model, hash)
+
+            # Purge the item's multihash in the model
+            # Purge its parent as well because the parent multihash will change
+            await modelhelpers.modelDeleteAsync(self.model, multihash)
+
+            if item.parentHash:
+                await modelhelpers.modelDeleteAsync(
+                    self.model, item.parentHash)
+
+            ensure(ipfsop.purge(multihash))
+            log.debug('{0}: deleted'.format(multihash))
+
+            self.updateTree()
+        else:
+            log.debug('Did not find multihash {}'.format(multihash))
 
     @ipfsOp
-    async def unlinkFileFromHash(self, op, hash):
-        listing = await op.filesList(self.displayPath)
+    async def unlinkFileFromHash(self, op, item, multihash):
+        _dir = os.path.dirname(item.path)
+
+        listing = await op.filesList(_dir)
         for entry in listing:
             await op.sleep()
-            if entry['Hash'] == hash:
-                await op.filesDelete(self.displayPath,
-                                     entry['Name'], recursive=True)
-                await modelhelpers.modelDeleteAsync(self.model, hash)
+            if entry['Hash'] == multihash:
+                await op.filesDelete(_dir, entry['Name'], recursive=True)
+                await modelhelpers.modelDeleteAsync(self.model, multihash)
 
     @ipfsOp
     async def addFiles(self, op, files, parent):
@@ -931,7 +1003,8 @@ class FilesTab(GalacteekTab):
             self.statusAdded(entry['Name'])
 
         dirEntry = await op.addPath(path, callback=onEntry,
-                                    recursive=True, wrap=wrapEnabled)
+                                    hidden=True, recursive=True,
+                                    wrap=wrapEnabled)
 
         if not dirEntry:
             # Nothing went through ?

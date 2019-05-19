@@ -1,5 +1,7 @@
 import os.path
+import functools
 
+from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QLabel
 from PyQt5.QtWidgets import QPushButton
@@ -8,7 +10,6 @@ from PyQt5.QtWidgets import QHBoxLayout
 from PyQt5.QtWidgets import QTreeView
 from PyQt5.QtWidgets import QHeaderView
 from PyQt5.QtWidgets import QToolBox
-from PyQt5.QtWidgets import QTextBrowser
 from PyQt5.QtWidgets import QProgressBar
 from PyQt5.QtWidgets import QSpacerItem
 from PyQt5.QtWidgets import QSizePolicy
@@ -32,8 +33,10 @@ from galacteek.ipfs import StatInfo
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import ipfsOp, ipfsStatOp
 from galacteek.ipfs.cache import IPFSEntryCache
-from galacteek.ipfs.mimetype import detectMimeTypeFromBuffer
+from galacteek.ipfs.mimetype import detectMimeType
+from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import joinIpfs
+from galacteek.ipfs.cidhelpers import cidValid
 from galacteek import ensure
 
 from .i18n import *
@@ -119,21 +122,26 @@ class IPFSNameItem(IPFSItem):
         return self._entry
 
     @property
+    def ipfsPath(self):
+        return IPFSPath(self.getFullPath())
+
+    @property
     def mimeType(self):
         return self._mimeType
 
+    @mimeType.setter
+    def mimeType(self, mime):
+        self._mimeType = mime
+
     def mimeFromDb(self, db):
-        self._mimeType = db.mimeTypeForFile(self.entry['Name'])
+        mType = db.mimeTypeForFile(self.entry['Name'])
+        if mType:
+            self.mimeType = mType.name()
 
     @property
     def mimeCategory(self):
         if self.mimeType:
-            return self.mimeTypeName.split('/')[0]
-
-    @property
-    def mimeTypeName(self):
-        if self.mimeType:
-            return self.mimeType.name()
+            return self.mimeType.split('/')[0]
 
     def cid(self):
         return cidhelpers.getCID(self.entry['Hash'])
@@ -176,11 +184,15 @@ class IPFSHashItemModel(QStandardItemModel):
     COL_MIME = 2
     COL_HASH = 3
 
-    def __init__(self, parent, *args, **kw):
-        QStandardItemModel.__init__(self, *args, **kw)
+    def __init__(self, parent):
+        super(IPFSHashItemModel, self).__init__(parent)
 
         self.entryCache = IPFSEntryCache()
         self.rowsInserted.connect(self.onRowsInserted)
+
+    def clearModel(self):
+        self.clear()
+        self.entryCache.reset()
 
     def mimeData(self, indexes):
         mimedata = QMimeData()
@@ -255,9 +267,14 @@ class IPFSHashExplorerToolBox(GalacteekTab):
         if self.itemsCount > self.maxItems:
             return False
 
-        view = IPFSHashExplorerWidget(self.gWindow, hashRef,
+        view = IPFSHashExplorerWidget(hashRef,
                                       parent=self, addClose=addClose,
                                       autoOpenFolders=autoOpenFolders)
+        view.closeRequest.connect(functools.partial(
+            self.remove, view))
+        view.directoryOpenRequest.connect(
+            lambda multihash: self.viewHash(multihash, addClose=True))
+
         idx = self.toolbox.addItem(view, getIconIpfsWhite(), hashRef)
         self.toolbox.setCurrentIndex(idx)
         view.reFocus()
@@ -284,6 +301,7 @@ class IPFSHashExplorerToolBox(GalacteekTab):
 class TreeEventFilter(QObject):
     copyPressed = pyqtSignal()
     returnPressed = pyqtSignal()
+    backspacePressed = pyqtSignal()
 
     def eventFilter(self, obj, event):
         if event.type() == QEvent.KeyPress:
@@ -293,6 +311,9 @@ class TreeEventFilter(QObject):
             if key == Qt.Key_Return:
                 self.returnPressed.emit()
                 return True
+            if key == Qt.Key_Backspace:
+                self.backspacePressed.emit()
+                return True
             if modifiers & Qt.ControlModifier:
                 if key == Qt.Key_C:
                     self.copyPressed.emit()
@@ -300,66 +321,38 @@ class TreeEventFilter(QObject):
         return False
 
 
-class TextViewerTab(GalacteekTab):
-    def __init__(self, parent=None):
-        super(TextViewerTab, self).__init__(parent)
-
-        self.textLayout = QVBoxLayout()
-        self.textBrowser = QTextBrowser()
-
-        self.textLayout.addWidget(self.textBrowser)
-        self.vLayout.addLayout(self.textLayout)
-
-    def show(self, ipfsPath):
-        ensure(self.showFromPath(ipfsPath))
-
-    @ipfsOp
-    async def showFromPath(self, ipfsop, ipfsPath):
-        data = await ipfsop.client.cat(ipfsPath)
-
-        if not data:
-            return messageBox('File could not be read')
-
-        textData = self.decode(data)
-
-        mType = await detectMimeTypeFromBuffer(data)
-
-        if mType == 'text/html':
-            self.textBrowser.setHtml(textData)
-        else:
-            self.textBrowser.setPlainText(textData)
-
-    def decode(self, data):
-        for enc in ['utf-8', 'latin1', 'ascii']:
-            try:
-                textData = data.decode(enc)
-            except BaseException:
-                continue
-            else:
-                return textData
-
-
-class HashTreeView(QTreeView):
+class MultihashTreeView(QTreeView):
     pass
 
 
 class IPFSHashExplorerWidget(QWidget):
-    def __init__(self, gWindow, hashRef, addClose=False,
+    closeRequest = pyqtSignal()
+    directoryOpenRequest = pyqtSignal(str)
+    fileOpenRequest = pyqtSignal(IPFSPath)
+    parentMultihashSet = pyqtSignal(str)
+
+    def __init__(self, hashRef, addClose=False,
+                 mimeDetectionMethod='db',
+                 addActions=True, autoOpenFiles=True,
                  autoOpenFolders=False, parent=None):
         super(IPFSHashExplorerWidget, self).__init__(parent)
 
         self.parent = parent
+        self.app = QApplication.instance()
+        self.gWindow = self.app.mainWindow
+        self.mimeDetectionMethod = mimeDetectionMethod
+        self.model = IPFSHashItemModel(self)
 
-        self.gWindow = gWindow
-        self.app = gWindow.app
-        self.rootHash = hashRef
-        self.rootPath = joinIpfs(self.rootHash)
-        self.cid = cidhelpers.getCID(self.rootHash)
+        self.parentMultihash = None
+        self.parentButton = None
+        self.rootHash = None
+        self.changeMultihash(hashRef)
 
         self.mainLayout = QVBoxLayout(self)
         self.setLayout(self.mainLayout)
 
         self.autoOpenFolders = autoOpenFolders
+        self.autoOpenFiles = autoOpenFiles
         self.hLayoutTop = QHBoxLayout()
         self.hLayoutInfo = QHBoxLayout()
         self.hLayoutCtrl = QHBoxLayout()
@@ -380,10 +373,68 @@ class IPFSHashExplorerWidget(QWidget):
             self.closeButton.setShortcut(QKeySequence('Ctrl+w'))
             self.hLayoutCtrl.addWidget(self.closeButton, 0, Qt.AlignLeft)
 
+        if addActions:
+            self.addButtons()
+
+        self.mainLayout.addLayout(self.hLayoutTop)
+
+        self.parentMultihashSet.connect(self.onParentMultihash)
+
+        self.tree = MultihashTreeView()
+        self.tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.tree.setDragDropMode(QAbstractItemView.DragOnly)
+        self.mainLayout.addWidget(self.tree)
+
+        self.initModel()
+
+        self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.tree.customContextMenuRequested.connect(self.onContextMenu)
+        self.tree.doubleClicked.connect(self.onDoubleClicked)
+        self.tree.setSortingEnabled(True)
+
+        self.evfilter = IPFSTreeKeyFilter(self.tree)
+        self.evfilter.copyHashPressed.connect(self.onCopyItemHash)
+        self.evfilter.copyPathPressed.connect(self.onCopyItemPath)
+        self.evfilter.returnPressed.connect(self.onReturnPressed)
+        self.evfilter.backspacePressed.connect(self.onBackspacePressed)
+        self.tree.installEventFilter(self.evfilter)
+        self.iconFolder = getIcon('folder-open.png')
+        self.iconFile = getIcon('file.png')
+        self.iconUnknown = getIcon('unknown-file.png')
+
+        self.updateTree()
+
+    def changeMultihash(self, multihash):
+        if cidValid(multihash):
+            self.parentMultihash = self.rootHash
+
+            if self.parentMultihash is not None:
+                self.parentMultihashSet.emit(self.parentMultihash)
+
+            self.rootHash = multihash
+            self.rootPath = IPFSPath(self.rootHash)
+            self.cid = cidhelpers.getCID(self.rootHash)
+            self.initModel()
+
+    def goToParent(self):
+        if self.parentMultihash:
+            self.changeMultihash(self.parentMultihash)
+            self.updateTree()
+
+    def onParentMultihash(self, parent):
+        pass
+
+    def initModel(self):
+        self.model.clearModel()
+        self.model.setHorizontalHeaderLabels(
+            [iFileName(), iFileSize(), iMimeType(), iMultihash()])
+        self.itemRoot = self.model.invisibleRootItem()
+        self.itemRootIdx = self.model.indexFromItem(self.itemRoot)
+
+    def addButtons(self):
         self.getTask = None
         self.getButton = QPushButton(iDownload())
         self.getButton.clicked.connect(self.onGet)
-        self.getButton.setShortcut(QKeySequence('Ctrl+d'))
         self.getLabel = QLabel()
         self.getProgress = QProgressBar()
         self.getProgress.setMinimum(0)
@@ -393,7 +444,7 @@ class IPFSHashExplorerWidget(QWidget):
         self.markButton = QPushButton(getIcon('hashmarks.png'), iHashmark())
         self.markButton.clicked.connect(self.onHashmark)
 
-        self.pinButton = QPushButton('Pin')
+        self.pinButton = QPushButton(iPin())
         self.pinButton.clicked.connect(self.onPin)
 
         self.hLayoutCtrl.addWidget(self.getButton)
@@ -401,35 +452,6 @@ class IPFSHashExplorerWidget(QWidget):
         self.hLayoutCtrl.addWidget(self.markButton)
         self.hLayoutCtrl.addWidget(self.getLabel)
         self.hLayoutCtrl.addWidget(self.getProgress)
-
-        self.mainLayout.addLayout(self.hLayoutTop)
-
-        self.tree = HashTreeView()
-        self.tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.tree.setDragDropMode(QAbstractItemView.DragOnly)
-        self.mainLayout.addWidget(self.tree)
-
-        self.model = IPFSHashItemModel(self)
-        self.model.setHorizontalHeaderLabels(
-            [iFileName(), iFileSize(), iMimeType(), iMultihash()])
-        self.itemRoot = self.model.invisibleRootItem()
-        self.itemRootIdx = self.model.indexFromItem(self.itemRoot)
-
-        self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.tree.customContextMenuRequested.connect(self.onContextMenu)
-        self.tree.doubleClicked.connect(self.onDoubleClicked)
-        self.tree.setSortingEnabled(True)
-
-        evfilter = IPFSTreeKeyFilter(self.tree)
-        evfilter.copyHashPressed.connect(self.onCopyItemHash)
-        evfilter.copyPathPressed.connect(self.onCopyItemPath)
-        evfilter.returnPressed.connect(self.onReturnPressed)
-        self.tree.installEventFilter(evfilter)
-        self.iconFolder = getIcon('folder-open.png')
-        self.iconFile = getIcon('file.png')
-        self.iconUnknown = getIcon('unknown-file.png')
-
-        self.updateTree()
 
     def setInfo(self, text):
         self.labelInfo.setText(text)
@@ -482,9 +504,9 @@ class IPFSHashExplorerWidget(QWidget):
             if dirSel:
                 self.app.task(self.gitClone, entry, dirSel)
 
-        self.gitMenu = QMenu()
+        self.gitMenu = QMenu(parent=self)
         self.gitMenu.addAction(iGitClone(), lambda: clone(gitEntry))
-        self.gitButton = QToolButton()
+        self.gitButton = QToolButton(self)
         self.gitButton.setText('Git')
         self.gitButton.setMenu(self.gitMenu)
         self.gitButton.setPopupMode(QToolButton.MenuButtonPopup)
@@ -492,18 +514,20 @@ class IPFSHashExplorerWidget(QWidget):
 
     def onHashmark(self):
         addHashmark(self.app.marksLocal,
-                    self.rootPath, '',
+                    str(self.rootPath), '',
                     stats=self.app.ipfsCtx.objectStats.get(
-                        self.rootPath, {}))
+                        self.rootPath.objPath, {}))
 
     def onGet(self):
         dirSel = directorySelect()
         if dirSel:
-            self.getTask = self.app.task(self.getResource, self.rootPath,
+            self.getTask = self.app.task(self.getResource,
+                                         self.rootPath.objPath,
                                          dirSel)
 
     def onPin(self):
-        self.app.task(self.app.ipfsCtx.pinner.queue, self.rootPath, True,
+        self.app.task(self.app.ipfsCtx.pinner.queue,
+                      self.rootPath.objPath, True,
                       None)
 
     def onReturnPressed(self):
@@ -520,8 +544,11 @@ class IPFSHashExplorerWidget(QWidget):
         if nameItem:
             self.app.setClipboardText(nameItem.getFullPath())
 
+    def onBackspacePressed(self):
+        pass
+
     def onCloseView(self):
-        self.parent.remove(self)
+        self.closeRequest.emit()
 
     def browse(self, hash):
         self.gWindow.addBrowserTab().browseIpfsHash(hash)
@@ -534,33 +561,36 @@ class IPFSHashExplorerWidget(QWidget):
         dataHash = self.model.getHashFromIdx(idx)
 
         if nameItem.isDir():
-            self.parent.viewHash(dataHash, addClose=True)
+            self.directoryOpenRequest.emit(dataHash)
         elif nameItem.isFile() or nameItem.isUnknown():
             self.openFile(nameItem, dataHash)
 
     def openFile(self, item, fileHash):
-        if item.mimeTypeName is None or item.mimeTypeName == 'text/html':
+        if item.mimeType is None or item.mimeType == 'text/html':
             return self.browse(fileHash)
 
-        self.gWindow.app.task(self.openWithRscOpener, item, fileHash)
+        if self.autoOpenFiles:
+            ensure(self.openWithRscOpener(item, fileHash))
+        else:
+            self.fileOpenRequest.emit(item.ipfsPath)
 
     @ipfsOp
     async def openWithRscOpener(self, ipfsop, item, fileHash):
         # Pass a null mimetype to the resource opener so that it
         # redetects the mimetype with a full (but slower) mime detection method
-        opener = self.gWindow.app.resourceOpener
+        opener = self.app.resourceOpener
         await opener.open(item.getFullPath(), None)
 
     def updateTree(self):
-        self.app.task(self.listMultihash, self.rootPath,
-                      parentItem=self.itemRoot)
+        if self.rootPath and self.rootPath.valid:
+            self.app.task(self.listMultihash, self.rootPath.objPath,
+                          parentItem=self.itemRoot)
 
     def onContextMenu(self, point):
         selModel = self.tree.selectionModel()
         rows = selModel.selectedRows()
 
         items = [self.model.getNameItemFromIdx(idx) for idx in rows]
-
         menu = QMenu()
 
         def pinRecursive():
@@ -579,10 +609,10 @@ class IPFSHashExplorerWidget(QWidget):
                               dirSel)
 
         menu.addAction(getIcon('pin-black.png'), iPinRecursive(),
-                       lambda: pinRecursive())
+                       pinRecursive)
         menu.addAction(getIcon('multimedia.png'), 'Queue in media player',
-                       lambda: queueMedia())
-        menu.addAction(iDownload(), lambda: download())
+                       queueMedia)
+        menu.addAction(iDownload(), download)
 
         menu.exec(self.tree.mapToGlobal(point))
 
@@ -657,14 +687,24 @@ class IPFSHashExplorerWidget(QWidget):
                 if entry['Hash'] in self.model.entryCache:
                     continue
 
+                multihash = entry['Hash']
+
                 nItemName = IPFSNameItem(entry, entry['Name'], None)
-                nItemName.mimeFromDb(self.app.mimeDb)
+
+                if self.mimeDetectionMethod == 'db':
+                    nItemName.mimeFromDb(self.app.mimeDb)
+                elif self.mimeDetectionMethod == 'magic':
+                    mType = await detectMimeType(multihash)
+                    if mType:
+                        nItemName.mimeType = str(mType)
+
                 nItemName.setParentHash(parentItemHash)
                 nItemSize = IPFSItem(sizeFormat(entry['Size']))
                 nItemSize.setToolTip(str(entry['Size']))
-                nItemMime = IPFSItem(nItemName.mimeTypeName or iUnknown())
-                nItemHash = IPFSItem(entry['Hash'])
-                nItemName.setToolTip(entry['Hash'])
+                nItemMime = IPFSItem(nItemName.mimeType or iUnknown())
+                nItemHash = IPFSItem(multihash)
+                nItemHash.setToolTip(multihash)
+                nItemName.setToolTip(multihash)
 
                 if nItemName.isDir():
                     nItemName.setIcon(self.iconFolder)
@@ -678,10 +718,7 @@ class IPFSHashExplorerWidget(QWidget):
 
                 if nItemName.isDir() and self.autoOpenFolders:
                     # Automatically open sub folders. Used by unit tests
-                    self.parent.viewHash(
-                        entry['Hash'],
-                        addClose=True,
-                        autoOpenFolders=self.autoOpenFolders)
+                    self.directoryOpenRequest.emit(dataHash)
 
                 if nItemName.isDir() and entry['Name'] == '.git':
                     # If there's a git repo here, add a control button
@@ -711,3 +748,18 @@ class IPFSHashExplorerWidget(QWidget):
 
         self.getLabel.setText('Download finished')
         self.getProgress.hide()
+
+
+class IPFSHashExplorerWidgetFollow(IPFSHashExplorerWidget):
+    def __init__(self, hashRef, parent=None, **kwargs):
+        super(IPFSHashExplorerWidgetFollow, self).__init__(
+            hashRef, parent=parent, **kwargs)
+
+        self.directoryOpenRequest.connect(self.onOpenDir)
+
+    def onOpenDir(self, multihash):
+        self.changeMultihash(multihash)
+        self.updateTree()
+
+    def onBackspacePressed(self):
+        self.goToParent()

@@ -125,7 +125,7 @@ class KeysTab(GalacteekTab):
 
     @ipfsOp
     async def keyResolve(self, ipfsop, key, item):
-        resolved = await ipfsop.resolve(key['Id'])
+        resolved = await ipfsop.nameResolve(key['Id'])
         if resolved:
             item.setText(resolved['Path'])
         else:

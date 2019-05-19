@@ -127,6 +127,10 @@ def iFileManager():
     return QCoreApplication.translate('GalacteekWindow', 'File Manager')
 
 
+def iTextEditor():
+    return QCoreApplication.translate('GalacteekWindow', 'Editor')
+
+
 def iHashmarksManager():
     return QCoreApplication.translate('GalacteekWindow', 'Hashmarks manager')
 
@@ -238,6 +242,10 @@ def iIpfsInfos():
 
 def iIpfsQrCodes():
     return QCoreApplication.translate('GalacteekWindow', 'IPFS QR codes')
+
+
+def iIpfsQrEncode():
+    return QCoreApplication.translate('GalacteekWindow', 'QR encoding')
 
 
 def iNoTitle():
