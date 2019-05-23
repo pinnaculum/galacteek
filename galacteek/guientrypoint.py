@@ -136,7 +136,7 @@ def galacteekGui(args):
             if not iVersion or iVersion < minVersion:
                 # warning here
                 log.debug('go-ipfs version found {0} is too old'.format(
-                    version))
+                    iVersion))
                 gApp.systemTrayMessage('Galacteek',
                                        iGoIpfsTooOld())
 
