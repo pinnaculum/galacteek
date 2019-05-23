@@ -726,7 +726,7 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="78"/>
+        <location filename="../../galacteek/ui/mainui.py" line="79"/>
         <source>
 Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
@@ -932,7 +932,7 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="85"/>
+        <location filename="../../galacteek/ui/mainui.py" line="86"/>
         <source>
         &lt;p&gt;
         &lt;b&gt;Galacteek&lt;/b&gt; is a multi-platform Qt5-based IPFS browser

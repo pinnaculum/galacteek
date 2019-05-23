@@ -886,7 +886,7 @@ p, li { white-space: pre-wrap; }
         <translation type="obsolete">Naviguer sur le chemin IPFS: {0}</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="78"/>
+        <location filename="../../galacteek/ui/mainui.py" line="79"/>
         <source>
 Path: {0}, nodes processed: {1}</source>
         <translation>
@@ -1159,7 +1159,7 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="85"/>
+        <location filename="../../galacteek/ui/mainui.py" line="86"/>
         <source>
         &lt;p&gt;
         &lt;b&gt;Galacteek&lt;/b&gt; is a multi-platform Qt5-based IPFS browser
@@ -1659,12 +1659,12 @@ Chemin: {0}, nodes traitées: {1}</translation>
     <message>
         <location filename="../../galacteek/ui/textedit.py" line="15"/>
         <source>Succesfully imported {0} in the Documents folder (hash reference {1})</source>
-        <translation>Import du document{0} (reference {1}) réussi</translation>
+        <translation type="unfinished">Import du document{0} (reference {1}) réussi</translation>
     </message>
     <message>
         <location filename="../../galacteek/ui/textedit.py" line="23"/>
         <source>File import error</source>
-        <translation>Erreur d&apos;import du fichier</translation>
+        <translation type="unfinished">Erreur d&apos;import du fichier</translation>
     </message>
 </context>
 <context>
@@ -2015,6 +2015,14 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <location filename="../../galacteek/ui/resource.py" line="35"/>
         <source>{}: cannot determine resource type or timeout occured (check connectivity)</source>
         <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>textEditor</name>
+    <message>
+        <location filename="../../galacteek/ui/textedit.py" line="61"/>
+        <source>Edit</source>
+        <translation type="obsolete">Edition</translation>
     </message>
 </context>
 <context>

@@ -375,19 +375,22 @@ class IPFSOperator(object):
         else:
             return resolved
 
-    async def resolve(self, path, timeout=20, recursive=False):
+    @async_generator
+    async def nameResolveStream(self, path, count=3, timeout='20s'):
         try:
-            resolved = await asyncio.wait_for(
-                self.client.core.resolve(path, recursive=recursive),
-                timeout)
+            async for nentry in self.client.name.resolve_stream(
+                    name=path,
+                    recursive=True,
+                    stream=True,
+                    dht_record_count=count,
+                    dht_timeout=timeout):
+                await yield_(nentry)
         except asyncio.TimeoutError:
-            self.debug('resolve timeout for {0}'.format(path))
+            self.debug('streamed resolve timeout for {0}'.format(path))
             return None
         except aioipfs.APIError as e:
-            self.debug('resolve error: {}'.format(e.message))
+            self.debug('streamed resolve error: {}'.format(e.message))
             return None
-        else:
-            return resolved
 
     async def purge(self, hashRef, rungc=False):
         """ Unpins an object and optionally runs the garbage collector """
