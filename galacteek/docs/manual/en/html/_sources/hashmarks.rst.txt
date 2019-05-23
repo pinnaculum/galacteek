@@ -55,8 +55,45 @@ Shared Hashmarks menu
 This menu shows the hashmarks that have been received on the
 network from other peers.
 
-Feeds
+Hashmark pyramids
+=================
+
+Hashmark pyramids are a way to give a unique address on the
+network to content that is regularly updated. It could be a
+website you're working on, a blog, or a code repository that
+you want to share with the world without the hassle of
+distributing the new cryptographic identifiers of your work
+every time you're making some changes.
+
+Hashmark pyramids can be seen as a stack of cryptographic
+snapshots of your work, with the top of the pyramid
+automatically associated with the pyramid's IPNS key.
+Just share the IPNS address with whoever you want so that
+they can access the content you're publishing.
+You can add and pop (remove) hashmarks from the pyramid.
+
+Usage
 -----
+
+.. image:: ../../../../share/icons/pyramid-blue.png
+    :width: 64
+    :height: 64
+
+From the right toolbar, click on the blue pyramid button
+and then *Add multihash pyramid*. After entering the
+different parameters and validating the dialog, you will
+see your new pyramid appear in the right toolbar.
+
+Updating the pyramid works (for now) by drag-and-dropping
+IPFS objects from most widgets (filemanager, browser, ipfssearch..).
+Just drag-and-drop a valid IPFS object on the pyramid's button and
+this object will be at the top of the stack and will be published
+to the pyramid's IPNS key.
+
+From the pyramid's menu you can copy the IPNS address of the pyramid.
+
+Feeds
+=====
 
 There is basic support for following IPNS names/keys. When browsing
 a root IPNS URL (e.g **/ipns/awesome.ipfs.io**), open the IPFS CID

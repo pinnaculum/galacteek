@@ -32,6 +32,10 @@ def rSlash(path):
     return path.rstrip('/')
 
 
+def categoryValid(category):
+    return re.match('^([0-9A-Za-z-_/]+)$', category) is not None
+
+
 class IPFSHashMark(collections.UserDict):
     @property
     def markData(self):
@@ -57,7 +61,7 @@ class IPFSHashMark(collections.UserDict):
              description='', comment='', datasize=None, cumulativesize=None,
              numlinks=None, icon=None, pinSingle=False, pinRecursive=False):
         if datecreated is None:
-            datecreated = isoformat(datetime.now())
+            datecreated = datetime.now().isoformat()
 
         path = rSlash(path)
 
@@ -89,8 +93,10 @@ class IPFSHashMark(collections.UserDict):
 
 
 class MultihashPyramid(collections.UserDict):
+    # Types
     TYPE_STANDARD = 0
 
+    # Flags
     FLAG_MODIFIABLE_BYUSER = 0x01
 
     @property
@@ -111,7 +117,6 @@ class MultihashPyramid(collections.UserDict):
 
     @latest.setter
     def latest(self, value):
-        print('Updating latest to', value)
         self.p['latest'] = value
 
     @property
@@ -119,18 +124,36 @@ class MultihashPyramid(collections.UserDict):
         return self.p['icon']
 
     @property
+    def description(self):
+        return self.p['description']
+
+    @property
     def ipnsKey(self):
         return self.p['ipns']['publishtokey']
 
+    @property
+    def ipnsAllowOffline(self):
+        return self.p['ipns']['allowoffline']
+
+    @property
+    def ipnsLifetime(self):
+        return self.p['ipns']['lifetime']
+
     @staticmethod
     def make(name, description='Pyramid', icon=None, ipnskey=None,
-             internal=False, publishdelay=0, comment=None, flags=0):
+             internal=False, publishdelay=0, comment=None, flags=0,
+             allowoffline=True):
+        datecreated = datetime.now().isoformat()
         pyramid = MultihashPyramid({
             name: {
                 'ipns': {
                     'publishtokey': ipnskey,
-                    'publishdelay': publishdelay
+                    'publishdelay': publishdelay,
+                    'allowoffline': allowoffline,
+                    'ttl': None,
+                    'lifetime': '24h',
                 },
+                'datecreated': datecreated,
                 'icon': icon,
                 'latest': None,
                 'description': description,
@@ -469,7 +492,6 @@ class IPFSMarks(QObject):
 
         mark = IPFSHashMark.make(path,
                                  title=title,
-                                 datecreated=isoformat(datetime.now()),
                                  share=share,
                                  tags=tags,
                                  description=description,
