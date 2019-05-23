@@ -1,4 +1,5 @@
 import functools
+import aioipfs
 
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtWidgets import QToolTip
@@ -25,6 +26,7 @@ from .helpers import getMimeIcon
 from .helpers import getIcon
 from .helpers import getIconFromIpfs
 from .helpers import runDialog
+from .helpers import questionBox
 from .dialogs import AddMultihashPyramidDialog
 from .i18n import iUnknown
 
@@ -77,9 +79,17 @@ class MultihashPyramidsToolBar(QToolBar):
         self.pyramids = {}
 
     def removePyramid(self, pyramidButton, action):
-        self.app.marksLocal.pyramidDrop(pyramidButton.pyramid.path)
-        self.removeAction(action)
-        del pyramidButton
+        reply = questionBox(
+            'Remove',
+            'Remove pyramid <b>{pyr}</b> and its IPNS key ?'.format(
+                pyr=pyramidButton.pyramid.name
+            )
+        )
+        if reply is True:
+            self.app.marksLocal.pyramidDrop(pyramidButton.pyramid.path)
+            self.removeAction(action)
+            ensure(self.removeIpnsKey(pyramidButton.pyramid.ipnsKey))
+            del pyramidButton
 
     def pyramidHelpMessage(self):
         QMessageBox.information(
@@ -126,6 +136,18 @@ class MultihashPyramidsToolBar(QToolBar):
             ensure(self.publishPyramid(pyramid, mark))
 
     @ipfsOp
+    async def removeIpnsKey(self, ipfsop, ipnsKeyId):
+        try:
+            key = await ipfsop.keyFindById(ipnsKeyId)
+        except aioipfs.APIError:
+            # log here
+            pass
+        else:
+            if key:
+                log.debug('Removing IPNS key: {}'.format(key))
+                await ipfsop.keysRemove(key['Name'])
+
+    @ipfsOp
     async def publishPyramid(self, ipfsop, pyramid, mark):
         try:
             log.debug('{pyramid}: publishing mark {mark} to {ipns}'.format(
@@ -134,7 +156,13 @@ class MultihashPyramidsToolBar(QToolBar):
                 ipns=pyramid.ipnsKey
             ))
 
-            await ipfsop.publish(mark.path, key=pyramid.ipnsKey)
+            await ipfsop.publish(
+                mark.path,
+                key=pyramid.ipnsKey,
+                allow_offline=pyramid.ipnsAllowOffline,
+                lifetime=pyramid.ipnsLifetime,
+                timeout=120
+            )
         except Exception:
             log.debug('Publish error')
         else:
@@ -145,6 +173,7 @@ class MultihashPyramidsToolBar(QToolBar):
 
     def onAddPyramid(self):
         runDialog(AddMultihashPyramidDialog, self.app.marksLocal,
+                  title='New multihash pyramid',
                   parent=self)
 
 
@@ -162,6 +191,7 @@ class MultihashPyramidToolButton(PopupToolButton):
 
         self._pyramid = pyramid
         self.setAcceptDrops(True)
+        self.setObjectName('pyramidButton')
 
         self.changed.connect(self.onPyrChange)
         self.ipfsObjectDropped.connect(self.onObjectDropped)
@@ -179,7 +209,10 @@ class MultihashPyramidToolButton(PopupToolButton):
                             'Copy IPNS address to clipboard',
                             self.onCopyIpns)
         self.menu.addSeparator()
-        self.menu.addAction('Remove', lambda: self.deleteRequest.emit())
+        self.menu.addAction(
+            getIcon('cancel.png'),
+            'Remove', lambda: self.deleteRequest.emit())
+        self.resetStyleSheet()
 
     @property
     def pyramid(self):
@@ -188,6 +221,29 @@ class MultihashPyramidToolButton(PopupToolButton):
     def dragEnterEvent(self, event):
         URLDragAndDropProcessor.dragEnterEvent(self, event)
         self.flashToolTip('Pyramid: {path}'.format(path=self.pyramid.path))
+        self.setStyleSheet('''
+            QToolButton {
+                background-color: #EB2121;
+            }
+        ''')
+
+    def dropEvent(self, event):
+        URLDragAndDropProcessor.dropEvent(self, event)
+        self.resetStyleSheet()
+
+    def dragLeaveEvent(self, event):
+        self.resetStyleSheet()
+
+    def resetStyleSheet(self):
+        self.setStyleSheet('''
+            QToolButton::hover {
+                background-color: #4a9ea1;
+            }
+
+            QToolButton::pressed {
+                background-color: #eec146;
+            }
+        ''')
 
     def flashToolTip(self, message):
         QToolTip.showText(self.mapToGlobal(QPoint(0, 0)), message)
@@ -195,9 +251,11 @@ class MultihashPyramidToolButton(PopupToolButton):
     def updateToolTip(self):
         self.setToolTip('''
             Multihash pyramid: {path}
+            Description: {descr}
             Latest: {latest}
         '''.format(
             path=self.pyramid.path,
+            descr=self.pyramid.description,
             latest=self.pyramid.latest if self.pyramid.latest else iUnknown()
         ))
 

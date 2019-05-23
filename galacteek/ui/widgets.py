@@ -1,6 +1,7 @@
 import re
 import asyncio
 
+from PyQt5.QtWidgets import QFrame
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtWidgets import QLineEdit
@@ -74,6 +75,13 @@ class GalacteekTab(QWidget):
     @property
     def profile(self):
         return self.app.ipfsCtx.currentProfile
+
+
+class HorizontalLine(QFrame):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFrameShape(QFrame.HLine)
+        self.setFrameShadow(QFrame.Sunken)
 
 
 class URLDragAndDropProcessor:

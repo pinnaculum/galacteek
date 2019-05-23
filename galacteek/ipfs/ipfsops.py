@@ -343,6 +343,12 @@ class IPFSOperator(object):
             if key['Name'] == name:
                 return key
 
+    async def keyFindById(self, ident):
+        keys = await self.keys()
+        for key in keys:
+            if key['Id'] == ident:
+                return key
+
     async def keysRemove(self, name):
         try:
             await self.client.key.rm(name)
@@ -352,10 +358,18 @@ class IPFSOperator(object):
             return False
         return True
 
-    async def publish(self, path, key='self', timeout=90):
+    async def publish(self, path, key='self', timeout=90,
+                      allow_offline=False, lifetime='24h',
+                      ttl=None):
         try:
-            return await self.waitFor(self.client.name.publish(path, key=key),
-                                      timeout)
+            return await self.waitFor(
+                self.client.name.publish(
+                    path, key=key,
+                    allow_offline=allow_offline,
+                    lifetime=lifetime,
+                    ttl=ttl
+                ), timeout
+            )
         except aioipfs.APIError as err:
             self.debug('Error publishing {path} to {key}: {msg}'.format(
                 path=path, key=key, msg=err.message))

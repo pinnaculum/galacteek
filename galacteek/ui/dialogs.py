@@ -1,6 +1,7 @@
 import re
 import aioipfs
 
+from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QComboBox
 from PyQt5.QtWidgets import QInputDialog
@@ -28,6 +29,7 @@ from PyQt5.QtGui import QRegExpValidator
 from galacteek import asyncify, ensure
 from galacteek.core.ipfsmarks import *
 from galacteek.core import countries
+from galacteek.core.ipfsmarks import categoryValid
 from galacteek.core.profile import UserInfos
 from galacteek.ipfs import cidhelpers
 from galacteek.ipfs.ipfsops import *
@@ -41,6 +43,7 @@ from . import ui_donatedialog
 from . import ui_profilepostmessage
 from .helpers import *
 from .widgets import ImageWidget
+from .widgets import HorizontalLine
 
 from .i18n import iDoNotPin
 from .i18n import iPinSingle
@@ -484,8 +487,11 @@ class AddMultihashPyramidDialog(QDialog):
     def __init__(self, marks, parent=None):
         super().__init__(parent)
 
+        self.app = QApplication.instance()
+
         self.marks = marks
         self.iconCid = None
+        self.customCategory = None
 
         cat = QLabel('Category')
         self.categoryCombo = QComboBox(self)
@@ -495,11 +501,12 @@ class AddMultihashPyramidDialog(QDialog):
             self.categoryCombo.addItem(category)
 
         label = QLabel('Pyramid name')
-        regexp = QRegExp("[0-9A-Za-z-_]+")  # noqa
+        restrictRegexp = QRegExp("[0-9A-Za-z-_]+")  # noqa
+        restrictRegexp2 = QRegExp("[0-9A-Za-z-_/]+")  # noqa
 
         self.nameLine = QLineEdit()
         self.nameLine.setMaxLength(32)
-        self.nameLine.setValidator(QRegExpValidator(regexp))
+        self.nameLine.setValidator(QRegExpValidator(restrictRegexp))
         label.setBuddy(self.nameLine)
 
         buttonBox = QDialogButtonBox(
@@ -508,6 +515,25 @@ class AddMultihashPyramidDialog(QDialog):
         catLayout = QHBoxLayout()
         catLayout.addWidget(cat)
         catLayout.addWidget(self.categoryCombo)
+
+        catCustomLabel = QLabel('Or create new category')
+        catCustomLayout = QHBoxLayout()
+
+        self.catCustom = QLineEdit()
+        self.catCustom.setMaxLength(32)
+        self.catCustom.setValidator(QRegExpValidator(restrictRegexp2))
+        self.catCustom.textChanged.connect(self.onCustomCategory)
+        catCustomLabel.setBuddy(self.catCustom)
+        catCustomLayout.addWidget(catCustomLabel)
+        catCustomLayout.addWidget(self.catCustom)
+
+        descrLabel = QLabel('Description')
+        self.descrLine = QLineEdit()
+        self.descrLine.setMaxLength(128)
+        descrLabel.setBuddy(self.descrLine)
+        descrLayout = QHBoxLayout()
+        descrLayout.addWidget(descrLabel)
+        descrLayout.addWidget(self.descrLine)
 
         nameLayout = QHBoxLayout()
         nameLayout.addWidget(label)
@@ -518,13 +544,23 @@ class AddMultihashPyramidDialog(QDialog):
             ':/share/icons/ipfs-logo-128-black.png',
             ':/share/icons/code-fork.png',
             ':/share/icons/go-home.png',
+            ':/share/icons/pyramid-aqua.png',
+            ':/share/icons/pyramid-stack.png',
+            ':/share/icons/multimedia.png',
+            ':/share/icons/folder-documents.png',
+            ':/share/icons/folder-music.png',
+            ':/share/icons/folder-pictures.png',
+            ':/share/icons/folder-videos.png',
             ':/share/icons/mimetypes/text-x-generic.png',
             ':/share/icons/mimetypes/image-x-generic.png',
-            ':/share/icons/mimetypes/text-html.png',
+            ':/share/icons/mimetypes/text-html.png'
         ]
 
         self.iconsCombo = QComboBox(self)
-        self.iconsCombo.setIconSize(QSize(128, 64))
+
+        if self.app.system == 'Linux':
+            self.iconsCombo.setIconSize(QSize(128, 128))
+
         self.view = QListView(self.iconsCombo)
         self.iconsCombo.setView(self.view)
 
@@ -541,7 +577,10 @@ class AddMultihashPyramidDialog(QDialog):
 
         mainLayout = QVBoxLayout()
         mainLayout.addLayout(nameLayout)
+        mainLayout.addLayout(descrLayout)
+        mainLayout.addWidget(HorizontalLine(self))
         mainLayout.addLayout(catLayout)
+        mainLayout.addLayout(catCustomLayout)
         mainLayout.addLayout(pickIconLayout)
         mainLayout.addWidget(buttonBox)
 
@@ -549,24 +588,35 @@ class AddMultihashPyramidDialog(QDialog):
         buttonBox.rejected.connect(self.reject)
         self.setLayout(mainLayout)
 
+    def onCustomCategory(self, text):
+        self.categoryCombo.setEnabled(len(text) == 0)
+        self.customCategory = text
+
     def reject(self):
         self.done(0)
 
     def accept(self):
         pyramidName = self.nameLine.text()
-        category = self.categoryCombo.currentText()
+
+        if isinstance(self.customCategory, str) and \
+                categoryValid(self.customCategory):
+            category = self.customCategory
+        else:
+            category = self.categoryCombo.currentText()
+
         ipnsKeyName = 'galacteek.pyramids.{cat}.{name}'.format(
             cat=category.replace('/', '_'), name=pyramidName)
         iconName = self.iconsCombo.currentData()
+        descr = self.descrLine.text()
 
         self.done(1)
 
         ensure(self.createPyramid(pyramidName, category, ipnsKeyName,
-                                  iconName))
+                                  iconName, descr))
 
     @ipfsOp
     async def createPyramid(self, ipfsop, pyramidName, category, ipnsKeyName,
-                            iconName):
+                            iconName, description):
         try:
             await self.injectQrcIcon(iconName)
 
@@ -577,13 +627,13 @@ class AddMultihashPyramidDialog(QDialog):
             if ipnsKey:
                 self.marks.pyramidNew(
                     pyramidName, category, self.iconCid,
-                    ipnskey=ipnsKey['Id'])
+                    ipnskey=ipnsKey['Id'],
+                    description=description)
 
     def changeIcon(self):
         fps = filesSelectImages()
         if len(fps) > 0:
             ensure(self.setIcon(fps.pop()))
-            print('OK')
 
     @ipfsOp
     async def setIcon(self, op, fp):
