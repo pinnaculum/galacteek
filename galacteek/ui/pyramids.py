@@ -55,12 +55,13 @@ class MultihashPyramidsToolBar(QToolBar):
         self.app.marksLocal.pyramidChanged.connect(self.onPyramidChanged)
 
         self.setObjectName('toolbarPyramids')
+        self.setToolTip('Hashmark pyramids toolbar')
         self.setContextMenuPolicy(Qt.NoContextMenu)
         self.setFloatable(False)
         self.setMovable(False)
         self.setAcceptDrops(True)
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
-        self.setMinimumHeight(parent.height() / 2)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.setMinimumHeight(400)  # change soon, use parent height on resize
         self.setOrientation(Qt.Vertical)
 
         pyrIcon = getIcon('pyramid-blue.png')
@@ -77,6 +78,9 @@ class MultihashPyramidsToolBar(QToolBar):
         self.addSeparator()
 
         self.pyramids = {}
+
+    def contextMenuEvent(self, event):
+        pass
 
     def removePyramid(self, pyramidButton, action):
         reply = questionBox(

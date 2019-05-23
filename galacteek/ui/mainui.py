@@ -209,6 +209,10 @@ class MiscToolBar(QToolBar):
         self.pyramidsToolbar = MultihashPyramidsToolBar(self)
         self.addWidget(self.pyramidsToolbar)
 
+    def contextMenuEvent(self, event):
+        # no context menu
+        pass
+
 
 class MainToolBar(QToolBar):
     moved = pyqtSignal(int)
