@@ -5,6 +5,7 @@ import argparse
 import shutil
 import subprocess
 import sys
+import re
 from distutils.version import StrictVersion
 
 from galacteek import log, ensure
@@ -40,7 +41,9 @@ def ipfsVersion():
     try:
         p = subprocess.Popen(['ipfs', 'version', '-n'], stdout=subprocess.PIPE)
         out, err = p.communicate()
-        return StrictVersion(out.decode().strip())
+        version = out.decode().strip()
+        version = re.sub('(-.*$)', '', version)
+        return StrictVersion(version)
     except BaseException:
         return None
 
