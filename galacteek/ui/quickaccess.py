@@ -91,6 +91,7 @@ class QuickAccessToolBar(QToolBar, URLDragAndDropProcessor):
                 'objects': []
             }
             self.registerDefaults()
+            await self.save()
 
     def registerDefaults(self):
         self.registerFromMarkMeta({
