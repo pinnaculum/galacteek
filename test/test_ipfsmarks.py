@@ -1,5 +1,7 @@
 import pytest
 
+from PyQt5.QtWidgets import QApplication
+
 from galacteek.core.ipfsmarks import *
 
 
@@ -134,3 +136,42 @@ class TestMarks:
         assert bmarks.add(path1, title=title, share=True, pinSingle=True)
         assert bmarks.add(path2, title=title, share=True, pinRecursive=True)
         bmarks2.merge(bmarks, share=True, reset=True)
+
+
+class TestHashPlones:
+    @pytest.mark.parametrize(
+        'path1,path2,path3',
+        [
+            ('/ipfs/QmT1TPVjdZ9CRnqwyQ9WygDoRgRRibFrEyWufenu92SuUV',
+             '/ipfs/QmT1TPVjdZ9CRnqwyQ9WygDoRgRRibFrEyWufenu92SuUV/a/abcdefgh/system/ak',
+             '/ipfs/QmT1TPVjdZ9CRnqwyQ9WygDoRgRRibFrEyWufenu92SuUV/b/ogkush'
+             )])
+    def test_hashpyramidadd(self, qtbot, bmarks, path1, path2, path3):
+        def pyramidAdded(path, mark):
+            assert isinstance(mark, IPFSHashMark)
+
+        bmarks.pyramidAddedMark.connect(pyramidAdded)
+
+        with qtbot.waitSignal(bmarks.pyramidConfigured, timeout=2000):
+            pyramid = bmarks.pyramidNew('pyramid1', 'my/pyramids', path1,
+                    ipnskey='abcd', description='Pyramid1')
+
+        with qtbot.waitSignal(bmarks.pyramidAddedMark, timeout=2000):
+            pyramid = bmarks.pyramidAdd('my/pyramids/pyramid1', path1)
+            mark = bmarks.pyramidGetLatestHashmark('my/pyramids/pyramid1')
+            assert mark.path == path1
+
+            pyramid = bmarks.pyramidAdd('my/pyramids/pyramid1', path2)
+            mark = bmarks.pyramidGetLatestHashmark('my/pyramids/pyramid1')
+            assert mark.path == path2
+
+        with qtbot.waitSignal(bmarks.pyramidNeedsPublish, timeout=2000):
+            pyramid = bmarks.pyramidAdd('my/pyramids/pyramid1', path3)
+
+        pyramid = bmarks.pyramidGet('my/pyramids/pyramid1')
+        assert pyramid.marksCount == 3
+        bmarks.pyramidPop('my/pyramids/pyramid1')
+        assert pyramid.marksCount == 2
+        assert pyramid.latest == path2
+
+        bmarks.dump()

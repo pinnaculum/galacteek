@@ -1,11 +1,24 @@
 import re
+import aioipfs
 
 from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import QComboBox
 from PyQt5.QtWidgets import QInputDialog
+from PyQt5.QtWidgets import QDialogButtonBox
+from PyQt5.QtWidgets import QLabel
+from PyQt5.QtWidgets import QLineEdit
+from PyQt5.QtWidgets import QVBoxLayout
+from PyQt5.QtWidgets import QHBoxLayout
+from PyQt5.QtWidgets import QPushButton
+from PyQt5.QtWidgets import QListView
 
+from PyQt5.QtCore import QFile
+from PyQt5.QtCore import QIODevice
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import QRegExp
 from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QSize
+from PyQt5.QtCore import QVariant
 
 from PyQt5.QtGui import QClipboard
 from PyQt5.QtGui import QPixmap
@@ -71,7 +84,7 @@ class AddHashmarkDialog(QDialog):
         self.ui.pinCombo.addItem(iPinSingle())
         self.ui.pinCombo.addItem(iPinRecursive())
 
-        regexp1 = QRegExp("[A-Za-z\/\_]+")  # noqa
+        regexp1 = QRegExp(r"[A-Za-z\/\_]+")  # noqa
         self.ui.newCategory.setValidator(QRegExpValidator(regexp1))
 
         if pin is True:
@@ -465,3 +478,129 @@ class ChooseProgramDialog(QInputDialog):
         self.setLabelText(
             '''Command arguments (example: <b>mupdf %f</b>).
                 <b>%f</b> is replaced with the file path''')
+
+
+class AddMultihashPyramidDialog(QDialog):
+    def __init__(self, marks, parent=None):
+        super().__init__(parent)
+
+        self.marks = marks
+        self.iconCid = None
+
+        cat = QLabel('Category')
+        self.categoryCombo = QComboBox(self)
+        cat.setBuddy(self.categoryCombo)
+
+        for category in marks.getCategories():
+            self.categoryCombo.addItem(category)
+
+        label = QLabel('Pyramid name')
+        regexp = QRegExp("[0-9A-Za-z-_]+")  # noqa
+
+        self.nameLine = QLineEdit()
+        self.nameLine.setMaxLength(32)
+        self.nameLine.setValidator(QRegExpValidator(regexp))
+        label.setBuddy(self.nameLine)
+
+        buttonBox = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self)
+
+        catLayout = QHBoxLayout()
+        catLayout.addWidget(cat)
+        catLayout.addWidget(self.categoryCombo)
+
+        nameLayout = QHBoxLayout()
+        nameLayout.addWidget(label)
+        nameLayout.addWidget(self.nameLine)
+
+        iconsList = [
+            ':/share/icons/ipfs-cube-64.png',
+            ':/share/icons/ipfs-logo-128-black.png',
+            ':/share/icons/code-fork.png',
+            ':/share/icons/go-home.png',
+            ':/share/icons/mimetypes/text-x-generic.png',
+            ':/share/icons/mimetypes/image-x-generic.png',
+            ':/share/icons/mimetypes/text-html.png',
+        ]
+
+        self.iconsCombo = QComboBox(self)
+        self.iconsCombo.setIconSize(QSize(128, 64))
+        self.view = QListView(self.iconsCombo)
+        self.iconsCombo.setView(self.view)
+
+        pickIconLayout = QHBoxLayout()
+        pickIconLayout.addWidget(QLabel('Choose icon'))
+        pickIconLayout.addWidget(self.iconsCombo)
+
+        for iconP in iconsList:
+            self.iconsCombo.addItem(
+                getIcon(iconP), '', QVariant(iconP))
+
+        changeIconButton = QPushButton('Set Icon')
+        changeIconButton.clicked.connect(self.changeIcon)
+
+        mainLayout = QVBoxLayout()
+        mainLayout.addLayout(nameLayout)
+        mainLayout.addLayout(catLayout)
+        mainLayout.addLayout(pickIconLayout)
+        mainLayout.addWidget(buttonBox)
+
+        buttonBox.accepted.connect(self.accept)
+        buttonBox.rejected.connect(self.reject)
+        self.setLayout(mainLayout)
+
+    def reject(self):
+        self.done(0)
+
+    def accept(self):
+        pyramidName = self.nameLine.text()
+        category = self.categoryCombo.currentText()
+        ipnsKeyName = 'galacteek.pyramids.{cat}.{name}'.format(
+            cat=category.replace('/', '_'), name=pyramidName)
+        iconName = self.iconsCombo.currentData()
+
+        self.done(1)
+
+        ensure(self.createPyramid(pyramidName, category, ipnsKeyName,
+                                  iconName))
+
+    @ipfsOp
+    async def createPyramid(self, ipfsop, pyramidName, category, ipnsKeyName,
+                            iconName):
+        try:
+            await self.injectQrcIcon(iconName)
+
+            ipnsKey = await ipfsop.keyGen(ipnsKeyName)
+        except aioipfs.APIError:
+            return
+        else:
+            if ipnsKey:
+                self.marks.pyramidNew(
+                    pyramidName, category, self.iconCid,
+                    ipnskey=ipnsKey['Id'])
+
+    def changeIcon(self):
+        fps = filesSelectImages()
+        if len(fps) > 0:
+            ensure(self.setIcon(fps.pop()))
+            print('OK')
+
+    @ipfsOp
+    async def setIcon(self, op, fp):
+        entry = await op.addPath(fp, recursive=False)
+        if entry:
+            cid = entry['Hash']
+            self.iconCid = cid
+
+    @ipfsOp
+    async def injectQrcIcon(self, op, iconPath):
+        _file = QFile(iconPath)
+        if _file.exists():
+            if not _file.open(QIODevice.ReadOnly):
+                return False
+
+            data = _file.readAll().data()
+            entry = await op.client.add_bytes(data, offline=True)
+            if entry:
+                self.iconCid = entry['Hash']
+                return True

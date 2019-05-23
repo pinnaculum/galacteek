@@ -30,8 +30,12 @@ def getIcon(iconName):
     if iconName in app._icons:
         return app._icons[iconName]
 
-    icon = app._icons[iconName] = QIcon(QPixmap(
-        ':/share/icons/{}'.format(iconName)))
+    if iconName.startswith(':/'):
+        iconPath = iconName
+    else:
+        iconPath = ':/share/icons/{}'.format(iconName)
+
+    icon = app._icons[iconName] = QIcon(QPixmap(iconPath))
     return icon
 
 
