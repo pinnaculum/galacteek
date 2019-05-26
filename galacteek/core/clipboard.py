@@ -282,7 +282,7 @@ class ClipboardTracker(QObject):
         path = cItem.path
         mHashMeta = await self.app.multihashDb.get(path)
 
-        if cItem.ipfsPath.isIpns:
+        if cItem.ipfsPath.isIpnsRoot:
             rPath = await self.streamResolve(cItem)
             if rPath:
                 path = str(rPath)

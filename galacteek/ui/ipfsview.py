@@ -29,7 +29,7 @@ from PyQt5.QtCore import QUrl
 
 from galacteek.appsettings import *
 from galacteek.ipfs import cidhelpers
-from galacteek.ipfs import StatInfo
+from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import ipfsOp, ipfsStatOp
 from galacteek.ipfs.cache import IPFSEntryCache
@@ -598,20 +598,14 @@ class IPFSHashExplorerWidget(QWidget):
                 fp = item.getFullPath()
                 self.app.task(self.app.ipfsCtx.pinner.queue, fp, True, None)
 
-        def queueMedia():
-            for item in items:
-                self.gWindow.mediaPlayerQueue(item.getFullPath())
-
         def download():
             dirSel = directorySelect()
             for item in items:
                 self.app.task(self.getResource, item.getFullPath(),
                               dirSel)
 
-        menu.addAction(getIcon('pin-black.png'), iPinRecursive(),
+        menu.addAction(getIcon('pin.png'), iPinRecursive(),
                        pinRecursive)
-        menu.addAction(getIcon('multimedia.png'), 'Queue in media player',
-                       queueMedia)
         menu.addAction(iDownload(), download)
 
         menu.exec(self.tree.mapToGlobal(point))
@@ -709,7 +703,14 @@ class IPFSHashExplorerWidget(QWidget):
                 if nItemName.isDir():
                     nItemName.setIcon(self.iconFolder)
                 elif nItemName.isFile():
-                    nItemName.setIcon(self.iconFile)
+                    if nItemName.mimeType:
+                        mIcon = getMimeIcon(nItemName.mimeType)
+                        if mIcon:
+                            nItemName.setIcon(mIcon)
+                        else:
+                            nItemName.setIcon(self.iconFile)
+                    else:
+                        nItemName.setIcon(self.iconFile)
                 elif nItemName.isUnknown():
                     nItemName.setIcon(self.iconUnknown)
 

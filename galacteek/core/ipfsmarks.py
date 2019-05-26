@@ -112,6 +112,10 @@ class MultihashPyramid(collections.UserDict):
         return len(self.marks)
 
     @property
+    def empty(self):
+        return self.marksCount == 0
+
+    @property
     def latest(self):
         return self.p['latest']
 
@@ -175,11 +179,12 @@ class IPFSMarks(QObject):
     markAdded = pyqtSignal(str, dict)
     feedMarkAdded = pyqtSignal(str, IPFSHashMark)
 
-    pyramidConfigured = pyqtSignal(str, str)
+    pyramidConfigured = pyqtSignal(str)
     pyramidAddedMark = pyqtSignal(str, IPFSHashMark)
     pyramidCapstoned = pyqtSignal(str)
     pyramidNeedsPublish = pyqtSignal(str, IPFSHashMark)
     pyramidChanged = pyqtSignal(str)
+    pyramidEmpty = pyqtSignal(str)
 
     def __init__(self, path, parent=None, data=None, autosave=True):
         super().__init__(parent)
@@ -589,6 +594,9 @@ class IPFSMarks(QObject):
     def norm(self, path):
         return path.rstrip('/')
 
+    def pyramidPathFormat(self, category, name):
+        return os.path.join(category, name)
+
     def pyramidGetLatestHashmark(self, pyramidPath):
         pyramid = self.pyramidGet(pyramidPath)
         if not pyramid:
@@ -628,7 +636,7 @@ class IPFSMarks(QObject):
                 flags=MultihashPyramid.FLAG_MODIFIABLE_BYUSER
             )
             sec[pyramidsKey].update(pyramid)
-            self.pyramidConfigured.emit(category, name)
+            self.pyramidConfigured.emit(self.pyramidPathFormat(category, name))
             self.changed.emit()
             return sec[pyramidsKey][name]
 
@@ -721,6 +729,9 @@ class IPFSMarks(QObject):
 
             self.pyramidChanged.emit(pyramidPath)
 
+            if pyramid.empty:
+                self.pyramidEmpty.emit(pyramidPath)
+
             self.changed.emit()
             return True
 
@@ -733,4 +744,4 @@ class IPFSMarks(QObject):
 
             pyramids = sec[pyramidsKey]
             for name, pyramid in pyramids.items():
-                self.pyramidConfigured.emit(cat, name)
+                self.pyramidConfigured.emit(self.pyramidPathFormat(cat, name))

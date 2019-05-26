@@ -39,6 +39,7 @@ from galacteek.core.multihashmetadb import IPFSObjectMetadataDatabase
 from galacteek.core.clipboard import ClipboardTracker
 from galacteek.ipfs import asyncipfsd, cidhelpers
 from galacteek.ipfs.cidhelpers import joinIpfs
+from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.feeds import FeedFollower
@@ -312,7 +313,7 @@ class GalacteekApplication(QApplication):
         self.jinjaEnv = jinja2.Environment(
             loader=jinja2.PackageLoader(GALACTEEK_NAME, 'templates'))
 
-        self.manuals = ManualsImporter(self)
+        self.manuals = ManualsManager(self)
         self.mimeDb = QMimeDatabase()
         self.resourceOpener = IPFSResourceOpener(parent=self)
 
@@ -715,14 +716,20 @@ class GalacteekApplication(QApplication):
         self.quit()
 
 
-class ManualsImporter(QObject):
-    """ Imports the HTML manuals in IPFS """
+class ManualsManager(QObject):
+    """
+    Object responsible for importing the HTML manuals in IPFS.
+
+    Also serves as an interface to open specific pages of the manual
+    from the application's code
+    """
 
     def __init__(self, app):
-        super(ManualsImporter, self).__init__()
+        super(ManualsManager, self).__init__()
 
         self.app = app
         self.registry = {}
+        self.defaultManualLang = 'en'
 
     def getManualEntry(self, lang):
         return self.registry.get(lang, None)
@@ -785,6 +792,21 @@ class ManualsImporter(QObject):
     async def importDocPath(self, ipfsop, docPath, lang):
         docEntry = await ipfsop.addPath(docPath)
         if docEntry:
+            await ipfsop.sleep()
             self.registry[lang] = docEntry
             self.app.manualAvailable.emit(lang, docEntry)
             return docEntry
+
+    def browseManualPage(self, pagePath, fragment=None):
+        manual = self.registry.get(self.defaultManualLang)
+        if not manual:
+            return False
+
+        manualPath = IPFSPath(manual['Hash'])
+        if not manualPath.valid:
+            return False
+
+        ipfsPath = manualPath.child(pagePath)
+        ipfsPath.fragment = fragment
+
+        ensure(self.app.resourceOpener.open(ipfsPath))

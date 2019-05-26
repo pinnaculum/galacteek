@@ -130,8 +130,35 @@ def iWebPages():
     return QCoreApplication.translate('FileManagerForm', 'Web Pages')
 
 
+def iDWebApps():
+    return QCoreApplication.translate('FileManagerForm', 'Dweb Apps')
+
+
 def iQrCodes():
     return QCoreApplication.translate('FileManagerForm', 'QR codes')
+
+
+def iOfflineMode():
+    return QCoreApplication.translate('FileManagerForm', 'Offline mode')
+
+
+def iDhtProvide():
+    return QCoreApplication.translate(
+        'FileManagerForm',
+        'Announce (DHT provide)')
+
+
+def iDhtProvideRecursive():
+    return QCoreApplication.translate(
+        'FileManagerForm',
+        'Announce (DHT provide, recursive)')
+
+
+def iOfflineModeToolTip():
+    return QCoreApplication.translate(
+        'FileManagerForm',
+        'Offline mode: in this mode your files will not be '
+        'immediately announced on the DHT')
 
 
 class IPFSItem(UneditableItem):
@@ -252,6 +279,8 @@ class FilesItemModel(QStandardItemModel):
                                       path=profile.pathDocuments)
         self.itemWebPages = IPFSItem(iWebPages(),
                                      path=profile.pathWebPages)
+        self.itemDWebApps = IPFSItem(iDWebApps(),
+                                     path=profile.pathDWebApps)
         self.itemQrCodes = IPFSItem(iQrCodes(),
                                     path=profile.pathQrCodes)
 
@@ -263,6 +292,7 @@ class FilesItemModel(QStandardItemModel):
             self.itemMusic,
             self.itemDocuments,
             self.itemWebPages,
+            self.itemDWebApps,
             self.itemQrCodes
         ])
 
@@ -370,6 +400,7 @@ class FilesTab(GalacteekTab):
         self.lock = asyncio.Lock()
         self.fmWidget = QWidget()
         self.addToLayout(self.fmWidget)
+        self._offlineMode = False
 
         self.ui = ui_files.Ui_FileManagerForm()
         self.ui.setupUi(self.fmWidget)
@@ -388,6 +419,13 @@ class FilesTab(GalacteekTab):
         self.ui.fileManagerSwitch.clicked.connect(self.onFileManager)
         self.ui.fileManagerButton.clicked.connect(self.onFileManager)
 
+        # Offline mode button
+        self.ui.offlineButton.setObjectName('filemanagerOfflineButton')
+        self.ui.offlineButton.setText(iOfflineMode())
+        self.ui.offlineButton.setCheckable(True)
+        self.ui.offlineButton.toggled.connect(self.onOfflineToggle)
+        self.ui.offlineButton.setChecked(False)
+
         # Connect the tree view actions
         self.ui.treeFiles.doubleClicked.connect(self.onDoubleClicked)
         self.ui.treeFiles.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -397,18 +435,24 @@ class FilesTab(GalacteekTab):
 
         # Path selector
         self.ui.pathSelector.insertItem(0, getIcon('go-home.png'), 'Home')
-        self.ui.pathSelector.insertItem(1, getIcon('folder-pictures.png'),
+        self.ui.pathSelector.insertSeparator(1)
+        self.ui.pathSelector.insertItem(2, getIcon('folder-pictures.png'),
                                         iPictures())
-        self.ui.pathSelector.insertItem(2, getIcon('folder-videos.png'),
+        self.ui.pathSelector.insertItem(3, getIcon('folder-videos.png'),
                                         iVideos())
-        self.ui.pathSelector.insertItem(3, getIcon('folder-music.png'),
+        self.ui.pathSelector.insertItem(4, getIcon('folder-music.png'),
                                         iMusic())
-        self.ui.pathSelector.insertItem(4, getIcon('code-fork.png'), iCode())
-        self.ui.pathSelector.insertItem(5, getIcon('folder-documents.png'),
+        self.ui.pathSelector.insertSeparator(5)
+        self.ui.pathSelector.insertItem(6, getIcon('code-fork.png'), iCode())
+        self.ui.pathSelector.insertItem(7, getIcon('folder-documents.png'),
                                         iDocuments())
-        self.ui.pathSelector.insertItem(6, getMimeIcon('text/html'),
+        self.ui.pathSelector.insertSeparator(8)
+        self.ui.pathSelector.insertItem(9, getMimeIcon('text/html'),
                                         iWebPages())
-        self.ui.pathSelector.insertItem(7, getIcon('ipfs-qrcode.png'),
+        self.ui.pathSelector.insertItem(10, getIcon('distributed.png'),
+                                        iDWebApps())
+        self.ui.pathSelector.insertSeparator(11)
+        self.ui.pathSelector.insertItem(12, getIcon('ipfs-qrcode.png'),
                                         iQrCodes())
         self.ui.pathSelector.activated.connect(self.onPathSelector)
 
@@ -439,6 +483,10 @@ class FilesTab(GalacteekTab):
         self.ui.treeFiles.setDragDropMode(QAbstractItemView.DragDrop)
 
         self.ipfsKeys = []
+
+    @property
+    def offlineMode(self):
+        return self._offlineMode
 
     @property
     def displayPath(self):
@@ -525,6 +573,12 @@ class FilesTab(GalacteekTab):
         if currentIdx.isValid():
             return self.model.getNameItemFromIdx(currentIdx)
 
+    def onOfflineToggle(self, checked):
+        self._offlineMode = checked
+        if self.offlineMode:
+            self.ui.offlineButton.setToolTip(iOfflineModeToolTip())
+        print('Offline mode', self.offlineMode)
+
     def onClose(self):
         if not self.busy:
             self.disconnectDropSignals()
@@ -583,19 +637,21 @@ class FilesTab(GalacteekTab):
 
         if text == iHome():
             self.changeDisplayItem(self.model.itemHome)
-        if text == iPictures():
+        elif text == iPictures():
             self.changeDisplayItem(self.model.itemPictures)
-        if text == iVideos():
+        elif text == iVideos():
             self.changeDisplayItem(self.model.itemVideos)
-        if text == iMusic():
+        elif text == iMusic():
             self.changeDisplayItem(self.model.itemMusic)
-        if text == iCode():
+        elif text == iCode():
             self.changeDisplayItem(self.model.itemCode)
-        if text == iDocuments():
+        elif text == iDocuments():
             self.changeDisplayItem(self.model.itemDocuments)
-        if text == iWebPages():
+        elif text == iWebPages():
             self.changeDisplayItem(self.model.itemWebPages)
-        if text == iQrCodes():
+        elif text == iDWebApps():
+            self.changeDisplayItem(self.model.itemWebApps)
+        elif text == iQrCodes():
             self.changeDisplayItem(self.model.itemQrCodes)
 
     def changeDisplayItem(self, item):
@@ -619,7 +675,7 @@ class FilesTab(GalacteekTab):
         menu = QMenu()
 
         def explore(multihash):
-            self.gWindow.exploreMultihash(multihash)
+            self.gWindow.explore(multihash)
 
         def hashmark(mPath, name):
             addHashmark(self.app.marksLocal, mPath, name)
@@ -646,6 +702,12 @@ class FilesTab(GalacteekTab):
                            functools.partial(self.app.setClipboardText,
                                              nameItem.fullPath))
         menu.addSeparator()
+        menu.addAction(getIconIpfs64(), iDhtProvide(), functools.partial(
+            self.onDhtProvide, dataHash, False))
+        menu.addAction(getIconIpfs64(), iDhtProvideRecursive(),
+                       functools.partial(self.onDhtProvide, dataHash, True))
+        menu.addSeparator()
+
         menu.addAction(iUnlinkFile(), functools.partial(
             self.scheduleUnlink, nameItem, dataHash))
         menu.addAction(iDeleteFile(), functools.partial(
@@ -704,6 +766,16 @@ class FilesTab(GalacteekTab):
         self.gWindow.addBrowserTab().browseFsPath(
             IPFSPath(path))
 
+    def onDhtProvide(self, multihash, recursive):
+        @ipfsOpFn
+        async def dhtProvide(ipfsop, value, recursive=True):
+            if await ipfsop.provide(value, recursive=recursive) is True:
+                logUser.info('{0}: DHT provide OK!'.format(value))
+            else:
+                logUser.info('{0}: DHT provide error'.format(value))
+
+        ensure(dhtProvide(multihash, recursive=recursive))
+
     def editFile(self, ipfsPath):
         self.gWindow.addEditorTab(path=ipfsPath)
 
@@ -712,7 +784,7 @@ class FilesTab(GalacteekTab):
 
         if current and current.isDir():
             dataHash = self.model.getHashFromIdx(current.index())
-            self.gWindow.exploreMultihash(dataHash)
+            self.gWindow.explore(dataHash)
 
     def onDoubleClicked(self, idx):
         resourceOpener = self.gWindow.app.resourceOpener
@@ -970,6 +1042,7 @@ class FilesTab(GalacteekTab):
             await op.sleep()
 
             root = await op.addPath(file, wrap=wrapEnabled,
+                                    offline=self.offlineMode,
                                     callback=onEntry)
 
             if root is None:
@@ -1004,6 +1077,7 @@ class FilesTab(GalacteekTab):
 
         dirEntry = await op.addPath(path, callback=onEntry,
                                     hidden=True, recursive=True,
+                                    offline=self.offlineMode,
                                     wrap=wrapEnabled)
 
         if not dirEntry:

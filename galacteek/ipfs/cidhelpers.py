@@ -1,4 +1,10 @@
+import aioipfs
+
+from PyQt5.QtCore import QUrl
+
+from galacteek import log
 from galacteek.ipfs.cid import make_cid
+from galacteek.ipfs.stat import StatInfo
 
 import multihash
 import re
@@ -116,14 +122,14 @@ def cidValid(cidstring):
 
 
 ipfsPathRe = re.compile(
-    r'^(\s*)?(?:fs:|ipfs:|dweb:|https?://[a-zA-Z0-9:.]*)?(?P<fullpath>/ipfs/(?P<rootcid>[a-zA-Z0-9]{46,59})\/?(?P<subpath>[a-zA-Z0-9<>\"\*:;,\\\?\!\%&=@$~\/\s\.\-\_\'\\\+\(\)]{1,1024})?)(?P<fragment>\#[a-zA-Z0-9\-\+\_\.\/]{1,256})?$', # noqa
+    r'^(\s*)?(?:fs:|ipfs:|dweb:|https?://[a-zA-Z0-9:.]*)?(?P<fullpath>/ipfs/(?P<rootcid>[a-zA-Z0-9]{46,59})\/?(?P<subpath>[a-zA-Z0-9<>\"\*:;,\\\?\!\%&=@$~\/\s\.\-\_\'\\\+\(\)]{1,1024})?)\#?(?P<fragment>[a-zA-Z0-9\-\+\_\.\/]{1,256})?$', # noqa
     flags=re.MULTILINE)
 
 ipfsCidRe = re.compile(
     r'^(\s*)?(?P<cid>[a-zA-Z0-9]{46,59})$', flags=re.MULTILINE)
 
 ipnsPathRe = re.compile(
-    r'^(\s*)?(?:fs:|ipfs:|dweb:|https?://[a-zA-Z0-9:.]*)?(?P<fullpath>/ipns/([a-zA-Z0-9\.\-\_]{1,128})\/?(?P<subpath>[a-zA-Z0-9<>\"\*:;,\\\?\!\%&=@$~\/\s\.\-\_\'\\\+\(\)]{1,1024})?)(?P<fragment>\#[a-zA-Z0-9\+\-\_\.\/]{1,256})?$',  # noqa
+    r'^(\s*)?(?:fs:|ipfs:|dweb:|https?://[a-zA-Z0-9:.]*)?(?P<fullpath>/ipns/([a-zA-Z0-9\.\-\_]{1,128})\/?(?P<subpath>[a-zA-Z0-9<>\"\*:;,\\\?\!\%&=@$~\/\s\.\-\_\'\\\+\(\)]{1,1024})?)\#?(?P<fragment>[a-zA-Z0-9\+\-\_\.\/]{1,256})?$',  # noqa
     flags=re.MULTILINE)
 
 
@@ -139,6 +145,7 @@ class IPFSPath:
         self._rscPath = None
         self._subPath = None
         self._fragment = None
+        self._resolvedMultihash = None
         self._valid = self.__analyze()
 
     @property
@@ -150,8 +157,16 @@ class IPFSPath:
         return self._valid
 
     @property
+    def resolvedMultihash(self):
+        return self._resolvedMultihash
+
+    @property
     def isIpfs(self):
         return self.valid is True and isIpfsPath(self.path)
+
+    @property
+    def isIpfsRoot(self):
+        return self.isIpfs is True and self.subPath is None
 
     @property
     def isIpns(self):
@@ -165,6 +180,10 @@ class IPFSPath:
     def fragment(self):
         # Return the fragment if there's any
         return self._fragment
+
+    @fragment.setter
+    def fragment(self, frag):
+        self._fragment = frag
 
     @property
     def path(self):
@@ -189,9 +208,13 @@ class IPFSPath:
     @property
     def fullPath(self):
         if isinstance(self.fragment, str):
-            return self._rscPath + self.fragment
+            return self._rscPath + '#' + self.fragment
         else:
             return self._rscPath
+
+    @property
+    def dwebQtUrl(self):
+        return QUrl('dweb:{}'.format(self.fullPath))
 
     def __analyze(self):
         """
@@ -252,6 +275,41 @@ class IPFSPath:
 
         childPath = IPFSPath(os.path.join(self.objPath, path))
         return childPath
+
+    async def resolve(self, ipfsop):
+        """
+        Resolve this object path to a multihash
+        """
+
+        timeout = 15
+        if self.resolvedMultihash:
+            # Return cached value
+            return self.resolvedMultihash
+
+        haveResolve = await ipfsop.hasCommand('resolve')
+
+        try:
+            if haveResolve:
+                # Use /api/vx/resolve as the preferred resolve strategy
+
+                resolved = await ipfsop.resolve(self.objPath, timeout=timeout)
+                if resolved and isIpfsPath(resolved):
+                    resolved = stripIpfs(resolved)
+
+                    if cidValid(resolved):
+                        self._resolvedMultihash = resolved
+                        return self.resolvedMultihash
+
+            # Use object stat
+            info = StatInfo(await ipfsop.objStat(
+                self.objPath, timeout=timeout))
+
+            if info.valid and cidValid(info.multihash):
+                self._resolvedMultihash = info.multihash
+                return self.resolvedMultihash
+        except aioipfs.APIError:
+            log.debug('Error resolving {0}'.format(self.objPath))
+            return None
 
     def __str__(self):
         return self.fullPath if self.valid else 'Invalid path: {}'.format(

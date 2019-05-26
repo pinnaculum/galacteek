@@ -97,9 +97,19 @@ class KeysTab(GalacteekTab):
 
     def onDelKeyClicked(self):
         idx = self.ui.treeKeys.currentIndex()
+        if not idx.isValid():
+            return messageBox('Invalid key')
+
         idxName = self.model.index(idx.row(), 0, idx.parent())
         keyName = self.model.data(idxName)
-        if keyName:
+
+        if not keyName:
+            return
+
+        reply = questionBox(
+            'Delete key', 'Delete IPNS key <b>{key}</b> ?'.format(key=keyName))
+
+        if reply is True:
             self.app.task(self.delKey, keyName)
 
     def onAddKeyClicked(self):

@@ -205,9 +205,7 @@ class MiscToolBar(QToolBar):
         self.setAllowedAreas(
             Qt.RightToolBarArea
         )
-
-        self.pyramidsToolbar = MultihashPyramidsToolBar(self)
-        self.addWidget(self.pyramidsToolbar)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
     def contextMenuEvent(self, event):
         # no context menu
@@ -308,7 +306,7 @@ class MainWindow(QMainWindow):
 
         # Global pin-all button
         self.pinAllGlobalButton = QToolButton()
-        self.pinAllGlobalButton.setIcon(getIcon('pin-black.png'))
+        self.pinAllGlobalButton.setIcon(getIcon('pin.png'))
         self.pinAllGlobalButton.setObjectName('pinGlobalButton')
         self.pinAllGlobalButton.setToolTip(iGlobalAutoPinning())
         self.pinAllGlobalButton.setCheckable(True)
@@ -318,7 +316,7 @@ class MainWindow(QMainWindow):
         self.pinAllGlobalButton.setChecked(self.app.settingsMgr.browserAutoPin)
 
         self.toolbarMain = MainToolBar(self)
-        self.toolbarMisc = MiscToolBar(self)
+        self.toolbarPyramids = MultihashPyramidsToolBar(self)
 
         self.toolbarMain.orientationChanged.connect(self.onMainToolbarMoved)
         self.toolbarTools = QToolBar()
@@ -490,7 +488,7 @@ class MainWindow(QMainWindow):
         self.toolbarMain.addAction(self.actionQuit)
 
         self.addToolBar(Qt.TopToolBarArea, self.toolbarMain)
-        self.addToolBar(Qt.RightToolBarArea, self.toolbarMisc)
+        self.addToolBar(Qt.RightToolBarArea, self.toolbarPyramids)
 
         self.ui.tabWidget.setDocumentMode(True)
         self.ui.tabWidget.setTabsClosable(True)
@@ -887,9 +885,18 @@ class MainWindow(QMainWindow):
 
         super(MainWindow, self).keyPressEvent(event)
 
-    def exploreMultihash(self, multihash):
-        if not cidValid(multihash):
-            return messageBox(iInvalidInput())
+    def explore(self, multihash):
+        ipfsPath = IPFSPath(multihash)
+        if ipfsPath.valid:
+            ensure(self.exploreIpfsPath(ipfsPath))
+        else:
+            messageBox(iInvalidInput())
+
+    @ipfsOp
+    async def exploreIpfsPath(self, ipfsop, ipfsPath):
+        multihash = await ipfsPath.resolve(ipfsop)
+        if not multihash:
+            return messageBox(iCannotResolve(str(ipfsPath)))
 
         tabName = shortPathRepr(multihash)
         tooltip = 'Multihash explorer: {0}'.format(multihash)
@@ -1045,7 +1052,8 @@ class MainWindow(QMainWindow):
             popupPoint = QPoint(btnPos.x() + 32, btnPos.y())
         elif self.toolbarMain.horizontal:
             popupPoint = QPoint(
-                btnPos.x() - self.ipfsSearchWidget.width() - 10, btnPos.y())
+                btnPos.x() - self.ipfsSearchWidget.width() - 30,
+                btnPos.y() + 20)
 
         self.ipfsSearchWidget.move(popupPoint)
 

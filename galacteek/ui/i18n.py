@@ -220,8 +220,18 @@ def iDelete():
     return QCoreApplication.translate('Galacteek', 'Delete')
 
 
+def iRemove():
+    return QCoreApplication.translate('Galacteek', 'Remove')
+
+
 def iInvalidInput():
     return QCoreApplication.translate('Galacteek', 'Invalid input')
+
+
+def iCannotResolve(objPath):
+    return QCoreApplication.translate(
+        'Galacteek',
+        'Cannot resolve object: <b>{}</b>').format(objPath)
 
 
 def iKey():

@@ -11,7 +11,7 @@ from PyQt5.Qt import QSizePolicy
 from galacteek import ensure
 from galacteek import log
 from galacteek.ipfs import ipfsOp
-from galacteek.ipfs import StatInfo
+from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs import kilobytes
 from galacteek.ipfs.cidhelpers import IPFSPath
 

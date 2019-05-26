@@ -6,6 +6,10 @@
                 font: 10pt "Montserrat";
             }
 
+            a {
+                padding: 2px;
+            }
+
             #local {
                 margin-top: 20px;
                 padding: 5px;
@@ -82,10 +86,12 @@
                     x.style.display = "block";
                     cat.style.border = "1px solid black";
                     cat.style.margin = "10px";
+                    cat.style.background = '#B7CDC2';
                 } else {
                     x.style.display = "none";
                     cat.style.border = "none";
                     cat.style.margin = "5px";
+                    cat.style.background = '#e0e0d1';
                 }
             }
 
@@ -137,17 +143,18 @@
         {% for path, mark in hashmarks %}
         <li>
                 <p style="text-align: left">
-                    <img width="16" src="qrc:///share/icons/ipfs-logo-128-black.png" />
-                    <a class="hashmarklink" title='{{ mark.metadata.description }}' href="dweb:{{path}}"
-                        onclick="event.preventDefault(); window.galacteek.openResource('{{ path }}');">{{ mark.metadata.title }}</a>
+            {% if mark.icon and ipfsConnParams %}
+                    <img width="16" src="{{ ipfsConnParams.gatewayUrl }}/{{ mark.icon }}" />
+            {% endif %}
+                    <a class="hashmarklink" title='{{ mark.metadata.description }}'
+                       href="dweb:{{path}}"
+                       onclick="event.preventDefault(); window.galacteek.openResource('{{ path }}');">{{ mark.metadata.title }}</a>
                     <span style="float: right">
                         <a href="#" style="margin: 2px" title="Copy object path to clipboard"
-                            onclick="event.preventDefault(); window.galacteek.copyToClipboard('{{ path }}');"><img width="16" height="16" src='qrc:///share/icons/clipboard.png'/>
-                        </a>
+                            onclick="event.preventDefault(); window.galacteek.copyToClipboard('{{ path }}');"><img width="16" height="16" src='qrc:///share/icons/clipboard.png'/></a>
 
                         <a href="#" style="margin: 2px" title="Explore path"
-                                   onclick="event.preventDefault(); window.galacteek.explorePath('{{ path }}');"><img width="16" height="16" src='qrc:///share/icons/folder-open-black.png'/>
-                        </a>
+                           onclick="event.preventDefault(); window.galacteek.explorePath('{{ path }}');"><img width="16" height="16" src='qrc:///share/icons/folder-open-black.png'/></a>
                         <a href="#" style="margin: 2px" title="Delete" onclick="event.preventDefault(); window.hashmarks.deleteHashmark('{{ path }}');">Delete</a>
                     </span>
                 </p>
@@ -175,18 +182,20 @@
 
                 <div class="marks" id="{{ feedData.name }}_marks">
         {% for path, mark in marks.getFeedMarks(feedPath).items() %}
-                <a class="hashmarklink" href="#" onclick="event.preventDefault(); window.galacteek.openResource('{{ path }}');">
-                    <p style="text-align: left"><img width="16" src="qrc:///share/icons/ipfs-logo-128-black.png" />
+                <p style="text-align: left"><img width="16" src="qrc:///share/icons/ipfs-logo-128-black.png" />
+                    <a class="hashmarklink" href="#" onclick="event.preventDefault(); window.galacteek.openResource('{{ path }}');">
+                    {% if mark.metadata.title %}
                         {{ mark.metadata.title }}
-
-                        <span style="float: right; width: 20%">{{ mark.tscreated|tstodate }}</span>
-                    </p>
-                </a>
+                    {% else %}
+                        Unknown
+                    {% endif %}
+                    </a>
+                    <span style="float: right; width: 20%">{{ mark.tscreated|tstodate }}</span>
+                </p>
         {% endfor %}
                 </div>
             </div>
-    </div>
-
+        </div>
 {% endfor %}
 
     </body>

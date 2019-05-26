@@ -22,7 +22,7 @@
         <enum>QLayout::SetDefaultConstraint</enum>
        </property>
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <layout class="QHBoxLayout" name="fsControlLayout">
          <property name="sizeConstraint">
           <enum>QLayout::SetFixedSize</enum>
          </property>
@@ -164,6 +164,13 @@
            <width>24</width>
            <height>24</height>
           </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="offlineButton">
+         <property name="text">
+          <string/>
          </property>
         </widget>
        </item>

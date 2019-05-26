@@ -46,7 +46,7 @@ QTabBar::tab:!selected {
 }
 
 QTabBar::tab:hover:!selected {
-    background-color: #4a9ea1;
+    background-color: #B7CDC2;
 }
 
 QTreeView {
@@ -93,11 +93,10 @@ QToolBox::tab {
 }
 
 QLineEdit {
-    background-color: rgb(189, 236, 255);
-    selection-background-color: #4a9ea1;
+    background-color: #B7CDC2;
     selection-color: black;
     border: 1px solid #244e66;
-    border-radius: 2px;
+    border-radius: 4px;
     padding: 0 8px;
 }
 
@@ -109,12 +108,24 @@ QToolButton#buttonBrowseIpfs::hover {
     background-color: #4a9ea1;
 }
 
+QToolButton#pyramidsController::pressed {
+    background-color: #eec146;
+}
+
+QToolButton#pyramidsController::hover {
+    background-color: #B7CDC2;
+}
+
 QToolButton#hashmarksMgrButton::hover {
     background-color: #4a9ea1;
 }
 
 QToolButton#hashmarksLibraryButton::hover {
     background-color: #4a9ea1;
+}
+
+QToolButton#filemanagerOfflineButton::checked {
+    background-color: #eec146;
 }
 
 QLabel#linkInfos {

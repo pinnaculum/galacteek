@@ -8,9 +8,8 @@ from PyQt5.QtWidgets import QInputDialog
 from PyQt5.QtWidgets import QDialogButtonBox
 from PyQt5.QtWidgets import QLabel
 from PyQt5.QtWidgets import QLineEdit
-from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWidgets import QHBoxLayout
-from PyQt5.QtWidgets import QPushButton
+from PyQt5.QtWidgets import QGridLayout
 from PyQt5.QtWidgets import QListView
 
 from PyQt5.QtCore import QFile
@@ -26,7 +25,10 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtGui import QImage
 from PyQt5.QtGui import QRegExpValidator
 
-from galacteek import asyncify, ensure
+from galacteek import asyncify
+from galacteek import ensure
+from galacteek import logUser
+
 from galacteek.core.ipfsmarks import *
 from galacteek.core import countries
 from galacteek.core.ipfsmarks import categoryValid
@@ -178,6 +180,10 @@ class AddFeedDialog(QDialog):
     def accept(self):
         share = self.ui.share.isChecked()
         autoPin = self.ui.autoPin.isChecked()
+        feedName = self.ui.feedName.text()
+
+        if len(feedName) == 0:
+            return messageBox('Please specify a feed name')
 
         self.marks.follow(self.ipfsResource, self.ui.feedName.text(),
                           resolveevery=self.ui.resolve.value(),
@@ -484,6 +490,30 @@ class ChooseProgramDialog(QInputDialog):
 
 
 class AddMultihashPyramidDialog(QDialog):
+    iconsList = [
+        ':/share/icons/atom.png',
+        ':/share/icons/ipfs-cube-64.png',
+        ':/share/icons/ipfs-logo-128-white.png',
+        ':/share/icons/code-fork.png',
+        ':/share/icons/cubehouse.png',
+        ':/share/icons/distributed.png',
+        ':/share/icons/go-home.png',
+        ':/share/icons/hotspot.png',
+        ':/share/icons/ipld-logo.png',
+        ':/share/icons/pyramid-aqua.png',
+        ':/share/icons/pyramid-stack.png',
+        ':/share/icons/multimedia.png',
+        ':/share/icons/folder-documents.png',
+        ':/share/icons/folder-pictures.png',
+        ':/share/icons/orbitdb.png',
+        ':/share/icons/pyramid-hierarchy.png',
+        ':/share/icons/sweethome.png',
+        ':/share/icons/stroke-code.png',
+        ':/share/icons/web-devel.png',
+        ':/share/icons/mimetypes/image-x-generic.png',
+        ':/share/icons/mimetypes/text-html.png'
+    ]
+
     def __init__(self, marks, parent=None):
         super().__init__(parent)
 
@@ -539,27 +569,10 @@ class AddMultihashPyramidDialog(QDialog):
         nameLayout.addWidget(label)
         nameLayout.addWidget(self.nameLine)
 
-        iconsList = [
-            ':/share/icons/ipfs-cube-64.png',
-            ':/share/icons/ipfs-logo-128-black.png',
-            ':/share/icons/code-fork.png',
-            ':/share/icons/go-home.png',
-            ':/share/icons/pyramid-aqua.png',
-            ':/share/icons/pyramid-stack.png',
-            ':/share/icons/multimedia.png',
-            ':/share/icons/folder-documents.png',
-            ':/share/icons/folder-music.png',
-            ':/share/icons/folder-pictures.png',
-            ':/share/icons/folder-videos.png',
-            ':/share/icons/mimetypes/text-x-generic.png',
-            ':/share/icons/mimetypes/image-x-generic.png',
-            ':/share/icons/mimetypes/text-html.png'
-        ]
-
         self.iconsCombo = QComboBox(self)
 
         if self.app.system == 'Linux':
-            self.iconsCombo.setIconSize(QSize(128, 128))
+            self.iconsCombo.setIconSize(QSize(64, 64))
 
         self.view = QListView(self.iconsCombo)
         self.iconsCombo.setView(self.view)
@@ -568,25 +581,31 @@ class AddMultihashPyramidDialog(QDialog):
         pickIconLayout.addWidget(QLabel('Choose icon'))
         pickIconLayout.addWidget(self.iconsCombo)
 
-        for iconP in iconsList:
+        for iconP in self.iconsList:
             self.iconsCombo.addItem(
                 getIcon(iconP), '', QVariant(iconP))
 
-        changeIconButton = QPushButton('Set Icon')
-        changeIconButton.clicked.connect(self.changeIcon)
-
-        mainLayout = QVBoxLayout()
-        mainLayout.addLayout(nameLayout)
-        mainLayout.addLayout(descrLayout)
-        mainLayout.addWidget(HorizontalLine(self))
-        mainLayout.addLayout(catLayout)
-        mainLayout.addLayout(catCustomLayout)
-        mainLayout.addLayout(pickIconLayout)
-        mainLayout.addWidget(buttonBox)
+        mainLayout = QGridLayout()
+        mainLayout.addLayout(nameLayout, 0, 0)
+        mainLayout.addLayout(descrLayout, 1, 0)
+        mainLayout.addWidget(HorizontalLine(self), 2, 0)
+        mainLayout.addLayout(catLayout, 3, 0)
+        mainLayout.addLayout(catCustomLayout, 4, 0)
+        mainLayout.addLayout(pickIconLayout, 5, 0)
+        mainLayout.addWidget(HorizontalLine(self), 6, 0)
+        mainLayout.addWidget(buttonBox, 7, 0)
 
         buttonBox.accepted.connect(self.accept)
         buttonBox.rejected.connect(self.reject)
         self.setLayout(mainLayout)
+
+        self.setStyleSheet('''
+            QWidget {
+                padding: 2px;
+            }
+        ''')
+
+        self.nameLine.setFocus(Qt.OtherFocusReason)
 
     def onCustomCategory(self, text):
         self.categoryCombo.setEnabled(len(text) == 0)
@@ -597,6 +616,10 @@ class AddMultihashPyramidDialog(QDialog):
 
     def accept(self):
         pyramidName = self.nameLine.text()
+        descr = self.descrLine.text()
+
+        if len(pyramidName) == 0 or len(descr) == 0:
+            return messageBox('Please give a name and description')
 
         if isinstance(self.customCategory, str) and \
                 categoryValid(self.customCategory):
@@ -607,7 +630,6 @@ class AddMultihashPyramidDialog(QDialog):
         ipnsKeyName = 'galacteek.pyramids.{cat}.{name}'.format(
             cat=category.replace('/', '_'), name=pyramidName)
         iconName = self.iconsCombo.currentData()
-        descr = self.descrLine.text()
 
         self.done(1)
 
@@ -620,6 +642,9 @@ class AddMultihashPyramidDialog(QDialog):
         try:
             await self.injectQrcIcon(iconName)
 
+            logUser.info(
+                'Multihash pyramid {pyr}: generating IPNS key ...'.format(
+                    pyr=pyramidName))
             ipnsKey = await ipfsop.keyGen(ipnsKeyName)
         except aioipfs.APIError:
             return
@@ -629,18 +654,8 @@ class AddMultihashPyramidDialog(QDialog):
                     pyramidName, category, self.iconCid,
                     ipnskey=ipnsKey['Id'],
                     description=description)
-
-    def changeIcon(self):
-        fps = filesSelectImages()
-        if len(fps) > 0:
-            ensure(self.setIcon(fps.pop()))
-
-    @ipfsOp
-    async def setIcon(self, op, fp):
-        entry = await op.addPath(fp, recursive=False)
-        if entry:
-            cid = entry['Hash']
-            self.iconCid = cid
+                logUser.info('Multihash pyramid {pyr}: created'.format(
+                    pyr=pyramidName))
 
     @ipfsOp
     async def injectQrcIcon(self, op, iconPath):

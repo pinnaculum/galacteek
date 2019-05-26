@@ -8,6 +8,7 @@ import uuid
 from datetime import datetime
 
 from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QCheckBox
 from PyQt5.QtWidgets import QScrollArea
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWidgets import QHBoxLayout
@@ -79,7 +80,7 @@ class PythonSyntaxHighlighter(QSyntaxHighlighter):
         self.fmt2 = self.charFormat(color=Qt.blue)
         self.fmt3 = self.charFormat(color=QColor('#AA1811'))
         self.fmt4 = self.charFormat(color=QColor('#6C0404'))
-        self.fmt5 = self.charFormat(color=QColor('#99C8CC'))
+        self.fmt5 = self.charFormat(color=QColor('#65416C'))
 
         self.exprs = [
             (r'^(?<instr>from)\s', self.fmt1),
@@ -128,13 +129,13 @@ defaultStyleSheet = '''
         padding: 5px;
         color: #242424;
         background-color: #F0F7F7;
-        font: 11pt "Montserrat";
+        font: 11pt "Courier";
     }
 '''
 
 
 class Editor(QTextEdit):
-    def __init__(self, parent, lineWrap=80, tabReplace=True):
+    def __init__(self, parent, lineWrap=80, tabReplace=False):
         super(Editor, self).__init__(parent)
 
         self.setLineWrapMode(QTextEdit.FixedColumnWidth)
@@ -186,15 +187,6 @@ class EditHistory(QScrollArea):
 
 
 class Document(QTextDocument):
-    defaultStyleSheetOld = '''
-        QTextEdit {
-            padding: 5px;
-            color: #242424;
-            background-color: #F0F7F7;
-            font: 12pt "Montserrat";
-        }
-    '''
-
     modified = pyqtSignal()
     filenameChanged = pyqtSignal(str)
 
@@ -250,6 +242,11 @@ class TextEditorTab(GalacteekTab):
     def onDocnameChanged(self, doc, name):
         if doc is self.editor.currentDocument:
             self.setTabName(name, widget=self)
+
+    def onClose(self):
+        if self.editor.checkChanges() is True:
+            return True
+        return False
 
 
 class TextEditorWidget(QWidget):
@@ -368,6 +365,12 @@ class TextEditorWidget(QWidget):
         self.textHLayout.addWidget(self.textEditor)
         self.textHLayout.addWidget(self.previewWidget)
 
+        optionsLayout = QHBoxLayout()
+        self.tabReplaceButton = QCheckBox('Replace tabs', self)
+        self.tabReplaceButton.stateChanged.connect(self.onTabReplaceToggled)
+        optionsLayout.addWidget(self.tabReplaceButton)
+        self.textVLayout.addLayout(optionsLayout)
+
         self.layout().addLayout(self.ctrlLayout)
         self.layout().addWidget(self.editHistory)
         self.layout().addLayout(self.textVLayout)
@@ -407,6 +410,7 @@ class TextEditorWidget(QWidget):
             if self.currentDocument.filename.endswith('.py'):
                 self.highlighter = PythonSyntaxHighlighter(
                     self.currentDocument)
+                self.tabReplaceButton.setChecked(True)
         else:
             self.highlighter = None
 
@@ -427,6 +431,9 @@ class TextEditorWidget(QWidget):
 
         if view is True:
             self.nameInputLine.setFocus(Qt.OtherFocusReason)
+
+    def onTabReplaceToggled(self, state):
+        self.textEditor.tabReplace = state
 
     def onNameInput(self):
         filename = self.nameInputLine.text()
@@ -450,10 +457,10 @@ class TextEditorWidget(QWidget):
         if self.editing is True:
             self.textEditor.setStyleSheet('''
                 QTextEdit {
-                    background-color: #cdfbe7;
+                    background-color: #D2DBD6;
                     color: #242424;
                     padding: 5px;
-                    font: 12pt "Inter UI";
+                    font: 12pt "Courier";
                     font-weight: bold;
                 }
             ''')
@@ -557,8 +564,7 @@ class TextEditorWidget(QWidget):
             reply = questionBox(
                 'Unsaved changes',
                 'The current document was not saved, continue ?')
-            if reply is False:
-                return False
+            return reply
         return True
 
     def onNewFile(self):

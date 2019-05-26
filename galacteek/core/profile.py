@@ -486,6 +486,7 @@ class UserProfile(QObject):
             self.pathMusic,
             self.pathCode,
             self.pathWebPages,
+            self.pathDWebApps,
             self.pathImages
         ]
 
@@ -524,6 +525,10 @@ class UserProfile(QObject):
     @property
     def pathWebPages(self):
         return os.path.join(self.pathFiles, 'webpages')
+
+    @property
+    def pathDWebApps(self):
+        return os.path.join(self.pathFiles, 'dwebapps')
 
     @property
     def pathVideos(self):
