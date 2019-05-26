@@ -18,6 +18,7 @@ SOURCES = galacteek/application.py \
 	galacteek/ui/mediaplayer.py \
 	galacteek/ui/peers.py \
 	galacteek/ui/pin.py \
+	galacteek/ui/pyramids.py \
 	galacteek/ui/quickaccess.py \
 	galacteek/ui/resource.py \
 	galacteek/ui/settings.py \

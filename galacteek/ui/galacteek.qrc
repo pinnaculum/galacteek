@@ -1,5 +1,14 @@
 <RCC>
   <qresource>
+    <file>../../share/icons/cubehouse.png</file>
+    <file>../../share/icons/hotspot.png</file>
+    <file>../../share/icons/distributed.png</file>
+    <file>../../share/icons/stroke-code.png</file>
+    <file>../../share/icons/atom.png</file>
+    <file>../../share/icons/web-devel.png</file>
+    <file>../../share/icons/pyramid-hierarchy.png</file>
+    <file>../../share/icons/pyramid-orange.png</file>
+    <file>../../share/icons/sweethome.png</file>
     <file>../../share/icons/text-editor.png</file>
     <file>../../share/icons/mimetypes/ipfs-dag-pb.png</file>
     <file>../../share/icons/save-file.png</file>

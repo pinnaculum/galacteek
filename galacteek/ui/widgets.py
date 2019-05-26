@@ -21,7 +21,7 @@ from PyQt5.QtCore import QMimeData
 from PyQt5.QtGui import QImage
 from PyQt5.QtGui import QPixmap
 
-from galacteek.ipfs import StatInfo
+from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek import ensure
@@ -82,6 +82,11 @@ class HorizontalLine(QFrame):
         super().__init__(parent)
         self.setFrameShape(QFrame.HLine)
         self.setFrameShadow(QFrame.Sunken)
+        self.setStyleSheet('''
+            QFrame {
+                background-color: #B7CDC2;
+            }
+        ''')
 
 
 class URLDragAndDropProcessor:

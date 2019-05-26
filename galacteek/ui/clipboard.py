@@ -31,7 +31,7 @@ from galacteek.ipfs.cidhelpers import isIpnsPath
 from galacteek.ipfs.cidhelpers import isIpfsPath
 from galacteek.ipfs.cidhelpers import shortPathRepr
 from galacteek.ipfs import ipfsOp
-from galacteek.ipfs import StatInfo
+from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs import megabytes
 from galacteek.ipfs.mimetype import mimeTypeDag
 from galacteek.crypto.qrcode import IPFSQrDecoder
@@ -705,7 +705,7 @@ class ClipboardItemButton(PopupToolButton):
 
     def onExplore(self):
         if self.item and self.item.cid:
-            self.app.mainWindow.exploreMultihash(self.item.cid)
+            self.app.mainWindow.explore(self.item.cid)
 
     def onDagView(self):
         if self.item:

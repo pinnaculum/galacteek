@@ -349,8 +349,7 @@ class IPFSSearchHandler(QObject):
     def explore(self, path):
         hashV = stripIpfs(path)
         if hashV:
-            mainW = self.searchW.app.mainWindow
-            mainW.exploreMultihash(hashV)
+            self.searchW.app.mainWindow.explore(hashV)
 
     @pyqtSlot()
     def search(self):

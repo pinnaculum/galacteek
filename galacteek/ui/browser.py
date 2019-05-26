@@ -32,7 +32,7 @@ from galacteek import log, ensure
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs import cidhelpers
 from galacteek.ipfs import megabytes
-from galacteek.ipfs import StatInfo
+from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import joinIpns

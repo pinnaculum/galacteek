@@ -18,7 +18,7 @@ from galacteek.dweb.page import DWebView
 
 from galacteek.ipfs import megabytes
 from galacteek.ipfs import ipfsOp
-from galacteek.ipfs import StatInfo
+from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs.mimetype import MIMEType
 from galacteek.ipfs.mimetype import detectMimeType
 from galacteek.ipfs.mimetype import detectMimeTypeFromBuffer

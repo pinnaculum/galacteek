@@ -58,7 +58,7 @@ class GalacteekHandler(QObject):
         if len(path) > 1024:
             return
 
-        self.app.mainWindow.exploreMultihash(path)
+        self.app.mainWindow.explore(path)
 
 
 class BasePage(QWebEnginePage):
@@ -179,6 +179,7 @@ class HashmarksPage(BasePage):
     async def render(self):
         self.setHtml(await renderTemplate(
             self.template,
+            ipfsConnParams=self.app.getIpfsConnectionParams(),
             marks=self.marksLocal,
             marksShared=self.marksNetwork),
             baseUrl=QUrl('qrc:/'))

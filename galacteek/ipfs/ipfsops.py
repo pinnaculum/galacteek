@@ -375,6 +375,24 @@ class IPFSOperator(object):
                 path=path, key=key, msg=err.message))
             return None
 
+    async def resolve(self, path, timeout=20, recursive=False):
+        """
+        Use /api/vx/resolve to resolve pretty much anything
+        """
+        try:
+            resolved = await asyncio.wait_for(
+                self.client.core.resolve(path, recursive=recursive),
+                timeout)
+        except asyncio.TimeoutError:
+            self.debug('resolve timeout for {0}'.format(path))
+            return None
+        except aioipfs.APIError as e:
+            self.debug('resolve error: {}'.format(e.message))
+            return None
+        else:
+            if isDict(resolved):
+                return resolved.get('Path')
+
     async def nameResolve(self, path, timeout=20, recursive=False):
         try:
             resolved = await asyncio.wait_for(
@@ -686,6 +704,29 @@ class IPFSOperator(object):
             return peers
 
         return peers
+
+    async def provide(self, multihash, recursive=False):
+        """
+        Announce to the network that we are providing this multihash
+
+        :param str multihash: The multihash to announce
+        :param bool recursive: Recursively provide the whole graph
+        """
+        provideRespCount = 0
+        try:
+            # Not much exception handling here.. if we get out of the
+            # async generator alive, we consider that it's a success
+            async for resp in self.client.dht.provide(
+                    multihash, recursive=recursive):
+                if not isinstance(resp, dict):
+                    continue
+                provideRespCount += 1
+
+            self.debug('DHT provide {multihash}: {count} messages'.format(
+                multihash=multihash, count=provideRespCount))
+            return True
+        except aioipfs.APIError:
+            return False
 
     @async_generator
     async def pingWrapper(self, peer, count=3):
