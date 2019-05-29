@@ -16,7 +16,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Pinning content" href="pinning.html" />
-    <link rel="prev" title="Hashmarks" href="hashmarks.html" />
+    <link rel="prev" title="Multihash pyramids" href="pyramids.html" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Neuton&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nobile:regular,italic,bold,bolditalic&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
 <!--[if lte IE 6]>
@@ -35,7 +35,7 @@
           <a href="pinning.html" title="Pinning content"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="hashmarks.html" title="Hashmarks"
+          <a href="pyramids.html" title="Multihash pyramids"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">galacteek  documentation</a> &#187;</li> 
       </ul>
@@ -82,26 +82,37 @@ repository. Multiple selection is supported by holding the <em>Control</em> or <
 keys.</p>
 <p>Drag-and-dropping content from other applications is supported as well.</p>
 </div>
-<div class="section" id="double-clicking-items">
-<h2>Double-clicking items<a class="headerlink" href="#double-clicking-items" title="Permalink to this headline">¶</a></h2>
-<p>Double-clicking a file will open the file, while double-clicking a directory
-will expand it.</p>
+<div class="section" id="offline-mode">
+<h2>Offline mode<a class="headerlink" href="#offline-mode" title="Permalink to this headline">¶</a></h2>
+<p>The <em>Offline mode</em> button, when toggled, sets the filemanager in offline
+mode. In this mode, adding new files to your node will not trigger an
+announcement on the DHT (meaning that other nodes will have no knowledge
+yet that your node provides these files).</p>
+<p>Later on, if you want to manually announce to the network that you provide
+some files, right-click a file or directory and select
+<strong>Announce (DHT provide)</strong> (for a directory, use the recursive version to
+recursively announce the entire graph).</p>
 </div>
-<div class="section" id="right-clicking-items">
-<h2>Right-clicking items<a class="headerlink" href="#right-clicking-items" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="file-context-menu">
+<h2>File context menu<a class="headerlink" href="#file-context-menu" title="Permalink to this headline">¶</a></h2>
 <p>Right-clicking an entry in the file manager will popup a menu giving you a few
 options:</p>
 <ul class="simple">
 <li><em>Copy multihash to the clipboard</em></li>
 <li><em>Copy full path to the clipboard</em></li>
-<li><em>Unlink</em>: this will dereference the item but not delete it (i.e. the
-content will still be available through your IPFS node)</li>
-<li><em>Delete</em>: purge from your IPFS node (<strong>note</strong>: if others have <em>pinned</em> this
-data on their node, it will still be available)</li>
+<li><em>Announce (DHT provide)</em>: announce to the network that you provide this
+file/directory</li>
+<li><em>Announce (DHT provide, recursive)</em>: announce to the network that you provide this
+file/directory (recursively announces the whole graph)</li>
 <li><em>Hashmark</em>: hashmark this item</li>
 <li><em>Browse</em>: open a browser tab for this item</li>
 <li><em>Open</em>: open this item with the resource opener</li>
 <li><em>Explore</em>: for directories, open an explorer tab for this entry</li>
+<li><em>Edit</em>: open this file in the text editor</li>
+<li><em>Unlink</em>: this will dereference the item but not delete it (i.e. the
+content will still be available through your IPFS node)</li>
+<li><em>Delete</em>: purge from your IPFS node (<strong>note</strong>: if others have <em>pinned</em> this
+data on their node, it will still be available)</li>
 <li><em>Publish to IPNS key</em>: this will link this file to the given IPNS key</li>
 </ul>
 </div>
@@ -123,8 +134,8 @@ data on their node, it will still be available)</li>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
   <h4>Previous topic</h4>
-  <p class="topless"><a href="hashmarks.html"
-                        title="previous chapter">Hashmarks</a></p>
+  <p class="topless"><a href="pyramids.html"
+                        title="previous chapter">Multihash pyramids</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="pinning.html"
                         title="next chapter">Pinning content</a></p>
@@ -154,7 +165,7 @@ data on their node, it will still be available)</li>
           <a href="pinning.html" title="Pinning content"
              >next</a> |</li>
         <li class="right" >
-          <a href="hashmarks.html" title="Hashmarks"
+          <a href="pyramids.html" title="Multihash pyramids"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">galacteek  documentation</a> &#187;</li> 
       </ul>

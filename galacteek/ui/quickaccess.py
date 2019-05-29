@@ -15,7 +15,6 @@ from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs import kilobytes
 from galacteek.ipfs.cidhelpers import IPFSPath
 
-from .helpers import questionBox
 from .helpers import getIcon
 from .helpers import getMimeIcon
 from .helpers import getIconFromIpfs
@@ -27,7 +26,6 @@ from .widgets import IPFSObjectToolButton
 from .widgets import URLDragAndDropProcessor
 
 from .resource import ResourceAnalyzer
-from .hashmarks import addHashmark
 from .i18n import iUnknown
 
 
@@ -116,20 +114,8 @@ class QuickAccessToolBar(QToolBar, URLDragAndDropProcessor):
             with await self.lock:
                 mark = self.app.marksLocal.find(path)
                 if not mark:
-                    text = 'Hashmark <b>{0}</b> before registering ?'.format(
-                        path)
-                    reply = questionBox('Quick access', text)
-
-                    if reply is True:
-                        # Hashmark and link to toolbar
-                        addHashmark(self.app.marksLocal, path,
-                                    ipfsPath.basename)
-                        mark = self.app.marksLocal.find(path)
-                        if mark:
-                            await self.registerHashmark(mark)
-                    else:
-                        # Quick access without hashmark
-                        await self.registerSimple(ipfsPath)
+                    # Quick access without hashmark
+                    await self.registerSimple(ipfsPath)
                 else:
                     await self.registerHashmark(mark)
         except Exception as err:

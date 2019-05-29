@@ -120,8 +120,16 @@ QToolButton#hashmarksMgrButton::hover {
     background-color: #4a9ea1;
 }
 
+QToolButton#hashmarksMgrButton::pressed {
+    background-color: #eec146;
+}
+
 QToolButton#hashmarksLibraryButton::hover {
     background-color: #4a9ea1;
+}
+
+QToolButton#hashmarksLibraryButton::pressed {
+    background-color: #eec146;
 }
 
 QToolButton#filemanagerOfflineButton::checked {

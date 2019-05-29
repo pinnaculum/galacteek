@@ -6,6 +6,10 @@ from datetime import datetime
 
 from galacteek import log
 from galacteek.core import isoformat
+from galacteek.ipfs.cidhelpers import joinIpfs
+from galacteek.ipfs.cidhelpers import cidValid
+from galacteek.ipfs.cidhelpers import isIpfsPath
+from galacteek.ipfs.cidhelpers import isIpnsPath
 from galacteek.ipfs.wrappers import ipfsOpFn
 
 
@@ -18,11 +22,20 @@ def tstodate(ts):
         return isoformat(date, timespec='seconds')
 
 
+def ipfspathnorm(input):
+    if isinstance(input, str):
+        if cidValid(input):
+            return joinIpfs(input)
+        elif isIpfsPath(input) or isIpnsPath(input):
+            return input
+
+
 def defaultJinjaEnv():
     env = jinja2.Environment(
         loader=jinja2.PackageLoader('galacteek', 'templates'),
         autoescape=jinja2.select_autoescape(['html', 'xml']))
     env.filters['tstodate'] = tstodate
+    env.filters['ipfspathnorm'] = ipfspathnorm
     return env
 
 

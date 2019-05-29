@@ -5,12 +5,12 @@ import collections
 import copy
 import re
 import os.path
+import asyncio
 from datetime import datetime
 
 import aiofiles
 
 from galacteek import log
-from galacteek.core import isoformat
 from galacteek.ipfs.cidhelpers import IPFSPath
 
 from PyQt5.QtCore import pyqtSignal, QObject
@@ -40,6 +40,14 @@ class IPFSHashMark(collections.UserDict):
     @property
     def markData(self):
         return self.data[self.path]
+
+    @property
+    def dtcreated(self):
+        dtime = self.markData['datecreated']
+        try:
+            return datetime.strptime(dtime, '%Y-%m-%dT%H:%M:%S.%f')
+        except:
+            return datetime.strptime(dtime, '%Y-%m-%d %H:%M:%S')
 
     def addTags(self, tags):
         self.data[self.path]['tags'] += tags
@@ -146,7 +154,7 @@ class MultihashPyramid(collections.UserDict):
     @staticmethod
     def make(name, description='Pyramid', icon=None, ipnskey=None,
              internal=False, publishdelay=0, comment=None, flags=0,
-             allowoffline=True):
+             allowoffline=True, lifetime='48h'):
         datecreated = datetime.now().isoformat()
         pyramid = MultihashPyramid({
             name: {
@@ -155,7 +163,7 @@ class MultihashPyramid(collections.UserDict):
                     'publishdelay': publishdelay,
                     'allowoffline': allowoffline,
                     'ttl': None,
-                    'lifetime': '24h',
+                    'lifetime': lifetime
                 },
                 'datecreated': datecreated,
                 'icon': icon,
@@ -619,7 +627,8 @@ class IPFSMarks(QObject):
             if mark:
                 self.pyramidNeedsPublish.emit(pyramidPath, mark)
 
-    def pyramidNew(self, name, category, icon, description=None, ipnskey=None):
+    def pyramidNew(self, name, category, icon, description=None, ipnskey=None,
+                   lifetime='48h'):
         sec = self.enterCategory(category, create=True)
 
         if not sec:
@@ -633,6 +642,7 @@ class IPFSMarks(QObject):
             pyramid = MultihashPyramid.make(
                 name, description=description,
                 ipnskey=ipnskey, icon=icon,
+                lifetime=lifetime,
                 flags=MultihashPyramid.FLAG_MODIFIABLE_BYUSER
             )
             sec[pyramidsKey].update(pyramid)
@@ -688,11 +698,12 @@ class IPFSMarks(QObject):
             if exmark:
                 mark = copy.copy(exmark)
             else:
+                datenowiso = datetime.now().isoformat()
                 mark = IPFSHashMark.make(path,
                                          title='{0}: #{1}'.format(
                                              name, count + 1),
                                          description=pyramid['description'],
-                                         datecreated=isoformat(datetime.now()),
+                                         datecreated=datenowiso,
                                          share=False,
                                          pinSingle=True,
                                          icon=pyramid['icon'],
@@ -735,13 +746,16 @@ class IPFSMarks(QObject):
             self.changed.emit()
             return True
 
-    def pyramidsInit(self):
+    async def pyramidsInit(self):
         categories = self.getCategories()
         for cat in categories:
+            await asyncio.sleep(0)
+
             sec = self.enterCategory(cat)
             if not sec or pyramidsKey not in sec:
                 continue
 
             pyramids = sec[pyramidsKey]
             for name, pyramid in pyramids.items():
+                await asyncio.sleep(0)
                 self.pyramidConfigured.emit(self.pyramidPathFormat(cat, name))

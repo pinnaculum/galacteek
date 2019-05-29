@@ -14,10 +14,11 @@ from PyQt5.QtGui import QColor
 
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek import ensure
+from galacteek.core.modelhelpers import UneditableItem
+from galacteek.core.modelhelpers import modelSearch
 
 from .widgets import GalacteekTab
-from .modelhelpers import UneditableItem
-from .modelhelpers import modelSearch
+
 from .helpers import messageBox
 
 from .i18n import iPath

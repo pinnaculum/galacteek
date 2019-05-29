@@ -36,6 +36,7 @@ from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import joinIpns
+from galacteek.ipfs.cidhelpers import cidValid
 
 from . import ui_browsertab
 from .resource import ResourceAnalyzer

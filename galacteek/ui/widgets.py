@@ -11,12 +11,18 @@ from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWidgets import QWidgetAction
 from PyQt5.QtWidgets import QLabel
 from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QComboBox
+from PyQt5.QtWidgets import QListView
 
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QPoint
 from PyQt5.QtCore import QUrl
 from PyQt5.QtCore import QMimeData
+from PyQt5.QtCore import QSize
+from PyQt5.QtCore import QFile
+from PyQt5.QtCore import QIODevice
+from PyQt5.QtCore import QVariant
 
 from PyQt5.QtGui import QImage
 from PyQt5.QtGui import QPixmap
@@ -294,7 +300,12 @@ class _HashmarksCommon:
     async def loadMarkIcon(self, ipfsop, action, iconCid):
         icon = await getIconFromIpfs(ipfsop, iconCid)
         if icon:
+            await ipfsop.sleep()
+
             action.setIcon(icon)
+            data = action.data()
+            data['iconloaded'] = True
+            action.setData(data)
 
 
 class HashmarkMgrButton(PopupToolButton, _HashmarksCommon):
@@ -316,6 +327,10 @@ class HashmarkMgrButton(PopupToolButton, _HashmarksCommon):
         disconnectSig(self.marks.changed, self.onChanged)
 
         self.marks.changed.connect(self.onChanged)
+        self.marks.markAdded.connect(self.onMarkAdded)
+
+    def onMarkAdded(self):
+        ensure(self.updateIcons())
 
     def onChanged(self):
         self.updateMenu()
@@ -327,7 +342,7 @@ class HashmarkMgrButton(PopupToolButton, _HashmarksCommon):
             for action in menu.actions():
                 data = action.data()
 
-                if data['iconcid']:
+                if 'iconloaded' not in data and data['iconcid']:
                     ensure(self.loadMarkIcon(action, data['iconcid']))
 
     def updateMenu(self):
@@ -575,3 +590,98 @@ class DownloadProgressButton(PopupToolButton):
 
     def onFinished(self):
         self.setToolTip('{path}: download finished'.format(path=self.path))
+
+
+class IconSelector(QComboBox):
+    """
+    A simple icon selector. The selected icon is injected in the
+    repository and a signal with its CID is emitted
+    """
+    iconSelected = pyqtSignal(str)
+    emptyIconSelected = pyqtSignal()
+
+    iconsList = [
+        ':/share/icons/distributed.png',
+        ':/share/icons/atom.png',
+        ':/share/icons/atom-rpg.png',
+        ':/share/icons/cerebro.png',
+        ':/share/icons/ipfs-cube-64.png',
+        ':/share/icons/ipfs-logo-128-white.png',
+        ':/share/icons/code-fork.png',
+        ':/share/icons/cubehouse.png',
+        ':/share/icons/fragments.png',
+        ':/share/icons/go-home.png',
+        ':/share/icons/hotspot.png',
+        ':/share/icons/ipld-logo.png',
+        ':/share/icons/pyramid-aqua.png',
+        ':/share/icons/pyramid-stack.png',
+        ':/share/icons/multimedia.png',
+        ':/share/icons/folder-documents.png',
+        ':/share/icons/folder-pictures.png',
+        ':/share/icons/orbitdb.png',
+        ':/share/icons/pyramid-hierarchy.png',
+        ':/share/icons/sweethome.png',
+        ':/share/icons/stroke-code.png',
+        ':/share/icons/web-devel.png',
+        ':/share/icons/mimetypes/image-x-generic.png',
+        ':/share/icons/mimetypes/application-pdf.png',
+        ':/share/icons/mimetypes/application-epub+zip.png',
+        ':/share/icons/mimetypes/application-x-directory.png',
+        ':/share/icons/mimetypes/text-html.png'
+    ]
+
+    def __init__(self, parent=None, offline=False, allowEmpty=False):
+        super(IconSelector, self).__init__(parent)
+
+        self.app = QApplication.instance()
+        self.allowEmpty = allowEmpty
+        self.offline = offline
+        self.iconCid = None
+
+        if self.app.system == 'Linux':
+            self.setIconSize(QSize(64, 64))
+
+        if allowEmpty is True:
+            self.addItem('No icon')
+
+        for iconP in self.iconsList:
+            icon = getIcon(iconP)
+            if icon:
+                self.addItem(icon, '', QVariant(iconP))
+
+        self.view = QListView(self)
+        self.setView(self.view)
+        self.currentIndexChanged.connect(self.onIndexChanged)
+
+        if allowEmpty is False:
+            self.injectCurrent()
+
+    def injectCurrent(self):
+        self.injectIconFromIndex(self.currentIndex())
+
+    def injectIconFromIndex(self, idx):
+        iconPath = self.itemData(idx)
+        if iconPath:
+            ensure(self.injectQrcIcon(iconPath))
+
+    def onIndexChanged(self, idx):
+        if self.allowEmpty and idx == 0:
+            self.emptyIconSelected.emit()
+        else:
+            self.injectIconFromIndex(idx)
+
+    @ipfsOp
+    async def injectQrcIcon(self, op, iconPath):
+        _file = QFile(iconPath)
+        if _file.exists():
+            if not _file.open(QIODevice.ReadOnly):
+                return False
+
+            data = _file.readAll().data()
+
+            entry = await op.client.add_bytes(data, offline=self.offline)
+            if entry:
+                self.iconCid = entry['Hash']
+                self.iconSelected.emit(self.iconCid)
+                self.setToolTip(self.iconCid)
+                return True

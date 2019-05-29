@@ -17,10 +17,10 @@ from galacteek import ensure, log
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import *
 from galacteek.ipfs.ipfsops import *
+from galacteek.core.modelhelpers import *
 
 from . import ui_peersmgr
 from .widgets import *
-from .modelhelpers import *
 from .helpers import *
 from .dialogs import *
 

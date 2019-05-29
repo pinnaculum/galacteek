@@ -12,6 +12,8 @@ Galacteek's manual (english)
     Settings <settings>
     Toolbars <toolbars>
     Hashmarks <hashmarks>
+    Multihash Pyramids <pyramids>
+    QR codes <qrcodes>
     File manager <filemanager>
     Pinning <pinning>
 

@@ -55,28 +55,40 @@ keys.
 
 Drag-and-dropping content from other applications is supported as well.
 
-Double-clicking items
----------------------
+Offline mode
+------------
 
-Double-clicking a file will open the file, while double-clicking a directory
-will expand it.
+The *Offline mode* button, when toggled, sets the filemanager in offline
+mode. In this mode, adding new files to your node will not trigger an
+announcement on the DHT (meaning that other nodes will have no knowledge
+yet that your node provides these files).
 
-Right-clicking items
---------------------
+Later on, if you want to manually announce to the network that you provide
+some files, right-click a file or directory and select
+**Announce (DHT provide)** (for a directory, use the recursive version to
+recursively announce the entire graph).
+
+File context menu
+------------------
 
 Right-clicking an entry in the file manager will popup a menu giving you a few
 options:
 
 - *Copy multihash to the clipboard*
 - *Copy full path to the clipboard*
-- *Unlink*: this will dereference the item but not delete it (i.e. the
-  content will still be available through your IPFS node)
-- *Delete*: purge from your IPFS node (**note**: if others have *pinned* this
-  data on their node, it will still be available)
+- *Announce (DHT provide)*: announce to the network that you provide this
+  file/directory
+- *Announce (DHT provide, recursive)*: announce to the network that you provide this
+  file/directory (recursively announces the whole graph)
 - *Hashmark*: hashmark this item
 - *Browse*: open a browser tab for this item
 - *Open*: open this item with the resource opener
 - *Explore*: for directories, open an explorer tab for this entry
+- *Edit*: open this file in the text editor
+- *Unlink*: this will dereference the item but not delete it (i.e. the
+  content will still be available through your IPFS node)
+- *Delete*: purge from your IPFS node (**note**: if others have *pinned* this
+  data on their node, it will still be available)
 - *Publish to IPNS key*: this will link this file to the given IPNS key
 
 Keyboard shortcuts

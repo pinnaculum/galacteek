@@ -1,5 +1,8 @@
 <RCC>
   <qresource>
+    <file>../../share/icons/fragments.png</file>
+    <file>../../share/icons/cerebro.png</file>
+    <file>../../share/icons/atom-rpg.png</file>
     <file>../../share/icons/cubehouse.png</file>
     <file>../../share/icons/hotspot.png</file>
     <file>../../share/icons/distributed.png</file>

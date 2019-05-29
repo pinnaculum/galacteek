@@ -1,0 +1,150 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Support for QR codes &#8212; galacteek  documentation</title>
+    <link rel="stylesheet" href="_static/pyramid.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="File manager" href="filemanager.html" />
+    <link rel="prev" title="Multihash pyramids" href="pyramids.html" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Neuton&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nobile:regular,italic,bold,bolditalic&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
+<!--[if lte IE 6]>
+<link rel="stylesheet" href="_static/ie6.css" type="text/css" media="screen" charset="utf-8" />
+<![endif]-->
+
+  </head><body>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="filemanager.html" title="File manager"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="pyramids.html" title="Multihash pyramids"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">galacteek  documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="support-for-qr-codes">
+<span id="qrcodes"></span><h1>Support for QR codes<a class="headerlink" href="#support-for-qr-codes" title="Permalink to this headline">¶</a></h1>
+<a class="reference internal image-reference" href="_images/ipfs-qrcode.png"><img alt="_images/ipfs-qrcode.png" src="_images/ipfs-qrcode.png" style="width: 64px; height: 64px;" /></a>
+<p>There is experimental support for encoding and reading QR codes
+containing references to IPFS-hosted content. To be able to use
+the QR features, you need to install the <strong>zbar</strong> library on your
+system (on Linux/BSD systems it is widely available, on MacOS you
+can install it with <strong>brew install zbar</strong>).</p>
+<p>In the filemanager you can access all your QR codes from the
+<strong>QR codes</strong> folder, which contains some QR sample files by
+default.</p>
+<div class="section" id="in-the-image-viewer">
+<h2>In the image viewer<a class="headerlink" href="#in-the-image-viewer" title="Permalink to this headline">¶</a></h2>
+<p>When opening an image containing IPFS QR codes, the image viewer
+will display a special section below the image. For each IPFS
+object found in the image, its path will be displayed, as well as
+buttons to open the object and copy its path to the clipboard.</p>
+</div>
+<div class="section" id="in-the-clipboard-manager">
+<h2>In the clipboard manager<a class="headerlink" href="#in-the-clipboard-manager" title="Permalink to this headline">¶</a></h2>
+<p>If a clipboard item is an image containing QR codes, a special
+<em>IPFS QR codes</em> menu will be displayed in the clipboard item’s menu.
+From this menu you can open each individual object.</p>
+<div class="section" id="encoding-the-clipboard-stack">
+<h3>Encoding the clipboard stack<a class="headerlink" href="#encoding-the-clipboard-stack" title="Permalink to this headline">¶</a></h3>
+<p>The clipboard manager’s <em>QR encoding</em> menu gives you the possibility
+to QR-encode all the IPFS objects of the current clipboard stack to
+a single image (RSA self-encrypted or clear). Later on the software
+could provide the possibility to send QR images encrypted for
+specific peers.</p>
+<p>The <em>clear</em> QR images are not encrypted, and are not immediately
+announced on the network (they are added to the repository with
+the <em>offline</em> option). You can announce them later on when you
+want to.</p>
+<p>The resulting images can be found in the <strong>QR codes</strong> folder in
+the filemanager (the RSA-encrypted images are stored in the
+<em>encrypted</em> subfolder).</p>
+</div>
+</div>
+<div class="section" id="in-the-browser">
+<h2>In the browser<a class="headerlink" href="#in-the-browser" title="Permalink to this headline">¶</a></h2>
+<p>If the page you’re browsing contains an image that contains
+IPFS QR codes, right-clicking on it will show an <em>IPFS QR codes</em>
+menu similar to the one displayed in the clipboard manager.</p>
+</div>
+<div class="section" id="encoding-a-pyramid-s-ipns-key">
+<h2>Encoding a pyramid’s IPNS key<a class="headerlink" href="#encoding-a-pyramid-s-ipns-key" title="Permalink to this headline">¶</a></h2>
+<p>The IPNS key of your multihash pyramids can be QR-encoded. Right-click
+a pyramid and select <em>Generate pyramid’s QR code</em> (the generated
+image’s filename will contain the IPNS key id).</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="pyramids.html"
+                        title="previous chapter">Multihash pyramids</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="filemanager.html"
+                        title="next chapter">File manager</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="filemanager.html" title="File manager"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="pyramids.html" title="Multihash pyramids"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">galacteek  documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, galacteek.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.7.
+    </div>
+  </body>
+</html>

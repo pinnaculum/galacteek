@@ -1,6 +1,7 @@
 import functools
 import aioipfs
 import asyncio
+import random
 from datetime import datetime
 
 from PyQt5.QtWidgets import QAction
@@ -19,10 +20,13 @@ from PyQt5.QtCore import QPoint
 
 from galacteek import ensure
 from galacteek import log
+from galacteek import logUser
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import joinIpns
 from galacteek.ipfs import ipfsOp
 from galacteek.core.ipfsmarks import IPFSHashMark
+from galacteek.core.profile import UserProfile
+from galacteek.crypto.qrcode import IPFSQrEncoder
 
 from .widgets import PopupToolButton
 from .widgets import URLDragAndDropProcessor
@@ -60,8 +64,23 @@ def iCopyIpnsAddress():
         'Copy IPNS address to clipboard')
 
 
+def iPyramidPublishCurrentClipboard():
+    return QCoreApplication.translate(
+        'pyramidMaster',
+        'Add current clipboard item to the pyramid'
+    )
+
+
+def iPyramidGenerateQr():
+    return QCoreApplication.translate(
+        'pyramidMaster',
+        "Generate pyramid's QR code"
+    )
+
+
 class MultihashPyramidsToolBar(QToolBar):
     moved = pyqtSignal(int)
+    mfsInit = pyqtSignal(UserProfile)
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -130,7 +149,7 @@ class MultihashPyramidsToolBar(QToolBar):
 
     def pyramidHelpMessage(self):
         self.app.manuals.browseManualPage(
-            'hashmarks.html', fragment='hashmark-pyramids')
+            'pyramids.html', fragment='multihash-pyramids')
 
     def onPyramidChanged(self, pyramidPath):
         if pyramidPath in self.pyramids:
@@ -222,6 +241,10 @@ class MultihashPyramidToolButton(PopupToolButton):
         self.setAcceptDrops(True)
         self.setObjectName('pyramidMaster')
 
+        self.clipboardItem = None
+        self.app.clipTracker.currentItemChanged.connect(
+            self.onClipboardItemChange)
+
         self.changed.connect(self.onPyrChange)
         self.emptyNow.connect(self.onPyrEmpty)
         self.needsPublish.connect(self.pyramidNeedsPublish)
@@ -234,7 +257,19 @@ class MultihashPyramidToolButton(PopupToolButton):
                                         self,
                                         triggered=self.onOpenLatest)
         self.openLatestAction.setEnabled(False)
+
+        self.publishCurrentClipAction = QAction(
+            getIcon('clipboard.png'),
+            iPyramidPublishCurrentClipboard(),
+            self,
+            triggered=self.onPublishClipboardItem
+        )
+        self.publishCurrentClipAction.setEnabled(False)
+
         self.menu.addAction(self.openLatestAction)
+        self.menu.addSeparator()
+
+        self.menu.addAction(self.publishCurrentClipAction)
         self.menu.addSeparator()
 
         self.popItemAction = QAction(getIcon('pyramid-stack.png'),
@@ -246,6 +281,9 @@ class MultihashPyramidToolButton(PopupToolButton):
         self.menu.addAction(getIcon('clipboard.png'),
                             iCopyIpnsAddress(),
                             self.onCopyIpns)
+        self.menu.addAction(getIcon('ipfs-qrcode.png'),
+                            iPyramidGenerateQr(),
+                            self.onGenerateQrCode)
         self.menu.addSeparator()
         self.menu.addAction(
             getIcon('cancel.png'),
@@ -259,6 +297,11 @@ class MultihashPyramidToolButton(PopupToolButton):
     @property
     def pyramid(self):
         return self._pyramid
+
+    @property
+    def ipnsKeyPath(self):
+        if self.pyramid.ipnsKey:
+            return IPFSPath(joinIpns(self.pyramid.ipnsKey))
 
     @property
     def pyramidion(self):
@@ -293,7 +336,7 @@ class MultihashPyramidToolButton(PopupToolButton):
                     }
                 ''')
             else:
-                self.resetStyleSheet()
+                self.app.loop.call_later(2, self.resetStyleSheet)
 
     @property
     def pyrToolTip(self):
@@ -387,6 +430,10 @@ class MultihashPyramidToolButton(PopupToolButton):
         self.pyramidion = None
         ensure(self.publishEmptyObject())
 
+    def onGenerateQrCode(self):
+        if self.ipnsKeyPath:
+            ensure(self.generateQrCode(self.ipnsKeyPath))
+
     def onObjectDropped(self, ipfsPath):
         self.app.marksLocal.pyramidAdd(self.pyramid.path, str(ipfsPath))
         self.updateToolTip()
@@ -418,8 +465,45 @@ class MultihashPyramidToolButton(PopupToolButton):
         if objPath.valid:
             ensure(self.app.resourceOpener.open(objPath))
 
+    def onClipboardItemChange(self, clipItem):
+        self.clipboardItem = clipItem
+        self.publishCurrentClipAction.setEnabled(True)
+
+    def onPublishClipboardItem(self):
+        if self.clipboardItem:
+            reply = questionBox(
+                'Publish',
+                'Publish clipboard item (<b>{0}</b>) to this pyramid ?'.format(
+                    str(self.clipboardItem.path))
+            )
+            if reply is True:
+                self.app.marksLocal.pyramidAdd(
+                    self.pyramid.path, str(self.clipboardItem.path)
+                )
+
     def onCopyIpns(self):
         self.app.setClipboardText(joinIpns(self.pyramid.ipnsKey))
+
+    @ipfsOp
+    async def generateQrCode(self, ipfsop, ipnsPath):
+        encoder = IPFSQrEncoder()
+        encoder.add(str(ipnsPath))
+
+        qrName = 'ipfsqr.{}.png'.format(self.pyramid.ipnsKey)
+        imgPath = self.app.tempDir.filePath(qrName)
+
+        try:
+            image = await encoder.encodeAll(loop=self.app.loop,
+                                            executor=self.app.executor)
+            image.save(imgPath)
+        except:
+            logUser.info('QR: encoding error ..')
+            return
+        else:
+            logUser.info('QR: encoding successfull!')
+
+        if ipfsop.ctx.currentProfile:
+            ipfsop.ctx.currentProfile.qrImageEncoded.emit(False, imgPath)
 
     @ipfsOp
     async def publishObject(self, ipfsop, objPath):
@@ -502,9 +586,13 @@ class MultihashPyramidToolButton(PopupToolButton):
     async def publishWatcherTask(self):
         # Depending on the lifetime of the records we publish, decide upon
         # a maximum time for us not to trigger a republish
+        #
+        # We sorta anticipate the record expiring
         # We be nice to the network
 
-        if self.pyramid.ipnsLifetime == '48h':
+        if self.pyramid.ipnsLifetime == '96h':
+            unpublishedMax = 84 * 3600
+        elif self.pyramid.ipnsLifetime == '48h':
             unpublishedMax = 42 * 3600
         elif self.pyramid.ipnsLifetime == '24h':
             unpublishedMax = 18 * 3600
@@ -516,8 +604,12 @@ class MultihashPyramidToolButton(PopupToolButton):
         while self.active:
             if self.pyramidion:
                 if self.publishedLast is None:
-                    # Publish on startup
-                    self.needsPublish.emit(self.pyramidion, False)
+                    # Publish on startup after random delay
+                    rand = random.Random()
+                    delay = rand.randint(5, 30)
+
+                    self.app.loop.call_later(
+                        delay, self.needsPublish.emit, self.pyramidion, False)
 
                 if isinstance(self.publishedLast, datetime):
                     delta = datetime.now() - self.publishedLast

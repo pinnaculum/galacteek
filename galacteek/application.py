@@ -151,7 +151,10 @@ class GalacteekApplication(QApplication):
         self._progName = progName
         self._progCid = None
         self._system = platform.system()
+
         self._icons = {}
+        self._ipfsIconsCache = {}
+        self._ipfsIconsCacheMax = 32
 
         self.enableOrbital = enableOrbital
         self.orbitConnector = None
@@ -185,6 +188,14 @@ class GalacteekApplication(QApplication):
     @property
     def debugEnabled(self):
         return self._debugEnabled
+
+    @property
+    def ipfsIconsCacheMax(self):
+        return self._ipfsIconsCacheMax
+
+    @property
+    def ipfsIconsCache(self):
+        return self._ipfsIconsCache
 
     @property
     def progName(self):
