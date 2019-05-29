@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtWidgets import QStyle
 from PyQt5.QtWidgets import QSlider
 from PyQt5.QtWidgets import QMenu
+from PyQt5.QtWidgets import QSizePolicy
 
 from PyQt5.QtMultimedia import QMediaPlayer
 from PyQt5.QtMultimedia import QMediaContent
@@ -187,6 +188,8 @@ class MediaPlayerTab(GalacteekTab):
         self.player.setPlaylist(self.playlist)
 
         self.videoWidget = VideoWidget(self)
+        self.videoWidget.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         self.player.setVideoOutput(self.videoWidget)
 

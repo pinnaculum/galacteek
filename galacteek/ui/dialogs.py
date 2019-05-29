@@ -609,12 +609,6 @@ class AddMultihashPyramidDialog(QDialog):
         buttonBox.rejected.connect(self.reject)
         self.setLayout(mainLayout)
 
-        self.setStyleSheet('''
-            QWidget {
-                padding: 2px;
-            }
-        ''')
-
         self.nameLine.setFocus(Qt.OtherFocusReason)
 
     def onIconSelected(self, iconCid):

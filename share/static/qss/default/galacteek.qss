@@ -46,7 +46,7 @@ QTabBar::tab:!selected {
 }
 
 QTabBar::tab:hover:!selected {
-    background-color: #B7CDC2;
+    background-color: #4a9ea1;
 }
 
 QTreeView {
@@ -93,7 +93,8 @@ QToolBox::tab {
 }
 
 QLineEdit {
-    background-color: #B7CDC2;
+    background-color: rgb(189, 236, 255);
+    selection-background-color: #4a9ea1;
     selection-color: black;
     border: 1px solid #244e66;
     border-radius: 4px;
