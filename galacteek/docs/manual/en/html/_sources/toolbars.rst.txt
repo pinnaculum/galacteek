@@ -26,10 +26,8 @@ Quick access
 ^^^^^^^^^^^^
 
 In this part of the toolbar you can drag and drop IPFS objects and apps
-that you want to have quick access to. If there's no existing hashmark
-for the object dropped you'll be asked if you want it to be hashmarked
-(this is not mandatory, but creating a hashmark with a custom icon
-will make the item more easily recognizable).
+that you want to have quick access to. You can drag and drop hashmarks
+from the hashmarks manager or things that have no hashmark associated.
 
 If you want to remove an item from the quickaccess bar, right-click the
 item and click *Remove*.
@@ -45,3 +43,9 @@ The right side of the toolbar offers the following controls:
 - Global pinning button
 - Settings and tools menu
 - Information menu
+
+Pyramids toolbar
+----------------
+
+The right-side toolbar contains tools to publish content on the
+IPNS naming system by using multihash pyramids (see :ref:`pyramids`).

@@ -5,7 +5,6 @@ from PyQt5.QtWidgets import QApplication
 
 from galacteek import log
 from galacteek.ipfs.ipfsops import IPFSOpRegistry
-from galacteek.ipfs.ipfsops import IPFSOperator
 
 
 def _getOp():

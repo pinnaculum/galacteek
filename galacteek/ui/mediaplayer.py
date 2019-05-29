@@ -28,7 +28,6 @@ from galacteek.core.jsono import *
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.ipfsops import *
 
-from . import ui_mediaplayer
 from . import ui_mediaplaylist
 
 from .clipboard import iClipboardEmpty
@@ -136,11 +135,6 @@ class MediaPlayerTab(GalacteekTab):
     def __init__(self, *args, **kw):
         super(MediaPlayerTab, self).__init__(*args, **kw)
 
-        self.mWidget = QWidget()
-        self.addToLayout(self.mWidget)
-        self.ui = ui_mediaplayer.Ui_MediaPlayer()
-        self.ui.setupUi(self.mWidget)
-
         self.playlistIpfsPath = None
         self.playlist = QMediaPlaylist()
         self.model = ListModel(self.playlist)
@@ -189,10 +183,10 @@ class MediaPlayerTab(GalacteekTab):
 
         self.duration = None
         self.playerState = None
-        self.player = QMediaPlayer()
+        self.player = QMediaPlayer(self)
         self.player.setPlaylist(self.playlist)
 
-        self.videoWidget = VideoWidget()
+        self.videoWidget = VideoWidget(self)
 
         self.player.setVideoOutput(self.videoWidget)
 
@@ -257,7 +251,7 @@ class MediaPlayerTab(GalacteekTab):
 
         self.pListWidget.hide()
 
-        self.ui.verticalLayout.addLayout(hLayout)
+        self.vLayout.addLayout(hLayout)
         self.update()
 
     @property

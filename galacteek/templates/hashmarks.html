@@ -4,6 +4,7 @@
         <style>
             body {
                 font: 10pt "Montserrat";
+                margin: 10px;
             }
 
             a {
@@ -30,7 +31,7 @@
                 box-shadow: 0 8px 6px -6px black;
                 background-color: #e0e0d1;
                 padding: 5px;
-                margin: 5px;
+                margin: 8px;
             }
 
             .marks {
@@ -50,7 +51,8 @@
                 background: none;
                 padding: 0;
                 border: none;
-                text-align: center;
+                text-align: left;
+                width: 100%;
             }
 
             .catbutton:focus {
@@ -85,12 +87,12 @@
                 if (x.style.display === "none" || !(x.style.display)) {
                     x.style.display = "block";
                     cat.style.border = "1px solid black";
-                    cat.style.margin = "10px";
+                    cat.style.margin = "12px";
                     cat.style.background = '#B7CDC2';
                 } else {
                     x.style.display = "none";
                     cat.style.border = "none";
-                    cat.style.margin = "5px";
+                    cat.style.margin = "8px";
                     cat.style.background = '#e0e0d1';
                 }
             }
@@ -144,7 +146,8 @@
         <li>
                 <p style="text-align: left">
             {% if mark.icon and ipfsConnParams %}
-                    <img width="16" src="{{ ipfsConnParams.gatewayUrl }}/{{ mark.icon }}" />
+            {% set iconpath = mark.icon|ipfspathnorm %}
+                    <img width="16" src="{{ ipfsConnParams.gatewayUrl }}/{{ iconpath }}" />
             {% endif %}
                     <a class="hashmarklink" title='{{ mark.metadata.description }}'
                        href="dweb:{{path}}"

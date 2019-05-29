@@ -2,7 +2,6 @@ import os.path
 import asyncio
 import functools
 
-from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtWidgets import QTreeView
@@ -13,15 +12,9 @@ from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QFileSystemModel
 from PyQt5.QtWidgets import QHeaderView
 
-from PyQt5.QtGui import QStandardItemModel
-
 from PyQt5.QtCore import QCoreApplication
-from PyQt5.QtCore import QUrl
 from PyQt5.QtCore import Qt
-from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtCore import QMimeData
 from PyQt5.QtCore import QDir
-from PyQt5.QtCore import QFile
 
 from galacteek import ensure
 from galacteek.ipfs.cidhelpers import joinIpfs
@@ -30,8 +23,11 @@ from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.appsettings import *
 
+from galacteek.core import modelhelpers
+from galacteek.core.mfsmodel import MFSItem
+from galacteek.core.mfsmodel import MFSNameItem
+
 from . import ui_files
-from . import modelhelpers
 from .i18n import *  # noqa
 from .helpers import *  # noqa
 from .widgets import GalacteekTab
@@ -102,42 +98,6 @@ def iSelectFiles():
                                       'Select one or more files to import')
 
 
-def iMusic():
-    return QCoreApplication.translate('FileManagerForm', 'Music')
-
-
-def iPictures():
-    return QCoreApplication.translate('FileManagerForm', 'Pictures')
-
-
-def iVideos():
-    return QCoreApplication.translate('FileManagerForm', 'Videos')
-
-
-def iHome():
-    return QCoreApplication.translate('FileManagerForm', 'Home')
-
-
-def iCode():
-    return QCoreApplication.translate('FileManagerForm', 'Code')
-
-
-def iDocuments():
-    return QCoreApplication.translate('FileManagerForm', 'Documents')
-
-
-def iWebPages():
-    return QCoreApplication.translate('FileManagerForm', 'Web Pages')
-
-
-def iDWebApps():
-    return QCoreApplication.translate('FileManagerForm', 'Dweb Apps')
-
-
-def iQrCodes():
-    return QCoreApplication.translate('FileManagerForm', 'QR codes')
-
-
 def iOfflineMode():
     return QCoreApplication.translate('FileManagerForm', 'Offline mode')
 
@@ -161,250 +121,24 @@ def iOfflineModeToolTip():
         'immediately announced on the DHT')
 
 
-class IPFSItem(UneditableItem):
-    def __init__(self, text, path=None, parenthash=None, icon=None):
-        super(IPFSItem, self).__init__(text, icon=icon)
-        self._path = path
-        self._parentHash = parenthash
-
-    @property
-    def path(self):
-        return self._path
-
-    @path.setter
-    def path(self, v):
-        self._path = v
-
-    @property
-    def parentHash(self):
-        return self._parentHash
-
-    def setParentHash(self, pHash):
-        self._parentHash = pHash
-
-    def childrenItems(self):
-        for row in range(0, self.rowCount()):
-            child = self.child(row, 0)
-            if child:
-                yield child
-
-    def findChildByMultihash(self, multihash):
-        for item in self.childrenItems():
-            if not isinstance(item, IPFSNameItem):
-                continue
-            if item.entry['Hash'] == multihash:
-                return item
-
-    def findChildByName(self, name):
-        for item in self.childrenItems():
-            if not isinstance(item, IPFSNameItem):
-                continue
-            if item.entry['Name'] == name:
-                return item
-
-
-class IPFSNameItem(IPFSItem):
-    def __init__(self, entry, text, icon):
-        super().__init__(text, icon=icon)
-
-        self._entry = entry
-        self._mimeType = None
-
-    @property
-    def entry(self):
-        return self._entry
-
-    @property
-    def ipfsPath(self):
-        return IPFSPath(self.fullPath)
-
-    @property
-    def dwebUrl(self):
-        return QUrl('dweb:{}'.format(self.fullPath))
-
-    @property
-    def mimeType(self):
-        return self._mimeType
-
-    def mimeFromDb(self, db):
-        self._mimeType = db.mimeTypeForFile(self.entry['Name'])
-
-    @property
-    def mimeCategory(self):
-        if self.mimeType:
-            return self.mimeTypeName.split('/')[0]
-
-    @property
-    def mimeTypeName(self):
-        if self.mimeType:
-            return self.mimeType.name()
-
-    @property
-    def fullPath(self):
-        parentHash = self.parentHash
-        if parentHash:
-            return joinIpfs(os.path.join(parentHash, self.entry['Name']))
-        else:
-            return joinIpfs(self.entry['Hash'])
-
-    def isFile(self):
-        return self.entry['Type'] == 0
-
-    def isDir(self):
-        return self.entry['Type'] == 1
-
-
-class FilesItemModel(QStandardItemModel):
-    fileDropEvent = pyqtSignal(str)
-    directoryDropEvent = pyqtSignal(str)
-
-    def __init__(self):
-        QStandardItemModel.__init__(self)
-        self.app = QApplication.instance()
-
-        self.itemRoot = self.invisibleRootItem()
-        self.itemRootIdx = self.indexFromItem(self.itemRoot)
-
-    def setupItemsFromProfile(self, profile, model, filesM):
-        self.itemHome = IPFSItem(iHome(), path=profile.pathHome)
-        self.itemPictures = IPFSItem(iPictures(),
-                                     path=profile.pathPictures)
-        self.itemVideos = IPFSItem(iVideos(),
-                                   path=profile.pathVideos)
-        self.itemMusic = IPFSItem(iMusic(),
-                                  path=profile.pathMusic)
-        self.itemCode = IPFSItem(iCode(),
-                                 path=profile.pathCode)
-        self.itemDocuments = IPFSItem(iDocuments(),
-                                      path=profile.pathDocuments)
-        self.itemWebPages = IPFSItem(iWebPages(),
-                                     path=profile.pathWebPages)
-        self.itemDWebApps = IPFSItem(iDWebApps(),
-                                     path=profile.pathDWebApps)
-        self.itemQrCodes = IPFSItem(iQrCodes(),
-                                    path=profile.pathQrCodes)
-
-        self.itemRoot.appendRows([
-            self.itemHome,
-            self.itemPictures,
-            self.itemVideos,
-            self.itemCode,
-            self.itemMusic,
-            self.itemDocuments,
-            self.itemWebPages,
-            self.itemDWebApps,
-            self.itemQrCodes
-        ])
-
-        ensure(self.setupQrCodesFolder(profile, model, filesM))
-
-    @ipfsOp
-    async def setupQrCodesFolder(self, ipfsop, profile, model, files):
-        """
-        Import the sample QR codes to the corresponding folder
-        Needs rewrite ..
-        """
-        for name, qrFile in sampleQrCodes():
-            await ipfsop.sleep()
-
-            if qrFile.exists():
-                path = self.app.tempDir.filePath(name)
-                if qrFile.copy(path):
-                    tmpFile = QFile(path)
-                    entry = await ipfsop.addPath(path)
-                    await ipfsop.sleep()
-
-                    if not entry:
-                        tmpFile.remove()
-                        continue
-
-                    exists = await ipfsop.filesLookupHash(
-                        model.itemQrCodes.path, entry['Hash'])
-
-                    if not exists:
-                        await files.linkEntry(ipfsop, entry,
-                                              model.itemQrCodes.path,
-                                              entry['Name'])
-
-                    tmpFile.remove()
-
-    def displayItem(self, arg):
-        self.itemRoot.appendRow(arg)
-
-    def supportedDropActions(self):
-        return Qt.CopyAction | Qt.MoveAction | \
-            Qt.TargetMoveAction | Qt.LinkAction
-
-    def mimeData(self, indexes):
-        mimedata = QMimeData()
-
-        for idx in indexes:
-            if not idx.isValid():
-                continue
-
-            nameItem = self.getNameItemFromIdx(idx)
-
-            if nameItem:
-                mimedata.setUrls([nameItem.dwebUrl])
-                break
-
-        return mimedata
-
-    def canDropMimeData(self, data, action, row, column, parent):
-        mimeText = data.text()
-
-        if mimeText and mimeText.startswith('file://'):
-            return True
-        return False
-
-    def dropMimeData(self, data, action, row, column, parent):
-        if data.hasUrls():
-            for url in data.urls():
-                path = url.toLocalFile()
-                if os.path.isfile(path):
-                    self.fileDropEvent.emit(path)
-                if os.path.isdir(path):
-                    self.directoryDropEvent.emit(path)
-            return True
-        else:
-            return False
-
-    def getHashFromIdx(self, idx):
-        idxHash = self.index(idx.row(), 2, idx.parent())
-        return self.data(idxHash)
-
-    def getNameFromIdx(self, idx):
-        idxName = self.index(idx.row(), 0, idx.parent())
-        return self.data(idxName)
-
-    def getNameItemFromIdx(self, idx):
-        idxName = self.index(idx.row(), 0, idx.parent())
-        return self.itemFromIndex(idxName)
-
-
-def makeFilesModel():
-    # Setup the model
-    model = FilesItemModel()
-    model.setHorizontalHeaderLabels(
-        [iFileName(), iFileSize(), iMultihash()])
-    return model
-
-
-class FilesTab(GalacteekTab):
+class FileManager(QWidget):
     statusReady = 0
     statusBusy = 1
 
-    def __init__(self, gWindow, **kw):
-        super().__init__(gWindow, **kw)
+    def __init__(self, app, parent=None):
+        super().__init__(parent)
+
+        self.app = app
+        self.gWindow = self.app.mainWindow
+        self.clipboard = self.app.appClipboard
 
         self.lock = asyncio.Lock()
-        self.fmWidget = QWidget()
-        self.addToLayout(self.fmWidget)
+        self.model = None
         self._offlineMode = False
 
         self.ui = ui_files.Ui_FileManagerForm()
-        self.ui.setupUi(self.fmWidget)
-        self.clipboard = self.app.appClipboard
+        self.ui.setupUi(self)
+
         self.status = self.statusReady
 
         # Build file browser
@@ -485,6 +219,10 @@ class FilesTab(GalacteekTab):
         self.ipfsKeys = []
 
     @property
+    def profile(self):
+        return self.app.ipfsCtx.currentProfile
+
+    @property
     def offlineMode(self):
         return self._offlineMode
 
@@ -535,13 +273,19 @@ class FilesTab(GalacteekTab):
         self.ui.hLayoutBrowser.insertWidget(0, self.localTree)
 
     def setupModel(self):
-        # Setup the model, caching it in the profile object
-        if self.profile.filesModel:
+        if self.profile is None:
+            return
+
+        # Setup the model if needed
+        if self.model is None and self.profile.filesModel:
             self.model = self.profile.filesModel
-        else:
-            self.model = makeFilesModel()
-            self.profile.setFilesModel(self.model)
-            self.model.setupItemsFromProfile(self.profile, self.model, self)
+
+            if not self.model.qrInitialized:
+                ensure(self.model.setupQrCodesFolder(
+                    self.profile, self.model, self))
+
+        if not self.model:
+            return
 
         self.ui.treeFiles.setModel(self.model)
         self.ui.treeFiles.header().setSectionResizeMode(
@@ -577,7 +321,6 @@ class FilesTab(GalacteekTab):
         self._offlineMode = checked
         if self.offlineMode:
             self.ui.offlineButton.setToolTip(iOfflineModeToolTip())
-        print('Offline mode', self.offlineMode)
 
     def onClose(self):
         if not self.busy:
@@ -650,7 +393,7 @@ class FilesTab(GalacteekTab):
         elif text == iWebPages():
             self.changeDisplayItem(self.model.itemWebPages)
         elif text == iDWebApps():
-            self.changeDisplayItem(self.model.itemWebApps)
+            self.changeDisplayItem(self.model.itemDWebApps)
         elif text == iQrCodes():
             self.changeDisplayItem(self.model.itemQrCodes)
 
@@ -708,11 +451,6 @@ class FilesTab(GalacteekTab):
                        functools.partial(self.onDhtProvide, dataHash, True))
         menu.addSeparator()
 
-        menu.addAction(iUnlinkFile(), functools.partial(
-            self.scheduleUnlink, nameItem, dataHash))
-        menu.addAction(iDeleteFile(), functools.partial(
-            self.scheduleDelete, nameItem, dataHash))
-        menu.addSeparator()
         menu.addAction(getIcon('hashmarks.png'),
                        iHashmarkFile(),
                        functools.partial(hashmark, ipfsPath,
@@ -745,8 +483,17 @@ class FilesTab(GalacteekTab):
 
             self.app.ipfsTaskOp(publish, oHash, key)
 
+        # Delete/unlink
+        menu.addSeparator()
+        menu.addAction(iUnlinkFile(), functools.partial(
+            self.scheduleUnlink, nameItem, dataHash))
+        menu.addAction(iDeleteFile(), functools.partial(
+            self.scheduleDelete, nameItem, dataHash))
+        menu.addSeparator()
+
         # Populate publish menu
-        publishMenu = QMenu('Publish to IPFS key')
+        publishMenu = QMenu('Publish to IPNS key')
+        publishMenu.setIcon(getIcon('key-diago.png'))
         for key in self.ipfsKeys:
             action = QAction(key['Name'], self)
             action.setData({
@@ -901,15 +648,17 @@ class FilesTab(GalacteekTab):
                         autoexpand=False):
         if self.busy:
             return
+
         self.enableButtons(flag=False)
         self.status = self.statusBusy
 
         try:
             await asyncio.wait_for(
                 self.listPath(ipfsop, path, parentItem,
-                              maxdepth=maxdepth, autoexpand=autoexpand), 60)
+                              maxdepth=maxdepth,
+                              autoexpand=autoexpand), 60)
         except aioipfs.APIError:
-            messageBox(iErrNoCx())
+            pass
 
         self.enableButtons()
         self.status = self.statusReady
@@ -953,11 +702,11 @@ class FilesTab(GalacteekTab):
             else:
                 icon = self.iconFile
 
-            nItemName = IPFSNameItem(entry, entry['Name'], icon)
+            nItemName = MFSNameItem(entry, entry['Name'], icon)
             nItemName.mimeFromDb(self.app.mimeDb)
             nItemName.setParentHash(parentItemHash)
-            nItemSize = IPFSItem(sizeFormat(entry['Size']))
-            nItemHash = IPFSItem(entry['Hash'])
+            nItemSize = MFSItem(sizeFormat(entry['Size']))
+            nItemHash = MFSItem(entry['Hash'])
 
             if nItemName.mimeTypeName:
                 # If we have a better icon matching the file's type..
@@ -986,6 +735,8 @@ class FilesTab(GalacteekTab):
 
         if autoexpand is True:
             self.ui.treeFiles.expand(parentItem.index())
+
+        self.model.refreshed.emit(parentItem)
 
     @ipfsOp
     async def deleteFromMultihash(self, ipfsop, item, multihash):
@@ -1107,3 +858,11 @@ class FilesTab(GalacteekTab):
                 linkS = await op.filesLink(entry, dest, name=lNew)
                 if linkS:
                     return lNew
+
+
+class FileManagerTab(GalacteekTab):
+    def __init__(self, gWindow, **kw):
+        super().__init__(gWindow, **kw)
+
+        self.fileManager = FileManager(self.app, parent=self)
+        self.addToLayout(self.fileManager)

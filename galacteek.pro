@@ -42,7 +42,6 @@ FORMS += galacteek/ui/addkeydialog.ui \
 	galacteek/ui/ipfssearchwresults.ui \
 	galacteek/ui/ipfsmultiplecidinputdialog.ui \
 	galacteek/ui/keys.ui\
-	galacteek/ui/mediaplayer.ui \
 	galacteek/ui/mediaplaylist.ui \
 	galacteek/ui/newdocument.ui \
 	galacteek/ui/settings.ui

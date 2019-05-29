@@ -39,10 +39,10 @@ from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import joinIpns
 from galacteek.ipfs.cidhelpers import shortPathRepr
-from galacteek.ipfs.cidhelpers import cidValid
 
 from galacteek.core.orbitdb import GalacteekOrbitConnector
 from galacteek.dweb.page import HashmarksPage, DWebView, WebTab
+from galacteek.core.modelhelpers import *
 
 from . import ui_galacteek
 from . import ui_ipfsinfos
@@ -64,7 +64,6 @@ from .textedit import TextEditorTab
 from .pyramids import MultihashPyramidsToolBar
 from .quickaccess import QuickAccessToolBar
 from .helpers import *
-from .modelhelpers import *
 from .widgets import PopupToolButton
 from .widgets import HashmarkMgrButton
 from .widgets import HashmarksLibraryButton
@@ -447,6 +446,11 @@ class MainWindow(QMainWindow):
         self.ipfsSearchWidget.hidden.connect(
             functools.partial(self.ipfsSearchButton.setChecked, False))
 
+        self.mPlayerButton = QToolButton()
+        self.mPlayerButton.setIcon(getIcon('multimedia.png'))
+        self.mPlayerButton.setToolTip(iMediaPlayer())
+        self.mPlayerButton.clicked.connect(self.onOpenMediaPlayer)
+
         self.toolbarMain.addWidget(self.browseButton)
         self.toolbarMain.addWidget(self.hashmarkMgrButton)
         self.toolbarMain.addWidget(self.sharedHashmarkMgrButton)
@@ -458,10 +462,10 @@ class MainWindow(QMainWindow):
         self.hashmarkMgrButton.hashmarkClicked.connect(self.onHashmarkClicked)
         self.sharedHashmarkMgrButton.hashmarkClicked.connect(
             self.onHashmarkClicked)
-        self.toolbarMain.addAction(getIcon('multimedia.png'), iMediaPlayer(),
-                                   self.onOpenMediaPlayer)
 
+        self.toolbarMain.addWidget(self.mPlayerButton)
         self.toolbarMain.addSeparator()
+
         self.toolbarMain.addWidget(self.toolbarTools)
         self.toolbarMain.addSeparator()
         self.toolbarMain.addWidget(self.qaToolbar)
@@ -641,6 +645,8 @@ class MainWindow(QMainWindow):
                     filesM.setupModel()
                     filesM.pathSelectorDefault()
 
+        self.toolbarPyramids.mfsInit.emit(profile)
+
     def onUserProfile(self, action):
         if action is self.ui.actionNew_Profile:
             inText = QInputDialog.getText(self, iNewProfile(),
@@ -683,8 +689,7 @@ class MainWindow(QMainWindow):
         ensure(self.displayConnectionInfo())
         ensure(self.qaToolbar.init())
         ensure(self.hashmarkMgrButton.updateIcons())
-
-        self.app.marksLocal.pyramidsInit()
+        ensure(self.app.marksLocal.pyramidsInit())
 
         if self.app.enableOrbital and self.app.ipfsCtx.orbitConnector is None:
             self.app.ipfsCtx.orbitConnector = GalacteekOrbitConnector(
@@ -795,6 +800,7 @@ class MainWindow(QMainWindow):
                 self.chatRoomButton,
                 self.peersButton,
                 self.textEditorButton,
+                self.mPlayerButton,
                 self.profileEditButton]:
             btn.setEnabled(flag)
 
@@ -973,13 +979,12 @@ class MainWindow(QMainWindow):
         icon = getIcon('folder-open.png')
         ft = self.findTabWithName(name)
         if ft:
-            ft.updateTree()
+            ft.fileManager.updateTree()
             return self.ui.tabWidget.setCurrentWidget(ft)
 
-        filesTab = files.FilesTab(self, parent=self.ui.tabWidget)
-        self.registerTab(filesTab, name, current=True, icon=icon)
-
-        filesTab.updateTree()
+        fileManagerTab = files.FileManagerTab(self, parent=self.ui.tabWidget)
+        self.registerTab(fileManagerTab, name, current=True, icon=icon)
+        fileManagerTab.fileManager.updateTree()
 
     def onIpfsKeysClicked(self):
         name = self.tabnKeys

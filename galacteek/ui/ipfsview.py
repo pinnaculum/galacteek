@@ -28,6 +28,7 @@ from PyQt5.QtCore import QMimeData
 from PyQt5.QtCore import QUrl
 
 from galacteek.appsettings import *
+from galacteek.core.modelhelpers import UneditableItem
 from galacteek.ipfs import cidhelpers
 from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs.ipfsops import *

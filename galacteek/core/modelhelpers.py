@@ -4,6 +4,8 @@ import re
 
 from PyQt5.QtGui import QStandardItem
 from PyQt5.QtCore import QModelIndex
+from PyQt5.QtCore import QObject
+from PyQt5.QtCore import pyqtSignal
 
 """ Helper functions to operate on QT item models """
 
@@ -121,7 +123,9 @@ async def modelDeleteAsync(model, search):
     return await modelSearchAsync(model, search=search, delete=True)
 
 
-class UneditableItem(QStandardItem):
+class UneditableItem(QStandardItem, QObject):
+    refreshes = pyqtSignal()
+
     def __init__(self, text, icon=None):
         if icon:
             super(UneditableItem, self).__init__(icon, text)

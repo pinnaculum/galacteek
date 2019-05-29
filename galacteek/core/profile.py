@@ -27,6 +27,7 @@ from galacteek.core.asynclib import asyncReadFile
 from galacteek.core.orbitdb import OrbitConfigMap
 from galacteek.core.orbitdbcfg import defaultOrbitConfigMap
 from galacteek.core.jsono import QJSONFile
+from galacteek.core.mfsmodel import createMFSModel
 from galacteek.core.ipfsmarks import IPFSMarks
 
 from galacteek.dweb import render
@@ -468,6 +469,10 @@ class UserProfile(QObject):
     def filesModel(self):
         return self._filesModel
 
+    @filesModel.setter
+    def filesModel(self, model):
+        self._filesModel = model
+
     @property
     def tree(self):
         # Profile's filesystem tree list
@@ -579,7 +584,7 @@ class UserProfile(QObject):
         return os.path.join(self.pathData, 'dag.main')
 
     def setFilesModel(self, model):
-        self._filesModel = model
+        self.filesModel = model
 
     @ipfsOp
     async def init(self, ipfsop):
@@ -593,6 +598,9 @@ class UserProfile(QObject):
 
         for directory in self.tree:
             await ipfsop.filesMkdir(directory)
+
+        self.filesModel = createMFSModel()
+        self.filesModel.setupItemsFromProfile(self)
 
         self.userLogInfo('Initializing crypto')
 
@@ -856,7 +864,7 @@ class UserProfile(QObject):
                 data = file.readAll().data()
                 entry = await self.rsaEncryptSelf(data)
             else:
-                entry = await ipfsop.addPath(path)
+                entry = await ipfsop.addPath(path, offline=True)
 
             if entry:
                 # Link it, open it

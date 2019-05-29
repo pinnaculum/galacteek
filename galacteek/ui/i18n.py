@@ -357,3 +357,41 @@ def iNewReleaseAvailable():
     return QCoreApplication.translate(
         'Galacteek',
         'New release available: upgrade with pip install -U galacteek')
+
+
+# MFS
+
+def iMusic():
+    return QCoreApplication.translate('FileManagerForm', 'Music')
+
+
+def iPictures():
+    return QCoreApplication.translate('FileManagerForm', 'Pictures')
+
+
+def iVideos():
+    return QCoreApplication.translate('FileManagerForm', 'Videos')
+
+
+def iHome():
+    return QCoreApplication.translate('FileManagerForm', 'Home')
+
+
+def iCode():
+    return QCoreApplication.translate('FileManagerForm', 'Code')
+
+
+def iDocuments():
+    return QCoreApplication.translate('FileManagerForm', 'Documents')
+
+
+def iWebPages():
+    return QCoreApplication.translate('FileManagerForm', 'Web Pages')
+
+
+def iDWebApps():
+    return QCoreApplication.translate('FileManagerForm', 'Dweb Apps')
+
+
+def iQrCodes():
+    return QCoreApplication.translate('FileManagerForm', 'QR codes')

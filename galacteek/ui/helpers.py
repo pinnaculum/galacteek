@@ -10,7 +10,6 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QEvent
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import QDir
-from PyQt5.QtCore import QFile
 from PyQt5.QtCore import pyqtSignal
 
 from PyQt5.QtWidgets import QMessageBox
@@ -20,6 +19,7 @@ from PyQt5.QtWidgets import QInputDialog
 from PyQt5.QtWidgets import QMenu
 
 from galacteek import ensure
+from galacteek import log
 from galacteek.ipfs.mimetype import mimeTypeDag
 
 from .i18n import iIpfsQrCodes
@@ -61,6 +61,23 @@ def preloadMimeIcons():
 
 
 async def getIconFromIpfs(ipfsop, ipfsPath, scaleWidth=None, timeout=10):
+    """
+    We cache the icons that we got out of the IPFS repo by their path
+    Max icons cached is set by 'ipfsIconsCacheMax' in the app object
+    """
+    app = QApplication.instance()
+    iconsCache = app.ipfsIconsCache
+
+    if ipfsPath in iconsCache:
+        # Already cached
+        return iconsCache[ipfsPath]
+
+    if len(iconsCache) >= app.ipfsIconsCacheMax:
+        # FIFO 1/8
+        for icount in range(0, int(app.ipfsIconsCacheMax / 8)):
+            out = list(iconsCache.keys())[0]
+            del iconsCache[out]
+
     try:
         imgData = await ipfsop.waitFor(
             ipfsop.client.cat(ipfsPath), timeout
@@ -69,7 +86,10 @@ async def getIconFromIpfs(ipfsop, ipfsPath, scaleWidth=None, timeout=10):
         if not imgData:
             return None
 
-        return getIconFromImageData(imgData, scaleWidth=scaleWidth)
+        icon = getIconFromImageData(imgData, scaleWidth=scaleWidth)
+        if icon:
+            iconsCache[ipfsPath] = icon
+            return icon
     except BaseException:
         return None
 
@@ -303,10 +323,3 @@ def qrCodesMenuBuilder(urls, resourceOpener, parent=None):
                 icon, str(url), functools.partial(
                     ensure, resourceOpener.open(url)))
         return menu
-
-
-def sampleQrCodes():
-    dir = QDir(':/share/qr-codes')
-    if dir.exists():
-        for entry in dir.entryList():
-            yield entry, QFile(':/share/qr-codes/{}'.format(entry))

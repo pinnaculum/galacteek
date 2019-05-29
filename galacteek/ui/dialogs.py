@@ -10,15 +10,13 @@ from PyQt5.QtWidgets import QLabel
 from PyQt5.QtWidgets import QLineEdit
 from PyQt5.QtWidgets import QHBoxLayout
 from PyQt5.QtWidgets import QGridLayout
-from PyQt5.QtWidgets import QListView
+from PyQt5.QtWidgets import QFormLayout
 
 from PyQt5.QtCore import QFile
 from PyQt5.QtCore import QIODevice
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import QRegExp
 from PyQt5.QtCore import Qt
-from PyQt5.QtCore import QSize
-from PyQt5.QtCore import QVariant
 
 from PyQt5.QtGui import QClipboard
 from PyQt5.QtGui import QPixmap
@@ -46,6 +44,7 @@ from . import ui_profilepostmessage
 from .helpers import *
 from .widgets import ImageWidget
 from .widgets import HorizontalLine
+from .widgets import IconSelector
 
 from .i18n import iDoNotPin
 from .i18n import iPinSingle
@@ -80,14 +79,29 @@ class AddHashmarkDialog(QDialog):
         self.ui.resourceLabel.setText(self.ipfsResource)
         self.ui.resourceLabel.setStyleSheet(boldLabelStyle())
         self.ui.newCategory.textChanged.connect(self.onNewCatChanged)
-        self.ui.selectIconButton.clicked.connect(self.onSelectIcon)
         self.ui.title.setText(title)
-        self.iconWidget = ImageWidget()
-        self.ui.layoutIcon.addWidget(self.iconWidget, 0, Qt.AlignCenter)
+
+        pix = QPixmap.fromImage(QImage(':/share/icons/hashmarks.png'))
+        pix = pix.scaledToWidth(32)
+        self.ui.hashmarksIconLabel.setPixmap(pix)
+
+        self.iconWidget = None
 
         self.ui.pinCombo.addItem(iDoNotPin())
         self.ui.pinCombo.addItem(iPinSingle())
         self.ui.pinCombo.addItem(iPinRecursive())
+
+        self.ui.formLayout.setRowWrapPolicy(QFormLayout.DontWrapRows)
+        self.ui.formLayout.setFieldGrowthPolicy(
+            QFormLayout.ExpandingFieldsGrow)
+        self.ui.formLayout.setLabelAlignment(Qt.AlignHCenter | Qt.AlignTop)
+        self.ui.formLayout.setHorizontalSpacing(20)
+
+        self.iconSelector = IconSelector(parent=self, allowEmpty=True)
+        self.iconSelector.iconSelected.connect(self.onIconSelected)
+        self.iconSelector.emptyIconSelected.connect(self.onIconEmpty)
+        self.ui.formLayout.insertRow(7, QLabel('Icon'),
+                                     self.iconSelector)
 
         regexp1 = QRegExp(r"[A-Za-z\/\_]+")  # noqa
         self.ui.newCategory.setValidator(QRegExpValidator(regexp1))
@@ -103,6 +117,12 @@ class AddHashmarkDialog(QDialog):
         for cat in self.marks.getCategories():
             self.ui.category.addItem(cat)
 
+    def onIconSelected(self, iconCid):
+        self.iconCid = iconCid
+
+    def onIconEmpty(self):
+        self.iconCid = None
+
     def onSelectIcon(self):
         fps = filesSelectImages()
         if len(fps) > 0:
@@ -114,8 +134,16 @@ class AddHashmarkDialog(QDialog):
         if entry:
             cid = entry['Hash']
 
-            if await self.iconWidget.load(cid):
-                self.iconCid = cid
+            if self.iconWidget is None:
+                iconWidget = ImageWidget()
+
+                if await iconWidget.load(cid):
+                    self.ui.formLayout.insertRow(7, QLabel(''), iconWidget)
+                    self.iconCid = cid
+                    self.iconWidget = iconWidget
+            else:
+                if await self.iconWidget.load(cid):
+                    self.iconCid = cid
 
     def onNewCatChanged(self, text):
         self.ui.category.setEnabled(len(text) == 0)
@@ -144,7 +172,6 @@ class AddHashmarkDialog(QDialog):
             share=share,
             comment=self.ui.comment.text(),
             description=description,
-            tags=self.ui.tags.text().split(),
             pinSingle=pSingle,
             pinRecursive=pRecursive,
             icon=self.iconCid,
@@ -173,6 +200,12 @@ class AddFeedDialog(QDialog):
         self.ui.setupUi(self)
         self.ui.resourceLabel.setText(self.ipfsResource)
         self.ui.resourceLabel.setStyleSheet(boldLabelStyle())
+
+        self.ui.formLayout.setRowWrapPolicy(QFormLayout.DontWrapRows)
+        self.ui.formLayout.setFieldGrowthPolicy(
+            QFormLayout.ExpandingFieldsGrow)
+        self.ui.formLayout.setLabelAlignment(Qt.AlignCenter)
+        self.ui.formLayout.setHorizontalSpacing(20)
 
         if isinstance(feedName, str):
             self.ui.feedName.setText(feedName)
@@ -490,30 +523,6 @@ class ChooseProgramDialog(QInputDialog):
 
 
 class AddMultihashPyramidDialog(QDialog):
-    iconsList = [
-        ':/share/icons/atom.png',
-        ':/share/icons/ipfs-cube-64.png',
-        ':/share/icons/ipfs-logo-128-white.png',
-        ':/share/icons/code-fork.png',
-        ':/share/icons/cubehouse.png',
-        ':/share/icons/distributed.png',
-        ':/share/icons/go-home.png',
-        ':/share/icons/hotspot.png',
-        ':/share/icons/ipld-logo.png',
-        ':/share/icons/pyramid-aqua.png',
-        ':/share/icons/pyramid-stack.png',
-        ':/share/icons/multimedia.png',
-        ':/share/icons/folder-documents.png',
-        ':/share/icons/folder-pictures.png',
-        ':/share/icons/orbitdb.png',
-        ':/share/icons/pyramid-hierarchy.png',
-        ':/share/icons/sweethome.png',
-        ':/share/icons/stroke-code.png',
-        ':/share/icons/web-devel.png',
-        ':/share/icons/mimetypes/image-x-generic.png',
-        ':/share/icons/mimetypes/text-html.png'
-    ]
-
     def __init__(self, marks, parent=None):
         super().__init__(parent)
 
@@ -569,21 +578,21 @@ class AddMultihashPyramidDialog(QDialog):
         nameLayout.addWidget(label)
         nameLayout.addWidget(self.nameLine)
 
-        self.iconsCombo = QComboBox(self)
+        self.iconSelector = IconSelector()
+        self.iconSelector.iconSelected.connect(self.onIconSelected)
 
-        if self.app.system == 'Linux':
-            self.iconsCombo.setIconSize(QSize(64, 64))
-
-        self.view = QListView(self.iconsCombo)
-        self.iconsCombo.setView(self.view)
+        self.lifetimeCombo = QComboBox(self)
+        self.lifetimeCombo.addItem('24h')
+        self.lifetimeCombo.addItem('48h')
+        self.lifetimeCombo.addItem('96h')
+        self.lifetimeCombo.setCurrentText('48h')
+        ipnsLTimeLayout = QHBoxLayout()
+        ipnsLTimeLayout.addWidget(QLabel('IPNS record lifetime'))
+        ipnsLTimeLayout.addWidget(self.lifetimeCombo)
 
         pickIconLayout = QHBoxLayout()
         pickIconLayout.addWidget(QLabel('Choose icon'))
-        pickIconLayout.addWidget(self.iconsCombo)
-
-        for iconP in self.iconsList:
-            self.iconsCombo.addItem(
-                getIcon(iconP), '', QVariant(iconP))
+        pickIconLayout.addWidget(self.iconSelector)
 
         mainLayout = QGridLayout()
         mainLayout.addLayout(nameLayout, 0, 0)
@@ -591,9 +600,10 @@ class AddMultihashPyramidDialog(QDialog):
         mainLayout.addWidget(HorizontalLine(self), 2, 0)
         mainLayout.addLayout(catLayout, 3, 0)
         mainLayout.addLayout(catCustomLayout, 4, 0)
-        mainLayout.addLayout(pickIconLayout, 5, 0)
-        mainLayout.addWidget(HorizontalLine(self), 6, 0)
-        mainLayout.addWidget(buttonBox, 7, 0)
+        mainLayout.addLayout(ipnsLTimeLayout, 5, 0)
+        mainLayout.addLayout(pickIconLayout, 6, 0)
+        mainLayout.addWidget(HorizontalLine(self), 7, 0)
+        mainLayout.addWidget(buttonBox, 8, 0)
 
         buttonBox.accepted.connect(self.accept)
         buttonBox.rejected.connect(self.reject)
@@ -607,6 +617,9 @@ class AddMultihashPyramidDialog(QDialog):
 
         self.nameLine.setFocus(Qt.OtherFocusReason)
 
+    def onIconSelected(self, iconCid):
+        self.iconCid = iconCid
+
     def onCustomCategory(self, text):
         self.categoryCombo.setEnabled(len(text) == 0)
         self.customCategory = text
@@ -617,6 +630,7 @@ class AddMultihashPyramidDialog(QDialog):
     def accept(self):
         pyramidName = self.nameLine.text()
         descr = self.descrLine.text()
+        lifetime = self.lifetimeCombo.currentText()
 
         if len(pyramidName) == 0 or len(descr) == 0:
             return messageBox('Please give a name and description')
@@ -629,19 +643,16 @@ class AddMultihashPyramidDialog(QDialog):
 
         ipnsKeyName = 'galacteek.pyramids.{cat}.{name}'.format(
             cat=category.replace('/', '_'), name=pyramidName)
-        iconName = self.iconsCombo.currentData()
 
         self.done(1)
 
         ensure(self.createPyramid(pyramidName, category, ipnsKeyName,
-                                  iconName, descr))
+                                  descr, lifetime))
 
     @ipfsOp
     async def createPyramid(self, ipfsop, pyramidName, category, ipnsKeyName,
-                            iconName, description):
+                            description, ipnsLifetime):
         try:
-            await self.injectQrcIcon(iconName)
-
             logUser.info(
                 'Multihash pyramid {pyr}: generating IPNS key ...'.format(
                     pyr=pyramidName))
@@ -653,6 +664,7 @@ class AddMultihashPyramidDialog(QDialog):
                 self.marks.pyramidNew(
                     pyramidName, category, self.iconCid,
                     ipnskey=ipnsKey['Id'],
+                    lifetime=ipnsLifetime,
                     description=description)
                 logUser.info('Multihash pyramid {pyr}: created'.format(
                     pyr=pyramidName))

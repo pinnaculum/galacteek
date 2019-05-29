@@ -42,6 +42,7 @@ class EventLogWidget(GalacteekTab):
         self.checkDht = QCheckBox('DHT events')
         self.checkBitswap = QCheckBox('Bitswap events')
         self.checkAll = QCheckBox('All events')
+        self.checkAll.stateChanged.connect(self.onCheckAll)
 
         hLayout.addWidget(self.checkCore)
         hLayout.addWidget(self.checkDht)
@@ -55,6 +56,11 @@ class EventLogWidget(GalacteekTab):
 
         self.tskLog = self.app.task(self.logWatch)
         self.vLayout.addLayout(layout)
+
+    def onCheckAll(self, state):
+        self.checkCore.setEnabled(not state)
+        self.checkDht.setEnabled(not state)
+        self.checkBitswap.setEnabled(not state)
 
     def onSave(self):
         fPath = saveFileSelect()

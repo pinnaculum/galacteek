@@ -2,14 +2,16 @@ from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QTreeView
 from PyQt5.QtWidgets import QHeaderView
 from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QFormLayout
 
 from PyQt5.QtGui import QStandardItemModel
 from PyQt5.QtCore import Qt, QCoreApplication
 
 from galacteek.ipfs.wrappers import ipfsOp
+from galacteek.core.modelhelpers import *
 
 from . import ui_keys, ui_addkeydialog
-from .modelhelpers import *
+
 from .widgets import GalacteekTab
 from .helpers import *
 
@@ -34,6 +36,9 @@ class AddKeyDialog(QDialog):
         self.app = app
         self.ui = ui_addkeydialog.Ui_AddKeyDialog()
         self.ui.setupUi(self)
+        self.ui.addKeyLayout.setRowWrapPolicy(QFormLayout.DontWrapRows)
+        self.ui.addKeyLayout.setFieldGrowthPolicy(
+            QFormLayout.ExpandingFieldsGrow)
 
     def accept(self):
         keyName = self.ui.keyName.text()

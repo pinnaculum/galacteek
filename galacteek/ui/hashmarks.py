@@ -3,7 +3,6 @@ from PyQt5.QtCore import QCoreApplication
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.cidhelpers import *
 
-from .modelhelpers import *
 from .helpers import *
 from .dialogs import *
 from .widgets import *
