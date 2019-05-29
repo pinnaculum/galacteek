@@ -90,7 +90,7 @@ class HorizontalLine(QFrame):
         self.setFrameShadow(QFrame.Sunken)
         self.setStyleSheet('''
             QFrame {
-                background-color: #B7CDC2;
+                background-color: #4a9ea1;
             }
         ''')
 
