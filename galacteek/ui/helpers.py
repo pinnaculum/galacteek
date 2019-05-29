@@ -19,7 +19,6 @@ from PyQt5.QtWidgets import QInputDialog
 from PyQt5.QtWidgets import QMenu
 
 from galacteek import ensure
-from galacteek import log
 from galacteek.ipfs.mimetype import mimeTypeDag
 
 from .i18n import iIpfsQrCodes

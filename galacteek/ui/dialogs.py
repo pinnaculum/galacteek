@@ -600,9 +600,9 @@ class AddMultihashPyramidDialog(QDialog):
         mainLayout.addWidget(HorizontalLine(self), 2, 0)
         mainLayout.addLayout(catLayout, 3, 0)
         mainLayout.addLayout(catCustomLayout, 4, 0)
-        mainLayout.addLayout(ipnsLTimeLayout, 5, 0)
-        mainLayout.addLayout(pickIconLayout, 6, 0)
-        mainLayout.addWidget(HorizontalLine(self), 7, 0)
+        mainLayout.addWidget(HorizontalLine(self), 5, 0)
+        mainLayout.addLayout(ipnsLTimeLayout, 6, 0)
+        mainLayout.addLayout(pickIconLayout, 7, 0)
         mainLayout.addWidget(buttonBox, 8, 0)
 
         buttonBox.accepted.connect(self.accept)
