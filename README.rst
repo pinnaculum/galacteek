@@ -18,6 +18,12 @@ Platforms supported
 - MacOS
 - FreeBSD
 
+Donations
+=========
+
+If you want to donate to this project please use the
+`patreon page <https://www.patreon.com/galacteek>`_
+
 Installation
 ============
 
