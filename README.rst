@@ -1,10 +1,8 @@
 
-=========
-Galacteek
-=========
-
-.. image:: https://gitlab.com/galacteek/galacteek/raw/master/share/icons/galacteek.png
+.. image:: https://gitlab.com/galacteek/galacteek/raw/master/share/icons/cube-nova-aqua.png
     :align: center
+    :width: 128
+    :height: 128
 
 :info: A multi-platform IPFS_ browser
 
@@ -22,7 +20,7 @@ Donations
 =========
 
 If you want to donate to this project please use the
-`patreon page <https://www.patreon.com/galacteek>`_
+`Patreon page <https://www.patreon.com/galacteek>`_
 
 Installation
 ============
