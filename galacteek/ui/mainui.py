@@ -127,19 +127,30 @@ class IPFSInfosDialog(QDialog):
         self.ui.setupUi(self)
         self.ui.okButton.clicked.connect(functools.partial(self.done, 1))
 
+        self.labels = [self.ui.repoObjCount,
+                       self.ui.repoVersion,
+                       self.ui.repoSize,
+                       self.ui.repoMaxStorage,
+                       self.ui.nodeId,
+                       self.ui.agentVersion,
+                       self.ui.protocolVersion]
+
+        self.enableLabels(False)
+
+    def enableLabels(self, enable):
+        for label in self.labels:
+            if not enable:
+                label.setText('Fetching ...')
+
+            label.setEnabled(enable)
+
     @ipfsOp
     async def loadInfos(self, ipfsop):
         try:
             repoStat = await ipfsop.client.repo.stat()
             idInfo = await ipfsop.client.core.id()
         except BaseException:
-            for label in [self.ui.repoObjCount,
-                          self.ui.repoVersion,
-                          self.ui.repoSize,
-                          self.ui.repoMaxStorage,
-                          self.ui.nodeId,
-                          self.ui.agentVersion,
-                          self.ui.protocolVersion]:
+            for label in self.labels:
                 label.setText(iUnknown())
         else:
             self.ui.repoObjCount.setText(str(repoStat.get(
@@ -156,6 +167,7 @@ class IPFSInfosDialog(QDialog):
                 'AgentVersion', iUnknown()))
             self.ui.protocolVersion.setText(idInfo.get('ProtocolVersion',
                                                        iUnknown()))
+            self.enableLabels(True)
 
 
 class DatabasesManager(QObject):

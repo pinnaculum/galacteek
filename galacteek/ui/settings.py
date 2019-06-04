@@ -24,6 +24,8 @@ class SettingsDialog(QDialog):
         self.ui.language.insertItem(0, iLangEnglish())
         self.ui.language.insertItem(1, iLangFrench())
 
+        self.ui.swarmMaxConns.valueChanged.connect(self.onSwarmMaxConns)
+
         self.loadSettings()
 
     def enableGroupDaemon(self):
@@ -34,6 +36,11 @@ class SettingsDialog(QDialog):
     def enableGroupCustom(self):
         self.ui.groupBoxIpfsConn.setEnabled(True)
         self.ui.groupBoxDaemon.setChecked(False)
+
+    def onSwarmMaxConns(self, value):
+        minConns = self.ui.swarmMinConns.value()
+        if value < minConns:
+            self.ui.swarmMaxConns.setValue(minConns)
 
     def onChangeDownloadsPath(self):
         dirSel = directorySelect()

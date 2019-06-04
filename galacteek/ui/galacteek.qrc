@@ -1,5 +1,6 @@
 <RCC>
   <qresource>
+    <file>../../share/icons/folder-temp.png</file>
     <file>../../share/icons/cube-nova-aqua.png</file>
     <file>../../share/icons/cube-nova-orange.png</file>
     <file>../../share/icons/mimetypes/application-x-shellscript.png</file>

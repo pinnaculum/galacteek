@@ -20,6 +20,7 @@ from PyQt5.QtCore import QSize
 from PyQt5.QtCore import pyqtSignal
 
 from galacteek import ensure
+from galacteek import GALACTEEK_NAME
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.ipfsops import *
@@ -57,7 +58,7 @@ def iAddedFile(name):
 
 def iImportedCount(count):
     return QCoreApplication.translate('FileManagerForm',
-                                      'Imported {0} files').format(count)
+                                      'Imported {0} file(s)').format(count)
 
 
 def iLoadingFile(name):
@@ -151,6 +152,9 @@ class FileManager(QWidget):
         self.displayedItem = None
         self.createFileManager()
 
+        self.filesDialog = QFileDialog(None)
+        self.dialogLastDirSelected = None
+
         self.ui.localFileManagerSwitch.setCheckable(True)
 
         # Connect the various buttons
@@ -181,24 +185,29 @@ class FileManager(QWidget):
         self.ui.pathSelector.setObjectName('fmanagerPathSelector')
         self.ui.pathSelector.insertItem(0, getIcon('go-home.png'), 'Home')
         self.ui.pathSelector.insertSeparator(1)
-        self.ui.pathSelector.insertItem(2, getIcon('folder-pictures.png'),
+        self.ui.pathSelector.insertItem(2, getMimeIcon('image/x-generic'),
+                                        iImages())
+        self.ui.pathSelector.insertItem(3, getIcon('folder-pictures.png'),
                                         iPictures())
-        self.ui.pathSelector.insertItem(3, getIcon('folder-videos.png'),
+        self.ui.pathSelector.insertItem(4, getIcon('folder-videos.png'),
                                         iVideos())
-        self.ui.pathSelector.insertItem(4, getIcon('folder-music.png'),
+        self.ui.pathSelector.insertItem(5, getIcon('folder-music.png'),
                                         iMusic())
-        self.ui.pathSelector.insertSeparator(5)
-        self.ui.pathSelector.insertItem(6, getIcon('code-fork.png'), iCode())
-        self.ui.pathSelector.insertItem(7, getIcon('folder-documents.png'),
+        self.ui.pathSelector.insertSeparator(6)
+        self.ui.pathSelector.insertItem(7, getIcon('code-fork.png'), iCode())
+        self.ui.pathSelector.insertItem(8, getIcon('folder-documents.png'),
                                         iDocuments())
-        self.ui.pathSelector.insertSeparator(8)
-        self.ui.pathSelector.insertItem(9, getMimeIcon('text/html'),
+        self.ui.pathSelector.insertSeparator(9)
+        self.ui.pathSelector.insertItem(10, getMimeIcon('text/html'),
                                         iWebPages())
-        self.ui.pathSelector.insertItem(10, getIcon('distributed.png'),
+        self.ui.pathSelector.insertItem(11, getIcon('distributed.png'),
                                         iDWebApps())
-        self.ui.pathSelector.insertSeparator(11)
-        self.ui.pathSelector.insertItem(12, getIcon('ipfs-qrcode.png'),
+        self.ui.pathSelector.insertSeparator(12)
+        self.ui.pathSelector.insertItem(13, getIcon('ipfs-qrcode.png'),
                                         iQrCodes())
+        self.ui.pathSelector.insertSeparator(14)
+        self.ui.pathSelector.insertItem(15, getIcon('folder-temp.png'),
+                                        iTemporaryFiles())
         self.ui.pathSelector.activated.connect(self.onPathSelector)
 
         if self.app.system == 'Linux':
@@ -251,6 +260,9 @@ class FileManager(QWidget):
 
     @property
     def offlineMode(self):
+        if self.displayedItem:
+            return self.displayedItem.offline
+
         return self._offlineMode
 
     @property
@@ -336,6 +348,7 @@ class FileManager(QWidget):
                     self.ui.localFileManagerSwitch,
                     self.ui.fileManagerButton,
                     self.ui.pathSelector,
+                    self.ui.offlineButton,
                     self.ui.searchFiles]:
             btn.setEnabled(flag)
 
@@ -366,9 +379,10 @@ class FileManager(QWidget):
             self.collapseButtonUpdate()
 
     def onOfflineToggle(self, checked):
-        self._offlineMode = checked
-        if self.offlineMode:
-            self.ui.offlineButton.setToolTip(iOfflineModeToolTip())
+        if self.displayedItem:
+            self.displayedItem.offline = checked
+
+        self.ui.offlineButton.setToolTip(iOfflineModeToolTip())
 
     def onClose(self):
         if not self.busy:
@@ -378,6 +392,9 @@ class FileManager(QWidget):
 
     def onItemChange(self, item):
         self.collapseButtonUpdate()
+
+        if isinstance(item, MFSRootItem):
+            self.ui.offlineButton.setChecked(item.offline)
 
     def collapseButtonUpdate(self):
         self.ui.collapseAll.setVisible(
@@ -445,6 +462,8 @@ class FileManager(QWidget):
             self.changeDisplayItem(self.model.itemHome)
         elif text == iPictures():
             self.changeDisplayItem(self.model.itemPictures)
+        elif text == iImages():
+            self.changeDisplayItem(self.model.itemImages)
         elif text == iVideos():
             self.changeDisplayItem(self.model.itemVideos)
         elif text == iMusic():
@@ -459,6 +478,8 @@ class FileManager(QWidget):
             self.changeDisplayItem(self.model.itemDWebApps)
         elif text == iQrCodes():
             self.changeDisplayItem(self.model.itemQrCodes)
+        elif text == iTemporaryFiles():
+            self.changeDisplayItem(self.model.itemTemporary)
 
     def changeDisplayItem(self, item):
         self.displayedItem = item
@@ -561,6 +582,9 @@ class FileManager(QWidget):
         publishMenu = QMenu('Publish to IPNS key')
         publishMenu.setIcon(getIcon('key-diago.png'))
         for key in self.ipfsKeys:
+            if not key['Name'] or key['Name'].startswith(GALACTEEK_NAME):
+                continue
+
             action = QAction(key['Name'], self)
             action.setData({
                 'key': key,
@@ -642,10 +666,31 @@ class FileManager(QWidget):
         self.ui.treeFiles.setFocus(Qt.OtherFocusReason)
 
     def onAddDirClicked(self):
-        result = QFileDialog.getExistingDirectory(
-            None, iSelectDirectory(), getHomePath(), QFileDialog.ShowDirsOnly)
+        dialog = QFileDialog(None)
+
+        if self.dialogLastDirSelected:
+            #dialog.setDirectory(self.dialogLastDirSelected)
+            pass
+
+        dialog.setFileMode(QFileDialog.DirectoryOnly)
+        dialog.filesSelected.connect(
+            lambda dirs: self.onDirsSelected(dialog, dirs))
+
+        return dialog.exec_()
+
+        if 0:
+            result = QFileDialog.getExistingDirectory(
+                None, iSelectDirectory(), getHomePath(), QFileDialog.ShowDirsOnly)
+
         if result:
             self.scheduleAddDirectory(result)
+
+    def onDirsSelected(self, dialog, dirs):
+        self.dialogLastDirSelected = dialog.directory()
+
+        if isinstance(dirs, list):
+            print('DIRS SELECTED', dirs)
+            self.scheduleAddDirectory(dirs.pop())
 
     def statusAdded(self, name):
         self.statusSet(iAddedFile(name))
@@ -659,22 +704,28 @@ class FileManager(QWidget):
     def onAddFilesClicked(self):
         self.addFilesDialog()
 
-    def addFilesDialog(self, parent=None):
-        if parent is None:
-            parent = self.displayPath
+    def addFilesDialog(self):
+        dialog = QFileDialog(None)
 
-        result = QFileDialog.getOpenFileNames(
-            None, iSelectFiles(), getHomePath(), '(*.*)')
-        if not result:
-            return
+        if self.dialogLastDirSelected:
+            #dialog.setDirectory(self.dialogLastDirSelected)
+            pass
 
-        self.scheduleAddFiles(result[0], parent=parent)
+        dialog.filesSelected.connect(
+            lambda files: self.onFilesSelected(dialog, files))
+        dialog.exec_()
+
+    def onFilesSelected(self, dialog, files):
+        self.dialogLastDirSelected = dialog.directory()
+        self.scheduleAddFiles(files, parent=self.displayPath)
 
     def scheduleAddFiles(self, path, parent=None):
         if self.busy:
             return
+
         if parent is None:
             parent = self.displayPath
+
         return self.app.task(self.addFiles, path, parent)
 
     def scheduleAddDirectory(self, path):

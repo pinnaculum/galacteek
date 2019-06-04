@@ -17,12 +17,14 @@ from PyQt5.QtCore import QIODevice
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import QRegExp
 from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QUrl
 
 from PyQt5.QtGui import QClipboard
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtGui import QImage
 from PyQt5.QtGui import QRegExpValidator
 
+from galacteek import GALACTEEK_NAME
 from galacteek import asyncify
 from galacteek import ensure
 from galacteek import logUser
@@ -326,14 +328,22 @@ class DonateDialog(QDialog):
     def __init__(self, bcAddr, parent=None):
         super().__init__(parent)
 
+        self.app = QApplication.instance()
         self.ui = ui_donatedialog.Ui_DonateDialog()
         self.ui.setupUi(self)
         self.ui.okButton.clicked.connect(self.close)
         self.ui.bitcoinClip.clicked.connect(self.onBcClip)
+        self.ui.donatePatreon.clicked.connect(self.onPatreonClicked)
 
         self._bcAddr = bcAddr
         self.ui.bitcoinAddress.setText('<b>{0}</b>'.format(self._bcAddr))
         self.setWindowTitle('Make a donation')
+
+    def onPatreonClicked(self):
+        tab = self.app.mainWindow.addBrowserTab()
+        tab.enterUrl(QUrl(
+            'https://www.patreon.com/{0}'.format(GALACTEEK_NAME)))
+        self.accept()
 
     def onBcClip(self):
         self.toClip(self._bcAddr)

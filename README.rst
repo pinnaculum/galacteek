@@ -12,12 +12,13 @@ for the IPFS_ peer-to-peer network.
 Platforms supported
 ===================
 
-- Linux
-- MacOS
+- Linux (main target)
+- MacOS (*experimental*, probably a lot of asyncio-related instability)
 - FreeBSD
 
-Donations
-=========
+If it works for you, great, but most likely it won't :)
+This started as an experiment with quamash_ and is WIP
+(expect crashes and other delicacies).
 
 If you want to donate to this project please use the
 `Patreon page <https://www.patreon.com/galacteek>`_
