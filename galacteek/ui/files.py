@@ -668,28 +668,16 @@ class FileManager(QWidget):
     def onAddDirClicked(self):
         dialog = QFileDialog(None)
 
-        if self.dialogLastDirSelected:
-            #dialog.setDirectory(self.dialogLastDirSelected)
-            pass
-
         dialog.setFileMode(QFileDialog.DirectoryOnly)
         dialog.filesSelected.connect(
             lambda dirs: self.onDirsSelected(dialog, dirs))
 
         return dialog.exec_()
 
-        if 0:
-            result = QFileDialog.getExistingDirectory(
-                None, iSelectDirectory(), getHomePath(), QFileDialog.ShowDirsOnly)
-
-        if result:
-            self.scheduleAddDirectory(result)
-
     def onDirsSelected(self, dialog, dirs):
         self.dialogLastDirSelected = dialog.directory()
 
         if isinstance(dirs, list):
-            print('DIRS SELECTED', dirs)
             self.scheduleAddDirectory(dirs.pop())
 
     def statusAdded(self, name):
@@ -702,14 +690,8 @@ class FileManager(QWidget):
         self.ui.statusLabel.setText(msg)
 
     def onAddFilesClicked(self):
-        self.addFilesDialog()
-
-    def addFilesDialog(self):
         dialog = QFileDialog(None)
-
-        if self.dialogLastDirSelected:
-            #dialog.setDirectory(self.dialogLastDirSelected)
-            pass
+        dialog.setFileMode(QFileDialog.ExistingFiles)
 
         dialog.filesSelected.connect(
             lambda files: self.onFilesSelected(dialog, files))
