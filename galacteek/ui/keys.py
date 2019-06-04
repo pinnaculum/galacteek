@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QTreeView
 from PyQt5.QtWidgets import QHeaderView
@@ -5,9 +7,14 @@ from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QFormLayout
 
 from PyQt5.QtGui import QStandardItemModel
-from PyQt5.QtCore import Qt, QCoreApplication
+from PyQt5.QtGui import QBrush
+from PyQt5.QtGui import QColor
+
+from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QCoreApplication
 
 from galacteek.ipfs.wrappers import ipfsOp
+from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.core.modelhelpers import *
 
 from . import ui_keys, ui_addkeydialog
@@ -67,10 +74,23 @@ class KeysView(QTreeView):
         QTreeView.mousePressEvent(self, event)
 
 
+class KeyMultihashItem(UneditableItem):
+    pass
+
+
+class KeyResolvedItem(UneditableItem):
+    def __init__(self, text):
+        super(KeyResolvedItem, self).__init__(text)
+
+        self.resolvedLast = None
+        self.resolvesTo = None
+
+
 class KeysTab(GalacteekTab):
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
 
+        self.resolveTimeout = 60 * 5
         self.keysW = QWidget()
         self.addToLayout(self.keysW)
         self.ui = ui_keys.Ui_KeysForm()
@@ -133,21 +153,64 @@ class KeysTab(GalacteekTab):
             found = modelSearch(self.model, search=key['Name'])
             if len(found) > 0:
                 continue
-            resolveItem = UneditableItem('')
+
+            nameItem = UneditableItem(key['Name'])
+            nameItem.setToolTip(key['Name'])
+
+            resolveItem = KeyResolvedItem('')
             self.model.appendRow([
-                UneditableItem(key['Name']),
-                UneditableItem(key['Id']),
+                nameItem,
+                KeyMultihashItem(key['Id']),
                 resolveItem
             ])
+
             self.app.task(self.keyResolve, key, resolveItem)
 
     @ipfsOp
     async def keyResolve(self, ipfsop, key, item):
-        resolved = await ipfsop.nameResolve(key['Id'])
-        if resolved:
-            item.setText(resolved['Path'])
-        else:
-            item.setText(iUnknown())
+        if not isinstance(item, KeyResolvedItem):
+            return
+
+        now = datetime.now()
+
+        update = False
+        if item.resolvedLast is None:
+            update = True
+
+        if isinstance(item.resolvedLast, datetime):
+            delta = now - item.resolvedLast
+            if delta.seconds > self.resolveTimeout:
+                update = True
+
+        if update is True:
+            resolved = await ipfsop.nameResolve(key['Id'])
+
+            if isinstance(resolved, dict):
+                rPath = resolved.get('Path')
+                if not rPath:
+                    item.setBackground(QBrush(QColor('red')))
+                elif item.resolvesTo and rPath != item.resolvesTo:
+                    color = QColor('#c1f0c1')
+                    item.setBackground(QBrush(color))
+                else:
+                    item.setBackground(QBrush(Qt.NoBrush))
+
+                if rPath and IPFSPath(rPath).valid:
+                    item.resolvesTo = rPath
+                    item.setText(rPath)
+                    item.setToolTip(
+                        "{path}\n\nResolved date: {date}".format(
+                            path=rPath,
+                            date=now.isoformat(sep=' ', timespec='seconds')
+                        ))
+            else:
+                item.setText(iUnknown())
+
+            item.resolvedLast = now
+
+        # Ensure another one
+        self.app.loop.call_later(
+            self.resolveTimeout, self.app.task, self.keyResolve, key, item)
 
     def updateKeysList(self):
         self.app.task(self.listKeys)

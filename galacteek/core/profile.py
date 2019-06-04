@@ -483,6 +483,7 @@ class UserProfile(QObject):
             self.pathData,
             self.pathHMarksLibrary,
             self.pathPlaylists,
+            self.pathImages,
             self.pathPictures,
             self.pathVideos,
             self.pathDocuments,
@@ -492,7 +493,7 @@ class UserProfile(QObject):
             self.pathCode,
             self.pathWebPages,
             self.pathDWebApps,
-            self.pathImages
+            self.pathTmp
         ]
 
     @property
@@ -508,6 +509,10 @@ class UserProfile(QObject):
         return os.path.join(self.pathFiles, 'documents')
 
     @property
+    def pathTmp(self):
+        return os.path.join(self.pathFiles, 'tmp')
+
+    @property
     def pathQrCodes(self):
         return os.path.join(self.pathMedia, 'qrcodes')
 
@@ -520,12 +525,12 @@ class UserProfile(QObject):
         return os.path.join(self.pathFiles, 'multimedia')
 
     @property
-    def pathPictures(self):
-        return os.path.join(self.pathMedia, 'pictures')
-
-    @property
     def pathImages(self):
         return os.path.join(self.pathMedia, 'images')
+
+    @property
+    def pathPictures(self):
+        return os.path.join(self.pathMedia, 'pictures')
 
     @property
     def pathWebPages(self):

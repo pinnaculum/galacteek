@@ -13,11 +13,7 @@
 }
 
 * {
-    font: 10pt "Montserrat";
-}
-
-.navy-muted {
-    color: #244e66;
+    font: 11pt "Montserrat";
 }
 
 QToolBar#toolbarMain {
@@ -52,7 +48,6 @@ QTabBar::tab:hover:!selected {
 QTreeView {
     background-color: #f6fafb;
     alternate-background-color: #d9dbe2;
-    font: 10pt "Montserrat";
 }
 
 QTreeView::item:open {
@@ -61,13 +56,6 @@ QTreeView::item:open {
 
 QLabel {
     color: #244e66;
-    font: 10pt "Inter UI";
-}
-
-QTreeView::item:selected {
-}
-
-QTreeView::item:hover {
 }
 
 QToolBox {
@@ -141,33 +129,17 @@ QToolButton#pinGlobalButton::checked {
     background-color: #eec146;
 }
 
-QPushButton {
-    padding: 5px;
-}
-
 QLabel#linkInfos {
     color: black;
     font: 12pt "Inter UI";
-}
-
-QMenu#hashmarksMgrMenu {
-    font: 11pt "Inter UI";
 }
 
 QMenu::item:selected#hashmarksMgrMenu {
     background-color: #4a9ea1;
 }
 
-QMenu#hashmarksLibraryMenu {
-    font: 11pt "Inter UI";
-}
-
 QMenu::item:selected#hashmarksLibraryMenu {
     background-color: #4a9ea1;
-}
-
-QMenu {
-    font: 11pt "Inter UI";
 }
 
 QMenu::item:selected {
@@ -185,25 +157,8 @@ QProgressBar::chunk#pBarBrowser {
     background-color: #7f8491;
 }
 
-QComboBox#fmanagerPathSelector {
-    background-color: #B7CDC2;
-}
-
-QComboBox:disabled#fmanagerPathSelector {
-    background-color: lightgray;
-}
-
-QComboBox#fmanagerPathSelector QAbstractItemView {
-    padding: 4px;
-    selection-color: black;
-}
-
-QToolButton#localFileManagerSwitch::checked {
-    background-color: #B7CDC2;
-}
-
 QTextBrowser#javascriptConsole {
-    background-color: lightgray;
+    background-color: lightgrey;
 }
 
 QToolButton#jsConsoleButton::checked {

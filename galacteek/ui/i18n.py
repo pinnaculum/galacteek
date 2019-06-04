@@ -369,6 +369,14 @@ def iPictures():
     return QCoreApplication.translate('FileManagerForm', 'Pictures')
 
 
+def iImages():
+    return QCoreApplication.translate('FileManagerForm', 'Images')
+
+
+def iTemporaryFiles():
+    return QCoreApplication.translate('FileManagerForm', 'Temporary')
+
+
 def iVideos():
     return QCoreApplication.translate('FileManagerForm', 'Videos')
 

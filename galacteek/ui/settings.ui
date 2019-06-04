@@ -187,10 +187,13 @@
             <item row="0" column="3">
              <widget class="QSpinBox" name="swarmMinConns">
               <property name="minimum">
-               <number>1</number>
+               <number>20</number>
               </property>
               <property name="maximum">
-               <number>100</number>
+               <number>1000</number>
+              </property>
+              <property name="singleStep">
+               <number>5</number>
               </property>
              </widget>
             </item>
@@ -227,10 +230,13 @@
             <item row="1" column="3">
              <widget class="QSpinBox" name="swarmMaxConns">
               <property name="minimum">
-               <number>10</number>
+               <number>150</number>
               </property>
               <property name="maximum">
-               <number>300</number>
+               <number>2000</number>
+              </property>
+              <property name="singleStep">
+               <number>5</number>
               </property>
              </widget>
             </item>

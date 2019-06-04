@@ -66,14 +66,14 @@ def setDefaultSettings(gApp):
     sManager.setDefaultSetting(section, CFG_KEY_APIPORT, 5001)
     sManager.setDefaultSetting(section, CFG_KEY_SWARMPORT, 4001)
     sManager.setDefaultSetting(section, CFG_KEY_HTTPGWPORT, 8080)
-    sManager.setDefaultSetting(section, CFG_KEY_SWARMHIGHWATER, 150)
-    sManager.setDefaultSetting(section, CFG_KEY_SWARMLOWWATER, 100)
+    sManager.setDefaultSetting(section, CFG_KEY_SWARMHIGHWATER, 900)
+    sManager.setDefaultSetting(section, CFG_KEY_SWARMLOWWATER, 600)
     sManager.setDefaultSetting(section, CFG_KEY_STORAGEMAX, 50)
     sManager.setDefaultSetting(section, CFG_KEY_ROUTINGMODE, 'dht')
     sManager.setDefaultSetting(section, CFG_KEY_NICE, 20)
     sManager.setDefaultTrue(section, CFG_KEY_CORS)
     sManager.setDefaultTrue(section, CFG_KEY_ENABLED)
-    sManager.setDefaultTrue(section, CFG_KEY_HTTPGWWRITABLE)
+    sManager.setDefaultFalse(section, CFG_KEY_HTTPGWWRITABLE)
 
     section = CFG_SECTION_BROWSER
     sManager.setDefaultSetting(section, CFG_KEY_HOMEURL, HOME_DEFAULT)
@@ -81,7 +81,7 @@ def setDefaultSettings(gApp):
                                gApp.defaultDownloadsLocation)
     sManager.setDefaultTrue(section, CFG_KEY_GOTOHOME)
     sManager.setDefaultTrue(section, CFG_KEY_JSAPI)
-    sManager.setDefaultFalse(section, CFG_KEY_ALLOWHTTPBROWSING)
+    sManager.setDefaultTrue(section, CFG_KEY_ALLOWHTTPBROWSING)
     sManager.setDefaultTrue(section, CFG_KEY_PPAPIPLUGINS)
 
     # Default IPFS connection when not spawning daemon

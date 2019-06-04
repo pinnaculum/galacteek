@@ -73,7 +73,21 @@ class MFSItem(UneditableItem):
 
 
 class MFSRootItem(MFSItem):
+    """
+    Root item (top-level items in the MFS model)
+    """
+
     expandedItemsCount = 0
+
+    def __init__(self, text, path=None, parenthash=None, icon=None,
+                 offline=False, alwaysOffline=False):
+        super(MFSRootItem, self).__init__(text, path=path,
+                                          parenthash=parenthash,
+                                          icon=icon)
+
+        # alwaysOffline won't be used by the filemanager for now
+        self.offline = True if alwaysOffline else offline
+        self.alwaysOffline = alwaysOffline
 
 
 class MFSNameItem(MFSItem):
@@ -148,6 +162,8 @@ class MFSItemModel(QStandardItemModel):
 
     def setupItemsFromProfile(self, profile):
         self.itemHome = MFSRootItem(iHome(), path=profile.pathHome)
+        self.itemImages = MFSRootItem(iImages(),
+                                      path=profile.pathImages)
         self.itemPictures = MFSRootItem(iPictures(),
                                         path=profile.pathPictures)
         self.itemVideos = MFSRootItem(iVideos(),
@@ -164,10 +180,15 @@ class MFSItemModel(QStandardItemModel):
                                         path=profile.pathDWebApps)
         self.itemQrCodes = MFSRootItem(iQrCodes(),
                                        path=profile.pathQrCodes)
+        self.itemTemporary = MFSRootItem(iTemporaryFiles(),
+                                         alwaysOffline=True,
+                                         path=profile.pathTmp)
 
         self.itemRoot.appendRows([
             self.itemHome,
+            self.itemTemporary,
             self.itemPictures,
+            self.itemImages,
             self.itemVideos,
             self.itemCode,
             self.itemMusic,
