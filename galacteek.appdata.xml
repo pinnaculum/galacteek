@@ -37,15 +37,16 @@
     </screenshots>
 
     <url type="homepage">https://github.com/eversum/galacteek</url>
+    <url type="donation">https://www.patreon.com/galacteek</url>
 
     <provides>
         <binary>galacteek</binary>
     </provides>
 
     <releases>
-        <release version="0.3.4" date="2019-01-13">
+        <release version="0.4.4" date="2019-06-05">
             <description>
-                <p>Release 0.3.4</p>
+                <p>Release 0.4.4</p>
             </description>
         </release>
     </releases>
