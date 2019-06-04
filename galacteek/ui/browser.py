@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import QMenu
 from PyQt5.QtWidgets import QInputDialog
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QToolButton
+from PyQt5.QtWidgets import QTextBrowser
 
 from PyQt5.QtPrintSupport import *
 
@@ -18,9 +19,12 @@ from PyQt5.QtCore import QTimer
 
 from PyQt5 import QtWebEngineWidgets
 from PyQt5 import QtWebEngineCore
+
+from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWebEngineWidgets import QWebEngineDownloadItem
 from PyQt5.QtWebEngineWidgets import QWebEngineSettings
 from PyQt5.QtWebEngineWidgets import QWebEngineContextMenuData
+
 from PyQt5.QtWebEngineCore import QWebEngineUrlRequestInterceptor
 
 from PyQt5.Qt import QByteArray
@@ -226,10 +230,46 @@ class RequestInterceptor(QWebEngineUrlRequestInterceptor):
 
 
 class CustomWebPage (QtWebEngineWidgets.QWebEnginePage):
+    jsConsoleMessage = pyqtSignal(int, str, int, str)
+
     def javaScriptConsoleMessage(self, level, message, lineNumber, sourceId):
-        log.debug(
-            'JS: level: {0}, source: {1}, line: {2}, message: {3}'.format(
-                level, sourceId, lineNumber, message))
+        self.jsConsoleMessage.emit(level, message, lineNumber, sourceId)
+
+
+class JSConsoleWidget(QTextBrowser):
+    def __init__(self, parent):
+        super(JSConsoleWidget, self).__init__(parent)
+
+        self.setReadOnly(True)
+        self.setAcceptRichText(True)
+        self.setObjectName('javascriptConsole')
+
+    def showMessage(self, level, message, lineNumber, sourceId):
+        sourcePath = IPFSPath(sourceId)
+
+        if sourcePath.valid:
+            source = str(sourcePath)
+        else:
+            source = sourceId
+
+        if level == QWebEnginePage.InfoMessageLevel:
+            levelH = 'INFO'
+        elif level == QWebEnginePage.WarningMessageLevel:
+            levelH = 'WARNING'
+        elif level == QWebEnginePage.ErrorMessageLevel:
+            levelH = 'ERROR'
+        else:
+            levelH = 'UNKNOWN'
+
+        self.append('''
+           <p>[{level}]
+           <b>{source}</b> at line {line}: {message}
+           </p>'''.format(
+            source=source,
+            level=levelH,
+            line=lineNumber,
+            message=message
+        ))
 
 
 class WebView(QtWebEngineWidgets.QWebEngineView):
@@ -241,6 +281,7 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
         self.linkInfoTimer.timeout.connect(self.onLinkInfoTimeout)
 
         self.webPage = CustomWebPage(self)
+        self.webPage.jsConsoleMessage.connect(self.onJsMessage)
         self.webPage.linkHovered.connect(self.onLinkHovered)
         self.setPage(self.webPage)
 
@@ -249,6 +290,9 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
         self.webSettings = self.settings()
         self.webSettings.setAttribute(QWebEngineSettings.PluginsEnabled,
                                       enablePlugins)
+
+    def onJsMessage(self, level, message, lineNo, sourceId):
+        self.browserTab.jsConsole.showMessage(level, message, lineNo, sourceId)
 
     def onLinkInfoTimeout(self):
         self.browserTab.ui.linkInfosLabel.setText('')
@@ -262,6 +306,7 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
             self.browserTab.ui.linkInfosLabel.setText(ipfsPath.fullPath)
             if self.linkInfoTimer.isActive():
                 self.linkInfoTimer.stop()
+
             self.linkInfoTimer.start(2200)
 
     def contextMenuEvent(self, event):
@@ -379,7 +424,7 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
             menu = QMenu()
             scheme = url.scheme()
 
-            if scheme == 'http' or scheme == 'https':
+            if scheme in ['http', 'https']:
                 menu.addAction(
                     iOpenHttpInTab(),
                     functools.partial(self.openHttpInTab, url)
@@ -452,12 +497,18 @@ class BrowserTab(GalacteekTab):
     def __init__(self, gWindow, pinBrowsed=False):
         super(BrowserTab, self).__init__(gWindow)
 
-        self.browserWidget = QWidget()
+        self.browserWidget = QWidget(self)
         self.browserWidget.setAttribute(Qt.WA_DeleteOnClose)
-        self.vLayout.addWidget(self.browserWidget)
+
+        self.jsConsoleWidget = JSConsoleWidget(self)
+        self.jsConsoleWidget.setMaximumHeight(180)
+        self.jsConsoleWidget.hide()
 
         self.ui = ui_browsertab.Ui_BrowserTabForm()
         self.ui.setupUi(self.browserWidget)
+
+        self.vLayout.addWidget(self.browserWidget)
+        self.ui.vLayoutConsole.addWidget(self.jsConsoleWidget)
 
         # Install scheme handler early on
         self.webProfile = QtWebEngineWidgets.QWebEngineProfile.defaultProfile()
@@ -491,6 +542,8 @@ class BrowserTab(GalacteekTab):
         self.ui.stopButton.setEnabled(False)
 
         self.ui.linkInfosLabel.setObjectName('linkInfos')
+        self.ui.jsConsoleButton.setCheckable(True)
+        self.ui.jsConsoleButton.toggled.connect(self.onJsConsoleToggle)
 
         self.ui.loadFromClipboardButton.clicked.connect(
             self.loadFromClipboardButtonClicked)
@@ -598,6 +651,10 @@ class BrowserTab(GalacteekTab):
         return self.ui.webEngineView
 
     @property
+    def jsConsole(self):
+        return self.jsConsoleWidget
+
+    @property
     def tabPage(self):
         return self.gWindow.ui.tabWidget.widget(self.tabPageIdx)
 
@@ -650,6 +707,9 @@ class BrowserTab(GalacteekTab):
         # If automatic pinning is checked we pin the object
         if self.pinAll is True:
             self.pinPath(path, recursive=False, notify=False)
+
+    def onJsConsoleToggle(self, checked):
+        self.jsConsoleWidget.setVisible(checked)
 
     def onClipboardIpfs(self, pathObj):
         self.ui.loadFromClipboardButton.setEnabled(True)

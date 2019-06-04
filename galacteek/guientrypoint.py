@@ -8,7 +8,9 @@ import sys
 import re
 from distutils.version import StrictVersion
 
-from galacteek import log, ensure
+from galacteek import log
+from galacteek import ensure
+from galacteek import __version__
 from galacteek.core import glogger
 
 from galacteek.ipfs import distipfsfetch
@@ -166,6 +168,9 @@ def galacteekGui(args):
 def start():
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('--version', dest='version',
+                        action='store_true',
+                        help='Show version number')
     parser.add_argument('--apiport', default=None,
                         help='IPFS API port number')
     parser.add_argument('--swarmport', default=None,
@@ -210,5 +215,9 @@ def start():
     parser.add_argument('-d', action='store_true',
                         dest='debug', help='Activate debugging')
     args = parser.parse_args()
+
+    if args.version is True:
+        print(__version__)
+        sys.exit()
 
     galacteekGui(args)

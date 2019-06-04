@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>618</width>
+    <width>817</width>
     <height>349</height>
    </rect>
   </property>
@@ -168,6 +168,22 @@
         </widget>
        </item>
        <item>
+        <spacer name="horizontalSpacer_4">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeType">
+          <enum>QSizePolicy::Maximum</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
         <widget class="QToolButton" name="offlineButton">
          <property name="text">
           <string/>
@@ -188,6 +204,39 @@
             </size>
            </property>
           </spacer>
+         </item>
+         <item>
+          <widget class="QPushButton" name="collapseAll">
+           <property name="text">
+            <string>Collapse all</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_5">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeType">
+            <enum>QSizePolicy::Maximum</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_2">
+           <property name="text">
+            <string>Icon size</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="comboIconSize"/>
          </item>
          <item>
           <widget class="QLabel" name="label">
@@ -242,7 +291,7 @@
          <item>
           <layout class="QVBoxLayout" name="verticalLayout_4">
            <item>
-            <widget class="QPushButton" name="fileManagerSwitch">
+            <widget class="QToolButton" name="localFileManagerSwitch">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
                <horstretch>0</horstretch>
@@ -264,6 +313,12 @@
              <property name="icon">
               <iconset resource="galacteek.qrc">
                <normaloff>:/share/icons/file-manager.png</normaloff>:/share/icons/file-manager.png</iconset>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>24</width>
+               <height>24</height>
+              </size>
              </property>
             </widget>
            </item>

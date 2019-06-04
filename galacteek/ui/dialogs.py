@@ -103,8 +103,9 @@ class AddHashmarkDialog(QDialog):
         self.ui.formLayout.insertRow(7, QLabel('Icon'),
                                      self.iconSelector)
 
-        regexp1 = QRegExp(r"[A-Za-z\/\_]+")  # noqa
+        regexp1 = QRegExp(r"[A-Za-z0-9\/_-]+")  # noqa
         self.ui.newCategory.setValidator(QRegExpValidator(regexp1))
+        self.ui.newCategory.setMaxLength(64)
 
         if pin is True:
             self.ui.pinCombo.setCurrentIndex(1)
@@ -157,6 +158,9 @@ class AddHashmarkDialog(QDialog):
         share = self.ui.share.isChecked()
         newCat = self.ui.newCategory.text()
         description = self.ui.description.toPlainText()
+
+        if len(description) > 1024:
+            return messageBox('Description is too long')
 
         if len(newCat) > 0:
             category = re.sub('//', '', newCat)

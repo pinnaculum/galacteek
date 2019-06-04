@@ -608,6 +608,8 @@ class IconSelector(QComboBox):
         ':/share/icons/ipfs-cube-64.png',
         ':/share/icons/ipfs-logo-128-white.png',
         ':/share/icons/code-fork.png',
+        ':/share/icons/cube-nova-aqua.png',
+        ':/share/icons/cube-nova-orange.png',
         ':/share/icons/cubehouse.png',
         ':/share/icons/fragments.png',
         ':/share/icons/go-home.png',

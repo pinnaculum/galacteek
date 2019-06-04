@@ -368,6 +368,7 @@ class TextEditorWidget(QWidget):
         optionsLayout = QHBoxLayout()
         self.tabReplaceButton = QCheckBox('Replace tabs', self)
         self.tabReplaceButton.stateChanged.connect(self.onTabReplaceToggled)
+        self.tabReplaceButton.setEnabled(False)
         optionsLayout.addWidget(self.tabReplaceButton)
         self.textVLayout.addLayout(optionsLayout)
 
@@ -392,6 +393,7 @@ class TextEditorWidget(QWidget):
         self._editing = editing
         self.textEditor.setReadOnly(not self.editing)
         self.editButton.setChecked(self.editing)
+        self.tabReplaceButton.setEnabled(self.editing)
         self.applyStylesheet()
 
         if self.editing is True and self.unixDirCid is None:

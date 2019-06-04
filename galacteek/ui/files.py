@@ -2,6 +2,7 @@ import os.path
 import asyncio
 import functools
 
+from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtWidgets import QTreeView
@@ -15,17 +16,21 @@ from PyQt5.QtWidgets import QHeaderView
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QDir
+from PyQt5.QtCore import QSize
+from PyQt5.QtCore import pyqtSignal
 
 from galacteek import ensure
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import ipfsOp
+from galacteek.ipfs.mimetype import MIMEType
 from galacteek.appsettings import *
 
 from galacteek.core import modelhelpers
 from galacteek.core.mfsmodel import MFSItem
 from galacteek.core.mfsmodel import MFSNameItem
+from galacteek.core.mfsmodel import MFSRootItem
 
 from . import ui_files
 from .i18n import *  # noqa
@@ -125,11 +130,12 @@ class FileManager(QWidget):
     statusReady = 0
     statusBusy = 1
 
-    def __init__(self, app, parent=None):
+    displayedItemChanged = pyqtSignal(MFSNameItem)
+
+    def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.app = app
-        self.gWindow = self.app.mainWindow
+        self.app = QApplication.instance()
         self.clipboard = self.app.appClipboard
 
         self.lock = asyncio.Lock()
@@ -145,13 +151,16 @@ class FileManager(QWidget):
         self.displayedItem = None
         self.createFileManager()
 
+        self.ui.localFileManagerSwitch.setCheckable(True)
+
         # Connect the various buttons
         self.ui.addFileButton.clicked.connect(self.onAddFilesClicked)
         self.ui.addDirectoryButton.clicked.connect(self.onAddDirClicked)
         self.ui.refreshButton.clicked.connect(self.onRefreshClicked)
         self.ui.searchFiles.returnPressed.connect(self.onSearchFiles)
-        self.ui.fileManagerSwitch.clicked.connect(self.onFileManager)
-        self.ui.fileManagerButton.clicked.connect(self.onFileManager)
+        self.ui.localFileManagerSwitch.toggled.connect(
+            self.onLocalFileManagerToggled)
+        self.ui.fileManagerButton.clicked.connect(self.onLocalFileManager)
 
         # Offline mode button
         self.ui.offlineButton.setObjectName('filemanagerOfflineButton')
@@ -166,8 +175,10 @@ class FileManager(QWidget):
         self.ui.treeFiles.customContextMenuRequested.connect(
             self.onContextMenu)
         self.ui.treeFiles.expanded.connect(self.onExpanded)
+        self.ui.treeFiles.collapsed.connect(self.onCollapsed)
 
         # Path selector
+        self.ui.pathSelector.setObjectName('fmanagerPathSelector')
         self.ui.pathSelector.insertItem(0, getIcon('go-home.png'), 'Home')
         self.ui.pathSelector.insertSeparator(1)
         self.ui.pathSelector.insertItem(2, getIcon('folder-pictures.png'),
@@ -190,6 +201,17 @@ class FileManager(QWidget):
                                         iQrCodes())
         self.ui.pathSelector.activated.connect(self.onPathSelector)
 
+        if self.app.system == 'Linux':
+            self.ui.pathSelector.setIconSize(QSize(24, 24))
+
+        self.ui.comboIconSize.addItem('Small')
+        self.ui.comboIconSize.addItem('Medium')
+        self.ui.comboIconSize.addItem('Large')
+        self.ui.comboIconSize.currentIndexChanged.connect(self.onIconSize)
+
+        self.ui.collapseAll.clicked.connect(self.onCollapseAll)
+        self.ui.collapseAll.hide()
+
         # Connect the event filter
         evfilter = IPFSTreeKeyFilter(self.ui.treeFiles)
         evfilter.copyHashPressed.connect(self.onCopyItemHash)
@@ -198,13 +220,14 @@ class FileManager(QWidget):
         evfilter.explorePressed.connect(self.onExploreItem)
         self.ui.treeFiles.installEventFilter(evfilter)
 
-        self.setupModel()
+        self.displayedItemChanged.connect(self.onItemChange)
 
         # Setup the tree view
         self.ui.treeFiles.setExpandsOnDoubleClick(True)
         self.ui.treeFiles.setItemsExpandable(True)
         self.ui.treeFiles.setSortingEnabled(True)
         self.ui.treeFiles.sortByColumn(0, Qt.AscendingOrder)
+        self.ui.treeFiles.setIconSize(QSize(16, 16))
 
         if self.app.settingsMgr.hideHashes:
             self.ui.treeFiles.hideColumn(2)
@@ -217,6 +240,10 @@ class FileManager(QWidget):
         self.ui.treeFiles.setDragDropMode(QAbstractItemView.DragDrop)
 
         self.ipfsKeys = []
+
+    @property
+    def gWindow(self):
+        return self.app.mainWindow
 
     @property
     def profile(self):
@@ -306,7 +333,7 @@ class FileManager(QWidget):
         for btn in [self.ui.addFileButton,
                     self.ui.addDirectoryButton,
                     self.ui.refreshButton,
-                    self.ui.fileManagerSwitch,
+                    self.ui.localFileManagerSwitch,
                     self.ui.fileManagerButton,
                     self.ui.pathSelector,
                     self.ui.searchFiles]:
@@ -316,6 +343,27 @@ class FileManager(QWidget):
         currentIdx = self.ui.treeFiles.currentIndex()
         if currentIdx.isValid():
             return self.model.getNameItemFromIdx(currentIdx)
+
+    def onIconSize(self, index):
+        size = None
+
+        if index == 0:
+            size = QSize(16, 16)
+        elif index == 1:
+            size = QSize(24, 24)
+        elif index == 2:
+            size = QSize(32, 32)
+        else:
+            return
+
+        self.ui.treeFiles.setIconSize(size)
+
+    def onCollapseAll(self):
+        self.ui.treeFiles.collapseAll()
+
+        if self.displayedItem:
+            self.displayedItem.expandedItemsCount = 0
+            self.collapseButtonUpdate()
 
     def onOfflineToggle(self, checked):
         self._offlineMode = checked
@@ -328,6 +376,13 @@ class FileManager(QWidget):
             return True
         return False
 
+    def onItemChange(self, item):
+        self.collapseButtonUpdate()
+
+    def collapseButtonUpdate(self):
+        self.ui.collapseAll.setVisible(
+            self.displayedItem.expandedItemsCount > 0)
+
     def disconnectDropSignals(self):
         try:
             self.model.fileDropEvent.disconnect(self.onDropFile)
@@ -335,11 +390,12 @@ class FileManager(QWidget):
         except Exception:
             pass
 
-    def onFileManager(self):
-        if self.localTree.isHidden():
-            self.localTree.show()
-        else:
-            self.localTree.hide()
+    def onLocalFileManagerToggled(self, checked):
+        self.localTree.setVisible(checked)
+
+    def onLocalFileManager(self):
+        self.ui.localFileManagerSwitch.setChecked(
+            not self.ui.localFileManagerSwitch.isChecked())
 
     def onDropFile(self, path):
         self.scheduleAddFiles([path])
@@ -367,7 +423,14 @@ class FileManager(QWidget):
             self.gWindow.addBrowserTab().browseIpfsHash(dataHash)
 
     def onExpanded(self, idx):
-        pass
+        if self.displayedItem and idx != self.displayedItem.index():
+            self.displayedItem.expandedItemsCount += 1
+            self.collapseButtonUpdate()
+
+    def onCollapsed(self, idx):
+        if self.displayedItem and idx != self.displayedItem.index():
+            self.displayedItem.expandedItemsCount -= 1
+            self.collapseButtonUpdate()
 
     def pathSelectorDefault(self):
         self.ui.pathSelector.setCurrentIndex(0)
@@ -402,6 +465,9 @@ class FileManager(QWidget):
         self.ui.treeFiles.setRootIndex(self.displayedItem.index())
         self.updateTree()
         self.ui.treeFiles.expand(self.displayedItem.index())
+
+        if isinstance(item, MFSRootItem):
+            self.displayedItemChanged.emit(item)
 
     def onContextMenuVoid(self, point):
         menu = QMenu()
@@ -697,10 +763,9 @@ class FileManager(QWidget):
             if found:
                 continue
 
+            icon = None
             if entry['Type'] == 1:  # directory
                 icon = self.iconFolder
-            else:
-                icon = self.iconFile
 
             nItemName = MFSNameItem(entry, entry['Name'], icon)
             nItemName.mimeFromDb(self.app.mimeDb)
@@ -708,9 +773,12 @@ class FileManager(QWidget):
             nItemSize = MFSItem(sizeFormat(entry['Size']))
             nItemHash = MFSItem(entry['Hash'])
 
-            if nItemName.mimeTypeName:
+            if not icon and nItemName.mimeTypeName:
                 # If we have a better icon matching the file's type..
-                mIcon = getMimeIcon(nItemName.mimeTypeName)
+
+                mType = MIMEType(nItemName.mimeTypeName)
+                mIcon = getIconFromMimeType(mType, defaultIcon='unknown')
+
                 if mIcon:
                     nItemName.setIcon(mIcon)
 
@@ -855,14 +923,18 @@ class FileManager(QWidget):
                 lNew = '{0}.{1}'.format(basename, lIndex)
             lookup = await op.filesLookup(dest, lNew)
             if not lookup:
+                await op.sleep()
                 linkS = await op.filesLink(entry, dest, name=lNew)
                 if linkS:
                     return lNew
 
 
 class FileManagerTab(GalacteekTab):
-    def __init__(self, gWindow, **kw):
-        super().__init__(gWindow, **kw)
+    def __init__(self, gWindow, fileManager=None):
+        super(FileManagerTab, self).__init__(gWindow)
 
-        self.fileManager = FileManager(self.app, parent=self)
+        self.fileManager = fileManager if fileManager else \
+            FileManager(parent=self)
+        self.fileManager.setupModel()
+
         self.addToLayout(self.fileManager)
