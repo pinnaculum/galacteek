@@ -1,5 +1,11 @@
 <RCC>
   <qresource>
+    <file>../../share/icons/cube-nova-aqua.png</file>
+    <file>../../share/icons/cube-nova-orange.png</file>
+    <file>../../share/icons/mimetypes/application-x-shellscript.png</file>
+    <file>../../share/icons/mimetypes/application-octet-stream.png</file>
+    <file>../../share/icons/mimetypes/application-javascript.png</file>
+    <file>../../share/icons/mimetypes/application-xhtml+xml.png</file>
     <file>../../share/icons/fragments.png</file>
     <file>../../share/icons/cerebro.png</file>
     <file>../../share/icons/atom-rpg.png</file>

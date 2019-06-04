@@ -139,9 +139,15 @@ def getIconClipboard():
     return getIcon('clipboard.png')
 
 
-def getIconFromMimeType(mimeType):
-    mIcon = None
+def getIconFromMimeType(mimeType, defaultIcon=None):
+    if not mimeType.valid:
+        return getMimeIcon('unknown')
 
+    fIcon = getMimeIcon(mimeType.type)
+    if fIcon:
+        return fIcon
+
+    mIcon = None
     if mimeType.isDir:
         mIcon = 'inode/directory'
     elif mimeType.isHtml:
@@ -156,11 +162,10 @@ def getIconFromMimeType(mimeType):
         mIcon = 'audio/x-generic'
     elif mimeType == mimeTypeDag:
         mIcon = mimeTypeDag.type
-    else:
-        mIcon = mimeType.type
 
-    icon = getMimeIcon(mIcon if mIcon else 'unknown')
-    return icon if icon else getMimeIcon('unknown')
+    icon = getMimeIcon(mIcon)
+    return icon if icon else getMimeIcon(
+        defaultIcon if defaultIcon else 'unknown')
 
 
 def getHomePath():

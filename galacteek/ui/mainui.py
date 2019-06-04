@@ -347,6 +347,9 @@ class MainWindow(QMainWindow):
         self.fileManagerButton.clicked.connect(self.onFileManagerClicked)
         self.fileManagerButton.setShortcut(QKeySequence('Ctrl+f'))
 
+        # File manager
+        self.fileManagerWidget = files.FileManager(parent=self)
+
         # Text editor button
         self.textEditorButton = QToolButton()
         self.textEditorButton.setToolTip(iTextEditor())
@@ -982,7 +985,8 @@ class MainWindow(QMainWindow):
             ft.fileManager.updateTree()
             return self.ui.tabWidget.setCurrentWidget(ft)
 
-        fileManagerTab = files.FileManagerTab(self, parent=self.ui.tabWidget)
+        fileManagerTab = files.FileManagerTab(
+            self.ui.tabWidget, fileManager=self.fileManagerWidget)
         self.registerTab(fileManagerTab, name, current=True, icon=icon)
         fileManagerTab.fileManager.updateTree()
 

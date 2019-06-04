@@ -10,7 +10,6 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import QMimeData
 from PyQt5.QtCore import QDir
 from PyQt5.QtCore import QFile
-from PyQt5.QtCore import QObject
 from PyQt5.QtCore import QModelIndex
 
 from galacteek.ipfs.cidhelpers import joinIpfs
@@ -73,7 +72,11 @@ class MFSItem(UneditableItem):
                 return item
 
 
-class MFSNameItem(MFSItem, QObject):
+class MFSRootItem(MFSItem):
+    expandedItemsCount = 0
+
+
+class MFSNameItem(MFSItem):
     def __init__(self, entry, text, icon):
         super().__init__(text, icon=icon)
 
@@ -144,23 +147,23 @@ class MFSItemModel(QStandardItemModel):
         self.qrInitialized = False
 
     def setupItemsFromProfile(self, profile):
-        self.itemHome = MFSItem(iHome(), path=profile.pathHome)
-        self.itemPictures = MFSItem(iPictures(),
-                                    path=profile.pathPictures)
-        self.itemVideos = MFSItem(iVideos(),
-                                  path=profile.pathVideos)
-        self.itemMusic = MFSItem(iMusic(),
-                                 path=profile.pathMusic)
-        self.itemCode = MFSItem(iCode(),
-                                path=profile.pathCode)
-        self.itemDocuments = MFSItem(iDocuments(),
-                                     path=profile.pathDocuments)
-        self.itemWebPages = MFSItem(iWebPages(),
-                                    path=profile.pathWebPages)
-        self.itemDWebApps = MFSItem(iDWebApps(),
-                                    path=profile.pathDWebApps)
-        self.itemQrCodes = MFSItem(iQrCodes(),
-                                   path=profile.pathQrCodes)
+        self.itemHome = MFSRootItem(iHome(), path=profile.pathHome)
+        self.itemPictures = MFSRootItem(iPictures(),
+                                        path=profile.pathPictures)
+        self.itemVideos = MFSRootItem(iVideos(),
+                                      path=profile.pathVideos)
+        self.itemMusic = MFSRootItem(iMusic(),
+                                     path=profile.pathMusic)
+        self.itemCode = MFSRootItem(iCode(),
+                                    path=profile.pathCode)
+        self.itemDocuments = MFSRootItem(iDocuments(),
+                                         path=profile.pathDocuments)
+        self.itemWebPages = MFSRootItem(iWebPages(),
+                                        path=profile.pathWebPages)
+        self.itemDWebApps = MFSRootItem(iDWebApps(),
+                                        path=profile.pathDWebApps)
+        self.itemQrCodes = MFSRootItem(iQrCodes(),
+                                       path=profile.pathQrCodes)
 
         self.itemRoot.appendRows([
             self.itemHome,

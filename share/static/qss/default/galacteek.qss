@@ -137,6 +137,14 @@ QToolButton#filemanagerOfflineButton::checked {
     background-color: #eec146;
 }
 
+QToolButton#pinGlobalButton::checked {
+    background-color: #eec146;
+}
+
+QPushButton {
+    padding: 5px;
+}
+
 QLabel#linkInfos {
     color: black;
     font: 12pt "Inter UI";
@@ -149,7 +157,6 @@ QMenu#hashmarksMgrMenu {
 QMenu::item:selected#hashmarksMgrMenu {
     background-color: #4a9ea1;
 }
-
 
 QMenu#hashmarksLibraryMenu {
     font: 11pt "Inter UI";
@@ -176,4 +183,29 @@ QProgressBar#pBarBrowser {
 
 QProgressBar::chunk#pBarBrowser {
     background-color: #7f8491;
+}
+
+QComboBox#fmanagerPathSelector {
+    background-color: #B7CDC2;
+}
+
+QComboBox:disabled#fmanagerPathSelector {
+    background-color: lightgray;
+}
+
+QComboBox#fmanagerPathSelector QAbstractItemView {
+    padding: 4px;
+    selection-color: black;
+}
+
+QToolButton#localFileManagerSwitch::checked {
+    background-color: #B7CDC2;
+}
+
+QTextBrowser#javascriptConsole {
+    background-color: lightgray;
+}
+
+QToolButton#jsConsoleButton::checked {
+    background-color: #eec146;
 }

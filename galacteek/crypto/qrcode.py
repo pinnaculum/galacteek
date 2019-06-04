@@ -41,16 +41,27 @@ class ImageReader:
 
 
 class ZbarIPFSQrDecoder(ImageReader):
+    """
+    Decodes IPFS QR codes with the zbar library
+    """
+
     def decode(self, data):
-        if not isinstance(data, bytes):
-            raise Exception('Need bytes')
+        """
+        :param bytes data: Raw image data or Pillow image
+        :rtype: list
+        """
+
+        if isinstance(data, bytes):
+            image = self._getImage(data)
+        elif isinstance(data, Image.Image):
+            image = data
+        else:
+            raise Exception('Need bytes or PIL.Image')
+
+        if image is None:
+            return None
 
         try:
-            image = self._getImage(data)
-
-            if image is None:
-                return
-
             objects = zbar_decode(image)
 
             urls = []
@@ -86,18 +97,23 @@ class QReaderIPFSQrDecoder(ImageReader):
         in an image. Returns a list of IPFS paths, or None if no URL
         was found.
 
-        :param bytes data: Raw image data
+        :param bytes data: Raw image data or Pillow image
         :rtype: list
         """
-        if not isinstance(data, bytes):
-            raise Exception('Need bytes')
+        # if not isinstance(data, bytes):
+        #    raise Exception('Need bytes')
+
+        if isinstance(data, bytes):
+            image = self._getImage(data)
+        elif isinstance(data, Image):
+            image = data
+        else:
+            raise Exception('Need bytes or PIL.Image')
+
+        if image is None:
+            return
 
         try:
-            image = self._getImage(data)
-
-            if image is None:
-                return
-
             imgScanner = ImageScanner(image)
             results = QRDecoder(imgScanner).get_all()
 
@@ -155,8 +171,7 @@ class IPFSQrEncoder:
         qr.make()
 
         qrImage = qr.make_image(fill_color=fillColor, back_color=backColor)
-        pil = qrImage.get_image()
-        return pil
+        return qrImage.get_image()
 
     async def encodeAll(self, loop=None, executor=None, method='append',
                         version=12):
@@ -171,7 +186,7 @@ class IPFSQrEncoder:
     def _encodeAllAppend(self, version=12):
         """
         Generate all the QR codes and embed them all into one image by
-        appending. We use QR version 8 by default
+        appending. We use QR version 12 by default
 
         Does basically something similar to what 'convert +append' would do,
         but probably less elegantly.
@@ -186,7 +201,7 @@ class IPFSQrEncoder:
         # Base image sizes based on the QR count
         # The image is resized in height if needed to fit more codes
 
-        unit = 192
+        unit = 172
         imageSizes = {
             range(1, 20): (unit * 4, unit * 4),
             range(20, 50): (unit * 6, unit * 6),
@@ -259,8 +274,11 @@ class IPFSQrEncoder:
 
         if lastImage is not None:
             # Crop it
+
             imgMosaic = imgMosaic.crop(
-                (0, 0, imgMosaic.width, posY + lastImage.height))
+                (0, 0, posX if posY == 0 else imgMosaic.width,
+                    posY + lastImage.height)
+            )
 
         return imgMosaic
 
