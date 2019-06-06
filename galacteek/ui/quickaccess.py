@@ -34,7 +34,7 @@ def iQuickAccess():
         'toolbarQa',
         '''<p><b>Quick Access</b> toolbar</p>
            <p>Drag and drop hashmarks and IPFS objects that
-           you want to have to easy access to</p>
+           you want to have easy access to</p>
         ''')
 
 
@@ -201,6 +201,7 @@ class QuickAccessToolBar(QToolBar, URLDragAndDropProcessor):
         mimeType, rscStat = await self.analyzer(ipfsPath)
 
         mIcon = mark.markData.get('icon', None)
+        icon = None
 
         if mIcon and IPFSPath(mIcon).valid:
             stat = await ipfsop.objStat(mIcon)
@@ -219,19 +220,6 @@ class QuickAccessToolBar(QToolBar, URLDragAndDropProcessor):
                         await ipfsop.ctx.pin(mIcon)
         elif mimeType:
             icon = await self.findIcon(ipfsop, ipfsPath, rscStat, mimeType)
-            if 0:
-                if mimeType.isImage:
-                    data = await ipfsop.catObject(mPath, timeout=5)
-                    if data:
-                        icon = getIconFromImageData(data)
-                elif mimeType.isDir:
-                    favIcon = await getFavIconFromDir(ipfsop, ipfsPath)
-                    if favIcon:
-                        icon = favIcon
-                    else:
-                        icon = getMimeIcon('inode/directory')
-                else:
-                    icon = getIconFromMimeType(mimeType)
         else:
             icon = getIcon('unknown-file.png')
 
