@@ -350,7 +350,7 @@ class ClipboardManager(PopupToolButton):
         Handle a drop event with a file:// URL
         """
 
-        maxFileSize = (64 * 1024 * 1024)
+        maxFileSize = megabytes(64)
         try:
             path = url.toLocalFile()
             fileInfo = QFileInfo(path)
