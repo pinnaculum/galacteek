@@ -142,17 +142,30 @@ class NoResultsPage(QWebEnginePage):
         self.setHtml('<html><body><p>NO RESULTS</p></body></html>')
 
 
-class SearchInProgressPage(QWebEnginePage):
+class BaseSearchPage(QWebEnginePage):
+    pageRendered = pyqtSignal(str)
+
+    def __init__(self, parent):
+        super(BaseSearchPage, self).__init__(parent)
+        self.pageRendered.connect(self.onPageRendered)
+
+    def onPageRendered(self, html):
+        self.setHtml(html, baseUrl=QUrl('qrc:/'))
+
+
+class SearchInProgressPage(BaseSearchPage):
     def __init__(self, tmpl, parent=None):
         super(SearchInProgressPage, self).__init__(parent)
         self.template = tmpl
         ensure(self.render())
 
     async def render(self):
-        self.setHtml(await renderTemplate(self.template))
+        html = await renderTemplate(self.template)
+        if html:
+            self.pageRendered.emit(html)
 
 
-class SearchResultsPage(QWebEnginePage):
+class SearchResultsPage(BaseSearchPage):
     def __init__(
             self,
             handler,
@@ -192,8 +205,9 @@ class SearchResultsPage(QWebEnginePage):
                 message))
 
     async def render(self):
-        self.setHtml(await renderTemplate(self.template),
-                     baseUrl=QUrl('qrc:/'))
+        html = await renderTemplate(self.template)
+        if html:
+            self.pageRendered.emit(html)
 
     def renderHits(self, pageNo, pageCount, results):
         ctxHits = []

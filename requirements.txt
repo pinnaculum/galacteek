@@ -4,6 +4,7 @@ aioipfs>=0.4.1
 async-generator>=1.10
 base58>=1.0.2
 feedgen>=0.7.0
+feedparser>=5.2.0
 gitpython>=2.1.11
 jinja2>=2.10.1
 json-traverse>=0.4
