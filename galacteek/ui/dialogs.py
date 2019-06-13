@@ -42,7 +42,6 @@ from . import ui_addfeeddialog
 from . import ui_ipfscidinputdialog, ui_ipfsmultiplecidinputdialog
 from . import ui_profileeditdialog
 from . import ui_donatedialog
-from . import ui_profilepostmessage
 from .helpers import *
 from .widgets import ImageWidget
 from .widgets import HorizontalLine
@@ -495,34 +494,11 @@ class ProfileEditDialog(QDialog):
         if self.previousUsername != self.profile.userInfo.username:
             self.profile.userInfo.usernameChanged.emit()
 
+        self.profile.userInfo.changed.emit()
         self.done(1)
 
     def reject(self):
         self.done(0)
-
-
-class ProfilePostMessageDialog(QDialog):
-    def __init__(self, profile, parent=None):
-        super().__init__(parent)
-
-        self.profile = profile
-
-        self.ui = ui_profilepostmessage.Ui_PostMessageDialog()
-        self.ui.setupUi(self)
-
-    def accept(self):
-        ensure(self.post())
-
-    async def post(self):
-        msg = self.ui.message.toPlainText()
-        title = self.ui.title.text()
-        if not title:
-            title = 'No title'
-
-        if msg:
-            ensure(self.profile.app.postMessage(title, msg))
-
-        self.done(1)
 
 
 class ChooseProgramDialog(QInputDialog):
@@ -685,7 +661,7 @@ class AddMultihashPyramidDialog(QDialog):
                 return False
 
             data = _file.readAll().data()
-            entry = await op.client.add_bytes(data, offline=True)
+            entry = await op.addBytes(data, offline=True)
             if entry:
                 self.iconCid = entry['Hash']
                 return True

@@ -13,12 +13,11 @@ Platforms supported
 ===================
 
 - Linux (main target)
+- FreeBSD (or any BSD OS, as long as you have PyCryptodome)
 - MacOS (*experimental*, probably a lot of asyncio-related instability)
-- FreeBSD
 
 If it works for you, great, but most likely it won't :)
-This started as an experiment with quamash_ and is WIP
-(expect crashes and other delicacies).
+This started as an experiment with quamash_ and is WIP.
 
 If you want to donate to this project please use the
 `Patreon page <https://www.patreon.com/galacteek>`_
@@ -33,7 +32,7 @@ install from PyPI.
 PyPI
 ----
 
-You need to have python>=3.5 (python>=3.6 is recommended) and pip installed.
+You need to have python>=3.6 and pip installed.
 From a virtualenv, or as root, install with:
 
 .. code-block:: shell
@@ -60,19 +59,17 @@ Now just run the application with:
     galacteek
 
 If you don't have go-ipfs_ already installed, the application will ask you
-if you want to automatically download and install it from dist.ipfs.io_
+if you want to automatically download it from dist.ipfs.io_
 You need a recent version of go-ipfs_ (> 0.4.7) with the new DAG API.
 
 For the media player to work on Linux, you will need to install the
 *gstreamer* (1.x) package and all the gstreamer plugins.
 
 There is experimental support for reading QR codes containing IPFS addresses,
-using either pyzbar_ or qreader_ (both are included in the application).
-pyzbar_ depends on the zbar shared library,
+using pyzbar_. pyzbar_ depends on the zbar shared library,
 so make sure it's installed on your system (on Linux look for a libzbar or
 libzbar0 package and install it, on MacOS install it with
-**brew install zbar**). It's recommended to use pyzbar as it supports
-reading multiple QR codes contained in a single image.
+**brew install zbar**).
 
 AppImage
 --------
@@ -92,6 +89,16 @@ profile). Use *--help* for all options.
 (install aiomonitor_ manually as it's not a dependency).
 Then connect to the aiomonitor_ interface with **nc localhost 50101**
 
+URL schemes
+===========
+
+Right now the application relies on the *dweb:/* URL scheme. We are
+using CIDv1 by default for all content. Starting with go-ipfs_ version
+0.4.21, objects using CIDv1 are in base32 by default, creating the
+possibility to integrate other URL schemes (like *ipfs://<cidv1-base32>*)
+that will treat the CID as the authority. Work is being done to
+integrate such schemes in the browser and make it the default.
+
 Features
 ========
 
@@ -102,9 +109,9 @@ toolbar and restart the application afterwards. If using a custom daemon, you
 should enable pubsub or some features won't be available.
 
 - Browsing sessions with automatic pinning (pins every page you browse)
-- Feeds (following IPNS hashes)
-- Sharing hashmarks over pubsub
 - File manager with drag-and-drop support
+- Following IPNS hashes
+- Sharing hashmarks over pubsub
 - Basic built-in media player with IPFS-stored playlists
 - Search content with the ipfs-search_ search engine
 - Image viewer
@@ -144,10 +151,10 @@ Contact by mail at: galacteek AT protonmail DOT com
 Requirements
 ============
 
-- python3 >= 3.5.3 (it is strongly suggested to use python>=3.6)
-- go-ipfs_ > 0.4.7
-- qt5
-- PyQt5 with QtWebEngine support
+- python3 >= 3.6
+- go-ipfs_ >= 0.4.7
+- PyQt5 >= 5.12.2
+- PyQtWebengine >= 5.12
 - gstreamer (on Linux) for media player support
 - quamash_
 - aiohttp_

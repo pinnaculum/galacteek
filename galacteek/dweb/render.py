@@ -1,16 +1,21 @@
-import asyncio
-import functools
 import jinja2
+import aiofiles
 import jinja2.exceptions
+import os.path
 from datetime import datetime
+from dateutil import parser as dateparser
+from tempfile import TemporaryDirectory
 
 from galacteek import log
 from galacteek.core import isoformat
+
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import cidValid
 from galacteek.ipfs.cidhelpers import isIpfsPath
 from galacteek.ipfs.cidhelpers import isIpnsPath
 from galacteek.ipfs.wrappers import ipfsOpFn
+
+from galacteek.dweb.markdown import markitdown
 
 
 def tstodate(ts):
@@ -30,12 +35,29 @@ def ipfspathnorm(input):
             return input
 
 
+def markdownconv(text):
+    return markitdown(text)
+
+
+def datetimeclean(datestring):
+    try:
+        dt = dateparser.parse(datestring)
+        if dt:
+            return dt.strftime('%Y-%m-%d %H:%M')
+    except:
+        return None
+
+
 def defaultJinjaEnv():
+    # We use Jinja's async rendering
     env = jinja2.Environment(
         loader=jinja2.PackageLoader('galacteek', 'templates'),
-        autoescape=jinja2.select_autoescape(['html', 'xml']))
+        enable_async=True
+    )
     env.filters['tstodate'] = tstodate
     env.filters['ipfspathnorm'] = ipfspathnorm
+    env.filters['markdown'] = markdownconv
+    env.filters['dtclean'] = datetimeclean
     return env
 
 
@@ -52,34 +74,55 @@ def renderWrapper(tmpl, **kw):
 
 async def renderTemplate(tmplname, loop=None, env=None, **kw):
     env = env if env else defaultJinjaEnv()
-    loop = loop if loop else asyncio.get_event_loop()
     tmpl = env.get_template(tmplname)
     if not tmpl:
         raise Exception('template not found')
 
-    data = await loop.run_in_executor(
-        None, functools.partial(renderWrapper, tmpl, **kw)
-    )
+    data = await tmpl.render_async(**kw)
     return data
 
 
 @ipfsOpFn
-async def ipfsRender(op, tmplname, **kw):
-    env = defaultJinjaEnv()
-    loop = kw.pop('loop', None)
-
+async def ipfsRender(op, env, tmplname, **kw):
     tmpl = env.get_template(tmplname)
     if not tmpl:
         raise Exception('template not found')
 
     try:
-        loop = loop if loop else asyncio.get_event_loop()
-        data = await loop.run_in_executor(
-            None, functools.partial(tmpl.render, **kw)
-        )
-        ent = await op.client.add_str(data)
-    except Exception:
-        log.debug('Could not render web template {0}'.format(tmplname))
+        data = await tmpl.render_async(**kw)
+        entry = await op.addString(data)
+    except Exception as err:
+        log.debug('Could not render web template {0}: {1}'.format(
+            tmplname, str(err)))
         return None
     else:
-        return ent['Hash']
+        if entry:
+            return entry['Hash']
+
+
+@ipfsOpFn
+async def ipfsRenderContained(op, env, tmplname, **kw):
+    """
+    Render a template, wrapping the result in a directory
+    """
+
+    tmpl = env.get_template(tmplname)
+    if not tmpl:
+        raise Exception('template not found')
+
+    with TemporaryDirectory() as tmpdir:
+        try:
+            data = await tmpl.render_async(**kw)
+
+            async with aiofiles.open(os.path.join(
+                    tmpdir, 'index.html'), 'w+t') as fd:
+                await fd.write(data)
+
+            entry = await op.addPath(tmpdir)
+        except Exception as err:
+            log.debug('Could not render web template {0}: {1}'.format(
+                tmplname, str(err)))
+            return None
+        else:
+            if entry:
+                return entry['Hash']

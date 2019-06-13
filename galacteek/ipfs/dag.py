@@ -277,6 +277,9 @@ class EvolvingDAG(QObject):
     def initDag(self):
         return {}
 
+    def updateDagSchema(self, dag):
+        pass
+
     def mkLink(self, cid):
         if isinstance(cid, str):
             return {"/": cid}
@@ -300,6 +303,11 @@ class EvolvingDAG(QObject):
                 self.dagCid = latest
                 self.debug('Getting DAG: {cid}'.format(cid=self.dagCid))
                 self._dagRoot = await op.dagGet(self.dagCid)
+
+                if self.dagRoot:
+                    if self.updateDagSchema(self.dagRoot) is True:
+                        # save right away
+                        await self.ipfsSave()
             else:
                 self.debug('No CID history, reinitializing')
                 # How inconvenient ..
@@ -314,6 +322,7 @@ class EvolvingDAG(QObject):
                 'history': []
             }
             self._dagRoot = self.initDag()
+            self.updateDagSchema(self.dagRoot)
             self.changed.emit()
             self.loaded.set_result(True)
 
@@ -358,9 +367,14 @@ class EvolvingDAG(QObject):
 
     @ipfsOp
     async def get(self, op, path):
-        self.debug('DAG get {}'.format(os.path.join(self.dagCid, path)))
-        dagNode = await op.dagGet(
-            os.path.join(self.dagCid, path))
+        self.debug('DAG get: {}'.format(os.path.join(self.dagCid, path)))
+        try:
+            dagNode = await op.dagGet(
+                os.path.join(self.dagCid, path))
+        except aioipfs.APIError as err:
+            log.debug('DAG get: {0}. An error occured: {1}'.format(
+                path, err.message))
+            return None
 
         if isinstance(dagNode, dict) and 'data' in dagNode and \
                 'links' in dagNode:
@@ -384,7 +398,7 @@ class EvolvingDAG(QObject):
             return
 
         if isinstance(data, dict):
-            return data.keys()
+            return list(data.keys())
 
     @ipfsOp
     async def resolve(self, op, path=''):
@@ -450,5 +464,5 @@ class EvolvingDAG(QObject):
         self.loop.call_soon(self.changed.emit)
 
     @async_enterable
-    async def query(self):
+    async def portal(self):
         return DAGPortal(dagCid=self.dagCid, dagRoot=self.dagRoot)

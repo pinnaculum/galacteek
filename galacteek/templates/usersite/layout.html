@@ -1,0 +1,45 @@
+{% from "usersite/macros/urls.html" import site_ipns_url %}
+<html>
+    <head>
+        <title>
+            {{ profile.userInfo.username }}'s homepage
+        </title>
+        <link rel="stylesheet" type="text/css"
+                   href="{{ site_ipns_url(siteIpns, 'assets/css/style.css') }}" />
+        <link rel="stylesheet" type="text/css"
+                   href="{{ site_ipns_url(siteIpns, 'assets/css/pygments.css') }}" />
+        <link rel="alternate" type="application/atom+xml"
+             title="Atom feed"
+             href="{{ site_ipns_url(siteIpns, 'dfeed.atom') }}"/>
+    </head>
+    <body>
+        <header>
+            <nav>
+            <ul class="banner">
+                <li>
+                    <a href="{{ site_ipns_url(siteIpns, 'index.html') }}">Home</a>
+                </li>
+                <li>
+                    <a href="{{ site_ipns_url(siteIpns, 'about.html') }}">About</a>
+                </li>
+                <li>
+                    <a href="{{ site_ipns_url(siteIpns, 'pinrequests.html') }}">Pin requests</a>
+                </li>
+
+                <li>
+                    <a href="{{ site_ipns_url(siteIpns, 'dfeed.atom') }}"
+                       alt="Distributed Atom Feed">
+                        <img width="16" height="16"
+                            src="{{ site_ipns_url(siteIpns, 'media/images/atom-feed.png') }}"/>
+                    </a>
+                </li>
+            </ul>
+            </nav>
+        </header>
+
+        <div class="page">
+            {% block body %}
+            {% endblock %}
+        </div>
+    </body>
+</html>

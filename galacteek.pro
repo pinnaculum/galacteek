@@ -23,6 +23,7 @@ SOURCES = galacteek/application.py \
 	galacteek/ui/resource.py \
 	galacteek/ui/settings.py \
 	galacteek/ui/textedit.py \
+	galacteek/ui/userwebsite.py \
 	galacteek/ui/widgets.py
 
 FORMS += galacteek/ui/addkeydialog.ui \

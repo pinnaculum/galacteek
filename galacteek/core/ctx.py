@@ -466,7 +466,7 @@ class IPFSContext(QObject):
 
     @ipfsOp
     async def importSoftIdent(self, op):
-        added = await op.client.add_str(gSoftIdent)
+        added = await op.addString(gSoftIdent)
         if added is not None:
             self.softIdent = added
 

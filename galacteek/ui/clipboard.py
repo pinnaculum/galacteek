@@ -502,6 +502,11 @@ class ClipboardItemButton(PopupToolButton):
             iClipboardEmpty(), self,
             triggered=self.onMarkdownEdit)
 
+        self.followFeedAction = QAction(
+            getIcon('feed-atom.png'),
+            iClipboardEmpty(), self,
+            triggered=self.onFollowFeed)
+
         self.pinAction = QAction(
             getIcon('pin.png'),
             iClipboardEmpty(), self,
@@ -645,6 +650,12 @@ class ClipboardItemButton(PopupToolButton):
             self.updateIcon(getMimeIcon('image/x-generic'))
             ensure(self.analyzeImage())
 
+        elif self.item.mimeType.isAtomFeed:
+            # We have an atom!
+            self.menu.addSeparator()
+            self.menu.addAction(self.followFeedAction)
+            self.followFeedAction.setEnabled(False)
+
         mIcon = getIconFromMimeType(self.item.mimeType)
 
         if mIcon:
@@ -653,6 +664,13 @@ class ClipboardItemButton(PopupToolButton):
     def updateIcon(self, icon):
         self.item.mimeIcon = icon
         self.setIcon(icon)
+
+    @ipfsOp
+    async def analyzeFeed(self, ipfsop):
+        statInfo = StatInfo(self.item.stat)
+
+        if statInfo.valid and not statInfo.dataLargerThan(megabytes(4)):
+            pass
 
     @ipfsOp
     async def analyzeImage(self, ipfsop):
@@ -718,6 +736,10 @@ class ClipboardItemButton(PopupToolButton):
             )
         else:
             messageBox(iClipboardEmpty())
+
+    def onFollowFeed(self):
+        # TODO
+        pass
 
     def onIpldExplore(self):
         """

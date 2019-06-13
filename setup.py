@@ -9,10 +9,10 @@ from distutils.command.build import build
 
 PY_VER = sys.version_info
 
-if PY_VER >= (3, 5):
+if PY_VER >= (3, 6):
     pass
 else:
-    raise RuntimeError("You need python 3.5 or newer (need async support)")
+    raise RuntimeError("You need python 3.6 or newer")
 
 with codecs.open(os.path.join(os.path.abspath(os.path.dirname(
         __file__)), 'galacteek', '__init__.py'), 'r', 'latin1') as fp:
@@ -175,8 +175,8 @@ setup(
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Topic :: System :: Filesystems',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7'
     ],
     keywords=[
         'asyncio',

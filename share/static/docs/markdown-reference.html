@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Adapted to a single HTML from https://commonmark.org -->
+
+    <meta charset="utf-8">
+    <title>Markdown Reference</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+    /*
+    * Free to use under the MIT license.
+    * https://www.opensource.org/licenses/mit-license.php
+    */
+
+    html,body {
+      height: 97%;
+      margin: 20px;
+    }
+
+    #fullpage, .section {
+      height: 100%;
+    }
+
+    .slide {
+      height: 100%;
+      min-height: 100%;
+      display: none;
+    }
+
+    .active {
+      display: block;
+    }
+
+    html>body .slide {
+      height: auto;
+    }
+
+    /* #Blockquotes
+    ================================================== */
+    blockquote {
+      border-left: 5px solid #ccc;
+      margin: 1.5em 10px;
+      padding: 0.5em 10px;
+    }
+    blockquote:before {
+      color: #ccc;
+      font-size: 4em;
+      line-height: 0.1em;
+      margin-right: 0.25em;
+      vertical-align: -0.4em;
+    }
+
+    /* #Code
+    ================================================== */
+    .code-block {
+        background:#F1F1F1;
+        border: 1px solid #E1E1E1;
+        border-radius: 4px;
+        font-size: 90%;
+        padding: .2rem .5rem;
+        font-family: 'Roboto Mono', 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+    }
+
+
+    /* sweet-alert customization
+    ================================================== */
+    .sa-button-container {
+        display: none;
+    }
+    .sweet-alert {
+        top: 30%;
+    }
+
+    /* #General
+    ================================================== */
+    .center {
+        text-align: center;
+    }
+
+    .custom-hr {
+        border-top: 3px solid #E1E1E1;
+        margin-top: 1rem;
+    }
+
+    p {
+        margin-bottom: 1.5em;
+    }
+
+    .container {
+        margin-top: 2em;
+    }
+
+    .button-primary
+    {
+        box-shadow: 2px 2px 2px rgba(0,0,0,.2);
+        border-color: #4FCAEF !important;
+        border-bottom: 2px #2A9EC1 solid !important;
+        border-right: 2px #2A9EC1 solid !important;
+    }
+
+    .button-urgent
+    {
+        box-shadow: 2px 2px 2px rgba(0,0,0,.2);
+        background-color: #d95353 !important;
+        border: #E37E7E !important; 
+        border-bottom: 2px #AD4343 solid !important;
+        border-right: 2px #AD4343 solid !important;
+    }
+
+
+    button.button-previous:before {
+        content: "\2190";
+        font-size: 1.3em;
+        margin-right: 1em;
+    }
+    button.button-next:after, a.button-next-lesson:after {
+        content: "\2192";
+        font-size: 1.3em;
+        margin-left: 1em;
+    }
+
+    .noselect {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+
+    .six.columns label {
+        color: #999;
+        font-weight: normal;
+        font-size: 0.8em;
+        margin-top: 5px;
+    }
+
+    input[type="checkbox"] {
+        vertical-align: -2px;
+    }
+
+    .spaces {
+        color:#888;
+    }
+
+    /* format the editors for the exercises */
+    .editor {
+        width: 100%;
+        max-width: 100%;
+        height: 11.7em;
+        border: 1px #666 solid;
+        margin-bottom: 0em;
+    }
+    code, kbd, pre, samp, .editor, .html-pad, .preformatted {
+        font: 1em/normal 'Roboto Mono', 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+    }
+    .preformatted {
+        font-size: 0.9em;
+    }
+    .render-pad, .html-pad {
+        font-size: 0.9em;
+        height: 13em;
+        border: 1px #999 dotted; 
+        overflow: auto;
+        padding: 0.5em;
+    }
+    .html-pad { 
+        display: none;
+    }
+
+    .lesson-number {
+        font-size:5em;
+        color: #ddd;
+        border: 10px #ddd solid;
+        width:150px;
+        border-radius:50%;
+        padding-left:22px;
+        font-weight: bold;
+    }
+
+    .muted {
+        color: #aaa;
+    }
+
+    .muted a {
+        color: #aaa;
+    }
+
+    /* mobile modifications */
+    @media (max-width: 737px) {
+        .editor {
+            height: 9em;
+            font-size: 0.9em;
+        }
+        .render-pad, .html-pad {
+            height: 10em;
+        }
+        .lesson-number {
+            font-size: 30px;
+            border: none;
+            padding-left: 0;
+        }
+        .rowspacer {
+            display: none;
+        }
+        .container {
+            margin-top: 0.5em;
+            padding: 0 10px;
+        }
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        h2 {        
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        .generated-check {
+            display: none;
+        }
+        .button-answer {
+            margin-top: 1em;
+            margin-bottom: -1em;
+        }
+        .button-reset {
+            margin-top: 1em;
+            margin-bottom: -1em;
+        }
+        .row.exercise-instructions p {
+            margin-bottom: 0.4em;
+        }
+        .cd-container {
+            margin: 0;
+        }
+        .second-example {
+            display: none;
+        }
+    }
+
+    /* iPhone 6 height */
+    @media (min-height: 570px) and (max-width: 737px) {
+        .editor {
+            height: 180px;
+            font-size: 1em;
+        }
+        .render-pad, .html-pad {
+            height: 180px;
+            font-size: 1em;
+        }
+    }
+
+    /* iPhone 6 plus height */
+    @media (min-height: 730px) and (max-width: 737px) {
+        .editor {
+            height: 230px;
+            font-size: 1em;
+        }
+        .render-pad, .html-pad {
+            height: 230px;
+            font-size: 1em;
+        }
+    }
+
+
+    /* tiny desktop height */
+    @media (min-height: 550px) and (min-width:820px) {
+        .editor {
+            height: 240px;
+        }
+        .render-pad, .html-pad {
+            height: 240px;
+        }
+    }
+
+    /* small desktop height */
+    @media (min-height: 650px) and (min-width:820px) {
+        .editor {
+            height: 340px;
+            font-size: 1em;
+        }
+        .render-pad, .html-pad {
+            height: 340px;
+            font-size: 1em;
+        }
+    }
+
+    /* regular desktop height */
+    @media (min-height: 750px) and (min-width:820px) {
+        .editor {
+            height: 440px;
+            font-size: 1em;
+        }
+        .render-pad, .html-pad {
+            height: 440px;
+            font-size: 1em;
+        }
+    }
+
+    /* fixed footer */
+    #footer{
+        position:fixed;
+        height: 40px;
+        display:block;
+        width: 100%;
+        background: rgba(255, 255, 255, 1.0);
+        z-index:9;
+        text-align:center;
+        color: #333;
+        padding: 15px 0 0 0;
+    }
+
+    #footer {
+        bottom:0px;
+    }
+
+    .touch #footer {
+        display: none;
+    }
+
+    /* #Slide Menu (adapted from https://tympanus.net/codrops/2014/01/21/dot-navigation-styles/)
+    ================================================== */
+    .dotstyle ul {
+        position: relative;
+        display: inline-block;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        cursor: default;
+        -webkit-touch-callout: none;
+        user-select: none;
+    }
+
+    .dotstyle li {
+        position: relative;
+        display: block;
+        float: left;
+        margin: 0 16px;
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+    }
+
+    .dotstyle li a {
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        outline: none;
+        border-radius: 50%;
+        background-color: #000;
+        background-color: rgba(255, 255, 255, 0.3);
+        text-indent: -999em; /* make the text accessible to screen readers */
+        cursor: pointer;
+        position: absolute;
+    }
+
+    .dotstyle li a:focus {
+        outline: none;
+    }
+
+    /* Individual styles and effects */
+
+    /* Fill up */
+
+    .dotstyle-fillup li a {
+        overflow: hidden;
+        background-color: transparent;
+        box-shadow: inset 0 0 0 2px black;
+        transition: background 0.3s ease;
+    }
+
+    .dotstyle-fillup li a::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        height: 0;
+        left: 0;
+        width: 100%;
+        background-color: #000;
+        box-shadow: 0 0 1px #000;
+        transition: height 0.3s ease;
+    }
+
+    .dotstyle-fillup li a:hover,
+    .dotstyle-fillup li a:focus {
+        background-color: rgba(0, 0, 0, 0.2);
+    }
+
+    .dotstyle-fillup li.current a::after {
+        height: 100%;
+    }
+
+    /* fix some editor preview style issues */
+
+    .render-pad li > pre, .render-pad li > preblockquote { 
+        margin-left: 1em;
+    }
+    .render-pad li > p:not(:first-child) { 
+        margin-left: 1em;
+    }
+
+    .render-pad h1,h2,h3,h4,h5,h6 {
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+
+    /* headers are ridiculously friggin' big in skeleton */
+    .render-pad h1 {
+        font-size:2.2rem;
+    }
+    .render-pad h2 {
+        font-size:1.9rem;
+    }
+    .render-pad h3 {
+        font-size:1.7rem;
+    }
+    .render-pad h4 {
+        font-size:1.5rem;
+    }
+    .render-pad h5 {
+        font-size:1.4rem;    
+    }
+    .render-pad h6 {
+        font-size: 1.4rem;    
+    }
+
+
+    .render-pad p {
+        margin-bottom: 1em;
+    }
+
+    /* reference card fixups */
+
+    .smaller-h1 {
+        font-size:2.2rem;
+    }
+
+    .smaller-h2 {
+        font-size:2rem;
+        font-weight: normal;
+    }
+
+    .markdown-reference {
+        width: 100%;
+    }
+
+    /* fixup for list exercise with long ol number */
+    #render_pad_8-3 ol {
+        padding-left: 40px;
+    }
+
+    /* syntax highlighting for the "show generated HTML" tags */
+    .hljs-tag {
+        color: maroon !important;
+        font-weight: normal !important;
+    }
+    .hljs-title {
+        color: maroon !important;
+        font-weight: normal !important;
+    }
+
+
+
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="twelve columns">
+            <p><b>Markdown</b> is a simple way to format text that looks great on any device. It doesn’t do anything fancy like change the font size, color, or type &mdash; just the essentials, using keyboard symbols you already know.</p>
+        </div>
+
+        <div class="twelve columns center">
+            <table class="markdown-reference">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th class="second-example">Or</th>
+                        <th>&hellip; to Get</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>                        
+                        <td class="preformatted">*Italic*</td>
+                        <td class="preformatted second-example">_Italic_</td>
+                        <td><em>Italic</em></td>
+                    </tr>
+                    <tr>                        
+                        <td class="preformatted">**Bold**</td>
+                        <td class="preformatted second-example">__Bold__</td>
+                        <td><strong>Bold</strong></td>
+                    </tr>
+                    <tr>
+                        <td class="preformatted">
+                            # Heading 1
+                        </td>
+                        <td class="preformatted second-example">
+                            Heading 1<br/>
+                            =========
+                        </td>
+                        <td>
+                            <h1 class="smaller-h1">Heading 1</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="preformatted">
+                            ## Heading 2
+                        </td>
+                        <td class="preformatted second-example">
+                            Heading 2<br/>
+                            ---------
+                        </td>
+                        <td>
+                            <h2 class="smaller-h2">Heading 2</h2>
+                        </td>
+                    </tr>
+                    <tr>                        
+                        <td class="preformatted">
+                            [Link](http://a.com)
+                        </td>
+                        <td class="preformatted second-example">
+                            [Link][1]<br/>
+                            &#8942;<br/>
+                            [1]: http://b.org
+                        </td>
+                        <td><a href="https://commonmark.org/">Link</a></td>
+                    </tr>
+                    <tr>
+                        <td class="preformatted">
+                            ![Image](http://url/a.png)
+                        </td>
+                        <td class="preformatted second-example">
+                            ![Image][1]<br/>
+                            &#8942;<br/>
+                            [1]: http://url/b.jpg
+                        </td>
+                        <td>
+                            <img src="images/favicon.png" width="36" height="36" alt="Markdown"/>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="preformatted">
+                            &gt; Blockquote
+                        </td>
+                        <td class="preformatted second-example">
+                            &nbsp;
+                        </td>
+                        <td>
+                            <blockquote>Blockquote</blockquote>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="preformatted">
+                            <p>
+                                * List<br/>
+                                * List<br/>
+                                * List
+                            </p>
+                        </td>
+                        <td class="preformatted second-example">
+                            <p>
+                                - List<br/>
+                                - List<br/>
+                                - List<br/>
+                            </p>
+                        </td>
+                        <td>
+                            <ul>
+                                <li>List</li>
+                                <li>List</li>
+                                <li>List</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="preformatted">
+                            <p>
+                                1. One<br/>
+                                2. Two<br/>
+                                3. Three
+                            </p>
+                        </td>
+                        <td class="preformatted second-example">
+                            <p>
+                                1) One<br/>
+                                2) Two<br/>
+                                3) Three
+                            </p>
+                        </td>
+                        <td>
+                            <ol>
+                                <li>One</li>
+                                <li>Two</li>
+                                <li>Three</li>
+                            </ol>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="preformatted">
+                            Horizontal Rule<br/>
+                            <br/>
+                            ---
+                        </td>
+                        <td class="preformatted second-example">
+                            Horizontal Rule<br/>
+                            <br/>
+                            ***
+                        </td>
+                        <td>
+                            Horizontal Rule
+                            <hr class="custom-hr" />
+                        </td>
+                    </tr>
+                    <tr>                        
+                        <td class="preformatted">
+                            `Inline code` with backticks
+                            </td>
+                        <td class="preformatted second-example">
+                            &nbsp;
+                        </td>
+                        <td>
+                            <code class="preformatted">Inline code</code> with backticks
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="preformatted">
+                            ```<br/>
+                            # code block<br/>
+                            print '3 backticks or'<br/> 
+                            print 'indent 4 spaces'<br/>                            
+                            ```
+                        </td>
+                        <td class="preformatted second-example">
+                            <span class="spaces">····</span># code block<br/> 
+                            <span class="spaces">····</span>print '3 backticks or'<br/>
+                            <span class="spaces">····</span>print 'indent 4 spaces'
+                        </td>
+                        <td>
+                            <div class="code-block">
+                                # code block
+                                <br/> print '3 backticks or'
+                                <br/> print 'indent 4 spaces'
+                            </div>
+                        </td>
+                    </tr>                    
+                </tbody>
+            </table>
+        </div>
+                
+</body>
+
+</html>

@@ -1,6 +1,6 @@
+import os
 import os.path
 import uuid
-import pkg_resources
 import asyncio
 import time
 from os import urandom
@@ -16,7 +16,6 @@ from galacteek import log, logUser, ensure
 
 from galacteek.ipfs import ipfsOpFn
 from galacteek.ipfs.mutable import MutableIPFSJson, CipheredIPFSJson
-from galacteek.ipfs.dag import EvolvingDAG
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.encrypt import IpfsRSAAgent
 from galacteek.ipfs.pubsub import TOPIC_CHAT
@@ -29,6 +28,9 @@ from galacteek.core.orbitdbcfg import defaultOrbitConfigMap
 from galacteek.core.jsono import QJSONFile
 from galacteek.core.mfsmodel import createMFSModel
 from galacteek.core.ipfsmarks import IPFSMarks
+
+from galacteek.core.userdag import UserDAG
+from galacteek.core.userdag import UserWebsite
 
 from galacteek.dweb import render
 
@@ -57,6 +59,7 @@ class UserInfos(CipheredIPFSJson):
     GENDER_UNSPECIFIED = -1
 
     usernameChanged = pyqtSignal()
+    changed = pyqtSignal()
 
     def initObj(self):
         uid = str(uuid.uuid4())
@@ -217,81 +220,6 @@ class UserInfos(CipheredIPFSJson):
 
     def valid(self):
         return True
-
-
-class UserDAG(EvolvingDAG):
-    def initDag(self):
-        return {
-            'index.html': 'Blank',
-            'media': {
-                'images': {},
-            },
-            'board': {
-                'messages': []
-            }
-        }
-
-
-class UserApp(QObject):
-    def __init__(self, profile):
-        super(UserApp, self).__init__(profile)
-
-        self._profile = profile
-        self.cssEntry = None
-
-    @property
-    def profile(self):
-        return self._profile
-
-    @property
-    def dagRoot(self):
-        return self.profile.dagUser.root
-
-    def debug(self, msg):
-        return self.profile.debug(msg)
-
-    @ipfsOp
-    async def postMessage(self, op, title, msg):
-        async with self.profile.dagUser as dag:
-            board = dag.dagRoot['board']
-            newMsg = {
-                'content': msg,
-                'title': title,
-                'date': isoformat(datetime.now()),
-            }
-            board['messages'].append(newMsg)
-
-        await self.update()
-
-    @ipfsOp
-    async def init(self, op):
-        cssPath = pkg_resources.resource_filename('galacteek.templates',
-                                                  'public/css')
-        self.cssEntry = await op.addPath(cssPath, recursive=True)
-
-    @ipfsOp
-    async def update(self, op):
-        if self.dagRoot is None:
-            return
-
-        homeIndex = await self.profile.tmplRender(
-            'public/userhome.html',
-            boardMessages=list(reversed(self.dagRoot['board']['messages'])),
-            loop=self.profile.ctx.loop
-        )
-
-        async with self.profile.dagUser as dag:
-            dag.root['index.html'] = dag.mkLink(homeIndex)
-            if self.cssEntry:
-                dag.root['css'] = dag.mkLink(self.cssEntry)
-
-            if self.profile.userInfo.avatarCid != '':
-                dag.root['media']['images']['avatar'] = dag.mkLink(
-                    self.profile.userInfo.avatarCid)
-
-            if self.profile.ctx.hasRsc('ipfs-cube-64'):
-                dag.root['media']['images']['ipfs-cube.png'] = dag.mkLink(
-                    self.profile.ctx.resources['ipfs-cube-64'])
 
 
 class ProfileError(Exception):
@@ -642,8 +570,16 @@ class UserProfile(QObject):
 
             self.dagUser.dagCidChanged.connect(self.onDagChange)
 
-            self.app = UserApp(self)
-            await self.app.init()
+            self.userWebsite = UserWebsite(
+                self.dagUser,
+                self,
+                self.keyRootId,
+                self.ctx.app.jinjaEnv,
+                parent=self
+            )
+
+            await self.userWebsite.init()
+
             ensure(self.update())
             self.userLogInfo('Loaded')
         else:
@@ -832,14 +768,22 @@ class UserProfile(QObject):
 
     async def tmplRender(self, tmpl, **kw):
         """
-        Render an HTML template (jinja), passing it the profile, ipfs context
-        and the DAG
+        Render an HTML template (jinja)
         """
-        return await render.ipfsRender(tmpl,
+        return await render.ipfsRender(self.ctx.app.jinjaEnv,
+                                       tmpl,
                                        profile=self,
-                                       ipfsCtx=self.ctx,
                                        dag=self.dagUser.dagRoot,
+                                       siteIpns=self.keyRootId,
                                        **kw)
+
+    async def tmplRenderContained(self, tmpl, **kw):
+        return await render.ipfsRenderContained(self.ctx.app.jinjaEnv,
+                                                tmpl,
+                                                profile=self,
+                                                dag=self.dagUser.dagRoot,
+                                                siteIpns=self.keyRootId,
+                                                **kw)
 
     @ipfsOp
     async def update(self, op):
@@ -851,7 +795,10 @@ class UserProfile(QObject):
             return
 
         await self.dagUser.loaded
-        await self.app.update()
+
+        if await self.userWebsite.edag.neverUpdated():
+            # First build
+            await self.userWebsite.update()
 
     @ipfsOp
     async def storeHashmarks(self, ipfsop, senderPeerId, marksJson):

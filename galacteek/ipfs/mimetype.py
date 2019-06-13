@@ -138,6 +138,10 @@ class MIMEType(object):
     def isPdf(self):
         return self.type == 'application/pdf'
 
+    @property
+    def isAtomFeed(self):
+        return self.type == 'application/atom+xml'
+
     def __str__(self):
         return self.type
 
@@ -149,6 +153,18 @@ class MIMEType(object):
 
 
 mimeTypeDag = MIMEType('ipfs/dag-pb')
+
+
+def mimeTypeProcess(mTypeText, buff):
+    if mTypeText == 'text/xml':
+        # If it's an XML, check if it's an Atom feed from the buffer
+        # Can't call feedparser here cause we only got a partial buffer
+        atomized = re.search('<feed xmlns="http://www.w3.org/[0-9]+/Atom".*>',
+                             buff.decode())
+        if atomized:
+            return MIMEType('application/atom+xml')
+
+    return MIMEType(mTypeText)
 
 
 async def detectMimeTypeFromBuffer(buff):
@@ -170,7 +186,8 @@ async def detectMimeTypeFromBuffer(buff):
         except Exception:
             return None
         else:
-            return MIMEType(mime)
+            if isinstance(mime, str):
+                return mimeTypeProcess(mime, buff)
     elif shutil.which('file'):
         # Libmagic not available, go with good'ol file
 
@@ -188,7 +205,7 @@ async def detectMimeTypeFromBuffer(buff):
             return None
         else:
             if len(spl) == 2 and spl[0] == '/dev/stdin':
-                return MIMEType(spl[1].strip())
+                return mimeTypeProcess(spl[1].strip(), buff)
     else:
         raise MimeDecodeError('No MIME detection method available')
 

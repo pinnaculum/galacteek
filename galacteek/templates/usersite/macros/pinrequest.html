@@ -1,0 +1,18 @@
+{% macro render_pinrequest(request) %}
+    <div class="box-shadow">
+        <h2>{{ request.title }}</h2>
+        <p>
+            made by <b>{{ request.pinrequest.author }}</b>
+                on {{ request.pinrequest.date_published|dtclean }}
+        </p>
+
+        <p>The following objects are part of the pinrequest:</p>
+    {% for object in request.pinrequest.objects %}
+            <p class="nope">
+                <a href="dweb:{{ object.path }}">
+                    {{ object.path }}
+                </a> (size: <b>{{ object.totalsize }})</b></a>
+            </p>
+    {% endfor %}
+    </div>
+{% endmacro %}

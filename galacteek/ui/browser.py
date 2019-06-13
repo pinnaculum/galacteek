@@ -18,7 +18,6 @@ from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtCore import QTimer
 
 from PyQt5 import QtWebEngineWidgets
-from PyQt5 import QtWebEngineCore
 
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWebEngineWidgets import QWebEngineDownloadItem
@@ -30,8 +29,6 @@ from PyQt5.QtWebEngineCore import QWebEngineUrlRequestInterceptor
 from PyQt5.Qt import QByteArray
 from PyQt5.QtGui import QKeySequence
 
-from yarl import URL
-
 from galacteek import log, ensure
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs import cidhelpers
@@ -41,9 +38,10 @@ from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import joinIpns
 from galacteek.ipfs.cidhelpers import cidValid
+from galacteek.dweb.atom import DWEB_ATOM_FEEDFN
+from galacteek.core.analyzer import ResourceAnalyzer
 
 from . import ui_browsertab
-from .resource import ResourceAnalyzer
 from .helpers import *
 from .dialogs import *
 from .hashmarks import *
@@ -177,53 +175,6 @@ def usesIpfsNs(url):
     return url.startswith('{0}:/'.format(SCHEME_DWEB))
 
 
-class IPFSSchemeHandler(QtWebEngineCore.QWebEngineUrlSchemeHandler):
-    def __init__(self, app, parent=None):
-        QtWebEngineCore.QWebEngineUrlSchemeHandler.__init__(self, parent)
-        self.app = app
-
-    def requestStarted(self, request):
-        url = request.requestUrl()
-
-        if url is None:
-            return
-
-        scheme = url.scheme()
-        path = url.path()
-
-        log.debug(
-            'IPFS scheme handler req: {url} {scheme} {path} {method}'.format(
-                url=url.toString(), scheme=scheme, path=path,
-                method=request.requestMethod()))
-
-        def redirectIpfs(path):
-            yUrl = URL(url.toString())
-
-            if len(yUrl.parts) < 3:
-                return None
-
-            newUrl = self.app.subUrl(path)
-
-            if url.hasFragment():
-                newUrl.setFragment(url.fragment())
-            if url.hasQuery():
-                newUrl.setQuery(url.query())
-
-            return request.redirect(newUrl)
-
-        if scheme in [SCHEME_FS, SCHEME_IPFS, SCHEME_DWEB]:
-            # Handle scheme:/{ipfs,ipns}/path
-
-            if not isinstance(path, str):
-                return
-
-            if path.startswith('/ipfs/') or path.startswith('/ipns/'):
-                try:
-                    return redirectIpfs(path)
-                except Exception as err:
-                    log.debug('Exception in request'.format(exc_info=err))
-
-
 class RequestInterceptor(QWebEngineUrlRequestInterceptor):
     def interceptRequest(self, info):
         pass
@@ -234,6 +185,9 @@ class CustomWebPage (QtWebEngineWidgets.QWebEnginePage):
 
     def javaScriptConsoleMessage(self, level, message, lineNumber, sourceId):
         self.jsConsoleMessage.emit(level, message, lineNumber, sourceId)
+
+    def acceptNavigationRequest(self, url, nType, isMainFrame):
+        return True
 
 
 class JSConsoleWidget(QTextBrowser):
@@ -297,6 +251,10 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
     def onLinkInfoTimeout(self):
         self.browserTab.ui.linkInfosLabel.setText('')
 
+    def onFollowTheAtom(self, ipfsPath):
+        # TODO
+        log.debug('Following atom feed: {}'.format(ipfsPath))
+
     def onLinkHovered(self, url):
         if not isinstance(url, str):
             return
@@ -310,6 +268,7 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
             self.linkInfoTimer.start(2200)
 
     def contextMenuEvent(self, event):
+        analyzer = ResourceAnalyzer(parent=self)
         currentPage = self.page()
         contextMenuData = currentPage.contextMenuData()
         url = contextMenuData.linkUrl()
@@ -350,11 +309,33 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
                     self.browserTab.pinPath,
                     ipfsPath.objPath,
                     True))
+
+            def rscAnalyzed(fut, path, iMenu):
+                try:
+                    mimeType, stat = fut.result()
+                except Exception:
+                    pass
+                else:
+                    if mimeType and mimeType.isAtomFeed:
+                        iMenu.addSeparator()
+                        iMenu.addAction(
+                            getIcon('atom-feed.png'),
+                            'Follow Atom feed',
+                            lambda: self.onFollowTheAtom(path)
+                        )
+            ensure(
+                analyzer(ipfsPath),
+                futcallback=lambda fut: rscAnalyzed(
+                    fut,
+                    ipfsPath,
+                    menu
+                )
+            )
+
             menu.exec(event.globalPos())
+
         elif mediaIpfsPath and mediaIpfsPath.valid:
             # Needs refactor
-            analyzer = ResourceAnalyzer(parent=self)
-
             menu = QMenu()
 
             menu.addSeparator()
@@ -700,7 +681,18 @@ class BrowserTab(GalacteekTab):
 
     def onPathVisited(self, ipfsPath):
         # Called after a new IPFS object has been loaded in this tab
-        ensure(self.tsVisitPath(ipfsPath.objPath))
+
+        if ipfsPath.valid:
+            ensure(self.tsVisitPath(ipfsPath.objPath))
+
+            if ipfsPath.basename and ipfsPath.basename == DWEB_ATOM_FEEDFN:
+                reply = questionBox(
+                    'Atom feed',
+                    'This looks like an Atom feed. Try and follow the atom ?'
+                )
+                if reply is True:
+                    # TODO
+                    return
 
     @ipfsStatOp
     async def tsVisitPath(self, ipfsop, path, stat):

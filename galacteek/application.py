@@ -37,6 +37,7 @@ from galacteek.core.asynclib import asyncify
 from galacteek.core.ctx import IPFSContext
 from galacteek.core.multihashmetadb import IPFSObjectMetadataDatabase
 from galacteek.core.clipboard import ClipboardTracker
+from galacteek.core.schemes import DWebSchemeHandler
 from galacteek.ipfs import asyncipfsd, cidhelpers
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import IPFSPath
@@ -45,10 +46,10 @@ from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.feeds import FeedFollower
 
 from galacteek.dweb.webscripts import ipfsClientScripts
+from galacteek.dweb.render import defaultJinjaEnv
 
 from galacteek.ui import mainui
 from galacteek.ui import downloads
-from galacteek.ui import browser
 from galacteek.ui import peers
 from galacteek.ui.resource import IPFSResourceOpener
 
@@ -321,8 +322,7 @@ class GalacteekApplication(QApplication):
         self.multihashDb = IPFSObjectMetadataDatabase(self._mHashDbLocation,
                                                       loop=self.loop)
 
-        self.jinjaEnv = jinja2.Environment(
-            loader=jinja2.PackageLoader(GALACTEEK_NAME, 'templates'))
+        self.jinjaEnv = defaultJinjaEnv()
 
         self.manuals = ManualsManager(self)
         self.mimeDb = QMimeDatabase()
@@ -408,8 +408,11 @@ class GalacteekApplication(QApplication):
             '/share/icons/ipfs-logo-128-ice.png')
         self.ipfsCtx.resources['ipfs-cube-64'] = await self.importQtResource(
             '/share/icons/ipfs-cube-64.png')
-        self.ipfsCtx.resources['ipfs-logo-text'] = await self.importQtResource(
-            '/share/icons/ipfs-logo-text-128-ice-white.png')
+        self.ipfsCtx.resources['atom-feed'] = await self.importQtResource(
+            '/share/icons/atom-feed.png')
+        self.ipfsCtx.resources['markdown-reference'] = \
+            await self.importQtResource(
+                '/share/static/docs/markdown-reference.html')
 
         await self.ipfsCtx.setup(pubsubEnable=pubsubEnabled,
                                  pubsubHashmarksExch=hExchEnabled)
@@ -452,7 +455,7 @@ class GalacteekApplication(QApplication):
         try:
             rscFile.open(QFile.ReadOnly)
             data = rscFile.readAll().data()
-            entry = await op.client.add_bytes(data)
+            entry = await op.addBytes(data)
         except Exception as e:
             log.debug('importQtResource: {}'.format(str(e)))
         else:
@@ -680,7 +683,7 @@ class GalacteekApplication(QApplication):
         return self.clipTracker.getText()
 
     def setupSchemeHandlers(self):
-        self.ipfsSchemeHandler = browser.IPFSSchemeHandler(self)
+        self.ipfsSchemeHandler = DWebSchemeHandler(self)
 
     def subUrl(self, path):
         """ Joins the gatewayUrl and path to form a new URL """

@@ -1,0 +1,21 @@
+{% from "usersite/macros/urls.html" import site_ipns_url %}
+
+{# Adapted from lektor's macro #}
+{% macro render_blog_post(post, from_index=false) %}
+  <div class="blog-post">
+  {% if from_index %}
+    <h2>
+        <a href="blog/{{ post.postname }}/view">{{ post.title }}</a>
+    </h2>
+  {% else %}
+    <h2>{{ post.title }}</h2>
+  {% endif %}
+  <p class="blog-meta">
+  written by <a href="about.html"><b>{{ post.author }}</b></a>
+  on {{ post.date_published|dtclean }}
+  </p>
+      <div class="blog-post-body">
+          {{ post.body|markdown }}
+      </div>
+  </div>
+{% endmacro %}

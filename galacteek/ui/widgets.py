@@ -2,10 +2,12 @@ import re
 import asyncio
 
 from PyQt5.QtWidgets import QFrame
+from PyQt5.QtWidgets import QPushButton
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtWidgets import QLineEdit
 from PyQt5.QtWidgets import QMenu
+from PyQt5.QtWidgets import QSpacerItem
 from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWidgets import QWidgetAction
@@ -13,7 +15,16 @@ from PyQt5.QtWidgets import QLabel
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QComboBox
 from PyQt5.QtWidgets import QListView
+from PyQt5.QtWidgets import QTextEdit
+from PyQt5.QtWidgets import QHBoxLayout
+from PyQt5.QtWidgets import QSizePolicy
 
+from PyQt5.QtWebEngineWidgets import QWebEngineView
+from PyQt5.QtWebEngineWidgets import QWebEngineProfile
+from PyQt5.QtWebEngineWidgets import QWebEnginePage
+
+from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QByteArray
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QPoint
@@ -31,6 +42,8 @@ from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek import ensure
+from galacteek.dweb.markdown import markitdown
+from galacteek.core.schemes import SCHEME_DWEB
 
 from .helpers import getIcon
 from .helpers import getIconFromIpfs
@@ -681,9 +694,102 @@ class IconSelector(QComboBox):
 
             data = _file.readAll().data()
 
-            entry = await op.client.add_bytes(data, offline=self.offline)
+            entry = await op.addBytes(data, offline=self.offline)
             if entry:
                 self.iconCid = entry['Hash']
                 self.iconSelected.emit(self.iconCid)
                 self.setToolTip(self.iconCid)
                 return True
+
+
+class MarkdownView(QWebEngineView):
+    def __init__(self, parent):
+        super(MarkdownView, self).__init__(parent=parent)
+        baDweb = QByteArray(SCHEME_DWEB.encode())
+
+        self.app = QApplication.instance()
+        self.webProfile = QWebEngineProfile.defaultProfile()
+        self.webProfile.installUrlSchemeHandler(
+            baDweb, self.app.ipfsSchemeHandler)
+
+        self.wPage = QWebEnginePage()
+        self.setPage(self.wPage)
+
+        self.setMinimumSize(QSize(400, 400))
+
+
+class MarkdownInputWidget(QWidget):
+    """
+    General purpose markdown input editor, with (almost) live
+    preview in a qtwebengine view
+
+    It supports the 'dweb' URL scheme, so when you type something
+    like ![img](dweb:/pathtoimage) the image should appear in
+    the preview widget
+    """
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.app = QApplication.instance()
+
+        self.markdownDocButton = QPushButton(
+            'Have you completely lost your Markdown ?')
+        self.markdownDocButton.setMaximumWidth(600)
+
+        self.markdownDocButton.clicked.connect(self.onMarkdownHelp)
+        helpLayout = QHBoxLayout()
+        labelsLayout = QHBoxLayout()
+        labelsLayout.addWidget(QLabel('Markdown input'))
+        labelsLayout.addWidget(QLabel('Preview'))
+
+        helpLayout.addWidget(self.markdownDocButton)
+        helpLayout.addItem(
+            QSpacerItem(10, 10, QSizePolicy.Expanding, QSizePolicy.Minimum))
+
+        self.textEditUser = QTextEdit(self)
+        self.textEditUser.textChanged.connect(self.onEdited)
+        self.textEditMarkdown = MarkdownView(self)
+
+        self.updateTimeoutMs = 500
+        self.updateTimer = QTimer()
+        self.updateTimer.timeout.connect(self.onTimerOut)
+
+        mainLayout = QVBoxLayout()
+        editLayout = QHBoxLayout()
+        editLayout.addWidget(self.textEditUser)
+        editLayout.addWidget(self.textEditMarkdown)
+
+        mainLayout.addLayout(labelsLayout)
+        mainLayout.addLayout(editLayout)
+        mainLayout.addLayout(helpLayout)
+
+        self.setLayout(mainLayout)
+        self.changeWidth(400)
+
+    def onMarkdownHelp(self):
+        ref = self.app.ipfsCtx.resources.get('markdown-reference')
+        if ref:
+            self.app.mainWindow.addBrowserTab().browseIpfsHash(
+                ref['Hash']
+            )
+
+    def changeWidth(self, width):
+        self.textEditUser.setMinimumWidth(width)
+        self.textEditMarkdown.setMinimumWidth(width)
+
+    def markdownText(self):
+        return self.textEditUser.toPlainText()
+
+    def onEdited(self):
+        if self.updateTimer.isActive():
+            self.updateTimer.stop()
+
+        self.updateTimer.start(self.updateTimeoutMs)
+
+    def onTimerOut(self):
+        textData = self.textEditUser.toPlainText()
+        try:
+            html = markitdown(textData)
+            self.textEditMarkdown.setHtml(html)
+        except Exception:
+            pass
