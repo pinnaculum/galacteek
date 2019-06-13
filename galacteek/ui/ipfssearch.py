@@ -29,6 +29,7 @@ from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs import ipfssearch
 from galacteek.dweb.render import renderTemplate
 from galacteek import ensure
+from galacteek import log
 
 from . import ui_ipfssearchinput
 from . import ui_ipfssearchw
@@ -209,7 +210,14 @@ class SearchResultsPage(BaseSearchPage):
         if html:
             self.pageRendered.emit(html)
 
-    def renderHits(self, pageNo, pageCount, results):
+    async def renderHits(self, pageNo, pageCount, results):
+        """
+        This used to be a simple function and not a coroutine
+        but now that we use jinja in async mode ..
+
+        Ensuring the fetchObjectStat task could be a source of
+        problems here, this should be changed
+        """
         ctxHits = []
 
         for hit in results.hits:
@@ -236,13 +244,14 @@ class SearchResultsPage(BaseSearchPage):
 
             ensure(self.fetchObjectStat(hitHash, path))
 
-        r = self.templateHits.render(hits=ctxHits,
-                                     resultsCount=results.resultsCount,
-                                     pageCount=results.pageCount,
-                                     showPrevious=pageNo > 1,
-                                     showNext=pageNo < pageCount,
-                                     ipfsConnParams=self.ipfsConnParams)
-        return r
+        return await self.templateHits.render_async(
+            hits=ctxHits,
+            resultsCount=results.resultsCount,
+            pageCount=results.pageCount,
+            showPrevious=pageNo > 1,
+            showNext=pageNo < pageCount,
+            ipfsConnParams=self.ipfsConnParams
+        )
 
     @ipfsOp
     async def fetchObjectStat(self, op, cid, path):
@@ -635,9 +644,18 @@ class IPFSSearchView(GalacteekTab):
         self.setResultsPage()
         pageData = self.handler.getPageData(page)
 
+        def hitsRendered(future, page):
+            try:
+                rendered = future.result()
+            except Exception as err:
+                log.debug('Exception rendering hits: {}'.format(
+                    str(err)))
+            else:
+                self.ui.comboPages.setCurrentIndex(page)
+                self.handler.resultsReadyDom.emit(rendered)
+                self.onPageChanged(page)
+
         if pageData:
-            rendered = self.resultsPage.renderHits(
-                page, self.handler.pageCount, pageData['results'])
-            self.ui.comboPages.setCurrentIndex(page)
-            self.handler.resultsReadyDom.emit(rendered)
-            self.onPageChanged(page)
+            ensure(self.resultsPage.renderHits(
+                page, self.handler.pageCount, pageData['results']),
+                futcallback=lambda future: hitsRendered(future, page))

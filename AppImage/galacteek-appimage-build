@@ -6,8 +6,8 @@
 #
 
 MINICONDA_DIST="Miniconda3-4.5.11-Linux-x86_64.sh"
-GOIPFS_TGZ="go-ipfs_v0.4.19_linux-amd64.tar.gz"
-GOIPFS_DISTURL="https://dist.ipfs.io/go-ipfs/v0.4.19/${GOIPFS_TGZ}"
+GOIPFS_TGZ="go-ipfs_v0.4.21_linux-amd64.tar.gz"
+GOIPFS_DISTURL="https://dist.ipfs.io/go-ipfs/v0.4.21/${GOIPFS_TGZ}"
 
 if [ $# -lt 1 ]; then
     echo "Pass the version number as argument"
