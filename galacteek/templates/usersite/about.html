@@ -1,0 +1,16 @@
+{% extends "usersite/layout.html" %}
+{% from "usersite/macros/urls.html" import site_ipns_url %}
+{% block body %}
+
+<div>
+    <h2>{{ profile.userInfo.username }}</h2>
+    <div>
+        <p>
+        <a href="{{ site_ipns_url(siteIpns, 'media/images/avatar') }}">
+            <img src="{{ site_ipns_url(siteIpns, 'media/images/avatar') }}"/>
+            </a>
+        </p>
+    </div>
+</div>
+
+{% endblock %}

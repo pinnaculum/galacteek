@@ -122,14 +122,14 @@ def cidValid(cidstring):
 
 
 ipfsPathRe = re.compile(
-    r'^(\s*)?(?:fs:|ipfs:|dweb:|https?://[a-zA-Z0-9:.]*)?(?P<fullpath>/ipfs/(?P<rootcid>[a-zA-Z0-9]{46,59})\/?(?P<subpath>[a-zA-Z0-9<>\"\*:;,\\\?\!\%&=@$~\/\s\.\-\_\'\\\+\(\)]{1,1024})?)\#?(?P<fragment>[a-zA-Z0-9\-\+\_\.\/]{1,256})?$', # noqa
+    r'^(\s*)?(?:fs:(\/*)|ipfs:|dweb:(\/*)?|https?://[a-zA-Z0-9:.-]*)?(?P<fullpath>/ipfs/(?P<rootcid>[a-zA-Z0-9]{46,59})\/?(?P<subpath>[a-zA-Z0-9<>\"\*:;,\\\?\!\%&=@$~\/\s\.\-\_\'\\\+\(\)]{1,1024})?)\#?(?P<fragment>[a-zA-Z0-9\-\+\_\.\/]{1,256})?$', # noqa
     flags=re.MULTILINE)
 
 ipfsCidRe = re.compile(
     r'^(\s*)?(?P<cid>[a-zA-Z0-9]{46,59})$', flags=re.MULTILINE)
 
 ipnsPathRe = re.compile(
-    r'^(\s*)?(?:fs:|ipfs:|dweb:|https?://[a-zA-Z0-9:.]*)?(?P<fullpath>/ipns/([a-zA-Z0-9\.\-\_]{1,128})\/?(?P<subpath>[a-zA-Z0-9<>\"\*:;,\\\?\!\%&=@$~\/\s\.\-\_\'\\\+\(\)]{1,1024})?)\#?(?P<fragment>[a-zA-Z0-9\+\-\_\.\/]{1,256})?$',  # noqa
+    r'^(\s*)?(?:fs:(\/*)|ipfs:|dweb:(\/*)?|https?://[a-zA-Z0-9:.-]*)?(?P<fullpath>/ipns/([a-zA-Z0-9\.\-\_]{1,128})\/?(?P<subpath>[a-zA-Z0-9<>\"\*:;,\\\?\!\%&=@$~\/\s\.\-\_\'\\\+\(\)]{1,1024})?)\#?(?P<fragment>[a-zA-Z0-9\+\-\_\.\/]{1,256})?$',  # noqa
     flags=re.MULTILINE)
 
 
@@ -213,8 +213,12 @@ class IPFSPath:
             return self._rscPath
 
     @property
+    def dwebUrl(self):
+        return 'dweb:{}'.format(self.fullPath)
+
+    @property
     def dwebQtUrl(self):
-        return QUrl('dweb:{}'.format(self.fullPath))
+        return QUrl(self.dwebUrl)
 
     def __analyze(self):
         """
@@ -273,8 +277,7 @@ class IPFSPath:
         if not isinstance(path, str):
             raise ValueError('Need string')
 
-        childPath = IPFSPath(os.path.join(self.objPath, path))
-        return childPath
+        return IPFSPath(os.path.join(self.objPath, path))
 
     async def resolve(self, ipfsop):
         """

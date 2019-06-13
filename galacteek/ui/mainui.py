@@ -47,6 +47,7 @@ from galacteek.core.modelhelpers import *
 from . import ui_galacteek
 from . import ui_ipfsinfos
 
+from . import userwebsite
 from . import browser
 from . import files
 from . import keys
@@ -384,8 +385,11 @@ class MainWindow(QMainWindow):
                                    'View homepage',
                                    self.onProfileViewHomepage)
         self.profileMenu.addSeparator()
-        self.profileMenu.addAction('Post Message',
-                                   self.onProfilePostMessage)
+
+        self.userWebsiteManager = userwebsite.UserWebsiteManager(
+            parent=self.profileMenu)
+        self.profileMenu.addMenu(self.userWebsiteManager.blogMenu)
+
         self.profileEditButton = ProfileButton(
             menu=self.profileMenu,
             mode=QToolButton.InstantPopup,
@@ -634,6 +638,21 @@ class MainWindow(QMainWindow):
         runDialog(ProfileEditDialog, self.app.ipfsCtx.currentProfile,
                   title='Profile Edit dialog')
 
+    def onProfileWebsiteUpdated(self):
+        self.profileEditButton.setStyleSheet('''
+            QToolButton {
+                background-color: #B7CDC2;
+            }
+        ''')
+        self.app.loop.call_later(
+            3, self.profileEditButton.setStyleSheet,
+            'QToolButton {}'
+        )
+
+    def onProfileInfoChanged(self, profile):
+        # Regen website
+        ensure(profile.userWebsite.update())
+
     @asyncify
     async def onProfileChanged(self, pName, profile):
         if not profile.initialized:
@@ -651,6 +670,15 @@ class MainWindow(QMainWindow):
         await profile.userInfo.loaded
         self.profileEditButton.setEnabled(True)
 
+        if profile.userWebsite:
+            profile.userWebsite.websiteUpdated.connect(
+                self.onProfileWebsiteUpdated
+            )
+
+        profile.userInfo.changed.connect(
+            lambda: self.onProfileInfoChanged(profile)
+        )
+
         for action in self.profilesActionGroup.actions():
             if action.data() == pName:
                 action.setChecked(True)
@@ -659,8 +687,6 @@ class MainWindow(QMainWindow):
                 if filesM:
                     filesM.setupModel()
                     filesM.pathSelectorDefault()
-
-        self.toolbarPyramids.mfsInit.emit(profile)
 
     def onUserProfile(self, action):
         if action is self.ui.actionNew_Profile:
@@ -675,9 +701,6 @@ class MainWindow(QMainWindow):
             if action.isChecked() and \
                     self.app.ipfsCtx.currentProfile.name != pName:
                 self.app.ipfsCtx.profileChange(pName)
-
-    def onProfilePostMessage(self):
-        runDialog(ProfilePostMessageDialog, self.app.ipfsCtx.currentProfile)
 
     def onProfileViewHomepage(self):
         self.addBrowserTab().browseFsPath(os.path.join(

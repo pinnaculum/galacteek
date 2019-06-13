@@ -26,8 +26,6 @@ from galacteek.ipfs.mimetype import detectMimeTypeFromBuffer
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import shortPathRepr
 
-from galacteek.crypto.qrcode import IPFSQrDecoder
-
 from .textedit import TextEditorTab
 from .helpers import getMimeIcon
 from .helpers import messageBox
@@ -293,64 +291,3 @@ class IPFSResourceOpener(QObject):
             await self.openWithExternal(rscPath, "xdg-open '%f'")
         elif self.app.system == 'Darwin':
             await self.openWithExternal(rscPath, "open '%f'")
-
-
-class ResourceAnalyzer(QObject):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.app = QApplication.instance()
-
-    @ipfsOp
-    async def __call__(self, ipfsop, ipfsPath):
-        """
-        :param IPFSPath ipfsPath
-        """
-
-        path = ipfsPath.objPath
-        mHashMeta = await self.app.multihashDb.get(path)
-
-        if mHashMeta:
-            # Already have metadata for this object
-            mimetype = MIMEType(mHashMeta.get('mimetype'))
-            statInfo = mHashMeta.get('stat')
-            return mimetype, statInfo
-        else:
-            mimetype = await detectMimeType(path)
-
-            statInfo = await ipfsop.objStat(path)
-            if not statInfo or not isinstance(statInfo, dict):
-                log.debug('Stat failed for {path}'.format(
-                    path=path))
-                return mimetype, None
-
-            await ipfsop.sleep()
-
-            # Store retrieved information in the metadata store
-            metaMtype = mimetype.type if mimetype and mimetype.valid else None
-            await self.app.multihashDb.store(
-                path,
-                mimetype=metaMtype,
-                stat=statInfo
-            )
-
-        if mimetype and mimetype.valid:
-            return mimetype, statInfo
-
-    @ipfsOp
-    async def decodeQrCodes(self, ipfsop, path):
-        try:
-            data = await ipfsop.waitFor(
-                ipfsop.client.cat(path), 12
-            )
-
-            if data is None:
-                return
-
-            # Decode the QR codes in the image if there's any
-            qrDecoder = IPFSQrDecoder()
-            if not qrDecoder:
-                return
-
-            return qrDecoder.decode(data)
-        except aioipfs.APIError:
-            pass

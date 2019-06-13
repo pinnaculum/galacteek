@@ -55,8 +55,8 @@ Shared Hashmarks menu
 This menu shows the hashmarks that have been received on the
 network from other peers.
 
-Feeds
-=====
+Following IPNS keys
+===================
 
 There is basic support for following IPNS names/keys. When browsing
 a root IPNS URL (e.g **/ipns/awesome.ipfs.io**), open the IPFS CID

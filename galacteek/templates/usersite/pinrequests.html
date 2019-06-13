@@ -1,0 +1,9 @@
+{% from "usersite/macros/pinrequest.html" import render_pinrequest %}
+{% extends "usersite/layout.html" %}
+{% block body %}
+
+  {% for request in pinrequests %}
+  {{ render_pinrequest(request) }}
+  {% endfor %}
+
+{% endblock %}

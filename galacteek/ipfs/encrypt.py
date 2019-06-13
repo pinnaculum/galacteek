@@ -48,7 +48,7 @@ class IpfsRSAAgent:
             if encrypted is None:
                 return
 
-            entry = await op.client.add_bytes(encrypted, offline=offline)
+            entry = await op.addBytes(encrypted, offline=offline)
             if entry:
                 self.debug(
                     'storeSelf: encoded {0} bytes to {1}'.format(

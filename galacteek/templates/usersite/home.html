@@ -1,0 +1,11 @@
+{% from "usersite/macros/blog.html" import render_blog_post %}
+{% extends "usersite/layout.html" %}
+{% block body %}
+
+<div class="blog-posts">
+  {% for post in posts %}
+    {{ render_blog_post(post, from_index=true) }}
+  {% endfor %}
+</div>
+
+{% endblock %}

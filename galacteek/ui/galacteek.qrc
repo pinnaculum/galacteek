@@ -1,5 +1,9 @@
 <RCC>
   <qresource>
+    <file>../../share/static/docs/markdown-reference.html</file>
+    <file>../../share/icons/blog.png</file>
+    <file>../../share/icons/mimetypes/application-atom+xml.png</file>
+    <file>../../share/icons/atom-feed.png</file>
     <file>../../share/icons/folder-temp.png</file>
     <file>../../share/icons/cube-nova-aqua.png</file>
     <file>../../share/icons/cube-nova-orange.png</file>
@@ -95,7 +99,6 @@
     <file>../../share/icons/pin-zoom.png</file>
     <file>../../share/icons/zoom-in.png</file>
     <file>../../share/icons/zoom-out.png</file>
-    <file>../../share/js/orbit-db/orbitdb.js</file>
     <file>../../share/js/ipfs-http-client/index.min.js</file>
     <file>../../share/static/fonts/Montserrat-Regular.woff2</file>
     <file>../../share/icons/quit.png</file>
@@ -135,8 +138,6 @@
     <file>../../share/icons/go-previous.png</file>
     <file>../../share/icons/go-home.png</file>
     <file>../../share/icons/network-offline.png</file>
-    <file>../../share/icons/network-transmit.png</file>
-    <file>../../share/icons/write-document.png</file>
     <file>../../share/icons/network-transmit.png</file>
     <file>../../share/icons/pin-black.png</file>
     <file>../../share/icons/pin-blue-loading.png</file>

@@ -7,7 +7,6 @@ requirements:
 	cat requirements.txt.autogen|grep -v '#'|sed -e '/^$$/d' > requirements.txt
 	cat requirements-dev.txt.autogen|grep -v '#'|sed -e '/^$$/d' > requirements-dev.txt
 	rm -f requirements.txt.autogen requirements-dev.txt.autogen
-	echo '-e git+https://github.com/ewino/qreader#egg=qreader' >> requirements.txt
 
 sdist: requirements
 	pipenv run python setup.py sdist

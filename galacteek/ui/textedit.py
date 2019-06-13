@@ -1,4 +1,3 @@
-import markdown2
 import functools
 import aiofiles
 import os.path
@@ -41,6 +40,7 @@ from galacteek.core import isoformat
 from galacteek.appsettings import *
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
+from galacteek.dweb.markdown import markitdown
 
 from .helpers import *
 
@@ -501,7 +501,7 @@ class TextEditorWidget(QWidget):
         newDocument = self.newDocument(text=textData)
 
         try:
-            html = markdown2.markdown(textData)
+            html = markitdown(textData)
             newDocument.setHtml(html)
         except Exception:
             newDocument.setPlainText(textData)
@@ -516,7 +516,7 @@ class TextEditorWidget(QWidget):
             newDocument = self.newDocument(text=textData)
 
             try:
-                html = markdown2.markdown(text)
+                html = markitdown(text)
                 newDocument.setHtml(html)
             except Exception:
                 newDocument.setPlainText(text)

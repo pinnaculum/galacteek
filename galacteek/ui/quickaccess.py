@@ -14,6 +14,7 @@ from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs import kilobytes
 from galacteek.ipfs.cidhelpers import IPFSPath
+from galacteek.core.analyzer import ResourceAnalyzer
 
 from .helpers import getIcon
 from .helpers import getMimeIcon
@@ -25,7 +26,6 @@ from .widgets import HashmarkToolButton
 from .widgets import IPFSObjectToolButton
 from .widgets import URLDragAndDropProcessor
 
-from .resource import ResourceAnalyzer
 from .i18n import iUnknown
 
 

@@ -475,6 +475,21 @@ class IPFSOperator(object):
             return False
         return await self.waitFor(_pin(path), timeout)
 
+    async def unpin(self, obj):
+        """
+        Unpin an object
+        """
+
+        self.debug('unpinning: {0}'.format(obj))
+        try:
+            result = await self.client.pin.rm(obj)
+        except aioipfs.APIError as e:
+            self.debug('unpin error: {}'.format(e.message))
+            return None
+        else:
+            self.debug('unpin success: {}'.format(result))
+            return result
+
     async def pinUpdate(self, old, new, unpin=True):
         """
         Update a pin
@@ -560,6 +575,22 @@ class IPFSOperator(object):
             return None
         else:
             return added
+
+    async def addBytes(self, data, cidversion=1, **kw):
+        try:
+            return await self.client.core.add_bytes(
+                data, cid_version=cidversion, **kw)
+        except aioipfs.APIError as err:
+            self.debug(err.message)
+            return None
+
+    async def addString(self, string, cidversion=1, **kw):
+        try:
+            return await self.client.core.add_str(
+                string, cid_version=cidversion, **kw)
+        except aioipfs.APIError as err:
+            self.debug(err.message)
+            return None
 
     async def closestPeers(self):
         peers = []

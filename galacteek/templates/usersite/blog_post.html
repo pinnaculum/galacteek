@@ -1,0 +1,6 @@
+{% from "usersite/macros/blog.html" import render_blog_post %}
+{% extends "usersite/layout.html" %}
+
+{% block body %}
+{{ render_blog_post(post, from_index=false) }}
+{% endblock %}

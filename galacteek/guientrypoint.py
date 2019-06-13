@@ -12,6 +12,7 @@ from galacteek import log
 from galacteek import ensure
 from galacteek import __version__
 from galacteek.core import glogger
+from galacteek.core.schemes import initializeSchemes
 
 from galacteek.ipfs import distipfsfetch
 from galacteek.ui.helpers import *  # noqa
@@ -67,7 +68,7 @@ async def fetchGoIpfsWrapper(app, timeout=60 * 10):
 async def fetchGoIpfsDist(app):
     async for msg in distipfsfetch.distIpfsExtract(
             dstdir=app.ipfsBinLocation, software='go-ipfs',
-            executable='ipfs', version='0.4.19', loop=app.loop,
+            executable='ipfs', version='0.4.21', loop=app.loop,
             sslverify=app.sslverify):
         try:
             code, text = msg
@@ -83,6 +84,9 @@ def galacteekGui(args):
         glogger.basicConfig(level='DEBUG')
     else:
         glogger.basicConfig(level='INFO')
+
+    # Initialize webengine schemes before creating the application
+    initializeSchemes()
 
     gApp = application.GalacteekApplication(
         profile=args.profile,
