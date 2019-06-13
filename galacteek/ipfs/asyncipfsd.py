@@ -3,7 +3,6 @@ import os.path
 import asyncio
 import re
 import json
-import psutil
 
 from galacteek import log
 
@@ -248,6 +247,11 @@ class AsyncIPFSDaemon(object):
         return True
 
     def setProcLimits(self, pid, nice=20):
+        try:
+            import psutil
+        except ImportError:
+            return
+
         log.debug('Applying limits to process: {pid}'.format(pid=pid))
 
         try:
