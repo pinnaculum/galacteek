@@ -38,6 +38,7 @@ from galacteek.core.ctx import IPFSContext
 from galacteek.core.multihashmetadb import IPFSObjectMetadataDatabase
 from galacteek.core.clipboard import ClipboardTracker
 from galacteek.core.schemes import DWebSchemeHandler
+from galacteek.core.schemes import Base32IPFSSchemeHandler
 from galacteek.ipfs import asyncipfsd, cidhelpers
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import IPFSPath
@@ -684,6 +685,7 @@ class GalacteekApplication(QApplication):
 
     def setupSchemeHandlers(self):
         self.ipfsSchemeHandler = DWebSchemeHandler(self)
+        self.ipfsSchemeHandler32 = Base32IPFSSchemeHandler(self)
 
     def subUrl(self, path):
         """ Joins the gatewayUrl and path to form a new URL """
