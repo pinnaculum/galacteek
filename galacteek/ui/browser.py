@@ -41,6 +41,11 @@ from galacteek.ipfs.cidhelpers import cidValid
 from galacteek.dweb.atom import DWEB_ATOM_FEEDFN
 from galacteek.core.analyzer import ResourceAnalyzer
 
+from galacteek.core.schemes import SCHEME_DWEB
+from galacteek.core.schemes import SCHEME_IPFS
+from galacteek.core.schemes import SCHEME_IPNS
+from galacteek.core.schemes import SCHEME_FS
+
 from . import ui_browsertab
 from .helpers import *
 from .dialogs import *
@@ -50,12 +55,7 @@ from .clipboard import iCopyPathToClipboard
 from .widgets import *
 from ..appsettings import *
 
-SCHEME_DWEB = 'dweb'
-SCHEME_FS = 'fs'
-SCHEME_IPFS = 'ipfs'
-
 # i18n
-
 
 def iOpenInTab():
     return QCoreApplication.translate('BrowserTabForm', 'Open link in new tab')
@@ -189,6 +189,9 @@ class CustomWebPage (QtWebEngineWidgets.QWebEnginePage):
     def acceptNavigationRequest(self, url, nType, isMainFrame):
         return True
 
+    def featurePermissionRequested(self, url, feature):
+        return True
+
 
 class JSConsoleWidget(QTextBrowser):
     def __init__(self, parent):
@@ -244,6 +247,12 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
         self.webSettings = self.settings()
         self.webSettings.setAttribute(QWebEngineSettings.PluginsEnabled,
                                       enablePlugins)
+        self.webSettings.setAttribute(QWebEngineSettings.LocalStorageEnabled,
+                True)
+        self.webSettings.setAttribute(QWebEngineSettings.LocalContentCanAccessFileUrls,
+                True)
+        self.webSettings.setAttribute(QWebEngineSettings.LocalContentCanAccessRemoteUrls,
+                True)
 
     def onJsMessage(self, level, message, lineNo, sourceId):
         self.browserTab.jsConsole.showMessage(level, message, lineNo, sourceId)
@@ -669,15 +678,21 @@ class BrowserTab(GalacteekTab):
                 self.webScripts.insert(script)
 
     def installIpfsSchemeHandler(self):
+        #from galacteek.core.schemes import Base32IPFSSchemeHandler
         baFs = QByteArray(b'fs')
         baIpfs = QByteArray(b'ipfs')
+        baIpns = QByteArray(b'ipns')
         baDweb = QByteArray(b'dweb')
 
-        for scheme in [baFs, baIpfs, baDweb]:
+        for scheme in [baFs, baIpfs, baIpns, baDweb]:
             eHandler = self.webProfile.urlSchemeHandler(scheme)
             if not eHandler:
-                self.webProfile.installUrlSchemeHandler(
-                    scheme, self.app.ipfsSchemeHandler)
+                if scheme in [baFs, baDweb]:
+                    self.webProfile.installUrlSchemeHandler(
+                        scheme, self.app.ipfsSchemeHandler)
+                else:
+                    self.webProfile.installUrlSchemeHandler(
+                        scheme, self.app.ipfsSchemeHandler32)
 
     def onPathVisited(self, ipfsPath):
         # Called after a new IPFS object has been loaded in this tab
@@ -848,7 +863,19 @@ class BrowserTab(GalacteekTab):
         currentPage.history().forward()
 
     def onUrlChanged(self, url):
-        if url.authority() == self.gatewayAuthority:
+        if url.scheme() in [SCHEME_IPFS, SCHEME_IPNS]:
+            # ipfs:// or ipns://
+            self.ui.urlZone.setStyleSheet(
+                '''QLineEdit {
+                    background-color: grey;
+                }''')
+
+            self.ui.urlZone.clear()
+            self.ui.urlZone.insert(url.toString())
+            self._currentIpfsResource = IPFSPath(self.webView.url().toString())
+
+        elif url.authority() == self.gatewayAuthority:
+            # dweb:/ with IPFS gateway's authority
             # Content loaded from IPFS gateway, this is IPFS content
             urlString = url.toDisplayString(
                 QUrl.RemoveAuthority | QUrl.RemoveScheme)
@@ -931,8 +958,7 @@ class BrowserTab(GalacteekTab):
             self.enterUrl(QUrl('{0}:{1}'.format(SCHEME_DWEB, path)))
         elif isinstance(path, IPFSPath):
             if path.valid:
-                self.enterUrl(QUrl('{0}:{1}'.format(SCHEME_DWEB,
-                                                    path.fullPath)))
+                self.enterUrl(QUrl(path.ipfsUrl))
             else:
                 messageBox(iInvalidUrl(path.fullPath))
 
@@ -962,7 +988,7 @@ class BrowserTab(GalacteekTab):
         url = QUrl(inputStr)
         scheme = url.scheme()
 
-        if scheme in [SCHEME_FS, SCHEME_IPFS, SCHEME_DWEB]:
+        if scheme in [SCHEME_FS, SCHEME_IPFS, SCHEME_IPNS, SCHEME_DWEB]:
             self.enterUrl(url)
         elif scheme in ['http', 'https'] and \
                 self.app.settingsMgr.allowHttpBrowsing is True:

@@ -125,6 +125,11 @@ ipfsPathRe = re.compile(
     r'^(\s*)?(?:fs:(\/*)|ipfs:|dweb:(\/*)?|https?://[a-zA-Z0-9:.-]*)?(?P<fullpath>/ipfs/(?P<rootcid>[a-zA-Z0-9]{46,59})\/?(?P<subpath>[a-zA-Z0-9<>\"\*:;,\\\?\!\%&=@$~\/\s\.\-\_\'\\\+\(\)]{1,1024})?)\#?(?P<fragment>[a-zA-Z0-9\-\+\_\.\/]{1,256})?$', # noqa
     flags=re.MULTILINE)
 
+# For ipfs://<cid-base32>
+ipfsPath32Re = re.compile(
+    r'^(\s*)?(?:ipfs://)?(?P<fullpath>(?P<rootcid>[a-z0-9]{59})\/?(?P<subpath>[a-zA-Z0-9<>\"\*:;,\\\?\!\%&=@$~\/\s\.\-\_\'\\\+\(\)]{1,1024})?)\#?(?P<fragment>[a-zA-Z0-9\-\+\_\.\/]{1,256})?$', # noqa
+    flags=re.MULTILINE)
+
 ipfsCidRe = re.compile(
     r'^(\s*)?(?P<cid>[a-zA-Z0-9]{46,59})$', flags=re.MULTILINE)
 
@@ -140,11 +145,13 @@ class IPFSPath:
         if not isinstance(input, str):
             raise ValueError('path should be a string')
 
-        self._enableBase32 = False
+        self._enableBase32 = True
+        self._isBase32 = False
         self._input = input
         self._rscPath = None
         self._subPath = None
         self._fragment = None
+        self._scheme = None
         self._resolvedMultihash = None
         self._valid = self.__analyze()
 
@@ -157,12 +164,17 @@ class IPFSPath:
         return self._valid
 
     @property
+    def scheme(self):
+        return self._scheme
+
+    @property
     def resolvedMultihash(self):
         return self._resolvedMultihash
 
     @property
     def isIpfs(self):
-        return self.valid is True and isIpfsPath(self.path)
+        return self.valid is True and self.scheme == 'ipfs'
+        #return self.valid is True and isIpfsPath(self.path)
 
     @property
     def isIpfsRoot(self):
@@ -175,6 +187,10 @@ class IPFSPath:
     @property
     def isIpnsRoot(self):
         return self.isIpns and self.subPath is None
+
+    @property
+    def isBase32(self):
+        return self._isBase32
 
     @property
     def fragment(self):
@@ -217,6 +233,16 @@ class IPFSPath:
         return 'dweb:{}'.format(self.fullPath)
 
     @property
+    def ipfsUrl(self):
+        if self.isIpfs and self.isBase32:
+            return '{scheme}://{path}'.format(
+                scheme=self.scheme,
+                path=stripIpfs(self.fullPath)
+            )
+        else:
+            return self.dwebUrl
+
+    @property
     def dwebQtUrl(self):
         return QUrl(self.dwebUrl)
 
@@ -230,9 +256,35 @@ class IPFSPath:
         if len(self.input) > self.maxLength:
             return False
 
-        ma = ipfsRegSearchPath(self.input)
-
+        ma = ipfsB32RegSearchPath(self.input)
         if ma:
+            gdict = ma.groupdict()
+            if 'rootcid' not in gdict or 'fullpath' not in gdict:
+                return False
+
+            cid = ma.group('rootcid')
+            if not cidValid(cid):
+                return False
+
+            subpath = gdict.get('subpath')
+
+            if subpath:
+                self._rscPath = os.path.join(
+                    joinIpfs(cid),
+                    subpath
+                )
+            else:
+                self._rscPath = joinIpfs(cid)
+
+            self._fragment = gdict.get('fragment')
+            self._subPath = subpath
+            self._scheme = 'ipfs'
+            self._isBase32 = True
+            return True
+
+        ma = ipfsRegSearchPath(self.input)
+        if ma:
+            print('B58 MATCH!', self.input)
             gdict = ma.groupdict()
             if 'rootcid' not in gdict or 'fullpath' not in gdict:
                 return False
@@ -244,6 +296,7 @@ class IPFSPath:
             self._rscPath = ma.group('fullpath').rstrip('/')
             self._fragment = gdict.get('fragment')
             self._subPath = gdict.get('subpath')
+            self._scheme = 'ipfs'
             return True
 
         ma = ipnsRegSearchPath(self.input)
@@ -252,6 +305,7 @@ class IPFSPath:
             self._rscPath = ma.group('fullpath').rstrip('/')
             self._fragment = gdict.get('fragment')
             self._subPath = gdict.get('subpath')
+            self._scheme = 'ipns'
             return True
 
         ma = ipfsRegSearchCid(self.input)
@@ -269,6 +323,7 @@ class IPFSPath:
                 path = joinIpfs(cidStr)
 
             self._rscPath = path
+            self._scheme = 'ipfs'
             return True
 
         return False
@@ -277,7 +332,7 @@ class IPFSPath:
         if not isinstance(path, str):
             raise ValueError('Need string')
 
-        return IPFSPath(os.path.join(self.objPath, path))
+        return IPFSPath(os.path.join(self.objPath, path.strip('/')))
 
     async def resolve(self, ipfsop):
         """
@@ -331,6 +386,10 @@ class IPFSPath:
 
 def ipfsRegSearchPath(text):
     return ipfsPathRe.match(text)
+
+
+def ipfsB32RegSearchPath(text):
+    return ipfsPath32Re.match(text)
 
 
 def ipfsRegSearchCid(text):
