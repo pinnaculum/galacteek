@@ -693,7 +693,7 @@ class GalacteekApplication(QApplication):
         if running is True:
             ensure(self.updateIpfsClient())
         else:
-            logUser(iIpfsDaemonInitProblem())
+            logUser.info(iIpfsDaemonInitProblem())
 
     def setupClipboard(self):
         self.appClipboard = self.clipboard()
