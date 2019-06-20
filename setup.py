@@ -150,6 +150,7 @@ setup(
              'docs/manual/en/html/_static/*',
             'templates/*.html',
             'templates/usersite/*.html',
+            'templates/usersite/assets/*',
             'templates/usersite/assets/css/*',
             'templates/usersite/macros/*',
             'hashmarks/default/*.json'

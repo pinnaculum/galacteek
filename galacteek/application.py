@@ -666,6 +666,8 @@ class GalacteekApplication(QApplication):
             with async_timeout.timeout(1):
                 try:
                     await ipfsd.proto.eventStarted.wait()
+                except asyncio.CancelledError:
+                    break
                 except asyncio.TimeoutError:
                     # Event not set yet, wait again
                     log.debug('IPFSD: timeout occured while waiting for '

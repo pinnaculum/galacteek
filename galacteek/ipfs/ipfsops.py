@@ -126,6 +126,11 @@ class IPFSOperator(object):
         except asyncio.TimeoutError:
             self.debug('Timeout waiting for coroutine {0}'.format(fncall))
             return None
+        except asyncio.CancelledError:
+            self.debug('Cancelled coroutine {0}'.format(fncall))
+        except BaseException as err:
+            self.debug('Error in coroutine {0}: {1}'.format(
+                fncall, str(err)))
 
     async def getCommands(self):
         if self.availCommands is not None:
