@@ -66,12 +66,12 @@ class GalacteekTab(QWidget):
         self.setAttribute(Qt.WA_DeleteOnClose)
 
     def tabIndex(self, w=None):
-        return self.gWindow.ui.tabWidget.indexOf(w if w else self)
+        return self.gWindow.tabWidget.indexOf(w if w else self)
 
     def setTabName(self, name, widget=None):
         idx = self.tabIndex(w=widget)
         if idx >= 0:
-            self.gWindow.ui.tabWidget.setTabText(idx, name)
+            self.gWindow.tabWidget.setTabText(idx, name)
 
     def addToLayout(self, widget):
         self.vLayout.addWidget(widget)

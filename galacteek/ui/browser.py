@@ -535,7 +535,9 @@ class URLInputWidget(QLineEdit):
         super(URLInputWidget, self).focusOutEvent(event)
 
     def onUrlUserEdit(self, text):
-        if not self.urlEditing:
+        self.urlInput = text
+
+        if not self.urlEditing or not self.history.enabled:
             return
 
         if not self.editTimer.isActive():
@@ -543,8 +545,6 @@ class URLInputWidget(QLineEdit):
         else:
             self.editTimer.stop()
             self.editTimer.start(self.editTimeoutMs)
-
-        self.urlInput = text
 
     def onTimeoutUrlEdit(self):
         ensure(self.historyLookup())
@@ -790,11 +790,11 @@ class BrowserTab(GalacteekTab):
 
     @property
     def tabPage(self):
-        return self.gWindow.ui.tabWidget.widget(self.tabPageIdx)
+        return self.gWindow.tabWidget.widget(self.tabPageIdx)
 
     @property
     def tabPageIdx(self):
-        return self.gWindow.ui.tabWidget.indexOf(self)
+        return self.gWindow.tabWidget.indexOf(self)
 
     @property
     def gatewayAuthority(self):
@@ -1066,22 +1066,23 @@ class BrowserTab(GalacteekTab):
         if len(pageTitle) > lenMax:
             pageTitle = '{0} ...'.format(pageTitle[0:lenMax])
 
-        idx = self.gWindow.ui.tabWidget.indexOf(self)
-        self.gWindow.ui.tabWidget.setTabText(idx, pageTitle)
-        self.gWindow.ui.tabWidget.setTabToolTip(idx,
-                                                self.currentPageTitle)
+        idx = self.gWindow.tabWidget.indexOf(self)
+        self.gWindow.tabWidget.setTabText(idx, pageTitle)
+        self.gWindow.tabWidget.setTabToolTip(idx, self.currentPageTitle)
 
         if self.currentPageTitle != iNoTitle() and self.currentUrl and \
                 self.currentUrl.isValid():
-            self.history.record(self.currentUrl.toString(),
-                                self.currentPageTitle)
+            # Only record those schemes in the history
+            if self.currentUrl.scheme() in [SCHEME_DWEB, SCHEME_IPFS]:
+                self.history.record(self.currentUrl.toString(),
+                                    self.currentPageTitle)
 
     def onLoadFinished(self, ok):
         self.ui.stopButton.setEnabled(False)
         self.savePageButton.setEnabled(True)
 
     def onIconChanged(self, icon):
-        self.gWindow.ui.tabWidget.setTabIcon(self.tabPageIdx, icon)
+        self.gWindow.tabWidget.setTabIcon(self.tabPageIdx, icon)
 
     def onLoadProgress(self, progress):
         self.ui.pBarBrowser.setValue(progress)

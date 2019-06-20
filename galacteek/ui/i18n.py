@@ -54,7 +54,7 @@ def iUnknownAgent():
 def iMinimized():
     return QCoreApplication.translate(
         'GalacteekWindow',
-        'Galacteek was minimized to tray')
+        'galacteek was minimized to the system tray')
 
 
 # Headers used in the various tree widgets
@@ -306,6 +306,10 @@ def iZoomIn():
 
 def iZoomOut():
     return QCoreApplication.translate('GalacteekWindow', 'Zoom out')
+
+
+def iClearHistory():
+    return QCoreApplication.translate('GalacteekWindow', 'Clear history')
 
 
 # IPFS daemon ui messages

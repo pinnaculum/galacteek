@@ -1,5 +1,6 @@
 
 from PyQt5.QtWidgets import QListView
+from PyQt5.QtCore import QObject
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QStandardItemModel
@@ -8,14 +9,24 @@ from PyQt5.QtGui import QStandardItem
 from galacteek import ensure
 
 
-class URLHistory:
-    def __init__(self, db, enabled=True):
+class URLHistory(QObject):
+    historyConfigChanged = pyqtSignal(bool)
+
+    def __init__(self, db, enabled=False, parent=None):
+        super(URLHistory, self).__init__(parent)
         self.db = db
         self.enabled = enabled
+        self.historyConfigChanged.connect(self.onConfig)
+
+    def onConfig(self, enableHistory):
+        self.enabled = enableHistory
 
     def record(self, url, title):
         if self.enabled:
             ensure(self.db.historyRecord(url, title))
+
+    def clear(self):
+        ensure(self.db.historyClear())
 
     async def match(self, input):
         return await self.db.historySearch(input)
@@ -30,6 +41,7 @@ class HistoryMatchesWidget(QListView):
 
         self.setObjectName('historySearchResults')
         self.activated.connect(self.onItemActivated)
+        self.pressed.connect(self.onItemActivated)
         self.clicked.connect(self.onItemActivated)
 
         self.model = QStandardItemModel()

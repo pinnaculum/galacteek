@@ -116,6 +116,11 @@ class SettingsDialog(QDialog):
         self.setChecked(self.ui.jsIpfsApi,
                         self.sManager.isTrue(section, CFG_KEY_JSAPI))
 
+        # History
+        self.setChecked(self.ui.urlHistoryEnable,
+                        self.sManager.isTrue(CFG_SECTION_HISTORY,
+                                             CFG_KEY_HISTORYENABLED))
+
         # UI
         section = CFG_SECTION_UI
         self.setChecked(self.ui.wrapFiles,
@@ -165,6 +170,10 @@ class SettingsDialog(QDialog):
         self.sManager.setBoolFrom(section, CFG_KEY_JSAPI,
                                   self.isChecked(self.ui.jsIpfsApi))
 
+        section = CFG_SECTION_HISTORY
+        self.sManager.setBoolFrom(section, CFG_KEY_HISTORYENABLED,
+                                  self.isChecked(self.ui.urlHistoryEnable))
+
         section = CFG_SECTION_UI
         self.sManager.setBoolFrom(section, CFG_KEY_WRAPSINGLEFILES,
                                   self.isChecked(self.ui.wrapFiles))
@@ -179,6 +188,9 @@ class SettingsDialog(QDialog):
         elif lang == iLangFrench():
             self.sManager.setSetting(section, CFG_KEY_LANG, 'fr')
         self.app.setupTranslator()
+
+        self.app.urlHistory.historyConfigChanged.emit(
+            self.sManager.urlHistoryEnabled)
 
         self.sManager.sync()
         self.done(1)
