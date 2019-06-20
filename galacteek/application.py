@@ -11,6 +11,7 @@ import warnings
 import concurrent.futures
 import re
 import platform
+import async_timeout
 
 from quamash import QEventLoop
 
@@ -38,6 +39,8 @@ from galacteek.core.ctx import IPFSContext
 from galacteek.core.multihashmetadb import IPFSObjectMetadataDatabase
 from galacteek.core.clipboard import ClipboardTracker
 from galacteek.core.schemes import DWebSchemeHandler
+from galacteek.core.schemes import ENSWhoisSchemeHandler
+from galacteek.core.db import SqliteDatabase
 from galacteek.ipfs import asyncipfsd, cidhelpers
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import IPFSPath
@@ -51,6 +54,7 @@ from galacteek.dweb.render import defaultJinjaEnv
 from galacteek.ui import mainui
 from galacteek.ui import downloads
 from galacteek.ui import peers
+from galacteek.ui import history
 from galacteek.ui.resource import IPFSResourceOpener
 
 from galacteek.ui.helpers import *
@@ -170,6 +174,7 @@ class GalacteekApplication(QApplication):
         self.setupAsyncLoop()
 
         self.setupPaths()
+        self.setupDb()
         self.setupClipboard()
         self.setupSchemeHandlers()
 
@@ -384,6 +389,8 @@ class GalacteekApplication(QApplication):
         if show is True:
             self.mainWindow.show()
 
+        self.urlHistory = history.URLHistory(self.sqliteDb)
+
     def onSystemTrayIconClicked(self, reason):
         if reason == QSystemTrayIcon.Unknown:
             pass
@@ -520,6 +527,10 @@ class GalacteekApplication(QApplication):
         if self.feedFollowerTask is not None:
             self.feedFollowerTask.cancel()
 
+    def setupDb(self):
+        self.sqliteDb = SqliteDatabase(self._sqliteDbLocation)
+        ensure(self.sqliteDb.setup())
+
     def setupAsyncLoop(self):
         """
         Install the quamash event loop and enable debugging
@@ -558,6 +569,7 @@ class GalacteekApplication(QApplication):
         self._ipfsDataLocation = os.path.join(self._dataLocation, 'ipfs')
         self._orbitDataLocation = os.path.join(self._dataLocation, 'orbitdb')
         self._mHashDbLocation = os.path.join(self._dataLocation, 'mhashmetadb')
+        self._sqliteDbLocation = os.path.join(self._dataLocation, 'db.sqlite')
         self.marksDataLocation = os.path.join(self._dataLocation, 'marks')
         self.uiDataLocation = os.path.join(self._dataLocation, 'ui')
         self.cryptoDataLocation = os.path.join(self._dataLocation, 'crypto')
@@ -650,19 +662,21 @@ class GalacteekApplication(QApplication):
 
         for attempt in range(1, 32):
             self.mainWindow.statusMessage(iIpfsDaemonWaiting(attempt))
-            try:
-                await asyncio.wait_for(ipfsd.proto.eventStarted.wait(), 1)
-            except asyncio.TimeoutError:
-                # Event not set yet, wait again
-                log.debug('IPFSD: timeout occured while waiting for '
-                          'daemon to start (attempt: {0})'.format(attempt))
-                continue
-            else:
-                # Event was set, good to go
-                self.systemTrayMessage('IPFS',
-                                       iIpfsDaemonReady(), timeout=400)
-                running = True
-                break
+
+            with async_timeout.timeout(1):
+                try:
+                    await ipfsd.proto.eventStarted.wait()
+                except asyncio.TimeoutError:
+                    # Event not set yet, wait again
+                    log.debug('IPFSD: timeout occured while waiting for '
+                              'daemon to start (attempt: {0})'.format(attempt))
+                    continue
+                else:
+                    # Event was set, good to go
+                    self.systemTrayMessage('IPFS',
+                                           iIpfsDaemonReady(), timeout=400)
+                    running = True
+                    break
 
         if running is True:
             ensure(self.updateIpfsClient())
@@ -684,6 +698,7 @@ class GalacteekApplication(QApplication):
 
     def setupSchemeHandlers(self):
         self.ipfsSchemeHandler = DWebSchemeHandler(self)
+        self.ensSchemeHandler = ENSWhoisSchemeHandler(self)
 
     def subUrl(self, path):
         """ Joins the gatewayUrl and path to form a new URL """
@@ -715,6 +730,7 @@ class GalacteekApplication(QApplication):
         ensure(self.exitApp())
 
     async def exitApp(self):
+        await self.sqliteDb.close()
         await self.stopIpfsServices()
 
         if self.ipfsd:

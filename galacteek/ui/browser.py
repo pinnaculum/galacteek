@@ -8,6 +8,8 @@ from PyQt5.QtWidgets import QInputDialog
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtWidgets import QTextBrowser
+from PyQt5.QtWidgets import QLineEdit
+from PyQt5.QtWidgets import QListView
 
 from PyQt5.QtPrintSupport import *
 
@@ -16,6 +18,8 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtCore import QTimer
+from PyQt5.QtGui import QStandardItemModel
+from PyQt5.QtGui import QStandardItem
 
 from PyQt5 import QtWebEngineWidgets
 
@@ -26,7 +30,6 @@ from PyQt5.QtWebEngineWidgets import QWebEngineContextMenuData
 
 from PyQt5.QtWebEngineCore import QWebEngineUrlRequestInterceptor
 
-from PyQt5.Qt import QByteArray
 from PyQt5.QtGui import QKeySequence
 
 from galacteek import log, ensure
@@ -41,18 +44,20 @@ from galacteek.ipfs.cidhelpers import cidValid
 from galacteek.dweb.atom import DWEB_ATOM_FEEDFN
 from galacteek.core.analyzer import ResourceAnalyzer
 
+from galacteek.core.schemes import SCHEME_DWEB
+from galacteek.core.schemes import SCHEME_ENS
+from galacteek.core.schemes import SCHEME_FS
+from galacteek.core.schemes import SCHEME_IPFS
+
 from . import ui_browsertab
 from .helpers import *
 from .dialogs import *
 from .hashmarks import *
 from .i18n import *
 from .clipboard import iCopyPathToClipboard
+from .history import HistoryMatchesWidget
 from .widgets import *
 from ..appsettings import *
-
-SCHEME_DWEB = 'dweb'
-SCHEME_FS = 'fs'
-SCHEME_IPFS = 'ipfs'
 
 # i18n
 
@@ -442,6 +447,7 @@ class BrowserKeyFilter(QObject):
     reloadPressed = pyqtSignal()
     zoominPressed = pyqtSignal()
     zoomoutPressed = pyqtSignal()
+    focusUrlPressed = pyqtSignal()
 
     def eventFilter(self, obj, event):
         if event.type() == QEvent.KeyPress:
@@ -462,6 +468,9 @@ class BrowserKeyFilter(QObject):
                 if key == Qt.Key_R:
                     self.reloadPressed.emit()
                     return True
+                if key == Qt.Key_L:
+                    self.focusUrlPressed.emit()
+                    return True
                 if key == Qt.Key_Plus:
                     self.zoominPressed.emit()
                     return True
@@ -469,6 +478,139 @@ class BrowserKeyFilter(QObject):
                     self.zoomoutPressed.emit()
                     return True
         return False
+
+
+class URLInputWidget(QLineEdit):
+    def __init__(self, history, historyView, parent):
+        super(URLInputWidget, self).__init__(parent)
+
+        self.app = QCoreApplication.instance()
+        self.history = history
+        self.historyMatches = historyView
+        self.browser = parent
+
+        self.setObjectName('urlZone')
+        self.setMinimumWidth(400)
+        self.setDragEnabled(True)
+
+        self.urlEditing = False
+        self.urlInput = None
+
+        self.editTimer = QTimer(self)
+        self.editTimer.timeout.connect(self.onTimeoutUrlEdit)
+        self.editTimer.setSingleShot(True)
+
+        self.returnPressed.connect(self.onReturnPressed)
+        self.historyMatches.historyItemSelected.connect(
+            self.onHistoryItemSelected)
+        self.historyMatches.collapsed.connect(
+            self.onHistoryCollapse)
+
+    @property
+    def editTimeoutMs(self):
+        timeout = self.app.settingsMgr.urlHistoryEditTimeout
+        return timeout if isinstance(timeout, int) else 1000
+
+    def onReturnPressed(self):
+        self.urlEditing = False
+        self.browser.handleEditedUrl(self.text())
+
+    def onHistoryCollapse(self):
+        self.setFocus(Qt.PopupFocusReason)
+
+    def focusInEvent(self, event):
+        if event.reason() in [Qt.ShortcutFocusReason, Qt.MouseFocusReason,
+                              Qt.PopupFocusReason, Qt.ActiveWindowFocusReason,
+                              Qt.TabFocusReason]:
+            self.urlEditing = True
+            disconnectSig(self.textEdited, self.onUrlUserEdit)
+            self.textEdited.connect(self.onUrlUserEdit)
+
+        super(URLInputWidget, self).focusInEvent(event)
+
+    def focusOutEvent(self, event):
+        self.urlEditing = False
+        disconnectSig(self.textEdited, self.onUrlUserEdit)
+        self.editTimer.stop()
+        super(URLInputWidget, self).focusOutEvent(event)
+
+    def onUrlUserEdit(self, text):
+        if not self.urlEditing:
+            return
+
+        if not self.editTimer.isActive():
+            self.editTimer.start(self.editTimeoutMs)
+        else:
+            self.editTimer.stop()
+            self.editTimer.start(self.editTimeoutMs)
+
+        self.urlInput = text
+
+    def onTimeoutUrlEdit(self):
+        ensure(self.historyLookup())
+
+    async def historyLookup(self):
+        if self.urlInput:
+            matches = await self.history.match(self.urlInput)
+
+            if len(matches) > 0:
+                self.historyMatches.showMatches(matches)
+                self.historyMatches.show()
+                self.historyMatches.setFocus(Qt.OtherFocusReason)
+
+            self.editTimer.stop()
+
+    def onHistoryItemSelected(self, urlStr):
+        self.historyMatches.hide()
+        self.urlEditing = False
+
+        url = QUrl(urlStr)
+
+        if url.isValid():
+            self.browser.enterUrl(url)
+
+
+class HistoryMatchesWidgetOld(QListView):
+    historyItemSelected = pyqtSignal(str)
+    collapsed = pyqtSignal()
+
+    def __init__(self, parent=None):
+        super(HistoryMatchesWidget, self).__init__(parent)
+
+        self.setObjectName('historySearchResults')
+        self.activated.connect(self.onItemActivated)
+        self.clicked.connect(self.onItemActivated)
+
+        self.model = QStandardItemModel()
+        self.setModel(self.model)
+
+    def onItemActivated(self, idx):
+        data = self.model.data(idx, Qt.EditRole)
+
+        if isinstance(data, str):
+            print('GOT', data)
+            self.historyItemSelected.emit(data)
+
+    def showMatches(self, matches):
+        self.model.clear()
+        for match in matches:
+            if match['title']:
+                text = '{title}: {url}'.format(
+                    title=match['title'], url=match['url'])
+            else:
+                text = match['url']
+
+            item = QStandardItem(text)
+            item.setEditable(False)
+            item.setData(match['url'], Qt.EditRole)
+            self.model.invisibleRootItem().appendRow(item)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            self.hide()
+            self.collapsed.emit()
+
+        super(HistoryMatchesWidget, self).keyPressEvent(event)
 
 
 class BrowserTab(GalacteekTab):
@@ -491,6 +633,13 @@ class BrowserTab(GalacteekTab):
         self.vLayout.addWidget(self.browserWidget)
         self.ui.vLayoutConsole.addWidget(self.jsConsoleWidget)
 
+        # URL zone
+        self.historySearches = HistoryMatchesWidget(parent=self)
+        self.historySearches.hide()
+        self.urlZone = URLInputWidget(self.history, self.historySearches, self)
+        self.ui.layoutHistory.addWidget(self.historySearches)
+        self.ui.layoutUrl.addWidget(self.urlZone)
+
         # Install scheme handler early on
         self.webProfile = QtWebEngineWidgets.QWebEngineProfile.defaultProfile()
         self.installIpfsSchemeHandler()
@@ -510,8 +659,6 @@ class BrowserTab(GalacteekTab):
         self.ui.webEngineView.loadProgress.connect(self.onLoadProgress)
         self.ui.webEngineView.titleChanged.connect(self.onTitleChanged)
 
-        self.ui.urlZone.setDragEnabled(True)
-        self.ui.urlZone.returnPressed.connect(self.onUrlEdit)
         self.ui.backButton.clicked.connect(self.backButtonClicked)
         self.ui.forwardButton.clicked.connect(self.forwardButtonClicked)
 
@@ -540,8 +687,6 @@ class BrowserTab(GalacteekTab):
                                            self.onSavePage)
         self.savePageButton.setEnabled(False)
 
-        self.hashmarkMgrButton = HashmarkMgrButton(
-            marks=self.app.marksLocal)
         self.hashmarkPageAction = QAction(getIcon('hashmark-black.png'),
                                           iHashmarkThisPage(), self,
                                           shortcut=QKeySequence('Ctrl+b'),
@@ -549,18 +694,12 @@ class BrowserTab(GalacteekTab):
         self.ui.hashmarkThisPage.setDefaultAction(self.hashmarkPageAction)
         self.ui.hashmarkThisPage.setEnabled(False)
 
-        self.hashmarkMgrButton.hashmarkClicked.connect(self.onHashmarkClicked)
-
-        self.hashmarkMgrButton.updateMenu()
-
         self.ui.hLayoutCtrl.addWidget(self.savePageButton)
-        self.ui.hLayoutCtrl.addWidget(self.hashmarkMgrButton)
 
         # Setup the tool button for browsing IPFS content
         self.loadIpfsMenu = QMenu()
         self.loadIpfsCIDAction = QAction(getIconIpfsIce(),
                                          iBrowseIpfsCID(), self,
-                                         shortcut=QKeySequence('Ctrl+l'),
                                          triggered=self.onLoadIpfsCID)
         self.loadIpfsMultipleCIDAction = QAction(
             getIconIpfsIce(),
@@ -618,18 +757,32 @@ class BrowserTab(GalacteekTab):
         evfilter.reloadPressed.connect(self.onReloadPage)
         evfilter.zoominPressed.connect(self.onZoomIn)
         evfilter.zoomoutPressed.connect(self.onZoomOut)
+        evfilter.focusUrlPressed.connect(self.onFocusUrl)
         self.installEventFilter(evfilter)
+
+        self.resolveTimer = QTimer(self)
+        self.resolveTimerEnsMs = 7000
+        self.urlInput = None
 
         self.app.clipTracker.clipboardPathProcessed.connect(
             self.onClipboardIpfs)
         self.ipfsObjectVisited.connect(self.onPathVisited)
 
         self._currentIpfsResource = None
+        self._currentUrl = None
         self.currentPageTitle = None
+
+    @property
+    def history(self):
+        return self.gWindow.app.urlHistory
 
     @property
     def webView(self):
         return self.ui.webEngineView
+
+    @property
+    def currentUrl(self):
+        return self._currentUrl
 
     @property
     def jsConsole(self):
@@ -669,15 +822,18 @@ class BrowserTab(GalacteekTab):
                 self.webScripts.insert(script)
 
     def installIpfsSchemeHandler(self):
-        baFs = QByteArray(b'fs')
-        baIpfs = QByteArray(b'ipfs')
-        baDweb = QByteArray(b'dweb')
-
-        for scheme in [baFs, baIpfs, baDweb]:
-            eHandler = self.webProfile.urlSchemeHandler(scheme)
+        for scheme in [SCHEME_DWEB, SCHEME_FS]:
+            eHandler = self.webProfile.urlSchemeHandler(scheme.encode())
             if not eHandler:
                 self.webProfile.installUrlSchemeHandler(
-                    scheme, self.app.ipfsSchemeHandler)
+                    scheme.encode(), self.app.ipfsSchemeHandler)
+
+        eHandler = self.webProfile.urlSchemeHandler(SCHEME_ENS.encode())
+        if not eHandler:
+            self.webProfile.installUrlSchemeHandler(
+                SCHEME_ENS.encode(), self.app.ensSchemeHandler)
+
+        self.app.ensSchemeHandler.domainResolved.connect(self.onEnsResolved)
 
     def onPathVisited(self, ipfsPath):
         # Called after a new IPFS object has been loaded in this tab
@@ -708,6 +864,15 @@ class BrowserTab(GalacteekTab):
 
     def onToggledPinAll(self, checked):
         pass
+
+    def onFocusUrl(self):
+        self.focusUrlZone(True, reason=Qt.ShortcutFocusReason)
+
+    def focusUrlZone(self, select=False, reason=Qt.OtherFocusReason):
+        self.urlZone.setFocus(reason)
+
+        if select:
+            self.urlZone.setSelection(0, len(self.urlZone.text()))
 
     def onReloadPage(self):
         self.ui.webEngineView.reload()
@@ -858,23 +1023,31 @@ class BrowserTab(GalacteekTab):
             if self.currentIpfsResource.valid:
                 log.debug('Current IPFS object: {0}'.format(
                     repr(self.currentIpfsResource)))
+
+                url = QUrl(self.currentIpfsResource.dwebUrl)
+                self.urlZone.clear()
+                self.urlZone.insert(url.toString())
+
+                self.ui.hashmarkThisPage.setEnabled(True)
+                self.ui.pinToolButton.setEnabled(True)
+
+                self.ipfsObjectVisited.emit(self.currentIpfsResource)
+
+                self._currentUrl = url
             else:
                 log.debug('Invalid IPFS path: {0}'.format(urlString))
-
-            self.ui.hashmarkThisPage.setEnabled(self.currentIpfsResource.valid)
-            self.ui.pinToolButton.setEnabled(self.currentIpfsResource.valid)
-
-            self.ui.urlZone.clear()
-            self.ui.urlZone.insert(makeDwebPath(urlString))
-            self.ipfsObjectVisited.emit(self.currentIpfsResource)
 
             # Activate the follow action if this is a root IPNS address
             self.followIpnsAction.setEnabled(
                 self.currentIpfsResource.isIpnsRoot)
         else:
             self._currentIpfsResource = None
-            self.ui.urlZone.clear()
-            self.ui.urlZone.insert(url.toString())
+            self.urlZone.clear()
+            self.urlZone.insert(url.toString())
+            self._currentUrl = url
+
+        if url.scheme() in [SCHEME_ENS]:
+            self.history.record(url.toString(), None)
 
         currentPage = self.webView.page()
 
@@ -897,6 +1070,11 @@ class BrowserTab(GalacteekTab):
         self.gWindow.ui.tabWidget.setTabText(idx, pageTitle)
         self.gWindow.ui.tabWidget.setTabToolTip(idx,
                                                 self.currentPageTitle)
+
+        if self.currentPageTitle != iNoTitle() and self.currentUrl and \
+                self.currentUrl.isValid():
+            self.history.record(self.currentUrl.toString(),
+                                self.currentPageTitle)
 
     def onLoadFinished(self, ok):
         self.ui.stopButton.setEnabled(False)
@@ -946,15 +1124,28 @@ class BrowserTab(GalacteekTab):
         self.browseFsPath(IPFSPath(joinIpns(ipnsHash)))
 
     def enterUrl(self, url):
+        self.urlZone.urlEditing = False
+        self.urlZone.clearFocus()
+
         self.savePageButton.setEnabled(False)
         log.debug('Entering URL {}'.format(url.toString()))
-        self.ui.urlZone.clear()
-        self.ui.urlZone.insert(url.toString())
+
+        def onEnsTimeout():
+            if not self.urlZone.isEnabled():
+                self.urlZone.setEnabled(True)
+
+        if url.scheme() == SCHEME_ENS:
+            self.urlZone.setEnabled(False)
+            self.resolveTimer.timeout.connect(onEnsTimeout)
+            self.resolveTimer.start(self.resolveTimerEnsMs)
+        else:
+            self.urlZone.setEnabled(True)
+
+        self.urlZone.clear()
+        self.urlZone.insert(url.toString())
         self.ui.webEngineView.load(url)
 
-    def onUrlEdit(self):
-        inputStr = self.ui.urlZone.text().strip()
-
+    def handleEditedUrl(self, inputStr):
         if cidhelpers.cidValid(inputStr):
             # Raw CID in the URL zone
             return self.browseIpfsHash(inputStr)
@@ -962,14 +1153,17 @@ class BrowserTab(GalacteekTab):
         url = QUrl(inputStr)
         scheme = url.scheme()
 
-        if scheme in [SCHEME_FS, SCHEME_IPFS, SCHEME_DWEB]:
+        if scheme in [SCHEME_FS, SCHEME_ENS, SCHEME_IPFS, SCHEME_DWEB]:
             self.enterUrl(url)
         elif scheme in ['http', 'https'] and \
                 self.app.settingsMgr.allowHttpBrowsing is True:
             # Browse http urls if allowed
             self.enterUrl(url)
         else:
-            messageBox(iInvalidUrl(inputStr))
+            self.enterUrl(QUrl('dweb:/ipns/{input}'.format(input=inputStr)))
+
+    def onEnsResolved(self, domain, path):
+        self.urlZone.setEnabled(True)
 
     def onZoomIn(self):
         cFactor = self.webView.zoomFactor()
