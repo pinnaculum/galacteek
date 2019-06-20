@@ -19,9 +19,6 @@ Platforms supported
 If it works for you, great, but most likely it won't :)
 This started as an experiment with quamash_ and is WIP.
 
-If you want to donate to this project please use the
-`Patreon page <https://www.patreon.com/galacteek>`_
-
 Installation
 ============
 
@@ -125,7 +122,7 @@ should enable pubsub or some features won't be available.
 - Browsing sessions with automatic pinning (pins every page you browse)
 - File manager with drag-and-drop support
 - Following IPNS hashes
-- ENS_ (Ethereum Name System) resolving (access to ENS+IPFS websites)
+- ENS_ (Ethereum Name Service) resolving (access to ENS+IPFS websites)
 - Sharing hashmarks over pubsub
 - Basic built-in media player with IPFS-stored playlists
 - Search content with the ipfs-search_ search engine
@@ -163,6 +160,9 @@ Contributions and contact
 Contributions and ideas are more than welcome!
 Contact by mail at: galacteek AT protonmail DOT com
 
+If you want to donate to this project please use the
+`Patreon page <https://www.patreon.com/galacteek>`_
+
 Requirements
 ============
 
@@ -186,8 +186,6 @@ Some icons from the "Oxygen" icons set are included.
 
 Some of the beautiful artwork (under the Creative Commons CC-BY-SA license)
 from the ipfs-logo_ project's repository is included, unchanged.
-
-Main icon made by srip_ (flaticon, CC by 3.0)
 
 .. _aiohttp: https://pypi.python.org/pypi/aiohttp
 .. _aioipfs: https://gitlab.com/cipres/aioipfs
