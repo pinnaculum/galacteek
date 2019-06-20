@@ -19,8 +19,18 @@ class FeedFollower(object):
         self.marks = marks
         self.app = app
 
+    async def process(self):
+        try:
+            await self.processIpnsFeeds()
+        except asyncio.CancelledError:
+            pass
+        except asyncio.TimeoutError:
+            pass
+        except BaseException:
+            log.debug('IPNS follower: unknown error ocurred')
+
     @ipfsOp
-    async def process(self, op):
+    async def processIpnsFeeds(self, op):
         while True:
             feeds = self.marks.getFeeds()
 
