@@ -107,8 +107,8 @@ def setDefaultSettings(gApp):
     sManager.setDefaultFalse(section, CFG_KEY_BROWSER_AUTOPIN)
 
     section = CFG_SECTION_HISTORY
-    sManager.setDefaultTrue(section, CFG_KEY_HISTORYENABLED)
-    sManager.setDefaultSetting(section, CFG_KEY_TIMEOUTURLEDIT, 1000)
+    sManager.setDefaultFalse(section, CFG_KEY_HISTORYENABLED)
+    sManager.setDefaultSetting(section, CFG_KEY_TIMEOUTURLEDIT, 1200)
 
     section = CFG_SECTION_ORBITDB
     sManager.setDefaultSetting(section, CFG_KEY_CONNECTOR_LISTENPORT, 3000)
@@ -243,7 +243,7 @@ class SettingsManager(object):
 
     @property
     def urlHistoryEnabled(self):
-        return self.getSetting(CFG_SECTION_HISTORY, CFG_KEY_HISTORYENABLED)
+        return self.isTrue(CFG_SECTION_HISTORY, CFG_KEY_HISTORYENABLED)
 
     @property
     def urlHistoryEditTimeout(self):

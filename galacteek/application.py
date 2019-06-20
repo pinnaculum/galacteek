@@ -32,7 +32,9 @@ from PyQt5.QtCore import QTemporaryDir
 from PyQt5.QtCore import QDir
 from PyQt5.QtCore import QMimeDatabase
 
-from galacteek import log, ensure
+from galacteek import log
+from galacteek import logUser
+from galacteek import ensure
 from galacteek import pypicheck, GALACTEEK_NAME
 from galacteek.core.asynclib import asyncify
 from galacteek.core.ctx import IPFSContext
@@ -144,6 +146,8 @@ class GalacteekApplication(QApplication):
         QApplication.__init__(self, sys.argv)
 
         QCoreApplication.setApplicationName(GALACTEEK_NAME)
+
+        self.setQuitOnLastWindowClosed(False)
 
         self._debugEnabled = debug
         self._appProfile = profile
@@ -312,13 +316,19 @@ class GalacteekApplication(QApplication):
         self.systemTray.setIcon(getIcon('galacteek.png'))
         self.systemTray.show()
         self.systemTray.activated.connect(self.onSystemTrayIconClicked)
-        self.systemTray.setToolTip('Galacteek')
+        self.systemTray.setToolTip(GALACTEEK_NAME)
 
-        systemTrayMenu = QMenu(None)
+        systemTrayMenu = QMenu(self.mainWindow)
 
-        action = systemTrayMenu.addAction('Quit')
-        action.setIcon(QIcon.fromTheme('application-exit'))
-        action.triggered.connect(self.onExit)
+        actionShow = systemTrayMenu.addAction('Show')
+        actionShow.setIcon(getIcon('galacteek.png'))
+        actionShow.triggered.connect(self.onShowWindow)
+
+        systemTrayMenu.addSeparator()
+
+        actionQuit = systemTrayMenu.addAction('Quit')
+        actionQuit.setIcon(getIcon('quit.png'))
+        actionQuit.triggered.connect(self.onExit)
 
         self.systemTray.setContextMenu(systemTrayMenu)
 
@@ -389,7 +399,11 @@ class GalacteekApplication(QApplication):
         if show is True:
             self.mainWindow.show()
 
-        self.urlHistory = history.URLHistory(self.sqliteDb)
+        self.urlHistory = history.URLHistory(
+            self.sqliteDb,
+            enabled=self.settingsMgr.urlHistoryEnabled,
+            parent=self
+        )
 
     def onSystemTrayIconClicked(self, reason):
         if reason == QSystemTrayIcon.Unknown:
@@ -654,14 +668,13 @@ class GalacteekApplication(QApplication):
 
         running = False
 
-        self.systemTrayMessage('IPFS', iIpfsDaemonStarted(),
-                               timeout=1000)
+        logUser.info(iIpfsDaemonStarted())
 
         # Use asyncio.wait_for to wait for the proto.eventStarted
         # event to be fired.
 
         for attempt in range(1, 32):
-            self.mainWindow.statusMessage(iIpfsDaemonWaiting(attempt))
+            logUser.info(iIpfsDaemonWaiting(attempt))
 
             with async_timeout.timeout(1):
                 try:
@@ -675,15 +688,14 @@ class GalacteekApplication(QApplication):
                     continue
                 else:
                     # Event was set, good to go
-                    self.systemTrayMessage('IPFS',
-                                           iIpfsDaemonReady(), timeout=400)
+                    logUser.info(iIpfsDaemonReady())
                     running = True
                     break
 
         if running is True:
             ensure(self.updateIpfsClient())
         else:
-            self.systemTrayMessage('IPFS', iIpfsDaemonInitProblem())
+            logUser(iIpfsDaemonInitProblem())
 
     def setupClipboard(self):
         self.appClipboard = self.clipboard()
@@ -727,6 +739,9 @@ class GalacteekApplication(QApplication):
     def showTasks(self):
         for task in self.pendingTasks:
             self.debug('Pending task: {}'.format(task))
+
+    def onShowWindow(self):
+        self.mainWindow.show()
 
     def onExit(self):
         ensure(self.exitApp())

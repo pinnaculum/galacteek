@@ -24,6 +24,7 @@ from galacteek import ensure
 from galacteek import logUser
 from galacteek.crypto.qrcode import IPFSQrDecoder
 from galacteek.ipfs.wrappers import ipfsOp
+from galacteek.ipfs.cidhelpers import IPFSPath
 
 from .widgets import GalacteekTab
 from .helpers import getIcon
@@ -51,16 +52,20 @@ class ImageViewerTab(GalacteekTab):
     def __init__(self, mainW):
         super().__init__(mainW)
 
-        self.zoomIn = QToolButton()
+        self.pinButton = QToolButton(self)
+        self.pinButton.setIcon(getIcon('pin.png'))
+        self.pinButton.setEnabled(True)
+
+        self.zoomIn = QToolButton(self)
         self.zoomIn.setIcon(getIcon('zoom-in.png'))
         self.zoomIn.setShortcut(QKeySequence('Ctrl++'))
         self.zoomIn.setToolTip(iZoomIn())
-        self.zoomOut = QToolButton()
+        self.zoomOut = QToolButton(self)
         self.zoomOut.setIcon(getIcon('zoom-out.png'))
         self.zoomOut.setShortcut(QKeySequence('Ctrl+-'))
         self.zoomOut.setToolTip(iZoomOut())
 
-        self.fitWindow = QToolButton()
+        self.fitWindow = QToolButton(self)
         self.fitWindow.setCheckable(True)
         self.fitWindow.setToolTip('Fit to window')
         self.fitWindow.setIcon(getIcon('expand.png'))
@@ -68,6 +73,9 @@ class ImageViewerTab(GalacteekTab):
         layout = QHBoxLayout()
         layout.addItem(
             QSpacerItem(10, 10, QSizePolicy.Expanding, QSizePolicy.Minimum))
+        layout.addWidget(self.pinButton, 0, Qt.AlignLeft)
+        layout.addItem(
+            QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Minimum))
         layout.addWidget(self.zoomOut, 0, Qt.AlignLeft)
         layout.addWidget(self.zoomIn, 0, Qt.AlignLeft)
         layout.addWidget(self.fitWindow, 0, Qt.AlignLeft)
@@ -83,9 +91,10 @@ class ImageViewerTab(GalacteekTab):
         self.zoomOut.clicked.connect(self.view.zoomOut)
         self.fitWindow.clicked.connect(
             lambda: self.view.fitWindow(self.fitWindow.isChecked()))
+        self.pinButton.clicked.connect(self.view.pinImage)
 
     def onImageLoaded(self, path):
-        pass
+        self.pinButton.setEnabled(True)
 
     def onQrCodesListed(self, urls):
         # Create the scroll area and fix maximum height
@@ -159,6 +168,7 @@ class ImageView(QScrollArea):
     def __init__(self, parent=None):
         super(ImageView, self).__init__(parent)
 
+        self.currentImgPath = None
         self.setObjectName('ImageView')
         self.qrDecoder = IPFSQrDecoder()
         self.image = QImage()
@@ -174,6 +184,14 @@ class ImageView(QScrollArea):
         self.labelImage.setScaledContents(True)
         self.scaleFactor = 1.0
         self.setWidget(self.labelImage)
+
+    def pinImage(self):
+        if self.currentImgPath and self.currentImgPath.valid:
+            ensure(self.pinImageFromPath(self.currentImgPath))
+
+    @ipfsOp
+    async def pinImageFromPath(self, ipfsop, imgPath):
+        await ipfsop.ctx.pin(str(imgPath))
 
     def fitWindow(self, fit):
         self.setWidgetResizable(fit)
@@ -221,6 +239,8 @@ class ImageView(QScrollArea):
             self.labelImage.setPixmap(QPixmap.fromImage(self.image))
             self.labelImage.adjustSize()
             self.resizePixmap()
+
+            self.currentImgPath = IPFSPath(imgPath)
 
             self.imageLoaded.emit(imgPath)
 

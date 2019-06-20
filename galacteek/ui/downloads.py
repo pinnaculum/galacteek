@@ -16,6 +16,7 @@ from galacteek.ipfs.crawl import runTitleParser
 from galacteek.core.asynclib import asyncReadFile
 from galacteek.core.asynclib import asyncWriteFile
 
+from .helpers import questionBox
 from ..appsettings import *
 from .i18n import iUnknown
 
@@ -65,6 +66,11 @@ class DownloadsManager(QObject):
             downItem.finished.connect(
                 functools.partial(self.pageSaved, downItem))
             downItem.accept()
+            return
+
+        reply = questionBox('Download', 'Download {} ?'.format(name))
+        if reply is not True:
+            downItem.cancel()
             return
 
         self.app.systemTrayMessage('Galacteek', iStartingDownload(name))

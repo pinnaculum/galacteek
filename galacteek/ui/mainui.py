@@ -4,6 +4,7 @@ import os.path
 from logbook import Handler
 from logbook import StringFormatterHandlerMixin
 
+from PyQt5.QtWidgets import QTabWidget
 from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QWidget
@@ -12,7 +13,6 @@ from PyQt5.QtWidgets import QMenu
 from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QActionGroup
 from PyQt5.QtWidgets import QToolButton
-from PyQt5.QtWidgets import QInputDialog
 from PyQt5.QtWidgets import QPushButton
 from PyQt5.QtWidgets import QLabel
 
@@ -44,7 +44,6 @@ from galacteek.core.orbitdb import GalacteekOrbitConnector
 from galacteek.dweb.page import HashmarksPage, DWebView, WebTab
 from galacteek.core.modelhelpers import *
 
-from . import ui_galacteek
 from . import ui_ipfsinfos
 
 from . import userwebsite
@@ -288,13 +287,12 @@ class MainWindow(QMainWindow):
     def __init__(self, app):
         super(MainWindow, self).__init__()
 
+        self.setMinimumSize(QSize(600, 400))
+
         self.showMaximized()
         self._app = app
         self._allTabs = []
         self._lastFeedMark = None
-
-        self.ui = ui_galacteek.Ui_GalacteekWindow()
-        self.ui.setupUi(self)
 
         self.menuBar().hide()
 
@@ -307,13 +305,6 @@ class MainWindow(QMainWindow):
         self.tabnMediaPlayer = iMediaPlayer()
         self.tabnHashmarks = iHashmarks()
         self.tabnChat = iChat()
-
-        self.ui.actionCloseAllTabs.triggered.connect(
-            self.onCloseAllTabs)
-        self.ui.actionSettings.triggered.connect(
-            self.onSettings)
-        self.ui.actionEvent_log.triggered.connect(
-            self.onOpenEventLog)
 
         self.actionQuit = QAction(
             getIcon('quit.png'),
@@ -378,8 +369,6 @@ class MainWindow(QMainWindow):
 
         # Edit-Profile button
         self.menuUserProfile = QMenu()
-        self.menuUserProfile.addSeparator()
-        self.menuUserProfile.triggered.connect(self.onUserProfile)
         self.profilesActionGroup = QActionGroup(self)
 
         # Profile button
@@ -447,6 +436,9 @@ class MainWindow(QMainWindow):
                        self.onOpenEventLog)
         menu.addAction(getIcon('lock-and-key.png'), iKeys(),
                        self.onIpfsKeysClicked)
+        menu.addSeparator()
+        menu.addAction(iClearHistory(), self.onClearHistory)
+
         self.settingsToolButton.setMenu(menu)
 
         self.helpToolButton = QToolButton()
@@ -520,15 +512,16 @@ class MainWindow(QMainWindow):
         self.addToolBar(Qt.TopToolBarArea, self.toolbarMain)
         self.addToolBar(Qt.RightToolBarArea, self.toolbarPyramids)
 
-        self.ui.tabWidget.setDocumentMode(True)
-        self.ui.tabWidget.setTabsClosable(True)
-        self.ui.tabWidget.tabCloseRequested.connect(self.onTabCloseRequest)
-        self.ui.tabWidget.setElideMode(Qt.ElideMiddle)
-        self.ui.tabWidget.setUsesScrollButtons(True)
+        self.tabWidget = QTabWidget(self)
+        self.tabWidget.setDocumentMode(True)
+        self.tabWidget.setTabsClosable(True)
+        self.tabWidget.tabCloseRequested.connect(self.onTabCloseRequest)
+        self.tabWidget.setElideMode(Qt.ElideMiddle)
+        self.tabWidget.setUsesScrollButtons(True)
 
         tabKeyFilter = TabWidgetKeyFilter(self)
         tabKeyFilter.nextPressed.connect(self.cycleTabs)
-        self.ui.tabWidget.installEventFilter(tabKeyFilter)
+        self.tabWidget.installEventFilter(tabKeyFilter)
 
         # Chat room
         self.chatRoomWidget = chat.ChatRoomWidget(self)
@@ -540,23 +533,24 @@ class MainWindow(QMainWindow):
         self.webProfile = QtWebEngineWidgets.QWebEngineProfile.defaultProfile()
 
         # Status bar setup
-        self.ui.pinningStatusButton = QPushButton()
-        self.ui.pinningStatusButton.setToolTip(iNoStatus())
-        self.ui.pinningStatusButton.setIcon(getIcon('pin-black.png'))
-        self.ui.pinningStatusButton.clicked.connect(
+        self.pinningStatusButton = QPushButton()
+        self.pinningStatusButton.setToolTip(iNoStatus())
+        self.pinningStatusButton.setIcon(getIcon('pin-black.png'))
+        self.pinningStatusButton.clicked.connect(
             self.showPinningStatusWidget)
-        self.ui.pubsubStatusButton = QPushButton()
-        self.ui.pubsubStatusButton.setIcon(getIcon('network-offline.png'))
-        self.ui.ipfsInfosButton = QPushButton()
-        self.ui.ipfsInfosButton.setIcon(getIcon('information.png'))
-        self.ui.ipfsInfosButton.setToolTip(iIpfsInfos())
-        self.ui.ipfsInfosButton.clicked.connect(self.onIpfsInfos)
+        self.pubsubStatusButton = QPushButton()
+        self.pubsubStatusButton.setIcon(getIcon('network-offline.png'))
+        self.ipfsInfosButton = QPushButton()
+        self.ipfsInfosButton.setIcon(getIcon('information.png'))
+        self.ipfsInfosButton.setToolTip(iIpfsInfos())
+        self.ipfsInfosButton.clicked.connect(self.onIpfsInfos)
 
-        self.ui.ipfsStatusLabel = QLabel()
-        self.ui.statusbar.addPermanentWidget(self.ui.ipfsStatusLabel)
-        self.ui.statusbar.addPermanentWidget(self.ui.ipfsInfosButton)
-        self.ui.statusbar.addPermanentWidget(self.ui.pinningStatusButton)
-        self.ui.statusbar.addPermanentWidget(self.ui.pubsubStatusButton)
+        self.ipfsStatusLabel = QLabel()
+        self.statusbar = self.statusBar()
+        self.statusbar.addPermanentWidget(self.ipfsStatusLabel)
+        self.statusbar.addPermanentWidget(self.ipfsInfosButton)
+        self.statusbar.addPermanentWidget(self.pinningStatusButton)
+        self.statusbar.addPermanentWidget(self.pubsubStatusButton)
 
         # Connection status timer
         self.timerStatus = QTimer(self)
@@ -583,7 +577,7 @@ class MainWindow(QMainWindow):
         # Application signals
         self.app.manualAvailable.connect(self.onManualAvailable)
 
-        self.ui.tabWidget.removeTab(0)
+        self.tabWidget.removeTab(0)
 
         previousGeo = self.app.settingsMgr.mainWindowGeometry
         if previousGeo:
@@ -598,7 +592,7 @@ class MainWindow(QMainWindow):
         self.pinIconLoading = getIcon('pin-blue-loading.png')
         self.pinIconNormal = getIcon('pin-black.png')
 
-        self.setCentralWidget(self.ui.tabWidget)
+        self.setCentralWidget(self.tabWidget)
 
     @property
     def app(self):
@@ -609,11 +603,14 @@ class MainWindow(QMainWindow):
         return self._allTabs
 
     def cycleTabs(self):
-        curIndex = self.ui.tabWidget.currentIndex()
-        if curIndex + 1 < self.ui.tabWidget.count():
-            self.ui.tabWidget.setCurrentIndex(curIndex + 1)
+        curIndex = self.tabWidget.currentIndex()
+        if curIndex + 1 < self.tabWidget.count():
+            self.tabWidget.setCurrentIndex(curIndex + 1)
         else:
-            self.ui.tabWidget.setCurrentIndex(0)
+            self.tabWidget.setCurrentIndex(0)
+
+    def onClearHistory(self):
+        self.app.urlHistory.clear()
 
     def onHashmarkClicked(self, path, title):
         ipfsPath = IPFSPath(path)
@@ -697,20 +694,6 @@ class MainWindow(QMainWindow):
                     filesM.setupModel()
                     filesM.pathSelectorDefault()
 
-    def onUserProfile(self, action):
-        if action is self.ui.actionNew_Profile:
-            inText = QInputDialog.getText(self, iNewProfile(),
-                                          iNewProfile())
-            profile, create = inText
-            if create is True and profile:
-                self.app.task(self.app.ipfsCtx.profileNew, profile,
-                              emitavail=True)
-        else:
-            pName = action.text()
-            if action.isChecked() and \
-                    self.app.ipfsCtx.currentProfile.name != pName:
-                self.app.ipfsCtx.profileChange(pName)
-
     def onProfileViewHomepage(self):
         self.addBrowserTab().browseFsPath(os.path.join(
             joinIpns(self.app.ipfsCtx.currentProfile.keyRootId), 'index.html'))
@@ -756,7 +739,7 @@ class MainWindow(QMainWindow):
             orbitIcon = QPushButton()
             orbitIcon.setIcon(getIcon('orbitdb.png'))
             orbitIcon.setToolTip('OrbitDB: connected')
-            self.ui.statusbar.addPermanentWidget(orbitIcon)
+            self.statusbar.addPermanentWidget(orbitIcon)
 
             self.orbitManager = DatabasesManager(
                 self.app.ipfsCtx.orbitConnector, self)
@@ -796,8 +779,8 @@ class MainWindow(QMainWindow):
 
     def onPubsubRx(self):
         now = QDateTime.currentDateTime()
-        self.ui.pubsubStatusButton.setIcon(getIcon('network-transmit.png'))
-        self.ui.pubsubStatusButton.setToolTip(
+        self.pubsubStatusButton.setIcon(getIcon('network-transmit.png'))
+        self.pubsubStatusButton.setToolTip(
             'Pubsub: last message received {}'.format(now.toString()))
 
     def onPubsubTx(self):
@@ -807,7 +790,7 @@ class MainWindow(QMainWindow):
         name = self.tabnPinning
         ft = self.findTabWithName(name)
         if ft:
-            return self.ui.tabWidget.setCurrentWidget(ft)
+            return self.tabWidget.setCurrentWidget(ft)
 
         tab = self.pinStatusTab
         self.registerTab(tab, name, current=True,
@@ -817,12 +800,12 @@ class MainWindow(QMainWindow):
         statusMsg = iItemsInPinningQueue(count)
 
         if count > 0:
-            self.ui.pinningStatusButton.setIcon(self.pinIconLoading)
+            self.pinningStatusButton.setIcon(self.pinIconLoading)
         else:
-            self.ui.pinningStatusButton.setIcon(self.pinIconNormal)
+            self.pinningStatusButton.setIcon(self.pinIconNormal)
 
-        self.ui.pinningStatusButton.setToolTip(statusMsg)
-        self.ui.pinningStatusButton.setStatusTip(statusMsg)
+        self.pinningStatusButton.setToolTip(statusMsg)
+        self.pinningStatusButton.setStatusTip(statusMsg)
 
     def onPinFinished(self, path):
         pass
@@ -852,48 +835,48 @@ class MainWindow(QMainWindow):
             btn.setEnabled(flag)
 
     def statusMessage(self, msg):
-        self.ui.statusbar.showMessage(msg)
+        self.statusbar.showMessage(msg)
 
     def registerTab(self, tab, name, icon=None, current=False,
                     tooltip=None):
         idx = None
         if icon:
-            idx = self.ui.tabWidget.addTab(tab, icon, name)
+            idx = self.tabWidget.addTab(tab, icon, name)
         else:
-            idx = self.ui.tabWidget.addTab(tab, name)
+            idx = self.tabWidget.addTab(tab, name)
 
         self._allTabs.append(tab)
 
         if current is True:
-            self.ui.tabWidget.setCurrentWidget(tab)
+            self.tabWidget.setCurrentWidget(tab)
             tab.setFocus(Qt.OtherFocusReason)
 
         if tooltip and idx:
-            self.ui.tabWidget.setTabToolTip(idx, tooltip)
+            self.tabWidget.setTabToolTip(idx, tooltip)
 
     def findTabFileManager(self):
         return self.findTabWithName(self.tabnFManager)
 
     def findTabIndex(self, w):
-        return self.ui.tabWidget.indexOf(w)
+        return self.tabWidget.indexOf(w)
 
     def findTabWithName(self, name):
-        for idx in range(0, self.ui.tabWidget.count()):
-            tName = self.ui.tabWidget.tabText(idx)
+        for idx in range(0, self.tabWidget.count()):
+            tName = self.tabWidget.tabText(idx)
 
             if tName == name:
-                return self.ui.tabWidget.widget(idx)
+                return self.tabWidget.widget(idx)
 
     def removeTabFromWidget(self, w):
-        idx = self.ui.tabWidget.indexOf(w)
+        idx = self.tabWidget.indexOf(w)
         if idx:
-            self.ui.tabWidget.removeTab(idx)
+            self.tabWidget.removeTab(idx)
 
     def onSettings(self):
         runDialog(settings.SettingsDialog, self.app)
 
     def onCloseAllTabs(self):
-        self.ui.tabWidget.clear()
+        self.tabWidget.clear()
 
     def onToggledPinAllGlobal(self, checked):
         self.pinAllGlobalChecked = checked
@@ -906,7 +889,7 @@ class MainWindow(QMainWindow):
         try:
             info = await ipfsop.client.core.id()
         except BaseException:
-            return self.ui.ipfsStatusLabel.setText(iErrNoCx())
+            return self.ipfsStatusLabel.setText(iErrNoCx())
 
         nodeId = info.get('ID', iUnknown())
         nodeAgent = info.get('AgentVersion', iUnknownAgent())
@@ -914,11 +897,11 @@ class MainWindow(QMainWindow):
         # Get IPFS peers list
         peers = await ipfsop.peersList()
         if not peers:
-            return self.ui.ipfsStatusLabel.setText(
+            return self.ipfsStatusLabel.setText(
                 iCxButNoPeers(nodeId, nodeAgent))
 
         message = iConnectStatus(nodeId, nodeAgent, len(peers))
-        self.ui.ipfsStatusLabel.setText(message)
+        self.ipfsStatusLabel.setText(message)
 
     def onMainTimerStatus(self):
         ensure(self.displayConnectionInfo())
@@ -934,8 +917,10 @@ class MainWindow(QMainWindow):
             if event.key() == Qt.Key_U:
                 self.showPinningStatusWidget()
             if event.key() == Qt.Key_W:
-                idx = self.ui.tabWidget.currentIndex()
+                idx = self.tabWidget.currentIndex()
                 self.onTabCloseRequest(idx)
+            if event.key() == Qt.Key_Q:
+                self.quit()
 
         super(MainWindow, self).keyPressEvent(event)
 
@@ -983,13 +968,13 @@ class MainWindow(QMainWindow):
             tab.playFromPath(path, mediaName=mediaName)
 
     def onTabCloseRequest(self, idx):
-        tab = self.ui.tabWidget.widget(idx)
+        tab = self.tabWidget.widget(idx)
 
         if tab not in self.allTabs:
             return False
 
         if tab.onClose() is True:
-            self.ui.tabWidget.removeTab(idx)
+            self.tabWidget.removeTab(idx)
             self.allTabs.remove(tab)
             del tab
 
@@ -1015,7 +1000,7 @@ class MainWindow(QMainWindow):
         self.addBrowserTab(pinBrowsed=pinBrowsed)
 
     def onWriteNewDocumentClicked(self):
-        w = textedit.AddDocumentWidget(self, parent=self.ui.tabWidget)
+        w = textedit.AddDocumentWidget(self, parent=self.tabWidget)
         self.registerTab(w, 'New document', current=True)
 
     def onPeersMgrClicked(self):
@@ -1028,10 +1013,10 @@ class MainWindow(QMainWindow):
         ft = self.findTabWithName(name)
         if ft:
             ft.fileManager.updateTree()
-            return self.ui.tabWidget.setCurrentWidget(ft)
+            return self.tabWidget.setCurrentWidget(ft)
 
         fileManagerTab = files.FileManagerTab(
-            self.ui.tabWidget, fileManager=self.fileManagerWidget)
+            self.tabWidget, fileManager=self.fileManagerWidget)
         self.registerTab(fileManagerTab, name, current=True, icon=icon)
         fileManagerTab.fileManager.updateTree()
 
@@ -1039,7 +1024,7 @@ class MainWindow(QMainWindow):
         name = self.tabnKeys
         ft = self.findTabWithName(name)
         if ft:
-            return self.ui.tabWidget.setCurrentWidget(ft)
+            return self.tabWidget.setCurrentWidget(ft)
 
         keysTab = keys.KeysTab(self)
         self.registerTab(keysTab, name, current=True)
@@ -1069,7 +1054,7 @@ class MainWindow(QMainWindow):
 
         ft = self.findTabWithName(name)
         if ft:
-            return self.ui.tabWidget.setCurrentWidget(ft)
+            return self.tabWidget.setCurrentWidget(ft)
 
         pMgr = peers.PeersManager(self, self.app.peersTracker)
         self.registerTab(pMgr, name, current=current)
@@ -1097,7 +1082,8 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         event.ignore()
         self.hide()
-        self.app.systemTrayMessage('Galacteek', iMinimized())
+        self.app.systemTrayMessage('galacteek', iMinimized())
+        super(MainWindow, self).closeEvent(event)
 
     def toggleIpfsSearchWidget(self, forceshow=False):
         btnPos = self.ipfsSearchButton.mapToGlobal(QPoint(0, 0))
@@ -1125,14 +1111,15 @@ class MainWindow(QMainWindow):
     def addHashmarksTab(self):
         ft = self.findTabWithName(self.tabnHashmarks)
         if ft:
-            return self.ui.tabWidget.setCurrentWidget(ft)
+            return self.tabWidget.setCurrentWidget(ft)
+
+        tab = WebTab(self.tabWidget)
 
         if self.hashmarksPage is None:
             self.hashmarksPage = HashmarksPage(self.app.marksLocal,
-                                               self.app.marksNetwork)
-
-        tab = WebTab(self.ui.tabWidget)
-        hview = DWebView(page=self.hashmarksPage)
+                                               self.app.marksNetwork,
+                                               parent=tab)
+        hview = DWebView(page=self.hashmarksPage, parent=tab)
         tab.attach(hview)
 
         self.registerTab(tab, iHashmarks(),
@@ -1141,7 +1128,7 @@ class MainWindow(QMainWindow):
     def onOpenChatWidget(self):
         ft = self.findTabWithName(self.tabnChat)
         if ft:
-            return self.ui.tabWidget.setCurrentWidget(ft)
+            return self.tabWidget.setCurrentWidget(ft)
 
         self.registerTab(self.chatRoomWidget, self.tabnChat,
                          icon=getIcon('chat.png'), current=True)

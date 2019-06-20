@@ -21,7 +21,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>1</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="tab">
       <attribute name="title">
@@ -522,10 +522,17 @@
           <item row="0" column="0">
            <layout class="QGridLayout" name="gridLayout_3"/>
           </item>
-          <item row="1" column="0">
+          <item row="2" column="0">
            <widget class="QCheckBox" name="jsIpfsApi">
             <property name="text">
              <string>Enable Javascript IPFS API</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QCheckBox" name="urlHistoryEnable">
+            <property name="text">
+             <string>Enable URL history</string>
             </property>
            </widget>
           </item>
