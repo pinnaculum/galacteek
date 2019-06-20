@@ -1,5 +1,5 @@
 
-.. image:: https://gitlab.com/galacteek/galacteek/raw/master/share/icons/cube-nova-aqua.png
+.. image:: https://gitlab.com/galacteek/galacteek/raw/master/share/icons/galacteek.png
     :align: center
     :width: 128
     :height: 128
@@ -14,7 +14,7 @@ Platforms supported
 
 - Linux (main target)
 - FreeBSD (or any BSD OS, as long as you have PyCryptodome)
-- MacOS (*experimental*, probably a lot of asyncio-related instability)
+- MacOS (*experimental*)
 
 If it works for you, great, but most likely it won't :)
 This started as an experiment with quamash_ and is WIP.
@@ -92,12 +92,26 @@ Then connect to the aiomonitor_ interface with **nc localhost 50101**
 URL schemes
 ===========
 
+dweb:/
+------
+
 Right now the application relies on the *dweb:/* URL scheme. We are
 using CIDv1 by default for all content. Starting with go-ipfs_ version
 0.4.21, objects using CIDv1 are in base32 by default, creating the
 possibility to integrate other URL schemes (like *ipfs://<cidv1-base32>*)
 that will treat the CID as the authority. Work is being done to
 integrate such schemes in the browser and make it the default.
+
+ens://
+------
+
+There is support for accessing IPFS-hosted websites that are registered
+on Ethereum Name Service (see ENS_). Just use **ens://mydomain.eth** for example
+as a URL in the browser and you will be redirected to the IPFS website
+referenced on ENS for this domain.
+
+`On this dweb page <dweb:/ipfs/QmdjGyE5axZcCRorALntbqrr6TFdr7ik2kwKiUxY1tELSh/ens+ipfs/list-of_ENSIPFS-websites.html>`_
+you can find a list of some ENS+IPFS websites (or with **ens://blog.almonit.eth**)
 
 Features
 ========
@@ -111,6 +125,7 @@ should enable pubsub or some features won't be available.
 - Browsing sessions with automatic pinning (pins every page you browse)
 - File manager with drag-and-drop support
 - Following IPNS hashes
+- ENS_ (Ethereum Name System) resolving (access to ENS+IPFS websites)
 - Sharing hashmarks over pubsub
 - Basic built-in media player with IPFS-stored playlists
 - Search content with the ipfs-search_ search engine
@@ -190,3 +205,4 @@ Main icon made by srip_ (flaticon, CC by 3.0)
 .. _qreader: https://github.com/ewino/qreader/
 .. _shortcuts: http://htmlpreview.github.io/?https://raw.githubusercontent.com/eversum/galacteek/master/galacteek/docs/manual/en/html/shortcuts.html
 .. _releases: https://github.com/eversum/galacteek/releases
+.. _ENS: https://ens.domains/

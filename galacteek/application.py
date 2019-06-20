@@ -19,8 +19,6 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QSystemTrayIcon
 from PyQt5.QtWidgets import QMenu
 
-from PyQt5.QtGui import QIcon
-
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import QUrl
 from PyQt5.QtCore import QStandardPaths

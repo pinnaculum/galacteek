@@ -560,22 +560,22 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>Galacteek</name>
     <message>
-        <location filename="../../galacteek/application.py" line="76"/>
+        <location filename="../../galacteek/application.py" line="74"/>
         <source>IPFS daemon started</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/application.py" line="80"/>
+        <location filename="../../galacteek/application.py" line="78"/>
         <source>IPFS daemon&apos;s gateway started</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/application.py" line="85"/>
+        <location filename="../../galacteek/application.py" line="83"/>
         <source>IPFS daemon is ready</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/application.py" line="89"/>
+        <location filename="../../galacteek/application.py" line="87"/>
         <source>Problem starting IPFS daemon</source>
         <translation type="unfinished"></translation>
     </message>
@@ -585,7 +585,7 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/application.py" line="94"/>
+        <location filename="../../galacteek/application.py" line="92"/>
         <source>Problem initializing the IPFS daemon (check the ports configuration)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -738,7 +738,7 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="79"/>
+        <location filename="../../galacteek/ui/mainui.py" line="80"/>
         <source>
 Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
@@ -949,7 +949,7 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="86"/>
+        <location filename="../../galacteek/ui/mainui.py" line="87"/>
         <source>
         &lt;p align=&apos;center&apos;&gt;
         &lt;img src=&apos;:/share/icons/galacteek.png&apos;
@@ -1395,16 +1395,6 @@ Path: {0}, nodes processed: {1}</source>
 </context>
 <context>
     <name>NetworkHashmarksViewForm</name>
-    <message>
-        <location filename="../../galacteek/ui/hashmarksmgrnetwork.ui" line="14"/>
-        <source>Form</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/hashmarksmgrnetwork.ui" line="54"/>
-        <source>Search</source>
-        <translation type="unfinished"></translation>
-    </message>
 </context>
 <context>
     <name>PeersManager</name>

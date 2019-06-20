@@ -21,7 +21,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>2</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="tab">
       <attribute name="title">
@@ -532,7 +532,7 @@
           <item row="1" column="0">
            <widget class="QCheckBox" name="urlHistoryEnable">
             <property name="text">
-             <string>Enable URL history</string>
+             <string>Enable navigation history</string>
             </property>
            </widget>
           </item>

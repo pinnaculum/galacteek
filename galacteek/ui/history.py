@@ -1,8 +1,11 @@
 
 from PyQt5.QtWidgets import QListView
+from PyQt5.QtWidgets import QApplication
+
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import Qt
+
 from PyQt5.QtGui import QStandardItemModel
 from PyQt5.QtGui import QStandardItem
 
@@ -39,8 +42,8 @@ class HistoryMatchesWidget(QListView):
     def __init__(self, parent=None):
         super(HistoryMatchesWidget, self).__init__(parent)
 
+        self.app = QApplication.instance()
         self.setObjectName('historySearchResults')
-        self.activated.connect(self.onItemActivated)
         self.pressed.connect(self.onItemActivated)
         self.clicked.connect(self.onItemActivated)
 
@@ -68,8 +71,14 @@ class HistoryMatchesWidget(QListView):
             self.model.invisibleRootItem().appendRow(item)
 
     def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Escape:
+        if event.key() == Qt.Key_Return:
+            # The 'activated' signal does not seem to have the same
+            # behavior across platforms so we handle Return manually here
+            curIdx = self.currentIndex()
+            if curIdx.isValid():
+                self.onItemActivated(curIdx)
+        elif event.key() == Qt.Key_Escape:
             self.hide()
             self.collapsed.emit()
-
-        super(HistoryMatchesWidget, self).keyPressEvent(event)
+        else:
+            super(HistoryMatchesWidget, self).keyPressEvent(event)

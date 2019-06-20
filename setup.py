@@ -120,7 +120,7 @@ setup(
     author='David Ferlier',
     author_email='galacteek@protonmail.com',
     url='https://github.com/eversum/galacteek',
-    description='IPFS browser',
+    description='Distributed web browser',
     long_description=long_description,
     include_package_data=True,
     cmdclass={'build': _build, 'build_ui': build_ui, 'build_docs': build_docs},

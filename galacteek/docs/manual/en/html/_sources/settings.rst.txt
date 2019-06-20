@@ -53,3 +53,9 @@ Activate Javascript IPFS API
 With this setting you can activate the Javascript API in the browser, allowing
 control of your IPFS daemon from the Javascript engine. Access to the IPFS
 daemon is done through the **window.ipfs** JavaScript variable.
+
+Enable navigation history
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If enabled, visited dweb and ENS URLs are recorded and you will get
+history search results when typing an URL.
