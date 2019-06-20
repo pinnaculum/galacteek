@@ -18,7 +18,7 @@ Browser keyboard shortcuts
 --------------------------
 
 - **Mod + b**: Bookmark current page
-- **Mod + l**: Load an IPFS CID
+- **Mod + l**: Focus the URL zone
 - **Mod + r** or **F5**: Reload the current page
 - **Mod + +**: Zoom in
 - **Mod + -**: Zoom out

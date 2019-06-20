@@ -170,3 +170,8 @@ QListView#historySearchResults {
     margin: 5px;
     font: 10pt "Courier";
 }
+
+QLabel#ipfsStatusLabel {
+    padding-left: 10px;
+    font: 9pt "Montserrat";
+}

@@ -33,10 +33,6 @@ FORMS += galacteek/ui/addkeydialog.ui \
 	galacteek/ui/dagview.ui \
 	galacteek/ui/donatedialog.ui \
 	galacteek/ui/files.ui\
-	galacteek/ui/galacteek.ui\
-	galacteek/ui/hashmarksmgrfeeds.ui \
-	galacteek/ui/hashmarksmgrnetwork.ui \
-	galacteek/ui/hashmarksmgr.ui \
 	galacteek/ui/ipfscidinputdialog.ui \
 	galacteek/ui/ipfsinfos.ui \
 	galacteek/ui/ipfssearchw.ui \
@@ -44,7 +40,6 @@ FORMS += galacteek/ui/addkeydialog.ui \
 	galacteek/ui/ipfsmultiplecidinputdialog.ui \
 	galacteek/ui/keys.ui\
 	galacteek/ui/mediaplaylist.ui \
-	galacteek/ui/newdocument.ui \
 	galacteek/ui/settings.ui
 
 TRANSLATIONS = share/translations/galacteek_en.ts \

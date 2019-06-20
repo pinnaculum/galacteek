@@ -63,6 +63,9 @@ class ipfsStatOp(ipfsClassW):
     def __get__(self, inst, owner):
         async def wrapper(*args, **kw):
             op = IPFSOpRegistry.getDefault()
+            if op is None:
+                return
+
             path = args[0]
 
             stat = op.objStatCtxGet(path)

@@ -29,7 +29,8 @@ from PyQt5.QtGui import QKeySequence
 
 from PyQt5 import QtWebEngineWidgets
 
-from galacteek import ensure, log
+from galacteek import ensure
+from galacteek import log
 from galacteek.core.glogger import loggerUser
 from galacteek.core.glogger import easyFormatString
 from galacteek.core.asynclib import asyncify
@@ -208,7 +209,7 @@ class DatabasesManager(QObject):
     def onMainFeed(self):
         database = self.connector.database('feeds', 'general')
         view = orbital.OrbitFeedView(self.connector, database,
-                                     parent=self.mainW.ui.tabWidget)
+                                     parent=self.mainW.tabWidget)
         self.mainW.registerTab(view, 'General', current=True,
                                icon=self.icon)
 
@@ -513,6 +514,7 @@ class MainWindow(QMainWindow):
         self.addToolBar(Qt.RightToolBarArea, self.toolbarPyramids)
 
         self.tabWidget = QTabWidget(self)
+        self.tabWidget.setObjectName('tabWidget')
         self.tabWidget.setDocumentMode(True)
         self.tabWidget.setTabsClosable(True)
         self.tabWidget.tabCloseRequested.connect(self.onTabCloseRequest)
@@ -546,6 +548,7 @@ class MainWindow(QMainWindow):
         self.ipfsInfosButton.clicked.connect(self.onIpfsInfos)
 
         self.ipfsStatusLabel = QLabel()
+        self.ipfsStatusLabel.setObjectName('ipfsStatusLabel')
         self.statusbar = self.statusBar()
         self.statusbar.addPermanentWidget(self.ipfsStatusLabel)
         self.statusbar.addPermanentWidget(self.ipfsInfosButton)
@@ -889,7 +892,9 @@ class MainWindow(QMainWindow):
         try:
             info = await ipfsop.client.core.id()
         except BaseException:
-            return self.ipfsStatusLabel.setText(iErrNoCx())
+            self.ipfsStatusLabel.setText(iErrNoCx())
+            self.ipfsInfosButton.setToolTip(iErrNoCx())
+            return
 
         nodeId = info.get('ID', iUnknown())
         nodeAgent = info.get('AgentVersion', iUnknownAgent())
@@ -897,18 +902,19 @@ class MainWindow(QMainWindow):
         # Get IPFS peers list
         peers = await ipfsop.peersList()
         if not peers:
-            return self.ipfsStatusLabel.setText(
-                iCxButNoPeers(nodeId, nodeAgent))
+            msg = iCxButNoPeers(nodeId, nodeAgent)
+            self.ipfsStatusLabel.setText(msg)
+            self.ipfsInfosButton.setToolTip(msg)
+            return
 
         message = iConnectStatus(nodeId, nodeAgent, len(peers))
         self.ipfsStatusLabel.setText(message)
+        self.ipfsInfosButton.setToolTip(message)
 
     def onMainTimerStatus(self):
         ensure(self.displayConnectionInfo())
 
     def keyPressEvent(self, event):
-        # Ultimately this will be moved to configurable shortcuts
-
         modifiers = event.modifiers()
 
         if modifiers & Qt.ControlModifier:
