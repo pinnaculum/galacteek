@@ -167,7 +167,11 @@ class QuickAccessToolBar(QToolBar, URLDragAndDropProcessor):
         """
 
         path = str(ipfsPath)
-        mimeType, rscStat = await self.analyzer(ipfsPath)
+        result = await self.analyzer(ipfsPath)
+        if result is None:
+            return
+
+        mimeType, rscStat = result
 
         if mimeType:
             icon = await self.findIcon(ipfsop, ipfsPath, rscStat, mimeType)
@@ -198,7 +202,11 @@ class QuickAccessToolBar(QToolBar, URLDragAndDropProcessor):
             return
 
         mPath = str(ipfsPath)
-        mimeType, rscStat = await self.analyzer(ipfsPath)
+        result = await self.analyzer(ipfsPath)
+        if result is None:
+            return
+
+        mimeType, rscStat = result
 
         mIcon = mark.markData.get('icon', None)
         icon = None
