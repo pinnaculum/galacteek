@@ -6,6 +6,7 @@ CFG_SECTION_IPFS = 'ipfs'
 CFG_SECTION_BROWSER = 'browser'
 CFG_SECTION_IPFSCONN1 = 'ipfsconn1'
 CFG_SECTION_UI = 'ui'
+CFG_SECTION_HISTORY = 'history'
 CFG_SECTION_USERINFO = 'userinfo'
 CFG_SECTION_ORBITDB = 'orbitdb'
 
@@ -31,6 +32,10 @@ CFG_KEY_DLPATH = 'downloadspath'
 CFG_KEY_ALLOWHTTPBROWSING = 'httpbrowsing'
 CFG_KEY_JSAPI = 'jsapi'
 CFG_KEY_PPAPIPLUGINS = 'ppapiplugins'
+
+# History
+CFG_KEY_HISTORYENABLED = 'enabled'
+CFG_KEY_TIMEOUTURLEDIT = 'timeouturledit'
 
 # IPFS
 CFG_KEY_PUBSUB = 'pubsub'
@@ -100,6 +105,10 @@ def setDefaultSettings(gApp):
     sManager.setDefaultFalse(section, CFG_KEY_HIDEHASHES)
     sManager.setDefaultSetting(section, CFG_KEY_LANG, 'en')
     sManager.setDefaultFalse(section, CFG_KEY_BROWSER_AUTOPIN)
+
+    section = CFG_SECTION_HISTORY
+    sManager.setDefaultTrue(section, CFG_KEY_HISTORYENABLED)
+    sManager.setDefaultSetting(section, CFG_KEY_TIMEOUTURLEDIT, 1000)
 
     section = CFG_SECTION_ORBITDB
     sManager.setDefaultSetting(section, CFG_KEY_CONNECTOR_LISTENPORT, 3000)
@@ -231,3 +240,11 @@ class SettingsManager(object):
     @property
     def downloadsDir(self):
         return self.getSetting(CFG_SECTION_BROWSER, CFG_KEY_DLPATH)
+
+    @property
+    def urlHistoryEnabled(self):
+        return self.getSetting(CFG_SECTION_HISTORY, CFG_KEY_HISTORYENABLED)
+
+    @property
+    def urlHistoryEditTimeout(self):
+        return self.getInt(CFG_SECTION_HISTORY, CFG_KEY_TIMEOUTURLEDIT)

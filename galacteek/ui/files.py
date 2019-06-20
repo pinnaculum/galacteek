@@ -1,6 +1,7 @@
 import os.path
 import asyncio
 import functools
+import async_timeout
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QAction
@@ -752,10 +753,10 @@ class FileManager(QWidget):
         self.status = self.statusBusy
 
         try:
-            await asyncio.wait_for(
-                self.listPath(ipfsop, path, parentItem,
-                              maxdepth=maxdepth,
-                              autoexpand=autoexpand), 60)
+            with async_timeout.timeout(60):
+                await self.listPath(ipfsop, path, parentItem,
+                                    maxdepth=maxdepth,
+                                    autoexpand=autoexpand)
         except aioipfs.APIError:
             pass
 

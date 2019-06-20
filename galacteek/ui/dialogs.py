@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import QDialogButtonBox
 from PyQt5.QtWidgets import QLabel
 from PyQt5.QtWidgets import QLineEdit
 from PyQt5.QtWidgets import QHBoxLayout
+from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWidgets import QGridLayout
 from PyQt5.QtWidgets import QFormLayout
 
@@ -665,3 +666,23 @@ class AddMultihashPyramidDialog(QDialog):
             if entry:
                 self.iconCid = entry['Hash']
                 return True
+
+
+class AboutDialog(QDialog):
+    def __init__(self, text, parent=None):
+        super().__init__(parent)
+
+        buttonBox = QDialogButtonBox(
+            QDialogButtonBox.Ok, self)
+        buttonBox.accepted.connect(self.accept)
+
+        self.setWindowTitle('About')
+
+        layout = QVBoxLayout()
+        layout.addWidget(QLabel(text, parent=self))
+        layout.addWidget(buttonBox)
+
+        self.setLayout(layout)
+
+    def accept(self):
+        self.done(1)

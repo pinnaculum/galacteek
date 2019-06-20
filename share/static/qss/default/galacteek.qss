@@ -164,3 +164,9 @@ QTextBrowser#javascriptConsole {
 QToolButton#jsConsoleButton::checked {
     background-color: #eec146;
 }
+
+QListView#historySearchResults {
+    background-color: #B7CDC2;
+    margin: 5px;
+    font: 10pt "Courier";
+}

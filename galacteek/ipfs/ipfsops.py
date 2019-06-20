@@ -4,6 +4,7 @@ import tempfile
 import uuid
 
 from async_generator import async_generator, yield_
+import async_timeout
 
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import stripIpfs
@@ -120,12 +121,11 @@ class IPFSOperator(object):
 
     async def waitFor(self, fncall, timeout):
         try:
-            output = await asyncio.wait_for(fncall, timeout)
+            with async_timeout.timeout(timeout):
+                return await fncall
         except asyncio.TimeoutError:
             self.debug('Timeout waiting for coroutine {0}'.format(fncall))
             return None
-        else:
-            return output
 
     async def getCommands(self):
         if self.availCommands is not None:

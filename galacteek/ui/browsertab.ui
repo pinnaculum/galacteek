@@ -93,39 +93,14 @@
           </widget>
          </item>
          <item>
-          <widget class="QLineEdit" name="urlZone">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>400</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>3000</width>
-             <height>26</height>
-            </size>
-           </property>
-           <property name="font">
-            <font>
-             <family>Sans Serif</family>
-             <pointsize>12</pointsize>
-             <italic>false</italic>
-            </font>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">background-color: rgb(189, 236, 255);</string>
-           </property>
-           <property name="maxLength">
-            <number>2048</number>
+          <widget class="QLabel" name="urlZonePre">
+           <property name="text">
+            <string/>
            </property>
           </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="layoutUrl"/>
          </item>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -345,6 +320,9 @@
         <bool>false</bool>
        </property>
       </widget>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="layoutHistory"/>
      </item>
      <item>
       <layout class="QVBoxLayout" name="vLayoutBrowser">

@@ -1,7 +1,9 @@
 aiofiles>=0.4.0
 aiohttp>=3.4.4
 aioipfs>=0.4.1
+aiosqlite>=0.10.0
 async-generator>=1.10
+async-timeout>=3.0.1
 base58>=1.0.2
 feedgen>=0.7.0
 feedparser>=5.2.0

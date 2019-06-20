@@ -85,15 +85,22 @@ def iPinningItemStatus(pinPath, pinProgress):
 def iAbout():
     from galacteek import __version__
     return QCoreApplication.translate('GalacteekWindow', '''
-        <p>
-        <b>Galacteek</b> is a multi-platform Qt5-based IPFS browser
+        <p align='center'>
+        <img src=':/share/icons/galacteek.png'
+            width='256' height='256'/>
         </p>
+
+        <p>
+        <b>galacteek</b> is a multi-platform Qt5-based browser
+        for the distributed web
+        </p>
+        <br/>
         <p>Author: David Ferlier</p>
         <p>Contact:
             <a href="mailto:
             galacteek@protonmail.com">galacteek@protonmail.com</a>
         </p>
-        <p>Galacteek version {0}</p>''').format(__version__)
+        <p>galacteek version {0}</p>''').format(__version__)
 
 
 class MainWindowLogHandler(Handler, StringFormatterHandlerMixin):
@@ -591,6 +598,8 @@ class MainWindow(QMainWindow):
         self.pinIconLoading = getIcon('pin-blue-loading.png')
         self.pinIconNormal = getIcon('pin-black.png')
 
+        self.setCentralWidget(self.ui.tabWidget)
+
     @property
     def app(self):
         return self._app
@@ -857,6 +866,7 @@ class MainWindow(QMainWindow):
 
         if current is True:
             self.ui.tabWidget.setCurrentWidget(tab)
+            tab.setFocus(Qt.OtherFocusReason)
 
         if tooltip and idx:
             self.ui.tabWidget.setTabToolTip(idx, tooltip)
@@ -889,7 +899,7 @@ class MainWindow(QMainWindow):
         self.pinAllGlobalChecked = checked
 
     def onAboutGalacteek(self):
-        QMessageBox.about(self, 'About Galacteek', iAbout())
+        runDialog(AboutDialog, iAbout())
 
     @ipfsOp
     async def displayConnectionInfo(self, ipfsop):
