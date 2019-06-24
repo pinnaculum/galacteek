@@ -129,6 +129,7 @@ setup(
         'galacteek.docs',
         'galacteek.docs.manual',
         'galacteek.core',
+        'galacteek.core.models',
         'galacteek.crypto',
         'galacteek.ipfs',
         'galacteek.ipfs.pubsub',
