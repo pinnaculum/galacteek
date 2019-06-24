@@ -129,8 +129,7 @@ class AtomFeedsModel(QStandardItemModel):
         self.invisibleRootItem().appendRow(self.itemRoot)
         self.itemRootIdx = self.indexFromItem(self.itemRoot)
 
-        self.setHorizontalHeaderLabels(
-            ['Title', 'Date'])
+        self.setHorizontalHeaderLabels(['Title', 'Date'])
 
     @property
     def root(self):
@@ -169,16 +168,3 @@ class AtomFeedsModel(QStandardItemModel):
             ])
 
             self.feedEntryAdded.emit(entryItem)
-
-    def setupItems(self):
-        self.initialized = True
-
-    def displayItem(self, arg):
-        self.itemRoot.appendRow(arg)
-
-
-def createAtomModel(parent=None):
-    model = AtomFeedsModel(parent=parent)
-    model.setHorizontalHeaderLabels(
-        [iFileName(), iFileSize(), iMultihash()])
-    return model

@@ -10,7 +10,6 @@ from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtWidgets import QTextBrowser
 from PyQt5.QtWidgets import QLineEdit
-from PyQt5.QtWidgets import QListView
 
 from PyQt5.QtPrintSupport import *
 
@@ -19,8 +18,9 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtCore import QTimer
-from PyQt5.QtGui import QStandardItemModel
-from PyQt5.QtGui import QStandardItem
+
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QImage
 
 from PyQt5 import QtWebEngineWidgets
 
@@ -42,12 +42,10 @@ from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import joinIpns
 from galacteek.ipfs.cidhelpers import cidValid
-from galacteek.dweb.atom import DWEB_ATOM_FEEDFN
 from galacteek.core.analyzer import ResourceAnalyzer
 
 from galacteek.core.schemes import SCHEME_DWEB
 from galacteek.core.schemes import SCHEME_ENS
-from galacteek.core.schemes import SCHEME_FS
 from galacteek.core.schemes import SCHEME_IPFS
 from galacteek.core.schemes import SCHEME_IPNS
 from galacteek.core.schemes import isIpfsUrl
@@ -582,6 +580,49 @@ class URLInputWidget(QLineEdit):
             self.browser.enterUrl(url)
 
 
+class CIDInfosDisplay(QObject):
+    objectVisited = pyqtSignal(IPFSPath)
+
+    tooltipMessage = '''
+        <p>
+            <img src='{icon}' width='32' height='32'/>
+        </p>
+        <p>Root CID: CIDv{cidv} {more} <b>{cid}</b></p>
+    '''
+
+    def __init__(self, label, parent=None):
+        super(CIDInfosDisplay, self).__init__(parent)
+
+        self.cidLabel = label
+        self.objectVisited.connect(self.onVisited)
+
+        self.pathCubeOrange = ':/share/icons/cube-nova-orange.png'
+        self.pathCubeAqua = ':/share/icons/cube-nova-aqua.png'
+
+        self.pixmapCubeOrange = QPixmap.fromImage(QImage(self.pathCubeOrange))
+        self.pixmapCubeAqua = QPixmap.fromImage(QImage(self.pathCubeAqua))
+
+    def onVisited(self, ipfsPath):
+        cidRepr = ipfsPath.rootCidRepr
+
+        if ipfsPath.rootCidUseB32:
+            self.cidLabel.setPixmap(
+                self.pixmapCubeOrange.scaled(16, 16))
+            self.cidLabel.setToolTip(self.tooltipMessage.format(
+                cid=cidRepr, cidv=1, more='(base32)',
+                icon=self.pathCubeOrange))
+        else:
+            self.cidLabel.setPixmap(
+                self.pixmapCubeAqua.scaled(16, 16))
+
+            if not ipfsPath.rootCid:
+                return
+
+            self.cidLabel.setToolTip(self.tooltipMessage.format(
+                cid=cidRepr, cidv=ipfsPath.rootCid.version, more='',
+                icon=self.pathCubeAqua))
+
+
 class BrowserTab(GalacteekTab):
     # signals
     ipfsObjectVisited = pyqtSignal(IPFSPath)
@@ -609,6 +650,9 @@ class BrowserTab(GalacteekTab):
         self.ui.layoutHistory.addWidget(self.historySearches)
         self.ui.layoutUrl.addWidget(self.urlZone)
 
+        self.cidInfosDisplay = CIDInfosDisplay(self.ui.cidInfoLabel,
+                                               parent=self)
+
         # Install scheme handler early on
         self.webProfile = QtWebEngineWidgets.QWebEngineProfile.defaultProfile()
 
@@ -626,9 +670,6 @@ class BrowserTab(GalacteekTab):
         self.webEngineView.iconChanged.connect(self.onIconChanged)
         self.webEngineView.loadProgress.connect(self.onLoadProgress)
         self.webEngineView.titleChanged.connect(self.onTitleChanged)
-
-        #self.webEngineView.ensSchemeHandler.domainResolved.connect(
-        #    self.onEnsResolved)
 
         self.ui.backButton.clicked.connect(self.backButtonClicked)
         self.ui.forwardButton.clicked.connect(self.forwardButtonClicked)
@@ -797,6 +838,7 @@ class BrowserTab(GalacteekTab):
         # Called after a new IPFS object has been loaded in this tab
 
         if ipfsPath.valid:
+            self.cidInfosDisplay.objectVisited.emit(ipfsPath)
             ensure(self.tsVisitPath(ipfsPath.objPath))
 
     @ipfsStatOp

@@ -340,7 +340,7 @@ class AtomFeedsDatabase(QObject):
                             entry.status = exent['status']
                             entry.srow_id = exent['id']
                             self.processedFeedEntry.emit(atomFeed,
-                                                      entry)
+                                                         entry)
 
             # Mark the object as processed
             await self.feedObjectHistoryUpdateStatus(historyObjId,

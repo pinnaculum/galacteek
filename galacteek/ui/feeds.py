@@ -15,11 +15,17 @@ from PyQt5.QtGui import QFont
 from galacteek import ensure
 from galacteek.core.models.atomfeeds import AtomFeedEntryItem
 from galacteek.core.models.atomfeeds import AtomFeedItem
+from galacteek.dweb.page import BasePage
 
 from . import ui_atomfeeds
 from .widgets import GalacteekTab
 from .widgets import IPFSWebView
 from .helpers import inputText
+
+
+class EmptyPage(BasePage):
+    def __init__(self, parent=None):
+        super(EmptyPage, self).__init__('atomfeedsinit.html', parent=parent)
 
 
 class AtomFeedsView(QWidget):
@@ -37,6 +43,8 @@ class AtomFeedsView(QWidget):
         self._offlineMode = False
 
         self.webView = IPFSWebView(self)
+        self.emptyPage = EmptyPage(self)
+        self.webView.setPage(self.emptyPage)
 
         self.ui = ui_atomfeeds.Ui_AtomFeeds()
         self.ui.setupUi(self)

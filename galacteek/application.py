@@ -53,7 +53,6 @@ from galacteek.ipfs.feeds import FeedFollower
 
 from galacteek.dweb.webscripts import ipfsClientScripts
 from galacteek.dweb.render import defaultJinjaEnv
-from galacteek.dweb.atom import AtomFeedExistsError
 
 from galacteek.ui import mainui
 from galacteek.ui import downloads
