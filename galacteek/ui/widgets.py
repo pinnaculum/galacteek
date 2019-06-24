@@ -838,10 +838,10 @@ class AtomFeedsToolbarButton(QToolButton):
         self.setIcon(getIcon('atom-feed.png'))
         self.subscribeResult.connect(self.onSubResult)
 
-        self.setToolTip('Atom Feeds manager')
+        self.setToolTip('Atom Feeds reader')
 
     def unreadEntriesCountChanged(self, count):
-        self.setToolTip('Atom Feeds manager: {count} unread entries'.format(
+        self.setToolTip('Atom Feeds reader: {count} unread entries'.format(
             count=count))
 
     def onSubResult(self, url, result):
