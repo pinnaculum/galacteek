@@ -17,7 +17,7 @@
 
     <description>
         <p>
-            <b>galacteek</b> is a multi-platform browser for the distributed web.
+            galacteek is a multi-platform browser for the distributed web.
 
             It contains tools to access and publish content over IPFS, and allows you to make search queries with the ipfs-search.com search engine. It can interact with the Ethereum Name Service (ENS) and has support for dweb Atom feeds.
         </p>
