@@ -13,6 +13,7 @@ galacteek's manual (english)
     Toolbars <toolbars>
     Hashmarks <hashmarks>
     Multihash Pyramids <pyramids>
+    Atom feeds <atom>
     QR codes <qrcodes>
     File manager <filemanager>
     Pinning <pinning>

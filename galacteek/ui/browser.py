@@ -1,5 +1,6 @@
 import functools
 import os.path
+import re
 
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QAction
@@ -48,6 +49,8 @@ from galacteek.core.schemes import SCHEME_DWEB
 from galacteek.core.schemes import SCHEME_ENS
 from galacteek.core.schemes import SCHEME_FS
 from galacteek.core.schemes import SCHEME_IPFS
+from galacteek.core.schemes import SCHEME_IPNS
+from galacteek.core.schemes import isIpfsUrl
 
 from . import ui_browsertab
 from .helpers import *
@@ -194,6 +197,9 @@ class CustomWebPage (QtWebEngineWidgets.QWebEnginePage):
     def acceptNavigationRequest(self, url, nType, isMainFrame):
         return True
 
+    def featurePermissionRequested(self, url, feature):
+        return True
+
 
 class JSConsoleWidget(QTextBrowser):
     def __init__(self, parent):
@@ -231,9 +237,9 @@ class JSConsoleWidget(QTextBrowser):
         ))
 
 
-class WebView(QtWebEngineWidgets.QWebEngineView):
+class WebView(IPFSWebView):
     def __init__(self, browserTab, enablePlugins=False, parent=None):
-        super().__init__(parent=parent)
+        super(WebView, self).__init__(parent=parent)
 
         self.app = QCoreApplication.instance()
         self.linkInfoTimer = QTimer()
@@ -249,6 +255,12 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
         self.webSettings = self.settings()
         self.webSettings.setAttribute(QWebEngineSettings.PluginsEnabled,
                                       enablePlugins)
+        self.webSettings.setAttribute(QWebEngineSettings.LocalStorageEnabled,
+                                      True)
+        self.webSettings.setAttribute(
+            QWebEngineSettings.LocalContentCanAccessFileUrls, True)
+        self.webSettings.setAttribute(
+            QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
 
     def onJsMessage(self, level, message, lineNo, sourceId):
         self.browserTab.jsConsole.showMessage(level, message, lineNo, sourceId)
@@ -256,9 +268,9 @@ class WebView(QtWebEngineWidgets.QWebEngineView):
     def onLinkInfoTimeout(self):
         self.browserTab.ui.linkInfosLabel.setText('')
 
-    def onFollowTheAtom(self, ipfsPath):
-        # TODO
-        log.debug('Following atom feed: {}'.format(ipfsPath))
+    def onFollowTheAtom(self, path):
+        log.debug('Following atom feed: {}'.format(path))
+        ensure(self.app.mainWindow.atomButton.atomFeedSubscribe(str(path)))
 
     def onLinkHovered(self, url):
         if not isinstance(url, str):
@@ -570,49 +582,6 @@ class URLInputWidget(QLineEdit):
             self.browser.enterUrl(url)
 
 
-class HistoryMatchesWidgetOld(QListView):
-    historyItemSelected = pyqtSignal(str)
-    collapsed = pyqtSignal()
-
-    def __init__(self, parent=None):
-        super(HistoryMatchesWidget, self).__init__(parent)
-
-        self.setObjectName('historySearchResults')
-        self.activated.connect(self.onItemActivated)
-        self.clicked.connect(self.onItemActivated)
-
-        self.model = QStandardItemModel()
-        self.setModel(self.model)
-
-    def onItemActivated(self, idx):
-        data = self.model.data(idx, Qt.EditRole)
-
-        if isinstance(data, str):
-            print('GOT', data)
-            self.historyItemSelected.emit(data)
-
-    def showMatches(self, matches):
-        self.model.clear()
-        for match in matches:
-            if match['title']:
-                text = '{title}: {url}'.format(
-                    title=match['title'], url=match['url'])
-            else:
-                text = match['url']
-
-            item = QStandardItem(text)
-            item.setEditable(False)
-            item.setData(match['url'], Qt.EditRole)
-            self.model.invisibleRootItem().appendRow(item)
-
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Escape:
-            self.hide()
-            self.collapsed.emit()
-
-        super(HistoryMatchesWidget, self).keyPressEvent(event)
-
-
 class BrowserTab(GalacteekTab):
     # signals
     ipfsObjectVisited = pyqtSignal(IPFSPath)
@@ -642,22 +611,24 @@ class BrowserTab(GalacteekTab):
 
         # Install scheme handler early on
         self.webProfile = QtWebEngineWidgets.QWebEngineProfile.defaultProfile()
-        self.installIpfsSchemeHandler()
 
-        self.ui.webEngineView = WebView(
+        self.webEngineView = WebView(
             self, enablePlugins=self.app.settingsMgr.ppApiPlugins,
             parent=self
         )
-        self.ui.vLayoutBrowser.addWidget(self.ui.webEngineView)
+        self.ui.vLayoutBrowser.addWidget(self.webEngineView)
 
         self.webScripts = self.webProfile.scripts()
         self.installScripts()
 
-        self.ui.webEngineView.urlChanged.connect(self.onUrlChanged)
-        self.ui.webEngineView.loadFinished.connect(self.onLoadFinished)
-        self.ui.webEngineView.iconChanged.connect(self.onIconChanged)
-        self.ui.webEngineView.loadProgress.connect(self.onLoadProgress)
-        self.ui.webEngineView.titleChanged.connect(self.onTitleChanged)
+        self.webEngineView.urlChanged.connect(self.onUrlChanged)
+        self.webEngineView.loadFinished.connect(self.onLoadFinished)
+        self.webEngineView.iconChanged.connect(self.onIconChanged)
+        self.webEngineView.loadProgress.connect(self.onLoadProgress)
+        self.webEngineView.titleChanged.connect(self.onTitleChanged)
+
+        #self.webEngineView.ensSchemeHandler.domainResolved.connect(
+        #    self.onEnsResolved)
 
         self.ui.backButton.clicked.connect(self.backButtonClicked)
         self.ui.forwardButton.clicked.connect(self.forwardButtonClicked)
@@ -715,6 +686,7 @@ class BrowserTab(GalacteekTab):
         self.loadHomeAction = QAction(getIcon('go-home.png'),
                                       iBrowseHomePage(), self,
                                       triggered=self.onLoadHome)
+        self.followIpnsAction.setEnabled(False)
 
         self.loadIpfsMenu.addAction(self.loadIpfsCIDAction)
         self.loadIpfsMenu.addAction(self.loadIpfsMultipleCIDAction)
@@ -778,7 +750,7 @@ class BrowserTab(GalacteekTab):
 
     @property
     def webView(self):
-        return self.ui.webEngineView
+        return self.webEngineView
 
     @property
     def currentUrl(self):
@@ -821,34 +793,11 @@ class BrowserTab(GalacteekTab):
             for script in self.app.scriptsIpfs:
                 self.webScripts.insert(script)
 
-    def installIpfsSchemeHandler(self):
-        for scheme in [SCHEME_DWEB, SCHEME_FS]:
-            eHandler = self.webProfile.urlSchemeHandler(scheme.encode())
-            if not eHandler:
-                self.webProfile.installUrlSchemeHandler(
-                    scheme.encode(), self.app.ipfsSchemeHandler)
-
-        eHandler = self.webProfile.urlSchemeHandler(SCHEME_ENS.encode())
-        if not eHandler:
-            self.webProfile.installUrlSchemeHandler(
-                SCHEME_ENS.encode(), self.app.ensSchemeHandler)
-
-        self.app.ensSchemeHandler.domainResolved.connect(self.onEnsResolved)
-
     def onPathVisited(self, ipfsPath):
         # Called after a new IPFS object has been loaded in this tab
 
         if ipfsPath.valid:
             ensure(self.tsVisitPath(ipfsPath.objPath))
-
-            if ipfsPath.basename and ipfsPath.basename == DWEB_ATOM_FEEDFN:
-                reply = questionBox(
-                    'Atom feed',
-                    'This looks like an Atom feed. Try and follow the atom ?'
-                )
-                if reply is True:
-                    # TODO
-                    return
 
     @ipfsStatOp
     async def tsVisitPath(self, ipfsop, path, stat):
@@ -875,7 +824,7 @@ class BrowserTab(GalacteekTab):
             self.urlZone.setSelection(0, len(self.urlZone.text()))
 
     def onReloadPage(self):
-        self.ui.webEngineView.reload()
+        self.webEngineView.reload()
 
     def onSavePage(self):
         tmpd = self.app.tempDirCreate(self.app.tempDirWeb)
@@ -887,7 +836,7 @@ class BrowserTab(GalacteekTab):
         url = page.url()
         filename = url.fileName()
 
-        if filename == '' or cidValid(filename):
+        if not filename or cidValid(filename):
             filename = 'index.html'
 
         path = os.path.join(tmpd, filename)
@@ -938,7 +887,7 @@ class BrowserTab(GalacteekTab):
             return ok
 
         if dialog.exec_() == QDialog.Accepted:
-            currentPage = self.ui.webEngineView.page()
+            currentPage = self.webEngineView.page()
             currentPage.print(printer, success)
 
     def onPinSingle(self):
@@ -997,23 +946,42 @@ class BrowserTab(GalacteekTab):
         self.enterUrl(QUrl(homeUrl))
 
     def refreshButtonClicked(self):
-        self.ui.webEngineView.reload()
+        self.webEngineView.reload()
 
     def stopButtonClicked(self):
-        self.ui.webEngineView.stop()
+        self.webEngineView.stop()
         self.ui.pBarBrowser.setValue(0)
         self.ui.stopButton.setEnabled(False)
 
     def backButtonClicked(self):
-        currentPage = self.ui.webEngineView.page()
+        currentPage = self.webEngineView.page()
         currentPage.history().back()
 
     def forwardButtonClicked(self):
-        currentPage = self.ui.webEngineView.page()
+        currentPage = self.webEngineView.page()
         currentPage.history().forward()
 
     def onUrlChanged(self, url):
-        if url.authority() == self.gatewayAuthority:
+        if url.scheme() in [SCHEME_IPFS, SCHEME_IPNS]:
+            # ipfs:// or ipns://
+            self.urlZone.setStyleSheet('''
+                QLineEdit {
+                    background-color: #C3D7DF;
+                }''')
+
+            self.urlZone.clear()
+            self.urlZone.insert(url.toString())
+            self._currentIpfsResource = IPFSPath(url.toString())
+            self._currentUrl = url
+            self.ipfsObjectVisited.emit(self.currentIpfsResource)
+            self.ui.hashmarkThisPage.setEnabled(True)
+            self.ui.pinToolButton.setEnabled(True)
+
+            self.followIpnsAction.setEnabled(
+                self.currentIpfsResource.isIpnsRoot)
+
+        elif url.authority() == self.gatewayAuthority:
+            # dweb:/ with IPFS gateway's authority
             # Content loaded from IPFS gateway, this is IPFS content
             urlString = url.toDisplayString(
                 QUrl.RemoveAuthority | QUrl.RemoveScheme)
@@ -1073,7 +1041,8 @@ class BrowserTab(GalacteekTab):
         if self.currentPageTitle != iNoTitle() and self.currentUrl and \
                 self.currentUrl.isValid():
             # Only record those schemes in the history
-            if self.currentUrl.scheme() in [SCHEME_DWEB, SCHEME_IPFS]:
+            if self.currentUrl.scheme() in [SCHEME_DWEB, SCHEME_IPFS,
+                                            SCHEME_IPNS]:
                 self.history.record(self.currentUrl.toString(),
                                     self.currentPageTitle)
 
@@ -1110,8 +1079,7 @@ class BrowserTab(GalacteekTab):
             self.enterUrl(QUrl('{0}:{1}'.format(SCHEME_DWEB, path)))
         elif isinstance(path, IPFSPath):
             if path.valid:
-                self.enterUrl(QUrl('{0}:{1}'.format(SCHEME_DWEB,
-                                                    path.fullPath)))
+                self.enterUrl(QUrl(path.ipfsUrl))
             else:
                 messageBox(iInvalidUrl(path.fullPath))
 
@@ -1132,19 +1100,20 @@ class BrowserTab(GalacteekTab):
         log.debug('Entering URL {}'.format(url.toString()))
 
         def onEnsTimeout():
-            if not self.urlZone.isEnabled():
-                self.urlZone.setEnabled(True)
+            pass
+
+        # This should not be necessary starting with qt 5.12.4
+        if url.scheme() in [SCHEME_IPFS, SCHEME_IPNS]:
+            if not url.path():
+                url.setPath('/')
 
         if url.scheme() == SCHEME_ENS:
-            self.urlZone.setEnabled(False)
             self.resolveTimer.timeout.connect(onEnsTimeout)
             self.resolveTimer.start(self.resolveTimerEnsMs)
-        else:
-            self.urlZone.setEnabled(True)
 
         self.urlZone.clear()
         self.urlZone.insert(url.toString())
-        self.ui.webEngineView.load(url)
+        self.webEngineView.load(url)
 
     def handleEditedUrl(self, inputStr):
         if cidhelpers.cidValid(inputStr):
@@ -1154,17 +1123,19 @@ class BrowserTab(GalacteekTab):
         url = QUrl(inputStr)
         scheme = url.scheme()
 
-        if scheme in [SCHEME_FS, SCHEME_ENS, SCHEME_IPFS, SCHEME_DWEB]:
+        if isIpfsUrl(url) or scheme == SCHEME_ENS:
             self.enterUrl(url)
         elif scheme in ['http', 'https'] and \
                 self.app.settingsMgr.allowHttpBrowsing is True:
             # Browse http urls if allowed
             self.enterUrl(url)
-        else:
+        elif re.match('[a-zA-Z0-9.]+', inputStr):
             self.enterUrl(QUrl('dweb:/ipns/{input}'.format(input=inputStr)))
+        else:
+            messageBox('Unknown URL type')
 
     def onEnsResolved(self, domain, path):
-        self.urlZone.setEnabled(True)
+        logUser.info('ENS: {0} maps to {1}'.format(domain, path))
 
     def onZoomIn(self):
         cFactor = self.webView.zoomFactor()

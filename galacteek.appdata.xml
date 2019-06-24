@@ -5,9 +5,7 @@
     <project_license>GPL-3.0+</project_license>
     <name>Galacteek</name>
 
-    <summary>IPFS browser</summary>
-    <summary xml:lang="es">Navegador IPFS</summary>
-    <summary xml:lang="fr">Navigateur IPFS</summary>
+    <summary>Distributed web browser</summary>
     <categories>
         <category>Network</category>
     </categories>
@@ -19,8 +17,9 @@
 
     <description>
         <p>
-            Galacteek is a simple Qt5-based browser and toolbox for the IPFS peer-to-peer network.
-            It contains tools to access and publish content over IPFS, and allows you to make search queries with the ipfs-search.com search engine.
+            <b>galacteek</b> is a multi-platform browser for the distributed web.
+
+            It contains tools to access and publish content over IPFS, and allows you to make search queries with the ipfs-search.com search engine. It can interact with the Ethereum Name Service (ENS) and has support for dweb Atom feeds.
         </p>
         <p>
             Learn more about IPFS at ipfs.io
@@ -44,6 +43,21 @@
     </provides>
 
     <releases>
+        <release version="0.4.7" date="2019-06-24">
+            <description>
+                <p>Release 0.4.7</p>
+            </description>
+        </release>
+        <release version="0.4.6" date="2019-06-20">
+            <description>
+                <p>Release 0.4.6</p>
+            </description>
+        </release>
+        <release version="0.4.5" date="2019-06-13">
+            <description>
+                <p>Release 0.4.5</p>
+            </description>
+        </release>
         <release version="0.4.4" date="2019-06-05">
             <description>
                 <p>Release 0.4.4</p>

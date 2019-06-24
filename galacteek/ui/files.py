@@ -30,9 +30,9 @@ from galacteek.ipfs.mimetype import MIMEType
 from galacteek.appsettings import *
 
 from galacteek.core import modelhelpers
-from galacteek.core.mfsmodel import MFSItem
-from galacteek.core.mfsmodel import MFSNameItem
-from galacteek.core.mfsmodel import MFSRootItem
+from galacteek.core.models.mfs import MFSItem
+from galacteek.core.models.mfs import MFSNameItem
+from galacteek.core.models.mfs import MFSRootItem
 
 from . import ui_files
 from .i18n import *  # noqa

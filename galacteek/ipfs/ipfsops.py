@@ -128,9 +128,6 @@ class IPFSOperator(object):
             return None
         except asyncio.CancelledError:
             self.debug('Cancelled coroutine {0}'.format(fncall))
-        except BaseException as err:
-            self.debug('Error in coroutine {0}: {1}'.format(
-                fncall, str(err)))
 
     async def getCommands(self):
         if self.availCommands is not None:
@@ -466,9 +463,10 @@ class IPFSOperator(object):
         except aioipfs.APIError:
             return None
 
-    async def pin(self, path, timeout=3600):
-        async def _pin(ppath):
-            async for pinStatus in self.client.pin.add(ppath):
+    async def pin(self, path, recursive=False, timeout=3600):
+        async def _pin(ppath, rec):
+            async for pinStatus in self.client.pin.add(
+                    ppath, recursive=rec):
                 self.debug('Pin status: {0} {1}'.format(
                     ppath, pinStatus))
                 pins = pinStatus.get('Pins', None)
@@ -478,7 +476,7 @@ class IPFSOperator(object):
                     # Ya estamos
                     return True
             return False
-        return await self.waitFor(_pin(path), timeout)
+        return await self.waitFor(_pin(path, recursive), timeout)
 
     async def unpin(self, obj):
         """

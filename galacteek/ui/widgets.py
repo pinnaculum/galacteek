@@ -21,10 +21,8 @@ from PyQt5.QtWidgets import QSizePolicy
 
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWebEngineWidgets import QWebEngineProfile
-from PyQt5.QtWebEngineWidgets import QWebEnginePage
 
 from PyQt5.QtCore import QTimer
-from PyQt5.QtCore import QByteArray
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QPoint
@@ -43,12 +41,19 @@ from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek import ensure
 from galacteek.dweb.markdown import markitdown
+
 from galacteek.core.schemes import SCHEME_DWEB
+from galacteek.core.schemes import SCHEME_ENS
+from galacteek.core.schemes import SCHEME_FS
+from galacteek.core.schemes import SCHEME_IPFS
+from galacteek.core.schemes import SCHEME_IPNS
+from galacteek.core.schemes import ENSWhoisSchemeHandler
 
 from .helpers import getIcon
 from .helpers import getIconFromIpfs
 from .helpers import disconnectSig
 from .helpers import sizeFormat
+from .helpers import messageBox
 from .i18n import iNoTitle
 from .i18n import iCancel
 from .i18n import iUnknown
@@ -702,20 +707,41 @@ class IconSelector(QComboBox):
                 return True
 
 
-class MarkdownView(QWebEngineView):
-    def __init__(self, parent):
-        super(MarkdownView, self).__init__(parent=parent)
-        baDweb = QByteArray(SCHEME_DWEB.encode())
+class IPFSWebView(QWebEngineView):
+    def __init__(self, parent=None):
+        super(IPFSWebView, self).__init__(parent=parent)
 
         self.app = QApplication.instance()
         self.webProfile = QWebEngineProfile.defaultProfile()
-        self.webProfile.installUrlSchemeHandler(
-            baDweb, self.app.ipfsSchemeHandler)
+        self.installIpfsSchemeHandlers()
 
-        self.wPage = QWebEnginePage()
-        self.setPage(self.wPage)
+        self.setMinimumSize(QSize(
+            self.app.desktopGeometry.width() / 8,
+            self.app.desktopGeometry.height() / 8)
+        )
 
-        self.setMinimumSize(QSize(400, 400))
+    def installIpfsSchemeHandlers(self):
+        # XXX Remove fs: soon
+        for scheme in [SCHEME_DWEB, SCHEME_FS]:
+            eHandler = self.webProfile.urlSchemeHandler(scheme.encode())
+            if not eHandler:
+                self.webProfile.installUrlSchemeHandler(
+                    scheme.encode(), self.app.ipfsSchemeHandler)
+
+        for scheme in [SCHEME_IPFS, SCHEME_IPNS]:
+            eHandler = self.webProfile.urlSchemeHandler(scheme.encode())
+            if not eHandler:
+                self.webProfile.installUrlSchemeHandler(
+                    scheme.encode(), self.app.dedIpfsSchemeHandler)
+
+        eHandler = self.webProfile.urlSchemeHandler(SCHEME_ENS.encode())
+        if not eHandler:
+            self.webProfile.installUrlSchemeHandler(
+                SCHEME_ENS.encode(), self.app.ensSchemeHandler)
+
+
+class MarkdownView(IPFSWebView):
+    pass
 
 
 class MarkdownInputWidget(QWidget):
@@ -764,7 +790,7 @@ class MarkdownInputWidget(QWidget):
         mainLayout.addLayout(helpLayout)
 
         self.setLayout(mainLayout)
-        self.changeWidth(400)
+        self.setMinSize()
 
     def onMarkdownHelp(self):
         ref = self.app.ipfsCtx.resources.get('markdown-reference')
@@ -773,9 +799,15 @@ class MarkdownInputWidget(QWidget):
                 ref['Hash']
             )
 
-    def changeWidth(self, width):
-        self.textEditUser.setMinimumWidth(width)
-        self.textEditMarkdown.setMinimumWidth(width)
+    def setMinSize(self):
+        self.textEditUser.setMinimumSize(QSize(
+            self.app.desktopGeometry.width() / 3,
+            self.app.desktopGeometry.height() / 2)
+        )
+        self.textEditMarkdown.setMinimumSize(QSize(
+            self.app.desktopGeometry.width() / 3,
+            self.app.desktopGeometry.height() / 2)
+        )
 
     def markdownText(self):
         return self.textEditUser.toPlainText()
@@ -793,3 +825,41 @@ class MarkdownInputWidget(QWidget):
             self.textEditMarkdown.setHtml(html)
         except Exception:
             pass
+
+
+class AtomFeedsToolbarButton(QToolButton):
+    subscribeResult = pyqtSignal(str, int)
+
+    def __init__(self, parent=None):
+        super(AtomFeedsToolbarButton, self).__init__(parent=parent)
+        self.app = QApplication.instance()
+        self.model = self.app.modelAtomFeeds
+        self.model.root.tracker.unreadCountChanged.connect(
+            self.unreadEntriesCountChanged)
+        self.setIcon(getIcon('atom-feed.png'))
+        self.subscribeResult.connect(self.onSubResult)
+
+        self.setToolTip('Atom Feeds manager')
+
+    def unreadEntriesCountChanged(self, count):
+        self.setToolTip('Atom Feeds manager: {count} unread entries'.format(
+            count=count))
+
+    def onSubResult(self, url, result):
+        if result == 1:
+            messageBox('This Atom feed is already registered', title=url)
+        elif result == 2:
+            messageBox('Error while subscribing to Atom feed', title=url)
+        elif result == 3:
+            messageBox('Subscribe OK!', title=url)
+
+    async def atomFeedSubscribe(self, url):
+        from galacteek.dweb.atom import AtomFeedExistsError
+        try:
+            await self.app.sqliteDb.feeds.follow(url)
+        except AtomFeedExistsError:
+            self.subscribeResult.emit(url, 1)
+        except Exception:
+            self.subscribeResult.emit(url, 2)
+        else:
+            self.subscribeResult.emit(url, 3)

@@ -2,6 +2,7 @@ from yarl import URL
 import aiohttp
 import asyncio
 import async_timeout
+import re
 
 from galacteek import log
 from galacteek.ipfs.cidhelpers import IPFSPath
@@ -30,8 +31,10 @@ async def ensContentHash(domain, sslverify=True, timeout=5):
                     data = await resp.json()
                     addr = data['result']['result']
 
-                    if isinstance(addr, str):
-                        return IPFSPath(addr)
+                    if isinstance(addr, str) and addr.startswith('ipfs://'):
+                        match = re.search('ipfs://(?P<cid>[A-Za-z0-9]+)$', addr)
+                        if match:
+                            return IPFSPath(match.group('cid'))
     except asyncio.TimeoutError:
         return None
     except Exception:

@@ -70,6 +70,9 @@ The clipboard manager supports the following formats:
 - *URLs using the fs: or dweb: scheme* for example
   **fs:/ipfs/QmRifA98t769dzkDv2gQocqJPXGtTySR5dPkyTaUZXtkLo** or
   **dweb:/ipfs/QmRifA98t769dzkDv2gQocqJPXGtTySR5dPkyTaUZXtkLo**
+- *URLs using the ipfs:// or ipns:// scheme* for example
+  **ipfs://bafybeigbtqkmsaeu6qcyp2oklp6qxjcq7twidewmx7h3ycokylhxk44ugy/** or
+  **ipns://ipfs.io**
 - *HTTP/HTTPs URLs that use an IPFS http gateway (like ipfs.io)* for example
   **https://ipfs.io/ipfs/QmRifA98t769dzkDv2gQocqJPXGtTySR5dPkyTaUZXtkLo** or
   **http://localhost:8080/ipns/peerpad.net**.

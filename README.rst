@@ -4,7 +4,7 @@
     :width: 128
     :height: 128
 
-:info: A multi-platform IPFS_ browser
+:info: A multi-platform browser for the distributed web
 
 **galacteek** is an experimental multi-platform Qt5-based browser/toolbox
 for the IPFS_ peer-to-peer network.
@@ -89,26 +89,62 @@ Then connect to the aiomonitor_ interface with **nc localhost 50101**
 URL schemes
 ===========
 
+As much as possible we're trying to follow the in-web-browsers_ specs
+(URL notations are taken from there).
+
+ipfs:// and ipns://
+-------------------
+
+These are what could be considered the *native* schemes.
+The scheme handler for these schemes supports the following
+URL formats::
+
+    ipfs://{cidv1base32}/path/to/resource
+    ipns://{fqdn-with-dnslink}/path/to/resource
+
+This scheme handler makes the requests asynchronously on the daemon
+(it does not use the go-ipfs's HTTP gateway). The root CID or IPNS
+domain of the URL is considered the authority.
+
+We are using CIDv1 by default for all content (and starting with
+go-ipfs_ v0.4.21, they will be base32-encoded by default). If you're
+accessing an object within a base58-encoded CIDv1, the root CID will
+automatically be converted to its base32 representation so that you can
+use the native *ipfs://* scheme. 
+
+When you are using the native handler, the URL's background color should
+change (you're using base32 after all!) and will look something like this:
+
+.. image:: https://gitlab.com/galacteek/galacteek/raw/master/screenshots/ipfs-scheme-urlbar.png
+    :align: center
+
+*Note*: this is a recent implementation, please report any issues.
+MIME type detection for rendered resources could be slow on
+platforms that don't have libmagic.
+
 dweb:/
 ------
 
-Right now the application relies on the *dweb:/* URL scheme. We are
-using CIDv1 by default for all content. Starting with go-ipfs_ version
-0.4.21, objects using CIDv1 are in base32 by default, creating the
-possibility to integrate other URL schemes (like *ipfs://<cidv1-base32>*)
-that will treat the CID as the authority. Work is being done to
-integrate such schemes in the browser and make it the default.
+This is the legacy scheme and it will be automatically used when
+accessing content rooted under CIDv0 objects.
+Because it proxies the requests to the daemon's HTTP gateway, it
+can handle anything that the daemon supports::
+
+    dweb:/ipfs/{cidv0}/path/to/resource
+    dweb:/ipfs/{cidv1b32}/path/to/resource
+    dweb:/ipfs/{cidv1b58}/path/to/resource
+    dweb:/ipns/{fqdn-with-dnslink}/path/to/resource
+    dweb:/ipns/{libp2p-key-in-base58}/path/to/resource
 
 ens://
 ------
 
 There is support for accessing IPFS-hosted websites that are registered
-on Ethereum Name Service (see ENS_). Just use **ens://mydomain.eth** for example
-as a URL in the browser and you will be redirected to the IPFS website
-referenced on ENS for this domain.
+on the *Ethereum Name Service* (see ENS_). Just use **ens://mydomain.eth**
+for example as a URL in the browser and you will be redirected to the IPFS
+website referenced on ENS for this domain.
 
-`On this dweb page <dweb:/ipfs/QmdjGyE5axZcCRorALntbqrr6TFdr7ik2kwKiUxY1tELSh/ens+ipfs/list-of_ENSIPFS-websites.html>`_
-you can find a list of some ENS+IPFS websites (or with **ens://blog.almonit.eth**)
+Go to **ens://blog.almonit.eth** to find a list of some ENS+IPFS websites.
 
 Features
 ========
@@ -121,11 +157,11 @@ should enable pubsub or some features won't be available.
 
 - Browsing sessions with automatic pinning (pins every page you browse)
 - File manager with drag-and-drop support
-- Following IPNS hashes
+- Search content with the ipfs-search_ search engine
+- Atom feeds (subscribe to feeds on the dweb)
 - ENS_ (Ethereum Name Service) resolving (access to ENS+IPFS websites)
 - Sharing hashmarks over pubsub
 - Basic built-in media player with IPFS-stored playlists
-- Search content with the ipfs-search_ search engine
 - Image viewer
 - QR codes from images
 - Decentralized application development/testing with the Javascript API
@@ -204,3 +240,4 @@ from the ipfs-logo_ project's repository is included, unchanged.
 .. _shortcuts: http://htmlpreview.github.io/?https://raw.githubusercontent.com/eversum/galacteek/master/galacteek/docs/manual/en/html/shortcuts.html
 .. _releases: https://github.com/eversum/galacteek/releases
 .. _ENS: https://ens.domains/
+.. _in-web-browsers: https://github.com/ipfs/in-web-browsers
