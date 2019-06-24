@@ -32,7 +32,7 @@
          <item>
           <widget class="QPushButton" name="addFeedButton">
            <property name="text">
-            <string>Subscribe to Atom feed from URL</string>
+            <string>Subscribe to an Atom feed</string>
            </property>
            <property name="icon">
             <iconset resource="galacteek.qrc">

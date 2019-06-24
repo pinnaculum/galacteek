@@ -97,7 +97,7 @@ class ENSWhoisSchemeHandler(QWebEngineUrlSchemeHandler):
 
         logUser.info('ENS: resolving {0}'.format(domain))
 
-        path = await ensContentHash(domain)
+        path = await ensContentHash(domain, sslverify=self.app.sslverify)
         if path and path.valid:
             self.domainResolved.emit(domain, path)
             sPath = path.child(uPath) if uPath else path

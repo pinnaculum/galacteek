@@ -47,7 +47,6 @@ from galacteek.core.schemes import SCHEME_ENS
 from galacteek.core.schemes import SCHEME_FS
 from galacteek.core.schemes import SCHEME_IPFS
 from galacteek.core.schemes import SCHEME_IPNS
-from galacteek.core.schemes import ENSWhoisSchemeHandler
 
 from .helpers import getIcon
 from .helpers import getIconFromIpfs
