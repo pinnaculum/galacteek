@@ -26,6 +26,11 @@ def stripIpfs(path):
         return path.lstrip('/ipfs/')
 
 
+def stripIpns(path):
+    if isinstance(path, str):
+        return path.lstrip('/ipns/')
+
+
 def isIpfsPath(path):
     if isinstance(path, str):
         return ipfsRegSearchPath(path) is not None
@@ -127,18 +132,21 @@ ipfsPathRe = re.compile(
 
 # For ipfs://<cid-base32>
 ipfsPathDedRe = re.compile(
-    r'^(\s*)?(?:ipfs://)?(?P<fullpath>(?P<rootcid>[A-Za-z0-9]{46,59})\/?(?P<subpath>[a-zA-Z0-9<>\"\*:;,\\\?\!\%&=@$~\/\s\.\-\_\'\\\+\(\)]{1,1024})?)\#?(?P<fragment>[a-zA-Z0-9\-\+\_\.\/]{1,256})?$',  # noqa
+    r'^(\s*)?(?:ipfs://)(?P<fullpath>(?P<rootcid>[a-z2-7]{59})\/?(?P<subpath>[a-zA-Z0-9<>\"\*:;,\\\?\!\%&=@$~\/\s\.\-\_\'\\\+\(\)]{1,1024})?)\#?(?P<fragment>[a-zA-Z0-9\-\+\_\.\/]{1,256})?$',  # noqa
     flags=re.MULTILINE)
 
 ipnsPathDedRe = re.compile(
-    r'^(\s*)?(?:ipns://)(?P<fullpath>(?P<ipnsname>[A-Za-z.-_]{1,128})\/?(?P<subpath>[a-zA-Z0-9<>\"\*:;,\\\?\!\%&=@$~\/\s\.\-\_\'\\\+\(\)]{1,1024})?)\#?(?P<fragment>[a-zA-Z0-9\-\+\_\.\/]{1,256})?$',  # noqa
+    r'^(\s*)?(?:ipns://)(?P<fullpath>(?P<fqdn>[A-Za-z.-]{1,128})\/?(?P<subpath>[a-zA-Z0-9<>\"\*:;,\\\?\!\%&=@$~\/\s\.\-\_\'\\\+\(\)]{1,1024})?)\#?(?P<fragment>[a-zA-Z0-9\-\+\_\.\/]{1,256})?$',  # noqa
     flags=re.MULTILINE)
 
 ipfsCidRe = re.compile(
     r'^(\s*)?(?P<cid>[a-zA-Z0-9]{46,59})$', flags=re.MULTILINE)
 
+ipfsCid32Re = re.compile(
+    r'^(\s*)?(?P<cid>[a-z2-7]{59})$', flags=re.MULTILINE)
+
 ipnsPathRe = re.compile(
-    r'^(\s*)?(?:fs:(\/*)|ipfs:|dweb:(\/*)?|https?://[a-zA-Z0-9:.-]*)?(?P<fullpath>/ipns/([a-zA-Z0-9\.\-\_]{1,128})\/?(?P<subpath>[a-zA-Z0-9<>\"\*:;,\\\?\!\%&=@$~\/\s\.\-\_\'\\\+\(\)]{1,1024})?)\#?(?P<fragment>[a-zA-Z0-9\+\-\_\.\/]{1,256})?$',  # noqa
+    r'^(\s*)?(?:fs:(\/*)|ipfs:|dweb:(\/*)?|https?://[a-zA-Z0-9:.-]*)?(?P<fullpath>/ipns/(?P<fqdn>[a-zA-Z0-9.-]{1,128})\/?(?P<subpath>[a-zA-Z0-9<>\"\*:;,\\\?\!\%&=@$~\/\s\.\-\_\'\\\+\(\)]{1,1024})?)\#?(?P<fragment>[a-zA-Z0-9\+\-\_\.\/]{1,256})?$',  # noqa
     flags=re.MULTILINE)
 
 
@@ -152,6 +160,7 @@ class IPFSPath:
         self._enableBase32 = True
         self._rootCid = None
         self._rootCidV = None
+        self._rootCidUseB32 = False
         self._input = input
         self._rscPath = None
         self._subPath = None
@@ -183,6 +192,17 @@ class IPFSPath:
     @property
     def rootCid(self):
         return self._rootCid
+
+    @property
+    def rootCidRepr(self):
+        if self.rootCidUseB32:
+            return self._rootCid.encode('base32').decode()
+        else:
+            return str(self._rootCid)
+
+    @property
+    def rootCidUseB32(self):
+        return self._rootCidUseB32
 
     @property
     def isIpfs(self):
@@ -245,8 +265,8 @@ class IPFSPath:
 
     @property
     def ipfsUrl(self):
-        if self.isIpfs:
-            # Dedicated (ipfs:// or ipns://) URL
+        if self.isIpfs and self.rootCidUseB32:
+            # ipfs://
             return '{scheme}://{path}'.format(
                 scheme=self.scheme,
                 path=stripIpfs(self.fullPath)
@@ -278,20 +298,18 @@ class IPFSPath:
             if not cidValid(cid):
                 return False
 
-            self._rootCid = getCID(cid)
-            if self.rootCid:
-                self._rootCidV = self.rootCid.version if \
-                    self.rootCid.version in range(0, 2) else None
+            if not self.parseCid(cid):
+                return False
 
             subpath = gdict.get('subpath')
 
             if subpath:
                 self._rscPath = os.path.join(
-                    joinIpfs(cid),
+                    joinIpfs(self.rootCidRepr),
                     subpath
                 )
             else:
-                self._rscPath = joinIpfs(cid)
+                self._rscPath = joinIpfs(self.rootCidRepr)
 
             self._fragment = gdict.get('fragment')
             self._subPath = subpath
@@ -308,12 +326,18 @@ class IPFSPath:
             if not cidValid(cid):
                 return False
 
-            self._rootCid = getCID(cid)
-            if self.rootCid:
-                self._rootCidV = self.rootCid.version if \
-                    self.rootCid.version in range(0, 2) else None
+            if not self.parseCid(cid):
+                return False
 
-            self._rscPath = ma.group('fullpath').rstrip('/')
+            subpath = gdict.get('subpath')
+            if subpath:
+                self._rscPath = os.path.join(
+                    joinIpfs(self.rootCidRepr),
+                    subpath
+                )
+            else:
+                self._rscPath = joinIpfs(self.rootCidRepr)
+
             self._fragment = gdict.get('fragment')
             self._subPath = gdict.get('subpath')
             self._scheme = 'ipfs'
@@ -322,7 +346,16 @@ class IPFSPath:
         ma = ipnsRegSearchPath(self.input)
         if ma:
             gdict = ma.groupdict()
-            self._rscPath = ma.group('fullpath').rstrip('/')
+
+            subpath = gdict.get('subpath')
+            if subpath:
+                self._rscPath = os.path.join(
+                    joinIpns(gdict.get('fqdn')),
+                    subpath
+                )
+            else:
+                self._rscPath = joinIpns(gdict.get('fqdn'))
+
             self._fragment = gdict.get('fragment')
             self._subPath = gdict.get('subpath')
             self._scheme = 'ipns'
@@ -332,25 +365,30 @@ class IPFSPath:
         if ma:
             cidStr = ma.group('cid')
             if not cidValid(cidStr):
-                return
+                return False
 
-            self._rootCid = getCID(cidStr)
-            if self.rootCid:
-                self._rootCidV = self.rootCid.version if \
-                    self.rootCid.version in range(0, 2) else None
+            if not self.parseCid(cidStr):
+                return False
 
-            if self.rootCid.version == 1 and self._enableBase32:
-                cidB32 = cidConvertBase32(cidStr)
-                if cidB32:
-                    path = joinIpfs(cidB32)
-            else:
-                path = joinIpfs(cidStr)
-
-            self._rscPath = path
+            self._rscPath = joinIpfs(self.rootCidRepr)
             self._scheme = 'ipfs'
             return True
 
         return False
+
+    def parseCid(self, cidStr):
+        self._rootCid = getCID(cidStr)
+        if self.rootCid:
+            self._rootCidV = self.rootCid.version if \
+                self.rootCid.version in range(0, 2) else None
+        else:
+            return False
+
+        if self.rootCid.version == 1 and self._enableBase32:
+            # rootCidRepr will convert it to base32
+            self._rootCidUseB32 = True
+
+        return True
 
     def child(self, path):
         if not isinstance(path, str):
@@ -360,7 +398,7 @@ class IPFSPath:
 
     async def resolve(self, ipfsop):
         """
-        Resolve this object path to a multihash
+        Resolve this object's path to a multihash
         """
 
         timeout = 15
@@ -419,6 +457,10 @@ def ipfsDedSearchPath(text):
 
 def ipfsRegSearchCid(text):
     return ipfsCidRe.match(text)
+
+
+def ipfsRegSearchCid32(text):
+    return ipfsCid32Re.match(text)
 
 
 def ipnsRegSearchPath(text):

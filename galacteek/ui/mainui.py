@@ -61,6 +61,8 @@ from . import eventlog
 from . import pin
 from . import chat
 
+from .feeds import AtomFeedsViewTab
+from .feeds import AtomFeedsView
 from .textedit import TextEditorTab
 from .pyramids import MultihashPyramidsToolBar
 from .quickaccess import QuickAccessToolBar
@@ -68,6 +70,7 @@ from .helpers import *
 from .widgets import PopupToolButton
 from .widgets import HashmarkMgrButton
 from .widgets import HashmarksLibraryButton
+from .widgets import AtomFeedsToolbarButton
 from .dialogs import *
 from ..appsettings import *
 from .i18n import *
@@ -288,14 +291,18 @@ class MainWindow(QMainWindow):
     def __init__(self, app):
         super(MainWindow, self).__init__()
 
-        self.setMinimumSize(QSize(600, 400))
-
         self.showMaximized()
         self._app = app
         self._allTabs = []
         self._lastFeedMark = None
 
         self.menuBar().hide()
+
+        # Seems reasonable
+        self.setMinimumSize(QSize(
+            self.app.desktopGeometry.width() / 2,
+            self.app.desktopGeometry.height() / 2)
+        )
 
         loggerUser.handlers.append(
             MainWindowLogHandler(window=self, level='DEBUG'))
@@ -306,6 +313,7 @@ class MainWindow(QMainWindow):
         self.tabnMediaPlayer = iMediaPlayer()
         self.tabnHashmarks = iHashmarks()
         self.tabnChat = iChat()
+        self.tabnFeeds = iAtomFeeds()
 
         self.actionQuit = QAction(
             getIcon('quit.png'),
@@ -367,6 +375,11 @@ class MainWindow(QMainWindow):
         self.textEditorButton.setToolTip(iTextEditor())
         self.textEditorButton.setIcon(getIcon('text-editor.png'))
         self.textEditorButton.clicked.connect(self.addEditorTab)
+
+        # Atom Feeds
+        self.atomButton = AtomFeedsToolbarButton(self)
+        self.atomButton.clicked.connect(self.onShowAtomFeeds)
+        self.atomFeedsViewWidget = AtomFeedsView(self.app.modelAtomFeeds)
 
         # Edit-Profile button
         self.menuUserProfile = QMenu()
@@ -443,12 +456,12 @@ class MainWindow(QMainWindow):
         self.settingsToolButton.setMenu(menu)
 
         self.helpToolButton = QToolButton()
+        self.helpToolButton.setObjectName('helpToolButton')
         self.helpToolButton.setIcon(getIcon('information.png'))
-        self.helpToolButton.setPopupMode(QToolButton.MenuButtonPopup)
-        self.helpToolButton.clicked.connect(
-            functools.partial(self.onOpenManual, 'en'))
+        self.helpToolButton.setPopupMode(QToolButton.InstantPopup)
         menu = QMenu()
         menu.addMenu(self.menuManual)
+        menu.addSeparator()
         menu.addAction('Donate', self.onHelpDonate)
         menu.addAction('About', self.onAboutGalacteek)
         self.helpToolButton.setMenu(menu)
@@ -473,6 +486,7 @@ class MainWindow(QMainWindow):
         self.toolbarMain.addWidget(self.browseButton)
         self.toolbarMain.addWidget(self.hashmarkMgrButton)
         self.toolbarMain.addWidget(self.sharedHashmarkMgrButton)
+        self.toolbarMain.addWidget(self.atomButton)
 
         self.toolbarMain.addSeparator()
         self.toolbarMain.addWidget(self.fileManagerButton)
@@ -508,6 +522,7 @@ class MainWindow(QMainWindow):
         self.toolbarMain.addWidget(self.settingsToolButton)
 
         self.toolbarMain.addWidget(self.helpToolButton)
+        self.toolbarMain.addSeparator()
         self.toolbarMain.addAction(self.actionQuit)
 
         self.addToolBar(Qt.TopToolBarArea, self.toolbarMain)
@@ -515,11 +530,13 @@ class MainWindow(QMainWindow):
 
         self.tabWidget = QTabWidget(self)
         self.tabWidget.setObjectName('tabWidget')
-        self.tabWidget.setDocumentMode(True)
         self.tabWidget.setTabsClosable(True)
         self.tabWidget.tabCloseRequested.connect(self.onTabCloseRequest)
         self.tabWidget.setElideMode(Qt.ElideMiddle)
         self.tabWidget.setUsesScrollButtons(True)
+
+        if self.app.system != 'Darwin':
+            self.tabWidget.setDocumentMode(True)
 
         tabKeyFilter = TabWidgetKeyFilter(self)
         tabKeyFilter.nextPressed.connect(self.cycleTabs)
@@ -723,6 +740,7 @@ class MainWindow(QMainWindow):
         ensure(self.qaToolbar.init())
         ensure(self.hashmarkMgrButton.updateIcons())
         ensure(self.app.marksLocal.pyramidsInit())
+        ensure(self.app.sqliteDb.feeds.start())
 
         if self.app.enableOrbital and self.app.ipfsCtx.orbitConnector is None:
             self.app.ipfsCtx.orbitConnector = GalacteekOrbitConnector(
@@ -816,9 +834,10 @@ class MainWindow(QMainWindow):
     def onPinStatusChanged(self, qname, path, status):
         pass
 
-    def onManualAvailable(self, lang, entry):
+    def onManualAvailable(self, langCode, entry):
+        lang = iLangEnglish() if langCode == 'en' else iUnknown()
         self.menuManual.addAction(lang, functools.partial(
-                                  self.onOpenManual, lang))
+                                  self.onOpenManual, langCode))
 
     def onOpenManual(self, lang):
         entry = self.app.manuals.getManualEntry(lang)
@@ -834,6 +853,7 @@ class MainWindow(QMainWindow):
                 self.peersButton,
                 self.textEditorButton,
                 self.mPlayerButton,
+                self.atomButton,
                 self.profileEditButton]:
             btn.setEnabled(flag)
 
@@ -1138,3 +1158,12 @@ class MainWindow(QMainWindow):
 
         self.registerTab(self.chatRoomWidget, self.tabnChat,
                          icon=getIcon('chat.png'), current=True)
+
+    def onShowAtomFeeds(self):
+        ft = self.findTabWithName(self.tabnFeeds)
+        if ft:
+            return self.tabWidget.setCurrentWidget(ft)
+
+        tab = AtomFeedsViewTab(self, view=self.atomFeedsViewWidget)
+        self.registerTab(tab, self.tabnFeeds,
+                         icon=getIcon('atom-feed.png'), current=True)

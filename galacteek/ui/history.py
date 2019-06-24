@@ -44,7 +44,6 @@ class HistoryMatchesWidget(QListView):
 
         self.app = QApplication.instance()
         self.setObjectName('historySearchResults')
-        self.pressed.connect(self.onItemActivated)
         self.clicked.connect(self.onItemActivated)
 
         self.model = QStandardItemModel()

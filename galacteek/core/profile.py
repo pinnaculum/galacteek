@@ -26,7 +26,7 @@ from galacteek.core.asynclib import asyncReadFile
 from galacteek.core.orbitdb import OrbitConfigMap
 from galacteek.core.orbitdbcfg import defaultOrbitConfigMap
 from galacteek.core.jsono import QJSONFile
-from galacteek.core.mfsmodel import createMFSModel
+from galacteek.core.models.mfs import createMFSModel
 from galacteek.core.ipfsmarks import IPFSMarks
 
 from galacteek.core.userdag import UserDAG
@@ -565,10 +565,10 @@ class UserProfile(QObject):
             self.userLogInfo('Loading DAG ..')
             self._dagUser = UserDAG(self.pathUserDagMeta, loop=self.ctx.loop)
 
+            self.dagUser.dagCidChanged.connect(self.onDagChange)
+
             ensure(self.dagUser.load())
             await self.dagUser.loaded
-
-            self.dagUser.dagCidChanged.connect(self.onDagChange)
 
             self.userWebsite = UserWebsite(
                 self.dagUser,
@@ -759,7 +759,8 @@ class UserProfile(QObject):
     async def publishDag(self, op):
         self.debug('Publishing DAG CID {}'.format(self.dagUser.dagCid))
 
-        result = await op.publish(self.dagUser.dagCid, key=self.keyRoot)
+        result = await op.publish(self.dagUser.dagCid, key=self.keyRoot,
+                                  allow_offline=True, lifetime='48h')
 
         if result is None:
             self.debug('DAG publish failed: {}'.format(result))

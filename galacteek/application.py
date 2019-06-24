@@ -16,6 +16,7 @@ import async_timeout
 from quamash import QEventLoop
 
 from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QDesktopWidget
 from PyQt5.QtWidgets import QSystemTrayIcon
 from PyQt5.QtWidgets import QMenu
 
@@ -40,7 +41,9 @@ from galacteek.core.multihashmetadb import IPFSObjectMetadataDatabase
 from galacteek.core.clipboard import ClipboardTracker
 from galacteek.core.schemes import DWebSchemeHandler
 from galacteek.core.schemes import ENSWhoisSchemeHandler
+from galacteek.core.schemes import DedicatedIPFSSchemeHandler
 from galacteek.core.db import SqliteDatabase
+from galacteek.core.models.atomfeeds import AtomFeedsModel
 from galacteek.ipfs import asyncipfsd, cidhelpers
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import IPFSPath
@@ -50,6 +53,7 @@ from galacteek.ipfs.feeds import FeedFollower
 
 from galacteek.dweb.webscripts import ipfsClientScripts
 from galacteek.dweb.render import defaultJinjaEnv
+from galacteek.dweb.atom import AtomFeedExistsError
 
 from galacteek.ui import mainui
 from galacteek.ui import downloads
@@ -173,12 +177,15 @@ class GalacteekApplication(QApplication):
         self.ipfsCtx = IPFSContext(self)
         self.peersTracker = peers.PeersTracker(self.ipfsCtx)
 
-        self.setupAsyncLoop()
+        self.desktopWidget = QDesktopWidget()
+        self.desktopGeometry = self.desktopWidget.screenGeometry()
 
+        self.setupAsyncLoop()
         self.setupPaths()
         self.setupDb()
         self.setupClipboard()
         self.setupSchemeHandlers()
+        self.setupModels()
 
         self.initSettings()
         self.setupTranslator()
@@ -543,6 +550,9 @@ class GalacteekApplication(QApplication):
         self.sqliteDb = SqliteDatabase(self._sqliteDbLocation)
         ensure(self.sqliteDb.setup())
 
+    def setupModels(self):
+        self.modelAtomFeeds = AtomFeedsModel(self.sqliteDb.feeds, parent=self)
+
     def setupAsyncLoop(self):
         """
         Install the quamash event loop and enable debugging
@@ -711,6 +721,7 @@ class GalacteekApplication(QApplication):
     def setupSchemeHandlers(self):
         self.ipfsSchemeHandler = DWebSchemeHandler(self)
         self.ensSchemeHandler = ENSWhoisSchemeHandler(self)
+        self.dedIpfsSchemeHandler = DedicatedIPFSSchemeHandler(self)
 
     def subUrl(self, path):
         """ Joins the gatewayUrl and path to form a new URL """

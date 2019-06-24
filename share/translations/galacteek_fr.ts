@@ -130,6 +130,19 @@
     </message>
 </context>
 <context>
+    <name>AtomFeeds</name>
+    <message>
+        <location filename="../../galacteek/ui/atomfeeds.ui" line="14"/>
+        <source>Form</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/atomfeeds.ui" line="35"/>
+        <source>Subscribe to Atom feed from URL</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>BrowserTabForm</name>
     <message>
         <location filename="../../galacteek/ui/browsertab.ui" line="14"/>
@@ -187,87 +200,87 @@
         <translation type="obsolete">Ouvrir le lien dans une nouvelle tab</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browser.py" line="75"/>
+        <location filename="../../galacteek/ui/browser.py" line="78"/>
         <source>Open with</source>
         <translation>Ouvrir avec</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browser.py" line="79"/>
+        <location filename="../../galacteek/ui/browser.py" line="82"/>
         <source>Download</source>
         <translation>Télécharger</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browser.py" line="88"/>
+        <location filename="../../galacteek/ui/browser.py" line="91"/>
         <source>PIN</source>
         <translation>PIN</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browser.py" line="92"/>
+        <location filename="../../galacteek/ui/browser.py" line="95"/>
         <source>PIN (this page)</source>
         <translation>Pin (clouer) (cette page)</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browser.py" line="96"/>
+        <location filename="../../galacteek/ui/browser.py" line="99"/>
         <source>PIN (recursive)</source>
         <translation>Pin (clouer) (récursif)</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browser.py" line="100"/>
+        <location filename="../../galacteek/ui/browser.py" line="103"/>
         <source>Follow IPNS resource</source>
         <translation>Suivre la clé IPNS</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browser.py" line="105"/>
+        <location filename="../../galacteek/ui/browser.py" line="108"/>
         <source>Enter an IPFS CID</source>
         <translation>Entrez un CID IPFS</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browser.py" line="109"/>
+        <location filename="../../galacteek/ui/browser.py" line="112"/>
         <source>Go to home page</source>
         <translation>Allez a la page d&apos;accueil</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browser.py" line="114"/>
+        <location filename="../../galacteek/ui/browser.py" line="117"/>
         <source>Browse IPFS resource (CID)</source>
         <translation>Accéder a un CID</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browser.py" line="119"/>
+        <location filename="../../galacteek/ui/browser.py" line="122"/>
         <source>Browse multiple IPFS resources (CID)</source>
         <translation>Accéder a plusieurs CIDs</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browser.py" line="124"/>
+        <location filename="../../galacteek/ui/browser.py" line="127"/>
         <source>Load IPFS CID dialog</source>
         <translation>Dialogue de chargement de CID</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browser.py" line="129"/>
+        <location filename="../../galacteek/ui/browser.py" line="132"/>
         <source>IPNS add feed dialog</source>
         <translation>Dialogue d&apos;ajout de flux IPNS</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browser.py" line="134"/>
+        <location filename="../../galacteek/ui/browser.py" line="137"/>
         <source>Browse IPNS resource from hash/name</source>
         <translation>Accéder a une ressource IPNS (hash/nom)</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browser.py" line="139"/>
+        <location filename="../../galacteek/ui/browser.py" line="142"/>
         <source>Enter an IPNS hash/name</source>
         <translation>Entrez un nom/hash IPNS</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browser.py" line="144"/>
+        <location filename="../../galacteek/ui/browser.py" line="147"/>
         <source>Load IPNS key dialog</source>
         <translation>Dialogue de chargement IPNS</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browser.py" line="149"/>
+        <location filename="../../galacteek/ui/browser.py" line="152"/>
         <source>Hashmarked {0}</source>
         <translation>Hash-marqué: {0}</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browser.py" line="154"/>
+        <location filename="../../galacteek/ui/browser.py" line="157"/>
         <source>Hashmark title</source>
         <translation>Titre du hashmark</translation>
     </message>
@@ -277,12 +290,12 @@
         <translation type="obsolete">URL invalide</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browser.py" line="164"/>
+        <location filename="../../galacteek/ui/browser.py" line="167"/>
         <source>{0} is an invalid IPFS CID (Content IDentifier)</source>
         <translation>{0} est un CID invalide</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browser.py" line="159"/>
+        <location filename="../../galacteek/ui/browser.py" line="162"/>
         <source>Invalid URL: {0}</source>
         <translation>URL invalide: {0}</translation>
     </message>
@@ -297,7 +310,7 @@
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Dézoomer&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browser.py" line="170"/>
+        <location filename="../../galacteek/ui/browser.py" line="173"/>
         <source>Not an IPFS resource</source>
         <translation></translation>
     </message>
@@ -307,17 +320,17 @@
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Arreter&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browser.py" line="66"/>
+        <location filename="../../galacteek/ui/browser.py" line="69"/>
         <source>Open link in new tab</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browser.py" line="70"/>
+        <location filename="../../galacteek/ui/browser.py" line="73"/>
         <source>Open http/https link in new tab</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/browser.py" line="83"/>
+        <location filename="../../galacteek/ui/browser.py" line="86"/>
         <source>Save page to the &quot;Web Pages&quot; folder</source>
         <translation type="unfinished"></translation>
     </message>
@@ -522,32 +535,32 @@ p, li { white-space: pre-wrap; }
         <translation>Selectionnez un ou plusieurs fichiers a importer</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="369"/>
+        <location filename="../../galacteek/ui/i18n.py" line="373"/>
         <source>Music</source>
         <translation>Musique</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="373"/>
+        <location filename="../../galacteek/ui/i18n.py" line="377"/>
         <source>Pictures</source>
         <translation>Photos</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="385"/>
+        <location filename="../../galacteek/ui/i18n.py" line="389"/>
         <source>Videos</source>
         <translation>Vidéos</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="389"/>
+        <location filename="../../galacteek/ui/i18n.py" line="393"/>
         <source>Home</source>
         <translation>Home</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="393"/>
+        <location filename="../../galacteek/ui/i18n.py" line="397"/>
         <source>Code</source>
         <translation>Code</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="397"/>
+        <location filename="../../galacteek/ui/i18n.py" line="401"/>
         <source>Documents</source>
         <translation>Documents</translation>
     </message>
@@ -557,7 +570,7 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="409"/>
+        <location filename="../../galacteek/ui/i18n.py" line="413"/>
         <source>QR codes</source>
         <translation type="unfinished"></translation>
     </message>
@@ -572,12 +585,12 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="401"/>
+        <location filename="../../galacteek/ui/i18n.py" line="405"/>
         <source>Web Pages</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="405"/>
+        <location filename="../../galacteek/ui/i18n.py" line="409"/>
         <source>Dweb Apps</source>
         <translation type="unfinished"></translation>
     </message>
@@ -612,12 +625,12 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="377"/>
+        <location filename="../../galacteek/ui/i18n.py" line="381"/>
         <source>Images</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="381"/>
+        <location filename="../../galacteek/ui/i18n.py" line="385"/>
         <source>Temporary</source>
         <translation type="unfinished"></translation>
     </message>
@@ -630,27 +643,27 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>Galacteek</name>
     <message>
-        <location filename="../../galacteek/application.py" line="74"/>
+        <location filename="../../galacteek/application.py" line="78"/>
         <source>IPFS daemon started</source>
         <translation>Démon IPFS: démarré</translation>
     </message>
     <message>
-        <location filename="../../galacteek/application.py" line="78"/>
+        <location filename="../../galacteek/application.py" line="82"/>
         <source>IPFS daemon&apos;s gateway started</source>
         <translation>Démon IPFS: passerelle HTTP démarrée</translation>
     </message>
     <message>
-        <location filename="../../galacteek/application.py" line="83"/>
+        <location filename="../../galacteek/application.py" line="87"/>
         <source>IPFS daemon is ready</source>
         <translation>Démon IPFS: prêt</translation>
     </message>
     <message>
-        <location filename="../../galacteek/application.py" line="87"/>
+        <location filename="../../galacteek/application.py" line="91"/>
         <source>Problem starting IPFS daemon</source>
         <translation>Démon IPFS: problème de démarrage</translation>
     </message>
     <message>
-        <location filename="../../galacteek/application.py" line="92"/>
+        <location filename="../../galacteek/application.py" line="96"/>
         <source>Problem initializing the IPFS daemon (check the ports configuration)</source>
         <translation>Démon IPFS: problème lors de l&apos;initialisation (vérifiez les ports)</translation>
     </message>
@@ -715,42 +728,42 @@ p, li { white-space: pre-wrap; }
         <translation type="obsolete">Avertissement: impossible de trouver l&apos;outil de migration de depots IPFS</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="324"/>
+        <location filename="../../galacteek/ui/i18n.py" line="328"/>
         <source>Error: Could not find go-ipfs on your system</source>
         <translation>Erreur: impossible de trouver go-ipfs sur votre système</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="336"/>
+        <location filename="../../galacteek/ui/i18n.py" line="340"/>
         <source>go-ipfs was not found on your system: download binary from IPFS distributions website (https://dist.ipfs.io) ?</source>
         <translation>go-ipfs n&apos;a pas été trouvé sur votre système: télécharger depuis le site de distributions IPFS (https://dist.ipfs.io) ?</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="343"/>
+        <location filename="../../galacteek/ui/i18n.py" line="347"/>
         <source>Timeout while fetching go-ipfs distribution</source>
         <translation>Délai expiré lors du téléchargement de go-ipfs</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="349"/>
+        <location filename="../../galacteek/ui/i18n.py" line="353"/>
         <source>go-ipfs was installed successfully</source>
         <translation>go-ipfs a été installé avec succès</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="355"/>
+        <location filename="../../galacteek/ui/i18n.py" line="359"/>
         <source>Error while fetching go-ipfs distribution</source>
         <translation>Erreur lors du téléchargement de go-ipfs</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="361"/>
+        <location filename="../../galacteek/ui/i18n.py" line="365"/>
         <source>New release available: upgrade with pip install -U galacteek</source>
         <translation>Nouvelle version disponible: mise a jour avec &quot;pip install -U galacteek&quot;</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="330"/>
+        <location filename="../../galacteek/ui/i18n.py" line="334"/>
         <source>Error: go-ipfs version found on your system is too old</source>
         <translation>Erreur: votre version de go-ipfs est trop ancienne</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="318"/>
+        <location filename="../../galacteek/ui/i18n.py" line="322"/>
         <source>Warning: could not find IPFS repository migration tool</source>
         <translation>Avertissement: impossible de trouver l&apos;outil de migration de repos IPFS</translation>
     </message>
@@ -963,7 +976,7 @@ p, li { white-space: pre-wrap; }
         <translation type="obsolete">Naviguer sur le chemin IPFS: {0}</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="80"/>
+        <location filename="../../galacteek/ui/mainui.py" line="83"/>
         <source>
 Path: {0}, nodes processed: {1}</source>
         <translation>
@@ -1256,7 +1269,7 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="87"/>
+        <location filename="../../galacteek/ui/mainui.py" line="90"/>
         <source>
         &lt;p align=&apos;center&apos;&gt;
         &lt;img src=&apos;:/share/icons/galacteek.png&apos;
@@ -1284,6 +1297,11 @@ Chemin: {0}, nodes traitées: {1}</translation>
     <message>
         <location filename="../../galacteek/ui/i18n.py" line="312"/>
         <source>Clear history</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/i18n.py" line="316"/>
+        <source>Atom feeds</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1759,27 +1777,27 @@ Chemin: {0}, nodes traitées: {1}</translation>
 <context>
     <name>PeersManager</name>
     <message>
-        <location filename="../../galacteek/ui/peers.py" line="29"/>
+        <location filename="../../galacteek/ui/peers.py" line="30"/>
         <source>Username</source>
         <translation>Utilisateur</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/peers.py" line="33"/>
+        <location filename="../../galacteek/ui/peers.py" line="34"/>
         <source>Peer ID</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/peers.py" line="37"/>
+        <location filename="../../galacteek/ui/peers.py" line="38"/>
         <source>Ping Average (ms)</source>
         <translation>Ping (ms)</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/peers.py" line="41"/>
+        <location filename="../../galacteek/ui/peers.py" line="42"/>
         <source>Location</source>
         <translation>Localisation</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/peers.py" line="45"/>
+        <location filename="../../galacteek/ui/peers.py" line="46"/>
         <source>Invalid DAG CID: {0}</source>
         <translation>CID de DAG invalide: {0}</translation>
     </message>
@@ -2003,7 +2021,7 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="obsolete">Vue du DAG: {0}</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="147"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="152"/>
         <source>Clipboard history</source>
         <translation type="unfinished">Historique du presse-papier</translation>
     </message>
@@ -2013,37 +2031,37 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="obsolete">Naviguer sur le chemin IPFS: {0}</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="156"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="161"/>
         <source>Open</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="160"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="165"/>
         <source>Open with application</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="165"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="170"/>
         <source>Open with default system application</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="170"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="175"/>
         <source>Set as current clipboard item</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="185"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="190"/>
         <source>Switch to item {} in the stack</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="191"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="196"/>
         <source>Clipboard stack</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="180"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="185"/>
         <source>Remove item</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2058,7 +2076,7 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="175"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="180"/>
         <source>Set as homepage</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2073,48 +2091,53 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="unfinished">Explorer le répertoire</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="117"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="122"/>
         <source>Hashmark</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="122"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="127"/>
         <source>Pin</source>
         <translation type="unfinished">Clouer</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="132"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="137"/>
         <source>Run IPLD Explorer</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="142"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="147"/>
         <source>DAG view</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="151"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="156"/>
         <source>Browse IPFS path</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="137"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="142"/>
         <source>Open with Markdown editor</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="127"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="132"/>
         <source>Download</source>
         <translation type="unfinished">Télécharger</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="196"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="201"/>
         <source>QR codes: encode clipboard stack to image (encrypted)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="202"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="207"/>
         <source>QR codes: encode clipboard stack to image (clear)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/clipboard.py" line="117"/>
+        <source>Subscribe to Atom feed</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

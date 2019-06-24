@@ -312,6 +312,10 @@ def iClearHistory():
     return QCoreApplication.translate('GalacteekWindow', 'Clear history')
 
 
+def iAtomFeeds():
+    return QCoreApplication.translate('GalacteekWindow', 'Atom feeds')
+
+
 # IPFS daemon ui messages
 
 def iFsRepoMigrateNotFound():

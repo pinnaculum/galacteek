@@ -29,6 +29,7 @@ SOURCES = galacteek/application.py \
 FORMS += galacteek/ui/addkeydialog.ui \
 	galacteek/ui/addhashmarkdialog.ui \
 	galacteek/ui/addfeeddialog.ui \
+	galacteek/ui/atomfeeds.ui \
 	galacteek/ui/browsertab.ui\
 	galacteek/ui/dagview.ui \
 	galacteek/ui/donatedialog.ui \

@@ -18,6 +18,7 @@ from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import *
 from galacteek.ipfs.ipfsops import *
 from galacteek.core.modelhelpers import *
+from galacteek.dweb.atom import DWEB_ATOM_FEEDFN
 
 from . import ui_peersmgr
 from .widgets import *
@@ -186,11 +187,13 @@ class PeersManager(GalacteekTab):
         ensure(self.refreshControls())
 
     async def refreshControls(self):
-        def openPeerHome(idx, id):
-            log.debug('openPeerHome: {0} {1}'.format(idx, id))
-            method = 'ipns' if idx == 1 else 'direct'
+        def onPeerAction(idx, id):
             peerCtx = self.peersTracker.ctx.peers.getByPeerId(id)
-            ensure(self.explorePeerHome(peerCtx, method=method))
+            if idx in [0, 1]:
+                method = 'ipns' if idx == 1 else 'direct'
+                ensure(self.explorePeerHome(peerCtx, method=method))
+            elif idx == 2:
+                ensure(self.followPeerFeed(peerCtx))
 
         def followPeer(id):
             peerCtx = self.peersTracker.ctx.peers.getByPeerId(id)
@@ -208,8 +211,9 @@ class PeersManager(GalacteekTab):
                 btnHomeCombo = QComboBox()
                 btnHomeCombo.addItem('Browse homepage (direct)')
                 btnHomeCombo.addItem('Browse homepage (IPNS)')
+                btnHomeCombo.addItem('Follow (Atom feed)')
                 btnHomeCombo.activated.connect(
-                    lambda idx: openPeerHome(idx, peerId))
+                    lambda idx: onPeerAction(idx, peerId))
 
                 self.ui.tree.setIndexWidget(idx, btnHomeCombo)
 
@@ -227,6 +231,18 @@ class PeersManager(GalacteekTab):
         peerCtx = self.peersTracker.ctx.peers.getByPeerId(peerId)
 
         ensure(self.explorePeerHome(peerCtx))
+
+    @ipfsOp
+    async def followPeerFeed(self, op, peerCtx):
+        identMsg = peerCtx.ident
+        path = os.path.join(joinIpns(identMsg.dagIpns), DWEB_ATOM_FEEDFN)
+        ipfsPath = IPFSPath(path)
+
+        try:
+            await self.app.sqliteDb.feeds.follow(ipfsPath.dwebUrl)
+        except Exception:
+            # TODO
+            pass
 
     @ipfsOp
     async def explorePeerHome(self, op, peerCtx, method='direct'):

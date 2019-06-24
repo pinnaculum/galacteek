@@ -113,6 +113,11 @@ def iClipItemExplore():
                                       'Explore directory')
 
 
+def iClipItemSubscribeToFeed():
+    return QCoreApplication.translate('clipboardManager',
+                                      'Subscribe to Atom feed')
+
+
 def iClipItemHashmark():
     return QCoreApplication.translate('clipboardManager',
                                       'Hashmark')
@@ -503,8 +508,8 @@ class ClipboardItemButton(PopupToolButton):
             triggered=self.onMarkdownEdit)
 
         self.followFeedAction = QAction(
-            getIcon('feed-atom.png'),
-            iClipboardEmpty(), self,
+            getIcon('atom-feed.png'),
+            iClipItemSubscribeToFeed(), self,
             triggered=self.onFollowFeed)
 
         self.pinAction = QAction(
@@ -654,7 +659,6 @@ class ClipboardItemButton(PopupToolButton):
             # We have an atom!
             self.menu.addSeparator()
             self.menu.addAction(self.followFeedAction)
-            self.followFeedAction.setEnabled(False)
 
         mIcon = getIconFromMimeType(self.item.mimeType)
 
@@ -738,8 +742,8 @@ class ClipboardItemButton(PopupToolButton):
             messageBox(iClipboardEmpty())
 
     def onFollowFeed(self):
-        # TODO
-        pass
+        ensure(self.app.mainWindow.atomButton.atomFeedSubscribe(
+            self.item.path))
 
     def onIpldExplore(self):
         """
