@@ -1,6 +1,8 @@
 import re
 import uuid
 import aioipfs
+import functools
+import asyncio
 
 from PyQt5.QtWebEngineCore import QWebEngineUrlSchemeHandler
 from PyQt5.QtWebEngineCore import QWebEngineUrlScheme
@@ -121,6 +123,14 @@ class DedicatedIPFSSchemeHandler(QWebEngineUrlSchemeHandler):
 
     We don't use the gateway at all here, making the async requests
     manually on the daemon.
+
+    The requestStarted() function will first assign a UUID to the
+    request and store the request in the handler so that it doesn't get
+    garbage-collected by QtWebEngine. The handleRequest() coroutine
+    is responsible for fetching the objects from IPFS. When the data
+    is ready it will call the renderData() coroutine which will detect
+    the MIME type, and emit the 'contentReady' signal which is handled
+    by the 'onContent' callback.
     """
 
     contentReady = pyqtSignal(str, QWebEngineUrlRequestJob, str, bytes)
@@ -140,15 +150,13 @@ class DedicatedIPFSSchemeHandler(QWebEngineUrlSchemeHandler):
             del self.requests[uid]
 
     def onContent(self, uid, request, ctype, data):
-        self.requests[uid] = {
-            'request': request,
-            'iodev': QBuffer(parent=request),
-            'mutex': QMutex()
-        }
-        request.destroyed.connect(lambda: self.onRequestDestroyed(uid))
         self.reply(uid, request, ctype, data)
 
     def reply(self, uid, request, ctype, data, parent=None):
+        """
+        We're using a mutex here but it shouldn't be necessary
+        """
+
         if uid not in self.requests:
             # Destroyed ?
             return
@@ -216,24 +224,21 @@ class DedicatedIPFSSchemeHandler(QWebEngineUrlSchemeHandler):
         except aioipfs.APIError as exc:
             if exc.message.startswith('no link named'):
                 return await self.directoryListing(request, client, path)
-            elif exc.message == 'this dag node is a directory':
-                return await self.directoryListing(request, client, path)
         else:
             return data
 
-    async def renderData(self, request, data):
+    async def renderData(self, request, data, uid):
         rUrl = request.requestUrl()
         cType = await detectMimeTypeFromBuffer(data[0:512])
 
         if cType:
-            uid = str(uuid.uuid4())
             self.contentReady.emit(uid, request, cType.type, data)
         else:
             self.debug('Impossible to detect MIME type for {0}'.format(
                 rUrl.toString()))
 
     @ipfsOp
-    async def handleRequest(self, ipfsop, request):
+    async def handleRequest(self, ipfsop, request, uid):
         rUrl = request.requestUrl()
 
         if not rUrl.isValid():
@@ -247,7 +252,8 @@ class DedicatedIPFSSchemeHandler(QWebEngineUrlSchemeHandler):
             cid = rUrl.host()
 
             if not ipfsRegSearchCid32(cid):
-                return request.fail(QWebEngineUrlRequestJob.UrlInvalid)
+                request.fail(QWebEngineUrlRequestJob.UrlInvalid)
+                return
 
             ipfsPathS = joinIpfs(cid) + rUrl.path()
         elif scheme == SCHEME_IPNS:
@@ -262,6 +268,7 @@ class DedicatedIPFSSchemeHandler(QWebEngineUrlSchemeHandler):
         try:
             data = await ipfsop.client.cat(ipfsPathS)
         except aioipfs.APIError as exc:
+            await asyncio.sleep(0)
             if exc.message.startswith('no link named'):
                 return request.fail(QWebEngineUrlRequestJob.UrlNotFound)
             if exc.message == 'this dag node is a directory':
@@ -271,12 +278,21 @@ class DedicatedIPFSSchemeHandler(QWebEngineUrlSchemeHandler):
                     ipfsPathS
                 )
                 if data:
-                    return await self.renderData(request, data)
+                    return await self.renderData(request, data, uid)
         else:
-            return await self.renderData(request, data)
+            return await self.renderData(request, data, uid)
 
     def requestStarted(self, request):
-        ensure(self.handleRequest(request))
+        uid = str(uuid.uuid4())
+        self.requests[uid] = {
+            'request': request,
+            'iodev': QBuffer(parent=request),
+            'mutex': QMutex()
+        }
+
+        request.destroyed.connect(
+            functools.partial(self.onRequestDestroyed, uid))
+        ensure(self.handleRequest(request, uid))
 
 
 class DWebSchemeHandler(QWebEngineUrlSchemeHandler):
