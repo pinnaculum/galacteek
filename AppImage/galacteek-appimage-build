@@ -112,7 +112,6 @@ rm -rf lib/python3.7/site-packages/PyQt5/Qt/plugins/sqldrivers
 find lib/python3.7/site-packages/PyQt5/Qt/qml/ -name *.qml -exec rm {} \;
 find lib/python3.7/site-packages/PyQt5/Qt/qml/ -name *.qmlc -exec rm {} \;
 find lib/python3.7/site-packages/PyQt5/Qt/qml/QtQuick -exec rm {} \;
-find lib/python3.7 -name tests -exec rm -rf {} \;
 
 popd
 
