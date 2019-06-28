@@ -3,7 +3,7 @@ import pytest
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtCore import QModelIndex
 
-from galacteek.ui.modelhelpers import *
+from galacteek.core.modelhelpers import *
 
 @pytest.fixture
 def model():
