@@ -382,7 +382,7 @@ class PSPeersService(JSONPubsubService):
             if profile.orbitalCfgMap:
                 cfgMaps.append(profile.orbitalCfgMap.data)
 
-        if uInfo.schemaVersion is 1:
+        if uInfo.schemaVersion == 1:
             msg = PeerIdentMessageV2.make(
                 nodeId,
                 uInfo.objHash,
