@@ -1,15 +1,15 @@
 #!/bin/bash
 
-# Disable sandboxing
-export QTWEBENGINE_DISABLE_SANDBOX=1
-
 HERE=$(dirname $(readlink -f "${0}"))
 export PATH=$PATH:${HERE}/usr/bin
+
+if [ ! -z "${container}" ] && [ x"${container}" == x"firejail" ]; then
+	# Disable qtwebengine sandboxing if running inside firejail
+	export QTWEBENGINE_DISABLE_SANDBOX=1
+fi
 
 if [ ! -z $APPIMAGE ] ; then
 	BINARY_NAME=$(basename "$ARGV0")
 	"${HERE}"/usr/bin/python "${HERE}"/usr/bin/galacteek \
 		--binary-name=${BINARY_NAME} --no-ssl-verify --no-release-check "$@"
-else
-	"${HERE}"/usr/bin/python "${HERE}"/usr/bin/galacteek --no-ssl-verify --no-release-check "$@"
 fi

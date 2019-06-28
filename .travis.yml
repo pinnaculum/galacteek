@@ -1,0 +1,22 @@
+sudo: required
+language: python
+python:
+  - "3.6"
+
+os:
+  - linux
+
+before_install:
+  - pip3 install --upgrade pip
+
+script:
+  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then mkdir -p build-appimage; fi
+  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then cd build-appimage; fi
+  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then bash -xe ../AppImage/galacteek-appimage-build; fi
+
+after_success:
+  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then echo "AppImage build successfull"; fi
+
+branches:
+  except:
+    - devel

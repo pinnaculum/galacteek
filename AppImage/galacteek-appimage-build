@@ -5,7 +5,7 @@
 # You need to run "make dists" before running the script
 #
 
-MINICONDA_DIST="Miniconda3-4.5.11-Linux-x86_64.sh"
+MINICONDA_DIST="Miniconda3-4.6.14-Linux-x86_64.sh"
 GOIPFS_TGZ="go-ipfs_v0.4.21_linux-amd64.tar.gz"
 GOIPFS_DISTURL="https://dist.ipfs.io/go-ipfs/v0.4.21/${GOIPFS_TGZ}"
 
