@@ -207,7 +207,7 @@ async def dial(ipfsop, peer, protocol, address):
 
             ipaddr, port = multiAddrTcp4(maddr)
 
-            if ipaddr is None or port is 0:
+            if ipaddr is None or port == 0:
                 return (None, 0)
 
             return (ipaddr, port)
