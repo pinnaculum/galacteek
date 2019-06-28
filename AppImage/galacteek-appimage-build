@@ -10,9 +10,12 @@ GOIPFS_TGZ="go-ipfs_v0.4.21_linux-amd64.tar.gz"
 GOIPFS_DISTURL="https://dist.ipfs.io/go-ipfs/v0.4.21/${GOIPFS_TGZ}"
 
 if [ $# -lt 1 ]; then
-    echo "Pass the version number as argument"
-    exit
+    G_VERSION=$(grep '__version__' ../galacteek/__init__.py|sed -e "s/__version__\s=\s'\(.*\)'$/\1/")
+else
+    G_VERSION=$1
 fi
+
+echo "Building AppImage for version: ${G_VERSION}"
 
 if ! [ -e $MINICONDA_DIST ]; then
     wget "https://repo.continuum.io/miniconda/${MINICONDA_DIST}"
@@ -24,14 +27,13 @@ fi
 
 tar -C /tmp -xzvf ${GOIPFS_TGZ}
 
-G_VERSION=$1
 APPDIR="galacteek.AppDir.${G_VERSION}"
 PIP=$APPDIR/usr/bin/pip
 WHEEL=../dist/galacteek-$G_VERSION-py3-none-any.whl
 
 if ! [ -e $WHEEL ]; then
     echo "Wheel for version $G_VERSION does not exist, run make dists"
-    exit
+    exit 1
 fi
 
 if [ -e $APPDIR ]; then
@@ -121,5 +123,8 @@ chmod 755 $APPDIR/AppRun
 
 sed -i -e 's/#\!\/.*$/#!\//' $APPDIR/usr/bin/galacteek
 
+wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+chmod +x appimagetool*.AppImage
+
 echo "AppDir successfully created, running appimagetool"
-ARCH=x86_64 appimagetool-x86_64.AppImage -n $APPDIR Galacteek-${G_VERSION}-x86_64.AppImage
+ARCH=x86_64 ./appimagetool-x86_64.AppImage -n $APPDIR Galacteek-${G_VERSION}-x86_64.AppImage
