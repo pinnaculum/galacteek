@@ -17,9 +17,8 @@ install:
   - python setup.py sdist bdist_wheel
 
 script:
-  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then mkdir -p build-appimage; fi
-  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then cd build-appimage; fi
-  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then bash -xe ../AppImage/galacteek-appimage-build; fi
+  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then cd AppImage; fi
+  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then bash -xe galacteek-appimage-build; fi
   - wget https://github.com/probonopd/uploadtool/raw/master/upload.sh
 
 after_success:
