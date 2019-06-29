@@ -12,11 +12,11 @@ import aioipfs
 from PyQt5.QtCore import QObject, pyqtSignal
 
 from galacteek.ipfs import asyncipfsd
-from galacteek.ipfs import ipfsdconfig
 from galacteek.core.ipfsmarks import *
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.tunnel import *
 from galacteek.ipfs.pubsub import *
+from galacteek.ipfs.pubsub.service import PubsubService
 
 from .daemon import *
 
@@ -204,13 +204,3 @@ class Ctx(QObject):
 class Exchanger(PubsubService):
     def __init__(self, client, ipfsCtx):
         super().__init__(client, ipfsCtx, topic='test')
-
-@pytest.fixture()
-def configD(tmpdir):
-    return ipfsdconfig.getDefault()
-
-class TestConfig:
-    def test_default(self, configD):
-        cfgStr = str(configD)
-        assert 'API' in configD.c
-        assert 'Bootstrap' in configD.c
