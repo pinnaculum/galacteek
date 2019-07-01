@@ -1,5 +1,6 @@
 <RCC>
   <qresource>
+    <file>../../share/js/web3.min.js</file>
     <file>../../share/static/docs/markdown-reference.html</file>
     <file>../../share/icons/blog.png</file>
     <file>../../share/icons/mimetypes/application-atom+xml.png</file>

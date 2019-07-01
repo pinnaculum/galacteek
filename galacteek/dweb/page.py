@@ -13,7 +13,9 @@ from galacteek.ui.widgets import GalacteekTab
 from galacteek import ensure
 from galacteek import log
 from galacteek.dweb.render import renderTemplate
-from galacteek.dweb.webscripts import ipfsClientScripts, orbitScripts
+from galacteek.dweb.webscripts import ipfsClientScripts
+from galacteek.dweb.webscripts import orbitScripts
+from galacteek.dweb.webscripts import web3ClientScripts
 
 import asyncio
 import functools
@@ -69,7 +71,7 @@ class BasePage(QWebEnginePage):
         self._handlers = {}
         self.channel = QWebChannel()
         self.url = url if url else QUrl('qrc:/')
-        self.setUrl(self.url)
+        #self.setUrl(self.url)
         self.setWebChannel(self.channel)
         self.webScripts = self.profile().scripts()
 
@@ -106,7 +108,8 @@ class IPFSPage(BasePage):
         exSc = self.webScripts.findScript('ipfs-http-client')
         if exSc.isNull():
             scripts = self.app.scriptsIpfs
-            for script in scripts:
+            web3Scripts = web3ClientScripts()
+            for script in scripts + web3Scripts:
                 self.webScripts.insert(script)
 
 
@@ -154,7 +157,7 @@ class HashmarksHandler(BaseHandler):
         return self.marksLocal.delete(path)
 
 
-class HashmarksPage(BasePage):
+class HashmarksPage(IPFSPage):
     def __init__(self, marksLocal, marksNetwork, parent=None):
         super(HashmarksPage, self).__init__('hashmarks.html', parent=parent)
 
