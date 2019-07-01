@@ -52,6 +52,7 @@ from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.feeds import FeedFollower
 
 from galacteek.dweb.webscripts import ipfsClientScripts
+from galacteek.dweb.webscripts import web3ClientScripts
 from galacteek.dweb.render import defaultJinjaEnv
 
 from galacteek.ui import mainui
@@ -359,7 +360,8 @@ class GalacteekApplication(QApplication):
         self.tempDirWeb = self.tempDirCreate(
             self.tempDir.path(), 'webdownloads')
 
-        self.scriptsIpfs = ipfsClientScripts(self.getIpfsConnectionParams())
+        self.scriptsIpfs = ipfsClientScripts(
+            self.getIpfsConnectionParams()) + web3ClientScripts()
 
     def tempDirCreate(self, basedir, name=None):
         tmpdir = QDir(basedir)
