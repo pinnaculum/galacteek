@@ -55,14 +55,18 @@ cp "$OLD_CWD"/travis/Info.plist galacteek.app/Contents/Info.plist
 cp -R ~/miniconda/envs/galacteek/* galacteek.app/Contents/Resources/
 
 # copy icons
-mkdir -p galacteek.app/Contents/Resources/
 mkdir -p galacteek.app/Contents/Resources/share/icons
 cp "$OLD_CWD"/share/icons/galacteek.icns galacteek.app/Contents/Resources/share/icons
+
+# copy go-ipfs
+mkdir -p galacteek.app/Contents/Resources/bin
+cp $HOME/bin/ipfs galacteek.app/Contents/Resources/bin
 
 # create entry script for galacteek
 cat > galacteek.app/Contents/MacOS/galacteek <<\EAT
 #!/usr/bin/env bash
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export PATH=$PATH:$DIR/../Resources/bin
 $DIR/../Resources/bin/python $DIR/../Resources/bin/galacteek $@
 EAT
 
