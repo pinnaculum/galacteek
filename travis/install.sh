@@ -9,6 +9,12 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
 	PYTHONEX=python3.6
 	wget https://dist.ipfs.io/go-ipfs/v0.4.21/go-ipfs_v0.4.21_linux-amd64.tar.gz
 	tar -C $HOME -xzvf go-ipfs_v0.4.21_linux-amd64.tar.gz
+
+	export DISPLAY=":99.0"
+	/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -screen 0 1920x1200x24 -ac +extension GLX +render -noreset
+	sleep 3
+	herbstluftwm &
+	sleep 1
 fi
 
 if [ "$TRAVIS_OS_NAME" = "osx" ]; then
@@ -29,7 +35,3 @@ $PIP install -r requirements-dev.txt
 
 $PYTHONEX setup.py build install
 $PYTHONEX setup.py sdist bdist_wheel
-
-if [ "$TRAVIS_OS_NAME" = "linux" ]; then
-	tox -v
-fi
