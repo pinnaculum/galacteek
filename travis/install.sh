@@ -31,5 +31,5 @@ $PYTHONEX setup.py build install
 $PYTHONEX setup.py sdist bdist_wheel
 
 if [ "$TRAVIS_OS_NAME" = "linux" ]; then
-	xvfb-run tox -v
+	tox -v
 fi
