@@ -509,6 +509,7 @@ class URLInputWidget(QLineEdit):
             self.onHistoryItemSelected)
         self.historyMatches.collapsed.connect(
             self.onHistoryCollapse)
+        self.textEdited.connect(self.onUrlUserEdit)
 
     @property
     def editTimeoutMs(self):
@@ -527,15 +528,18 @@ class URLInputWidget(QLineEdit):
                               Qt.PopupFocusReason, Qt.ActiveWindowFocusReason,
                               Qt.TabFocusReason]:
             self.urlEditing = True
-            disconnectSig(self.textEdited, self.onUrlUserEdit)
-            self.textEdited.connect(self.onUrlUserEdit)
 
         super(URLInputWidget, self).focusInEvent(event)
 
     def focusOutEvent(self, event):
-        self.urlEditing = False
-        disconnectSig(self.textEdited, self.onUrlUserEdit)
-        self.editTimer.stop()
+        if event.reason() not in [
+                Qt.ActiveWindowFocusReason,
+                Qt.PopupFocusReason,
+                Qt.TabFocusReason,
+                Qt.OtherFocusReason]:
+            self.urlEditing = False
+            self.editTimer.stop()
+
         super(URLInputWidget, self).focusOutEvent(event)
 
     def onUrlUserEdit(self, text):
@@ -858,6 +862,8 @@ class BrowserTab(GalacteekTab):
 
         if select:
             self.urlZone.setSelection(0, len(self.urlZone.text()))
+
+        self.urlZone.urlEditing = True
 
     def onReloadPage(self):
         self.webEngineView.reload()
