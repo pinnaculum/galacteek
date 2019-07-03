@@ -315,11 +315,12 @@ class MainWindow(QMainWindow):
         self.tabnChat = iChat()
         self.tabnFeeds = iAtomFeeds()
 
-        self.exitButton = QToolButton(self)
-        self.exitButton.setIcon(getIcon('quit.png'))
-        self.exitButton.clicked.connect(self.quit)
-        self.exitButton.setToolTip('Exit')
-        self.exitButton.setShortcut(QKeySequence('Ctrl+q'))
+        self.quitButton = QToolButton(self)
+        self.quitButton.setObjectName('quitToolButton')
+        self.quitButton.setIcon(getIcon('quit.png'))
+        self.quitButton.clicked.connect(self.quit)
+        self.quitButton.setToolTip('Quit')
+        self.quitButton.setShortcut(QKeySequence('Ctrl+q'))
 
         self.menuManual = QMenu(iManual())
 
@@ -523,7 +524,7 @@ class MainWindow(QMainWindow):
 
         self.toolbarMain.addWidget(self.helpToolButton)
         self.toolbarMain.addSeparator()
-        self.toolbarMain.addWidget(self.exitButton)
+        self.toolbarMain.addWidget(self.quitButton)
 
         self.addToolBar(Qt.TopToolBarArea, self.toolbarMain)
         self.addToolBar(Qt.RightToolBarArea, self.toolbarPyramids)
