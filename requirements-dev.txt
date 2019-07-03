@@ -4,3 +4,4 @@ pytest-asyncio
 pytest-qt
 flake8
 wheel
+tox
