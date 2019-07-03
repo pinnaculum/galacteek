@@ -30,4 +30,6 @@ $PIP install -r requirements-dev.txt
 $PYTHONEX setup.py build install
 $PYTHONEX setup.py sdist bdist_wheel
 
-tox -v
+if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+	xvfb-run tox -v
+fi
