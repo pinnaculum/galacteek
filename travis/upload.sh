@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -x
+set -e
+
 IFS='' read -r -d '' UPLOADTOOL_BODY <<"EOF"
 ## galacteek release\n
 \n
