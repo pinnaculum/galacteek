@@ -24,3 +24,7 @@ after_success:
   - if [ "$TRAVIS_OS_NAME" == "osx" ] && [ "$TRAVIS_BRANCH" == "master" ]; then
         bash upload.sh Galacteek*.dmg;
     fi
+
+branches:
+  except:
+    - /^(?i:continuous)$/
