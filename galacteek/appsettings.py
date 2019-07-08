@@ -57,7 +57,7 @@ CFG_KEY_MAINWINDOW_GEOMETRY = 'mainwindow_geometry'
 CFG_KEY_CONNECTOR_LISTENPORT = 'connectorlistenport'
 
 # Ethereum
-CFG_KEY_PROVIDERTYPE = 'http'
+CFG_KEY_PROVIDERTYPE = 'providertype'
 CFG_KEY_RPCURL = 'rpcurl'
 
 # for fast access
@@ -269,3 +269,11 @@ class SettingsManager(object):
     @property
     def ethereumEnabled(self):
         return self.isTrue(CFG_SECTION_ETHEREUM, CFG_KEY_ENABLED)
+
+    @property
+    def ethereumProvType(self):
+        return self.isTrue(CFG_SECTION_ETHEREUM, CFG_KEY_PROVIDERTYPE)
+
+    @property
+    def ethereumRpcUrl(self):
+        return self.isTrue(CFG_SECTION_ETHEREUM, CFG_KEY_RPCURL)

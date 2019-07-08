@@ -144,6 +144,8 @@ setup(
         'galacteek.hashmarks.default',
         'galacteek.templates',
         'galacteek.dweb',
+        'galacteek.dweb.ethereum',
+        'galacteek.smartcontracts',
         'galacteek.ui',
         'galacteek.ui.orbital'
     ],

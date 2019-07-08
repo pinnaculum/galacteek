@@ -99,10 +99,10 @@ def iAbout():
         for the distributed web
         </p>
         <br/>
-        <p>Author: David Ferlier</p>
         <p>Contact:
-            <a href="mailto:
-            galacteek@protonmail.com">galacteek@protonmail.com</a>
+            <a href="mailto: galacteek@protonmail.com">
+                galacteek@protonmail.com
+            </a>
         </p>
         <p>galacteek version {0}</p>''').format(__version__)
 
@@ -316,12 +316,15 @@ class MainWindow(QMainWindow):
         self.tabnChat = iChat()
         self.tabnFeeds = iAtomFeeds()
 
-        self.quitButton = QToolButton(self)
+        self.quitButton = PopupToolButton(
+            parent=self, mode=QToolButton.InstantPopup)
         self.quitButton.setObjectName('quitToolButton')
         self.quitButton.setIcon(getIcon('quit.png'))
-        self.quitButton.clicked.connect(self.quit)
+        self.quitButton.menu.addAction(iRestart(), self.app.restart)
+        self.quitButton.menu.addSeparator()
+        self.quitButton.menu.addAction(getIcon('quit.png'), iQuit(), self.quit,
+                                       QKeySequence('Ctrl+q'))
         self.quitButton.setToolTip('Quit')
-        self.quitButton.setShortcut(QKeySequence('Ctrl+q'))
 
         self.menuManual = QMenu(iManual())
 
@@ -892,8 +895,9 @@ class MainWindow(QMainWindow):
     def findTabWithName(self, name):
         for idx in range(0, self.tabWidget.count() + 1):
             tName = self.tabWidget.tabText(idx)
+            print('>>', name, tName)
 
-            if tName == name:
+            if tName.strip() == name.strip():
                 return self.tabWidget.widget(idx)
 
     def removeTabFromWidget(self, w):
@@ -955,6 +959,9 @@ class MainWindow(QMainWindow):
                 self.onTabCloseRequest(idx)
             if event.key() == Qt.Key_Q:
                 self.quit()
+            if modifiers & Qt.ShiftModifier:
+                if event.key() == Qt.Key_R:
+                    self.app.restart()
 
         super(MainWindow, self).keyPressEvent(event)
 

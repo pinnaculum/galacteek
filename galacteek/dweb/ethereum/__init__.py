@@ -53,11 +53,7 @@ class EthereumController(QObject):
             concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
         self._params = connParams
-        self._web3 = self.getWeb3()
-
-        self.web3.eth.defaultAccount = self._web3.eth.accounts[0]
-        self._ns = ENS.fromWeb3(self.web3)
-
+        self._web3 = None
         self._watchTask = None
         self._blockLatest = None
 
@@ -70,12 +66,20 @@ class EthereumController(QObject):
         return self._params
 
     def getWeb3(self):
-        if self._params.provType == 'http':
-            web3 = Web3(Web3.HTTPProvider(self.params.rpcUrl))
+        try:
+            if self._params.provType == 'http':
+                web3 = Web3(Web3.HTTPProvider(self.params.rpcUrl))
+
+            elif self._params.provType == 'websocket':
+                web3 = Web3(WebsocketProvider(self.params.rpcUrl))
+                return web3
+
+            web3.eth.defaultAccount = web3.eth.accounts[0]
+            self._ns = ENS.fromWeb3(web3)
             return web3
-        elif self._params.provType == 'websocket':
-            web3 = Web3(WebsocketProvider(self.params.rpcUrl))
-            return web3
+        except Exception as err:
+            log.debug('Cannot get Web3 connector: {}'.format(str(err)))
+            return None
 
     async def _e(self, fn, *args, **kw):
         timeout = kw.pop('timeout', None)
@@ -97,6 +101,11 @@ class EthereumController(QObject):
     # API coroutines
 
     async def start(self):
+        self._web3 = self.getWeb3()
+        if self.web3 is None:
+            log.debug('Web3 invalid')
+            return
+
         if await self.connected():
             logUser.info('Ethereum: connected to {}'.format(
                 self.params.rpcUrl))

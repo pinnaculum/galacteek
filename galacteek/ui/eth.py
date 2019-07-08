@@ -9,13 +9,16 @@ from galacteek.dweb.page import DWebView, WebTab
 from galacteek.dweb.page import BaseHandler
 
 from .helpers import getIcon
+from .i18n import iUnknown
 
 
-def iEthConnected(rpcUrl):
+def iEthConnected(rpcUrl, lBlockHash):
     return QCoreApplication.translate(
         'ethereumStatusButton',
         '''Connected to the Ethereum blockchain
-           RPC Url: {0}''').format(rpcUrl)
+           RPC Url: {0}
+           Latest block's hash: {1}
+           ''').format(rpcUrl, lBlockHash)
 
 
 def iEthNotConnected():
@@ -62,11 +65,6 @@ class EthereumStatusButton(QToolButton):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
 
-        self.setCheckable(True)
-        self.setAutoRaise(True)
-
-        self.toggled.connect(self.onToggled)
-
         self.setEnabled(False)
         self.app = QApplication.instance()
         self.app.ethereum.ethConnected.connect(self.onEthStatus)
@@ -78,6 +76,7 @@ class EthereumStatusButton(QToolButton):
         self.view.p = self.page1
 
         self.statusTab = None
+        self.lBlockHash = None
 
         self.iconEthereum = getIcon('ethereum.png')
         self.setIcon(self.iconEthereum)
@@ -99,11 +98,17 @@ class EthereumStatusButton(QToolButton):
 
     def onEthStatus(self, connected):
         self.setEnabled(connected)
-
         if connected:
-            self.setToolTip(iEthConnected(self.app.ethereum.params.rpcUrl))
+            self.updateToolTip()
         else:
             self.setToolTip(iEthNotConnected())
 
+    def updateToolTip(self):
+        self.setToolTip(iEthConnected(
+            self.app.ethereum.params.rpcUrl,
+            self.lBlockHash if self.lBlockHash else iUnknown()))
+
     def onNewBlock(self, blockHash):
+        self.lBlockHash = blockHash
+        self.updateToolTip()
         self.page1.handler.newBlock.emit(blockHash)

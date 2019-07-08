@@ -308,6 +308,14 @@ def iZoomOut():
     return QCoreApplication.translate('GalacteekWindow', 'Zoom out')
 
 
+def iQuit():
+    return QCoreApplication.translate('GalacteekWindow', 'Quit')
+
+
+def iRestart():
+    return QCoreApplication.translate('GalacteekWindow', 'Restart')
+
+
 def iClearHistory():
     return QCoreApplication.translate('GalacteekWindow', 'Clear history')
 

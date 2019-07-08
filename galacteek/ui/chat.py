@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtGui import QTextCursor
+from PyQt5.QtCore import Qt
 
 from galacteek.ipfs import cidhelpers
 from galacteek.ipfs.wrappers import ipfsOp
@@ -58,6 +59,9 @@ class ChatRoomWidget(GalacteekTab):
 
     def onSendMessage(self):
         messageText = self.ui.message.text()
+        if not messageText:
+            return
+
         self.ui.message.clear()
         ensure(self.sendMessage(messageText))
 
