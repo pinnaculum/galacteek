@@ -58,7 +58,7 @@ fi
 # Install the wheel from local dists
 
 echo "Installing wheel: $WHEEL"
-$PIP install --force-reinstall $WHEEL
+$PIP install $WHEEL
 
 cp ../galacteek.desktop $APPDIR/usr/share/applications
 cp ../galacteek.desktop $APPDIR
