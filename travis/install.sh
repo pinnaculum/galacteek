@@ -5,6 +5,7 @@ set -e
 
 PIP=pip3
 PYTHONEX=python3
+SOLIDITY_VERSION=0.5.0
 
 mkdir -p $HOME/bin
 
@@ -35,6 +36,9 @@ source venvg/bin/activate
 
 $PIP install -r requirements.txt
 $PIP install -r requirements-dev.txt
+
+# Use py-solc-x to try and fetch a solidity compiler (solc)
+$PYTHONEX -m solcx.install "v${SOLIDITY_VERSION}"
 
 $PYTHONEX setup.py build install
 $PYTHONEX setup.py sdist bdist_wheel
