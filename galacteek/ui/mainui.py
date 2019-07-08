@@ -61,6 +61,7 @@ from . import eventlog
 from . import pin
 from . import chat
 
+from .eth import EthereumStatusButton
 from .feeds import AtomFeedsViewTab
 from .feeds import AtomFeedsView
 from .textedit import TextEditorTab
@@ -566,9 +567,13 @@ class MainWindow(QMainWindow):
 
         self.ipfsStatusLabel = QLabel()
         self.ipfsStatusLabel.setObjectName('ipfsStatusLabel')
+
+        self.ethereumStatusBtn = EthereumStatusButton(parent=self)
+
         self.statusbar = self.statusBar()
         self.statusbar.addPermanentWidget(self.ipfsStatusLabel)
         self.statusbar.addPermanentWidget(self.ipfsInfosButton)
+        self.statusbar.addPermanentWidget(self.ethereumStatusBtn)
         self.statusbar.addPermanentWidget(self.pinningStatusButton)
         self.statusbar.addPermanentWidget(self.pubsubStatusButton)
 
@@ -884,7 +889,7 @@ class MainWindow(QMainWindow):
         return self.tabWidget.indexOf(w)
 
     def findTabWithName(self, name):
-        for idx in range(0, self.tabWidget.count()):
+        for idx in range(0, self.tabWidget.count() + 1):
             tName = self.tabWidget.tabText(idx)
 
             if tName == name:
@@ -894,6 +899,8 @@ class MainWindow(QMainWindow):
         idx = self.tabWidget.indexOf(w)
         if idx:
             self.tabWidget.removeTab(idx)
+        else:
+            print('Tab cannot be found')
 
     def onSettings(self):
         runDialog(settings.SettingsDialog, self.app)

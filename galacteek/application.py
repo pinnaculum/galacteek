@@ -52,8 +52,9 @@ from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.feeds import FeedFollower
 
 from galacteek.dweb.webscripts import ipfsClientScripts
-from galacteek.dweb.webscripts import web3ClientScripts
 from galacteek.dweb.render import defaultJinjaEnv
+from galacteek.dweb.ethereum import EthereumController
+from galacteek.dweb.ethereum import EthereumConnectionParams
 
 from galacteek.ui import mainui
 from galacteek.ui import downloads
@@ -191,6 +192,7 @@ class GalacteekApplication(QApplication):
         self.setupTranslator()
         self.initSystemTray()
         self.initMisc()
+        self.initEthereum()
         self.createMainWindow()
 
         self.setStyle()
@@ -360,8 +362,7 @@ class GalacteekApplication(QApplication):
         self.tempDirWeb = self.tempDirCreate(
             self.tempDir.path(), 'webdownloads')
 
-        self.scriptsIpfs = ipfsClientScripts(
-            self.getIpfsConnectionParams()) + web3ClientScripts()
+        self.scriptsIpfs = ipfsClientScripts(self.getIpfsConnectionParams())
 
     def tempDirCreate(self, basedir, name=None):
         tmpdir = QDir(basedir)
@@ -522,6 +523,13 @@ class GalacteekApplication(QApplication):
                 mgr.getSetting(section, CFG_KEY_APIPORT),
                 mgr.getSetting(section, CFG_KEY_HTTPGWPORT)
             )
+
+    def getEthParams(self):
+
+        mgr = self.settingsMgr
+        provType = mgr.getSetting(CFG_SECTION_ETHEREUM, CFG_KEY_PROVIDERTYPE)
+        rpcUrl = mgr.getSetting(CFG_SECTION_ETHEREUM, CFG_KEY_RPCURL)
+        return EthereumConnectionParams(rpcUrl, provType=provType)
 
     async def updateIpfsClient(self):
         connParams = self.getIpfsConnectionParams()
@@ -705,6 +713,11 @@ class GalacteekApplication(QApplication):
             ensure(self.updateIpfsClient())
         else:
             logUser.info(iIpfsDaemonInitProblem())
+
+    def initEthereum(self):
+        self.ethereum = EthereumController(self.getEthParams(),
+                                           loop=self.loop, parent=self)
+        ensure(self.ethereum.start())
 
     def setupClipboard(self):
         self.appClipboard = self.clipboard()

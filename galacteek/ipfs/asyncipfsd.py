@@ -126,6 +126,7 @@ class AsyncIPFSDaemon(object):
                  gatewayport=DEFAULT_GWPORT, initRepo=True,
                  swarmLowWater=10, swarmHighWater=20, nice=20,
                  pubsubEnable=False, noBootstrap=False, corsEnable=True,
+                 pubsubRouter='floodsub',
                  p2pStreams=False, migrateRepo=False, routingMode='dht',
                  gwWritable=False, storageMax=20, debug=False, loop=None):
 
@@ -142,6 +143,7 @@ class AsyncIPFSDaemon(object):
         self.storageMax = storageMax
         self.initRepo = initRepo
         self.pubsubEnable = pubsubEnable
+        self.pubsubRouter = pubsubRouter
         self.corsEnable = corsEnable
         self.p2pStreams = p2pStreams
         self.noBootstrap = noBootstrap
@@ -187,6 +189,7 @@ class AsyncIPFSDaemon(object):
                          '60s')
 
         await ipfsConfig(self.goIpfsPath, 'Routing.Type', self.routingMode)
+        await ipfsConfig(self.goIpfsPath, 'Pubsub.Router', self.pubsubRouter)
         await ipfsConfigJson(self.goIpfsPath,
                              'Swarm.DisableBandwidthMetrics', 'true')
 

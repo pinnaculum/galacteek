@@ -15,10 +15,7 @@ from galacteek import log
 from galacteek.dweb.render import renderTemplate
 from galacteek.dweb.webscripts import ipfsClientScripts
 from galacteek.dweb.webscripts import orbitScripts
-from galacteek.dweb.webscripts import web3ClientScripts
-
-import asyncio
-import functools
+from galacteek.dweb.webscripts import ethereumClientScripts
 
 
 class BaseHandler(QObject):
@@ -28,10 +25,6 @@ class BaseHandler(QObject):
     @pyqtSlot()
     def test(self):
         pass
-
-    def awrap(self, fn, *args, **kw):
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(functools.partial(fn, *args, **kw))
 
 
 class GalacteekHandler(QObject):
@@ -69,9 +62,10 @@ class BasePage(QWebEnginePage):
         self.app = QApplication.instance()
         self.template = template
         self._handlers = {}
+        self.pageCtx = {}
         self.channel = QWebChannel()
         self.url = url if url else QUrl('qrc:/')
-        #self.setUrl(self.url)
+        self.setUrl(self.url)
         self.setWebChannel(self.channel)
         self.webScripts = self.profile().scripts()
 
@@ -100,7 +94,8 @@ class BasePage(QWebEnginePage):
                 message))
 
     async def render(self):
-        self.setHtml(await renderTemplate(self.template), baseUrl=self.url)
+        self.setHtml(await renderTemplate(self.template, **self.pageCtx),
+                     baseUrl=self.url)
 
 
 class IPFSPage(BasePage):
@@ -108,9 +103,14 @@ class IPFSPage(BasePage):
         exSc = self.webScripts.findScript('ipfs-http-client')
         if exSc.isNull():
             scripts = self.app.scriptsIpfs
-            web3Scripts = web3ClientScripts()
-            for script in scripts + web3Scripts:
-                self.webScripts.insert(script)
+            [self.webScripts.insert(script) for script in scripts]
+
+        if self.app.settingsMgr.ethereumEnabled:
+            ethereumScripts = ethereumClientScripts(
+                self.app.getEthParams())
+            if ethereumScripts:
+                [self.webScripts.insert(script) for script in
+                 ethereumScripts]
 
 
 class OrbitPage(BasePage):
