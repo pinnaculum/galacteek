@@ -37,8 +37,18 @@ source venvg/bin/activate
 $PIP install -r requirements.txt
 $PIP install -r requirements-dev.txt
 
-# Use py-solc-x to try and fetch a solidity compiler (solc)
-$PYTHONEX -m solcx.install "v${SOLIDITY_VERSION}"
+if [ "$TRAVIS_OS_NAME" = "osx" ]; then
+	wget -O $HOME/bin/solc \
+		"https://github.com/ethereum/solidity/releases/download/v0.5.10/solc-static-linux"
+fi
+
+if [ "$TRAVIS_OS_NAME" = "osx" ]; then
+	brew update
+	brew upgrade
+	brew tap ethereum/ethereum
+	brew install solidity
+	cp /usr/local/Cellar/solidity/0.5.*/bin/solc $HOME/bin
+fi
 
 $PYTHONEX setup.py build install
 $PYTHONEX setup.py sdist bdist_wheel
