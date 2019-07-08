@@ -12,6 +12,7 @@ import concurrent.futures
 import re
 import platform
 import async_timeout
+import time
 
 from quamash import QEventLoop
 
@@ -35,6 +36,7 @@ from galacteek import log
 from galacteek import logUser
 from galacteek import ensure
 from galacteek import pypicheck, GALACTEEK_NAME
+
 from galacteek.core.asynclib import asyncify
 from galacteek.core.ctx import IPFSContext
 from galacteek.core.multihashmetadb import IPFSObjectMetadataDatabase
@@ -717,7 +719,8 @@ class GalacteekApplication(QApplication):
     def initEthereum(self):
         self.ethereum = EthereumController(self.getEthParams(),
                                            loop=self.loop, parent=self)
-        ensure(self.ethereum.start())
+        if self.settingsMgr.ethereumEnabled:
+            ensure(self.ethereum.start())
 
     def setupClipboard(self):
         self.appClipboard = self.clipboard()
@@ -766,6 +769,17 @@ class GalacteekApplication(QApplication):
     def onShowWindow(self):
         self.mainWindow.showMaximized()
 
+    def restart(self):
+        ensure(self.restartApp())
+
+    async def restartApp(self):
+        from galacteek.guientrypoint import appStarter
+        pArgs = self.arguments()
+
+        await self.exitApp()
+        time.sleep(1)
+        appStarter.startProcess(pArgs)
+
     def onExit(self):
         ensure(self.exitApp())
 
@@ -785,6 +799,8 @@ class GalacteekApplication(QApplication):
 
         if self.ipfsCtx.inOrbit:
             await self.ipfsCtx.orbitConnector.stop()
+
+        self.mainWindow.close()
 
         if self.debug:
             self.showTasks()
