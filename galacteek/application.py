@@ -718,7 +718,8 @@ class GalacteekApplication(QApplication):
 
     def initEthereum(self):
         self.ethereum = EthereumController(self.getEthParams(),
-                                           loop=self.loop, parent=self)
+                                           loop=self.loop, parent=self,
+                                           executor=self.executor)
         if self.settingsMgr.ethereumEnabled:
             ensure(self.ethereum.start())
 
@@ -793,6 +794,7 @@ class GalacteekApplication(QApplication):
             task.cancel()
 
         await self.stopIpfsServices()
+        await self.ethereum.stop()
 
         if self.ipfsd:
             self.ipfsd.stop()

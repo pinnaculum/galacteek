@@ -2,6 +2,7 @@ import functools
 import asyncio
 import concurrent.futures
 import async_timeout
+import time
 
 from web3 import Web3
 from web3.providers.websocket import WebsocketProvider
@@ -56,6 +57,7 @@ class EthereumController(QObject):
         self._web3 = None
         self._watchTask = None
         self._blockLatest = None
+        self._stop = False
 
     @property
     def web3(self):
@@ -100,6 +102,9 @@ class EthereumController(QObject):
 
     # API coroutines
 
+    async def stop(self):
+        self._stop = True
+
     async def start(self):
         self._web3 = self.getWeb3()
         if self.web3 is None:
@@ -110,7 +115,7 @@ class EthereumController(QObject):
             logUser.info('Ethereum: connected to {}'.format(
                 self.params.rpcUrl))
             self.ethConnected.emit(True)
-            self._watchTask = self.app.task(self.watchTask)
+            self._watchTask = await self._e(self.watchTask)
         else:
             self.ethConnected.emit(False)
 
@@ -126,23 +131,22 @@ class EthereumController(QObject):
     async def ensAddress(self, name):
         return await self._e(self._ns.address, name)
 
-    async def watchTask(self):
+    def watchTask(self):
         try:
             blkfilter = self.web3.eth.filter('latest')
         except Exception:
             # Node does not support filters ?
             return
 
-        while True:
-            await asyncio.sleep(1)
+        while not self._stop:
+            time.sleep(5)
 
             for event in blkfilter.get_new_entries():
-                await self.eventLatestBlock(event)
+                self.eventLatestBlock(event)
 
-    async def eventLatestBlock(self, event):
+    def eventLatestBlock(self, event):
         if isinstance(event, bytes):
             blockHex = w3.toHex(event)
-            self._blockLatest = await self.getBlock(blockHex)
             self.ethNewBlock.emit(blockHex)
 
     async def loadContractFromAddress(self, address, abi):

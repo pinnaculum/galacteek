@@ -163,7 +163,13 @@ class HashmarksPage(IPFSPage):
 
         self.marksLocal = marksLocal
         self.marksNetwork = marksNetwork
-        self.marksLocal.changed.connect(self.onMarksChanged)
+        self.marksLocal.markAdded.connect(
+            lambda path, mark: self.onMarksChanged())
+        self.marksLocal.markDeleted.connect(
+            lambda path: self.onMarksChanged())
+        self.marksLocal.feedMarkAdded.connect(
+            lambda path, mark: self.onMarksChanged())
+
         self.hashmarks = HashmarksHandler(self.marksLocal,
                                           self.marksNetwork, self)
         self.register('hashmarks', self.hashmarks)
