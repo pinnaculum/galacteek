@@ -1,6 +1,5 @@
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtGui import QTextCursor
-from PyQt5.QtCore import Qt
 
 from galacteek.ipfs import cidhelpers
 from galacteek.ipfs.wrappers import ipfsOp

@@ -1,3 +1,6 @@
+import os.path
+import json
+
 from solcx import compile_source
 
 from galacteek import log
@@ -14,18 +17,35 @@ def solCompileFile(file_path):
 
 
 def contractDeploy(w3, contract_interface):
-    tx_hash = w3.eth.contract(
-        abi=contract_interface['abi'],
-        bytecode=contract_interface['bin']).deploy()
+    try:
+        contract = w3.eth.contract(
+            abi=contract_interface['abi'],
+            bytecode=contract_interface['bin'])
 
-    address = w3.eth.getTransactionReceipt(tx_hash)['contractAddress']
-    return address
+        txHash = contract.constructor().transact()
+        address = w3.eth.getTransactionReceipt(txHash)['contractAddress']
+        return address
+    except Exception:
+        log.debug('Failed to deploy contract')
+        return None
 
 
 class LocalContract:
-    def __init__(self, solPath):
+    def __init__(self, name, rootDir, solPath):
+        self.name = name
+        self.rootDir = rootDir
         self.solSourcePath = solPath
         self._deployedAddress = None
+
+    def interface(self):
+        fp = os.path.join(self.dir, 'interface.json')
+        if os.path.exists(fp):
+            with open(fp, 'rt') as fd:
+                return json.load(fd)
+
+    @property
+    def dir(self):
+        return self.rootDir
 
     @property
     def sol(self):

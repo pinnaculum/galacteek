@@ -15,13 +15,13 @@ from PyQt5.QtWidgets import QActionGroup
 from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtWidgets import QPushButton
 from PyQt5.QtWidgets import QLabel
+from PyQt5.QtWidgets import QVBoxLayout
 
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QTimer
 from PyQt5.QtCore import QDateTime
 from PyQt5.QtCore import QSize
-from PyQt5.QtCore import QPoint
 
 from PyQt5.Qt import QSizePolicy
 
@@ -288,6 +288,15 @@ class TabWidgetKeyFilter(QObject):
         return False
 
 
+class CentralWidget(QWidget):
+    def __init__(self, parent):
+        super(CentralWidget, self).__init__(parent)
+
+        self.setObjectName('centralWidget')
+        self.wLayout = QVBoxLayout()
+        self.setLayout(self.wLayout)
+
+
 class MainWindow(QMainWindow):
     def __init__(self, app):
         super(MainWindow, self).__init__()
@@ -297,6 +306,7 @@ class MainWindow(QMainWindow):
         self._allTabs = []
         self._lastFeedMark = None
 
+        self.centralWidget = CentralWidget(self)
         self.menuBar().hide()
 
         # Seems reasonable
@@ -471,17 +481,12 @@ class MainWindow(QMainWindow):
         menu.addAction('About', self.onAboutGalacteek)
         self.helpToolButton.setMenu(menu)
 
-        self.ipfsSearchButton = ipfssearch.IPFSSearchButton()
-        self.ipfsSearchButton.hovered.connect(
-            functools.partial(self.toggleIpfsSearchWidget, True))
+        self.ipfsSearchPageFactory = ipfssearch.SearchResultsPageFactory(self)
+
+        self.ipfsSearchButton = ipfssearch.IPFSSearchButton(self)
         self.ipfsSearchButton.setShortcut(QKeySequence('Ctrl+s'))
         self.ipfsSearchButton.setIcon(self.ipfsSearchButton.iconNormal)
-        self.ipfsSearchButton.toggled.connect(self.toggleIpfsSearchWidget)
-
-        self.ipfsSearchWidget = ipfssearch.IPFSSearchWidget(self)
-        self.ipfsSearchWidget.runSearch.connect(self.addIpfsSearchView)
-        self.ipfsSearchWidget.hidden.connect(
-            functools.partial(self.ipfsSearchButton.setChecked, False))
+        self.ipfsSearchButton.clicked.connect(self.addIpfsSearchView)
 
         self.mPlayerButton = QToolButton()
         self.mPlayerButton.setIcon(getIcon('multimedia.png'))
@@ -539,6 +544,8 @@ class MainWindow(QMainWindow):
         self.tabWidget.tabCloseRequested.connect(self.onTabCloseRequest)
         self.tabWidget.setElideMode(Qt.ElideMiddle)
         self.tabWidget.setUsesScrollButtons(True)
+
+        self.centralWidget.wLayout.addWidget(self.tabWidget)
 
         if self.app.system != 'Darwin':
             self.tabWidget.setDocumentMode(True)
@@ -621,7 +628,7 @@ class MainWindow(QMainWindow):
         self.pinIconLoading = getIcon('pin-blue-loading.png')
         self.pinIconNormal = getIcon('pin-black.png')
 
-        self.setCentralWidget(self.tabWidget)
+        self.setCentralWidget(self.centralWidget)
 
     @property
     def app(self):
@@ -630,6 +637,10 @@ class MainWindow(QMainWindow):
     @property
     def allTabs(self):
         return self._allTabs
+
+    @property
+    def searchBar(self):
+        return self.centralWidget.searchBar
 
     def cycleTabs(self):
         curIndex = self.tabWidget.currentIndex()
@@ -893,9 +904,8 @@ class MainWindow(QMainWindow):
         return self.tabWidget.indexOf(w)
 
     def findTabWithName(self, name):
-        for idx in range(0, self.tabWidget.count() + 1):
+        for idx in range(0, self.tabWidget.count()):
             tName = self.tabWidget.tabText(idx)
-            print('>>', name, tName)
 
             if tName.strip() == name.strip():
                 return self.tabWidget.widget(idx)
@@ -904,8 +914,6 @@ class MainWindow(QMainWindow):
         idx = self.tabWidget.indexOf(w)
         if idx:
             self.tabWidget.removeTab(idx)
-        else:
-            print('Tab cannot be found')
 
     def onSettings(self):
         runDialog(settings.SettingsDialog, self.app)
@@ -1028,11 +1036,11 @@ class MainWindow(QMainWindow):
         self.registerTab(tab, iTextEditor(),
                          icon=getIcon('text-editor.png'), current=True)
 
-    def addIpfsSearchView(self, text):
-        if len(text) > 0:
-            view = ipfssearch.IPFSSearchView(text, self)
-            self.registerTab(view, iIpfsSearch(text), current=True,
-                             icon=getIcon('search-engine.png'))
+    def addIpfsSearchView(self):
+        tab = ipfssearch.IPFSSearchTab(self)
+        self.registerTab(tab, iIpfsSearch(), current=True,
+                         icon=getIcon('search-engine.png'))
+        tab.view.browser.setFocus(Qt.OtherFocusReason)
 
     def onOpenMediaPlayer(self):
         self.addMediaPlayerTab()
@@ -1125,30 +1133,6 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         event.ignore()
         self.showMinimized()
-
-    def toggleIpfsSearchWidget(self, forceshow=False):
-        btnPos = self.ipfsSearchButton.mapToGlobal(self.pos())
-
-        if self.toolbarMain.vertical:
-            popupPoint = QPoint(btnPos.x() + 32, btnPos.y())
-        elif self.toolbarMain.horizontal:
-            posX = self.width() - self.ipfsSearchWidget.width() - \
-                self.toolbarPyramids.width() - 5
-            posY = self.toolbarMain.height()
-            popupPoint = QPoint(posX, posY)
-        else:
-            return
-
-        self.ipfsSearchWidget.move(popupPoint)
-
-        if forceshow:
-            self.ipfsSearchButton.setChecked(True)
-
-        if self.ipfsSearchButton.isChecked() or forceshow:
-            self.ipfsSearchWidget.show()
-            self.ipfsSearchWidget.focus()
-        else:
-            self.ipfsSearchWidget.hide()
 
     def addHashmarksTab(self):
         ft = self.findTabWithName(self.tabnHashmarks)

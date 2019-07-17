@@ -15,7 +15,7 @@ def listContracts():
             path = pkg_resources.resource_filename(pkg, fn)
             mainSol = os.path.join(path, 'contract.sol')
             if os.path.isdir(path) and os.path.isfile(mainSol):
-                yield LocalContract(mainSol)
+                yield LocalContract(fn, path, mainSol)
     except Exception:
         pass
 
@@ -24,4 +24,4 @@ def getContractByName(name):
     path = pkg_resources.resource_filename(pkg, name)
     mainSol = os.path.join(path, 'contract.sol')
     if os.path.isdir(path) and os.path.isfile(mainSol):
-        return LocalContract(mainSol)
+        return LocalContract(name, path, mainSol)
