@@ -42,7 +42,7 @@ class AtomFeedsView(QWidget):
         self.model = model
         self._offlineMode = False
 
-        self.webView = IPFSWebView(self)
+        self.webView = IPFSWebView(parent=self)
         self.emptyPage = EmptyPage(self)
         self.webView.setPage(self.emptyPage)
 
@@ -98,7 +98,7 @@ class AtomFeedsView(QWidget):
             menu.addAction('Remove feed',
                            functools.partial(self.removeFeed, item))
 
-        menu.exec(self.ui.treeFeeds.mapToGlobal(point))
+            menu.exec(self.ui.treeFeeds.mapToGlobal(point))
 
     def removeFeed(self, feedItem):
         ensure(self.app.sqliteDb.feeds.unfollow(
