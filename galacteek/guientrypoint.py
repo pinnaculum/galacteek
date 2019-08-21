@@ -208,11 +208,18 @@ def start():
                         help='Application Profile')
     parser.add_argument('--binary-name', default=None,
                         help='Binary name', dest='binaryname')
+    parser.add_argument('--binary-path', default=None,
+                        help='Binary path', dest='binarypath')
     parser.add_argument(
         '--monitor',
         action='store_true',
         dest='monitor',
         help='Monitor application with aiomonitor')
+    parser.add_argument(
+        '--appimage',
+        action='store_true',
+        dest='appimage',
+        help='Running from an AppImage')
     parser.add_argument(
         '--migrate',
         action='store_true',
