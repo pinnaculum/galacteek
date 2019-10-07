@@ -34,6 +34,16 @@ files data is the same).
 You might want to use the *Trickle* DAG format for large files
 (for instance video files), making DAG traversal potentially faster.
 
+Chunker
+^^^^^^^
+
+From the *Chunker* menu you can choose the chunking algorithm.
+It defines which strategy IPFS will use to break files into blocks:
+
+- **Fixed size**: files are split into fixed-size blocks
+- **Rabin**: fingerprinting chunker (you can specify a minimum, average
+  and maximum block size)
+
 Use raw blocks for leaf nodes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

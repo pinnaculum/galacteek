@@ -787,7 +787,8 @@ class GalacteekApplication(QApplication):
         self.ensSchemeHandler = EthDNSSchemeHandler(self)
         self.ensProxySchemeHandler = EthDNSProxySchemeHandler(self)
         self.nativeIpfsSchemeHandler = NativeIPFSSchemeHandler(
-            self, noMutexes=self.cmdArgs.noipfsmutexlock)
+            self, noMutexes=self.cmdArgs.noipfsmutexlock
+        )
         self.qSchemeHandler = MultiObjectHostSchemeHandler(self)
 
     def subUrl(self, path):

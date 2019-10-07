@@ -19,6 +19,10 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtWidgets import QInputDialog
 from PyQt5.QtWidgets import QMenu
+from PyQt5.QtWidgets import QLabel
+from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import QVBoxLayout
+from PyQt5.QtWidgets import QDialogButtonBox
 
 from galacteek import ensure
 from galacteek.ipfs.mimetype import mimeTypeDagUnknown
@@ -177,12 +181,19 @@ def getHomePath():
     return pList[0] if len(pList) > 0 else os.getenv('HOME')
 
 
-def messageBox(message, richText=False, title=None):
-    msgBox = QMessageBox()
-    msgBox.setText(message)
+def messageBox(message, title=None):
+    msgBox = QDialog()
 
-    if richText:
-        msgBox.setTextFormat(Qt.RichText)
+    buttonBox = QDialogButtonBox(
+        QDialogButtonBox.Ok,
+        msgBox
+    )
+    buttonBox.accepted.connect(functools.partial(msgBox.done, 1))
+
+    layout = QVBoxLayout()
+    layout.addWidget(QLabel(message))
+    layout.addWidget(buttonBox)
+    msgBox.setLayout(layout)
 
     if title:
         msgBox.setWindowTitle(title)
@@ -345,6 +356,7 @@ def cidInfosMarkup(cidString):
         return '<p>Invalid CID</p>'
 
     return '''
+    <p>CID: <b>{cids}</b></p>
     <p>CID version {cidv}</p>
 
     <p>Codec: <b>{codec}</b></p>
@@ -353,7 +365,8 @@ def cidInfosMarkup(cidString):
         (<b>{mhashfuncvaluehex}</b>)</p>
     <p>Multihash digest: <b>{mhashdigest}</b></p>
     <p>Multihash: <b>{mhashascii}</b></p>
-    '''.format(cidv=cid.version,
+    '''.format(cids=cidString,
+               cidv=cid.version,
                codec=cid.codec,
                mhashfunc=mhash.func.name,
                mhashfuncvalue=mhash.func.value,

@@ -426,7 +426,7 @@ class MainWindow(QMainWindow):
         self.fileManagerButton.setToolTip(iFileManager())
         self.fileManagerButton.setIcon(getIcon('folder-open.png'))
         self.fileManagerButton.clicked.connect(self.onFileManagerClicked)
-        self.fileManagerButton.setShortcut(QKeySequence('Ctrl+f'))
+        self.fileManagerButton.setShortcut(QKeySequence('Ctrl+Alt+f'))
 
         # File manager
         self.fileManagerWidget = files.FileManager(parent=self)
@@ -1242,3 +1242,8 @@ class MainWindow(QMainWindow):
         tab = AtomFeedsViewTab(self, view=self.atomFeedsViewWidget)
         self.registerTab(tab, self.tabnFeeds,
                          icon=getIcon('atom-feed.png'), current=True)
+
+    def onIpfsObjectServed(self, ipfsPath, cType, reqTime):
+        # TODO
+        # Called when an object was served by the native IPFS scheme handler
+        pass
