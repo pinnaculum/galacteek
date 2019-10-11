@@ -464,7 +464,7 @@ class ClipboardItemButton(PopupToolButton):
         self.setToolTip(iClipboardNoValidAddress())
         self.setEnabled(False)
         self.rscOpener = rscOpener
-        self.loadingClip = QMovie(':/share/icons/loading.gif')
+        self.loadingClip = QMovie(':/share/clips/loading.gif')
         self.loadingClip.finished.connect(
             functools.partial(self.loadingClip.start))
         self.menu.setToolTipsVisible(True)
@@ -560,7 +560,8 @@ class ClipboardItemButton(PopupToolButton):
             item.mimeTypeDetected.connect(self.mimeDetected)
 
     def onLoadingFrame(self, num):
-        self.setIcon(QIcon(self.loadingClip.currentPixmap()))
+        if self.isVisible():
+            self.setIcon(QIcon(self.loadingClip.currentPixmap()))
 
     def onHashmark(self):
         if self.item:

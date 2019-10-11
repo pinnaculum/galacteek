@@ -45,7 +45,6 @@ from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import joinIpns
 from galacteek.ipfs.cidhelpers import cidValid
-from galacteek.core.analyzer import ResourceAnalyzer
 from galacteek.core.asynclib import asyncify
 
 from galacteek.core.schemes import isSchemeRegistered
@@ -490,7 +489,7 @@ class WebView(IPFSWebView):
     def contextMenuEvent(self, event):
         # TODO: cleanup and refactoring
 
-        analyzer = ResourceAnalyzer(parent=self)
+        analyzer = self.app.rscAnalyzer
         currentPage = self.page()
         contextMenuData = currentPage.contextMenuData()
         url = contextMenuData.linkUrl()
