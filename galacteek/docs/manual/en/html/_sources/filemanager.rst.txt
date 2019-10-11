@@ -126,7 +126,7 @@ File context menu
 Right-clicking an entry in the file manager will popup a menu giving you a few
 options:
 
-- *Copy multihash to the clipboard*
+- *Copy CID to the clipboard*
 - *Copy full path to the clipboard*
 - *Announce (DHT provide)*: announce to the network that you provide this
   file/directory
@@ -149,5 +149,5 @@ Keyboard shortcuts
 The following keyboard shortcuts are available within the files manager:
 
 - **Mod + c** or **Mod + y**: Copy selected item's IPFS path to the clipboard
-- **Mod + a**: Copy selected item's multihash (CID) to the clipboard
+- **Mod + a**: Copy selected item's CID to the clipboard
 - **Mod+x**: Explore item if it is a directory

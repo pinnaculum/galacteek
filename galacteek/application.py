@@ -45,6 +45,7 @@ from galacteek.core.db import SqliteDatabase
 from galacteek.core.models.atomfeeds import AtomFeedsModel
 from galacteek.core.signaltowers import DAGSignalsTower
 from galacteek.core.signaltowers import URLSchemesTower
+from galacteek.core.analyzer import ResourceAnalyzer
 
 from galacteek.core.schemes import SCHEME_MANUAL
 from galacteek.core.schemes import DWebSchemeHandler
@@ -592,6 +593,8 @@ class GalacteekApplication(QApplication):
             'dags': DAGSignalsTower(self),
             'schemes': URLSchemesTower(self)
         }
+
+        self.rscAnalyzer = ResourceAnalyzer(parent=self)
 
     def setupAsyncLoop(self):
         """

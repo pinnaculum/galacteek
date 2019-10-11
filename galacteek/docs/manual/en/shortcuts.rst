@@ -29,7 +29,7 @@ IPFS views keyboard shortcuts (filemanager, explorer, dag viewer)
 -----------------------------------------------------------------
 
 - **Mod + c** or **Mod + y**: Copy selected item's IPFS path to the clipboard
-- **Mod + a**: Copy selected item's multihash (CID) to the clipboard
+- **Mod + a**: Copy selected item's CID to the clipboard
 - **Mod + w**: Close tab/hash view
 
 Clipboard shortcuts

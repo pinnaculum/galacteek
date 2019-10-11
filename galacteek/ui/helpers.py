@@ -6,6 +6,7 @@ import multihash
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtGui import QImage
 from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QMovie
 
 from PyQt5.QtCore import QStandardPaths
 from PyQt5.QtCore import Qt
@@ -373,3 +374,26 @@ def cidInfosMarkup(cidString):
                mhashfuncvaluehex=hex(mhash.func.value),
                mhashdigest=binascii.b2a_hex(mhash.digest).decode('ascii'),
                mhashascii=binascii.b2a_hex(cid.multihash).decode('ascii'))
+
+
+class RotatingCubeClip(QMovie):
+    def __init__(self, filename='rotating-cube.gif', speed=100):
+        super(RotatingCubeClip, self).__init__(
+            ':/share/clips/{}'.format(filename))
+        self.setSpeed(speed)
+
+    def createIcon(self):
+        return QIcon(self.currentPixmap())
+
+    def playing(self):
+        return self.state() == QMovie.Running
+
+
+class RotatingCubeClipSimple(RotatingCubeClip):
+    def __init__(self, **kw):
+        super().__init__(filename='rotating-cube.gif', **kw)
+
+
+class RotatingCubeClipFunky(RotatingCubeClip):
+    def __init__(self, **kw):
+        super().__init__(filename='funky-cube-1.gif', **kw)
