@@ -92,7 +92,7 @@ popd
 popd
 
 # generate .dmg
-HOMEBREW_NO_AUTO_UPDATE=1 brew install homebrew/linuxbrew-core/create-dmg
+brew install create-dmg
 
 create-dmg --hdiutil-verbose --volname "galacteek-${VERSION}" \
     --volicon "${OLD_CWD}"/share/icons/galacteek.icns \
