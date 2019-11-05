@@ -229,6 +229,9 @@ ipfsCidRe = re.compile(
 ipfsCid32Re = re.compile(
     r'^(\s*)?(?P<cid>[a-z2-7]{59})$')
 
+ipnsKeyRe = re.compile(
+    r'^(?P<key>(Qm[\w]{44}))$')
+
 ipnsPathRe = re.compile(
     r'^(\s*)?(?:fs:|dweb:|https?://[\w:.-]+)?(?P<fullpath>/ipns/(?P<fqdn>[\w\.-]+)/?(?P<subpath>[\w<>"*:;,?!%&=@\$~/\s\.\-_\'\\\+()]{1,1024})?)#?(?P<fragment>[\w\+\-_\.,=/]{1,256})?$',  # noqa
     flags=re.UNICODE)

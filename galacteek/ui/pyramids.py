@@ -21,6 +21,8 @@ from PyQt5.QtCore import QPoint
 from galacteek import ensure
 from galacteek import log
 from galacteek import logUser
+from galacteek import AsyncSignal
+
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import joinIpns
 from galacteek.ipfs import ipfsOp
@@ -31,8 +33,10 @@ from galacteek.dweb.render import ipfsRender
 from galacteek.core import utcDatetimeIso
 from galacteek.core.ipfsmarks import MultihashPyramid
 from galacteek.core.profile import UserProfile
-from galacteek.core.objects import SingleASig
 from galacteek.crypto.qrcode import IPFSQrEncoder
+
+from galacteek.did.ipid import IPService
+from galacteek.did.ipid import IPIDServiceException
 
 from .widgets import PopupToolButton
 from .widgets import URLDragAndDropProcessor
@@ -43,6 +47,7 @@ from .helpers import runDialog
 from .helpers import questionBox
 from .helpers import getImageFromIpfs
 from .helpers import inputTextLong
+from .helpers import messageBox
 from .dialogs import AddMultihashPyramidDialog
 
 from .i18n import iRemove
@@ -83,6 +88,19 @@ def iRewindDAG():
     return QCoreApplication.translate(
         'pyramidMaster',
         'Rewind DAG')
+
+
+def iProfilePublishToDID():
+    return QCoreApplication.translate(
+        'pyramidMaster',
+        'Publish on my DID')
+
+
+def iProfilePublishToDIDToolTip():
+    return QCoreApplication.translate(
+        'pyramidMaster',
+        'Register this pyramid as a service in the list '
+        'of IP services on your DID (Decentralized Identifier)')
 
 
 def iRewindDAGToolTip():
@@ -265,7 +283,7 @@ class MultihashPyramidsToolBar(QToolBar):
     def publishNeeded(self, pyramidPath, mark):
         if pyramidPath in self.pyramids:
             pyramidMaster = self.pyramids[pyramidPath]
-            ensure(pyramidMaster.needsPublish.send(mark, True))
+            ensure(pyramidMaster.needsPublish.emit(mark, True))
 
     @ipfsOp
     async def fetchIcon(self, ipfsop, button, iconPath):
@@ -335,7 +353,8 @@ class MultihashPyramidToolButton(PopupToolButton):
         self.changed.connect(self.onPyrChange)
         self.emptyNow.connect(self.onPyrEmpty)
 
-        self.needsPublish = SingleASig(self.pyramidNeedsPublish, self)
+        self.needsPublish = AsyncSignal(dict, bool)
+        self.needsPublish.connectTo(self.pyramidNeedsPublish)
 
         self.ipfsObjectDropped.connect(self.onObjectDropped)
         self.clicked.connect(self.onOpenLatest)
@@ -373,6 +392,12 @@ class MultihashPyramidToolButton(PopupToolButton):
                                     iRemove(),
                                     self,
                                     triggered=self.onDeletePyramid)
+
+        self.didPublishAction = QAction(getIcon('ipservice.png'),
+                                        iProfilePublishToDID(),
+                                        self,
+                                        triggered=self.onPublishToDID)
+        self.didPublishAction.setToolTip(iProfilePublishToDIDToolTip())
 
         self.createExtraActions()
         self.buildMenu()
@@ -467,6 +492,8 @@ class MultihashPyramidToolButton(PopupToolButton):
         self.menu.addAction(self.copyIpnsAction)
         self.menu.addAction(self.generateQrAction)
         self.menu.addSeparator()
+        self.menu.addAction(self.didPublishAction)
+        self.menu.addSeparator()
         self.menu.addAction(self.deleteAction)
 
     def dragEnterEvent(self, event):
@@ -534,6 +561,10 @@ class MultihashPyramidToolButton(PopupToolButton):
 
     def onDeletePyramid(self):
         self.deleteRequest.emit()
+
+    def onPublishToDID(self):
+        if questionBox('Publish', 'Publish to your DID ?'):
+            ensure(self.didPublishService())
 
     def onPyrChange(self):
         self.updateToolTip()
@@ -618,7 +649,8 @@ class MultihashPyramidToolButton(PopupToolButton):
             logUser.info('QR: encoding successfull!')
 
         if ipfsop.ctx.currentProfile:
-            ipfsop.ctx.currentProfile.qrImageEncoded.emit(False, imgPath)
+            await ipfsop.ctx.currentProfile.qrImageEncoded.emit(
+                False, imgPath)
 
     @ipfsOp
     async def publishObject(self, ipfsop, objPath):
@@ -687,6 +719,28 @@ class MultihashPyramidToolButton(PopupToolButton):
                     count=self._publishFailedCount))
                 return False
 
+    @ipfsOp
+    async def didPublishService(self, ipfsop):
+        profile = ipfsop.ctx.currentProfile
+
+        if not profile.ipid:
+            return
+
+        try:
+            await profile.ipid.addServiceRaw({
+                'id': profile.ipid.didUrl(
+                    path='/pyramids',
+                    params={'name': self.pyramid.name}
+                ),
+                'type': IPService.SRV_TYPE_GENERICPYRAMID,
+                'description': 'Generic pyramid: {}'.format(
+                    self.pyramid.name
+                ),
+                'serviceEndpoint': self.indexIpnsPath.ipfsUrl
+            })
+        except IPIDServiceException as err:
+            messageBox('IP Service error: {}'.format(str(err)))
+
     async def pyramidNeedsPublish(self, mark, notify):
         """
         We need to publish! Unless there's already a publish
@@ -724,14 +778,15 @@ class MultihashPyramidToolButton(PopupToolButton):
                     delay = rand.randint(5, 30)
 
                     self.app.loop.call_later(
-                        delay, ensure, self.needsPublish.send(self.pyramidion,
-                                                              False))
+                        delay, ensure,
+                        self.needsPublish.emit(self.pyramidion,
+                                               False))
 
                 if isinstance(self.publishedLast, datetime):
                     delta = datetime.now() - self.publishedLast
 
                     if unpublishedMax and delta.seconds > unpublishedMax:
-                        await self.needsPublish.send(self.pyramidion, True)
+                        await self.needsPublish.emit(self.pyramidion, True)
 
             await asyncio.sleep(3600)
 
@@ -892,10 +947,35 @@ class GalleryPyramidController(EDAGBuildingPyramidController):
         self.menu.addSeparator()
         self.menu.addAction(self.deleteAction)
         self.menu.addSeparator()
+        self.menu.addAction(self.didPublishAction)
+        self.menu.addSeparator()
         self.menu.addAction(
             getIcon('pyramid-blue.png'), iHelp(), self.galleryHelpMessage)
         self.menu.setEnabled(False)
         self.menu.setToolTipsVisible(True)
+
+    def onPublishToDID(self):
+        if questionBox('Publish', 'Publish to your DID ?'):
+            ensure(self.didPublishService())
+
+    @ipfsOp
+    async def didPublishService(self, ipfsop):
+        profile = ipfsop.ctx.currentProfile
+
+        if not profile.ipid:
+            return
+
+        try:
+            await profile.ipid.addServiceRaw({
+                'id': profile.ipid.didUrl(
+                    path='/galleries',
+                    params={'galleryname': self.pyramid.name}
+                ),
+                'type': IPService.SRV_TYPE_GALLERY,
+                'serviceEndpoint': self.indexIpnsPath.ipfsUrl
+            })
+        except IPIDServiceException as err:
+            messageBox('IP Service error: {}'.format(str(err)))
 
     def onChangeTitle(self):
         curTitle = self.edag.root['metadata']['title']

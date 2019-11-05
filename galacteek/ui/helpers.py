@@ -59,6 +59,10 @@ def getMimeIcon(mType):
     return app.mimeTypeIcons.get(mType)
 
 
+def getPlanetIcon(planet):
+    return getIcon('planets/{}'.format(planet))
+
+
 def preloadMimeIcons():
     icons = {}
     mIconsDir = QDir(':/share/icons/mimetypes')

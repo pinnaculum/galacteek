@@ -55,12 +55,16 @@ from galacteek.core.schemes import NativeIPFSSchemeHandler
 from galacteek.core.schemes import ObjectProxySchemeHandler
 from galacteek.core.schemes import MultiObjectHostSchemeHandler
 
+from galacteek.space.solarsystem import SolarSystem
+
 from galacteek.ipfs import asyncipfsd, cidhelpers
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.feeds import FeedFollower
+
+from galacteek.did.ipid import IPIDManager
 
 from galacteek.ipdapps.loader import DappsRegistry
 
@@ -326,6 +330,10 @@ class GalacteekApplication(QApplication):
         return self._ipfsDataLocation
 
     @property
+    def nsCacheLocation(self):
+        return self._nsCacheLocation
+
+    @property
     def orbitDataLocation(self):
         return self._orbitDataLocation
 
@@ -372,6 +380,7 @@ class GalacteekApplication(QApplication):
         self.systemTray.setContextMenu(systemTrayMenu)
 
     def initMisc(self):
+        self.solarSystem = SolarSystem()
         self.mimeTypeIcons = preloadMimeIcons()
         self.multihashDb = IPFSObjectMetadataDatabase(self._mHashDbLocation,
                                                       loop=self.loop)
@@ -393,6 +402,8 @@ class GalacteekApplication(QApplication):
         self.tempDir = QTemporaryDir()
         self.tempDirWeb = self.tempDirCreate(
             self.tempDir.path(), 'webdownloads')
+
+        self.ipidManager = IPIDManager()
 
     def tempDirCreate(self, basedir, name=None):
         tmpdir = QDir(basedir)
@@ -535,7 +546,8 @@ class GalacteekApplication(QApplication):
     def getIpfsOperator(self):
         """ Returns a new IPFSOperator with the currently active IPFS client"""
         return IPFSOperator(self.ipfsClient, ctx=self.ipfsCtx,
-                            debug=self.debugEnabled)
+                            debug=self.debugEnabled,
+                            nsCachePath=self.nsCacheLocation)
 
     def getIpfsConnectionParams(self):
         mgr = self.settingsMgr
@@ -638,13 +650,13 @@ class GalacteekApplication(QApplication):
             qtDataLocation, self._appProfile)
 
         self._ipfsBinLocation = os.path.join(qtDataLocation, 'ipfs-bin')
-        self._ipfsDataLocation = os.path.join(self._dataLocation, 'ipfs')
-        self._orbitDataLocation = os.path.join(self._dataLocation, 'orbitdb')
-        self._mHashDbLocation = os.path.join(self._dataLocation, 'mhashmetadb')
-        self._sqliteDbLocation = os.path.join(self._dataLocation, 'db.sqlite')
-        self.marksDataLocation = os.path.join(self._dataLocation, 'marks')
-        self.uiDataLocation = os.path.join(self._dataLocation, 'ui')
-        self.cryptoDataLocation = os.path.join(self._dataLocation, 'crypto')
+        self._ipfsDataLocation = os.path.join(self.dataLocation, 'ipfs')
+        self._orbitDataLocation = os.path.join(self.dataLocation, 'orbitdb')
+        self._mHashDbLocation = os.path.join(self.dataLocation, 'mhashmetadb')
+        self._sqliteDbLocation = os.path.join(self.dataLocation, 'db.sqlite')
+        self.marksDataLocation = os.path.join(self.dataLocation, 'marks')
+        self.uiDataLocation = os.path.join(self.dataLocation, 'ui')
+        self.cryptoDataLocation = os.path.join(self.dataLocation, 'crypto')
         self.gpgDataLocation = os.path.join(self.cryptoDataLocation, 'gpg')
         self.localMarksFileLocation = os.path.join(self.marksDataLocation,
                                                    'ipfsmarks.local.json')
@@ -652,6 +664,8 @@ class GalacteekApplication(QApplication):
                                                      'ipfsmarks.network.json')
         self.pinStatusLocation = os.path.join(self.dataLocation,
                                               'pinstatus.json')
+        self._nsCacheLocation = os.path.join(self.dataLocation,
+                                             'nscache.json')
 
         qtConfigLocation = QStandardPaths.writableLocation(
             QStandardPaths.ConfigLocation)

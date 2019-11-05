@@ -5,9 +5,15 @@ import time
 import os.path
 import copy
 
-from PyQt5.QtCore import (pyqtSignal, QObject)
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import QObject
 
-from galacteek import log, logUser, GALACTEEK_NAME, ensure
+from galacteek import log
+from galacteek import logUser
+from galacteek import GALACTEEK_NAME
+from galacteek import ensure
+from galacteek import AsyncSignal
 
 from galacteek.ipfs import pinning
 from galacteek.ipfs.wrappers import ipfsOp
@@ -20,14 +26,22 @@ from galacteek.ipfs.pubsub.service import PSPeersService
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs import tunnel
 
+from galacteek.did.ipid import ipidFormatValid
+from galacteek.did.ipid import IPIdentifier
+from galacteek.did.ipid import IPService
+
 from galacteek.core.profile import UserProfile
 from galacteek.core.softident import gSoftIdent
+
 from galacteek.crypto.rsa import RSAExecutor
 
 
-class PeerCtx(QObject):
-    def __init__(self, ipfsCtx, peerId, identMsg, pinglast=0, pingavg=0):
+class PeerCtx:
+    def __init__(self, ipfsCtx, peerId, identMsg,
+                 ipIdentifier: IPIdentifier,
+                 pinglast=0, pingavg=0):
         self._ipfsCtx = ipfsCtx
+        self._ipid = ipIdentifier
         self.peerId = peerId
         self.ident = identMsg
         self.pinglast = pinglast
@@ -41,6 +55,10 @@ class PeerCtx(QObject):
     @property
     def ident(self):
         return self._ident
+
+    @property
+    def ipid(self):
+        return self._ipid
 
     @property
     def identLast(self):
@@ -57,11 +75,20 @@ class PeerCtx(QObject):
         self.debug('Updated last ident to {}'.format(self.identLast))
 
     def debug(self, msg):
-        log.debug('Peer {0}: {1}'.format(self.peerId, msg))
+        log.debug('Peer {p}@{ipid}: {msg}'.format(
+            p=self.peerId, ipid=self.ipid.did, msg=msg))
 
     @ipfsOp
-    async def update(self, op):
+    async def update(self, ipfsop):
         pass
+
+    async def discoverServices(self):
+        self.debug('Discovering services for IPID: {}'.format(self.ipid.did))
+
+        services = await self.ipid.getServices()
+
+        for srv in services:
+            yield IPService(srv)
 
     @ipfsOp
     async def getRsaPubKey(self, op):
@@ -75,17 +102,16 @@ class PeerCtx(QObject):
             self.debug('Failed to load pubkey')
 
 
-class Peers(QObject):
-    changed = pyqtSignal()
-    peerAdded = pyqtSignal(str)
-    peerModified = pyqtSignal(str)
-    peerLogout = pyqtSignal(str)
+class Peers:
+    changed = AsyncSignal()
+    peerAdded = AsyncSignal(str)
+    peerModified = AsyncSignal(str)
+    peerLogout = AsyncSignal(str)
 
     def __init__(self, ctx):
-        super().__init__(ctx)
-
+        self.app = QApplication.instance()
         self.ctx = ctx
-        self.lock = asyncio.Lock()
+        self.lock = asyncio.Lock(loop=self.app.loop)
         self.evStopWatcher = asyncio.Event()
         self._byPeerId = collections.OrderedDict()
 
@@ -109,8 +135,8 @@ class Peers(QObject):
         with await self.lock:
             if peerId in self.byPeerId:
                 del self.byPeerId[peerId]
-            self.peerLogout.emit(peerId)
-            self.changed.emit()
+            await self.peerLogout.emit(peerId)
+            await self.changed.emit()
 
     @ipfsOp
     async def registerFromIdent(self, op, iMsg):
@@ -120,19 +146,43 @@ class Peers(QObject):
             now = int(time.time())
             avgPing = await op.waitFor(op.pingAvg(iMsg.peer, count=2), 5)
 
+            personDid = iMsg.userDid
+
+            if not ipidFormatValid(personDid):
+                log.debug('Invalid DID: {}'.format(personDid))
+                return
+
+            # Load the IPID
+            ipid = await self.app.ipidManager.load(
+                personDid, track=True
+            )
+
+            if not ipid:
+                log.debug('Cannot load DID: {}'.format(personDid))
+                return
+
             with await self.lock:
-                pCtx = PeerCtx(self.ctx, iMsg.peer, iMsg,
+                pCtx = PeerCtx(self.ctx, iMsg.peer, iMsg, ipid,
                                pingavg=avgPing if avgPing else 0,
                                pinglast=now if avgPing else 0
                                )
                 self._byPeerId[iMsg.peer] = pCtx
-            self.peerAdded.emit(iMsg.peer)
+            await self.peerAdded.emit(iMsg.peer)
         else:
-            with await self.lock:
-                self.peerModified.emit(iMsg.peer)
-                self._byPeerId[iMsg.peer].ident = iMsg
+            # This peer is already registered
+            # What we ought to do here is just to refresh the DID document
 
-        self.changed.emit()
+            with await self.lock:
+                pCtx = self.getByPeerId(iMsg.peer)
+                if pCtx:
+                    pCtx.ident = iMsg
+                    log.debug('Refreshing DID: {}'.format(pCtx.ipid))
+
+                    await pCtx.ipid.refresh()
+
+                    await self.peerModified.emit(iMsg.peer)
+
+        await self.changed.emit()
 
     async def init(self):
         pass

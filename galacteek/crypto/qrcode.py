@@ -1,6 +1,7 @@
 import asyncio
 import io
 import functools
+import tempfile
 
 import qrcode
 from PIL.Image import new as NewImage
@@ -8,6 +9,8 @@ from PIL import Image
 
 from galacteek import log
 from galacteek.ipfs.cidhelpers import IPFSPath
+from galacteek.ipfs import ipfsOp
+from galacteek.did import didRe
 
 
 try:
@@ -78,7 +81,11 @@ class ZbarIPFSQrDecoder(ImageReader):
 
                 path = IPFSPath(decoded, autoCidConv=True)
                 if path.valid and path not in urls:
+                    log.debug('Decoded IPFS QR: {}'.format(path))
                     urls.append(path)
+                elif didRe.match(decoded):
+                    log.debug('Decoded DID QR: {}'.format(decoded))
+                    urls.append(decoded)
 
             if len(urls) > 0:  # don't return empty list
                 return urls
@@ -143,8 +150,8 @@ class IPFSQrEncoder:
     def codes(self):
         return self._codes
 
-    def add(self, url):
-        if len(self._codes) < self._maxCodes:
+    def add(self, url: str):
+        if url and len(self._codes) < self._maxCodes:
             self._codes.append(url)
 
     def _newImage(self, width, height, mode='P', fill=255, color='#000000'):
@@ -172,6 +179,23 @@ class IPFSQrEncoder:
 
         qrImage = qr.make_image(fill_color=fillColor, back_color=backColor)
         return qrImage.get_image()
+
+    @ipfsOp
+    async def encodeAndStore(self, ipfsop, loop=None, executor=None,
+                             filename=None, format='raw', **kw):
+        try:
+            img = await self.encodeAll(loop=loop, executor=executor, **kw)
+            if not img:
+                raise Exception('Could not encode QR')
+
+            if format == 'raw':
+                return await ipfsop.addBytes(img.tobytes())
+            elif format == 'png':
+                tfile = tempfile.NamedTemporaryFile(suffix='.png')
+                img.save(tfile.name)
+                return await ipfsop.addPath(tfile.name)
+        except Exception as e:
+            log.debug('Error encoding/storing QR code: {}'.format(str(e)))
 
     async def encodeAll(self, loop=None, executor=None, method='append',
                         version=12):

@@ -21,14 +21,7 @@
        <item>
         <widget class="QLabel" name="label">
          <property name="text">
-          <string>Peers registered</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="peersCountLabel">
-         <property name="text">
-          <string/>
+          <string>Right-click on a peer to discover services</string>
          </property>
         </widget>
        </item>

@@ -16,8 +16,8 @@ from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtWidgets import QPushButton
 from PyQt5.QtWidgets import QLabel
 from PyQt5.QtWidgets import QVBoxLayout
-from PyQt5.QtWidgets import QTextBrowser
-from PyQt5.QtWidgets import QToolTip
+from PyQt5.QtWidgets import QTextEdit
+from PyQt5.QtWidgets import QLineEdit
 
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import Qt
@@ -25,12 +25,12 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtCore import QDateTime
 from PyQt5.QtCore import QSize
 from PyQt5.QtCore import QPoint
-from PyQt5.QtCore import QRect
 
 from PyQt5.Qt import QSizePolicy
 
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtGui import QTextCursor
+from PyQt5.QtGui import QTextDocument
 
 from PyQt5 import QtWebEngineWidgets
 
@@ -73,6 +73,9 @@ from .eth import EthereumStatusButton
 from .feeds import AtomFeedsViewTab
 from .feeds import AtomFeedsView
 from .textedit import TextEditorTab
+from .iprofile import ProfileEditDialog
+from .iprofile import ProfileButton
+from .pubsub import PubsubSnifferWidget
 from .pyramids import MultihashPyramidsToolBar
 from .quickaccess import QuickAccessToolBar
 from .helpers import *
@@ -122,6 +125,44 @@ def iAbout():
 
 class UserLogsWindow(QMainWindow):
     hidden = pyqtSignal()
+
+    def __init__(self):
+        super(UserLogsWindow, self).__init__()
+        self.toolbar = QToolBar(self)
+        self.toolbar.setMovable(False)
+        self.addToolBar(Qt.TopToolBarArea, self.toolbar)
+
+        self.logsBrowser = QTextEdit(self)
+        self.logsBrowser.setReadOnly(True)
+        self.logsBrowser.setObjectName('logsTextWidget')
+        self.logsBrowser.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        self.searchBack = QPushButton('Search backward')
+        self.searchBack.clicked.connect(self.onSearchBack)
+        self.searchFor = QPushButton('Search forward')
+        self.searchFor.clicked.connect(self.onSearchForward)
+
+        self.logsSearcher = QLineEdit(self)
+        self.logsSearcher.setClearButtonEnabled(True)
+        self.toolbar.addWidget(self.logsSearcher)
+        self.toolbar.addWidget(self.searchBack)
+        self.toolbar.addWidget(self.searchFor)
+        self.logsSearcher.returnPressed.connect(self.onSearchForward)
+        self.setCentralWidget(self.logsBrowser)
+
+    def onSearchBack(self):
+        flags = QTextDocument.FindCaseSensitively | QTextDocument.FindBackward
+        self.searchText(flags)
+
+    def onSearchForward(self):
+        flags = QTextDocument.FindCaseSensitively
+        self.searchText(flags)
+
+    def searchText(self, flags):
+        text = self.logsSearcher.text()
+        if text:
+            self.logsBrowser.find(text, flags)
 
     def hideEvent(self, event):
         self.hidden.emit()
@@ -306,10 +347,6 @@ class MainToolBar(QToolBar):
         pass
 
 
-class ProfileButton(PopupToolButton):
-    pass
-
-
 class TabWidgetKeyFilter(QObject):
     nextPressed = pyqtSignal()
 
@@ -409,19 +446,13 @@ class MainWindow(QMainWindow):
         self.logsPopupWindow.setWindowTitle('{}: logs'.format(GALACTEEK_NAME))
         self.logsPopupWindow.hide()
 
-        self.logsBrowser = QTextBrowser(self.logsPopupWindow)
-        self.logsBrowser.setObjectName('logsTextWidget')
-        self.logsPopupWindow.setCentralWidget(self.logsBrowser)
-        self.logsBrowser.setSizePolicy(
-            QSizePolicy.Expanding, QSizePolicy.Expanding)
-
         self.logsPopupWindow.setMinimumSize(QSize(
             (2 * self.app.desktopGeometry.width()) / 3,
             self.app.desktopGeometry.height() / 2
         ))
 
         self.userLogsHandler = MainWindowLogHandler(
-            self.logsBrowser, window=self,
+            self.logsPopupWindow.logsBrowser, window=self,
             level='DEBUG' if self.app.debugEnabled else 'INFO')
 
         loggerMain.handlers.append(self.userLogsHandler)
@@ -474,6 +505,12 @@ class MainWindow(QMainWindow):
         self.mPlayerOpenAction = QAction(getIcon('multimedia.png'),
                                          iMediaPlayer(),
                                          triggered=self.onOpenMediaPlayer)
+
+        self.psniffAction = QAction(getIcon('network-transmit.png'),
+                                    iPubSubSniff(),
+                                    self,
+                                    shortcut=QKeySequence('Ctrl+0'),
+                                    triggered=self.openPsniffTab)
 
         self.editorOpenAction = QAction(getIcon('text-editor.png'),
                                         iTextEditor(),
@@ -571,7 +608,6 @@ class MainWindow(QMainWindow):
 
         self.profileEditButton = ProfileButton(
             menu=self.profileMenu,
-            mode=QToolButton.InstantPopup,
             icon=iconProfile
         )
         self.profileEditButton.setEnabled(False)
@@ -621,6 +657,8 @@ class MainWindow(QMainWindow):
         menu.addAction(getIcon('lock-and-key.png'), iKeys(),
                        self.onIpfsKeysClicked)
         menu.addSeparator()
+        menu.addAction(self.psniffAction)
+        menu.addSeparator()
         menu.addAction(iClearHistory(), self.onClearHistory)
 
         self.settingsToolButton.setMenu(menu)
@@ -657,6 +695,7 @@ class MainWindow(QMainWindow):
         self.toolbarMain.addWidget(self.browseButton)
         self.toolbarMain.addWidget(self.hashmarkMgrButton)
         self.toolbarMain.addWidget(self.hashmarksSearcher)
+        self.toolbarMain.addWidget(self.profileEditButton)
         self.toolbarMain.addWidget(self.atomButton)
 
         self.toolbarMain.addSeparator()
@@ -674,7 +713,6 @@ class MainWindow(QMainWindow):
         self.toolbarMain.addWidget(self.qaToolbar)
 
         self.toolbarTools.addWidget(self.peersButton)
-        self.toolbarTools.addWidget(self.profileEditButton)
 
         self.toolbarMain.actionStatuses = self.toolbarMain.addAction(
             'Statuses')
@@ -862,7 +900,7 @@ class MainWindow(QMainWindow):
         )
 
         self.logsPopupWindow.move(popupPoint)
-        self.logsBrowser.moveCursor(QTextCursor.End)
+        self.logsPopupWindow.logsBrowser.moveCursor(QTextCursor.End)
         self.logsPopupWindow.setVisible(checked)
 
     def onProfileEditDialog(self):
@@ -880,12 +918,10 @@ class MainWindow(QMainWindow):
             'QToolButton {}'
         )
 
-    def onProfileInfoChanged(self, profile):
-        # Regen website
-        ensure(profile.userWebsite.update())
-
     @asyncify
     async def onProfileChanged(self, pName, profile):
+        self.profileEditButton.setEnabled(False)
+
         if not profile.initialized:
             return
 
@@ -897,26 +933,10 @@ class MainWindow(QMainWindow):
 
         profile.sharedHManager.hashmarksLoaded.connect(hashmarksLoaded)
 
-        self.profileEditButton.setEnabled(False)
         await profile.userInfo.loaded
         self.profileEditButton.setEnabled(True)
 
-        if profile.userWebsite:
-            profile.userWebsite.websiteUpdated.connect(
-                self.onProfileWebsiteUpdated
-            )
-
-        if not profile.userInfo.usernameSet:
-            QToolTip.showText(
-                self.profileEditButton.mapToGlobal(
-                    QPoint(0, 16)),
-                "Your profile's username is not set!",
-                self.profileEditButton, QRect(0, 0, 0, 0), 1800
-            )
-
-        profile.userInfo.changed.connect(
-            lambda: self.onProfileInfoChanged(profile)
-        )
+        await self.profileEditButton.changeProfile(profile)
 
         for action in self.profilesActionGroup.actions():
             if action.data() == pName:
@@ -1141,12 +1161,15 @@ class MainWindow(QMainWindow):
 
         # Get IPFS peers list
         peers = await ipfsop.peersList()
-        if not peers:
+        peersCount = len(peers)
+
+        if peersCount == 0:
+            await ipfsop.noPeersFound()
             self.setConnectionInfoMessage(iCxButNoPeers(nodeId, nodeAgent))
             self.ipfsStatusCube.clip.setSpeed(0)
             return
 
-        peersCount = len(peers)
+        await ipfsop.peersCountStatus(peersCount)
 
         # TODO: compute something more precise, probably based on the
         # swarm's high/low config
@@ -1224,6 +1247,10 @@ class MainWindow(QMainWindow):
             self.tabWidget.removeTab(idx)
             self.allTabs.remove(tab)
             del tab
+
+    def openPsniffTab(self):
+        self.registerTab(
+            PubsubSnifferWidget(self), iPubSubSniff(), current=True)
 
     def addEditorTab(self, path=None, editing=True):
         tab = TextEditorTab(editing=editing, parent=self)
@@ -1309,7 +1336,8 @@ class MainWindow(QMainWindow):
             return self.tabWidget.setCurrentWidget(ft)
 
         pMgr = peers.PeersManager(self, self.app.peersTracker)
-        self.registerTab(pMgr, name, current=current)
+        self.registerTab(pMgr, name, icon=getIcon('peers.png'),
+                         current=current)
 
     def quit(self):
         # Qt and application exit
@@ -1356,7 +1384,7 @@ class MainWindow(QMainWindow):
         tab = self.findTabWithName(self.tabnChat)
         if tab:
             tab.focusMessage()
-            return self.tabWidget.setCurrentWidget(ft)
+            return self.tabWidget.setCurrentWidget(tab)
 
         self.chatRoomWidget.focusMessage()
 

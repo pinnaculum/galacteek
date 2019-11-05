@@ -444,7 +444,8 @@ class ClipboardManager(PopupToolButton):
             logUser.info('QR: encoding successfull!')
 
         if ipfsop.ctx.currentProfile:
-            ipfsop.ctx.currentProfile.qrImageEncoded.emit(encrypt, imgPath)
+            await ipfsop.ctx.currentProfile.qrImageEncoded.emit(
+                encrypt, imgPath)
 
 
 class ClipboardItemButton(PopupToolButton):

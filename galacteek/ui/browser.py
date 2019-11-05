@@ -137,7 +137,7 @@ def iLinkToQaToolbar():
         'BrowserTabForm', 'Link to Quick Access toolbar')
 
 
-def iFollow():
+def iFollowIpns():
     return QCoreApplication.translate('BrowserTabForm',
                                       'Follow IPNS resource')
 
@@ -1165,7 +1165,7 @@ class BrowserTab(GalacteekTab):
                                       iBrowseIpnsHash(), self,
                                       triggered=self.onLoadIpns)
         self.followIpnsAction = QAction(getIconIpfsWhite(),
-                                        iFollow(), self,
+                                        iFollowIpns(), self,
                                         triggered=self.onFollowIpns)
         self.loadHomeAction = QAction(getIcon('go-home.png'),
                                       iBrowseHomePage(), self,
