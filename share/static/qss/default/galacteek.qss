@@ -199,7 +199,7 @@ QWidget#logsTextWindow {
     background-color: #4a9ea1;
 }
 
-QTextBrowser#logsTextWidget {
+QTextEdit#logsTextWidget {
     background-color: #7f8491;
     font: 12pt "Inter UI";
     margin: 5px;
@@ -250,4 +250,10 @@ QToolButton#buttonBrowseIpfs::pressed {
 
 QToolButton#qaToolButton::hover {
     background-color: #C3D7DF;
+}
+
+/* Dialogs */
+
+QDialog {
+    background-color: #DBDBDB;
 }
