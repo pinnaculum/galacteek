@@ -246,6 +246,18 @@ QToolButton#buttonBrowseIpfs::pressed {
     background-color: #eec146;
 }
 
+/* Profile button */
+
+QToolButton#profileButton::hover {
+    background-color: #4a9ea1;
+}
+
+QToolButton#profileButton::pressed {
+    background-color: #eec146;
+}
+
+
+
 /* Quick Access tool buttons */
 
 QToolButton#qaToolButton::hover {
@@ -254,6 +266,60 @@ QToolButton#qaToolButton::hover {
 
 /* Dialogs */
 
-QDialog {
+QDialog#profileEditDialog {
     background-color: #DBDBDB;
+}
+
+/* Peers View */
+
+QTreeView#peersMgrView {
+    font: 11pt "Inter UI";
+    background-color: #DAD9EB;
+}
+
+QTreeView::branch#peersMgrView {
+    background: transparent;
+}
+
+QTreeView::item#peersMgrView {
+    padding: 4px;
+}
+
+QTreeView::item:selected#peersMgrView {
+    font: 14pt "Inter UI";
+    color: #4a9ea1;
+}
+
+/* IP Services search widgets */
+
+QLineEdit#ipServicesSearcher {
+    margin-left: 20px;
+    margin-right: 10px;
+    margin-top: 5px;
+    margin-bottom: 2px;
+    font: 12pt "Inter UI";
+}
+
+
+QLineEdit QAbstractItemView {
+    background-color: #7f8491;
+    alternate-background-color: #4a9ea1;
+    color: black;
+    border: 1px solid #4a9ea1;
+    border-radius: 14px;
+}
+
+/* Combobox */
+
+QComboBox QAbstractItemView {
+    font: 12pt "Inter UI";
+    margin: 2px;
+    selection-background-color: #60cccf;
+    border: 1px solid #4b9fa2;
+    border-radius: 14px;
+}
+
+QComboBox:on {
+    padding-top: 4px;
+    padding-left: 8px;
 }

@@ -450,24 +450,20 @@ class IPFSOperator(object):
     async def publish(self, path, key='self', timeout=90,
                       allow_offline=False, lifetime='24h',
                       ttl=None, cache=None, cacheOrigin='unknown'):
+        usingCache = cache == 'always' or \
+            (cache == 'offline' and self.noPeers)
         try:
-            if cache == 'always' or \
-                    (cache == 'offline' and self.noPeers is True):
-
+            if usingCache:
                 self.debug('Caching IPNS key: {key} (origin: {origin})'.format(
                     key=key, origin=cacheOrigin))
 
-                self._nsCache[joinIpns(key)] = {
-                    'resolved': path,
-                    'resolvedLast': int(time.time()),
-                    'cacheOrigin': cacheOrigin
-                }
-                await self.nsCacheSave()
+                await self.nsCacheSet(
+                    joinIpns(key), path, origin=cacheOrigin)
 
             result = await self.waitFor(
                 self.client.name.publish(
                     path, key=key,
-                    allow_offline=allow_offline,
+                    allow_offline=self.noPeers,
                     lifetime=lifetime,
                     ttl=ttl
                 ), timeout
@@ -536,11 +532,24 @@ class IPFSOperator(object):
             if (int(time.time()) - rLast) < maxLifetime:
                 return entry['resolved']
 
+    async def nsCacheSet(self, path, resolved, origin=None):
+        self._nsCache[path] = {
+            'resolved': resolved,
+            'resolvedLast': int(time.time()),
+            'cacheOrigin': origin
+        }
+        await self.nsCacheSave()
+
     async def nameResolve(self, path, timeout=20, recursive=False,
-                          useCache=None, maxCacheLifetime=60 * 10):
+                          useCache='never',
+                          cache='never',
+                          maxCacheLifetime=60 * 10,
+                          cacheOrigin='unknown'):
+        usingCache = useCache == 'always' or \
+            (useCache == 'offline' and self.noPeers)
+        cache = cache == 'always' or (cache == 'offline' and self.noPeers)
         try:
-            if useCache == 'always' or \
-                    (useCache == 'offline' and self.noPeers):
+            if usingCache:
                 # The NS cache is used only for IPIDs when offline
 
                 rPath = self.nsCacheGet(path, maxLifetime=maxCacheLifetime)
@@ -563,17 +572,48 @@ class IPFSOperator(object):
             self.debug('resolve error: {0}: {1}'.format(path, e.message))
             return None
         else:
+            if cache and resolved:
+                await self.nsCacheSet(path, resolved, origin=cacheOrigin)
+
             return resolved
 
-    async def nameResolveStream(self, path, count=3, timeout='20s'):
+    async def nameResolveStream(self, path, count=3,
+                                timeout=20,
+                                useCache='never',
+                                cache='never',
+                                recursive=True,
+                                maxCacheLifetime=60 * 10):
+        usingCache = useCache == 'always' or \
+            (useCache == 'offline' and self.noPeers)
+        cache = cache == 'always' or (cache == 'offline' and self.noPeers)
+        rTimeout = '{t}s'.format(t=timeout) if isinstance(timeout, int) else \
+            timeout
+
         try:
-            async for nentry in self.client.name.resolve_stream(
-                    name=path,
-                    recursive=True,
-                    stream=True,
-                    dht_record_count=count,
-                    dht_timeout=timeout):
-                yield nentry
+            gotFromCache = False
+            if usingCache:
+                # The NS cache is used only for IPIDs when offline
+
+                rPath = self.nsCacheGet(path, maxLifetime=maxCacheLifetime)
+
+                if rPath and IPFSPath(rPath).valid:
+                    self.debug(
+                        'nameResolve: Feeding entry from NS cache: {}'.format(
+                            rPath))
+                    yield {
+                        'Path': rPath
+                    }
+
+                    gotFromCache = True
+
+            if not gotFromCache:
+                async for nentry in self.client.name.resolve_stream(
+                        name=path,
+                        recursive=recursive,
+                        stream=True,
+                        dht_record_count=count,
+                        dht_timeout=rTimeout):
+                    yield nentry
         except asyncio.TimeoutError:
             self.debug('streamed resolve timeout for {0}'.format(path))
         except aioipfs.APIError as e:
@@ -713,6 +753,9 @@ class IPFSOperator(object):
 
         return await self.addPath(path, recursive=recursive, only_hash=True)
 
+    async def hashComputeString(self, s):
+        return await self.addString(s, only_hash=True)
+
     async def addPath(self, path, recursive=True, wrap=False,
                       callback=None, cidversion=1, offline=False,
                       dagformat='balanced', rawleaves=False,
@@ -822,6 +865,62 @@ class IPFSOperator(object):
             self.debug(err.message)
             return None
 
+    async def ldInline(self, dagData):
+        # In-line the JSON-LD contexts for JSON-LD usage
+
+        async def process(data):
+            if isinstance(data, dict):
+                for objKey, objValue in data.items():
+                    if objKey == '@context' and isinstance(objValue, dict):
+                        link = objValue.get('/')
+                        if not link:
+                            continue
+
+                        try:
+                            ctx = await self.client.cat(link)
+                            if data:
+                                data.update(json.loads(ctx.decode()))
+                        except Exception as err:
+                            self.debug(str(err))
+                    else:
+                        await process(objValue)
+            elif isinstance(data, list):
+                for stuff in data:
+                    await process(stuff)
+
+            return data
+
+        return await process(dagData)
+
+    async def ldContext(self, cName: str, source=None,
+                        key=None):
+        specPath = os.path.join(
+            os.path.dirname(__file__),
+            'contexts',
+            '{context}'.format(
+                context=cName
+            )
+        )
+
+        if not os.path.isfile(specPath):
+            return None
+
+        try:
+            with open(specPath, 'r') as fd:
+                data = fd.read()
+
+            entry = await self.addString(data)
+        except Exception as err:
+            self.debug(str(err))
+        else:
+            return self.ipld(entry)
+
+    def ipld(self, cid):
+        if isinstance(cid, str):
+            return {"/": cid}
+        elif isinstance(cid, dict) and 'Hash' in cid:
+            return {"/": cid['Hash']}
+
     async def catObject(self, path, offset=None, length=None, timeout=30):
         try:
             data = await self.waitFor(
@@ -903,6 +1002,8 @@ class IPFSOperator(object):
         :param int nproviders: max number of providers to look for
         """
         try:
+            self.debug('finding providers for: {}'.format(cid))
+
             async for prov in self.client.dht.findprovs(
                     cid, verbose=verbose,
                     numproviders=nproviders):
@@ -918,6 +1019,9 @@ class IPFSOperator(object):
         except aioipfs.APIError as err:
             self.debug('findProviders: {}'.format(str(err.message)))
             return False
+        except Exception as gerr:
+            self.debug('findProviders: unknown error: {}'.format(
+                str(gerr)))
 
     async def whoProvides(self, key, numproviders=20, timeout=20):
         """

@@ -107,8 +107,6 @@ class QReaderIPFSQrDecoder(ImageReader):
         :param bytes data: Raw image data or Pillow image
         :rtype: list
         """
-        # if not isinstance(data, bytes):
-        #    raise Exception('Need bytes')
 
         if isinstance(data, bytes):
             image = self._getImage(data)

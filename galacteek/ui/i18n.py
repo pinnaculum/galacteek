@@ -57,6 +57,11 @@ def iIPServices():
 # Space jargon
 
 
+def iIPHandle():
+    return QCoreApplication.translate(
+        'GalacteekWindow', 'IP handle')
+
+
 def iConstellation():
     return QCoreApplication.translate(
         'GalacteekWindow', 'Constellation')

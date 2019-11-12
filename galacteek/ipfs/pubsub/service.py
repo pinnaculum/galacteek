@@ -357,7 +357,6 @@ class PSPeersService(JSONPubsubService):
     def __init__(self, ipfsCtx, client):
         super().__init__(ipfsCtx, client, topic=TOPIC_PEERS,
                          runPeriodic=True,
-                         minMsgTsDiff=10,
                          filterSelfMessages=False)
 
         self._curProfile = None
@@ -395,7 +394,7 @@ class PSPeersService(JSONPubsubService):
         nodeId = op.ctx.node.id
         uInfo = profile.userInfo
 
-        msg = PeerIdentMessageV3.make(
+        msg = await PeerIdentMessageV3.make(
             nodeId,
             profile.dagUser.dagCid,
             profile.keyRootId,

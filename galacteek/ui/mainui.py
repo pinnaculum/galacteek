@@ -1,5 +1,4 @@
 import functools
-import os.path
 
 from logbook import Handler
 from logbook import StringFormatterHandlerMixin
@@ -45,7 +44,6 @@ from galacteek.ui import mediaplayer
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.cidhelpers import IPFSPath
-from galacteek.ipfs.cidhelpers import joinIpns
 
 from galacteek.core.orbitdb import GalacteekOrbitConnector
 from galacteek.dweb.page import HashmarksPage, DWebView, WebTab
@@ -75,6 +73,7 @@ from .feeds import AtomFeedsView
 from .textedit import TextEditorTab
 from .iprofile import ProfileEditDialog
 from .iprofile import ProfileButton
+from .peers import PeersServiceSearchDock
 from .pubsub import PubsubSnifferWidget
 from .pyramids import MultihashPyramidsToolBar
 from .quickaccess import QuickAccessToolBar
@@ -512,6 +511,11 @@ class MainWindow(QMainWindow):
                                     shortcut=QKeySequence('Ctrl+0'),
                                     triggered=self.openPsniffTab)
 
+        self.searchServicesAction = QAction('Search services',
+                                            self,
+                                            shortcut=QKeySequence('Ctrl+i'),
+                                            triggered=self.onSearchServices)
+
         self.editorOpenAction = QAction(getIcon('text-editor.png'),
                                         iTextEditor(),
                                         triggered=self.addEditorTab)
@@ -551,6 +555,8 @@ class MainWindow(QMainWindow):
 
         self.browseButton.menu.addAction(self.browseAction)
         self.browseButton.menu.addAction(self.browseAutopinAction)
+        self.browseButton.menu.addSeparator()
+        self.browseButton.menu.addAction(self.searchServicesAction)
         self.browseButton.menu.addSeparator()
         self.browseButton.menu.addAction(self.editorOpenAction)
         self.browseButton.menu.addSeparator()
@@ -597,9 +603,6 @@ class MainWindow(QMainWindow):
         self.profileMenu.addAction(iconProfile,
                                    'Edit profile',
                                    self.onProfileEditDialog)
-        self.profileMenu.addAction(getIcon('go-home.png'),
-                                   'View homepage',
-                                   self.onProfileViewHomepage)
         self.profileMenu.addSeparator()
 
         self.userWebsiteManager = userwebsite.UserWebsiteManager(
@@ -629,6 +632,7 @@ class MainWindow(QMainWindow):
 
         # Peers button
         self.peersButton = QToolButton(self)
+        self.peersButton.setToolTip('Peers')
         self.peersButton.setIcon(getIcon('peers.png'))
         self.peersButton.clicked.connect(self.onPeersMgrClicked)
 
@@ -696,6 +700,7 @@ class MainWindow(QMainWindow):
         self.toolbarMain.addWidget(self.hashmarkMgrButton)
         self.toolbarMain.addWidget(self.hashmarksSearcher)
         self.toolbarMain.addWidget(self.profileEditButton)
+        self.toolbarMain.addWidget(self.peersButton)
         self.toolbarMain.addWidget(self.atomButton)
 
         self.toolbarMain.addSeparator()
@@ -711,8 +716,6 @@ class MainWindow(QMainWindow):
         self.toolbarMain.addWidget(self.toolbarTools)
         self.toolbarMain.addSeparator()
         self.toolbarMain.addWidget(self.qaToolbar)
-
-        self.toolbarTools.addWidget(self.peersButton)
 
         self.toolbarMain.actionStatuses = self.toolbarMain.addAction(
             'Statuses')
@@ -805,6 +808,11 @@ class MainWindow(QMainWindow):
         self.timerStatus.start(20000)
 
         self.enableButtons(False)
+
+        # Docks
+        self.pSearchDock = PeersServiceSearchDock(self.app.peersTracker, self)
+        self.pSearchDock.setAllowedAreas(Qt.BottomDockWidgetArea)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.pSearchDock)
 
         # Connect the IPFS context signals
         self.app.ipfsCtx.ipfsConnectionReady.connect(self.onConnReady)
@@ -905,7 +913,7 @@ class MainWindow(QMainWindow):
 
     def onProfileEditDialog(self):
         runDialog(ProfileEditDialog, self.app.ipfsCtx.currentProfile,
-                  title='Profile Edit dialog')
+                  title='IP profile')
 
     def onProfileWebsiteUpdated(self):
         self.profileEditButton.setStyleSheet('''
@@ -946,10 +954,6 @@ class MainWindow(QMainWindow):
                 if filesM:
                     filesM.setupModel()
                     filesM.pathSelectorDefault()
-
-    def onProfileViewHomepage(self):
-        self.addBrowserTab().browseFsPath(os.path.join(
-            joinIpns(self.app.ipfsCtx.currentProfile.keyRootId), 'index.html'))
 
     def onProfilesList(self, pList):
         currentList = [action.data() for action in
@@ -1404,3 +1408,6 @@ class MainWindow(QMainWindow):
         # TODO
         # Called when an object was served by the native IPFS scheme handler
         pass
+
+    def onSearchServices(self):
+        self.pSearchDock.searchMode()

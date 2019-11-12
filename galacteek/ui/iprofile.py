@@ -4,9 +4,11 @@ from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import QPoint
 from PyQt5.QtCore import QRect
 from PyQt5.QtCore import QUrl
+from PyQt5.QtCore import QSize
+from PyQt5.QtCore import Qt
+
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QDialog
-from PyQt5.QtWidgets import QPushButton
 from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtWidgets import QToolTip
 
@@ -15,21 +17,28 @@ from PyQt5.QtGui import QImage
 
 from galacteek import asyncify
 from galacteek import ensure
-from galacteek import partialEnsure
 from galacteek import log
 from galacteek.ipfs.wrappers import ipfsOp
+from galacteek.ipfs.cidhelpers import joinIpns
+from galacteek.ipfs.cidhelpers import IPFSPath
+from galacteek.core.iphandle import ipHandleUsername
+from galacteek.core.iphandle import ipHandleGen
+from galacteek.core.iphandle import SpaceHandle
 
 from galacteek.crypto.qrcode import IPFSQrEncoder
 
 from galacteek.ipfs.pubsub import TOPIC_PEERS
 from galacteek.ipfs.pubsub.messages import PeerIpHandleChosen
 
+from .dids import buildIpServicesMenu
 from .helpers import filesSelectImages
 from .helpers import getIcon
 from .helpers import questionBox
+from .clips import RotatingCubeClipSimple
 from .widgets import PopupToolButton
 from . import ui_profileeditdialog
 from .i18n import iUnknown
+from .i18n import iIPServices
 
 
 def iNoSmartContract():
@@ -50,7 +59,7 @@ def iNoSmartContract():
         ''')
 
 
-def iProfileInfo(vPlanet, ipHandle, did):
+def iIdentityInfo(vPlanet, ipHandle, did):
     return QCoreApplication.translate(
         'GalacteekWindow',
         '''<p>
@@ -63,7 +72,7 @@ def iProfileInfo(vPlanet, ipHandle, did):
            <p>
             DID: <b>{2}</b>
            </p>
-        ''').format(vPlanet.lower(), ipHandle, did)
+        ''').format(vPlanet.lower() if vPlanet else iUnknown(), ipHandle, did)
 
 
 class ProfileButton(PopupToolButton):
@@ -83,6 +92,7 @@ class ProfileButton(PopupToolButton):
         self.updateToolTip(self.curProfile)
 
         profile.userInfo.changed.connect(self.onInfoChanged)
+        profile.identityChanged.connectTo(self.onIdentityChanged)
 
         if profile.userWebsite:
             profile.userWebsite.websiteUpdated.connectTo(
@@ -97,14 +107,40 @@ class ProfileButton(PopupToolButton):
                 self, QRect(0, 0, 0, 0), 1800
             )
 
+        for action in self.menu.actions():
+            if action.text() == iIPServices():
+                self.menu.removeAction(action)
+
+        ipid = await self.curProfile.userInfo.ipIdentifier()
+        if ipid:
+            menu = await buildIpServicesMenu(ipid, parent=self.menu)
+            menu.triggered.connect(self.onIpServiceTriggered)
+            self.menu.addMenu(menu)
+
+    def onIpServiceTriggered(self, action):
+        service = action.data()
+        ipfsPath = IPFSPath(service.endpoint)
+
+        if ipfsPath.valid:
+            ensure(self.app.resourceOpener.open(ipfsPath,
+                                                openingFrom='didlocal'))
+
+    async def onIdentityChanged(self, identityUid: str, personDid: str):
+        log.debug('Profile IPID object is {}'.format(self.curProfile.ipid))
+
+        menu = buildIpServicesMenu(self.curProfile.ipid)
+        self.menu.addMenu(menu)
+
     def onInfoChanged(self):
         ensure(self.curProfile.userWebsite.updateAboutPage())
         self.updateToolTip(self.curProfile)
 
     def updateToolTip(self, profile):
-        self.setToolTip(iProfileInfo(
+        spaceHandle = SpaceHandle(profile.userInfo.iphandle)
+
+        self.setToolTip(iIdentityInfo(
             profile.userInfo.vplanet,
-            profile.userInfo.iphandle,
+            spaceHandle.human if spaceHandle.valid else iUnknown(),
             profile.userInfo.personDid
         ))
 
@@ -137,6 +173,8 @@ class ProfileEditDialog(QDialog):
 
         self.ui.labelWarning.setStyleSheet(
             'QLabel { font-weight: bold; }')
+        self.ui.labelInfo.setStyleSheet(
+            'QLabel { font-weight: bold; }')
         self.ui.labelWarning.linkActivated.connect(
             self.onLabelAnchorClicked
         )
@@ -144,6 +182,8 @@ class ProfileEditDialog(QDialog):
         self.ui.profileDid.setText('<b>{0}</b>'.format(
             self.profile.userInfo.personDid))
 
+        self.ui.lockButton.toggled.connect(self.onLockChange)
+        self.ui.lockButton.setChecked(True)
         self.ui.changeIconButton.clicked.connect(self.changeIcon)
         self.ui.updateButton.clicked.connect(self.save)
         self.ui.updateButton.setEnabled(False)
@@ -156,33 +196,42 @@ class ProfileEditDialog(QDialog):
 
         ensure(self.loadIpHandlesContract())
 
+    def enableDialog(self, toggle=True):
+        self.ui.pEditTabWidget.setEnabled(toggle)
+        self.setEnabled(toggle)
+
+    def onLockChange(self, toggled):
+        self.ui.vPlanet.setEnabled(not toggled)
+        self.ui.username.setEnabled(not toggled)
+
     def onLabelAnchorClicked(self, url):
         self.app.mainWindow.addBrowserTab().enterUrl(QUrl(url))
 
     def infoMessage(self, text):
-        self.ui.labelWarning.setText(text)
+        self.ui.labelInfo.setText(text)
 
     def onEdited(self, text):
         if text and self.ui.username.isEnabled():
             self.ui.updateButton.setEnabled(True)
 
     def updateProfile(self):
-        self.ui.username.setText(self.profile.userInfo.username)
+        spaceHandle = SpaceHandle(self.profile.userInfo.iphandle)
 
-        if self.profile.userInfo.vplanet:
-            self.ui.vPlanet.setCurrentText(self.profile.userInfo.vplanet)
+        if spaceHandle.valid:
+            self.ui.username.setText(ipHandleUsername(
+                self.profile.userInfo.iphandle
+            ))
+            self.ui.username.setText(spaceHandle.username)
+            self.ui.vPlanet.setCurrentText(spaceHandle.vPlanet)
 
-        if self.profile.userInfo.iphandle:
             self.ui.ipHandle.setText(
-                '<b>{0}</b>'.format(self.profile.userInfo.iphandle))
+                '<b>{0}</b>'.format(str(spaceHandle)))
+
+            self.ui.profileDid.setText('<b>{0}</b>'.format(
+                self.profile.userInfo.personDid))
         else:
             self.ui.ipHandle.setText(iUnknown())
-
-        self.ui.profileDid.setText('<b>{0}</b>'.format(
-            self.profile.userInfo.personDid))
-
-    def updateAvatarCid(self):
-        pass
+            self.ui.profileDid.setText('<b>{0}</b>'.format(iUnknown()))
 
     def reloadIcon(self):
         ensure(self.loadIcon())
@@ -204,7 +253,7 @@ class ProfileEditDialog(QDialog):
 
     @asyncify
     async def loadIcon(self):
-        avatar = await self.profile.userInfo.getAvatar()
+        avatar = await self.profile.userInfo.identityDagGet('avatar')
 
         if isinstance(avatar, bytes):
             try:
@@ -227,11 +276,10 @@ class ProfileEditDialog(QDialog):
             return
 
         async with self.profile.userInfo as dag:
-            dag.root['avatar'] = dag.mkLink(entry['Hash'])
+            dag.curIdentity['avatar'] = dag.mkLink(entry['Hash'])
 
         await op.sleep(2)
         await self.loadIcon()
-        self.updateAvatarCid()
 
     def save(self):
         if self.profile.userInfo.iphandleValid:
@@ -241,6 +289,7 @@ class ProfileEditDialog(QDialog):
                                ):
                 return
 
+        self.enableDialog(toggle=False)
         ensure(self.saveProfile())
 
     @ipfsOp
@@ -250,13 +299,12 @@ class ProfileEditDialog(QDialog):
         msg = PeerIpHandleChosen.make(
             ipfsop.ctx.node.id,
             iphandle,
-            qrRaw['Hash'],
+            None,
             qrPng['Hash'],
         )
 
         async with profile.userInfo as userInfo:
-            userInfo.root['iphandleqr']['raw'] = userInfo.mkLink(qrRaw)
-            userInfo.root['iphandleqr']['png'] = userInfo.mkLink(qrPng)
+            userInfo.curIdentity['iphandleqr']['png'] = userInfo.mkLink(qrPng)
 
         await ipfsop.ctx.pubsub.send(TOPIC_PEERS, msg)
 
@@ -272,6 +320,7 @@ class ProfileEditDialog(QDialog):
 
             encoder.add(entry['Hash'])
             encoder.add(self.profile.userInfo.personDid)
+            encoder.add(joinIpns(ipfsop.ctx.node.id))
             return await encoder.encodeAndStore(format=format)
         except Exception:
             # TODO
@@ -279,7 +328,6 @@ class ProfileEditDialog(QDialog):
 
     async def loadIpHandlesContract(self):
         if not await self.app.ethereum.connected():
-            self.setLimitedControls()
             return
 
         cOperator = self.getIpHandlesOp()
@@ -287,24 +335,13 @@ class ProfileEditDialog(QDialog):
         if cOperator:
             self.ui.vPlanet.setEnabled(True)
         else:
-            # If we can't load the smart contract,
-            # you're stuck on Magrathea
-
-            self.setLimitedControls()
+            pass
 
     def setLimitedControls(self):
         self.ui.labelWarning.setText(iNoSmartContract())
-        self.loadPlanets(planetsList=['Magrathea'])
         self.ui.vPlanet.setEnabled(False)
         self.ui.username.setEnabled(False)
         self.ui.updateButton.setEnabled(False)
-
-        if not self.profile.userInfo.iphandleValid:
-            btn = QPushButton('Create temporary DID', self)
-            btn.clicked.connect(
-                partialEnsure(self.generateTemporaryDid(btn)))
-            btn.setMaximumWidth(200)
-            self.ui.hLayoutTmp.addWidget(btn)
 
     def getIpHandlesOp(self):
         return self.app.ethereum.getDefaultLoadedOperator('iphandles')
@@ -323,6 +360,7 @@ class ProfileEditDialog(QDialog):
         )
 
         if not ret:
+            log.debug('Could not register Handle: {}'.format(iphandle))
             return False
 
         msg = PeerIpHandleChosen.make(
@@ -333,8 +371,8 @@ class ProfileEditDialog(QDialog):
         )
 
         async with profile.userInfo as userInfo:
-            userInfo.root['iphandleqr']['raw'] = userInfo.mkLink(qrRaw)
-            userInfo.root['iphandleqr']['png'] = userInfo.mkLink(qrPng)
+            userInfo.curIdentity['iphandleqr']['raw'] = userInfo.mkLink(qrRaw)
+            userInfo.curIdentity['iphandleqr']['png'] = userInfo.mkLink(qrPng)
 
         await ipfsop.ctx.pubsub.send(TOPIC_PEERS, msg)
 
@@ -351,17 +389,15 @@ class ProfileEditDialog(QDialog):
         return not exists, rawQr, rawQrPng
 
     @ipfsOp
-    async def ipHandleAvailableIpfs(self, ipfsop, iphandle):
+    async def localHandleAvailable(self, ipfsop, iphandle):
         log.debug('Checking if {} is available ..'.format(iphandle))
-        # entry = await ipfsop.addString(iphandle, only_hash=True)
-        # entry = await self.encodeIpHandleQr(iphandle, filename=iphandle)
-        rawQr = await self.encodeIpHandleQr(iphandle, filename=iphandle,
-                                            format='raw')
 
-        if not rawQr:
-            return (False, None, None)
+        qrPng = await self.profile.userInfo.encodeIpHandleQr(
+            iphandle,
+            self.profile.userInfo.personDid
+        )
 
-        providers = await ipfsop.whoProvides(rawQr['Hash'], timeout=10)
+        providers = await ipfsop.whoProvides(qrPng['Hash'], timeout=5)
         log.debug('Providers: {!r}'.format(providers))
 
         def isOurself(providers):
@@ -372,10 +408,8 @@ class ProfileEditDialog(QDialog):
             return False
 
         if len(providers) == 0 or isOurself(providers):
-            rawQrPng = await self.encodeIpHandleQr(
-                iphandle, filename=iphandle, format='png')
             await ipfsop.addString(iphandle)
-            return (True, rawQr, rawQrPng)
+            return (True, None, qrPng)
         else:
             return (False, None, None)
 
@@ -396,38 +430,50 @@ class ProfileEditDialog(QDialog):
                 rid=str(r.randint(1, 199))
             )
 
-    @ipfsOp
-    async def generateTemporaryDid(self, ipfsop, btn):
-        btn.hide()
+    def peeredIpHandlesGen(self, peerId, vPlanet, username,
+                           onlyrand=False, randcount=9):
+        yield ipHandleGen(username, vPlanet, peerId=peerId)
 
-        username = 'dwebnoname'
+        for att in range(0, randcount):
+            yield ipHandleGen(username, vPlanet, peerId=peerId, rand=True)
+
+    @ipfsOp
+    async def generatePeeredIdentity(self, ipfsop):
+        username = self.ui.username.text().strip()
         vPlanet = self.ui.vPlanet.currentText()
 
-        self.infoMessage('Generating temporary DID ...')
-
         await ipfsop.ctx.pubsub.services[TOPIC_PEERS].sendLogoutMessage()
-        await self.profile.createIpIdentifier(
-            updateProfile=True)
-
-        for iphandle in self.ipHandlesGen(
-                vPlanet, username, onlyrand=True):
-            avail, qrRaw, qrPng = await self.ipHandleAvailableIpfs(
+        for iphandle in self.peeredIpHandlesGen(
+                ipfsop.ctx.node.id,
+                vPlanet, username):
+            avail, qrRaw, qrPng = await self.localHandleAvailable(
                 iphandle)
             if avail:
                 await self.ipHandleLockIpfs(iphandle, qrRaw, qrPng)
-                break
 
-        async with self.profile.userInfo as dag:
-            dag.root['username'] = username
-            dag.root['vplanet'] = vPlanet
-            dag.root['iphandle'] = iphandle
+                await self.profile.createIpIdentifier(
+                    iphandle=iphandle,
+                    updateProfile=True,
+                    peered=True
+                )
+
+                break
 
         self.ui.updateButton.setEnabled(False)
         self.infoMessage('Your IP handle and DID were updated')
         self.updateProfile()
 
+        return True
+
     @ipfsOp
     async def saveProfile(self, ipfsop):
+        clip = RotatingCubeClipSimple()
+        clip.setScaledSize(QSize(48, 48))
+        clip.start()
+
+        self.ui.labelInfo.setAlignment(Qt.AlignCenter)
+        self.ui.labelInfo.setMovie(clip)
+
         username = self.ui.username.text().strip()
         vPlanet = self.ui.vPlanet.currentText()
         available = False
@@ -435,12 +481,17 @@ class ProfileEditDialog(QDialog):
         await ipfsop.ctx.pubsub.services[TOPIC_PEERS].sendLogoutMessage()
         self.profile.userInfo.root['iphandle'] = None
 
-        identifier = await self.profile.createIpIdentifier(
-            updateProfile=True)
-
-        log.debug('Created IPID {}'.format(identifier.did))
+        if not await self.app.ethereum.connected():
+            if await self.generatePeeredIdentity():
+                self.enableDialog()
+                return
+            else:
+                self.infoMessage('This handle is not available')
 
         if await self.app.ethereum.connected():
+            identifier = await self.profile.createIpIdentifier(
+                updateProfile=True)
+            log.debug('Created IPID {}'.format(identifier.did))
             for iphandle in self.ipHandlesGen(vPlanet, username):
                 avail, qrRaw, qrPng = await self.ipHandleAvailable(iphandle)
                 if avail:
@@ -450,16 +501,18 @@ class ProfileEditDialog(QDialog):
 
         if not available:
             self.infoMessage('This handle is not available')
+            self.enableDialog()
             return
 
         async with self.profile.userInfo as dag:
-            dag.root['username'] = username
-            dag.root['vplanet'] = vPlanet
-            dag.root['iphandle'] = iphandle
+            dag.curIdentity['username'] = username
+            dag.curIdentity['vplanet'] = vPlanet
+            dag.curIdentity['iphandle'] = iphandle
 
         self.ui.updateButton.setEnabled(False)
         self.infoMessage('Your IP handle and DID were updated')
         self.updateProfile()
+        self.enableDialog()
 
     def reject(self):
         self.done(0)

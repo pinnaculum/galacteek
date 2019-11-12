@@ -460,7 +460,7 @@ class IPFSSearchHandler(QObject):
         cid = hit['hash']
         path = joinIpfs(cid)
 
-        stat = await ipfsop.objStatCtxUpdate(path, timeout=self.noStatTimeout)
+        mType, stat = await self.app.rscAnalyzer(path)
         if stat:
             self.objectStatAvailable.emit(cid, stat, hit)
 

@@ -580,6 +580,7 @@ class GalacteekApplication(QApplication):
         self.ipfsClient = client
         self.ipfsCtx.ipfsClient = client
         self.ipfsOpMain = self.getIpfsOperator()
+        self.ipfsOpMain.ipidManager = self.ipidManager
 
         IPFSOpRegistry.regDefault(self.ipfsOpMain)
 
