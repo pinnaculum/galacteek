@@ -2,21 +2,23 @@ import asyncio
 import os.path
 import json
 import re
+import time
+
 from urllib.parse import urlencode
 
 from galacteek import AsyncSignal
+from galacteek import ensure
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import stripIpfs
 from galacteek.ipfs.cidhelpers import joinIpns
+from galacteek.ipfs.dag import DAGOperations
 from galacteek.did import ipidIdentRe
 from galacteek.did import didExplode
 from galacteek.did import normedUtcDate
+from galacteek.core.ldloader import aioipfs_document_loader
+from galacteek.core import asyncjsonld as jsonld
 
 from galacteek import log
-
-
-didSpecPath = os.path.join(
-    os.path.dirname(__file__), 'contexts', 'did-v1.jsonld')
 
 
 def ipidFormatValid(did):
@@ -94,7 +96,7 @@ class IPService:
         )
 
 
-class IPIdentifier:
+class IPIdentifier(DAGOperations):
     """
     InterPlanetary IDentifier (decentralized identity)
 
@@ -106,9 +108,15 @@ class IPIdentifier:
         self._document = {}
         self._docCid = None
         self._localId = localId
+        self._lastResolve = None
+        self._latestModified = None
 
         # Async sigs
         self.sChanged = AsyncSignal(str)
+
+    @property
+    def dagCid(self):
+        return self.docCid
 
     @property
     def docCid(self):
@@ -137,6 +145,10 @@ class IPIdentifier:
         exploded = didExplode(self.did)
         if exploded and exploded['method'] == 'ipid':
             return exploded['id']
+
+    @property
+    def latestModified(self):
+        return self._latestModified
 
     def message(self, msg, level='debug'):
         getattr(log, level)('IPID ({loc}) ({did}): {msg}'.format(
@@ -178,6 +190,28 @@ class IPIdentifier:
 
         print(json.dumps(self.doc, indent=4))
 
+    @ipfsOp
+    async def inline(self, ipfsop):
+        # In-line the JSON-LD contexts in the DAG for JSON-LD usage
+
+        return await ipfsop.ldInline(await self.get())
+
+    @ipfsOp
+    async def expand(self, ipfsop):
+        """
+        Perform a JSON-LD expansion on the DID document
+        """
+        try:
+            expanded = await jsonld.expand(await self.inline(), {
+                'documentLoader': await aioipfs_document_loader(ipfsop.client)
+            })
+
+            if expanded:
+                return expanded.pop()
+        except Exception as err:
+            self.message('Error expanding DID document: {}'.format(
+                str(err)))
+
     async def update(self, obj: dict, publish=False):
         self._document.update(obj)
         await self.updateDocument(self.doc, publish=publish)
@@ -195,6 +229,26 @@ class IPIdentifier:
 
         self._document['service'].append(service)
         await self.updateDocument(self.doc, publish=publish)
+
+    @ipfsOp
+    async def addServiceContexted(self, ipfsop, service: dict, publish=True):
+        sid = service.get('id')
+        assert isinstance(sid, str)
+
+        didEx = didExplode(sid)
+        assert didEx is not None
+
+        if await self.searchServiceById(sid) is not None:
+            raise IPIDServiceException(
+                'An IP service already exists with this ID')
+
+        srvCtx = await ipfsop.ldContext('IpfsObjectEndpoint')
+
+        if srvCtx:
+            service['serviceEndpoint']['@context'] = srvCtx
+
+            self._document['service'].append(service)
+            await self.updateDocument(self.doc, publish=publish)
 
     @ipfsOp
     async def updateDocument(self, ipfsop, document, publish=False):
@@ -218,7 +272,7 @@ class IPIdentifier:
             self.docCid = cid
 
             if publish:
-                await self.publish()
+                ensure(self.publish())
 
             await self.sChanged.emit(cid)
         else:
@@ -231,12 +285,14 @@ class IPIdentifier:
         return await ipfsop.nameResolve(
             joinIpns(self.ipnsKey),
             timeout=resolveTimeout,
+            cache='always',
             useCache=useCache,
-            maxCacheLifetime=60 * 60 * 5
-        )
+            maxCacheLifetime=60 * 60 * 5)
 
     async def refresh(self):
-        await self.load()
+        if not self._lastResolve or \
+                (time.time() - self._lastResolve) > 60 * 5:
+            return await self.load()
 
     @ipfsOp
     async def load(self, ipfsop, pin=True, resolveTimeout=30):
@@ -245,6 +301,8 @@ class IPIdentifier:
         if not resolved:
             self.message('Failed to resolve ?')
             return False
+
+        self._lastResolve = time.time()
 
         dagCid = stripIpfs(resolved['Path'])
 
@@ -265,7 +323,9 @@ class IPIdentifier:
 
         if doc:
             self._document = doc
+            self._latestModified = doc.get('modified')
             self.docCid = dagCid
+            await self.sChanged.emit(dagCid)
             return True
 
         return False
@@ -288,7 +348,6 @@ class IPIdentifier:
             if await ipfsop.publish(self.docCid,
                                     key=self.ipnsKey,
                                     lifetime='96h',
-                                    allow_offline=True,
                                     cache='always',
                                     cacheOrigin='ipidmanager',
                                     timeout=timeout):
@@ -403,6 +462,13 @@ class IPIDManager:
                 async for srv in ipid.searchServices(term):
                     yield srv
 
+    async def getServiceById(self, _id: str):
+        with await self._lock:
+            for did, ipid in self._managedIdentifiers.items():
+                srv = await ipid.searchServiceById(_id)
+                if srv:
+                    return srv
+
     async def trackingTask(self):
         while True:
             await asyncio.sleep(60 * 5)
@@ -465,10 +531,7 @@ class IPIDManager:
 
         # Initial document
         initialDoc = {
-            "@context": {
-                "/":
-                "bafkreiewxn2t3qadfxabcnne3av4hj7vhlxus2rtl7eh3gfrmnozi7vn6u"
-            },
+            "@context": await ipfsop.ldContext('did-v0.11'),
             "publicKey": [{
                 "id": "{did}#keys-1".format(did=didId),
                 "type": "RsaVerificationKey2018",
@@ -481,6 +544,9 @@ class IPIDManager:
         }
 
         await identifier.updateDocument(initialDoc)
+
+        # Set the did context in the DAG
+        # await identifier.ldContext('did-v0.11')
 
         # Update the document with the IPID and auth section
         await identifier.update({
@@ -496,7 +562,7 @@ class IPIDManager:
         })
 
         # Publish the DID document to the key
-        await identifier.publish()
+        ensure(identifier.publish())
 
         if track:
             await self.track(identifier)

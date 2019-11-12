@@ -40,10 +40,15 @@ class AsyncSignal(UserList):
 
         for receiver in self:
             try:
-                await receiver(*args, **kwargs)
+                if isinstance(receiver, functools.partial) and \
+                        asyncio.iscoroutinefunction(receiver.func):
+                    await receiver.func(*(args + receiver.args), **kwargs)
+                else:
+                    await receiver(*args, **kwargs)
             except Exception as err:
-                log.debug('{!r}: Exception when emitting signal: {}'.format(
+                log.debug('{!r}: exception when emitting signal: {}'.format(
                     self, str(err)))
+                continue
 
 
 def ensure(coro, **kw):
@@ -63,6 +68,11 @@ def soonish(cbk, *args, **kw):
     """ Soon. Or a bit later .. """
     loop = kw.pop('loop', asyncio.get_event_loop())
     loop.call_soon(functools.partial(cbk, *args, **kw))
+
+
+def ensureLater(delay: int, coro, *args, **kw):
+    loop = asyncio.get_event_loop()
+    loop.call_later(delay, ensure, coro(*args, **kw))
 
 
 class asyncify:

@@ -232,7 +232,7 @@ class IPFSResourceOpener(QObject):
             return self.app.mainWindow.addBrowserTab(
                 minProfile=minWebProfile).browseFsPath(ipfsPath)
 
-        if openingFrom in ['filemanager', 'qa']:
+        if openingFrom in ['filemanager', 'qa', 'didlocal']:
             self.needUserConfirm.emit(ipfsPath, mimeType, True)
         else:
             self.needUserConfirm.emit(ipfsPath, mimeType, False)

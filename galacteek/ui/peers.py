@@ -5,7 +5,14 @@ import functools
 from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtWidgets import QHeaderView
+from PyQt5.QtWidgets import QCompleter
+from PyQt5.QtWidgets import QLineEdit
+from PyQt5.QtWidgets import QDockWidget
+from PyQt5.QtWidgets import QSizePolicy
+from PyQt5.QtWidgets import QLabel
 from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QAbstractItemView
+from PyQt5.QtWidgets import QHBoxLayout
 
 from PyQt5.QtCore import QAbstractItemModel
 from PyQt5.QtCore import QModelIndex
@@ -14,7 +21,8 @@ from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import QUrl
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QVariant
-from PyQt5.QtWidgets import QAbstractItemView
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtGui import QPixmap
 
 from galacteek import ensure
 from galacteek import partialEnsure
@@ -24,16 +32,19 @@ from galacteek.ipfs.cidhelpers import *
 from galacteek.ipfs.ipfsops import *
 from galacteek.core.modelhelpers import *
 from galacteek.core.models import BaseAbstractItem
+from galacteek.core.iphandle import SpaceHandle
 from galacteek.dweb.atom import DWEB_ATOM_FEEDFN
+from galacteek.did import didExplode
 
 from . import ui_peersmgr
 from .widgets import *
 from .helpers import *
 from .dialogs import *
-from .i18n import iVirtualPlanet
 from .i18n import iIPIDLong
 from .i18n import iIPServices
 from .i18n import iFollow
+from .i18n import iUnknown
+from .i18n import iIPHandle
 
 
 def iUsername():
@@ -57,15 +68,19 @@ def iInvalidDagCID(dagCid):
                                       'Invalid DAG CID: {0}').format(dagCid)
 
 
-def iPeerToolTip(peerId, did):
+def iPeerToolTip(peerId, ipHandle, did, validated):
     return QCoreApplication.translate(
         'PeersManager',
         '''
         <p>
-            <b>{0}</b>
-            <b>{1}</b>
+            Peer ID: {0}
         </p>
-        ''').format(peerId, did)
+        <p>Space Handle: {1}</p>
+        <p>DID: <b>{2}</b></p>
+        <p>{3}</p>
+        </p>
+        ''').format(peerId, ipHandle, did,
+                    'QR Validated' if validated is True else 'Not validated')
 
 
 class PeerBaseItem(BaseAbstractItem):
@@ -79,17 +94,25 @@ class PeerTreeItem(PeerBaseItem):
         self.ctx = peerCtx
 
     def columnCount(self):
-        return 4
+        return 2
 
     def userData(self, column):
         return self.ctx.peerId
 
     def tooltip(self, col):
-        return iPeerToolTip(self.ctx.peerId, self.ctx.ipid.did)
+        handle = SpaceHandle(self.ctx.ident.iphandle)
+        return iPeerToolTip(
+            self.ctx.peerId, str(handle), self.ctx.ipid.did,
+            self.ctx.validated)
 
     def data(self, column):
+        handle = self.ctx.spaceHandle
+
         if column == 0:
-            return self.ctx.ident.iphandle
+            if handle.valid:
+                return handle.short
+            else:
+                return iUnknown()
         if column == 1:
             return self.ctx.ipid.did
         if column == 2:
@@ -99,17 +122,50 @@ class PeerTreeItem(PeerBaseItem):
 
         return QVariant(None)
 
+    async def updateServices(self):
+        esids = [it.service.id for it in self.childItems]
+
+        async for service in self.ctx.discoverServices():
+            if service.id in esids:
+                continue
+
+            pSItem = PeerServiceTreeItem(service, parent=self)
+            self.appendChild(pSItem)
+
+
+class PeerServiceTreeItem(PeerBaseItem):
+    def __init__(self, service, parent=None):
+        super().__init__(parent=parent)
+        self.service = service
+        self.peerItem = parent
+
+    def columnCount(self):
+        return 2
+
+    def userData(self, column):
+        return None
+
+    def data(self, column):
+        handle = self.peerItem.ctx.spaceHandle
+        exploded = didExplode(self.service.id)
+
+        if column == 0:
+            if exploded['path']:
+                return os.path.join(handle.short,
+                                    exploded['path'].lstrip('/'))
+        if column == 1:
+            return str(self.service.id)
+
+        return QVariant(None)
+
 
 class PeersModel(QAbstractItemModel):
     def __init__(self, parent=None):
         super(PeersModel, self).__init__(parent)
 
         self.rootItem = PeerBaseItem([
-            iUsername(),
-            iIPIDLong(),
-            iPingAvg(),
-            iVirtualPlanet(),
-            ''
+            iIPHandle(),
+            iIPIDLong()
         ])
         self.lock = asyncio.Lock()
 
@@ -147,7 +203,7 @@ class PeersModel(QAbstractItemModel):
         if role == Qt.UserRole:
             return item.userData(index.column())
 
-        elif role == Qt.DisplayRole:
+        elif role == Qt.DisplayRole or role == Qt.EditRole:
             return item.data(index.column())
 
         elif role == Qt.ToolTipRole:
@@ -223,6 +279,15 @@ class PeersModel(QAbstractItemModel):
 
         return success
 
+    async def peerLookup(self, peerId):
+        with await self.lock:
+            for item in self.rootItem.childItems:
+                if not isinstance(item, PeerTreeItem):
+                    continue
+
+                if item.ctx.peerId == peerId:
+                    return item
+
 
 class PeersTracker:
     def __init__(self, ctx):
@@ -232,6 +297,7 @@ class PeersTracker:
         self.ctx.peers.changed.connectTo(self.onPeersChange)
         self.ctx.peers.peerAdded.connectTo(self.onPeerAdded)
         self.ctx.peers.peerModified.connectTo(self.onPeerModified)
+        self.ctx.peers.peerDidModified.connectTo(self.onPeerDidModified)
         self.ctx.peers.peerLogout.connectTo(self.onPeerLogout)
 
     async def onPeerLogout(self, peerId):
@@ -245,7 +311,14 @@ class PeersTracker:
                         del item
 
     async def onPeerModified(self, peerId):
-        self.model.modelReset.emit()
+        pass
+
+    async def onPeerDidModified(self, peerId, modified):
+        if modified:
+            peerItem = await self.model.peerLookup(peerId)
+            if peerItem:
+                await peerItem.updateServices()
+                self.model.modelReset.emit()
 
     async def onPeerAdded(self, peerId):
         peerCtx = self.ctx.peers.getByPeerId(peerId)
@@ -259,10 +332,116 @@ class PeersTracker:
             peerItem = PeerTreeItem(peerCtx, parent=self.model.rootItem)
 
             self.model.rootItem.appendChild(peerItem)
+
+            async for service in peerCtx.discoverServices():
+                pSItem = PeerServiceTreeItem(service, parent=peerItem)
+                peerItem.appendChild(pSItem)
+
             self.model.modelReset.emit()
 
     async def onPeersChange(self):
         pass
+
+
+class PeersServicesCompleter(QCompleter):
+    def splitPath(self, path):
+        hop = path.split('/')
+        return hop
+
+    def pathFromIndex(self, index):
+        data = self.model().data(index, Qt.EditRole)
+        return data
+
+
+class PeersServiceSearcher(QLineEdit):
+    serviceEntered = pyqtSignal(str)
+
+    def __init__(self, model, parent):
+        super().__init__(parent)
+
+        self.setClearButtonEnabled(True)
+        self.setObjectName('ipServicesSearcher')
+
+        self.app = QApplication.instance()
+        self.model = model
+
+        self.completer = PeersServicesCompleter(self)
+        self.completer.setModel(model)
+        self.completer.setModelSorting(QCompleter.UnsortedModel)
+        self.completer.setWidget(self)
+        self.completer.setCaseSensitivity(Qt.CaseInsensitive)
+        self.completer.setCompletionColumn(0)
+        self.completer.setCompletionMode(QCompleter.PopupCompletion)
+        self.completer.activated.connect(self.onCompletion)
+        self.setCompleter(self.completer)
+        self.returnPressed.connect(self.onCompletionAccess)
+
+    def onCompletionAccess(self):
+        service = self.text()
+
+        idxes = modelSearch(self.model, search=service)
+        if len(idxes) == 1:
+            self.clear()
+            idx = idxes.pop()
+            idxId = self.model.index(idx.row(), 1, idx.parent())
+            _id = self.model.data(idxId, Qt.DisplayRole)
+            self.serviceEntered.emit(_id)
+            ensure(self.accessPeerService(_id))
+
+    @ipfsOp
+    async def accessPeerService(self, ipfsop, serviceId):
+        self.clear()
+        pService = await ipfsop.ipidManager.getServiceById(serviceId)
+        await self.app.resourceOpener.open(pService.endpoint)
+
+    def onCompletion(self, text):
+        pass
+
+
+class PeersServiceSearchDockWidget(QWidget):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.hLayout = QHBoxLayout()
+        self.setLayout(self.hLayout)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        self.hide()
+
+
+class PeersServiceSearchDock(QDockWidget):
+    def __init__(self, peersTracker, parent):
+        super(PeersServiceSearchDock, self).__init__('Services search', parent)
+
+        self.setObjectName('ipServicesSearchDock')
+
+        self.peersTracker = peersTracker
+        self.setFeatures(QDockWidget.NoDockWidgetFeatures)
+
+        self.label = QLabel(self)
+        self.label.setPixmap(
+            QPixmap(':/share/icons/ipservice.png').scaled(32, 32))
+
+        self.searcher = PeersServiceSearcher(self.peersTracker.model, self)
+        self.searcher.serviceEntered.connect(self.onServiceEntered)
+
+        self.w = PeersServiceSearchDockWidget(self)
+        self.w.hLayout.addWidget(self.label)
+        self.w.hLayout.addWidget(self.searcher)
+        self.w.hide()
+
+        self.setWidget(self.w)
+        # self.setWidget(self.searcher)
+        self.searcher.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        self.hide()
+
+    def onServiceEntered(self, serviceId):
+        self.w.setVisible(False)
+        self.setVisible(False)
+
+    def searchMode(self):
+        self.w.setVisible(True)
+        self.setVisible(True)
+        self.searcher.setFocus(Qt.OtherFocusReason)
 
 
 class PeersManager(GalacteekTab):
@@ -277,21 +456,22 @@ class PeersManager(GalacteekTab):
         self.ui = ui_peersmgr.Ui_PeersManager()
         self.ui.setupUi(self.peersWidget)
 
-        self.ui.tree.setModel(self.peersTracker.model)
+        self.ui.peersMgrView.setModel(self.peersTracker.model)
 
-        self.ui.tree.header().setSectionResizeMode(
+        self.ui.peersMgrView.header().setSectionResizeMode(
             0, QHeaderView.ResizeToContents)
-        self.ui.tree.header().setSectionResizeMode(
+        self.ui.peersMgrView.header().setSectionResizeMode(
             1, QHeaderView.ResizeToContents)
-        self.ui.tree.header().setSectionResizeMode(
-            2, QHeaderView.ResizeToContents)
 
-        self.ui.tree.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.ui.tree.customContextMenuRequested.connect(self.onContextMenu)
-        self.ui.tree.doubleClicked.connect(self.onDoubleClick)
-        self.ui.tree.setDragDropMode(QAbstractItemView.DragOnly)
+        self.ui.peersMgrView.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.ui.peersMgrView.customContextMenuRequested.connect(
+            self.onContextMenu)
+        self.ui.peersMgrView.doubleClicked.connect(self.onDoubleClick)
+        self.ui.peersMgrView.setDragDropMode(QAbstractItemView.DragOnly)
 
-        self.ui.search.returnPressed.connect(self.onSearch)
+        self.peersSearcher = PeersServiceSearcher(
+            self.peersTracker.model, self)
+        self.ui.hLayoutTop.addWidget(self.peersSearcher)
 
         self.app.ipfsCtx.peers.changed.connectTo(self.onPeersChange)
         self.app.ipfsCtx.peers.peerAdded.connectTo(self.onPeerAdded)
@@ -300,11 +480,6 @@ class PeersManager(GalacteekTab):
     def model(self):
         return self.peersTracker.model
 
-    def onSearch(self):
-        search = self.ui.search.text()
-        if len(search) > 0:
-            self.ui.tree.keyboardSearch(search)
-
     async def onPeersChange(self):
         pass
 
@@ -312,7 +487,7 @@ class PeersManager(GalacteekTab):
         pass
 
     def onContextMenu(self, point):
-        idx = self.ui.tree.indexAt(point)
+        idx = self.ui.peersMgrView.indexAt(point)
         if not idx.isValid():
             return
 
@@ -322,7 +497,7 @@ class PeersManager(GalacteekTab):
         def menuBuilt(future):
             try:
                 menu = future.result()
-                menu.exec(self.ui.tree.mapToGlobal(point))
+                menu.exec(self.ui.peersMgrView.mapToGlobal(point))
             except Exception:
                 pass
 
@@ -377,26 +552,17 @@ class PeersManager(GalacteekTab):
             self.gWindow.addBrowserTab().browseFsPath(ipfsPath)
 
     def onDoubleClick(self, idx):
-        # XXX
-        # return
-
-        peerId = self.model.data(idx, Qt.UserRole)
-        peerCtx = self.peersTracker.ctx.peers.getByPeerId(peerId)
-
-        if peerCtx:
-            ensure(self.explorePeerHome(peerCtx))
+        pass
 
     @ipfsOp
     async def onFollowPeer(self, ipfsop, peerCtx):
         profile = ipfsop.ctx.currentProfile
 
         if profile.ipid != peerCtx.ipid:
-            async with profile.userInfo as dag:
-                section = dag.root['following'].setdefault('main', [])
-                section.append({
-                    'iphandle': peerCtx.ident.iphandle,
-                    'did': peerCtx.ipid.did
-                })
+            await profile.userInfo.follow(
+                peerCtx.ipid.did,
+                peerCtx.ident.iphandle
+            )
 
     @ipfsOp
     async def followPeerFeed(self, op, peerCtx):

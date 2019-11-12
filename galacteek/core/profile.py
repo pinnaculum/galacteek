@@ -3,6 +3,8 @@ import os.path
 import asyncio
 import time
 import re
+import uuid
+import getpass
 
 import aiofiles
 
@@ -25,8 +27,10 @@ from galacteek.ipfs.pubsub.messages import ChatRoomMessage
 from galacteek.ipfs.dag import EvolvingDAG
 
 from galacteek.did.ipid import IPIDManager
+from galacteek.did import didIdentRe
 
-from galacteek.core.iphandle import ipHandleRe
+from galacteek.core.iphandle import ipHandleGen
+from galacteek.core.iphandle import SpaceHandle
 from galacteek.core.asynclib import asyncReadFile
 from galacteek.core.orbitdb import OrbitConfigMap
 from galacteek.core.orbitdbcfg import defaultOrbitConfigMap
@@ -38,8 +42,11 @@ from galacteek.core.userdag import UserDAG
 from galacteek.core.userdag import UserWebsite
 from galacteek.core import utcDatetimeIso
 
+from galacteek.crypto.qrcode import IPFSQrEncoder
+
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import joinIpns
+from galacteek.ipfs.cidhelpers import joinIpfs
 
 from galacteek.dweb import render
 
@@ -74,70 +81,188 @@ class IPHandlesDAG(EvolvingDAG):
 
 
 class UserProfileEDAG(EvolvingDAG):
+    IDENTFLAG_READONLY = 1 << 1
+
     def initDag(self):
+        now = utcDatetimeIso()
+
         return {
-            'username': None,
-            'email': None,
-
-            'iphandle': None,
-            'iphandleqr': {},
-
-            'vplanet': 'Earth',
-
-            # DIDS
-            'personDid': None,
-            'identities': [],
-
+            'identities': {},
             'following': {},
+            'currentIdentityUid': None,
 
-            'avatar': None,
-            'bio': None,
-
-            'crypto': {},
-            'created': utcDatetimeIso(),
-            'modified': utcDatetimeIso()
+            'datecreated': now,
+            'datemodified': now
         }
 
     @property
+    def curIdentity(self):
+        if self.root['currentIdentityUid']:
+            return self.root['identities'].get(
+                self.root['currentIdentityUid'])
+
+    @property
     def username(self):
-        return self.root['username']
+        return self.identityAttr('username')
 
     @property
     def email(self):
-        return self.root['email']
+        return self.identityAttr('email')
 
     @property
     def iphandle(self):
-        return self.root['iphandle']
-
-    @property
-    def iphandleqrpng(self):
-        return self.root['iphandleqr'].get('png')
+        return self.identityAttr('iphandle')
 
     @property
     def iphandleValid(self):
-        if isinstance(self.iphandle, str):
-            return ipHandleRe.match(self.iphandle) is not None
+        return SpaceHandle(self.iphandle).valid
 
     @property
     def personDid(self):
-        return self.root['personDid']
+        return self.identityAttr('personDid')
 
     @property
     def vplanet(self):
-        return self.root['vplanet']
+        return self.identityAttr('vplanet')
 
     @property
     def avatar(self):
-        return self.root['avatar']
+        return self.identityAttr('avatar')
+
+    def identityAttr(self, attr):
+        if self.curIdentity:
+            return self.curIdentity.get(attr)
+
+    @ipfsOp
+    async def identityResolve(self, ipfsop, path):
+        if self.curIdentity:
+            return await self.resolve(os.path.join(
+                'identities',
+                self.root['currentIdentityUid'],
+                path)
+            )
+
+    @ipfsOp
+    async def identityDagGet(self, ipfsop, path, identityUid=None):
+        return await self.get(os.path.join(
+            'identities',
+            identityUid if identityUid else self.root['currentIdentityUid'],
+            path)
+        )
 
     @ipfsOp
     async def getAvatar(self, ipfsop):
         return await self.get('avatar')
 
-    def whoFollowing(self, section='main'):
-        contacts = self.root['following'].setdefault(section, [])
-        return contacts
+    async def follow(self, did, iphandle):
+        log.debug('Following {}'.format(did))
+
+        async with self as uInfo:
+            section = uInfo.curIdentity['following'].setdefault('main', {})
+            section[did] = {
+                'iphandle': iphandle
+            }
+
+    async def followingAll(self, section='main'):
+        node = await self.identityDagGet('following/{}'.format(section))
+
+        if isinstance(node, dict):
+            for did, info in node.items():
+                yield did, info
+
+    @ipfsOp
+    async def createIdentity(self, ipfsop, peered=False,
+                             personDid=None, setAsCurrent=True,
+                             iphandle=None,
+                             bio=None,
+                             flags=None):
+        # You never know ..
+
+        uid = str(uuid.uuid4())
+        while uid in self.root['identities'].keys():
+            uid = str(uuid.uuid4())
+
+        pFlags = flags if isinstance(flags, int) else 0
+
+        qr = await self.encodeIpHandleQr(
+            iphandle, personDid
+        )
+
+        bioEntry = await ipfsop.addString(
+            bio if bio else '# Bio')
+
+        identity = {
+            'email': None,
+            'flags': pFlags,
+
+            'iphandle': iphandle,
+            'iphandleqr': {
+                'png': self.mkLink(qr)
+            },
+
+            'vplanet': 'Earth',
+
+            # DIDS
+            'personDid': personDid,
+            'following': {},
+
+            'avatar': None,
+            'bio': self.mkLink(bioEntry),
+
+            'crypto': {},
+            'datecreated': utcDatetimeIso(),
+            'datemodified': utcDatetimeIso()
+        }
+
+        async with self as dag:
+            dag.root['identities'][uid] = identity
+
+            if setAsCurrent:
+                dag.root['currentIdentityUid'] = uid
+
+        log.debug('Created identity', uid)
+        return uid, dag.root['identities'][uid]
+
+    @ipfsOp
+    async def createIdentityPeered(self, ipfsop, **kw):
+        return await self.createIdentity(
+            peered=True,
+            **kw
+        )
+
+    @ipfsOp
+    async def ipIdentifier(self, ipfsop):
+        if self.personDid:
+            return await ipfsop.ipidManager.load(
+                self.personDid,
+                timeout=5,
+                localIdentifier=True
+            )
+
+    @ipfsOp
+    async def encodeIpHandleQr(self, ipfsop,
+                               iphandle,
+                               did,
+                               format='png',
+                               filename=None):
+        encoder = IPFSQrEncoder()
+
+        try:
+            entry = await ipfsop.addString(iphandle, pin=True, only_hash=True)
+            if not entry:
+                return
+
+            await ipfsop.sleep()
+
+            encoder.add(joinIpfs(entry['Hash']))
+            encoder.add(joinIpns(ipfsop.ctx.node.id))
+
+            if didIdentRe.match(did):
+                encoder.add(did)
+
+            return await encoder.encodeAndStore(format=format)
+        except Exception:
+            pass
 
 
 class ProfileError(Exception):
@@ -231,6 +356,8 @@ class UserProfile(QObject):
     qrImageEncoded = AsyncSignal(bool, str)
     webPageSaved = AsyncSignal(dict, str)
 
+    identityChanged = AsyncSignal(str, str)
+
     def __init__(self, ctx, name, rootDir):
         super(UserProfile, self).__init__()
 
@@ -270,6 +397,7 @@ class UserProfile(QObject):
 
         self.qrImageEncoded.connectTo(self.onQrImageEncoded)
         self.webPageSaved.connectTo(self.onWebPageSaved)
+        self.identityChanged.connectTo(self.onIdentitySwitch)
 
     def debug(self, msg):
         log.debug('Profile {0}: {1}'.format(self.name, msg))
@@ -589,11 +717,21 @@ class UserProfile(QObject):
             )
             await self.userInfo.load()
 
-            if len(self.userInfo.root['identities']) == 0:
-                self.userLogInfo('Creating IPID')
+            if not self.userInfo.curIdentity:
+                await self.createIpIdentifier(
+                    iphandle=ipHandleGen(
+                        getpass.getuser(),
+                        'Earth',
+                        peerId=op.ctx.node.id
+                    )
+                )
 
-                await self.createIpIdentifier(updateProfile=True)
-            else:
+            await self.identityChanged.emit(
+                self.userInfo.root['currentIdentityUid'],
+                self.userInfo.curIdentity['personDid']
+            )
+
+            if self.userInfo.curIdentity:
                 # Load our IPID with low resolve timeout
                 self.ipid = await self.ctx.app.ipidManager.load(
                     self.userInfo.personDid,
@@ -606,10 +744,29 @@ class UserProfile(QObject):
     def ipIdentifierKeyName(self, idx: int):
         return 'galacteek.{0}.dids.{1}'.format(self.name, idx)
 
+    async def onIdentitySwitch(self, identityUid, did):
+        self.debug('Identity switched to DID {} !'.format(did))
+        if self.userInfo.curIdentity:
+            # Load our IPID with low resolve timeout
+            self.ipid = await self.ctx.app.ipidManager.load(
+                did,
+                timeout=5,
+                localIdentifier=True
+            )
+
     @ipfsOp
     async def createIpIdentifier(self, ipfsop,
                                  ipnsKey=None,
+                                 peered=False,
+                                 iphandle=None,
                                  updateProfile=False):
+        if not iphandle:
+            iphandle = ipHandleGen(
+                'auto',
+                'Earth',
+                peerId=ipfsop.ctx.node.id
+            )
+
         try:
             keysNames = await ipfsop.keysNames()
             useKeyIdx = 0
@@ -635,14 +792,21 @@ class UserProfile(QObject):
             self.userLogInfo('Generated IPID with DID: {did}'.format(
                 did=did.did))
 
-            if updateProfile:
-                async with self.userInfo as dag:
-                    dag.root['identities'].append({
-                        'did': did.did
-                    })
-                    dag.root['personDid'] = did.did
+            if peered:
+                uid, identity = await self.userInfo.createIdentityPeered(
+                    iphandle=iphandle,
+                    personDid=did.did
+                )
+            else:
+                uid, identity = await self.userInfo.createIdentity(
+                    iphandle=iphandle,
+                    personDid=did.did,
+                    setAsCurrent=True,
+                )
 
-                self.ipid = did
+            self.userLogInfo('Current Identity UUID now is {}'.format(uid))
+
+            self.ipid = did
 
             # Register the blog as an IP service on the DID
             blogPath = IPFSPath(joinIpns(self.keyRootId)).child('blog')
@@ -650,9 +814,8 @@ class UserProfile(QObject):
                 'id': did.didUrl(path='/blog'),
                 'type': 'DwebBlogService',
                 'serviceEndpoint': blogPath.ipfsUrl
-            })
+            }, publish=True)
 
-            await did.publish()
             return did
 
     @ipfsOp
@@ -745,7 +908,7 @@ class UserProfile(QObject):
         self.debug('Publishing DAG CID {}'.format(self.dagUser.dagCid))
 
         result = await op.publish(self.dagUser.dagCid, key=self.keyRoot,
-                                  allow_offline=True, lifetime='48h')
+                                  lifetime='48h')
 
         if result is None:
             self.debug('DAG publish failed')

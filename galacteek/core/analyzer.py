@@ -18,6 +18,7 @@ class ResourceAnalyzer(QObject):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.app = QApplication.instance()
+        self.qrDecoder = IPFSQrDecoder()
 
     @ipfsOp
     async def __call__(self, ipfsop, pathRef):
@@ -73,11 +74,12 @@ class ResourceAnalyzer(QObject):
             if data is None:
                 return
 
-            # Decode the QR codes in the image if there's any
-            qrDecoder = IPFSQrDecoder()
-            if not qrDecoder:
+            if not self.qrDecoder:
+                # No QR decoding support
                 return
 
-            return qrDecoder.decode(data)
+            # Decode the QR codes in the image if there's any
+            return await self.app.loop.run_in_executor(
+                self.app.executor, self.qrDecoder.decode, data)
         except aioipfs.APIError:
             pass

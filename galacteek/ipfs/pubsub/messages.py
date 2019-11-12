@@ -11,6 +11,7 @@ from galacteek.core import utcDatetimeIso
 from galacteek.core.iphandle import ipHandleRe
 from galacteek.core.jtraverse import traverseParser
 from galacteek.ipfs.cidhelpers import ipfsCid32Re
+from galacteek.ipfs.cidhelpers import stripIpfs
 from galacteek.did import ipidIdentRe
 
 
@@ -501,22 +502,10 @@ class PeerIdentMessageV3(PubsubMessage):
                                     "iphandleqrpngcid",
                                     "persondid"
                                 ]
-                            },
-                            "publicdag": {
-                                "type": "object",
-                                "properties": {
-                                    "cid": {"type": "string"},
-                                    "ipns": {"type": "string"},
-                                    "available": {"type": "boolean"}
-                                },
-                                "required": [
-                                    "ipns",
-                                    "cid"
-                                ],
                             }
                         },
                         "required": [
-                            "publicdag"
+                            "identity"
                         ],
                     }
                 },
@@ -526,32 +515,28 @@ class PeerIdentMessageV3(PubsubMessage):
     }
 
     @staticmethod
-    def make(peerId, userDagCid, userDagIpns, userInfo):
-        p2pServices = []
-        qrPngNode = userInfo.iphandleqrpng
+    async def make(peerId, userDagCid, userDagIpns, userInfo,
+                   p2pServices=None):
+        p2pServices = p2pServices if p2pServices else []
+        qrPngNodeCid = stripIpfs(
+            await userInfo.identityResolve('iphandleqr/png')
+        )
 
         msg = PeerIdentMessageV3({
             'msgtype': PeerIdentMessageV3.TYPE,
             'date': utcDatetimeIso(),
-            'version': 3,
             'msg': {
                 'peerid': peerId,
                 'user': {
                     'identity': {
                         'vplanet': userInfo.vplanet,
                         'iphandle': userInfo.iphandle,
-                        'iphandleqrpngcid':
-                            qrPngNode.get('/') if qrPngNode else None,
+                        'iphandleqrpngcid': qrPngNodeCid,
                         'persondid': userInfo.personDid,
                         'orgs': []
                     },
-                    'publicdag': {
-                        'cid': userDagCid,
-                        'available': True,
-                        'ipns': userDagIpns if userDagIpns else ''
-                    },
-                },
-                'p2pservices': p2pServices
+                    'p2pservices': p2pServices
+                }
             }
         })
         return msg
@@ -565,6 +550,10 @@ class PeerIdentMessageV3(PubsubMessage):
         return self.jsonAttr('msg.user.identity.iphandle')
 
     @property
+    def iphandleqrpngcid(self):
+        return self.jsonAttr('msg.user.identity.iphandleqrpngcid')
+
+    @property
     def vplanet(self):
         return self.jsonAttr('msg.user.identity.vplanet')
 
@@ -574,14 +563,6 @@ class PeerIdentMessageV3(PubsubMessage):
 
     def dateMessage(self):
         return self.jsonAttr('date')
-
-    @property
-    def dagCid(self):
-        return self.jsonAttr('msg.user.publicdag.cid')
-
-    @property
-    def dagIpns(self):
-        return self.jsonAttr('msg.user.publicdag.ipns')
 
     @property
     def msgdata(self):
@@ -611,12 +592,10 @@ class PeerIpHandleChosen(PubsubMessage):
                         "type": "string",
                         "pattern": ipHandleRe.pattern
                     },
-                    "iphandleqrrawcid": {"type": "string"},
-                    "iphandleqrpngcid": {"type": "string"},
+                    "iphandleqrpngcid": {"type": "string"}
                 },
                 "required": [
                     "iphandle",
-                    "iphandleqrrawcid",
                     "iphandleqrpngcid"
                 ]
             }

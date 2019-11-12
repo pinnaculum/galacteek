@@ -19,6 +19,7 @@ from PyQt5.QtCore import QBuffer
 from PyQt5.QtCore import QPoint
 
 from galacteek import ensure
+from galacteek import ensureLater
 from galacteek import log
 from galacteek import logUser
 from galacteek import AsyncSignal
@@ -657,7 +658,6 @@ class MultihashPyramidToolButton(PopupToolButton):
         return await ipfsop.publish(
             objPath,
             key=self.pyramid.ipnsKey,
-            allow_offline=self.pyramid.ipnsAllowOffline,
             lifetime=self.pyramid.ipnsLifetime,
             timeout=self._publishTimeout
         )
@@ -771,24 +771,25 @@ class MultihashPyramidToolButton(PopupToolButton):
             unpublishedMax = None
 
         while self.active:
+            await asyncio.sleep(60)
+
             if self.pyramidion:
                 if self.publishedLast is None:
                     # Publish on startup after random delay
                     rand = random.Random()
                     delay = rand.randint(5, 30)
 
-                    self.app.loop.call_later(
-                        delay, ensure,
-                        self.needsPublish.emit(self.pyramidion,
-                                               False))
+                    ensureLater(
+                        delay,
+                        self.needsPublish.emit, self.pyramidion,
+                        False
+                    )
 
                 if isinstance(self.publishedLast, datetime):
                     delta = datetime.now() - self.publishedLast
 
                     if unpublishedMax and delta.seconds > unpublishedMax:
                         await self.needsPublish.emit(self.pyramidion, True)
-
-            await asyncio.sleep(3600)
 
 
 class EDAGBuildingPyramidController(MultihashPyramidToolButton):
@@ -900,6 +901,12 @@ class GalleryDAG(EvolvingDAG):
 class GalleryPyramidController(EDAGBuildingPyramidController):
     edagClass = GalleryDAG
 
+    def __init__(self, *args, **kw):
+        super(GalleryPyramidController, self).__init__(
+            *args, **kw)
+
+        self.fileDropped.connect(self.onFileDropped)
+
     @property
     def indexPath(self):
         return IPFSPath(self.pyramid.latest, autoCidConv=True).child(
@@ -908,6 +915,15 @@ class GalleryPyramidController(EDAGBuildingPyramidController):
     @property
     def indexIpnsPath(self):
         return self.ipnsKeyPath.child('index.html')
+
+    def onFileDropped(self, url):
+        ensure(self.dropEventLocalFile(url))
+
+    @ipfsOp
+    async def dropEventLocalFile(self, ipfsop, url):
+        entry = await self.importDroppedFileFromUrl(url)
+        if entry:
+            await self.analyzeImageObject(IPFSPath(entry['Hash']))
 
     def onObjectDropped(self, ipfsPath):
         ensure(self.analyzeImageObject(ipfsPath))
@@ -968,8 +984,9 @@ class GalleryPyramidController(EDAGBuildingPyramidController):
         try:
             await profile.ipid.addServiceRaw({
                 'id': profile.ipid.didUrl(
-                    path='/galleries',
-                    params={'galleryname': self.pyramid.name}
+                    path='/galleries/{name}'.format(
+                        name=self.pyramid.name
+                    )
                 ),
                 'type': IPService.SRV_TYPE_GALLERY,
                 'serviceEndpoint': self.indexIpnsPath.ipfsUrl
