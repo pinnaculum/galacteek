@@ -91,9 +91,10 @@ rm -rf share/{info,man}
 popd
 popd
 
-# generate .dmg
-HOMEBREW_NO_AUTO_UPDATE=1 brew install homebrew/linuxbrew-core/create-dmg
+# Get the create-dmg repo
+git clone https://github.com/andreyvit/create-dmg $HOME/create-dmg
 
+# generate .dmg
 create-dmg --hdiutil-verbose --volname "galacteek-${VERSION}" \
     --volicon "${OLD_CWD}"/share/icons/galacteek.icns \
     --hide-extension galacteek.app Galacteek-$VERSION.dmg "$BUILD_DIR"/

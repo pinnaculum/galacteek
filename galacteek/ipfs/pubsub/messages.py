@@ -516,6 +516,7 @@ class PeerIdentMessageV3(PubsubMessage):
 
     @staticmethod
     async def make(peerId, userDagCid, userDagIpns, userInfo,
+                   personDid, personDidCurCid,
                    p2pServices=None):
         p2pServices = p2pServices if p2pServices else []
         qrPngNodeCid = stripIpfs(
@@ -533,6 +534,7 @@ class PeerIdentMessageV3(PubsubMessage):
                         'iphandle': userInfo.iphandle,
                         'iphandleqrpngcid': qrPngNodeCid,
                         'persondid': userInfo.personDid,
+                        'persondidcurrentcid': personDidCurCid,
                         'orgs': []
                     },
                     'p2pservices': p2pServices
@@ -558,8 +560,12 @@ class PeerIdentMessageV3(PubsubMessage):
         return self.jsonAttr('msg.user.identity.vplanet')
 
     @property
-    def userDid(self):
+    def personDid(self):
         return self.jsonAttr('msg.user.identity.persondid')
+
+    @property
+    def personDidCurCid(self):
+        return self.jsonAttr('msg.user.identity.persondidcurrentcid')
 
     def dateMessage(self):
         return self.jsonAttr('date')

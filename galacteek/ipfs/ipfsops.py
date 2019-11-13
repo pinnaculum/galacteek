@@ -573,7 +573,8 @@ class IPFSOperator(object):
             return None
         else:
             if cache and resolved:
-                await self.nsCacheSet(path, resolved, origin=cacheOrigin)
+                await self.nsCacheSet(
+                    path, resolved['Path'], origin=cacheOrigin)
 
             return resolved
 
