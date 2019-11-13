@@ -164,7 +164,7 @@ class Peers:
             now = int(time.time())
             avgPing = await op.waitFor(op.pingAvg(iMsg.peer, count=2), 5)
 
-            personDid = iMsg.userDid
+            personDid = iMsg.personDid
 
             if not ipidFormatValid(personDid):
                 log.debug('Invalid DID: {}'.format(personDid))
@@ -196,7 +196,9 @@ class Peers:
 
             # Load the IPID
             ipid = await self.app.ipidManager.load(
-                personDid, track=True
+                personDid,
+                initialCid=iMsg.personDidCurCid,
+                track=True
             )
 
             if not ipid:
@@ -258,7 +260,7 @@ class Peers:
                         if computed['Hash'] == stripIpfs(code.objPath):
                             validCodes += 1
                 elif isinstance(code, str) and ipidFormatValid(code) and \
-                        code == iMsg.userDid:
+                        code == iMsg.personDid:
                     validCodes += 1
         except Exception as e:
             log.debug('QR decode error: {}'.format(str(e)))

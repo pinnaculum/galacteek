@@ -394,11 +394,22 @@ class PSPeersService(JSONPubsubService):
         nodeId = op.ctx.node.id
         uInfo = profile.userInfo
 
+        ipid = await op.ipidManager.load(
+            profile.userInfo.personDid,
+            localIdentifier=True
+        )
+
+        if not ipid:
+            logger.debug('Failed to load local DID')
+            return
+
         msg = await PeerIdentMessageV3.make(
             nodeId,
             profile.dagUser.dagCid,
             profile.keyRootId,
-            uInfo
+            uInfo,
+            profile.userInfo.personDid,
+            ipid.docCid
         )
 
         logger.debug('Sending ident message')

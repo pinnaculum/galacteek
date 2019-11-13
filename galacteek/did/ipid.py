@@ -295,16 +295,21 @@ class IPIdentifier(DAGOperations):
             return await self.load()
 
     @ipfsOp
-    async def load(self, ipfsop, pin=True, resolveTimeout=30):
-        resolved = await self.resolve(resolveTimeout=resolveTimeout)
+    async def load(self, ipfsop, pin=True, initialCid=None,
+                   resolveTimeout=30):
+        if not initialCid:
+            resolved = await self.resolve(resolveTimeout=resolveTimeout)
 
-        if not resolved:
-            self.message('Failed to resolve ?')
-            return False
+            if not resolved:
+                self.message('Failed to resolve ?')
+                return False
+
+            dagCid = stripIpfs(resolved['Path'])
+        else:
+            self.message('Loading from initial CID: {}'.format(initialCid))
+            dagCid = initialCid
 
         self._lastResolve = time.time()
-
-        dagCid = stripIpfs(resolved['Path'])
 
         self.message('DID resolves to {}'.format(dagCid))
 
@@ -315,7 +320,7 @@ class IPIdentifier(DAGOperations):
             return False
 
         if pin is True:
-            await ipfsop.pin(resolved['Path'])
+            await ipfsop.pin(dagCid)
 
         self.message('Load: IPNS key resolved to {}'.format(dagCid))
 
@@ -482,6 +487,7 @@ class IPIDManager:
                    did: str,
                    timeout=30,
                    localIdentifier=False,
+                   initialCid=None,
                    track=True):
         if not ipidFormatValid(did):
             return None
@@ -491,7 +497,7 @@ class IPIDManager:
                 return self._managedIdentifiers[did]
 
         ipid = IPIdentifier(did, localId=localIdentifier)
-        if await ipid.load(resolveTimeout=timeout):
+        if await ipid.load(resolveTimeout=timeout, initialCid=initialCid):
             if track:
                 await self.track(ipid)
 
