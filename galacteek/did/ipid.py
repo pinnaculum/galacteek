@@ -42,6 +42,7 @@ class IPService:
 
     SRV_TYPE_DWEBBLOG = 'DwebBlogService'
     SRV_TYPE_GALLERY = 'DwebGalleryService'
+    SRV_TYPE_ATOMFEED = 'DwebAtomFeedService'
     SRV_TYPE_VC = 'VerifiableCredentialService'
     SRV_TYPE_GENERICPYRAMID = 'GalacteekPyramidService'
 
@@ -86,7 +87,7 @@ class IPService:
             srvStr = 'User blog'
         elif self.type == self.SRV_TYPE_GALLERY:
             srvStr = 'Image gallery'
-        elif self.typr == self.SRV_TYPE_GENERICPYRAMID:
+        elif self.type == self.SRV_TYPE_GENERICPYRAMID:
             srvStr = 'Generic pyramid'
         else:
             srvStr = 'Unknown service'
@@ -281,13 +282,14 @@ class IPIdentifier(DAGOperations):
     @ipfsOp
     async def resolve(self, ipfsop, resolveTimeout=30):
         useCache = 'always' if self._localId else 'offline'
+        maxCache = None if self._localId else (60 * 60 * 5)
 
         return await ipfsop.nameResolve(
             joinIpns(self.ipnsKey),
             timeout=resolveTimeout,
             cache='always',
             useCache=useCache,
-            maxCacheLifetime=60 * 60 * 5)
+            maxCacheLifetime=maxCache)
 
     async def refresh(self):
         if not self._lastResolve or \
@@ -336,7 +338,7 @@ class IPIdentifier(DAGOperations):
         return False
 
     @ipfsOp
-    async def publish(self, ipfsop, timeout=30):
+    async def publish(self, ipfsop, timeout=120):
         """
         Publish the DID document to the IPNS key
 
@@ -453,9 +455,10 @@ class IPIdentifier(DAGOperations):
 
 
 class IPIDManager:
-    def __init__(self):
+    def __init__(self, resolveTimeout=60 * 5):
         self._managedIdentifiers = {}
         self._lock = asyncio.Lock()
+        self._resolveTimeout = resolveTimeout
 
     async def track(self, ipid: IPIdentifier):
         with await self._lock:
@@ -485,7 +488,7 @@ class IPIDManager:
     @ipfsOp
     async def load(self, ipfsop,
                    did: str,
-                   timeout=30,
+                   timeout=None,
                    localIdentifier=False,
                    initialCid=None,
                    track=True):
@@ -496,8 +499,10 @@ class IPIDManager:
             if did in self._managedIdentifiers:
                 return self._managedIdentifiers[did]
 
+        rTimeout = timeout if timeout else self._resolveTimeout
+
         ipid = IPIdentifier(did, localId=localIdentifier)
-        if await ipid.load(resolveTimeout=timeout, initialCid=initialCid):
+        if await ipid.load(resolveTimeout=rTimeout, initialCid=initialCid):
             if track:
                 await self.track(ipid)
 

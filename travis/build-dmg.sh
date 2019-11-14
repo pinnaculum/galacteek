@@ -67,6 +67,10 @@ cp $HOME/bin/ipfs galacteek.app/Contents/Resources/bin
 # brew install libmagic
 # cp -av /usr/local/Cellar/libmagic/*/lib/* galacteek.app/Contents/Resources/lib
 
+# zbar install
+brew install zbar
+cp -av /usr/local/Cellar/zbar/*/lib/*.dylib galacteek.app/Contents/Resources/lib
+
 # create entry script for galacteek
 cat > galacteek.app/Contents/MacOS/galacteek <<\EAT
 #!/usr/bin/env bash
@@ -95,6 +99,6 @@ popd
 git clone https://github.com/andreyvit/create-dmg $HOME/create-dmg
 
 # generate .dmg
-create-dmg --hdiutil-verbose --volname "galacteek-${VERSION}" \
+$HOME/create-dmg/create-dmg --hdiutil-verbose --volname "galacteek-${VERSION}" \
     --volicon "${OLD_CWD}"/share/icons/galacteek.icns \
     --hide-extension galacteek.app Galacteek-$VERSION.dmg "$BUILD_DIR"/

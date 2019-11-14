@@ -13,6 +13,8 @@ from galacteek import log
 from galacteek import logUser
 from galacteek import ensure
 
+from galacteek.did.ipid import IPService
+
 from galacteek.dweb.page import PDFViewerPage
 from galacteek.dweb.page import WebTab
 from galacteek.dweb.page import DWebView
@@ -344,3 +346,26 @@ class IPFSResourceOpener(QObject):
             await self.openWithExternal(rscPath, 'xdg-open "%f"')
         elif self.app.system == 'Darwin':
             await self.openWithExternal(rscPath, 'open "%f"')
+
+    @ipfsOp
+    async def browseIpService(self, ipfsop, serviceId):
+        """
+        Browse/open an IP service registered on an IPID
+        """
+
+        logUser.info('Accessing IP service {}'.format(serviceId))
+
+        pService = await ipfsop.ipidManager.getServiceById(serviceId)
+        if not pService:
+            return
+
+        endpoint = pService.endpoint
+
+        if pService.type == IPService.SRV_TYPE_ATOMFEED:
+            await self.app.mainWindow.atomButton.atomFeedSubscribe(
+                str(endpoint)
+            )
+
+        elif isinstance(endpoint, str):
+            path = IPFSPath(endpoint, autoCidConv=True)
+            await self.open(path)

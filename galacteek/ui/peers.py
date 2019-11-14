@@ -391,8 +391,7 @@ class PeersServiceSearcher(QLineEdit):
     @ipfsOp
     async def accessPeerService(self, ipfsop, serviceId):
         self.clear()
-        pService = await ipfsop.ipidManager.getServiceById(serviceId)
-        await self.app.resourceOpener.open(pService.endpoint)
+        await self.app.resourceOpener.browseIpService(serviceId)
 
     def onCompletion(self, text):
         pass
@@ -415,7 +414,7 @@ class PeersServiceSearchDock(QDockWidget):
         self.setObjectName('ipServicesSearchDock')
 
         self.peersTracker = peersTracker
-        self.setFeatures(QDockWidget.NoDockWidgetFeatures)
+        self.setFeatures(QDockWidget.DockWidgetClosable)
 
         self.label = QLabel(self)
         self.label.setPixmap(
@@ -424,22 +423,21 @@ class PeersServiceSearchDock(QDockWidget):
         self.searcher = PeersServiceSearcher(self.peersTracker.model, self)
         self.searcher.serviceEntered.connect(self.onServiceEntered)
 
-        self.w = PeersServiceSearchDockWidget(self)
-        self.w.hLayout.addWidget(self.label)
-        self.w.hLayout.addWidget(self.searcher)
-        self.w.hide()
+        self.searchWidget = PeersServiceSearchDockWidget(self)
+        self.searchWidget.hLayout.addWidget(self.label)
+        self.searchWidget.hLayout.addWidget(self.searcher)
+        self.searchWidget.hide()
 
-        self.setWidget(self.w)
-        # self.setWidget(self.searcher)
+        self.setWidget(self.searchWidget)
         self.searcher.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         self.hide()
 
     def onServiceEntered(self, serviceId):
-        self.w.setVisible(False)
+        self.searchWidget.setVisible(False)
         self.setVisible(False)
 
     def searchMode(self):
-        self.w.setVisible(True)
+        self.searchWidget.setVisible(True)
         self.setVisible(True)
         self.searcher.setFocus(Qt.OtherFocusReason)
 
@@ -552,7 +550,14 @@ class PeersManager(GalacteekTab):
             self.gWindow.addBrowserTab().browseFsPath(ipfsPath)
 
     def onDoubleClick(self, idx):
-        pass
+        didData = self.model.data(
+            self.model.sibling(idx.row(), 1, idx),
+            Qt.DisplayRole)
+        ensure(self.accessPeerService(didData))
+
+    @ipfsOp
+    async def accessPeerService(self, ipfsop, serviceId):
+        await self.app.resourceOpener.browseIpService(serviceId)
 
     @ipfsOp
     async def onFollowPeer(self, ipfsop, peerCtx):
