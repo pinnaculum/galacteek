@@ -10,6 +10,7 @@ CFG_SECTION_HISTORY = 'history'
 CFG_SECTION_USERINFO = 'userinfo'
 CFG_SECTION_ETHEREUM = 'ethereum'
 CFG_SECTION_ORBITDB = 'orbitdb'
+CFG_SECTION_IPID = 'ipid'
 
 CFG_KEY_ENABLED = 'enabled'
 
@@ -44,6 +45,7 @@ CFG_KEY_TIMEOUTURLEDIT = 'timeouturledit'
 # IPFS
 CFG_KEY_PUBSUB = 'pubsub'
 CFG_KEY_HASHMARKSEXCH = 'hashmarksexch'
+CFG_KEY_IPNSRESOLVETIMEOUT = 'ipnsresolvetimeout'
 
 # UI
 CFG_KEY_WRAPSINGLEFILES = 'wrapsinglefiles'
@@ -115,6 +117,12 @@ def setDefaultSettings(gApp):
     section = CFG_SECTION_IPFS
     sManager.setDefaultTrue(section, CFG_KEY_PUBSUB)
     sManager.setDefaultTrue(section, CFG_KEY_HASHMARKSEXCH)
+    sManager.setDefaultSetting(
+        section, CFG_KEY_IPNSRESOLVETIMEOUT, int(60 * 5))
+
+    section = CFG_SECTION_IPID
+    sManager.setDefaultSetting(
+        section, CFG_KEY_IPNSRESOLVETIMEOUT, int(60 * 5))
 
     section = CFG_SECTION_UI
     sManager.setDefaultTrue(section, CFG_KEY_WRAPSINGLEFILES)
@@ -287,3 +295,11 @@ class SettingsManager(object):
     @property
     def defaultWebProfile(self):
         return self.getSetting(CFG_SECTION_BROWSER, CFG_KEY_DEFAULTWEBPROFILE)
+
+    @property
+    def defaultIpnsTimeout(self):
+        return self.getInt(CFG_SECTION_IPFS, CFG_KEY_IPNSRESOLVETIMEOUT)
+
+    @property
+    def ipidIpnsTimeout(self):
+        return self.getInt(CFG_SECTION_IPID, CFG_KEY_IPNSRESOLVETIMEOUT)

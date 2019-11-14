@@ -511,7 +511,8 @@ class MainWindow(QMainWindow):
                                     shortcut=QKeySequence('Ctrl+0'),
                                     triggered=self.openPsniffTab)
 
-        self.searchServicesAction = QAction('Search services',
+        self.searchServicesAction = QAction(getIcon('ipservice.png'),
+                                            'Search IP services',
                                             self,
                                             shortcut=QKeySequence('Ctrl+i'),
                                             triggered=self.onSearchServices)

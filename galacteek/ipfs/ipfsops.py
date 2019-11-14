@@ -7,6 +7,8 @@ import tempfile
 import uuid
 import aiofiles
 
+from PyQt5.QtCore import QFile
+
 import async_timeout
 
 from galacteek.ipfs.cidhelpers import joinIpfs
@@ -529,7 +531,7 @@ class IPFSOperator(object):
         if isinstance(entry, dict):
             rLast = entry['resolvedLast']
 
-            if (int(time.time()) - rLast) < maxLifetime:
+            if not maxLifetime or (int(time.time()) - rLast) < maxLifetime:
                 return entry['resolved']
 
     async def nsCacheSet(self, path, resolved, origin=None):
@@ -843,6 +845,18 @@ class IPFSOperator(object):
         except aioipfs.APIError as err:
             self.debug(err.message)
             return None
+
+    async def importQtResource(self, path):
+        rscFile = QFile(':{0}'.format(path))
+
+        try:
+            rscFile.open(QFile.ReadOnly)
+            data = rscFile.readAll().data()
+            entry = await self.addBytes(data)
+        except Exception as e:
+            self.debug('importQtResource: {}'.format(str(e)))
+        else:
+            return entry
 
     async def closestPeers(self):
         peers = []

@@ -403,7 +403,9 @@ class GalacteekApplication(QApplication):
         self.tempDirWeb = self.tempDirCreate(
             self.tempDir.path(), 'webdownloads')
 
-        self.ipidManager = IPIDManager()
+        self.ipidManager = IPIDManager(
+            resolveTimeout=self.settingsMgr.ipidIpnsTimeout
+        )
 
     def tempDirCreate(self, basedir, name=None):
         tmpdir = QDir(basedir)

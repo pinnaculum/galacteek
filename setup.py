@@ -259,6 +259,7 @@ setup(
         'galacteek.dweb',
         'galacteek.dweb.ethereum',
         'galacteek.smartcontracts',
+        'galacteek.space',
         'galacteek.ui',
         'galacteek.ui.orbital'
     ],

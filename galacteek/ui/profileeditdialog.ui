@@ -89,7 +89,7 @@
             <number>16</number>
            </property>
            <property name="clearButtonEnabled">
-            <bool>true</bool>
+            <bool>false</bool>
            </property>
           </widget>
          </item>
@@ -168,20 +168,6 @@
               <string>Change avatar</string>
              </property>
             </widget>
-           </item>
-          </layout>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="tab_3">
-        <attribute name="title">
-         <string>Bio</string>
-        </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_6">
-         <item>
-          <layout class="QVBoxLayout" name="verticalLayout_5">
-           <item>
-            <widget class="QTextEdit" name="bio"/>
            </item>
           </layout>
          </item>

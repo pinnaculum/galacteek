@@ -148,7 +148,9 @@ class UserWebsite:
     @ipfsOp
     async def blogPost(self, ipfsop, title, msg, category=None, author=None):
         async with self.edag:
-            username = self.profile.userInfo.iphandle
+            sHandle = self.profile.userInfo.spaceHandle
+
+            username = sHandle.short
             uid = str(uuid.uuid4())
             postName = title.strip().lower().replace(' ', '-')
 
@@ -161,6 +163,7 @@ class UserWebsite:
 
             postObject = {
                 'blogpost': {
+                    'authordid': self.profile.userInfo.personDid,
                     'body': msg,
                     'title': title,
                     'uuid': uid,
@@ -262,10 +265,12 @@ class UserWebsite:
     def createFeed(self):
         # Create the feed
 
+        sHandle = self.profile.userInfo.spaceHandle
+
         feed = FeedGenerator()
         feed.id(self.siteUrl)
         feed.title("{0}'s dweb space".format(
-            self.profile.userInfo.iphandle))
+            sHandle.short))
         feed.author({
             'name': self.profile.userInfo.iphandle
         })

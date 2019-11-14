@@ -341,7 +341,6 @@ class MultihashPyramidToolButton(PopupToolButton):
         self._pyramidion = None
         self._publishedLast = None
         self._publishFailedCount = 0
-        self._publishTimeout = 60 * 3
         self._pyrToolTip = None
 
         self.setAcceptDrops(True)
@@ -659,7 +658,7 @@ class MultihashPyramidToolButton(PopupToolButton):
             objPath,
             key=self.pyramid.ipnsKey,
             lifetime=self.pyramid.ipnsLifetime,
-            timeout=self._publishTimeout
+            timeout=self.app.settingsMgr.defaultIpnsTimeout
         )
 
     @ipfsOp

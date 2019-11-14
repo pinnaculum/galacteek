@@ -26,7 +26,6 @@ from galacteek.ipfs.pubsub import TOPIC_CHAT
 from galacteek.ipfs.pubsub.messages import ChatRoomMessage
 from galacteek.ipfs.dag import EvolvingDAG
 
-from galacteek.did.ipid import IPIDManager
 from galacteek.did import didIdentRe
 
 from galacteek.core.iphandle import ipHandleGen
@@ -88,7 +87,7 @@ class UserProfileEDAG(EvolvingDAG):
 
         return {
             'identities': {},
-            'following': {},
+            'followingGlobal': {},
             'currentIdentityUid': None,
 
             'datecreated': now,
@@ -112,6 +111,10 @@ class UserProfileEDAG(EvolvingDAG):
     @property
     def iphandle(self):
         return self.identityAttr('iphandle')
+
+    @property
+    def spaceHandle(self):
+        return SpaceHandle(self.iphandle)
 
     @property
     def iphandleValid(self):
@@ -158,17 +161,16 @@ class UserProfileEDAG(EvolvingDAG):
         log.debug('Following {}'.format(did))
 
         async with self as uInfo:
-            section = uInfo.curIdentity['following'].setdefault('main', {})
+            section = uInfo['followingGlobal'].setdefault('main', {})
             section[did] = {
                 'iphandle': iphandle
             }
 
     async def followingAll(self, section='main'):
-        node = await self.identityDagGet('following/{}'.format(section))
+        section = self['followingGlobal'].setdefault(section, {})
 
-        if isinstance(node, dict):
-            for did, info in node.items():
-                yield did, info
+        for did, info in section.items():
+            yield did, info
 
     @ipfsOp
     async def createIdentity(self, ipfsop, peered=False,
@@ -206,7 +208,12 @@ class UserProfileEDAG(EvolvingDAG):
             'personDid': personDid,
             'following': {},
 
-            'avatar': None,
+            'avatar': self.mkLink(
+                await ipfsop.importQtResource(
+                    '/share/icons/ipfs-cube-64.png'
+                )
+            ),
+
             'bio': self.mkLink(bioEntry),
 
             'crypto': {},
@@ -365,9 +372,6 @@ class UserProfile(QObject):
         self._name = name
         self._rootDir = rootDir
         self._initialized = False
-
-        self.ipidOp = IPIDManager()
-        self.ipid = None
 
         self.keyRoot = 'galacteek.{}.root'.format(self.name)
         self.keyRootId = None
@@ -733,7 +737,7 @@ class UserProfile(QObject):
 
             if self.userInfo.curIdentity:
                 # Load our IPID with low resolve timeout
-                self.ipid = await self.ctx.app.ipidManager.load(
+                await self.ctx.app.ipidManager.load(
                     self.userInfo.personDid,
                     timeout=5,
                     localIdentifier=True
@@ -748,7 +752,7 @@ class UserProfile(QObject):
         self.debug('Identity switched to DID {} !'.format(did))
         if self.userInfo.curIdentity:
             # Load our IPID with low resolve timeout
-            self.ipid = await self.ctx.app.ipidManager.load(
+            await self.ctx.app.ipidManager.load(
                 did,
                 timeout=5,
                 localIdentifier=True
@@ -782,41 +786,58 @@ class UserProfile(QObject):
                 if num > useKeyIdx:
                     useKeyIdx = num + 1
 
-            did = await self.ctx.app.ipidManager.create(
+            privKey, pubKey = await self.rsaExec.genKeys()
+
+            ipid = await self.ctx.app.ipidManager.create(
                 ipnsKey if ipnsKey else self.ipIdentifierKeyName(useKeyIdx),
-                pubKeyPem=self.rsaPubKey.decode()
+                pubKeyPem=pubKey.decode()
             )
         except Exception as e:
             self.debug(str(e))
         else:
+            didPrivKeyPath = os.path.join(
+                self.ctx.app.cryptoDataLocation,
+                'rsa_{0}_ipid_{1}_priv.key'.format(
+                    self.name, ipid.ipnsKey))
+
+            async with aiofiles.open(didPrivKeyPath, 'w+b') as fd:
+                await fd.write(privKey)
+
             self.userLogInfo('Generated IPID with DID: {did}'.format(
-                did=did.did))
+                did=ipid.did))
 
             if peered:
                 uid, identity = await self.userInfo.createIdentityPeered(
                     iphandle=iphandle,
-                    personDid=did.did
+                    personDid=ipid.did
                 )
             else:
                 uid, identity = await self.userInfo.createIdentity(
                     iphandle=iphandle,
-                    personDid=did.did,
+                    personDid=ipid.did,
                     setAsCurrent=True,
                 )
 
             self.userLogInfo('Current Identity UUID now is {}'.format(uid))
 
-            self.ipid = did
-
             # Register the blog as an IP service on the DID
             blogPath = IPFSPath(joinIpns(self.keyRootId)).child('blog')
-            await did.addServiceRaw({
-                'id': did.didUrl(path='/blog'),
+            await ipid.addServiceRaw({
+                'id': ipid.didUrl(path='/blog'),
                 'type': 'DwebBlogService',
                 'serviceEndpoint': blogPath.ipfsUrl
             }, publish=True)
 
-            return did
+            # Register the Atom feed as an IP service on the DID
+            feedPath = IPFSPath(joinIpns(self.keyRootId)).child('dfeed.atom')
+            await ipid.addServiceRaw({
+                'id': ipid.didUrl(path='/feed'),
+                'type': 'DwebAtomFeedService',
+                'serviceEndpoint': feedPath.ipfsUrl,
+                'description': 'Dweb Atom feed'
+            }, publish=True)
+
+            return ipid
 
     @ipfsOp
     async def rsaEncryptSelf(self, op, data, offline=False):

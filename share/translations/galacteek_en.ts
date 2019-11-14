@@ -1835,12 +1835,7 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/profileeditdialog.ui" line="178"/>
-        <source>Bio</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/profileeditdialog.ui" line="291"/>
+        <location filename="../../galacteek/ui/profileeditdialog.ui" line="277"/>
         <source>Update</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1860,7 +1855,7 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/profileeditdialog.ui" line="272"/>
+        <location filename="../../galacteek/ui/profileeditdialog.ui" line="258"/>
         <source>Close</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2295,7 +2290,7 @@ Path: {0}, nodes processed: {1}</source>
 <context>
     <name>resourceOpener</name>
     <message>
-        <location filename="../../galacteek/ui/resource.py" line="42"/>
+        <location filename="../../galacteek/ui/resource.py" line="44"/>
         <source>{}: cannot determine resource type or timeout occured (check connectivity)</source>
         <translation type="unfinished"></translation>
     </message>

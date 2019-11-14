@@ -7,6 +7,7 @@ from PyQt5.QtCore import QUrl
 from PyQt5.QtCore import QSize
 from PyQt5.QtCore import Qt
 
+from PyQt5.QtWidgets import QMenu
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QToolButton
@@ -20,7 +21,6 @@ from galacteek import ensure
 from galacteek import log
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import joinIpns
-from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.core.iphandle import ipHandleUsername
 from galacteek.core.iphandle import ipHandleGen
 from galacteek.core.iphandle import SpaceHandle
@@ -86,9 +86,14 @@ class ProfileButton(PopupToolButton):
         self.curProfile = None
         self.setObjectName('profileButton')
 
+        self.sMenu = QMenu(iIPServices(), self.menu)
+        self.sMenu.triggered.connect(self.onIpServiceTriggered)
+        self.sMenu.setToolTipsVisible(True)
+        self.sMenu.setIcon(getIcon('ipservice.png'))
+        self.menu.addMenu(self.sMenu)
+
     async def changeProfile(self, profile):
         self.curProfile = profile
-        log.debug('Changing profile to {}'.format(profile))
         self.updateToolTip(self.curProfile)
 
         profile.userInfo.changed.connect(self.onInfoChanged)
@@ -107,29 +112,23 @@ class ProfileButton(PopupToolButton):
                 self, QRect(0, 0, 0, 0), 1800
             )
 
-        for action in self.menu.actions():
-            if action.text() == iIPServices():
-                self.menu.removeAction(action)
-
         ipid = await self.curProfile.userInfo.ipIdentifier()
         if ipid:
-            menu = await buildIpServicesMenu(ipid, parent=self.menu)
-            menu.triggered.connect(self.onIpServiceTriggered)
-            self.menu.addMenu(menu)
+            await buildIpServicesMenu(ipid, self.sMenu, parent=self.menu)
 
     def onIpServiceTriggered(self, action):
         service = action.data()
-        ipfsPath = IPFSPath(service.endpoint)
 
-        if ipfsPath.valid:
-            ensure(self.app.resourceOpener.open(ipfsPath,
-                                                openingFrom='didlocal'))
+        if service:
+            ensure(self.app.resourceOpener.browseIpService(
+                service.id))
 
     async def onIdentityChanged(self, identityUid: str, personDid: str):
         log.debug('Profile IPID object is {}'.format(self.curProfile.ipid))
 
-        menu = buildIpServicesMenu(self.curProfile.ipid)
-        self.menu.addMenu(menu)
+        ipid = await self.curProfile.userInfo.ipIdentifier()
+        if ipid:
+            await buildIpServicesMenu(ipid, self.sMenu, parent=self.menu)
 
     def onInfoChanged(self):
         ensure(self.curProfile.userWebsite.updateAboutPage())
@@ -191,6 +190,7 @@ class ProfileEditDialog(QDialog):
 
         self.ui.username.textEdited.connect(self.onEdited)
         self.ui.vPlanet.currentTextChanged.connect(self.onEdited)
+        self.ui.vPlanet.setIconSize(QSize(32, 32))
 
         self.reloadIcon()
 
@@ -203,6 +203,7 @@ class ProfileEditDialog(QDialog):
     def onLockChange(self, toggled):
         self.ui.vPlanet.setEnabled(not toggled)
         self.ui.username.setEnabled(not toggled)
+        self.ui.pEditTabWidget.setEnabled(not toggled)
 
     def onLabelAnchorClicked(self, url):
         self.app.mainWindow.addBrowserTab().enterUrl(QUrl(url))
