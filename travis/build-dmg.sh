@@ -67,6 +67,8 @@ cp $HOME/bin/ipfs galacteek.app/Contents/Resources/bin
 # brew install libmagic
 # cp -av /usr/local/Cellar/libmagic/*/lib/* galacteek.app/Contents/Resources/lib
 
+brew update
+
 # zbar install
 brew install zbar
 cp -av /usr/local/Cellar/zbar/*/lib/*.dylib galacteek.app/Contents/Resources/lib
