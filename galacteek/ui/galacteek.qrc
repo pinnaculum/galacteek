@@ -1,5 +1,6 @@
 <RCC>
   <qresource>
+    <file>../../share/icons/helmet.png</file>
     <file>../../share/icons/ipservice.png</file>
     <file>../../share/icons/planets/mercury.png</file>
     <file>../../share/icons/planets/jupiter.png</file>
@@ -134,7 +135,6 @@
     <file>../../share/icons/galacteek.png</file>
     <file>../../share/icons/hashmark-black.png</file>
     <file>../../share/icons/peers.png</file>
-    <file>../../share/icons/profile-user.png</file>
     <file>../../share/icons/ipfs-cube-64.png</file>
     <file>../../share/icons/unknown-file.png</file>
     <file>../../share/icons/expand.png</file>

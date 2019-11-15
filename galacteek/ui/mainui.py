@@ -115,11 +115,11 @@ def iAbout():
             </a>
         </p>
         <p>Authors: see
-        <a href="https://github.com/eversum/galacteek/blob/master/AUTHORS.rst">
+        <a href="https://github.com/pinnaculum/galacteek/blob/master/AUTHORS.rst">
             AUTHORS.rst
         </a>
         </p>
-        <p>galacteek version {0}</p>''').format(__version__)
+        <p>galacteek version {0}</p>''').format(__version__)  # noqa
 
 
 class UserLogsWindow(QMainWindow):
@@ -600,7 +600,7 @@ class MainWindow(QMainWindow):
 
         # Profile button
         self.profileMenu = QMenu(self)
-        iconProfile = getIcon('profile-user.png')
+        iconProfile = getIcon('helmet.png')
         self.profileMenu.addAction(iconProfile,
                                    'Edit profile',
                                    self.onProfileEditDialog)

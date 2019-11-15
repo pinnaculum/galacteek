@@ -21,10 +21,8 @@ and no control over what we publish. The dweb, thanks to
 the power of its protocols, erases the slavery model of
 the ancient client-server paradigm.
 
-Your thoughts matter and have value, handing them away to
-stock-market companies will not work just as well in 2020. 
-
-Stop being a slave, and express yourself on the dweb freely.
+Your thoughts matter and have value, stop being a slave,
+and express yourself on the dweb freely.
 
 Enter IPID
 ----------
@@ -32,7 +30,7 @@ Enter IPID
 InterPlanetary Identifiers (see IPID_) are a type of decentralized
 identifiers (DID) that live in the IPFS ecosystem (the DID
 document associated with an IPID identifier is stored
-as a :term:`Merkle DAG` in your IPFS repository).
+as a :term:`DAG` in your IPFS repository).
 
 The identifier of your IPID is an IPNS key, which always points
 to the latest version of the DID document DAG (your latest
@@ -84,6 +82,24 @@ Examples::
     alchemist@Saturn
     noname#156@Mars/QmXcBFXy5XA5qELL8Z8GeJdeD9LWa2cWVVnkStK6Jxtvas
     dwebartist@Earth/QmVrLyye1bByJT3ktj9gRFvxibBVpxk7vXvcwEXF9hhdku
+
+InterPlanetary services
+-----------------------
+
+You can publish services (they can be simple IPFS links, or P2P
+services) on your DID.
+
+An IP service attached to an IPID has a DID URL, for example::
+
+    did:ipid:QmXcBFXy5XA5qELL8Z8GeJdeD9LWa2cWVVnkStK6Jxtvas/blog
+
+This same IP service can be searched using the Space handle
+of the peer, for example **macfly@Mars@...** (this service
+would be represented as **macfly@Mars@VVnkStK6Jxtvas/blog**)
+
+You can search the IP services of a peer from the main menu,
+or by typing **Mod + i**. Typing a Space handle will autocomplete
+and show you the IP services for that peer.
 
 
 .. _IPID: https://github.com/jonnycrunch/ipid

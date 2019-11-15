@@ -55,15 +55,14 @@ current state: weak control over our digital identities,
 and no control over what we publish. The dweb, thanks to
 the power of its protocols, erases the slavery model of
 the ancient client-server paradigm.</p>
-<p>Your thoughts matter and have value, handing them away to
-stock-market companies will not work just as well in 2020.</p>
-<p>Stop being a slave, and express yourself on the dweb freely.</p>
+<p>Your thoughts matter and have value, stop being a slave,
+and express yourself on the dweb freely.</p>
 <div class="section" id="enter-ipid">
 <h2>Enter IPID<a class="headerlink" href="#enter-ipid" title="Permalink to this headline">¶</a></h2>
 <p>InterPlanetary Identifiers (see <a class="reference external" href="https://github.com/jonnycrunch/ipid">IPID</a>) are a type of decentralized
 identifiers (DID) that live in the IPFS ecosystem (the DID
 document associated with an IPID identifier is stored
-as a <span class="xref std std-term">Merkle DAG</span> in your IPFS repository).</p>
+as a <a class="reference internal" href="glossary.html#term-dag"><span class="xref std std-term">DAG</span></a> in your IPFS repository).</p>
 <p>The identifier of your IPID is an IPNS key, which always points
 to the latest version of the DID document DAG (your latest
 identity). This is an example of an IPID identifier:</p>
@@ -107,6 +106,21 @@ Examples:</p>
 <span class="n">dwebartist</span><span class="nd">@Earth</span><span class="o">/</span><span class="n">QmVrLyye1bByJT3ktj9gRFvxibBVpxk7vXvcwEXF9hhdku</span>
 </pre></div>
 </div>
+</div>
+<div class="section" id="interplanetary-services">
+<h2>InterPlanetary services<a class="headerlink" href="#interplanetary-services" title="Permalink to this headline">¶</a></h2>
+<p>You can publish services (they can be simple IPFS links, or P2P
+services) on your DID.</p>
+<p>An IP service attached to an IPID has a DID URL, for example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">did</span><span class="p">:</span><span class="n">ipid</span><span class="p">:</span><span class="n">QmXcBFXy5XA5qELL8Z8GeJdeD9LWa2cWVVnkStK6Jxtvas</span><span class="o">/</span><span class="n">blog</span>
+</pre></div>
+</div>
+<p>This same IP service can be searched using the Space handle
+of the peer, for example <strong>macfly&#64;Mars&#64;…</strong> (this service
+would be represented as <strong>macfly&#64;Mars&#64;VVnkStK6Jxtvas/blog</strong>)</p>
+<p>You can search the IP services of a peer from the main menu,
+or by typing <strong>Mod + i</strong>. Typing a Space handle will autocomplete
+and show you the IP services for that peer.</p>
 </div>
 </div>
 

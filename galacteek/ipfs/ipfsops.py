@@ -450,10 +450,12 @@ class IPFSOperator(object):
         return True
 
     async def publish(self, path, key='self', timeout=90,
-                      allow_offline=False, lifetime='24h',
+                      allow_offline=None, lifetime='24h',
                       ttl=None, cache=None, cacheOrigin='unknown'):
         usingCache = cache == 'always' or \
             (cache == 'offline' and self.noPeers)
+        aOffline = allow_offline if isinstance(allow_offline, bool) else \
+            self.noPeers
         try:
             if usingCache:
                 self.debug('Caching IPNS key: {key} (origin: {origin})'.format(
@@ -465,7 +467,7 @@ class IPFSOperator(object):
             result = await self.waitFor(
                 self.client.name.publish(
                     path, key=key,
-                    allow_offline=self.noPeers,
+                    allow_offline=aOffline,
                     lifetime=lifetime,
                     ttl=ttl
                 ), timeout
