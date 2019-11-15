@@ -722,12 +722,11 @@ class MultihashPyramidToolButton(PopupToolButton):
     async def didPublishService(self, ipfsop):
         profile = ipfsop.ctx.currentProfile
 
-        if not profile.ipid:
-            return
+        ipid = await profile.userInfo.ipIdentifier()
 
         try:
-            await profile.ipid.addServiceRaw({
-                'id': profile.ipid.didUrl(
+            await ipid.addServiceRaw({
+                'id': ipid.didUrl(
                     path='/pyramids',
                     params={'name': self.pyramid.name}
                 ),
@@ -770,13 +769,13 @@ class MultihashPyramidToolButton(PopupToolButton):
             unpublishedMax = None
 
         while self.active:
-            await asyncio.sleep(60)
+            await asyncio.sleep(20)
 
             if self.pyramidion:
                 if self.publishedLast is None:
                     # Publish on startup after random delay
                     rand = random.Random()
-                    delay = rand.randint(5, 30)
+                    delay = rand.randint(1, 10)
 
                     ensureLater(
                         delay,
@@ -977,12 +976,11 @@ class GalleryPyramidController(EDAGBuildingPyramidController):
     async def didPublishService(self, ipfsop):
         profile = ipfsop.ctx.currentProfile
 
-        if not profile.ipid:
-            return
+        ipid = await profile.userInfo.ipIdentifier()
 
         try:
-            await profile.ipid.addServiceRaw({
-                'id': profile.ipid.didUrl(
+            await ipid.addServiceRaw({
+                'id': ipid.didUrl(
                     path='/galleries/{name}'.format(
                         name=self.pyramid.name
                     )

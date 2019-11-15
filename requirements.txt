@@ -23,7 +23,7 @@ pycryptodomex>=3.6.6
 pygments>=2.3.1
 pyld>=1.0.5
 pymultihash==0.8.2
-pyqt5>=5.12.2
+pyqt5==5.13.0
 pyqtwebengine==5.12
 python-magic>=0.4.15
 pyzbar>=0.1.8

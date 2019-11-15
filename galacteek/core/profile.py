@@ -638,7 +638,7 @@ class UserProfile(QObject):
         await self.ipHandles.load()
 
         self.dagUser.dagCidChanged.connect(self.onDagChange)
-        ensure(self.publishDag())
+        ensure(self.publishDag(allowOffline=True))
 
         self.userWebsite = UserWebsite(
             self.dagUser,
@@ -826,7 +826,7 @@ class UserProfile(QObject):
                 'id': ipid.didUrl(path='/blog'),
                 'type': 'DwebBlogService',
                 'serviceEndpoint': blogPath.ipfsUrl
-            }, publish=True)
+            }, publish=False)
 
             # Register the Atom feed as an IP service on the DID
             feedPath = IPFSPath(joinIpns(self.keyRootId)).child('dfeed.atom')
@@ -835,7 +835,9 @@ class UserProfile(QObject):
                 'type': 'DwebAtomFeedService',
                 'serviceEndpoint': feedPath.ipfsUrl,
                 'description': 'Dweb Atom feed'
-            }, publish=True)
+            }, publish=False)
+
+            ensure(ipid.publish())
 
             return ipid
 
@@ -921,14 +923,19 @@ class UserProfile(QObject):
         ensure(self.publishDag())
 
     @ipfsOp
-    async def publishDag(self, op):
+    async def publishDag(self, op, allowOffline=False):
         if not self.dagUser.dagCid:
             self.debug('DAG CID not set yet ?')
             return
 
-        self.debug('Publishing DAG CID {}'.format(self.dagUser.dagCid))
+        self.debug('Publishing profile DAG with CID {}'.format(
+            self.dagUser.dagCid))
 
-        result = await op.publish(self.dagUser.dagCid, key=self.keyRoot,
+        result = await op.publish(self.dagUser.dagCid,
+                                  key=self.keyRootId,
+                                  allow_offline=allowOffline,
+                                  cache='always',
+                                  cacheOrigin='profile',
                                   lifetime='48h')
 
         if result is None:
