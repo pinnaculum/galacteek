@@ -2,8 +2,6 @@ sudo: required
 dist: xenial
 language: generic
 
-osx_image: xcode11
-
 os:
   - linux
   - osx

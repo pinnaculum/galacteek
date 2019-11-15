@@ -29,9 +29,9 @@ VERSION=$(grep '__version__' galacteek/__init__.py|sed -e "s/__version__ = '\(.*
 pushd "$BUILD_DIR"/
 
 # install Miniconda
-wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
-bash Miniconda3-latest-MacOSX-x86_64.sh -b -p ~/miniconda -f
-rm Miniconda3-latest-MacOSX-x86_64.sh 
+wget https://repo.continuum.io/miniconda/Miniconda3-4.6.14-MacOSX-x86_64.sh
+bash Miniconda3-4.6.14-MacOSX-x86_64.sh -b -p ~/miniconda -f
+rm Miniconda3-4.6.14-MacOSX-x86_64.sh
 
 export PATH="$HOME/miniconda/bin:$PATH"
 
