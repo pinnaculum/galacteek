@@ -449,8 +449,9 @@ class IPFSOperator(object):
             return False
         return True
 
-    async def publish(self, path, key='self', timeout=90,
+    async def publish(self, path, key='self', timeout=60 * 4,
                       allow_offline=None, lifetime='24h',
+                      resolve=True,
                       ttl=None, cache=None, cacheOrigin='unknown'):
         usingCache = cache == 'always' or \
             (cache == 'offline' and self.noPeers)
@@ -464,12 +465,20 @@ class IPFSOperator(object):
                 await self.nsCacheSet(
                     joinIpns(key), path, origin=cacheOrigin)
 
+            self.debug(
+                'Publishing {path} to {dst} '
+                '(cache: {cache}/{cacheOrigin}, allowoffline: {off})'.format(
+                    path=path, dst=key, off=allow_offline,
+                    cache=cache, cacheOrigin=cacheOrigin)
+            )
+
             result = await self.waitFor(
                 self.client.name.publish(
                     path, key=key,
                     allow_offline=aOffline,
                     lifetime=lifetime,
-                    ttl=ttl
+                    ttl=ttl,
+                    resolve=resolve
                 ), timeout
             )
         except aioipfs.APIError as err:

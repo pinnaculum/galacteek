@@ -31,7 +31,8 @@ class ResourceAnalyzer(QObject):
         elif isinstance(pathRef, str):
             ipfsPath = IPFSPath(pathRef, autoCidConv=True)
         else:
-            raise ValueError('Invalid input value')
+            log.debug('Invalid path: {path}'.format(path=pathRef))
+            return None, None
 
         path = ipfsPath.objPath
         mHashMeta = await self.app.multihashDb.get(path)

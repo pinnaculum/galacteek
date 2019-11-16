@@ -104,6 +104,6 @@ class PubsubSnifferWidget(GalacteekTab):
 
     def onClose(self):
         for topic, service in self.app.ipfsCtx.pubsub.services.items():
-            service.jsonMessageReceived.disconnect(self.rawMsgReceived)
+            service.rawMessageReceived.disconnect(self.rawMsgReceived)
 
         return True

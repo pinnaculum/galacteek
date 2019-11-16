@@ -12,6 +12,7 @@ from PyQt5.QtCore import QObject
 from galacteek import log
 from galacteek import logUser
 from galacteek import GALACTEEK_NAME
+from galacteek import ensure
 from galacteek import ensureLater
 from galacteek import AsyncSignal
 
@@ -192,7 +193,7 @@ class Peers:
                         qr=iMsg.iphandleqrpngcid, peer=iMsg.peer))
                     peerValidated = True
 
-                await op.pin(iMsg.iphandleqrpngcid)
+                ensure(op.pin(iMsg.iphandleqrpngcid))
 
             # Load the IPID
             ipid = await self.app.ipidManager.load(

@@ -208,18 +208,16 @@ class SearchResultsPage(BaseSearchPage):
             parent=None):
         super(SearchResultsPage, self).__init__(parent, profile=profile)
 
-        self.used = False
-
         if webchannel:
             self.setWebChannel(webchannel)
 
         self.app = QApplication.instance()
+        self.used = False
 
         self.handler = handler
         self.template = tmplMain
         self.templateHits = tmplHits
         self.ipfsConnParams = ipfsConnParams
-        self.noStatTimeout = 12
         ensure(self.render())
 
     def javaScriptConsoleMessage(self, level, message, lineNumber, sourceId):
@@ -264,7 +262,6 @@ class IPFSSearchHandler(QObject):
 
         self.app = QApplication.instance()
         self.analyzer = ResourceAnalyzer(self)
-        self.noStatTimeout = 8
 
         self.vPageCurrent = 0
         self.pagesPerVpage = 2

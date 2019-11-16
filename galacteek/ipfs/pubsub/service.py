@@ -233,15 +233,14 @@ class JSONPubsubService(PubsubService):
                 data = await self.inQueue.get()
 
                 if data is None:
-                    break
+                    continue
 
                 msg = self.msgDataToJson(data)
                 if msg is None:
+                    self.debug('Invalid JSON message')
                     continue
 
                 sender = data['from'].decode()
-
-                await self.jsonMessageReceived.emit(sender, self.topic, msg)
 
                 try:
                     await self.processJsonMessage(sender, msg)
@@ -252,9 +251,10 @@ class JSONPubsubService(PubsubService):
                     await self.errorsQueue.put((msg, exc))
                     self._errorsCount += 1
         except asyncio.CancelledError:
-            return
-        except Exception:
-            return
+            self.debug('JSON process cancelled')
+        except Exception as err:
+            self.debug('JSON process exception: {}'.format(
+                str(err)))
 
     async def processJsonMessage(self, sender, msg):
         """ Implement this method to process incoming JSON messages"""
@@ -360,7 +360,7 @@ class PSPeersService(JSONPubsubService):
                          filterSelfMessages=False)
 
         self._curProfile = None
-        self._identEvery = 35
+        self._identEvery = 30
         self.ipfsCtx.profileChanged.connect(self.onProfileChanged)
 
     @property

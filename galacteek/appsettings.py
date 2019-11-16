@@ -21,6 +21,7 @@ CFG_KEY_HTTPGWPORT = 'httpgwport'
 CFG_KEY_HTTPGWWRITABLE = 'httpgwwritable'
 CFG_KEY_NAMESYS_PUBSUB = 'namesyspubsub'
 CFG_KEY_PUBSUB_ROUTER = 'pubsub_router'
+CFG_KEY_PUBSUB_USESIGNING = 'pubsub_usesigning'
 CFG_KEY_HOST = 'host'
 CFG_KEY_SWARMLOWWATER = 'swarm_lowwater'
 CFG_KEY_SWARMHIGHWATER = 'swarm_highwater'
@@ -95,6 +96,7 @@ def setDefaultSettings(gApp):
     sManager.setDefaultTrue(section, CFG_KEY_CORS)
     sManager.setDefaultTrue(section, CFG_KEY_ENABLED)
     sManager.setDefaultFalse(section, CFG_KEY_NAMESYS_PUBSUB)
+    sManager.setDefaultTrue(section, CFG_KEY_PUBSUB_USESIGNING)
     sManager.setDefaultFalse(section, CFG_KEY_HTTPGWWRITABLE)
 
     section = CFG_SECTION_BROWSER
