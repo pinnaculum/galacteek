@@ -10,7 +10,6 @@ from PyQt5.QtWebChannel import QWebChannel
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtCore import QUrl
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QRegularExpression
 
@@ -124,7 +123,7 @@ class BaseSearchPage(QWebEnginePage):
         self.pageRendered.connect(self.onPageRendered)
 
     def onPageRendered(self, html):
-        self.setHtml(html, baseUrl=QUrl('qrc:/'))
+        self.setHtml(html)
 
 
 class SearchInProgressPage(BaseSearchPage):
@@ -216,7 +215,6 @@ class SearchResultsPage(BaseSearchPage):
 
         self.app = QApplication.instance()
 
-        self.url = QUrl('qrc:/')
         self.handler = handler
         self.template = tmplMain
         self.templateHits = tmplHits
@@ -225,7 +223,7 @@ class SearchResultsPage(BaseSearchPage):
         ensure(self.render())
 
     def javaScriptConsoleMessage(self, level, message, lineNumber, sourceId):
-        log.info(
+        log.debug(
             'JS: level: {0}, source: {1}, line: {2}, message: {3}'.format(
                 level,
                 sourceId,
@@ -235,7 +233,7 @@ class SearchResultsPage(BaseSearchPage):
     async def render(self):
         html = await renderTemplate(self.template,
                                     ipfsConnParams=self.ipfsConnParams)
-        self.setHtml(html, baseUrl=QUrl('qrc:/'))
+        self.setHtml(html)
 
 
 class IPFSSearchHandler(QObject):

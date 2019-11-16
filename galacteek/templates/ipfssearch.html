@@ -396,7 +396,7 @@
   <body>
     <div width="100%" class="container">
       <div style="float: left; width='40%'">
-        <form onsubmit="window.runSearch();">
+        <form onsubmit="event.preventDefault(); window.runSearch();">
           <input type="text" class="waitinput" name="query" id="searchquery" width="300"/>
           <select name="contenttype" id="contenttype">
             <option value="all">All</option>

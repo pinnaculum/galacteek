@@ -1566,31 +1566,6 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="102"/>
-        <source>
-        &lt;p align=&apos;center&apos;&gt;
-        &lt;img src=&apos;:/share/icons/galacteek-incandescent.png&apos; /&gt;
-        &lt;/p&gt;
-
-        &lt;p&gt;
-        &lt;b&gt;galacteek&lt;/b&gt; is a multi-platform Qt5-based browser
-        for the distributed web
-        &lt;/p&gt;
-        &lt;br/&gt;
-        &lt;p&gt;Contact:
-            &lt;a href=&quot;mailto: galacteek@protonmail.com&quot;&gt;
-                galacteek@protonmail.com
-            &lt;/a&gt;
-        &lt;/p&gt;
-        &lt;p&gt;Authors: see
-        &lt;a href=&quot;https://github.com/eversum/galacteek/blob/master/AUTHORS.rst&quot;&gt;
-            AUTHORS.rst
-        &lt;/a&gt;
-        &lt;/p&gt;
-        &lt;p&gt;galacteek version {0}&lt;/p&gt;</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <location filename="../../galacteek/ui/i18n.py" line="238"/>
         <source>
         &lt;div&gt;
@@ -1667,6 +1642,31 @@ Chemin: {0}, nodes traitées: {1}</translation>
     <message>
         <location filename="../../galacteek/ui/i18n.py" line="61"/>
         <source>IP handle</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/mainui.py" line="102"/>
+        <source>
+        &lt;p align=&apos;center&apos;&gt;
+        &lt;img src=&apos;:/share/icons/galacteek-incandescent.png&apos; /&gt;
+        &lt;/p&gt;
+
+        &lt;p&gt;
+        &lt;b&gt;galacteek&lt;/b&gt; is a multi-platform Qt5-based browser
+        for the distributed web
+        &lt;/p&gt;
+        &lt;br/&gt;
+        &lt;p&gt;Contact:
+            &lt;a href=&quot;mailto: galacteek@protonmail.com&quot;&gt;
+                galacteek@protonmail.com
+            &lt;/a&gt;
+        &lt;/p&gt;
+        &lt;p&gt;Authors: see
+        &lt;a href=&quot;https://github.com/pinnaculum/galacteek/blob/master/AUTHORS.rst&quot;&gt;
+            AUTHORS.rst
+        &lt;/a&gt;
+        &lt;/p&gt;
+        &lt;p&gt;galacteek version {0}&lt;/p&gt;</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1880,22 +1880,22 @@ Chemin: {0}, nodes traitées: {1}</translation>
 <context>
     <name>IPFSSearchResults</name>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="46"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="45"/>
         <source>Results count: &lt;b&gt;{0}&lt;/b&gt; (max score: &lt;b&gt;{1}&lt;/b&gt;)</source>
         <translation>&lt;b&gt;{0} résultats&lt;/b&gt; (score maximum: &lt;b&gt;{1}&lt;/b&gt;)</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="54"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="53"/>
         <source>&lt;b&gt;No results found&lt;/b&gt;</source>
         <translation>&lt;b&gt;Pas de résultats trouvés&lt;/b&gt;</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="64"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="63"/>
         <source>&lt;b&gt;Searching ...&lt;/b&gt;</source>
         <translation>&lt;b&gt;Recherche en cours ...&lt;/b&gt;</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="59"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="58"/>
         <source>&lt;b&gt;Error while fetching results&lt;/b&gt;</source>
         <translation>&lt;b&gt;Erreur lors du chargement des résultats&lt;/b&gt;</translation>
     </message>

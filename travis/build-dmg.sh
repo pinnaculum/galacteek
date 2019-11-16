@@ -36,7 +36,7 @@ rm Miniconda3-4.6.14-MacOSX-x86_64.sh
 export PATH="$HOME/miniconda/bin:$PATH"
 
 # create conda env
-conda create -n galacteek python --yes
+conda create -n galacteek python=3.7 --yes
 source activate galacteek
 
 # install dependencies
