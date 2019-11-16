@@ -26,6 +26,14 @@ trap cleanup EXIT
 OLD_CWD="$(pwd)"
 VERSION=$(grep '__version__' galacteek/__init__.py|sed -e "s/__version__ = '\(.*\)'$/\1/")
 
+COMMIT_SHORT=$(echo $TRAVIS_COMMIT|cut -c 1-8)
+
+if [ "$TRAVIS_BRANCH" != "master" ]; then
+    DMG_DEST="Galacteek-${COMMIT_SHORT}.dmg"
+else
+    DMG_DEST="Galacteek-${VERSION}.dmg"
+fi
+
 pushd "$BUILD_DIR"/
 
 # install Miniconda
@@ -103,4 +111,4 @@ git clone https://github.com/andreyvit/create-dmg $HOME/create-dmg
 # generate .dmg
 $HOME/create-dmg/create-dmg --hdiutil-verbose --volname "galacteek-${VERSION}" \
     --volicon "${OLD_CWD}"/share/icons/galacteek.icns \
-    --hide-extension galacteek.app Galacteek-$VERSION.dmg "$BUILD_DIR"/
+    --hide-extension galacteek.app $DMG_DEST "$BUILD_DIR"/
