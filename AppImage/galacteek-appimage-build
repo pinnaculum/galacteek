@@ -80,6 +80,7 @@ cp ../share/icons/galacteek.png $APPDIR
 cp ../share/icons/galacteek.png $APPDIR/usr/share/icons/hicolor/512x512/apps
 cp /tmp/go-ipfs/ipfs $APPDIR/usr/bin
 find /usr/lib -iname 'libzbar.so*' -exec cp -av {} $APPDIR/usr/lib \;
+find /usr/lib -iname 'libjpeg.so*' -exec cp -av {} $APPDIR/usr/lib \;
 
 # Remove unnecessary stuff
 pushd "$APPDIR"/usr
