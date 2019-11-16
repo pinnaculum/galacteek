@@ -21,9 +21,6 @@ def zbar_load():
     # if find_library() returns nothing, so that we can use
     # the libzbar from the AppImage
 
-    from pyzbar.wrapper import LIBZBAR
-    global LIBZBAR
-
     path = find_library('zbar')
     if not path:
         path = 'libzbar.so.0'
@@ -37,14 +34,14 @@ def zbar_load():
         return None, []
     else:
         log.debug('Loaded zbar lib from: {}'.format(path))
-        LIBZBAR = libzbar
         return libzbar, []
 
 
 try:
+    from pyzbar import zbar_library
+    zbar_library.load = zbar_load
     from pyzbar.pyzbar import decode as zbar_decode
-    zbar_load()
-except ImportError:
+except Exception:
     haveZbar = False
 else:
     haveZbar = True
