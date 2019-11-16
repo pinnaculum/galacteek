@@ -2137,27 +2137,27 @@ Chemin: {0}, nodes traitées: {1}</translation>
 <context>
     <name>PeersManager</name>
     <message>
-        <location filename="../../galacteek/ui/peers.py" line="51"/>
+        <location filename="../../galacteek/ui/peers.py" line="50"/>
         <source>Username</source>
         <translation>Utilisateur</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/peers.py" line="55"/>
+        <location filename="../../galacteek/ui/peers.py" line="54"/>
         <source>Peer ID</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/peers.py" line="59"/>
+        <location filename="../../galacteek/ui/peers.py" line="58"/>
         <source>Ping Average (ms)</source>
         <translation>Ping (ms)</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/peers.py" line="63"/>
+        <location filename="../../galacteek/ui/peers.py" line="62"/>
         <source>Location</source>
         <translation>Localisation</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/peers.py" line="67"/>
+        <location filename="../../galacteek/ui/peers.py" line="66"/>
         <source>Invalid DAG CID: {0}</source>
         <translation>CID de DAG invalide: {0}</translation>
     </message>
@@ -2177,7 +2177,7 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/peers.py" line="72"/>
+        <location filename="../../galacteek/ui/peers.py" line="71"/>
         <source>
         &lt;p&gt;
             Peer ID: {0}

@@ -124,10 +124,12 @@ class ProfileButton(PopupToolButton):
                 service.id))
 
     async def onIdentityChanged(self, identityUid: str, personDid: str):
-        log.debug('Profile IPID object is {}'.format(self.curProfile.ipid))
+        log.debug('Identity changed to DID {}'.format(personDid))
 
         ipid = await self.curProfile.userInfo.ipIdentifier()
         if ipid:
+            log.debug('Regenerating IP services menu')
+            self.sMenu.clear()
             await buildIpServicesMenu(ipid, self.sMenu, parent=self.menu)
 
     def onInfoChanged(self):

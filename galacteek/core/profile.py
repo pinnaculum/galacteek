@@ -17,6 +17,7 @@ from PyQt5.QtWidgets import QAction
 from galacteek import log
 from galacteek import logUser
 from galacteek import ensure
+from galacteek import ensureLater
 from galacteek import AsyncSignal
 
 from galacteek.ipfs.mutable import MutableIPFSJson, CipheredIPFSJson
@@ -638,7 +639,7 @@ class UserProfile(QObject):
         await self.ipHandles.load()
 
         self.dagUser.dagCidChanged.connect(self.onDagChange)
-        ensure(self.publishDag(allowOffline=True))
+        ensure(self.publishDag(allowOffline=True, reschedule=True))
 
         self.userWebsite = UserWebsite(
             self.dagUser,
@@ -689,6 +690,7 @@ class UserProfile(QObject):
                 self.userLogInfo('Error while saving RSA keys!')
                 return False
             else:
+                os.chmod(self.rsaPrivKeyPath, 0o600)
                 self.userLogInfo('Successfully created RSA keypair')
 
         if not await self.cryptoRegisterKeys():
@@ -730,11 +732,6 @@ class UserProfile(QObject):
                     )
                 )
 
-            await self.identityChanged.emit(
-                self.userInfo.root['currentIdentityUid'],
-                self.userInfo.curIdentity['personDid']
-            )
-
             if self.userInfo.curIdentity:
                 # Load our IPID with low resolve timeout
                 await self.ctx.app.ipidManager.load(
@@ -749,7 +746,8 @@ class UserProfile(QObject):
         return 'galacteek.{0}.dids.{1}'.format(self.name, idx)
 
     async def onIdentitySwitch(self, identityUid, did):
-        self.debug('Identity switched to DID {} !'.format(did))
+        self.debug('Identity switched to DID {}'.format(did))
+
         if self.userInfo.curIdentity:
             # Load our IPID with low resolve timeout
             await self.ctx.app.ipidManager.load(
@@ -803,6 +801,8 @@ class UserProfile(QObject):
             async with aiofiles.open(didPrivKeyPath, 'w+b') as fd:
                 await fd.write(privKey)
 
+            os.chmod(didPrivKeyPath, 0o600)
+
             self.userLogInfo('Generated IPID with DID: {did}'.format(
                 did=ipid.did))
 
@@ -838,6 +838,12 @@ class UserProfile(QObject):
             }, publish=False)
 
             ensure(ipid.publish())
+
+            if updateProfile is True:
+                await self.identityChanged.emit(
+                    self.userInfo.root['currentIdentityUid'],
+                    self.userInfo.curIdentity['personDid']
+                )
 
             return ipid
 
@@ -923,7 +929,7 @@ class UserProfile(QObject):
         ensure(self.publishDag())
 
     @ipfsOp
-    async def publishDag(self, op, allowOffline=False):
+    async def publishDag(self, op, allowOffline=False, reschedule=False):
         if not self.dagUser.dagCid:
             self.debug('DAG CID not set yet ?')
             return
@@ -936,12 +942,19 @@ class UserProfile(QObject):
                                   allow_offline=allowOffline,
                                   cache='always',
                                   cacheOrigin='profile',
+                                  resolve=True,
                                   lifetime='48h')
 
         if result is None:
             self.debug('DAG publish failed')
         else:
             self.debug('DAG publish success: {}'.format(result))
+
+        if reschedule is True:
+            self.debug('Rescheduling user DAG publish')
+            ensureLater(60 * 5,
+                        self.publishDag, reschedule=reschedule,
+                        allowOffline=allowOffline)
 
     async def tmplRender(self, tmpl, **kw):
         """

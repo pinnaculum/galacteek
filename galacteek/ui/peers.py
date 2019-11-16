@@ -1,6 +1,5 @@
 import os.path
 import asyncio
-import functools
 
 from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QMenu
@@ -492,12 +491,15 @@ class PeersManager(GalacteekTab):
         peerId = self.model.data(idx, Qt.UserRole)
         peerCtx = self.peersTracker.ctx.peers.getByPeerId(peerId)
 
+        if not peerCtx:
+            return
+
         def menuBuilt(future):
             try:
                 menu = future.result()
                 menu.exec(self.ui.peersMgrView.mapToGlobal(point))
-            except Exception:
-                pass
+            except Exception as e:
+                log.debug(str(e))
 
         ensure(self.showPeerContextMenu(peerCtx, point), futcallback=menuBuilt)
 
@@ -528,26 +530,13 @@ class PeersManager(GalacteekTab):
                 getPlanetIcon('uranus.png'),
                 str(service),
                 sMenu,
-                triggered=functools.partial(
-                    ensure,
-                    self.onAccessPeerService(peerCtx, service)))
+                triggered=partialEnsure(
+                    self.accessPeerService(service.id)))
             action.setToolTip(service.id)
             sMenu.addAction(action)
             sMenu.addSeparator()
 
         return menu
-
-    async def onAccessPeerService(self, pCtx, service):
-        log.debug('Accessing Peer Service ... '
-                  'Peer {peer}, service ID {srvid}'.format(
-                      peer=pCtx.peerId,
-                      srvid=service.id
-                  ))
-        endpoint = service.endpoint
-        ipfsPath = IPFSPath(endpoint)
-
-        if ipfsPath.valid:
-            self.gWindow.addBrowserTab().browseFsPath(ipfsPath)
 
     def onDoubleClick(self, idx):
         didData = self.model.data(
