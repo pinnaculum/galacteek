@@ -3,6 +3,9 @@ import io
 import functools
 import tempfile
 
+from ctypes import cdll
+from ctypes.util import find_library
+
 import qrcode
 from PIL.Image import new as NewImage
 from PIL import Image
@@ -13,10 +16,34 @@ from galacteek.ipfs import ipfsOp
 from galacteek.did import didRe
 
 
+def zbar_load():
+    # Like zbar.zbar_library.load() but uses 'libzbar.so.0'
+    # if find_library() returns nothing, so that we can use
+    # the libzbar from the AppImage
+
+    from pyzbar.wrapper import LIBZBAR
+    global LIBZBAR
+
+    path = find_library('zbar')
+    if not path:
+        path = 'libzbar.so.0'
+
+    log.debug('Loading zbar library from: {}'.format(path))
+
+    try:
+        libzbar = cdll.LoadLibrary(path)
+    except Exception:
+        log.debug('Could not load zbar lib from: {}'.format(path))
+        return None, []
+    else:
+        log.debug('Loaded zbar lib from: {}'.format(path))
+        LIBZBAR = libzbar
+        return libzbar, []
+
+
 try:
     from pyzbar.pyzbar import decode as zbar_decode
-    from pyzbar import zbar_library
-    zbar_library.load()
+    zbar_load()
 except ImportError:
     haveZbar = False
 else:
