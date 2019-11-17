@@ -488,11 +488,13 @@ class PSChatService(JSONPubsubService):
         msgType = msg.get('msgtype', None)
 
         if msgType == ChatRoomMessage.TYPE:
+            self.debug('Chat message received')
             await self.handleChatMessage(msg)
 
     async def handleChatMessage(self, msg):
         cMsg = ChatRoomMessage(msg)
         if not cMsg.valid():
+            self.debug('Invalid chat message')
             return
 
         self.ipfsCtx.pubsub.chatRoomMessageReceived.emit(cMsg)

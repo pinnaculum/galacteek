@@ -162,7 +162,7 @@ class UserProfileEDAG(EvolvingDAG):
         log.debug('Following {}'.format(did))
 
         async with self as uInfo:
-            section = uInfo['followingGlobal'].setdefault('main', {})
+            section = uInfo.root['followingGlobal'].setdefault('main', {})
             section[did] = {
                 'iphandle': iphandle
             }

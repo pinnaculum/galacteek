@@ -508,7 +508,6 @@ class MainWindow(QMainWindow):
         self.psniffAction = QAction(getIcon('network-transmit.png'),
                                     iPubSubSniff(),
                                     self,
-                                    shortcut=QKeySequence('Ctrl+0'),
                                     triggered=self.openPsniffTab)
 
         self.searchServicesAction = QAction(getIcon('ipservice.png'),

@@ -32,9 +32,6 @@ If you use Linux or MacOS you can download a prebuilt image
 (an AppImage for Linux or a .dmg image for osx) from the releases_
 page.
 
-If you want to use QR codes on MacOS, don't forget to install
-zbar by running **brew install zbar** in a terminal.
-
 If you use any other system or want to install the software
 manually you can always install from PyPI.
 
@@ -91,10 +88,8 @@ DMG (MacOS)
 -----------
 
 On MacOS the easiest is to download a DMG image from the releases_ page.
-MIME type detection will be faster if you install **libmagic**. Install
-**zbar** as well for QR codes if you want with::
-
-    brew install libmagic zbar
+MIME type detection will be faster if you install **libmagic**. The
+**zbar** library (for QR codes) is now embedded in the DMG.
 
 After opening/mounting the DMG image, hold Control and click on the
 **galacteek** icon, and select **Open** and accept. You probably need to

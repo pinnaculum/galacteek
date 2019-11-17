@@ -338,7 +338,7 @@ class IPIdentifier(DAGOperations):
         return False
 
     @ipfsOp
-    async def publish(self, ipfsop, timeout=120):
+    async def publish(self, ipfsop, timeout=60 * 5):
         """
         Publish the DID document to the IPNS key
 
@@ -505,6 +505,10 @@ class IPIDManager:
         if await ipid.load(resolveTimeout=rTimeout, initialCid=initialCid):
             if track:
                 await self.track(ipid)
+
+            if localIdentifier:
+                log.debug('Publishing (first load) local IPID: {}'.format(did))
+                ensure(ipid.publish())
 
             return ipid
 
