@@ -682,7 +682,7 @@ class MultihashPyramidToolButton(PopupToolButton):
                 self.debug('Invalid path! Cannot publish')
                 return False
 
-            self.info('publishing mark {mark} (obj: {obj}) to {ipns}'.format(
+            self.debug('publishing mark {mark} (obj: {obj}) to {ipns}'.format(
                 mark=latestMark.path,
                 obj=ipfsPath.objPath,
                 ipns=self.pyramid.ipnsKey
@@ -850,7 +850,7 @@ class EDAGBuildingPyramidController(MultihashPyramidToolButton):
 
     @ipfsOp
     async def initDag(self, ipfsop):
-        self.info('Loading EDAG from MFS metadata: {}'.format(
+        self.debug('Loading EDAG from MFS metadata: {}'.format(
             self.edagMetaPath))
 
         self.edag = self.edagClass(self.edagMetaPath)
@@ -870,7 +870,7 @@ class EDAGBuildingPyramidController(MultihashPyramidToolButton):
         pass
 
     def onPyramidDagCidChanged(self, cidStr):
-        self.info("Pyramid's DAG moving to CID: {}".format(cidStr))
+        self.debug("Pyramid's DAG moving to CID: {}".format(cidStr))
 
         path = IPFSPath(cidStr)
 
