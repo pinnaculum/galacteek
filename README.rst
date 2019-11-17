@@ -32,6 +32,10 @@ If you use Linux or MacOS you can download a prebuilt image
 (an AppImage for Linux or a .dmg image for osx) from the releases_
 page.
 
+The main images are built from the *master* branch. Latest
+(development) images are built from the *pimp-my-dweb* branch.
+They contain new features like DID (IPID) support.
+
 If you use any other system or want to install the software
 manually you can always install from PyPI.
 
