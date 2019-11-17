@@ -552,11 +552,10 @@ class PeersManager(GalacteekTab):
     async def onFollowPeer(self, ipfsop, peerCtx):
         profile = ipfsop.ctx.currentProfile
 
-        if profile.ipid != peerCtx.ipid:
-            await profile.userInfo.follow(
-                peerCtx.ipid.did,
-                peerCtx.ident.iphandle
-            )
+        await profile.userInfo.follow(
+            peerCtx.ipid.did,
+            peerCtx.ident.iphandle
+        )
 
     @ipfsOp
     async def followPeerFeed(self, op, peerCtx):
