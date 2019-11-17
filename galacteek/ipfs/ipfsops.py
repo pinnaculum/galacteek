@@ -742,6 +742,8 @@ class IPFSOperator(object):
                                       timeout)
         except Exception:
             return None
+        except aioipfs.APIError:
+            return None
         else:
             return stat
 

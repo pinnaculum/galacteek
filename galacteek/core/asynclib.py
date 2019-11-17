@@ -2,6 +2,7 @@ from collections import UserList
 import asyncio
 import functools
 import aiofiles
+import traceback
 
 
 class AsyncSignal(UserList):
@@ -51,9 +52,16 @@ class AsyncSignal(UserList):
                 continue
 
 
+def ensureGenericCallback(future):
+    try:
+        future.result()
+    except Exception:
+        traceback.print_exc()
+
+
 def ensure(coro, **kw):
     """ 'futcallback' should not be used in the coroutine's kwargs """
-    callback = kw.pop('futcallback', None)
+    callback = kw.pop('futcallback', ensureGenericCallback)
     future = asyncio.ensure_future(coro, **kw)
     if callback:
         future.add_done_callback(callback)
