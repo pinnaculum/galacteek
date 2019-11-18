@@ -7,6 +7,7 @@ import traceback
 
 from galacteek import log as logger
 from galacteek import AsyncSignal
+from galacteek import ensureLater
 
 from galacteek.ipfs.pubsub import TOPIC_MAIN
 from galacteek.ipfs.pubsub import TOPIC_PEERS
@@ -189,6 +190,7 @@ class PubsubService(object):
         except Exception as e:
             self.debug('Serve interrupted by unknown exception {}'.format(
                 str(e)))
+            ensureLater(10, self.serve)
 
     async def send(self, data, topic=None):
         """
@@ -360,7 +362,7 @@ class PSPeersService(JSONPubsubService):
                          filterSelfMessages=False)
 
         self._curProfile = None
-        self._identEvery = 30
+        self._identEvery = 25
         self.ipfsCtx.profileChanged.connect(self.onProfileChanged)
 
     @property
