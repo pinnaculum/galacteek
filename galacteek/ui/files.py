@@ -525,6 +525,7 @@ class FileManager(QWidget):
                     self.ui.refreshButton,
                     self.ui.localFileManagerSwitch,
                     self.ui.fileManagerButton,
+                    self.ui.fsOptionsButton,
                     self.ui.pathSelector,
                     self.ui.offlineButton,
                     self.ui.searchFiles]:

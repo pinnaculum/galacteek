@@ -177,6 +177,7 @@ class MainWindowLogHandler(Handler, StringFormatterHandlerMixin):
 
     modulesColorTable = {
         'galacteek.ui.resource': '#7f8491',
+        'galacteek.did.ipid': '#FA8A47',
         'galacteek.core.profile': 'blue'
     }
 

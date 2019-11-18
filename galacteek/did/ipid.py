@@ -89,6 +89,8 @@ class IPService:
             srvStr = 'Image gallery'
         elif self.type == self.SRV_TYPE_GENERICPYRAMID:
             srvStr = 'Generic pyramid'
+        elif self.type == self.SRV_TYPE_ATOMFEED:
+            srvStr = 'Atom feed'
         else:
             srvStr = 'Unknown service'
 
@@ -358,9 +360,10 @@ class IPIdentifier(DAGOperations):
                                     cache='always',
                                     cacheOrigin='ipidmanager',
                                     timeout=timeout):
+                self.message('Published !', level='info')
                 self.message(
-                    'Published IPID with DID docCid: {docCid}'.format(
-                        docCid=self.docCid), level='info')
+                    'Published IPID {did} with docCid: {docCid}'.format(
+                        did=self.did, docCid=self.docCid))
                 return True
             else:
                 self.message('Error publishing IPID with DID: {did}'.format(
