@@ -183,6 +183,8 @@ can change the IPFS connection settings by clicking on the settings icon in the
 toolbar and restart the application afterwards. If using a custom daemon, you
 should enable pubsub or some features won't be available.
 
+- Decentralized Identifiers (DID) support with IPID_ (support for
+  other DID methods is planned)
 - Browsing sessions with automatic pinning (pins every page you browse)
 - File manager with drag-and-drop support
 - Search content with the ipfs-search_ search engine
@@ -273,3 +275,4 @@ from the ipfs-logo_ project's repository is included, unchanged.
 .. _ENS: https://ens.domains/
 .. _in-web-browsers: https://github.com/ipfs/in-web-browsers
 .. _AppImage: https://appimage.org/
+.. _IPID: https://github.com/jonnycrunch/ipid
