@@ -256,8 +256,6 @@ QToolButton#profileButton::pressed {
     background-color: #eec146;
 }
 
-
-
 /* Quick Access tool buttons */
 
 QToolButton#qaToolButton::hover {
@@ -286,12 +284,10 @@ QTreeView::item#peersMgrView {
 }
 
 QTreeView::item:open#peersMgrView {
-    font: 14pt "Inter UI";
-    color: #F16A3C;
+    color: #AA3D2B;
 }
 
 QTreeView::item:selected#peersMgrView {
-    font: 14pt "Inter UI";
     color: #4a9ea1;
 }
 
