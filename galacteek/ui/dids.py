@@ -14,18 +14,6 @@ from .helpers import getIcon
 from .helpers import runDialog
 
 
-def onIpServiceTriggered(action):
-    app = QApplication.instance()
-
-    data = action.data()
-    service = data['service']
-    ctx = data.get('ctx')
-
-    if service:
-        ensure(app.resourceOpener.browseIpService(
-            service.id, serviceCtx=ctx))
-
-
 class DIDExplorer:
     def __init__(self):
         self.app = QApplication.instance()
@@ -96,11 +84,17 @@ async def buildIpServicesMenu(ipid: IPIdentifier,
                     }
                 })
 
-                action.triggered.connect(lambda checked: ensure(
-                    didTower.didServiceObjectOpenRequest.emit(
+                def emitObjectOpen(tower, did, serviceId, objectId):
+                    ensure(tower.didServiceObjectOpenRequest.emit(
+                        did, serviceId, objectId
+                    ))
+
+                action.triggered.connect(
+                    functools.partial(
+                        emitObjectOpen, didTower,
                         ipid.did, service.id, obj['id']
                     )
-                ))
+                )
 
                 menu.addAction(action)
 
@@ -115,11 +109,14 @@ async def buildIpServicesMenu(ipid: IPIdentifier,
                 'ctx': {}
             })
 
-            action.triggered.connect(lambda checked: ensure(
-                didTower.didServiceOpenRequest.emit(
-                    ipid.did, service.id, {}
+            def emitOpen(tower, did, serviceId):
+                ensure(tower.didServiceOpenRequest.emit(
+                    did, serviceId, {})
                 )
-            ))
+
+            action.triggered.connect(
+                functools.partial(emitOpen, didTower, ipid.did, service.id)
+            )
 
             action.setToolTip(service.id)
             sMenu.addAction(action)
