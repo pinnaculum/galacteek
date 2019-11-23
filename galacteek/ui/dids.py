@@ -43,7 +43,8 @@ def addIpServiceCollection(ipid: IPIdentifier):
 
     runDialog(
         GenericTextInputDialog, 'Collection name',
-        maxLength=32, title='IP collection service',
+        inputRegExp=r'[A-Za-z0-9\-_]+',
+        maxLength=24, title='IP collection service',
         accepted=addService
     )
 
