@@ -460,6 +460,8 @@ class ProfileEditDialog(QDialog):
 
                 break
 
+        await ipfsop.ctx.pubsub.services[TOPIC_PEERS].sendLogoutMessage()
+
         self.ui.updateButton.setEnabled(False)
         self.infoMessage('Your IP handle and DID were updated')
         self.updateProfile()
