@@ -1,8 +1,8 @@
 from collections import UserList
 import asyncio
+import traceback
 import functools
 import aiofiles
-import traceback
 
 
 class AsyncSignal(UserList):
@@ -13,12 +13,14 @@ class AsyncSignal(UserList):
     callback list. Adding signals works by just using append()
     """
 
-    def __init__(self, *signature):
+    def __init__(self, *signature, **kw):
         super().__init__()
+        self._id = kw.pop('_id', 'no id')
         self._sig = signature
 
-    def __repr__(self):
-        return '<AsyncSignal: signature: {!r}>'.format(list(self._sig))
+    def __str__(self):
+        return '<AsyncSignal({id}): signature: {!r}>'.format(
+            list(self._sig), id='no id')
 
     def disconnect(self, cbk):
         try:
@@ -36,19 +38,25 @@ class AsyncSignal(UserList):
 
         if len(args) != len(self._sig):
             log.debug(
-                '{!r}: does not match signature!'.format(self))
+                '{!r}: does not match signature: {} !'.format(
+                    self, *args))
             return
 
         for receiver in self:
             try:
                 if isinstance(receiver, functools.partial) and \
                         asyncio.iscoroutinefunction(receiver.func):
-                    await receiver.func(*(args + receiver.args), **kwargs)
-                else:
+                    await receiver.func(*(receiver.args + args), **kwargs)
+                elif isinstance(receiver, functools.partial) and \
+                        callable(receiver.func):
+                    receiver.func(*(receiver.args + args), **kwargs)
+                elif asyncio.iscoroutinefunction(receiver):
                     await receiver(*args, **kwargs)
             except Exception as err:
-                log.debug('{!r}: exception when emitting signal: {}'.format(
-                    self, str(err)))
+                log.debug(
+                    '{!r}: callback: {cbk}: exception at emission: {e}'.format(
+                        self, cbk=receiver, e=str(err)))
+                traceback.print_exc()
                 continue
 
 
@@ -68,8 +76,11 @@ def ensure(coro, **kw):
     return future
 
 
-def partialEnsure(coro, **kw):
-    return functools.partial(ensure, coro)
+def partialEnsure(coro, *args, **kw):
+    def _pwrapper(coro, *args, **kw):
+        ensure(coro(*args, **kw))
+
+    return functools.partial(_pwrapper, coro, *args, **kw)
 
 
 def soonish(cbk, *args, **kw):

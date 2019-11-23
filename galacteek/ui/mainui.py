@@ -65,6 +65,7 @@ from . import eventlog
 from . import pin
 from . import chat
 
+from .dids import DIDExplorer
 from .clips import RotatingCubeClipSimple
 from .clips import RotatingCubeRedFlash140d
 from .eth import EthereumStatusButton
@@ -468,6 +469,9 @@ class MainWindow(QMainWindow):
 
         self.menuManual = QMenu(iManual(), self)
 
+        # DID explorer
+        self.didExplorer = DIDExplorer()
+
         # Global pin-all button
         self.pinAllGlobalButton = QToolButton(self)
         self.pinAllGlobalButton.setIcon(getIcon('pin.png'))
@@ -610,11 +614,11 @@ class MainWindow(QMainWindow):
             parent=self.profileMenu)
         self.profileMenu.addMenu(self.userWebsiteManager.blogMenu)
 
-        self.profileEditButton = ProfileButton(
+        self.profileButton = ProfileButton(
             menu=self.profileMenu,
             icon=iconProfile
         )
-        self.profileEditButton.setEnabled(False)
+        self.profileButton.setEnabled(False)
 
         # Hashmarks mgr button
 
@@ -700,7 +704,7 @@ class MainWindow(QMainWindow):
         self.toolbarMain.addWidget(self.browseButton)
         self.toolbarMain.addWidget(self.hashmarkMgrButton)
         self.toolbarMain.addWidget(self.hashmarksSearcher)
-        self.toolbarMain.addWidget(self.profileEditButton)
+        self.toolbarMain.addWidget(self.profileButton)
         self.toolbarMain.addWidget(self.peersButton)
         self.toolbarMain.addWidget(self.atomButton)
 
@@ -917,19 +921,19 @@ class MainWindow(QMainWindow):
                   title='IP profile')
 
     def onProfileWebsiteUpdated(self):
-        self.profileEditButton.setStyleSheet('''
+        self.profileButton.setStyleSheet('''
             QToolButton {
                 background-color: #B7CDC2;
             }
         ''')
         self.app.loop.call_later(
-            3, self.profileEditButton.setStyleSheet,
+            3, self.profileButton.setStyleSheet,
             'QToolButton {}'
         )
 
     @asyncify
     async def onProfileChanged(self, pName, profile):
-        self.profileEditButton.setEnabled(False)
+        self.profileButton.setEnabled(False)
 
         if not profile.initialized:
             return
@@ -943,9 +947,9 @@ class MainWindow(QMainWindow):
         profile.sharedHManager.hashmarksLoaded.connect(hashmarksLoaded)
 
         await profile.userInfo.loaded
-        self.profileEditButton.setEnabled(True)
+        self.profileButton.setEnabled(True)
 
-        await self.profileEditButton.changeProfile(profile)
+        await self.profileButton.changeProfile(profile)
 
         for action in self.profilesActionGroup.actions():
             if action.data() == pName:
@@ -1094,7 +1098,7 @@ class MainWindow(QMainWindow):
                 self.atomButton,
                 self.hashmarkMgrButton,
                 self.hashmarksSearcher,
-                self.profileEditButton]:
+                self.profileButton]:
             btn.setEnabled(flag)
 
     def statusMessage(self, msg):

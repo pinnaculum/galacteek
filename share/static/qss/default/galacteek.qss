@@ -282,7 +282,12 @@ QTreeView::branch#peersMgrView {
 }
 
 QTreeView::item#peersMgrView {
-    padding: 4px;
+    padding: 6px;
+}
+
+QTreeView::item:open#peersMgrView {
+    font: 14pt "Inter UI";
+    color: #F16A3C;
 }
 
 QTreeView::item:selected#peersMgrView {

@@ -579,7 +579,7 @@ p, li { white-space: pre-wrap; }
         <translation>Recherche</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="54"/>
+        <location filename="../../galacteek/ui/files.py" line="57"/>
         <source>Error importing file {}</source>
         <translation>Erreur en important le fichier {}</translation>
     </message>
@@ -599,52 +599,52 @@ p, li { white-space: pre-wrap; }
         <translation type="obsolete">Le fichier {0} a été ajouté</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="69"/>
+        <location filename="../../galacteek/ui/files.py" line="72"/>
         <source>Loading file {0}</source>
         <translation>Chargement du fichier {0}</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="74"/>
+        <location filename="../../galacteek/ui/files.py" line="77"/>
         <source>Loading {0}</source>
         <translation>Chargement: {0}</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="91"/>
+        <location filename="../../galacteek/ui/files.py" line="94"/>
         <source>Open with</source>
         <translation>Ouvrir avec</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="95"/>
+        <location filename="../../galacteek/ui/files.py" line="98"/>
         <source>Delete file</source>
         <translation>Supprimer le fichier</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="99"/>
+        <location filename="../../galacteek/ui/files.py" line="102"/>
         <source>Explore directory</source>
         <translation>Explorer le répertoire</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="103"/>
+        <location filename="../../galacteek/ui/files.py" line="106"/>
         <source>Unlink file</source>
         <translation>Déréferencer le fichier</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="107"/>
+        <location filename="../../galacteek/ui/files.py" line="110"/>
         <source>Hashmark</source>
         <translation>Hash-marquer</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="111"/>
+        <location filename="../../galacteek/ui/files.py" line="114"/>
         <source>Browse</source>
         <translation>Naviguer</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="115"/>
+        <location filename="../../galacteek/ui/files.py" line="118"/>
         <source>Select directory</source>
         <translation>Sélectionnez un répertoire</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="119"/>
+        <location filename="../../galacteek/ui/files.py" line="122"/>
         <source>Select one or more files to import</source>
         <translation>Selectionnez un ou plusieurs fichiers a importer</translation>
     </message>
@@ -679,7 +679,7 @@ p, li { white-space: pre-wrap; }
         <translation>Documents</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="59"/>
+        <location filename="../../galacteek/ui/files.py" line="62"/>
         <source>Added {0}</source>
         <translation type="unfinished"></translation>
     </message>
@@ -699,22 +699,22 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="124"/>
+        <location filename="../../galacteek/ui/files.py" line="127"/>
         <source>Offline mode</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="132"/>
+        <location filename="../../galacteek/ui/files.py" line="135"/>
         <source>Announce (DHT provide)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="138"/>
+        <location filename="../../galacteek/ui/files.py" line="141"/>
         <source>Announce (DHT provide, recursive)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="168"/>
+        <location filename="../../galacteek/ui/files.py" line="171"/>
         <source>Offline mode: in this mode your files will not be immediately announced on the DHT</source>
         <translation type="unfinished"></translation>
     </message>
@@ -739,7 +739,7 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="64"/>
+        <location filename="../../galacteek/ui/files.py" line="67"/>
         <source>Imported {0} file(s)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -754,12 +754,12 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="79"/>
+        <location filename="../../galacteek/ui/files.py" line="82"/>
         <source>Listing MFS path: {0}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="85"/>
+        <location filename="../../galacteek/ui/files.py" line="88"/>
         <source>Timeout while listing MFS path: {0}</source>
         <translation type="unfinished"></translation>
     </message>
@@ -769,27 +769,27 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="144"/>
+        <location filename="../../galacteek/ui/files.py" line="147"/>
         <source>Use raw blocks for leaf nodes</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="150"/>
+        <location filename="../../galacteek/ui/files.py" line="153"/>
         <source>DAG generation format</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="156"/>
+        <location filename="../../galacteek/ui/files.py" line="159"/>
         <source>Balanced</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="162"/>
+        <location filename="../../galacteek/ui/files.py" line="165"/>
         <source>Trickle</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="128"/>
+        <location filename="../../galacteek/ui/files.py" line="131"/>
         <source>Chunker</source>
         <translation type="unfinished"></translation>
     </message>
@@ -815,27 +815,27 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>Galacteek</name>
     <message>
-        <location filename="../../galacteek/application.py" line="101"/>
+        <location filename="../../galacteek/application.py" line="102"/>
         <source>IPFS daemon started</source>
         <translation>Démon IPFS: démarré</translation>
     </message>
     <message>
-        <location filename="../../galacteek/application.py" line="105"/>
+        <location filename="../../galacteek/application.py" line="106"/>
         <source>IPFS daemon&apos;s gateway started</source>
         <translation>Démon IPFS: passerelle HTTP démarrée</translation>
     </message>
     <message>
-        <location filename="../../galacteek/application.py" line="110"/>
+        <location filename="../../galacteek/application.py" line="111"/>
         <source>IPFS daemon is ready</source>
         <translation>Démon IPFS: prêt</translation>
     </message>
     <message>
-        <location filename="../../galacteek/application.py" line="114"/>
+        <location filename="../../galacteek/application.py" line="115"/>
         <source>Problem starting IPFS daemon</source>
         <translation>Démon IPFS: problème de démarrage</translation>
     </message>
     <message>
-        <location filename="../../galacteek/application.py" line="119"/>
+        <location filename="../../galacteek/application.py" line="120"/>
         <source>Problem initializing the IPFS daemon (check the ports configuration)</source>
         <translation>Démon IPFS: problème lors de l&apos;initialisation (vérifiez les ports)</translation>
     </message>
@@ -1148,7 +1148,7 @@ p, li { white-space: pre-wrap; }
         <translation type="obsolete">Naviguer sur le chemin IPFS: {0}</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="95"/>
+        <location filename="../../galacteek/ui/mainui.py" line="96"/>
         <source>
 Path: {0}, nodes processed: {1}</source>
         <translation>
@@ -1645,7 +1645,7 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="102"/>
+        <location filename="../../galacteek/ui/mainui.py" line="103"/>
         <source>
         &lt;p align=&apos;center&apos;&gt;
         &lt;img src=&apos;:/share/icons/galacteek-incandescent.png&apos; /&gt;
@@ -1880,22 +1880,22 @@ Chemin: {0}, nodes traitées: {1}</translation>
 <context>
     <name>IPFSSearchResults</name>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="45"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="42"/>
         <source>Results count: &lt;b&gt;{0}&lt;/b&gt; (max score: &lt;b&gt;{1}&lt;/b&gt;)</source>
         <translation>&lt;b&gt;{0} résultats&lt;/b&gt; (score maximum: &lt;b&gt;{1}&lt;/b&gt;)</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="53"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="50"/>
         <source>&lt;b&gt;No results found&lt;/b&gt;</source>
         <translation>&lt;b&gt;Pas de résultats trouvés&lt;/b&gt;</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="63"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="60"/>
         <source>&lt;b&gt;Searching ...&lt;/b&gt;</source>
         <translation>&lt;b&gt;Recherche en cours ...&lt;/b&gt;</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="58"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="55"/>
         <source>&lt;b&gt;Error while fetching results&lt;/b&gt;</source>
         <translation>&lt;b&gt;Erreur lors du chargement des résultats&lt;/b&gt;</translation>
     </message>
@@ -2172,11 +2172,6 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="obsolete">Recherche</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/peersmgr.ui" line="24"/>
-        <source>Right-click on a peer to discover services</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <location filename="../../galacteek/ui/peers.py" line="71"/>
         <source>
         &lt;p&gt;
@@ -2187,6 +2182,11 @@ Chemin: {0}, nodes traitées: {1}</translation>
         &lt;p&gt;{3}&lt;/p&gt;
         &lt;/p&gt;
         </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/peersmgr.ui" line="24"/>
+        <source>Right-click/double-click on a peer to discover IP services</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

@@ -3,22 +3,28 @@ import os.path
 import json
 import re
 import time
+from yarl import URL
+from cachetools import LRUCache
 
 from urllib.parse import urlencode
 
 from galacteek import AsyncSignal
 from galacteek import ensure
+from galacteek import log
+
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import stripIpfs
 from galacteek.ipfs.cidhelpers import joinIpns
+from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.dag import DAGOperations
 from galacteek.did import ipidIdentRe
 from galacteek.did import didExplode
 from galacteek.did import normedUtcDate
 from galacteek.core.ldloader import aioipfs_document_loader
 from galacteek.core import asyncjsonld as jsonld
-
-from galacteek import log
+from galacteek.core import utcDatetimeIso
+from galacteek.core.asynclib import async_enterable
+from galacteek.core.asynccache import amlrucache
 
 
 def ipidFormatValid(did):
@@ -33,7 +39,37 @@ class IPIDServiceException(Exception):
     pass
 
 
-class IPService:
+class IPServiceRegistry(type):
+    IPSREGISTRY = {}
+
+    def __new__(cls, name, bases, attrs):
+        new_cls = type.__new__(cls, name, bases, attrs)
+        cls.IPSREGISTRY[new_cls.__name__] = new_cls
+        return new_cls
+
+    @classmethod
+    def get_registry(cls):
+        return dict(cls.IPSREGISTRY)
+
+
+class IPServiceEditor(object):
+    def __init__(self, ipid, service, sync=True):
+        self.ipid = ipid
+        self.service = service
+        self.sync = sync
+
+    async def __aenter__(self):
+        log.debug('Editing Service: {}'.format(self.service.get('id')))
+        return self
+
+    async def __aexit__(self, *args):
+        if self.sync is True:
+            await self.ipid.flush()
+
+        await self.ipid.sServicesChanged.emit()
+
+
+class IPService(metaclass=IPServiceRegistry):
     """
     InterPlanetary Service (attached to an IPID)
     """
@@ -46,9 +82,22 @@ class IPService:
     SRV_TYPE_VC = 'VerifiableCredentialService'
     SRV_TYPE_GENERICPYRAMID = 'GalacteekPyramidService'
 
-    def __init__(self, dagNode: dict):
+    SRV_TYPE_COLLECTION = 'ObjectsCollectionService'
+
+    forTypes = []
+    container = False
+
+    def __init__(self, dagNode: dict, ipid):
         self._srv = dagNode
         self._didEx = didExplode(self.id)
+        self._ipid = ipid
+
+        self.sChanged = AsyncSignal()
+        self.sChanged.connectTo(self.onChanged)
+
+    @property
+    def ipid(self):
+        return self._ipid
 
     @property
     def id(self):
@@ -82,6 +131,22 @@ class IPService:
     def endpoint(self):
         return self._srv['serviceEndpoint']
 
+    async def expandEndpoint(self):
+        exSrv = await self.ipid.expandService(self.id)
+        if not exSrv:
+            return None
+
+        try:
+            return exSrv.get('https://w3id.org/did#serviceEndpoint')[0]
+        except Exception:
+            return None
+
+    async def onChanged(self):
+        pass
+
+    def __repr__(self):
+        return self.id
+
     def __str__(self):
         if self.type == self.SRV_TYPE_DWEBBLOG:
             srvStr = 'User blog'
@@ -94,8 +159,84 @@ class IPService:
         else:
             srvStr = 'Unknown service'
 
-        return 'IP Service: {srv}'.format(
+        return 'IPS: {srv}'.format(
             srv=srvStr
+        )
+
+
+class IPGenericService(IPService):
+    forTypes = [
+        IPService.SRV_TYPE_ATOMFEED,
+        IPService.SRV_TYPE_DWEBBLOG,
+        IPService.SRV_TYPE_GALLERY,
+        IPService.SRV_TYPE_GENERICPYRAMID
+    ]
+
+
+class CollectionService(IPService):
+    forTypes = ['ObjectsCollectionService']
+    endpointName = 'ObjectsCollectionEndpoint'
+    container = True
+
+    async def getObjectWithId(self, id: str):
+        async for obj in self.contained():
+            if obj['id'] == id:
+                return obj
+
+    async def contained(self):
+        endpoint = await self.expandEndpoint()
+        if not endpoint:
+            return
+
+        for obj in endpoint.get(self.ipid.contextUrl(
+                self.endpointName, fragment='objects')):
+            try:
+                yield {
+                    'id': obj['@id'],
+                    'path': obj.get(
+                        self.ipid.contextUrl(
+                            'IpfsObject', fragment='path')
+                    )[0]['@value'],
+                    'name': obj.get(
+                        self.ipid.contextUrl(
+                            'IpfsObject', fragment='name')
+                    )[0]['@value']
+                }
+            except Exception:
+                continue
+
+    @ipfsOp
+    async def add(self, ipfsop, objPath, name=None,
+                  description='No description'):
+        path = IPFSPath(objPath, autoCidConv=True)
+        if not path.valid:
+            raise ValueError('Invalid path')
+
+        if not path.isRoot:
+            oName = path.basename
+        else:
+            oName = name if name else hex(int(time.time() * 10000))[2:]
+
+        oId = '{didurl}/{o}'.format(didurl=self.id, o=oName)
+        try:
+            async with self.ipid.editService(self.id) as editor:
+                editor.service['serviceEndpoint']['objects'].append({
+                    '@context': await ipfsop.ldContext('IpfsObject'),
+                    'id': oId,
+                    'objectPath': objPath,
+                    'objectName': path.basename,
+                    'objectDescription': description
+                })
+
+            return True
+        except Exception as err:
+            self.ipid.message('Error editing collection service: {}'.format(
+                str(err)))
+            return False
+
+    def __str__(self):
+        return 'IPS: Collection ({name})'.format(
+            name=self.endpoint.get('name', 'Unknown')
         )
 
 
@@ -106,7 +247,7 @@ class IPIdentifier(DAGOperations):
     This tries to follow the IPID spec as much as possible.
     """
 
-    def __init__(self, did, localId=False):
+    def __init__(self, did, localId=False, ldCache=None):
         self._did = did
         self._document = {}
         self._docCid = None
@@ -114,8 +255,17 @@ class IPIdentifier(DAGOperations):
         self._lastResolve = None
         self._latestModified = None
 
+        # JSON-LD expanded cache
+        self.cache = ldCache if ldCache else LRUCache(4)
+
         # Async sigs
         self.sChanged = AsyncSignal(str)
+        self.sServicesChanged = AsyncSignal()
+        self.sChanged.connectTo(self.onDidChanged)
+
+    @property
+    def local(self):
+        return self._localId is True
 
     @property
     def dagCid(self):
@@ -152,6 +302,16 @@ class IPIdentifier(DAGOperations):
     @property
     def latestModified(self):
         return self._latestModified
+
+    def contextUrl(self, path, fragment=None):
+        return str(
+            URL.build(
+                host='galacteek.ld.contexts',
+                scheme='ipschema',
+                path='/' + path,
+                fragment=fragment
+            )
+        )
 
     def message(self, msg, level='debug'):
         getattr(log, level)('IPID ({loc}) ({did}): {msg}'.format(
@@ -193,31 +353,63 @@ class IPIdentifier(DAGOperations):
 
         print(json.dumps(self.doc, indent=4))
 
+    async def onDidChanged(self, cid):
+        cacheKey = repr(self)
+        if cacheKey in self.cache:
+            # Reset expanded cache
+            self.message('LRU cache reset')
+            del self.cache[cacheKey]
+
     @ipfsOp
-    async def inline(self, ipfsop):
+    async def inline(self, ipfsop, path=''):
         # In-line the JSON-LD contexts in the DAG for JSON-LD usage
 
-        return await ipfsop.ldInline(await self.get())
+        return await ipfsop.ldInline(await self.get(path=path))
 
     @ipfsOp
-    async def expand(self, ipfsop):
+    async def compact(self, ipfsop):
+        pass
+
+    @amlrucache
+    async def expand(self):
+        return await self._expand()
+
+    @ipfsOp
+    async def _expand(self, ipfsop, path=''):
         """
         Perform a JSON-LD expansion on the DID document
         """
+
         try:
-            expanded = await jsonld.expand(await self.inline(), {
+            expanded = await jsonld.expand(await self.inline(path=path), {
                 'documentLoader': await aioipfs_document_loader(ipfsop.client)
             })
 
-            if expanded:
-                return expanded.pop()
+            if isinstance(expanded, list) and len(expanded) > 0:
+                return expanded[0]
         except Exception as err:
             self.message('Error expanding DID document: {}'.format(
                 str(err)))
 
+    @ipfsOp
+    async def expandService(self, ipfsop, srvId):
+        try:
+            expanded = await self.expand()
+            if not expanded:
+                return None
+
+            for srv in expanded.get('https://w3id.org/did#service', []):
+                if srv.get('@id') == srvId:
+                    return srv
+        except Exception:
+            pass
+
     async def update(self, obj: dict, publish=False):
         self._document.update(obj)
         await self.updateDocument(self.doc, publish=publish)
+
+    async def flush(self):
+        await self.updateDocument(self.doc, publish=True)
 
     async def addServiceRaw(self, service: dict, publish=True):
         sid = service.get('id')
@@ -232,9 +424,13 @@ class IPIdentifier(DAGOperations):
 
         self._document['service'].append(service)
         await self.updateDocument(self.doc, publish=publish)
+        await self.sServicesChanged.emit()
 
     @ipfsOp
-    async def addServiceContexted(self, ipfsop, service: dict, publish=True):
+    async def addServiceContexted(self, ipfsop, service: dict,
+                                  endpoint=None,
+                                  publish=True,
+                                  context='IpfsObjectEndpoint'):
         sid = service.get('id')
         assert isinstance(sid, str)
 
@@ -245,13 +441,35 @@ class IPIdentifier(DAGOperations):
             raise IPIDServiceException(
                 'An IP service already exists with this ID')
 
-        srvCtx = await ipfsop.ldContext('IpfsObjectEndpoint')
+        srvCtx = await ipfsop.ldContext(context)
 
         if srvCtx:
-            service['serviceEndpoint']['@context'] = srvCtx
+            service['serviceEndpoint'] = {
+                '@context': srvCtx
+            }
+
+            if isinstance(endpoint, dict):
+                service['serviceEndpoint'].update(endpoint)
 
             self._document['service'].append(service)
             await self.updateDocument(self.doc, publish=publish)
+            await self.sServicesChanged.emit()
+
+            return self._serviceInst(service)
+
+    @ipfsOp
+    async def addServiceCollection(self, ipfsop, name):
+        return await self.addServiceContexted({
+            'id': self.didUrl(
+                path=os.path.join('/collections', name)
+            ),
+            'type': IPService.SRV_TYPE_COLLECTION,
+        }, context='ObjectsCollectionEndpoint',
+            endpoint={
+            'name': name,
+            'created': utcDatetimeIso(),
+            'objects': []
+        }, publish=True)
 
     @ipfsOp
     async def updateDocument(self, ipfsop, document, publish=False):
@@ -295,7 +513,8 @@ class IPIdentifier(DAGOperations):
 
     async def refresh(self):
         if not self._lastResolve or \
-                (time.time() - self._lastResolve) > 60 * 5:
+                (time.time() - self._lastResolve) > 60 * 1:
+            self.message('Reloading')
             return await self.load()
 
     @ipfsOp
@@ -313,8 +532,6 @@ class IPIdentifier(DAGOperations):
             self.message('Loading from initial CID: {}'.format(initialCid))
             dagCid = initialCid
 
-        self._lastResolve = time.time()
-
         self.message('DID resolves to {}'.format(dagCid))
 
         if self.docCid == dagCid:
@@ -322,6 +539,8 @@ class IPIdentifier(DAGOperations):
 
             self.message('DID document already at latest iteration')
             return False
+
+        self._lastResolve = time.time()
 
         if pin is True:
             await ipfsop.pin(dagCid)
@@ -425,6 +644,19 @@ class IPIdentifier(DAGOperations):
     async def getServices(self):
         return await self.dagGet('service')
 
+    def _serviceInst(self, srv):
+        stype = srv.get('type')
+
+        for cname, sclass in IPServiceRegistry.IPSREGISTRY.items():
+            if stype in sclass.forTypes:
+                return sclass(srv, self)
+
+    async def discoverServices(self):
+        for srv in await self.getServices():
+            _inst = self._serviceInst(srv)
+            if _inst:
+                yield _inst
+
     async def getServiceByType(self, srvType: str):
         """
         Get first service found that matches the service type
@@ -434,24 +666,40 @@ class IPIdentifier(DAGOperations):
 
         for srv in await self.getServices():
             if srv.get('type') == srvType:
-                return IPService(srv)
+                return IPService(srv, self)
 
     async def searchServices(self, query: str):
         for srvNode in await self.getServices():
-            service = IPService(srvNode)
+            service = IPService(srvNode, self)
 
             if re.search(query, service.id, re.IGNORECASE):
                 yield service
 
     async def searchServiceById(self, _id: str):
         for srvNode in await self.getServices():
-            service = IPService(srvNode)
 
-            if service.id == _id:
-                return service
+            if srvNode['id'] == _id:
+                _inst = self._serviceInst(srvNode)
+                if _inst:
+                    return _inst
+
+    @async_enterable
+    async def editService(self, _id: str, sync=True):
+        """
+        Edit the IP service with the given ID
+
+        Returns an async context which flushes the DID document
+        by default on leaving the context
+        """
+        for srv in self._document['service']:
+            if srv['id'] == _id:
+                return IPServiceEditor(self, srv, sync=sync)
 
     def __eq__(self, other):
         return self.did == other.did
+
+    def __repr__(self):
+        return self.did
 
     def __str__(self):
         return 'IP Identifier: {did}'.format(did=self.did)
@@ -462,6 +710,9 @@ class IPIDManager:
         self._managedIdentifiers = {}
         self._lock = asyncio.Lock()
         self._resolveTimeout = resolveTimeout
+
+        # JSON-LD cache
+        self._ldCache = LRUCache(256)
 
     async def track(self, ipid: IPIdentifier):
         with await self._lock:
@@ -504,7 +755,9 @@ class IPIDManager:
 
         rTimeout = timeout if timeout else self._resolveTimeout
 
-        ipid = IPIdentifier(did, localId=localIdentifier)
+        ipid = IPIdentifier(
+            did, localId=localIdentifier, ldCache=self._ldCache)
+
         if await ipid.load(resolveTimeout=rTimeout, initialCid=initialCid):
             if track:
                 await self.track(ipid)

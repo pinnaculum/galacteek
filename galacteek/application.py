@@ -45,6 +45,7 @@ from galacteek.core.db import SqliteDatabase
 from galacteek.core.models.atomfeeds import AtomFeedsModel
 from galacteek.core.signaltowers import DAGSignalsTower
 from galacteek.core.signaltowers import URLSchemesTower
+from galacteek.core.signaltowers import DIDTower
 from galacteek.core.analyzer import ResourceAnalyzer
 
 from galacteek.core.schemes import SCHEME_MANUAL
@@ -489,6 +490,7 @@ class GalacteekApplication(QApplication):
                                  pubsubHashmarksExch=hExchEnabled)
         await self.ipfsCtx.profilesInit()
         await self.qSchemeHandler.start()
+        await self.importLdContexts()
 
         self.feedFollower = FeedFollower(self, self.marksLocal)
         self.feedFollowerTask = self.task(self.feedFollower.process)
@@ -519,6 +521,36 @@ class GalacteekApplication(QApplication):
         else:
             log.debug('App replication: success ({result})'.format(
                 result=replResult))
+
+    @ipfsOp
+    async def importLdContexts(self, ipfsop):
+        """
+        Import the JSON-LD contexts and associate the
+        directory entry with the 'galacteek.ld.contexts' key
+        """
+        contextsPath = pkg_resources.resource_filename(
+            'galacteek.ipfs', 'contexts')
+
+        if not os.path.isdir(contextsPath):
+            log.debug('LD contexts not found')
+            return
+
+        entry = await ipfsop.addPath(
+            contextsPath, recursive=True,
+            hidden=False
+        )
+        if entry:
+            log.debug('LD contexts sitting at: {}'.format(
+                entry.get('Hash')))
+            await ipfsop.keyGen(
+                'galacteek.ld.contexts',
+                checkExisting=True
+            )
+            ensure(ipfsop.publish(
+                entry['Hash'],
+                key='galacteek.ld.contexts',
+                allow_offline=True
+            ))
 
     @ipfsOp
     async def importQtResource(self, op, path):
@@ -610,7 +642,8 @@ class GalacteekApplication(QApplication):
     def setupMainObjects(self):
         self.towers = {
             'dags': DAGSignalsTower(self),
-            'schemes': URLSchemesTower(self)
+            'schemes': URLSchemesTower(self),
+            'did': DIDTower()
         }
 
         self.rscAnalyzer = ResourceAnalyzer(parent=self)
