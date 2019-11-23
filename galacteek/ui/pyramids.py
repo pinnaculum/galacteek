@@ -415,6 +415,10 @@ class MultihashPyramidToolButton(PopupToolButton):
             return IPFSPath(joinIpns(self.pyramid.ipnsKey))
 
     @property
+    def indexIpnsPath(self):
+        return self.ipnsKeyPath.child('index.html')
+
+    @property
     def pyramidion(self):
         return self._pyramidion
 
@@ -727,8 +731,9 @@ class MultihashPyramidToolButton(PopupToolButton):
         try:
             await ipid.addServiceRaw({
                 'id': ipid.didUrl(
-                    path='/pyramids',
-                    params={'name': self.pyramid.name}
+                    path='/pyramids/{}'.format(
+                        self.pyramid.name
+                    )
                 ),
                 'type': IPService.SRV_TYPE_GENERICPYRAMID,
                 'description': 'Generic pyramid: {}'.format(
@@ -909,10 +914,6 @@ class GalleryPyramidController(EDAGBuildingPyramidController):
     def indexPath(self):
         return IPFSPath(self.pyramid.latest, autoCidConv=True).child(
             'index.html')
-
-    @property
-    def indexIpnsPath(self):
-        return self.ipnsKeyPath.child('index.html')
 
     def onFileDropped(self, url):
         ensure(self.dropEventLocalFile(url))

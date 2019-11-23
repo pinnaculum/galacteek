@@ -1,5 +1,6 @@
 <RCC>
   <qresource>
+    <file>../../share/icons/blocks-cluster.png</file>
     <file>../../share/icons/helmet.png</file>
     <file>../../share/icons/ipservice.png</file>
     <file>../../share/icons/planets/mercury.png</file>

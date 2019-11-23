@@ -348,7 +348,7 @@ class IPFSResourceOpener(QObject):
             await self.openWithExternal(rscPath, 'open "%f"')
 
     @ipfsOp
-    async def browseIpService(self, ipfsop, serviceId):
+    async def browseIpService(self, ipfsop, serviceId, serviceCtx=None):
         """
         Browse/open an IP service registered on an IPID
         """
@@ -365,7 +365,19 @@ class IPFSResourceOpener(QObject):
             await self.app.mainWindow.atomButton.atomFeedSubscribe(
                 str(endpoint)
             )
-
         elif isinstance(endpoint, str):
             path = IPFSPath(endpoint, autoCidConv=True)
+            await self.open(path)
+
+    @ipfsOp
+    async def openIpServiceObject(self, ipfsop, serviceId, objectId):
+        logUser.info('Accessing IP service object {}'.format(objectId))
+
+        pService = await ipfsop.ipidManager.getServiceById(serviceId)
+        if not pService:
+            return
+
+        obj = await pService.getObjectWithId(objectId)
+        if obj:
+            path = IPFSPath(obj['path'], autoCidConv=True)
             await self.open(path)

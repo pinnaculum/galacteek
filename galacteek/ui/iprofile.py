@@ -87,7 +87,6 @@ class ProfileButton(PopupToolButton):
         self.setObjectName('profileButton')
 
         self.sMenu = QMenu(iIPServices(), self.menu)
-        self.sMenu.triggered.connect(self.onIpServiceTriggered)
         self.sMenu.setToolTipsVisible(True)
         self.sMenu.setIcon(getIcon('ipservice.png'))
         self.menu.addMenu(self.sMenu)
@@ -115,17 +114,16 @@ class ProfileButton(PopupToolButton):
         ipid = await self.curProfile.userInfo.ipIdentifier()
         if ipid:
             await buildIpServicesMenu(ipid, self.sMenu, parent=self.menu)
+            ipid.sChanged.connectTo(self.onDidChanged)
 
-    def onIpServiceTriggered(self, action):
-        service = action.data()
-
-        if service:
-            ensure(self.app.resourceOpener.browseIpService(
-                service.id))
+    async def onDidChanged(self, docCid: str):
+        await self.rebuildServicesMenu()
 
     async def onIdentityChanged(self, identityUid: str, personDid: str):
         log.debug('Identity changed to DID {}'.format(personDid))
+        await self.rebuildServicesMenu()
 
+    async def rebuildServicesMenu(self):
         ipid = await self.curProfile.userInfo.ipIdentifier()
         if ipid:
             log.debug('Regenerating IP services menu')

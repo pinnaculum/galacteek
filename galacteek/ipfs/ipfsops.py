@@ -417,7 +417,12 @@ class IPFSOperator(object):
         keys = await self.keys()
         return [key['Name'] for key in keys]
 
-    async def keyGen(self, keyName, type='rsa', keySize=2048):
+    async def keyGen(self, keyName, type='rsa', keySize=2048,
+                     checkExisting=False):
+        if checkExisting is True:
+            if keyName in await self.keysNames():
+                return
+
         return await self.waitFor(
             self.client.key.gen(keyName,
                                 type=type, size=keySize), 30
@@ -468,7 +473,7 @@ class IPFSOperator(object):
             self.debug(
                 'Publishing {path} to {dst} '
                 '(cache: {cache}/{cacheOrigin}, allowoffline: {off})'.format(
-                    path=path, dst=key, off=allow_offline,
+                    path=path, dst=key, off=aOffline,
                     cache=cache, cacheOrigin=cacheOrigin)
             )
 
@@ -678,17 +683,21 @@ class IPFSOperator(object):
 
     async def pin(self, path, recursive=False, timeout=3600):
         async def _pin(ppath, rec):
-            async for pinStatus in self.client.pin.add(
-                    ppath, recursive=rec):
-                self.debug('Pin status: {0} {1}'.format(
-                    ppath, pinStatus))
-                pins = pinStatus.get('Pins', None)
-                if pins is None:
-                    continue
-                if isinstance(pins, list) and ppath in pins:
-                    # Ya estamos
-                    return True
-            return False
+            try:
+                async for pinStatus in self.client.pin.add(
+                        ppath, recursive=rec):
+                    self.debug('Pin status: {0} {1}'.format(
+                        ppath, pinStatus))
+                    pins = pinStatus.get('Pins', None)
+                    if pins is None:
+                        continue
+                    if isinstance(pins, list) and ppath in pins:
+                        # Ya estamos
+                        return True
+                return False
+            except aioipfs.APIError as err:
+                self.debug('Pin error: {}'.format(err.message))
+                return False
         return await self.waitFor(_pin(path, recursive), timeout)
 
     async def unpin(self, obj):

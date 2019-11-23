@@ -19,7 +19,7 @@ didRe = re.compile(
     r'(?P<scheme>(did))' +
     r'\:(?P<method>([\w]+))\:(?P<id>([\w])+)' +
     r'(?P<params>([\w=:;]+)?)' +
-    r'(?P<path>([\w=/_\-]+)?)' +
+    r'(?P<path>([\w=/_\-().]+)?)' +
     r'(?P<query>(\?[\w=/_\-&]+)?)' +
     r'#?(?P<fragment>([\w]+)?)$'
 )

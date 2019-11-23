@@ -24,7 +24,6 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QPixmap
 
 from galacteek import ensure
-from galacteek import partialEnsure
 from galacteek import log
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import *
@@ -35,6 +34,7 @@ from galacteek.core.iphandle import SpaceHandle
 from galacteek.dweb.atom import DWEB_ATOM_FEEDFN
 from galacteek.did import didExplode
 
+from .dids import buildIpServicesMenu
 from . import ui_peersmgr
 from .widgets import *
 from .helpers import *
@@ -82,12 +82,19 @@ def iPeerToolTip(peerId, ipHandle, did, validated):
                     'QR Validated' if validated is True else 'Not validated')
 
 
+ItemTypeRole = Qt.UserRole + 1
+
+
 class PeerBaseItem(BaseAbstractItem):
+    itemType = None
+
     def tooltip(self, col):
         return ''
 
 
 class PeerTreeItem(PeerBaseItem):
+    itemType = 'peer'
+
     def __init__(self, peerCtx, parent=None):
         super().__init__(parent=parent)
         self.ctx = peerCtx
@@ -114,41 +121,82 @@ class PeerTreeItem(PeerBaseItem):
                 return iUnknown()
         if column == 1:
             return self.ctx.ipid.did
-        if column == 2:
-            return self.ctx.pingavg
-        if column == 3:
-            return self.ctx.ident.vplanet
 
         return QVariant(None)
 
     async def updateServices(self):
         esids = [it.service.id for it in self.childItems]
 
-        async for service in self.ctx.discoverServices():
+        async for service in self.ctx.ipid.discoverServices():
             if service.id in esids:
+                if service.container:
+                    for it in self.childItems:
+                        if it.service.id == service.id:
+                            await it.updateContained()
+
                 continue
 
             pSItem = PeerServiceTreeItem(service, parent=self)
             self.appendChild(pSItem)
 
+            if service.container:
+                await pSItem.updateContained()
+
+
+class PeerServiceObjectTreeItem(PeerBaseItem):
+    itemType = 'serviceObject'
+
+    def __init__(self, sObject, peerItem, parent=None):
+        super().__init__(parent=parent)
+        self.sObject = sObject
+        self.peerItem = peerItem
+        self.serviceItem = parent
+
+    def columnCount(self):
+        return 2
+
+    def userData(self, column):
+        pass
+
+    def tooltip(self, col):
+        return self.sObject.get('id')
+
+    def data(self, column):
+        if column == 0:
+            handle = self.peerItem.ctx.spaceHandle
+            exploded = didExplode(self.sObject['id'])
+
+            if exploded and exploded['path']:
+                return os.path.join(handle.short,
+                                    exploded['path'].lstrip('/'))
+        if column == 1:
+            return self.sObject['id']
+
+        return QVariant(None)
+
 
 class PeerServiceTreeItem(PeerBaseItem):
+    itemType = 'service'
+
     def __init__(self, service, parent=None):
         super().__init__(parent=parent)
         self.service = service
         self.peerItem = parent
 
     def columnCount(self):
-        return 2
+        return 3
 
     def userData(self, column):
-        return None
+        pass
+
+    def tooltip(self, col):
+        return self.service.id
 
     def data(self, column):
-        handle = self.peerItem.ctx.spaceHandle
-        exploded = didExplode(self.service.id)
-
         if column == 0:
+            handle = self.peerItem.ctx.spaceHandle
+            exploded = didExplode(self.service.id)
+
             if exploded['path']:
                 return os.path.join(handle.short,
                                     exploded['path'].lstrip('/'))
@@ -156,6 +204,17 @@ class PeerServiceTreeItem(PeerBaseItem):
             return str(self.service.id)
 
         return QVariant(None)
+
+    async def updateContained(self):
+        oids = [it.sObject['id'] for it in self.childItems]
+
+        async for obj in self.service.contained():
+            if obj['id'] in oids:
+                continue
+
+            pSItem = PeerServiceObjectTreeItem(
+                obj, self.peerItem, parent=self)
+            self.appendChild(pSItem)
 
 
 class PeersModel(QAbstractItemModel):
@@ -201,6 +260,9 @@ class PeersModel(QAbstractItemModel):
 
         if role == Qt.UserRole:
             return item.userData(index.column())
+
+        elif role == ItemTypeRole:
+            return item.itemType
 
         elif role == Qt.DisplayRole or role == Qt.EditRole:
             return item.data(index.column())
@@ -332,10 +394,7 @@ class PeersTracker:
 
             self.model.rootItem.appendChild(peerItem)
 
-            async for service in peerCtx.discoverServices():
-                pSItem = PeerServiceTreeItem(service, parent=peerItem)
-                peerItem.appendChild(pSItem)
-
+            await peerItem.updateServices()
             self.model.modelReset.emit()
 
     async def onPeersChange(self):
@@ -382,10 +441,20 @@ class PeersServiceSearcher(QLineEdit):
         if len(idxes) == 1:
             self.clear()
             idx = idxes.pop()
+            idxDid = self.model.index(
+                idx.parent().row(), 1, idx.parent().parent())
             idxId = self.model.index(idx.row(), 1, idx.parent())
-            _id = self.model.data(idxId, Qt.DisplayRole)
-            self.serviceEntered.emit(_id)
-            ensure(self.accessPeerService(_id))
+
+            serviceId = self.model.data(idxId, Qt.DisplayRole)
+            did = self.model.data(idxDid, Qt.DisplayRole)
+
+            self.serviceEntered.emit(serviceId)
+
+            ensure(
+                self.app.towers['did'].didServiceOpenRequest.emit(
+                    did, serviceId, {}
+                )
+            )
 
     @ipfsOp
     async def accessPeerService(self, ipfsop, serviceId):
@@ -457,8 +526,7 @@ class PeersManager(GalacteekTab):
 
         self.ui.peersMgrView.header().setSectionResizeMode(
             0, QHeaderView.ResizeToContents)
-        self.ui.peersMgrView.header().setSectionResizeMode(
-            1, QHeaderView.ResizeToContents)
+        self.ui.peersMgrView.hideColumn(1)
 
         self.ui.peersMgrView.setContextMenuPolicy(Qt.CustomContextMenu)
         self.ui.peersMgrView.customContextMenuRequested.connect(
@@ -499,6 +567,8 @@ class PeersManager(GalacteekTab):
                 menu = future.result()
                 menu.exec(self.ui.peersMgrView.mapToGlobal(point))
             except Exception as e:
+                import traceback
+                traceback.print_exc()
                 log.debug(str(e))
 
         ensure(self.showPeerContextMenu(peerCtx, point), futcallback=menuBuilt)
@@ -515,7 +585,7 @@ class PeersManager(GalacteekTab):
         followAction = QAction(
             iFollow(),
             self,
-            triggered=partialEnsure(self.onFollowPeer(peerCtx))
+            triggered=lambda checked: ensure(self.onFollowPeer(peerCtx))
         )
 
         if peerCtx.peerId == ipfsop.ctx.node.id:
@@ -525,24 +595,36 @@ class PeersManager(GalacteekTab):
         menu.addSeparator()
         menu.addMenu(sMenu)
 
-        async for service in peerCtx.discoverServices():
-            action = QAction(
-                getPlanetIcon('uranus.png'),
-                str(service),
-                sMenu,
-                triggered=partialEnsure(
-                    self.accessPeerService(service.id)))
-            action.setToolTip(service.id)
-            sMenu.addAction(action)
-            sMenu.addSeparator()
+        await buildIpServicesMenu(peerCtx.ipid, sMenu)
 
         return menu
 
     def onDoubleClick(self, idx):
+        itemType = self.model.data(
+            self.model.sibling(idx.row(), 0, idx),
+            ItemTypeRole
+        )
+
         didData = self.model.data(
             self.model.sibling(idx.row(), 1, idx),
             Qt.DisplayRole)
-        ensure(self.accessPeerService(didData))
+
+        if itemType == 'service':
+            ensure(
+                self.app.towers['did'].didServiceOpenRequest.emit(
+                    None, didData, {}
+                )
+            )
+        elif itemType == 'serviceObject':
+            serviceId = self.model.data(
+                self.model.sibling(idx.parent().row(), 1, idx.parent()),
+                Qt.DisplayRole)
+            if serviceId:
+                ensure(
+                    self.app.towers['did'].didServiceObjectOpenRequest.emit(
+                        None, serviceId, didData
+                    )
+                )
 
     @ipfsOp
     async def accessPeerService(self, ipfsop, serviceId):

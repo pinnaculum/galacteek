@@ -28,6 +28,7 @@ from galacteek.ipfs.pubsub.messages import ChatRoomMessage
 from galacteek.ipfs.dag import EvolvingDAG
 
 from galacteek.did import didIdentRe
+from galacteek.did.ipid import IPIdentifier
 
 from galacteek.core.iphandle import ipHandleGen
 from galacteek.core.iphandle import SpaceHandle
@@ -818,24 +819,7 @@ class UserProfile(QObject):
                     setAsCurrent=True,
                 )
 
-            self.userLogInfo('Current Identity UUID now is {}'.format(uid))
-
-            # Register the blog as an IP service on the DID
-            blogPath = IPFSPath(joinIpns(self.keyRootId)).child('blog')
-            await ipid.addServiceRaw({
-                'id': ipid.didUrl(path='/blog'),
-                'type': 'DwebBlogService',
-                'serviceEndpoint': blogPath.ipfsUrl
-            }, publish=False)
-
-            # Register the Atom feed as an IP service on the DID
-            feedPath = IPFSPath(joinIpns(self.keyRootId)).child('dfeed.atom')
-            await ipid.addServiceRaw({
-                'id': ipid.didUrl(path='/feed'),
-                'type': 'DwebAtomFeedService',
-                'serviceEndpoint': feedPath.ipfsUrl,
-                'description': 'Dweb Atom feed'
-            }, publish=False)
+            await self.ipIdentifierInit(ipid)
 
             ensure(ipid.publish())
 
@@ -846,6 +830,27 @@ class UserProfile(QObject):
                 )
 
             return ipid
+
+    @ipfsOp
+    async def ipIdentifierInit(self, ipid: IPIdentifier):
+        # Register the blog as an IP service on the DID
+        blogPath = IPFSPath(joinIpns(self.keyRootId)).child('blog')
+        await ipid.addServiceRaw({
+            'id': ipid.didUrl(path='/blog'),
+            'type': 'DwebBlogService',
+            'serviceEndpoint': blogPath.ipfsUrl
+        }, publish=False)
+
+        # Register the Atom feed as an IP service on the DID
+        feedPath = IPFSPath(joinIpns(self.keyRootId)).child('dfeed.atom')
+        await ipid.addServiceRaw({
+            'id': ipid.didUrl(path='/feed'),
+            'type': 'DwebAtomFeedService',
+            'serviceEndpoint': feedPath.ipfsUrl,
+            'description': 'Dweb Atom feed'
+        }, publish=False)
+
+        await ipid.addServiceCollection('default')
 
     @ipfsOp
     async def rsaEncryptSelf(self, op, data, offline=False):
@@ -1018,7 +1023,6 @@ class UserProfile(QObject):
             dst = self.pathQrCodesEncrypted if encrypt is True else \
                 self.pathQrCodes
             await ipfsop.filesLink(entry, dst, name=basename)
-            # ensure(self.ctx.app.resourceOpener.open(entry['Hash']))
             await self.ctx.app.resourceOpener.open(entry['Hash'])
 
     @ipfsOp

@@ -3,7 +3,6 @@ import re
 import collections
 import time
 import os.path
-import functools
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import pyqtSignal
@@ -14,6 +13,7 @@ from galacteek import logUser
 from galacteek import GALACTEEK_NAME
 from galacteek import ensure
 from galacteek import ensureLater
+from galacteek import partialEnsure
 from galacteek import AsyncSignal
 
 from galacteek.ipfs import pinning
@@ -212,7 +212,7 @@ class Peers:
                                pinglast=now if avgPing else 0,
                                validated=peerValidated
                                )
-                ipid.sChanged.connectTo(functools.partial(
+                ipid.sChanged.connectTo(partialEnsure(
                     self.onPeerDidModified, pCtx))
                 pCtx.sInactive.connectTo(self.onUnresponsivePeer)
                 self._byPeerId[iMsg.peer] = pCtx
@@ -272,7 +272,8 @@ class Peers:
 
         return False
 
-    async def onPeerDidModified(self, didCid, peerCtx):
+    async def onPeerDidModified(self, peerCtx, didCid):
+        log.debug('DID modified for peer: {}'.format(peerCtx.peerId))
         await self.peerDidModified.emit(peerCtx.peerId, True)
 
     async def onUnresponsivePeer(self, peerId):

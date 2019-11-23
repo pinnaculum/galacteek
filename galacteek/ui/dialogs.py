@@ -694,3 +694,48 @@ class TitleInputDialog(QDialog):
 
     def accept(self):
         self.done(1)
+
+
+class GenericTextInputDialog(QDialog):
+    def __init__(self, label, maxLength=64,
+                 inputRegExp=r"[A-Za-z0-9/\-]+",
+                 title=None, parent=None):
+        super().__init__(parent)
+
+        if title:
+            self.setWindowTitle(title)
+
+        self.app = QApplication.instance()
+        buttonBox = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
+            self
+        )
+        buttonBox.accepted.connect(self.accept)
+        buttonBox.rejected.connect(self.reject)
+
+        layout = QVBoxLayout()
+        layout.addWidget(QLabel(label))
+
+        self.tEdit = QLineEdit(self)
+        self.tEdit.setMaxLength(maxLength)
+        self.tEdit.setMaxLength(maxLength)
+
+        self.tEdit.setValidator(
+            QRegExpValidator(QRegExp(inputRegExp)))
+
+        layout.addWidget(self.tEdit)
+        layout.addWidget(buttonBox)
+
+        self.setLayout(layout)
+
+    def enteredText(self):
+        return self.tEdit.text()
+
+    def sizeHint(self):
+        return QSize(
+            self.app.desktopGeometry.width() / 3,
+            100
+        )
+
+    def accept(self):
+        self.done(1)
