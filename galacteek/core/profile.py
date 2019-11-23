@@ -832,7 +832,7 @@ class UserProfile(QObject):
             return ipid
 
     @ipfsOp
-    async def ipIdentifierInit(self, ipid: IPIdentifier):
+    async def ipIdentifierInit(self, ipfsop, ipid: IPIdentifier):
         # Register the blog as an IP service on the DID
         blogPath = IPFSPath(joinIpns(self.keyRootId)).child('blog')
         await ipid.addServiceRaw({
