@@ -63,8 +63,13 @@ else
     echo "Miniconda found, continuing"
 fi
 
+export PATH="$APPDIR/usr/bin:$PATH"
+
 # Enter the venv
 . "$APPDIR"/usr/bin/activate
+
+# Install necessary conda packages
+conda install libxkbcommon -c conda-forge
 
 # Install the wheel from local dists
 
