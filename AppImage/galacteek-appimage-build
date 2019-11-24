@@ -69,7 +69,7 @@ export PATH="$APPDIR/usr/bin:$PATH"
 . "$APPDIR"/usr/bin/activate
 
 # Install necessary conda packages
-conda install libxkbcommon -c conda-forge
+conda install -y -c conda-forge libxkbcommon
 
 # Install the wheel from local dists
 
