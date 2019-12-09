@@ -206,7 +206,7 @@ def domainValid(domain):
 # Regexps
 
 ipfsPathRe = re.compile(
-    r'^(\s*)?(?:fs:|dweb:|https?://[\w:.-]+)?(?P<fullpath>/ipfs/(?P<rootcid>[a-zA-Z0-9]{46,59})/?(?P<subpath>[\w<>":;,?!\*%&=@\$~/\s\.\-_\\\'()\+]{1,1024})?)#?(?P<fragment>[\w_\.\-\+,=/]{1,256})?$',  # noqa
+    r'^(\s*)?(?:fs:|dweb:|https?://[\w:.-]+)?(?P<fullpath>(/ipfs/)?(?P<rootcid>[a-zA-Z0-9]{46,59})/?(?P<subpath>[\w<>":;,?!\*%&=@\$~/\s\.\-_\\\'()\+]{1,1024})?)#?(?P<fragment>[\w_\.\-\+,=/]{1,256})?$',  # noqa
     flags=re.UNICODE)
 
 # For ipfs://<cid-base32>

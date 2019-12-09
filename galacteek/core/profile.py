@@ -357,6 +357,35 @@ class SharedHashmarksManager(QObject):
         await asyncio.sleep(1)
 
 
+class DIDRsaKeyStore:
+    def __init__(self, profile, _storeRoot):
+        self.__root = _storeRoot
+        self.__profile = profile
+
+    def _privateKeyForDid(self, did):
+        from Crypto.PublicKey import RSA
+
+        match = didIdentRe.match(did)
+        if not match:
+            return None
+
+        privKeyPath = os.path.join(
+            self.__root,
+            'rsa_{0}_ipid_{1}_priv.key'.format(
+                self.__profile, match.group('id')
+            )
+        )
+
+        if os.path.isfile(privKeyPath):
+            try:
+                with open(privKeyPath, 'rb') as fd:
+                    privKey = RSA.import_key(fd.read())
+            except Exception:
+                return None
+            else:
+                return privKey
+
+
 class UserProfile(QObject):
     """
     User profile object
@@ -378,6 +407,11 @@ class UserProfile(QObject):
         self.keyRoot = 'galacteek.{}.root'.format(self.name)
         self.keyRootId = None
         self.keyMainDid = self.ipIdentifierKeyName(idx=0)
+
+        self._didKeyStore = DIDRsaKeyStore(
+            self._name,
+            self.ctx.app.cryptoDataLocation
+        )
 
         self._rsaPrivKeyPath = os.path.join(
             self.ctx.app.cryptoDataLocation,
@@ -691,7 +725,7 @@ class UserProfile(QObject):
                 self.userLogInfo('Error while saving RSA keys!')
                 return False
             else:
-                os.chmod(self.rsaPrivKeyPath, 0o600)
+                os.chmod(self.rsaPrivKeyPath, 0o400)
                 self.userLogInfo('Successfully created RSA keypair')
 
         if not await self.cryptoRegisterKeys():
@@ -802,7 +836,7 @@ class UserProfile(QObject):
             async with aiofiles.open(didPrivKeyPath, 'w+b') as fd:
                 await fd.write(privKey)
 
-            os.chmod(didPrivKeyPath, 0o600)
+            os.chmod(didPrivKeyPath, 0o400)
 
             self.userLogInfo('Generated IPID with DID: {did}'.format(
                 did=ipid.did))
