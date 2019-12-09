@@ -272,11 +272,7 @@ QDialog#profileEditDialog {
 
 QTreeView#peersMgrView {
     font: 11pt "Inter UI";
-    background-color: #DAD9EB;
-}
-
-QTreeView::branch#peersMgrView {
-    background: transparent;
+    background-color: #DDE5DD;
 }
 
 QTreeView::item#peersMgrView {

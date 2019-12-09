@@ -2172,6 +2172,11 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="obsolete">Recherche</translation>
     </message>
     <message>
+        <location filename="../../galacteek/ui/peersmgr.ui" line="24"/>
+        <source>Right-click/double-click on a peer to discover IP services</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../../galacteek/ui/peers.py" line="71"/>
         <source>
         &lt;p&gt;
@@ -2180,13 +2185,9 @@ Chemin: {0}, nodes traitées: {1}</translation>
         &lt;p&gt;Space Handle: {1}&lt;/p&gt;
         &lt;p&gt;DID: &lt;b&gt;{2}&lt;/b&gt;&lt;/p&gt;
         &lt;p&gt;{3}&lt;/p&gt;
+        &lt;p&gt;{4}&lt;/p&gt;
         &lt;/p&gt;
         </source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/peersmgr.ui" line="24"/>
-        <source>Right-click/double-click on a peer to discover IP services</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

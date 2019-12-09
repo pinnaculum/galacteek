@@ -4839,7 +4839,6 @@ class JsonLdProcessor(object):
 
             # retrieve URL
             try:
-                print('LOAD DOCUMENT IS', load_document)
                 remote_doc = await load_document(url)
                 ctx = remote_doc['document']
             except Exception as cause:

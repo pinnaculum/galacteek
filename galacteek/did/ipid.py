@@ -1,8 +1,15 @@
+import base64
 import asyncio
 import os.path
 import json
 import re
 import time
+import random
+import string
+
+import aiohttp
+from aiohttp.web_exceptions import HTTPOk
+
 from yarl import URL
 from cachetools import LRUCache
 
@@ -23,8 +30,11 @@ from galacteek.did import normedUtcDate
 from galacteek.core.ldloader import aioipfs_document_loader
 from galacteek.core import asyncjsonld as jsonld
 from galacteek.core import utcDatetimeIso
+from galacteek.core import nonce
+from galacteek.core import unusedTcpPort
 from galacteek.core.asynclib import async_enterable
 from galacteek.core.asynccache import amlrucache
+from galacteek.crypto.rsa import RSAExecutor
 
 
 def ipidFormatValid(did):
@@ -641,6 +651,17 @@ class IPIdentifier(DAGOperations):
         """
         return await self.dagGet('publicKey/{}/publicKeyPem'.format(idx))
 
+    async def pubKeyPemGetWithId(self, keyId):
+        """
+        Returns the publicKey PEM whose id matches keyId
+
+        :rtype: str
+        """
+
+        for key in await self.dagGet('publicKey'):
+            if key.get('id') == keyId:
+                return key['publicKeyPem']
+
     async def getServices(self):
         return await self.dagGet('service')
 
@@ -710,6 +731,7 @@ class IPIDManager:
         self._managedIdentifiers = {}
         self._lock = asyncio.Lock()
         self._resolveTimeout = resolveTimeout
+        self._rsaExec = RSAExecutor()
 
         # JSON-LD cache
         self._ldCache = LRUCache(256)
@@ -816,9 +838,6 @@ class IPIDManager:
 
         await identifier.updateDocument(initialDoc)
 
-        # Set the did context in the DAG
-        # await identifier.ldContext('did-v0.11')
-
         # Update the document with the IPID and auth section
         await identifier.update({
             'id': didId,
@@ -839,3 +858,117 @@ class IPIDManager:
             await self.track(identifier)
 
         return identifier
+
+    @ipfsOp
+    async def didAuthenticate(self, ipfsop, ipid: IPIdentifier, peerId):
+        log.debug('DID auth for {}'.format(ipid))
+        lPort = unusedTcpPort()
+
+        if not lPort:
+            return
+
+        async with ipfsop.p2pDialer(
+                peerId, 'didauth-vc-pss',
+                address='/ip4/127.0.0.1/tcp/{}'.format(lPort)) as streamCtx:
+            if streamCtx.maddr is None:
+                return False
+            else:
+                log.debug('DID Authenticate ({0}): connected to srv'.format(
+                    ipid.did))
+
+                return await self.didAuthPerform(
+                    ipfsop, streamCtx, ipid)
+
+    async def didAuthPerform(self, ipfsop, streamCtx, ipid):
+        rand = random.Random()
+        req = {
+            'challenge': ''.join(
+                [str(rand.choice(string.ascii_letters)) for x in range(
+                    0, rand.randint(256, 384))]),
+            'did': ipid.did,
+            'nonce': nonce()
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                    'http://{host}:{port}/auth'.format(
+                        host=streamCtx.maddrHost,
+                        port=streamCtx.maddrPort),
+                    json=req) as resp:
+                try:
+                    if resp.status != HTTPOk.status_code:
+                        raise Exception('DID Auth error')
+
+                    payload = await resp.json()
+
+                    # Expand the response and verify it
+
+                    async with ipfsop.ldOps() as ldCtx:
+                        expanded = await ldCtx.expandDocument(payload)
+                        if not expanded:
+                            raise Exception('Invalid IPLD document')
+
+                    return await self.vcLdValidate(
+                        ipid, req, expanded
+                    )
+
+                except Exception as err:
+                    log.debug('didAuthPerform: {}'.format(str(err)))
+                    return False
+
+    @ipfsOp
+    async def vcLdValidate(self, ipfsop, ipid, req, document):
+        """ Validate the verifiable credentials """
+
+        try:
+            issued = document[
+                'https://www.w3.org/2018/credentials#issued'][0]['@value']
+            assert issued is not None
+            issuer = document[
+                'https://www.w3.org/2018/credentials#issuer'][0]['@id']
+            assert issuer == req['did']
+
+            cSubject = document[
+                'https://www.w3.org/2018/credentials#'
+                'credentialSubject'][0]['@id']
+            assert cSubject == req['did']
+
+            proof = document[
+                'https://w3id.org/security#proof'][0]['@graph'][0]
+            assert proof['https://w3id.org/security'
+                         '#challenge'][0]['@value'] == req['nonce']
+            assert proof['@type'][0] == \
+                'https://w3id.org/security#RsaSignature2018'
+
+            assert proof[
+                'https://w3id.org/security#proofPurpose'][0]['@id'] == \
+                'https://w3id.org/security#authenticationMethod'
+
+            sigValue = proof[
+                'https://w3id.org/security#proofValue'][0]['@value']
+            assert isinstance(sigValue, str)
+
+            # IRI: https://w3id.org/security#verificationMethod
+            # corresponds to the signer's publicKey DID's id
+
+            vMethod = \
+                proof['https://w3id.org/security#verificationMethod'][0]['@id']
+
+            rsaPubPem = await ipid.pubKeyPemGetWithId(vMethod)
+            if not rsaPubPem:
+                log.debug('didAuthPerform: {}'.format(str(vMethod)))
+                return False
+
+            # Check the signature with PSS
+            return await self._rsaExec.pssVerif(
+                req['challenge'].encode(),
+                base64.b64decode(sigValue),
+                rsaPubPem
+            )
+        except AssertionError as aerr:
+            log.debug('Verifiable credentials assert error: {}'.format(
+                str(aerr)))
+            return False
+        except Exception as err:
+            log.debug('Unknown VC error: {}'.format(str(err)))
+            return False

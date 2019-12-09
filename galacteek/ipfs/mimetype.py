@@ -237,9 +237,8 @@ async def detectMimeType(ipfsop, rscPath, bufferSize=131070, timeout=12):
     :rtype: MIMEType
     """
     try:
-        buff = await ipfsop.waitFor(
-            ipfsop.client.cat(rscPath, length=bufferSize), timeout
-        )
+        buff = await ipfsop.catObject(
+            rscPath, length=bufferSize, timeout=timeout)
     except aioipfs.APIError as err:
         dec = APIErrorDecoder(err)
 
