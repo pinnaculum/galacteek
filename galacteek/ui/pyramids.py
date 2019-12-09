@@ -662,6 +662,8 @@ class MultihashPyramidToolButton(PopupToolButton):
             objPath,
             key=self.pyramid.ipnsKey,
             lifetime=self.pyramid.ipnsLifetime,
+            cache='always',
+            cacheOrigin='pyramids',
             timeout=self.app.settingsMgr.defaultIpnsTimeout
         )
 

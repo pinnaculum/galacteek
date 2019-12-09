@@ -181,10 +181,11 @@ Features
 connect to an existing IPFS daemon. By default it will try to run a daemon. You
 can change the IPFS connection settings by clicking on the settings icon in the
 toolbar and restart the application afterwards. If using a custom daemon, you
-should enable pubsub or some features won't be available.
+should enable pubsub and p2p streams, or some features won't be available.
 
-- Decentralized Identifiers (DID) support with IPID_ (support for
-  other DID methods is planned)
+- Decentralized Identifiers (DID) support with IPID_
+- Browser-to-browser DID authentication over libp2p streams
+  (Verifiable Credentials with RSA-PSS)
 - Browsing sessions with automatic pinning (pins every page you browse)
 - File manager with drag-and-drop support
 - Search content with the ipfs-search_ search engine
