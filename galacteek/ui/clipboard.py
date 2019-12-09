@@ -764,9 +764,7 @@ class ClipboardItemButton(PopupToolButton):
             return
 
         try:
-            data = await ipfsop.waitFor(
-                ipfsop.client.cat(self.item.path), 12
-            )
+            data = await ipfsop.catObject(self.item.path)
 
             if data is None:
                 return

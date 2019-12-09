@@ -34,7 +34,6 @@ from galacteek.ipfs import tunnel
 
 from galacteek.did.ipid import ipidFormatValid
 from galacteek.did.ipid import IPIdentifier
-from galacteek.did.ipid import IPService
 
 from galacteek.core.profile import UserProfile
 from galacteek.core.softident import gSoftIdent
@@ -46,7 +45,9 @@ from galacteek.crypto.rsa import RSAExecutor
 class PeerCtx:
     def __init__(self, ipfsCtx, peerId, identMsg,
                  ipIdentifier: IPIdentifier,
-                 pinglast=0, pingavg=0, validated=False):
+                 pinglast=0, pingavg=0,
+                 validated=False,
+                 authenticated=False):
         self._ipfsCtx = ipfsCtx
         self._ipid = ipIdentifier
         self.peerId = peerId
@@ -55,6 +56,7 @@ class PeerCtx:
         self.pingavg = pingavg
         self._identLast = int(time.time())
         self._validated = validated
+        self._authenticated = authenticated
 
         self.sInactive = AsyncSignal(str)
 
@@ -83,6 +85,10 @@ class PeerCtx:
         return self._validated
 
     @property
+    def authenticated(self):
+        return self._authenticated
+
+    @property
     def peerUnresponsive(self):
         return (int(time.time()) - self.identLast) > (60 * 5)
 
@@ -98,14 +104,6 @@ class PeerCtx:
     @ipfsOp
     async def update(self, ipfsop):
         pass
-
-    async def discoverServices(self):
-        self.debug('Discovering services for IPID: {}'.format(self.ipid.did))
-
-        services = await self.ipid.getServices()
-
-        for srv in services:
-            yield IPService(srv)
 
     @ipfsOp
     async def getRsaPubKey(self, op):
@@ -215,6 +213,9 @@ class Peers:
                 ipid.sChanged.connectTo(partialEnsure(
                     self.onPeerDidModified, pCtx))
                 pCtx.sInactive.connectTo(self.onUnresponsivePeer)
+
+                ensure(self.didPerformAuth(pCtx))
+
                 self._byPeerId[iMsg.peer] = pCtx
                 ensureLater(60, pCtx.watch)
 
@@ -235,6 +236,22 @@ class Peers:
                     await self.peerModified.emit(iMsg.peer)
 
         await self.changed.emit()
+
+    @ipfsOp
+    async def didPerformAuth(self, ipfsop, peerCtx):
+        ipid = peerCtx.ipid
+
+        if not ipid.local:
+            # DID Auth
+            if not await self.app.ipidManager.didAuthenticate(
+                    ipid, peerCtx.ident.peer):
+                log.debug('DID auth failed {}'.format(ipid.did))
+            else:
+                log.debug('DID auth success {}'.format(ipid.did))
+                peerCtx._authenticated = True
+        else:
+            # We control this DID
+            peerCtx._authenticated = True
 
     @ipfsOp
     async def validateQr(self, ipfsop, qrCid, iMsg):
@@ -364,6 +381,10 @@ class P2PServices(QObject):
         self._services = []
 
     @property
+    def tunnelsMgr(self):
+        return self._manager
+
+    @property
     def services(self):
         return self._services
 
@@ -380,15 +401,22 @@ class P2PServices(QObject):
     async def streamsAll(self):
         return await self._manager.streams()
 
-    def register(self, service):
+    async def register(self, service):
         service.manager = self._manager
         self._services.append(service)
 
+        await service.start()
+
     @ipfsOp
     async def init(self, op):
+        from galacteek.ipfs.p2pservices import didauth
+
         if not await op.hasCommand('p2p') is True:
             log.debug('No P2P streams support')
             return
+
+        didAuthService = didauth.DIDAuthService()
+        await self.register(didAuthService)
 
         log.debug('P2P streams support available')
 

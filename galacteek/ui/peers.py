@@ -67,7 +67,7 @@ def iInvalidDagCID(dagCid):
                                       'Invalid DAG CID: {0}').format(dagCid)
 
 
-def iPeerToolTip(peerId, ipHandle, did, validated):
+def iPeerToolTip(peerId, ipHandle, did, validated, authenticated):
     return QCoreApplication.translate(
         'PeersManager',
         '''
@@ -77,9 +77,11 @@ def iPeerToolTip(peerId, ipHandle, did, validated):
         <p>Space Handle: {1}</p>
         <p>DID: <b>{2}</b></p>
         <p>{3}</p>
+        <p>{4}</p>
         </p>
         ''').format(peerId, ipHandle, did,
-                    'QR Validated' if validated is True else 'Not validated')
+                    'QR Validated' if validated is True else 'Not validated',
+                    'DID Auth OK' if authenticated is True else 'No Auth')
 
 
 ItemTypeRole = Qt.UserRole + 1
@@ -109,7 +111,8 @@ class PeerTreeItem(PeerBaseItem):
         handle = SpaceHandle(self.ctx.ident.iphandle)
         return iPeerToolTip(
             self.ctx.peerId, str(handle), self.ctx.ipid.did,
-            self.ctx.validated)
+            self.ctx.validated,
+            self.ctx.authenticated)
 
     def data(self, column):
         handle = self.ctx.spaceHandle
@@ -290,8 +293,8 @@ class PeersModel(QAbstractItemModel):
 
         return self.rootItem
 
-    def index(self, row, column, parent):
-        if not self.hasIndex(row, column, parent):
+    def index(self, row, column, parent=None):
+        if not parent or not self.hasIndex(row, column, parent):
             return QModelIndex()
 
         if not parent.isValid():
@@ -313,6 +316,9 @@ class PeersModel(QAbstractItemModel):
             return QModelIndex()
 
         childItem = index.internalPointer()
+        if childItem is None:
+            return QModelIndex()
+
         parentItem = childItem.parent()
 
         if parentItem == self.rootItem:
@@ -329,7 +335,10 @@ class PeersModel(QAbstractItemModel):
         else:
             parentItem = parent.internalPointer()
 
-        return parentItem.childCount()
+        if parentItem:
+            return parentItem.childCount()
+        else:
+            return 0
 
     def removeRows(self, position, rows, parent=QModelIndex()):
         parentItem = self.getItem(parent)
@@ -379,7 +388,10 @@ class PeersTracker:
             peerItem = await self.model.peerLookup(peerId)
             if peerItem:
                 await peerItem.updateServices()
-                self.model.modelReset.emit()
+                self.model.dataChanged.emit(
+                    self.model.index(peerItem.row(), 0),
+                    self.model.index(peerItem.row() + 1, 0)
+                )
 
     async def onPeerAdded(self, peerId):
         peerCtx = self.ctx.peers.getByPeerId(peerId)

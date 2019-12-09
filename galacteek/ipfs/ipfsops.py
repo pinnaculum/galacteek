@@ -16,9 +16,13 @@ from galacteek.ipfs.cidhelpers import joinIpns
 from galacteek.ipfs.cidhelpers import stripIpfs
 from galacteek.ipfs.cidhelpers import cidConvertBase32
 from galacteek.ipfs.cidhelpers import IPFSPath
+from galacteek.ipfs.multi import multiAddrTcp4
 
 from galacteek.core.asynclib import async_enterable
 from galacteek.core import jsonSchemaValidate
+from galacteek.core.ldloader import aioipfs_document_loader
+from galacteek.core import asyncjsonld as jsonld
+
 from galacteek import log
 from galacteek import logUser
 from galacteek import AsyncSignal
@@ -68,6 +72,75 @@ class IPFSOperatorOfflineContext(object):
     async def __aexit__(self, *args):
         self.operator.offline = self.prevOff
         log.debug('IPFS Operator in online mode')
+
+
+class TunnelDialerContext(object):
+    def __init__(self, operator, peerId, proto, maddr):
+        self.operator = operator
+        self.peerId = peerId
+        self.protocol = proto
+        self.maddr = maddr
+
+    @property
+    def maddrPort(self):
+        if self.maddr:
+            return multiAddrTcp4(self.maddr)[1]
+
+    @property
+    def maddrHost(self):
+        if self.maddr:
+            return multiAddrTcp4(self.maddr)[0]
+
+    async def __aenter__(self):
+        self.operator.debug('Tunnel dialer: {0} {1} {2}: enter'.format(
+            self.protocol, self.maddrHost, self.maddrPort))
+        return self
+
+    async def __aexit__(self, *args):
+        self.operator.debug('Tunnel dialer: {0} {1} {2}: aexit'.format(
+            self.protocol, self.maddrHost, self.maddrPort))
+        manager = self.operator.ctx.p2p.tunnelsMgr
+
+        streams = await manager.streamsForListenAddr(self.maddr)
+        if streams:
+            self.operator.debug(streams)
+            for stream in streams:
+                self.operator.debug('Tunnel dialer: closing {!r}'.format(
+                    stream))
+                await self.operator.client.p2p.listener_close(
+                    self.protocol,
+                    listen_address=self.maddr
+                )
+
+
+class LDOpsContext(object):
+    def __init__(self, operator, ldDocLoader):
+        self.operator = operator
+        self.ldLoader = ldDocLoader
+
+    async def __aenter__(self):
+        return self
+
+    async def expandDocument(self, doc):
+        """
+        Perform a JSON-LD expansion on a JSON document
+        """
+
+        try:
+            expanded = await jsonld.expand(
+                await self.operator.ldInline(doc), {
+                    'documentLoader': self.ldLoader
+                }
+            )
+
+            if isinstance(expanded, list) and len(expanded) > 0:
+                return expanded[0]
+        except Exception as err:
+            self.operator.debug('Error expanding document: {}'.format(
+                str(err)))
+
+    async def __aexit__(self, *args):
+        pass
 
 
 class APIErrorDecoder:
@@ -122,7 +195,7 @@ class IPFSOperator(object):
         self._rsaAgent = rsaAgent
         self._nsCache = {}
         self._nsCachePath = nsCachePath
-        self._noPeers = False
+        self._noPeers = True
 
         self.client = client
         self.debugInfo = debug
@@ -541,11 +614,14 @@ class IPFSOperator(object):
             async with aiofiles.open(self._nsCachePath, 'w+t') as fd:
                 await fd.write(json.dumps(self.nsCache))
 
-    def nsCacheGet(self, path, maxLifetime=60 * 10):
+    def nsCacheGet(self, path, maxLifetime=60 * 10, knownOrigin=False):
         entry = self.nsCache.get(path)
 
         if isinstance(entry, dict):
             rLast = entry['resolvedLast']
+
+            if knownOrigin is True and entry.get('cacheOrigin') == 'unknown':
+                return None
 
             if not maxLifetime or (int(time.time()) - rLast) < maxLifetime:
                 return entry['resolved']
@@ -915,15 +991,16 @@ class IPFSOperator(object):
 
                         try:
                             ctx = await self.client.cat(link)
-                            if data:
+                            if ctx:
                                 data.update(json.loads(ctx.decode()))
                         except Exception as err:
-                            self.debug(str(err))
+                            self.debug('ldInline error: {}'.format(
+                                str(err)))
                     else:
                         await process(objValue)
             elif isinstance(data, list):
-                for stuff in data:
-                    await process(stuff)
+                for node in data:
+                    await process(node)
 
             return data
 
@@ -952,23 +1029,55 @@ class IPFSOperator(object):
         else:
             return self.ipld(entry)
 
+    async def ldContextJson(self, cName: str):
+        specPath = os.path.join(
+            os.path.dirname(__file__),
+            'contexts',
+            '{context}'.format(
+                context=cName
+            )
+        )
+
+        if not os.path.isfile(specPath):
+            return None
+
+        try:
+            with open(specPath, 'r') as fd:
+                return json.load(fd)
+        except Exception as err:
+            self.debug(str(err))
+
     def ipld(self, cid):
         if isinstance(cid, str):
             return {"/": cid}
         elif isinstance(cid, dict) and 'Hash' in cid:
             return {"/": cid['Hash']}
 
-    async def catObject(self, path, offset=None, length=None, timeout=30):
-        try:
-            data = await self.waitFor(
-                self.client.cat(path, offset=offset, length=length),
-                timeout
-            )
-        except aioipfs.APIError as err:
-            self.debug(err.message)
-            return None
+    def objectPathMap(self, path):
+        ipfsPath = path if isinstance(path, IPFSPath) else \
+            IPFSPath(path, autoCidConv=True)
+
+        if ipfsPath.isIpns:
+            pSubPath = ipfsPath.subPath
+            cached = self.nsCacheGet(ipfsPath.root().objPath)
+
+            if cached:
+                if pSubPath:
+                    return IPFSPath(cached).child(pSubPath).objPath
+                else:
+                    return cached
+
+            return ipfsPath.objPath
         else:
-            return data
+            return ipfsPath.objPath
+
+    async def catObject(self, path, offset=None, length=None, timeout=30):
+        return await self.waitFor(
+            self.client.cat(
+                self.objectPathMap(path),
+                offset=offset, length=length
+            ), timeout
+        )
 
     async def dagPut(self, data, pin=False, offline=False):
         """
@@ -1008,7 +1117,9 @@ class IPFSOperator(object):
         Get the DAG object referenced by the DAG path and returns a JSON object
         """
 
-        output = await self.waitFor(self.client.dag.get(dagPath), timeout)
+        output = await self.waitFor(
+            self.client.dag.get(self.objectPathMap(dagPath)), timeout)
+
         if output is not None:
             return json.loads(output)
         return None
@@ -1217,6 +1328,47 @@ class IPFSOperator(object):
 
     async def hasP2PCommand(self):
         return await self.hasCommand('p2p')
+
+    @async_enterable
+    async def ldOps(self):
+        return LDOpsContext(
+            self,
+            await aioipfs_document_loader(self.client)
+        )
+
+    @async_enterable
+    async def p2pDialer(self, peer, protocol, address):
+        from galacteek.ipfs.tunnel import protocolFormat
+
+        if await self.client.agent_version_post0418():
+            proto = protocolFormat(protocol)
+        else:
+            proto = protocol
+
+        log.debug('Stream dial {0} {1}'.format(peer, proto))
+        try:
+            peerAddr = joinIpfs(peer) if not peer.startswith('/ipfs/') else \
+                peer
+            resp = await self.client.p2p.dial(proto, address, peerAddr)
+        except aioipfs.APIError as err:
+            log.debug(err.message)
+            return TunnelDialerContext(self, peer, proto, None)
+        else:
+            log.debug('Stream dial {0} {1}: OK'.format(peer, proto))
+
+        if resp:
+            maddr = resp.get('Address', None)
+            if not maddr:
+                return TunnelDialerContext(self, peer, proto, None)
+
+            ipaddr, port = multiAddrTcp4(maddr)
+
+            if ipaddr is None or port == 0:
+                return TunnelDialerContext(self, peer, proto, None)
+
+            return TunnelDialerContext(self, peer, proto, maddr)
+        else:
+            return TunnelDialerContext(self, peer, proto, address)
 
 
 class IPFSOpRegistry:

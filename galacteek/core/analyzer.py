@@ -68,9 +68,7 @@ class ResourceAnalyzer(QObject):
     @ipfsOp
     async def decodeQrCodes(self, ipfsop, path):
         try:
-            data = await ipfsop.waitFor(
-                ipfsop.client.cat(path), 12
-            )
+            data = await ipfsop.catObject(path)
 
             if data is None:
                 return

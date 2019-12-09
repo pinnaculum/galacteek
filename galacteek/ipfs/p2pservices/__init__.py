@@ -51,9 +51,9 @@ class P2PService:
     def manager(self, m):
         self._manager = m
 
-    async def start(self, client):
+    async def start(self):
         if not self.listener:
-            await self.createListener(client)
+            await self.createListener()
 
     async def stop(self):
         if self.listener:
