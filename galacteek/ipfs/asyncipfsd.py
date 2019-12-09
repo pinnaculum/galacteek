@@ -133,7 +133,7 @@ class AsyncIPFSDaemon(object):
                  pubsubEnable=False, noBootstrap=False, corsEnable=True,
                  pubsubRouter='floodsub', namesysPubsub=False,
                  pubsubSigning=False,
-                 p2pStreams=False, migrateRepo=False, routingMode='dht',
+                 p2pStreams=True, migrateRepo=False, routingMode='dht',
                  gwWritable=False, storageMax=20, debug=False, loop=None):
 
         self.loop = loop if loop else asyncio.get_event_loop()

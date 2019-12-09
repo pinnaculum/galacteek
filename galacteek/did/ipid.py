@@ -921,42 +921,47 @@ class IPIDManager:
         """ Validate the verifiable credentials """
 
         try:
-            issued = document[
-                'https://www.w3.org/2018/credentials#issued'][0]['@value']
+            issued = document.get(
+                'https://www.w3.org/2018/credentials#issued')[0]['@value']
             assert issued is not None
-            issuer = document[
-                'https://www.w3.org/2018/credentials#issuer'][0]['@id']
+
+            # Issuer's DID
+            issuer = document.get(
+                'https://www.w3.org/2018/credentials#issuer')[0]['@id']
             assert issuer == req['did']
 
-            cSubject = document[
+            # Credential Subject
+            cSubject = document.get(
                 'https://www.w3.org/2018/credentials#'
-                'credentialSubject'][0]['@id']
+                'credentialSubject')[0]['@id']
             assert cSubject == req['did']
 
-            proof = document[
-                'https://w3id.org/security#proof'][0]['@graph'][0]
-            assert proof['https://w3id.org/security'
-                         '#challenge'][0]['@value'] == req['nonce']
+            # Get the proof and check the type and nonce
+            proof = document.get(
+                'https://w3id.org/security#proof')[0]['@graph'][0]
+            assert proof.get('https://w3id.org/security'
+                             '#challenge')[0]['@value'] == req['nonce']
             assert proof['@type'][0] == \
                 'https://w3id.org/security#RsaSignature2018'
 
-            assert proof[
-                'https://w3id.org/security#proofPurpose'][0]['@id'] == \
+            assert proof.get(
+                'https://w3id.org/security#proofPurpose')[0]['@id'] == \
                 'https://w3id.org/security#authenticationMethod'
 
-            sigValue = proof[
-                'https://w3id.org/security#proofValue'][0]['@value']
+            sigValue = proof.get(
+                'https://w3id.org/security#proofValue')[0]['@value']
             assert isinstance(sigValue, str)
 
             # IRI: https://w3id.org/security#verificationMethod
             # corresponds to the signer's publicKey DID's id
 
-            vMethod = \
-                proof['https://w3id.org/security#verificationMethod'][0]['@id']
+            vMethod = proof.get(
+                'https://w3id.org/security#verificationMethod')[0]['@id']
 
             rsaPubPem = await ipid.pubKeyPemGetWithId(vMethod)
             if not rsaPubPem:
-                log.debug('didAuthPerform: {}'.format(str(vMethod)))
+                log.debug('didAuthPerform: PubKey not found: {}'.format(
+                    str(vMethod)))
                 return False
 
             # Check the signature with PSS

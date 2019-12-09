@@ -243,12 +243,18 @@ class Peers:
 
         if not ipid.local:
             # DID Auth
-            if not await self.app.ipidManager.didAuthenticate(
-                    ipid, peerCtx.ident.peer):
-                log.debug('DID auth failed {}'.format(ipid.did))
-            else:
-                log.debug('DID auth success {}'.format(ipid.did))
-                peerCtx._authenticated = True
+            for attempt in range(0, 3):
+                log.debug('DID auth: {did} (attempt: {a})'.format(
+                    did=ipid.did, a=attempt))
+                if not await self.app.ipidManager.didAuthenticate(
+                        ipid, peerCtx.ident.peer):
+                    log.debug('DID auth failed for DID: {}'.format(ipid.did))
+                    await ipfsop.sleep(5)
+                    continue
+                else:
+                    log.debug('DID auth success for DID: {}'.format(ipid.did))
+                    peerCtx._authenticated = True
+                    break
         else:
             # We control this DID
             peerCtx._authenticated = True
