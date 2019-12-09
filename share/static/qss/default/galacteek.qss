@@ -271,7 +271,7 @@ QDialog#profileEditDialog {
 /* Peers View */
 
 QTreeView#peersMgrView {
-    font: 11pt "Inter UI";
+    font: 13pt "Inter UI";
     background-color: #DDE5DD;
 }
 
