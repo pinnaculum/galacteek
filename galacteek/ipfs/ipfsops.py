@@ -6,6 +6,7 @@ import json
 import tempfile
 import uuid
 import aiofiles
+import pkg_resources
 
 from PyQt5.QtCore import QFile
 
@@ -20,8 +21,8 @@ from galacteek.ipfs.multi import multiAddrTcp4
 
 from galacteek.core.asynclib import async_enterable
 from galacteek.core import jsonSchemaValidate
-from galacteek.core.ldloader import aioipfs_document_loader
-from galacteek.core import asyncjsonld as jsonld
+from galacteek.ld.ldloader import aioipfs_document_loader
+from galacteek.ld import asyncjsonld as jsonld
 
 from galacteek import log
 from galacteek import logUser
@@ -196,9 +197,10 @@ class IPFSOperator(object):
         self._nsCache = {}
         self._nsCachePath = nsCachePath
         self._noPeers = True
-
-        self.client = client
+        self._ldDocLoader = None
         self.debugInfo = debug
+        self.client = client
+
         self.ctx = ctx
 
         self.filesChroot = None
@@ -1006,11 +1008,13 @@ class IPFSOperator(object):
 
         return await process(dagData)
 
+    def ldContextsRootPath(self):
+        return pkg_resources.resource_filename('galacteek.ld', 'contexts')
+
     async def ldContext(self, cName: str, source=None,
                         key=None):
         specPath = os.path.join(
-            os.path.dirname(__file__),
-            'contexts',
+            self.ldContextsRootPath(),
             '{context}'.format(
                 context=cName
             )
@@ -1031,8 +1035,7 @@ class IPFSOperator(object):
 
     async def ldContextJson(self, cName: str):
         specPath = os.path.join(
-            os.path.dirname(__file__),
-            'contexts',
+            self.ldContextsRootPath(),
             '{context}'.format(
                 context=cName
             )
@@ -1331,14 +1334,21 @@ class IPFSOperator(object):
 
     @async_enterable
     async def ldOps(self):
+        if not self._ldDocLoader:
+            self._ldDocLoader = await aioipfs_document_loader(self.client)
+
         return LDOpsContext(
             self,
-            await aioipfs_document_loader(self.client)
+            self._ldDocLoader
         )
 
     @async_enterable
-    async def p2pDialer(self, peer, protocol, address):
+    async def p2pDialer(self, peer, protocol, address=None, addressAuto=True):
+        from galacteek.core import unusedTcpPort
         from galacteek.ipfs.tunnel import protocolFormat
+
+        if addressAuto is True and not address:
+            address = '/ip4/127.0.0.1/tcp/{}'.format(unusedTcpPort())
 
         if await self.client.agent_version_post0418():
             proto = protocolFormat(protocol)

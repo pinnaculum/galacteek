@@ -1,4 +1,6 @@
 """
+Async adaptation of PyLD
+
 Python implementation of JSON-LD processor
 
 This implementation is ported from the JavaScript implementation of

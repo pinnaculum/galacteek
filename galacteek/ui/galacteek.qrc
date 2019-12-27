@@ -68,6 +68,7 @@
     <file>../../share/icons/mimetypes/image-x-generic.png</file>
     <file>../../share/icons/mimetypes/inode-directory.png</file>
     <file>../../share/icons/mimetypes/application-pdf.png</file>
+    <file>../../share/icons/mimetypes/application-wasm.png</file>
     <file>../../share/icons/mimetypes/text-plain.png</file>
     <file>../../share/icons/mimetypes/text-x-adasrc.png</file>
     <file>../../share/icons/mimetypes/text-x-authors.png</file>

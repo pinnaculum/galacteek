@@ -27,8 +27,8 @@ from galacteek.ipfs.dag import DAGOperations
 from galacteek.did import ipidIdentRe
 from galacteek.did import didExplode
 from galacteek.did import normedUtcDate
-from galacteek.core.ldloader import aioipfs_document_loader
-from galacteek.core import asyncjsonld as jsonld
+from galacteek.ld.ldloader import aioipfs_document_loader
+from galacteek.ld import asyncjsonld as jsonld
 from galacteek.core import utcDatetimeIso
 from galacteek.core import nonce
 from galacteek.core import unusedTcpPort
@@ -91,6 +91,8 @@ class IPService(metaclass=IPServiceRegistry):
     SRV_TYPE_ATOMFEED = 'DwebAtomFeedService'
     SRV_TYPE_VC = 'VerifiableCredentialService'
     SRV_TYPE_GENERICPYRAMID = 'GalacteekPyramidService'
+
+    SRV_TYPE_LIVEPEER_STREAMING = 'P2PLivePeerStreamingService'
 
     SRV_TYPE_COLLECTION = 'ObjectsCollectionService'
 
@@ -248,6 +250,11 @@ class CollectionService(IPService):
         return 'IPS: Collection ({name})'.format(
             name=self.endpoint.get('name', 'Unknown')
         )
+
+
+class LivePeerStreamingService(IPService):
+    forTypes = [IPService.SRV_TYPE_LIVEPEER_STREAMING]
+    endpointName = 'LivePeerEndpoint'
 
 
 class IPIdentifier(DAGOperations):
@@ -518,6 +525,7 @@ class IPIdentifier(DAGOperations):
             joinIpns(self.ipnsKey),
             timeout=resolveTimeout,
             cache='always',
+            cacheOrigin='ipidmanager',
             useCache=useCache,
             maxCacheLifetime=maxCache)
 
@@ -768,7 +776,8 @@ class IPIDManager:
                    localIdentifier=False,
                    initialCid=None,
                    track=True):
-        if not ipidFormatValid(did):
+
+        if not did or not ipidFormatValid(did):
             return None
 
         with await self._lock:
@@ -856,6 +865,11 @@ class IPIDManager:
 
         if track:
             await self.track(identifier)
+
+        # Register default IP services
+        for service in ipfsop.ctx.p2p.services:
+            if service.didDefaultRegister:
+                await service.didServiceInstall(identifier)
 
         return identifier
 

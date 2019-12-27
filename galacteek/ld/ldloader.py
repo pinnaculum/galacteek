@@ -23,7 +23,7 @@ async def aioipfs_document_loader(ipfsClient, loop=None,
         :return: the RemoteDocument.
         """
         try:
-            if url.startswith('ips://'):
+            if url.startswith('ipschema://'):
                 o = urlparse(url)
                 kList = await client.key.list()
 
@@ -42,7 +42,6 @@ async def aioipfs_document_loader(ipfsClient, loop=None,
                     raise Exception('Not a valid path')
 
             if path and path.valid:
-
                 data = await client.cat(path.objPath)
 
                 return {

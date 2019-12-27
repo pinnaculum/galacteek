@@ -421,10 +421,10 @@ class P2PServices(QObject):
             log.debug('No P2P streams support')
             return
 
+        log.debug('P2P streams support available')
+
         didAuthService = didauth.DIDAuthService()
         await self.register(didAuthService)
-
-        log.debug('P2P streams support available')
 
     async def stop(self):
         for srv in self.services:
