@@ -528,8 +528,8 @@ class GalacteekApplication(QApplication):
         Import the JSON-LD contexts and associate the
         directory entry with the 'galacteek.ld.contexts' key
         """
-        contextsPath = pkg_resources.resource_filename(
-            'galacteek.ipfs', 'contexts')
+
+        contextsPath = ipfsop.ldContextsRootPath()
 
         if not os.path.isdir(contextsPath):
             log.debug('LD contexts not found')
@@ -540,15 +540,16 @@ class GalacteekApplication(QApplication):
             hidden=False
         )
         if entry:
+            ldKeyName = 'galacteek.ld.contexts'
             log.debug('LD contexts sitting at: {}'.format(
                 entry.get('Hash')))
             await ipfsop.keyGen(
-                'galacteek.ld.contexts',
+                ldKeyName,
                 checkExisting=True
             )
             ensure(ipfsop.publish(
                 entry['Hash'],
-                key='galacteek.ld.contexts',
+                key=ldKeyName,
                 allow_offline=True
             ))
 

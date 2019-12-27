@@ -27,7 +27,8 @@ authReqSchema = {
         "challenge": {
             "type": "string"
         }
-    }
+    },
+    "required": ["did", "nonce", "challenge"]
 }
 
 

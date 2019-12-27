@@ -3,6 +3,7 @@ import os.path
 import asyncio
 import functools
 import aioipfs
+import shutil
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QCoreApplication
@@ -22,6 +23,7 @@ from galacteek.dweb.page import DWebView
 from galacteek.ipfs import megabytes
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.stat import StatInfo
+
 from galacteek.ipfs.mimetype import MIMEType
 from galacteek.ipfs.mimetype import detectMimeType
 from galacteek.ipfs.mimetype import detectMimeTypeFromBuffer
@@ -142,6 +144,17 @@ class IPFSResourceOpener(QObject):
             )
             return
 
+        if mimeType.isWasm and shutil.which('wasmer'):
+            log.debug('Opening WASM binary from object: {}'.format(
+                rscPath))
+
+            if self.app.system == 'Linux':
+                return await self.openWithExternal(
+                    rscPath,
+                    'xterm -e "wasmer run %f; '
+                    'echo WASM program exited with code $?; read e"'
+                )
+
         if mimeType.type == 'application/octet-stream' and not fromEncrypted:
             # Try to decode it with our key if it's a small file
             if statInfo is None:
@@ -185,7 +198,7 @@ class IPFSResourceOpener(QObject):
                     logUser.debug(
                         '{path}: decryption impossible'.format(path=rscPath))
 
-        elif mimeType.isText:
+        if mimeType.isText:
             tab = TextEditorTab(parent=self.app.mainWindow)
             tab.editor.display(ipfsPath)
             self.objectOpened.emit(ipfsPath)
@@ -365,6 +378,7 @@ class IPFSResourceOpener(QObject):
             await self.app.mainWindow.atomButton.atomFeedSubscribe(
                 str(endpoint)
             )
+
         elif isinstance(endpoint, str):
             path = IPFSPath(endpoint, autoCidConv=True)
             await self.open(path)
