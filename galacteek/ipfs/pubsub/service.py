@@ -122,7 +122,8 @@ class PubsubService(object):
         return False
 
     async def filterPeerActivity(self, msg):
-        senderNodeId = msg['from'].decode()
+        senderNodeId = msg['from'] if isinstance(msg['from'], str) else \
+            msg['from'].decode()
         if senderNodeId not in self._peerActivity:
             self._peerActivity[senderNodeId] = collections.deque([], 10)
 
@@ -140,7 +141,10 @@ class PubsubService(object):
         return False
 
     async def filterSelf(self, msg):
-        if msg['from'].decode() == self.ipfsCtx.node.id:
+        sender = msg['from'] if isinstance(msg['from'], str) else \
+            msg['from'].decode()
+
+        if sender == self.ipfsCtx.node.id:
             return True
 
         return False
@@ -170,7 +174,8 @@ class PubsubService(object):
 
         try:
             async for message in self.client.pubsub.sub(self.topic):
-                sender = message['from'].decode()
+                sender = message['from'] if isinstance(
+                    message['from'], str) else message['from'].decode()
 
                 await self.rawMessageReceived.emit(
                     self.topic, sender, message['data'])
@@ -188,6 +193,7 @@ class PubsubService(object):
                 self.inQueue.qsize()))
             return
         except Exception as e:
+            traceback.print_exc()
             self.debug('Serve interrupted by unknown exception {}'.format(
                 str(e)))
             ensureLater(10, self.serve)
@@ -242,7 +248,8 @@ class JSONPubsubService(PubsubService):
                     self.debug('Invalid JSON message')
                     continue
 
-                sender = data['from'].decode()
+                sender = data['from'] if isinstance(data['from'], str) else \
+                    data['from'].decode()
 
                 try:
                     await self.processJsonMessage(sender, msg)
