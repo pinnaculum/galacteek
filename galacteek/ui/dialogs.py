@@ -363,7 +363,7 @@ class DonateDialog(QDialog):
 
 
 class ChooseProgramDialog(QInputDialog):
-    def __init__(self, parent=None):
+    def __init__(self, cmd=None, parent=None):
         super().__init__(parent)
 
         self.setWindowTitle('Choose a program')
@@ -371,6 +371,9 @@ class ChooseProgramDialog(QInputDialog):
         self.setLabelText(
             '''Command arguments (example: <b>mupdf %f</b>).
                 <b>%f</b> is replaced with the file path''')
+
+        if cmd:
+            self.setTextValue(cmd)
 
 
 class AddAtomFeedDialog(QInputDialog):
