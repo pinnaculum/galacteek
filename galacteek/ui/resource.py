@@ -3,7 +3,6 @@ import os.path
 import asyncio
 import functools
 import aioipfs
-import shutil
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QCoreApplication
@@ -143,17 +142,6 @@ class IPFSResourceOpener(QObject):
                 tooltip=rscPath
             )
             return
-
-        if mimeType.isWasm and shutil.which('wasmer'):
-            log.debug('Opening WASM binary from object: {}'.format(
-                rscPath))
-
-            if self.app.system == 'Linux':
-                return await self.openWithExternal(
-                    rscPath,
-                    'xterm -e "wasmer run %f; '
-                    'echo WASM program exited with code $?; read e"'
-                )
 
         if mimeType.type == 'application/octet-stream' and not fromEncrypted:
             # Try to decode it with our key if it's a small file

@@ -20,6 +20,7 @@ from PyQt5.QtWidgets import QLineEdit
 
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QUrl
 from PyQt5.QtCore import QTimer
 from PyQt5.QtCore import QDateTime
 from PyQt5.QtCore import QSize
@@ -1314,8 +1315,9 @@ class MainWindow(QMainWindow):
         self.registerTab(keysTab, name, current=True)
 
     def onHelpDonate(self):
-        bcAddress = '3HSsNcwzkiWGu6wB18BC6D37JHExpxZvyS'
-        runDialog(DonateDialog, bcAddress)
+        tab = self.app.mainWindow.addBrowserTab()
+        tab.enterUrl(
+            QUrl('https://patreon.com/{}'.format(GALACTEEK_NAME)))
 
     def addBrowserTab(self, label='No page loaded', pinBrowsed=False,
                       minProfile=None, current=True):
