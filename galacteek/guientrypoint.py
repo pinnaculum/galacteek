@@ -9,8 +9,7 @@ import re
 from distutils.version import StrictVersion
 
 from PyQt5.QtCore import QProcess
-from PyQt5.QtCore import QCoreApplication
-from PyQt5.QtCore import Qt
+from PyQt5.QtWebEngine import QtWebEngine
 
 from galacteek import log
 from galacteek import ensure
@@ -75,7 +74,7 @@ async def fetchGoIpfsWrapper(app, timeout=60 * 10):
 async def fetchGoIpfsDist(app):
     async for msg in distipfsfetch.distIpfsExtract(
             dstdir=app.ipfsBinLocation, software='go-ipfs',
-            executable='ipfs', version='0.4.22', loop=app.loop,
+            executable='ipfs', version='0.4.23', loop=app.loop,
             sslverify=app.sslverify):
         try:
             code, text = msg
@@ -108,7 +107,8 @@ def galacteekGui(args):
     else:
         glogger.basicConfig(level='INFO')
 
-    QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts, True)
+    # QtWebEngine init
+    QtWebEngine.initialize()
 
     # Initialize webengine schemes before creating the application
     initializeSchemes()

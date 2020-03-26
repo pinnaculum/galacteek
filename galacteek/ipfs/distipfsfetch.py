@@ -15,7 +15,7 @@ import shutil
 
 @async_generator
 async def distIpfsExtract(dstdir='.', software='go-ipfs', executable='ipfs',
-                          site='dist.ipfs.io', version='0.4.22', loop=None,
+                          site='dist.ipfs.io', version='0.4.23', loop=None,
                           sslverify=True):
 
     """ Fetch a distribution archive from dist.ipfs.io and extracts the
@@ -93,7 +93,7 @@ async def distIpfsExtract(dstdir='.', software='go-ipfs', executable='ipfs',
         fname = os.path.basename(path)
         if fname.endswith('.zip'):
             opener, mode = zipfile.ZipFile, 'r'
-        elif fname.endswith('.tar.gz') or path.endswith('.tgz'):
+        elif fname.endswith('.tar.gz') or fname.endswith('.tgz'):
             opener, mode = tarfile.open, 'r:gz'
         else:
             # can't handle that

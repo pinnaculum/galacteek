@@ -322,7 +322,7 @@ class ClipboardManager(PopupToolButton):
         else:
             itemName = item.path
 
-        nMenu = QMenu(itemName, self)
+        nMenu = QMenu(shortPathRepr(itemName), self)
         nMenu.setToolTipsVisible(True)
         nMenu.setToolTip(item.path)
         nMenu.triggered.connect(self.onHistoryItemClicked)
