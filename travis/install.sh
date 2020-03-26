@@ -3,6 +3,7 @@
 set -x
 set -e
 
+GO_IPFS_VERSION=0.4.23
 PIP=pip3
 PYTHONEX=python3
 
@@ -11,8 +12,8 @@ mkdir -p $HOME/bin
 # Fetch and untar go-ipfs
 if [ "$TRAVIS_OS_NAME" = "linux" ]; then
 	PYTHONEX=python3.6
-	wget https://dist.ipfs.io/go-ipfs/v0.4.22/go-ipfs_v0.4.22_linux-amd64.tar.gz
-	tar -C $HOME -xzvf go-ipfs_v0.4.22_linux-amd64.tar.gz
+	wget https://dist.ipfs.io/go-ipfs/v${GO_IPFS_VERSION}/go-ipfs_v${GO_IPFS_VERSION}_linux-amd64.tar.gz
+	tar -C $HOME -xzvf go-ipfs_v${GO_IPFS_VERSION}_linux-amd64.tar.gz
 
 	wget https://github.com/wasmerio/wasmer/releases/download/0.12.0/wasmer-linux-amd64.tar.gz
 	tar -C $HOME -xzvf wasmer-linux-amd64.tar.gz
@@ -25,8 +26,8 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
 fi
 
 if [ "$TRAVIS_OS_NAME" = "osx" ]; then
-	wget https://dist.ipfs.io/go-ipfs/v0.4.22/go-ipfs_v0.4.22_darwin-amd64.tar.gz
-	tar -C $HOME -xzvf go-ipfs_v0.4.22_darwin-amd64.tar.gz
+	wget https://dist.ipfs.io/go-ipfs/v${GO_IPFS_VERSION}/go-ipfs_v${GO_IPFS_VERSION}_darwin-amd64.tar.gz
+	tar -C $HOME -xzvf go-ipfs_v${GO_IPFS_VERSION}_darwin-amd64.tar.gz
 fi
 
 mv $HOME/go-ipfs/ipfs $HOME/bin

@@ -433,8 +433,8 @@ def cidInfosMarkup(cidString):
                cidv=cid.version,
                mbase=baseEncoding.encoding if baseEncoding else iUnknown(),
                codec=cid.codec,
-               mhashfunc=mhash.func.name,
-               mhashfuncvalue=mhash.func.value,
-               mhashfuncvaluehex=hex(mhash.func.value),
+               mhashfunc=mhash.name,
+               mhashfuncvalue=mhash.code,
+               mhashfuncvaluehex=hex(mhash.code),
                mhashdigest=binascii.b2a_hex(mhash.digest).decode('ascii'),
                mhashascii=binascii.b2a_hex(cid.multihash).decode('ascii'))

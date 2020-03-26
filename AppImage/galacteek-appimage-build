@@ -8,8 +8,9 @@
 COMMIT_SHORT=$(echo $TRAVIS_COMMIT|cut -c 1-8)
 
 MINICONDA_DIST="Miniconda3-4.6.14-Linux-x86_64.sh"
-GOIPFS_TGZ="go-ipfs_v0.4.22_linux-amd64.tar.gz"
-GOIPFS_DISTURL="https://dist.ipfs.io/go-ipfs/v0.4.22/${GOIPFS_TGZ}"
+GO_IPFS_VERSION=0.4.23
+GOIPFS_TGZ="go-ipfs_v${GO_IPFS_VERSION}_linux-amd64.tar.gz"
+GOIPFS_DISTURL="https://dist.ipfs.io/go-ipfs/v${GO_IPFS_VERSION}/${GOIPFS_TGZ}"
 
 if [ $# -lt 1 ]; then
     G_VERSION=$(grep '__version__' ../galacteek/__init__.py|sed -e "s/__version__\s=\s'\(.*\)'$/\1/")
