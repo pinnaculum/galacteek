@@ -123,6 +123,7 @@ rm -rf share/readline
 rm -rf share/terminfo
 rm -rf share/info
 rm -rf ssl/man
+rm -f lib/libstdc++*
 
 # QT
 TSL_PATH=./lib/python3.7/site-packages/PyQt5/Qt/translations
