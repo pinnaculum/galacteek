@@ -693,13 +693,13 @@ class IPFSHashExplorerWidget(QWidget):
         try:
             self.setInfo(iLoading())
             await self.timedList(ipfsop, objPath, parentItem,
-                                 autoexpand, 15, True)
+                                 autoexpand, 25, True)
         except asyncio.TimeoutError:
             self.setInfo(iTimeoutTryNoResolve())
 
             try:
                 await self.timedList(ipfsop, objPath, parentItem,
-                                     autoexpand, 10, False)
+                                     autoexpand, 15, False)
             except asyncio.TimeoutError:
                 # That's a dead end .. bury that hash please ..
                 self.setInfo(iTimeoutInvalidHash())

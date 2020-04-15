@@ -59,6 +59,7 @@ SCHEME_MANUAL = 'manual'
 defaultSchemeFlags = QWebEngineUrlScheme.SecureScheme | \
     QWebEngineUrlScheme.ViewSourceAllowed
 
+
 # Registered URL schemes
 urlSchemes = {}
 
@@ -89,6 +90,12 @@ def declareUrlScheme(name,
     urlSchemes.setdefault(schemeSection, {})
     urlSchemes[schemeSection][name] = scheme
     return scheme
+
+
+def enableSchemeFlag(name: str, flag):
+    scheme = QWebEngineUrlScheme.schemeByName(name.encode())
+    if scheme:
+        scheme.setFlags(scheme.flags() | flag)
 
 
 def registerMiscSchemes():
@@ -162,6 +169,12 @@ def isNativeIpfsUrl(url):
 class BaseURLSchemeHandler(QWebEngineUrlSchemeHandler):
     webProfileNeeded = None
 
+    def __init__(self, parent=None, noMutexes=False):
+        super(BaseURLSchemeHandler, self).__init__(parent)
+
+        self.requests = {}
+        self.noMutexes = noMutexes
+
     def reqFailed(self, request):
         return request.fail(QWebEngineUrlRequestJob.RequestFailed)
 
@@ -173,6 +186,21 @@ class BaseURLSchemeHandler(QWebEngineUrlSchemeHandler):
 
     def aborted(self, request):
         return request.fail(QWebEngineUrlRequestJob.RequestAborted)
+
+    def allocReqId(self, req):
+        # TS is good enough
+        uid = str(time.time())
+
+        while uid in self.requests:
+            uid = str(time.time())
+
+        self.requests[uid] = {
+            'request': req,
+            'iodev': QBuffer(parent=req),
+            'mutex': QMutex() if not self.noMutexes else None
+        }
+
+        return uid
 
 
 class IPFSObjectProxyScheme:
@@ -291,10 +319,9 @@ class EthDNSSchemeHandler(BaseURLSchemeHandler):
     domainResolved = pyqtSignal(str, IPFSPath)
 
     def __init__(self, app, resolver=None, parent=None):
-        super(EthDNSSchemeHandler, self).__init__(parent)
+        super(EthDNSSchemeHandler, self).__init__(parent=parent)
 
         self.app = app
-        self.requests = {}
         self.ethResolver = resolver if resolver else \
             EthDNSResolver(self.app.loop)
 
@@ -333,10 +360,9 @@ class EthDNSSchemeHandler(BaseURLSchemeHandler):
             return self.urlNotFound(request)
 
     def requestStarted(self, request):
-        uid = str(uuid.uuid4())
-        self.requests[uid] = request
+        uid = self.allocReqId(request)
         request.destroyed.connect(lambda: self.onRequestDestroyed(uid))
-        ensure(self.handleRequest(self.requests[uid]))
+        ensure(self.handleRequest(request))
 
 
 class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
@@ -366,11 +392,11 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
 
     def __init__(self, app, parent=None, validCidQSize=32, reqTimeout=60 * 10,
                  noMutexes=False):
-        super(NativeIPFSSchemeHandler, self).__init__(parent)
+        super(NativeIPFSSchemeHandler, self).__init__(
+            parent=parent,
+            noMutexes=noMutexes)
 
         self.app = app
-        self.noMutexes = noMutexes
-        self.requests = {}
         self.validCids = collections.deque([], validCidQSize)
         self.requestTimeout = reqTimeout
         self.contentReady.connect(self.onContent)
@@ -396,8 +422,8 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
             buf = self.requests[uid]['iodev']
             buf.open(QIODevice.WriteOnly)
             buf.write(data)
-            buf.seek(0)
             buf.close()
+
             request.reply(ctype.encode('ascii'), buf)
 
             self.objectServed.emit(ipfsPath, ctype, time.time())
@@ -596,12 +622,7 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
                 request.requestUrl().toString()))
             return self.urlInvalid(request)
 
-        uid = str(uuid.uuid4())
-        self.requests[uid] = {
-            'request': request,
-            'iodev': QBuffer(parent=request),
-            'mutex': QMutex() if not self.noMutexes else None
-        }
+        uid = self.allocReqId(request)
 
         request.destroyed.connect(
             functools.partial(self.onRequestDestroyed, uid))

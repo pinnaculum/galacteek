@@ -647,3 +647,7 @@ def ipfsPathExtract(text):
 
     if ipfsRegSearchCid(text):
         return joinIpfs(text)
+
+
+def qurlPercentDecode(qurl):
+    return QUrl(QUrl.fromPercentEncoding(qurl.toEncoded())).toString()

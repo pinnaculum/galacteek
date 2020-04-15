@@ -1,4 +1,5 @@
 from collections import UserList
+from quamash import QThreadExecutor
 import asyncio
 import traceback
 import functools
@@ -188,3 +189,10 @@ async def asyncWriteFile(path, data, mode='w+b'):
             await fd.write(data)
     except BaseException:
         return None
+
+
+async def threadExec(fn, *args):
+    loop = asyncio.get_event_loop()
+
+    with QThreadExecutor(1) as texec:
+        await loop.run_in_executor(texec, fn, *args)
