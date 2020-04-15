@@ -28,6 +28,7 @@ from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QVBoxLayout
 
 from galacteek import ensure
+from galacteek import threadExec
 from galacteek.ipfs.mimetype import mimeTypeDagUnknown
 from galacteek.ipfs.mimetype import mimeTypeDagPb
 from galacteek.ipfs.cidhelpers import getCID
@@ -296,9 +297,6 @@ def runDialog(cls, *args, **kw):
     accepted = kw.pop('accepted', None)
     dlgW = cls(*args, **kw)
 
-    def onAccept():
-        if accepted:
-            accepted(dlgW)
     if title:
         dlgW.setWindowTitle(title)
     if accepted:
@@ -306,6 +304,21 @@ def runDialog(cls, *args, **kw):
 
     dlgW.show()
     dlgW.exec_()
+    return dlgW
+
+
+async def runDialogAsync(cls, *args, **kw):
+    title = kw.pop('title', None)
+    accepted = kw.pop('accepted', None)
+    dlgW = cls(*args, **kw)
+
+    if title:
+        dlgW.setWindowTitle(title)
+    if accepted:
+        dlgW.accepted.connect(functools.partial(accepted, dlgW))
+
+    dlgW.show()
+    await threadExec(dlgW.exec_)
     return dlgW
 
 

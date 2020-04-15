@@ -11,6 +11,8 @@ CFG_SECTION_USERINFO = 'userinfo'
 CFG_SECTION_ETHEREUM = 'ethereum'
 CFG_SECTION_ORBITDB = 'orbitdb'
 CFG_SECTION_IPID = 'ipid'
+CFG_SECTION_URLSCHEME_IPFS = 'urlscheme_ipfs'
+CFG_SECTION_URLSCHEME_ENS = 'urlscheme_ens'
 
 CFG_KEY_ENABLED = 'enabled'
 
@@ -60,6 +62,11 @@ CFG_KEY_MAINWINDOW_GEOMETRY = 'mainwindow_geometry'
 
 # OrbitDB
 CFG_KEY_CONNECTOR_LISTENPORT = 'connectorlistenport'
+
+# URL schemes
+CFG_KEY_URLS_IGNORE_CSP = 'ignorecsp'
+CFG_KEY_URLS_SERVICE_WORKERS = 'enablesrvworkers'
+CFG_KEY_URLS_CORS = 'enablecors'
 
 # Ethereum
 CFG_KEY_PROVIDERTYPE = 'providertype'

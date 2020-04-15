@@ -167,6 +167,7 @@ class GalacteekApplication(QApplication):
 
     manualAvailable = pyqtSignal(str, dict)
     messageDisplayRequest = pyqtSignal(str, str)
+    appImageImported = pyqtSignal(str)
 
     def __init__(self, debug=False, profile='main', sslverify=True,
                  enableOrbital=False, progName=None, cmdArgs={}):
@@ -397,6 +398,7 @@ class GalacteekApplication(QApplication):
         self.importDefaultHashmarks(self.marksLocal)
 
         self.marksLocal.addCategory('general')
+        self.marksLocal.addCategory('uncategorized')
         self.marksNetwork = IPFSMarks(self.networkMarksFileLocation,
                                       autosave=False)
 
@@ -512,6 +514,37 @@ class GalacteekApplication(QApplication):
                 await self.ipfsCtx.pin(joinIpfs(self.progCid), False,
                                        self.onAppReplication,
                                        qname='self-seeding')
+
+        if self.cmdArgs.seed and self.cmdArgs.appimage:
+            await self.seedAppImage()
+
+    @ipfsOp
+    async def seedAppImage(self, ipfsop):
+        # Automatic AppImage seeding
+
+        if os.path.isfile(self.cmdArgs.binarypath):
+            log.info('AppImage seeding: {img}'.format(
+                img=self.cmdArgs.binarypath
+            ))
+
+            ensure(ipfsop.addPath(
+                self.cmdArgs.binarypath,
+                wrap=True
+            ), futcallback=self.onAppSeed)
+
+    def onAppSeed(self, future):
+        try:
+            replResult = future.result()
+        except Exception as err:
+            log.debug('AppImage seed: failed', exc_info=err)
+        else:
+            if isinstance(replResult, dict):
+                cid = replResult.get('Hash')
+
+                self.appImageImported.emit(cid)
+
+                log.info('AppImage seed OK: CID {cid}'.format(
+                    cid=cid))
 
     def onAppReplication(self, future):
         try:
@@ -651,6 +684,8 @@ class GalacteekApplication(QApplication):
 
         self.messageDisplayRequest.connect(
             lambda msg, title: messageBox(msg, title=title))
+        self.appImageImported.connect(
+            lambda cid: messageBox('AppImage was imported in IPFS!'))
 
     def setupAsyncLoop(self):
         """

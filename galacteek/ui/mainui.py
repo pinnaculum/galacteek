@@ -552,7 +552,14 @@ class MainWindow(QMainWindow):
         self.chatAction = QAction(
             getIcon('chat.png'),
             'Chat',
-            triggered=self.onOpenChatWidget)
+            triggered=self.onOpenChatWidget
+        )
+
+        self.seedAppImageAction = QAction(
+            getIcon('appimage.png'),
+            'Seed AppImage',
+            triggered=self.onSeedAppImage
+        )
 
         self.browseButton = BrowseButton(self)
         self.browseButton.setPopupMode(QToolButton.InstantPopup)
@@ -570,6 +577,13 @@ class MainWindow(QMainWindow):
         self.browseButton.menu.addSeparator()
         self.browseButton.menu.addAction(self.mPlayerOpenAction)
         self.browseButton.menu.addSeparator()
+
+        if not self.app.cmdArgs.seed and self.app.cmdArgs.appimage:
+            # Add the possibility to import the image from the menu
+            # if not specified on the command-line
+            self.browseButton.menu.addAction(self.seedAppImageAction)
+            self.browseButton.menu.addSeparator()
+
         self.browseButton.menu.addAction(self.quitAction)
 
         self.browseButton.animatedActions = [
@@ -873,6 +887,9 @@ class MainWindow(QMainWindow):
             self.tabWidget.setCurrentIndex(curIndex + 1)
         else:
             self.tabWidget.setCurrentIndex(0)
+
+    def onSeedAppImage(self):
+        ensure(self.app.seedAppImage())
 
     def onClearHistory(self):
         self.app.urlHistory.clear()

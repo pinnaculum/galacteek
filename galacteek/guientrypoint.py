@@ -221,6 +221,11 @@ def start():
         dest='monitor',
         help='Monitor application with aiomonitor')
     parser.add_argument(
+        '--seed',
+        action='store_true',
+        dest='seed',
+        help='Automatic AppImage seeding')
+    parser.add_argument(
         '--from-appimage',
         action='store_true',
         dest='appimage',

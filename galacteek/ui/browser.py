@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtWidgets import QTextBrowser
 from PyQt5.QtWidgets import QLineEdit
+from PyQt5.QtWidgets import QTextEdit
 
 from PyQt5.QtPrintSupport import *
 
@@ -109,6 +110,26 @@ def iDownload():
 def iSaveContainedWebPage():
     return QCoreApplication.translate(
         'BrowserTabForm', 'Save full webpage to the "Web Pages" folder')
+
+
+def iPrintWebPageText():
+    return QCoreApplication.translate(
+        'BrowserTabForm', 'Print (text)')
+
+
+def iSaveWebPageToPdfFile():
+    return QCoreApplication.translate(
+        'BrowserTabForm', 'Save webpage to PDF')
+
+
+def iSaveWebPageToPdfFileError():
+    return QCoreApplication.translate(
+        'BrowserTabForm', 'Error saving webpage to PDF file')
+
+
+def iSaveWebPageToPdfFileOk(path):
+    return QCoreApplication.translate(
+        'BrowserTabForm', 'Saved to PDF file: {0}').format(path)
 
 
 def iJsConsole():
@@ -494,12 +515,19 @@ class WebView(IPFSWebView):
         analyzer = self.app.rscAnalyzer
         currentPage = self.page()
         contextMenuData = currentPage.contextMenuData()
-        url = contextMenuData.linkUrl()
+
+        urlDecoded = QUrl.fromPercentEncoding(
+            contextMenuData.linkUrl().toEncoded())
+        url = QUrl(urlDecoded)
+
         mediaType = contextMenuData.mediaType()
-        mediaUrl = contextMenuData.mediaUrl()
+        mediaUrlDecoded = QUrl.fromPercentEncoding(
+            contextMenuData.mediaUrl().toEncoded())
+        mediaUrl = QUrl(mediaUrlDecoded)
+
+        log.debug('Context URL: {0}'.format(url.toString()))
 
         if not url.isValid() and not mediaUrl.isValid():
-
             selectedText = self.webPage.selectedText()
 
             if selectedText:
@@ -1314,12 +1342,20 @@ class BrowserTab(GalacteekTab):
 
     def createPageOpsButton(self):
         icon = getMimeIcon('text/html')
+        iconPrinter = getIcon('printer.png')
+
         self.pageOpsButton = PopupToolButton(
             icon, mode=QToolButton.InstantPopup, parent=self
         )
         self.pageOpsButton.setAutoRaise(True)
         self.pageOpsButton.menu.addAction(
             icon, iSaveContainedWebPage(), self.onSavePageContained)
+        self.pageOpsButton.menu.addAction(
+            icon, iSaveWebPageToPdfFile(), self.onSavePageToPdf)
+        self.pageOpsButton.menu.addSeparator()
+        self.pageOpsButton.menu.addAction(
+            iconPrinter, iPrintWebPageText(), self.onPrintWebPage)
+        self.pageOpsButton.menu.addSeparator()
 
         ensure(self.createPageOpsMfsMenu())
 
@@ -1586,6 +1622,20 @@ class BrowserTab(GalacteekTab):
             QWebEnginePage.Reload
         )
 
+    def onSavePageToPdf(self):
+        path = saveFileSelect(filter='(*.pdf)')
+        if not path:
+            return
+
+        page = self.webView.page()
+
+        try:
+            page.printToPdf(path)
+        except Exception:
+            messageBox(iSaveWebPageToPdfFileError())
+        else:
+            messageBox(iSaveWebPageToPdfFileOk(path))
+
     def onSavePageContained(self):
         tmpd = self.app.tempDirCreate(self.app.tempDirWeb)
         if tmpd is None:
@@ -1651,18 +1701,21 @@ class BrowserTab(GalacteekTab):
         elif isinstance(path, IPFSPath):
             ensure(self.pinQueuePath(path.objPath, recursive, notify))
 
-    def printButtonClicked(self):
-        # TODO: reinstate the printing button
-        printer = QPrinter()
+    def onPrintWebPage(self):
+        printer = QPrinter(QPrinter.HighResolution)
         dialog = QPrintDialog(printer, self)
-        dialog.setModal(True)
 
-        def success(ok):
-            return ok
+        def htmlRendered(htmlCode):
+            if not printer.isValid():
+                return messageBox('Invalid printer')
+
+            edit = QTextEdit()
+            edit.setHtml(htmlCode)
+            edit.print_(printer)
 
         if dialog.exec_() == QDialog.Accepted:
             currentPage = self.webEngineView.page()
-            currentPage.print(printer, success)
+            currentPage.toHtml(htmlRendered)
 
     def onPinSingle(self):
         if not self.currentIpfsObject:
@@ -1691,7 +1744,6 @@ class BrowserTab(GalacteekTab):
             return messageBox(iNotAnIpfsResource())
 
         def htmlReady(htmlCode):
-
             ensure(self.pinIpfsLinksInPage(htmlCode))
 
         self.webEngineView.webPage.toHtml(htmlReady)

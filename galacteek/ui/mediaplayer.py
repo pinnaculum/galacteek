@@ -27,6 +27,7 @@ from PyQt5.QtCore import QTime
 
 from galacteek.core.jsono import *
 from galacteek.ipfs.cidhelpers import joinIpfs
+from galacteek.ipfs.cidhelpers import qurlPercentDecode
 from galacteek.ipfs.ipfsops import *
 
 from . import ui_mediaplaylist
@@ -84,6 +85,11 @@ def iPlaylistName():
 def iAlreadyInPlaylist():
     return QCoreApplication.translate('MediaPlayer',
                                       'Already queued in the current playlist')
+
+
+def iNoMediaInPlaylist():
+    return QCoreApplication.translate(
+        'MediaPlayer', 'No media in playlist')
 
 
 def mediaPlayerAvailable(player=None):
@@ -213,6 +219,9 @@ class MediaPlayerTab(GalacteekTab):
         self.clipboardButton.setIcon(getIconClipboard())
         self.clipboardButton.setEnabled(False)
 
+        self.pinButton = QToolButton(clicked=self.onPinMediaClicked)
+        self.pinButton.setIcon(getIcon('pin.png'))
+
         self.processClipboardItem(self.app.clipTracker.current, force=True)
         self.app.clipTracker.currentItemChanged.connect(self.onClipItemChange)
 
@@ -239,6 +248,7 @@ class MediaPlayerTab(GalacteekTab):
         hLayoutControls = QHBoxLayout()
         hLayoutControls.setContentsMargins(0, 0, 0, 0)
         hLayoutControls.addWidget(self.clipboardButton)
+        hLayoutControls.addWidget(self.pinButton)
         hLayoutControls.addWidget(self.playButton)
         hLayoutControls.addWidget(self.pauseButton)
         hLayoutControls.addWidget(self.stopButton)
@@ -289,6 +299,21 @@ class MediaPlayerTab(GalacteekTab):
     def onCopyPlaylistPath(self):
         if self.playlistIpfsPath:
             self.app.setClipboardText(self.playlistIpfsPath)
+
+    def onPinMediaClicked(self):
+        currentMedia = self.playlist.currentMedia()
+        if currentMedia.isNull():
+            return messageBox(iNoMediaInPlaylist())
+
+        ensure(self.pinMedia(currentMedia))
+
+    @ipfsOp
+    async def pinMedia(self, ipfsop, media):
+        mediaUrl = qurlPercentDecode(media.canonicalUrl())
+        path = IPFSPath(mediaUrl, autoCidConv=True)
+
+        if path.valid:
+            await ipfsop.ctx.pin(str(path), qname='mediaplayer')
 
     @ipfsOp
     async def updatePlaylistsMenu(self, ipfsop):

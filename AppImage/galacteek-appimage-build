@@ -150,6 +150,9 @@ chmod +x appimagetool*.AppImage
 echo "AppDir successfully created, running appimagetool"
 ARCH=x86_64 ./appimagetool-x86_64.AppImage -n $APPDIR $APPIMAGE_DEST
 
+APPIMAGE_CID=$(/tmp/go-ipfs/ipfs add -q -n --cid-version 1 $APPIMAGE_DEST)
+echo "==> CIDv1 $APPIMAGE_DEST: $APPIMAGE_CID"
+
 cp $HOME/bin/wasmer $APPDIR/usr/bin
 echo "AppDir successfully created, running appimagetool (wasmer image)"
 ARCH=x86_64 ./appimagetool-x86_64.AppImage -n $APPDIR $APPIMAGE_WASMER_DEST

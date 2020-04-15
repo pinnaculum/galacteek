@@ -131,6 +131,10 @@ def iChunker():
     return QCoreApplication.translate('FileManagerForm', 'Chunker')
 
 
+def iHashFunction():
+    return QCoreApplication.translate('FileManagerForm', 'Hash function')
+
+
 def iDhtProvide():
     return QCoreApplication.translate(
         'FileManagerForm',
@@ -194,6 +198,7 @@ class FileManager(QWidget):
         self.ui.setupUi(self)
 
         self.status = self.statusReady
+        self.hashFunction = 'sha2-256'
 
         # Build file browser
         self.displayedItem = None
@@ -221,6 +226,7 @@ class FileManager(QWidget):
         fsDagFormatMenu.setIcon(getIcon('ipld.png'))
 
         fsChunkerMenu = self.buildChunkerMenu()
+        fsHashFuncMenu = self.buildHashFuncMenu()
 
         fsMiscOptsMenu = QMenu('Options', self)
         fsMiscOptsMenu.setIcon(getIcon('folder-black.png'))
@@ -250,6 +256,8 @@ class FileManager(QWidget):
         fsOptsMenu.addMenu(fsDagFormatMenu)
         fsOptsMenu.addSeparator()
         fsOptsMenu.addMenu(fsChunkerMenu)
+        fsOptsMenu.addSeparator()
+        fsOptsMenu.addMenu(fsHashFuncMenu)
         fsOptsMenu.addSeparator()
         fsOptsMenu.addMenu(fsMiscOptsMenu)
 
@@ -350,6 +358,32 @@ class FileManager(QWidget):
     @property
     def inEncryptedFolder(self):
         return self.displayedItem is self.model.itemEncrypted
+
+    def buildHashFuncMenu(self):
+        # Build the menu to select the hashing function
+
+        fsHashMenu = QMenu(iHashFunction(), self)
+        self.hashFnGroup = QActionGroup(fsHashMenu)
+        self.hashFnGroup.triggered.connect(self.onHashFunctionChanged)
+
+        # One day probably just call /api/vx/cid/hashes and filter but hey..
+        hFnList = ['sha1']
+        hFnList += ['sha2-256', 'sha2-512']
+        hFnList += ['sha3-512', 'sha2-512']
+        hFnList += ['dbl-sha2-256']
+        hFnList += ['keccak-{}'.format(x) for x in [256, 512]]
+        hFnList += ['blake2b-{}'.format(x) for x in range(160, 513, 32)]
+        hFnList += ['blake2s-{}'.format(x) for x in range(160, 257, 32)]
+
+        for func in hFnList:
+            action = QAction(func, self.hashFnGroup)
+            action.setCheckable(True)
+
+            if func == 'sha2-256':
+                action.setChecked(True)
+
+        fsHashMenu.addActions(self.hashFnGroup.actions())
+        return fsHashMenu
 
     def buildChunkerMenu(self):
         # Build the menu to select the chunking strategy
@@ -547,6 +581,9 @@ class FileManager(QWidget):
 
     def onChunkerChanged(self, action):
         self.chunkingAlg = action.data()
+
+    def onHashFunctionChanged(self, action):
+        self.hashFunction = action.text()
 
     def onIconSize(self, index):
         size = None
@@ -803,15 +840,19 @@ class FileManager(QWidget):
 
         publishMenu.triggered.connect(publishToKey)
 
-        didPublishMenu = await buildPublishingMenu(
-            await profile.userInfo.ipIdentifier(),
-            parent=menu
-        )
-        didPublishMenu.triggered.connect(
-            functools.partial(self.onDidPublish, ipfsPath)
-        )
-
-        menu.addMenu(didPublishMenu)
+        # DID publishing menu
+        try:
+            didPublishMenu = await buildPublishingMenu(
+                await profile.userInfo.ipIdentifier(),
+                parent=menu
+            )
+            didPublishMenu.triggered.connect(
+                functools.partial(self.onDidPublish, ipfsPath)
+            )
+        except Exception:
+            pass
+        else:
+            menu.addMenu(didPublishMenu)
 
         menu.addSeparator()
         menu.addMenu(publishMenu)
@@ -1196,6 +1237,7 @@ class FileManager(QWidget):
                                     dagformat=self.dagGenerationFormat,
                                     rawleaves=self.useRawLeaves,
                                     chunker=self.chunkingAlg,
+                                    hashfunc=self.hashFunction,
                                     callback=onEntry)
 
             if root is None:
@@ -1234,6 +1276,7 @@ class FileManager(QWidget):
                                     dagformat=self.dagGenerationFormat,
                                     rawleaves=self.useRawLeaves,
                                     chunker=self.chunkingAlg,
+                                    hashfunc=self.hashFunction,
                                     wrap=wrapEnabled)
 
         if not dirEntry:

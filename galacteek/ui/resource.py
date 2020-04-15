@@ -1,7 +1,6 @@
 import os
 import os.path
 import asyncio
-import functools
 import aioipfs
 
 from PyQt5.QtWidgets import QApplication
@@ -12,6 +11,8 @@ from PyQt5.QtCore import pyqtSignal
 from galacteek import log
 from galacteek import logUser
 from galacteek import ensure
+from galacteek import partialEnsure
+from galacteek import AsyncSignal
 
 from galacteek.did.ipid import IPService
 
@@ -36,7 +37,7 @@ from .dialogs import ResourceOpenConfirmDialog
 from .helpers import getIcon
 from .helpers import getMimeIcon
 from .helpers import messageBox
-from .helpers import runDialog
+from .helpers import runDialogAsync
 from .imgview import ImageViewerTab
 from .i18n import iDagViewer
 
@@ -53,14 +54,13 @@ class IPFSResourceOpener(QObject):
     objectOpened = pyqtSignal(IPFSPath)
 
     # Emitted by the opener when we want to show a dialog for confirmation
-    needUserConfirm = pyqtSignal(IPFSPath, MIMEType, bool)
+    needUserConfirm = AsyncSignal(IPFSPath, MIMEType, bool)
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.app = QApplication.instance()
         self.setObjectName('resourceOpener')
-
-        self.needUserConfirm.connect(self.onNeedUserConfirm)
+        self.needUserConfirm.connectTo(self.onNeedUserConfirm)
 
     @ipfsOp
     async def open(self, ipfsop, pathRef,
@@ -236,17 +236,19 @@ class IPFSResourceOpener(QObject):
                 minProfile=minWebProfile).browseFsPath(ipfsPath)
 
         if openingFrom in ['filemanager', 'qa', 'didlocal']:
-            self.needUserConfirm.emit(ipfsPath, mimeType, True)
+            await self.needUserConfirm.emit(ipfsPath, mimeType, True)
         else:
-            self.needUserConfirm.emit(ipfsPath, mimeType, False)
+            await self.needUserConfirm.emit(ipfsPath, mimeType, False)
 
-    def onNeedUserConfirm(self, ipfsPath, mimeType, secureFlag):
-        runDialog(ResourceOpenConfirmDialog, ipfsPath, mimeType, secureFlag,
-                  accepted=functools.partial(self.onOpenConfirmed, ipfsPath,
-                                             mimeType))
+    async def onNeedUserConfirm(self, ipfsPath, mimeType, secureFlag):
+        await runDialogAsync(
+            ResourceOpenConfirmDialog, ipfsPath, mimeType, secureFlag,
+            accepted=partialEnsure(self.onOpenConfirmed, ipfsPath,
+                                   mimeType))
 
-    def onOpenConfirmed(self, iPath, mType, dlg):
-        return ensure(self.openWithSystemDefault(str(iPath)))
+    async def onOpenConfirmed(self, iPath, mType, dlg):
+        log.debug('Open confirmed for: {0}'.format(iPath))
+        await self.openWithSystemDefault(str(iPath))
 
     @ipfsOp
     async def openBlock(self, ipfsop, pathRef, mimeType=None):
@@ -340,8 +342,7 @@ class IPFSResourceOpener(QObject):
         else:
             os.unlink(filePath)
 
-    @ipfsOp
-    async def openWithSystemDefault(self, ipfsop, rscPath):
+    async def openWithSystemDefault(self, rscPath):
         # Use xdg-open or open depending on the platform
         if self.app.system == 'Linux':
             await self.openWithExternal(rscPath, 'xdg-open "%f"')

@@ -4,7 +4,6 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QComboBox
 from PyQt5.QtWidgets import QInputDialog
-from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtWidgets import QDialogButtonBox
 from PyQt5.QtWidgets import QLabel
 from PyQt5.QtWidgets import QLineEdit
@@ -617,7 +616,7 @@ class ResourceOpenConfirmDialog(QDialog):
         super().__init__(parent)
 
         self.rscPath = rscPath
-        self.setWindowTitle('Open resource')
+        self.setWindowTitle('Open IPFS object')
 
         buttonBox = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
@@ -635,23 +634,13 @@ class ResourceOpenConfirmDialog(QDialog):
 
         layout.addWidget(label)
 
-        okButton = buttonBox.button(QDialogButtonBox.Ok)
-
         if not secureEnv:
-            okButton.setEnabled(False)
-            ignButton = QToolButton(self)
-            ignButton.setCheckable(True)
-            ignButton.setText('Let me open it anyway')
-            ignButton.toggled.connect(
-                lambda state: okButton.setEnabled(state))
-
             wLabel = QLabel(
                 '<p style="color: red"> '
                 'You are trying to open this object '
                 'from an insecure context.'
                 '</font>')
             layout.addWidget(wLabel)
-            layout.addWidget(ignButton)
 
         layout.addWidget(buttonBox)
 

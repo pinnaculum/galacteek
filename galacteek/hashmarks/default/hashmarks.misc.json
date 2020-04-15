@@ -37,6 +37,32 @@
                             "tags": []
                         }
                     }
+                },
+                "papers": {
+                    "_marks": {
+                        "/ipfs/bafybeia4o4gqmuzqp2bekj7dhp6xdegih27x5zolrlkjepeen2tnqr4aia/": {
+                            "metadata": {
+                                "title": "Papers We Love (14/04/2020)",
+                                "description": "Papers We Love (snapshot: 14/04/2020)",
+                                "comment": "",
+                                "srcplanet": "Earth",
+                                "datasize": 2,
+                                "cumulativesize": 539810251,
+                                "numlinks": 74
+                            },
+                            "pin": {
+                                "single": false,
+                                "recursive": false,
+                                "filters": []
+                            },
+                            "datecreated": "2020-04-15T19:02:03.651129+00:00",
+                            "tscreated": 1586977323,
+                            "icon": null,
+                            "share": false,
+                            "tags": []
+                        }
+                    },
+                    "_pyramids": {}
                 }
             },
             "misc": {
@@ -125,5 +151,6 @@
         }
     },
     "feeds": {},
-    "qamappings": []
+    "qamappings": [],
+    "uuid": "8defd65b-05fa-4fba-97ed-f3f58f265ad0"
 }

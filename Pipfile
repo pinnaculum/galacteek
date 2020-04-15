@@ -35,7 +35,7 @@ aiosqlite = ">=0.10.0"
 web3 = "==5.1.0"
 aiodns = ">=2.0.0"
 pyld = ">=1.0.5"
-aioipfs = ">=0.4.3"
+aioipfs = ">=0.4.4"
 cachetools = ">=3.1.1"
 
 [dev-packages]

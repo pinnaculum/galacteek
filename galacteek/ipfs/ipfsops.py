@@ -862,6 +862,7 @@ class IPFSOperator(object):
     async def addPath(self, path, recursive=True, wrap=False,
                       callback=None, cidversion=1, offline=False,
                       dagformat='balanced', rawleaves=False,
+                      hashfunc='sha2-256',
                       hidden=False, only_hash=False, chunker=None):
         """
         Add files from ``path`` in the repo, and returns the top-level
@@ -885,14 +886,17 @@ class IPFSOperator(object):
         if isinstance(chunker, str):
             exopts['chunker'] = chunker
 
+        if rawleaves:
+            exopts['raw_leaves'] = rawleaves
+
         try:
             async for entry in self.client.add(path, quiet=True,
                                                recursive=recursive,
                                                cid_version=cidversion,
                                                offline=offline, hidden=hidden,
                                                only_hash=only_hash,
+                                               hash=hashfunc,
                                                wrap_with_directory=wrap,
-                                               raw_leaves=rawleaves,
                                                **exopts):
                 await self.sleep()
                 added = entry

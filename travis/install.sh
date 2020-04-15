@@ -31,6 +31,7 @@ if [ "$TRAVIS_OS_NAME" = "osx" ]; then
 fi
 
 mv $HOME/go-ipfs/ipfs $HOME/bin
+$HOME/bin/ipfs init
 
 export PYTHONPATH=$PYTHONPATH:/usr/local/lib/python3.6/dist-packages
 export PATH=$PATH:$HOME/bin

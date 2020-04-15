@@ -1,5 +1,7 @@
 <RCC>
   <qresource>
+    <file>../../share/icons/appimage.png</file>
+    <file>../../share/icons/printer.png</file>
     <file>../../share/icons/blocks-cluster.png</file>
     <file>../../share/icons/helmet.png</file>
     <file>../../share/icons/ipservice.png</file>
