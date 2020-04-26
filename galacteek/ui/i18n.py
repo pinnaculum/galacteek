@@ -54,6 +54,23 @@ def iIPServices():
         'GalacteekWindow', 'InterPlanetary Services')
 
 
+# IP Tags
+
+
+def iIPTag():
+    return QCoreApplication.translate('GalacteekWindow', 'IPTag')
+
+
+def iIPTagLong():
+    return QCoreApplication.translate(
+        'GalacteekWindow', 'InterPlanetary tag')
+
+
+def iHashmarkIPTagsEdit():
+    return QCoreApplication.translate(
+        'GalacteekWindow', 'Edit hashmark IP tags')
+
+
 # Space jargon
 
 
@@ -203,6 +220,32 @@ def iHashmark():
     return QCoreApplication.translate('GalacteekWindow', 'Hashmark')
 
 
+def iHashmarkSources():
+    return QCoreApplication.translate('GalacteekWindow', 'Hashmark sources')
+
+
+def iHashmarkSourceAlreadyRegistered():
+    return QCoreApplication.translate(
+        'GalacteekWindow', 'This hashmarks source is already registered')
+
+
+def iHashmarkSourcesDbSync():
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Synchronize database'
+    )
+
+
+def iHashmarkSourcesAddGitRepo():
+    return QCoreApplication.translate(
+        'GalacteekWindow', 'Add hashmarks repository source (Git)')
+
+
+def iHashmarkSourcesAddLegacyIpfsMarks():
+    return QCoreApplication.translate(
+        'GalacteekWindow', 'Add ipfsmarks source (old format)')
+
+
 def iHashmarkThisPage():
     return QCoreApplication.translate('GalacteekWindow', 'Hashmark this page')
 
@@ -241,12 +284,32 @@ def iSearchHashmarksAllAcross():
         <div>
             <p>Search the hashmarks database</p>
 
+            <p>Search by tags using #mytag or @Planet#mytag</p>
+
+            <ul>
+                <li><b>@Earth#ipfs</b></li>
+                <li>#dapp</li>
+                <li>#icon</li>
+            </ul>
+
             <p>Press <b>Shift + Return</b> to validate your search</p>
         </div>
         ''')
 
 
-def iHashmarkInfoToolTip(path, title, description, dateCreated):
+def iHashmarkInfoToolTipShort(mark):
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        '''
+            <img src=':/share/icons/hashmarks.png' width='16' height='16' />
+            <p>Title: <b>{0}</b></p>
+            <p>Description: <b>{1}</b></p>
+        ''').format(mark.title if mark.title else iNoTitle(),
+                    mark.description if mark.description else iNoDescription(),
+                    )
+
+
+def iHashmarkInfoToolTip(mark):
     return QCoreApplication.translate(
         'GalacteekWindow',
         '''
@@ -257,10 +320,13 @@ def iHashmarkInfoToolTip(path, title, description, dateCreated):
             <p>Description: <b>{2}</b></p>
 
             <p>Creation date: <b>{3}</b></p>
-        ''').format(path,
-                    title if title else iNoTitle(),
-                    description if description else iNoDescription(),
-                    dateCreated
+
+            <p>Hashmark source: {4}</p>
+        ''').format(mark.uri,
+                    mark.title if mark.title else iNoTitle(),
+                    mark.description if mark.description else iNoDescription(),
+                    mark.datecreated,
+                    str(mark.source) if mark.source else iUnknown()
                     )
 
 
@@ -352,12 +418,24 @@ def iLocalHashmarksCount(count):
     ).format(count)
 
 
+def iHashmarksDatabase():
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Hashmarks database'
+    )
+
+
 def iOpen():
     return QCoreApplication.translate('GalacteekWindow', 'Open')
 
 
 def iDownload():
     return QCoreApplication.translate('GalacteekWindow', 'Download')
+
+
+def iDownloadOpenDialog():
+    return QCoreApplication.translate(
+        'GalacteekWindow', 'Download or open IPFS object')
 
 
 def iCancel():
@@ -440,6 +518,10 @@ def iTitle():
 
 def iNoTitle():
     return QCoreApplication.translate('GalacteekWindow', 'No title')
+
+
+def iNoCategory():
+    return QCoreApplication.translate('GalacteekWindow', 'No category')
 
 
 def iNoDescription():

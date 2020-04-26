@@ -278,7 +278,7 @@ class ImageView(QScrollArea):
                 )
             else:
                 imgData = await ipfsop.waitFor(
-                    ipfsop.client.cat(imgPath), timeout
+                    ipfsop.catObject(imgPath), timeout
                 )
 
             if not imgData:

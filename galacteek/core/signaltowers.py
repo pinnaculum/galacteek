@@ -12,7 +12,7 @@ class DAGSignalsTower(GObject):
 
 
 class URLSchemesTower(GObject):
-    qMappingsChanged = pyqtSignal()
+    qMappingsChanged = AsyncSignal()
 
 
 class DIDTower:

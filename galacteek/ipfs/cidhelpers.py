@@ -206,7 +206,7 @@ def domainValid(domain):
 # Regexps
 
 ipfsPathRe = re.compile(
-    r'^(\s*)?(?:fs:|dweb:|https?://[\w:.-]+)?(?P<fullpath>(/ipfs/)?(?P<rootcid>[a-zA-Z0-9]{46,113})/?(?P<subpath>[\w<>":;,?!\*%&=@\$~/\s\.\-_\\\'()\+]{1,1024})?)#?(?P<fragment>[\w_\.\-\+,=/]{1,256})?$',  # noqa
+        r'^(\s*)?(?:fs:|dweb:|dwebgw:|https?://[\w:.-]+)?(?P<fullpath>(/ipfs/)?(?P<rootcid>[a-zA-Z0-9]{46,113})/?(?P<subpath>[\w<>":;,?!\*%&=@\$~/\s\.\-_\\\'()\+]{1,1024})?)#?(?P<fragment>[\w_\.\-\+,=/]{1,256})?$',  # noqa
     flags=re.UNICODE)
 
 # For ipfs://<cid-base32>
@@ -233,7 +233,7 @@ ipnsKeyRe = re.compile(
     r'^(?P<key>(Qm[\w]{44}))$')
 
 ipnsPathRe = re.compile(
-    r'^(\s*)?(?:fs:|dweb:|https?://[\w:.-]+)?(?P<fullpath>/ipns/(?P<fqdn>[\w\.-]+)/?(?P<subpath>[\w<>"*:;,?!%&=@\$~/\s\.\-_\'\\\+()]{1,1024})?)#?(?P<fragment>[\w\+\-_\.,=/]{1,256})?$',  # noqa
+        r'^(\s*)?(?:fs:|dweb:|dwebgw:|https?://[\w:.-]+)?(?P<fullpath>/ipns/(?P<fqdn>[\w\.-]+)/?(?P<subpath>[\w<>"*:;,?!%&=@\$~/\s\.\-_\'\\\+()]{1,1024})?)#?(?P<fragment>[\w\+\-_\.,=/]{1,256})?$',  # noqa
     flags=re.UNICODE)
 
 
@@ -368,6 +368,13 @@ class IPFSPath:
     def dwebUrl(self):
         return '{scheme}:{path}'.format(
             scheme='dweb',
+            path=self.fullPath
+        )
+
+    @property
+    def dwebGwUrl(self):
+        return '{scheme}:{path}'.format(
+            scheme='dwebgw',
             path=self.fullPath
         )
 

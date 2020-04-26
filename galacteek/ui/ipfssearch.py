@@ -317,9 +317,9 @@ class IPFSSearchHandler(QObject):
         pinSingle = (type == 'file')
         pinRecursive = (type == 'directory')
 
-        addHashmark(self.app.marksLocal,
-                    path, title, description=descr,
-                    pin=pinSingle, pinRecursive=pinRecursive)
+        ensure(addHashmarkAsync(
+            path, title=title, description=descr,
+            pin=pinSingle, pinRecursive=pinRecursive))
 
     @pyqtSlot(str)
     def explore(self, path):

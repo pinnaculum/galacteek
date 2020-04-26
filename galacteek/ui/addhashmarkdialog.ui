@@ -108,7 +108,7 @@
        <property name="maximumSize">
         <size>
          <width>600</width>
-         <height>16777215</height>
+         <height>50</height>
         </size>
        </property>
        <property name="acceptRichText">

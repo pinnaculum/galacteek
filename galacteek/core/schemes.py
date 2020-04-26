@@ -7,6 +7,7 @@ import aiodns
 import async_timeout
 import collections
 import time
+from yarl import URL
 from datetime import datetime
 
 from PyQt5.QtWebEngineCore import QWebEngineUrlSchemeHandler
@@ -22,6 +23,8 @@ from PyQt5.QtCore import QMutex
 from galacteek import log
 from galacteek import logUser
 from galacteek import ensure
+from galacteek import database
+from galacteek import AsyncSignal
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.mimetype import detectMimeTypeFromBuffer
 from galacteek.ipfs.cidhelpers import joinIpfs
@@ -38,6 +41,7 @@ from galacteek.ipdapps import dappsRegisterSchemes
 
 # Core schemes
 SCHEME_DWEB = 'dweb'
+SCHEME_DWEBGW = 'dwebgw'
 SCHEME_FS = 'fs'
 SCHEME_IPFS = 'ipfs'
 SCHEME_IPNS = 'ipns'
@@ -127,6 +131,11 @@ def initializeSchemes():
     )
 
     declareUrlScheme(
+        SCHEME_DWEBGW,
+        syntax=QWebEngineUrlScheme.Syntax.Path,
+    )
+
+    declareUrlScheme(
         SCHEME_FS,
         syntax=QWebEngineUrlScheme.Syntax.Path,
     )
@@ -157,13 +166,18 @@ def initializeSchemes():
 
 def isIpfsUrl(url):
     if url.isValid():
-        return url.scheme() in [SCHEME_FS, SCHEME_DWEB,
+        return url.scheme() in [SCHEME_FS, SCHEME_DWEB, SCHEME_DWEBGW,
                                 SCHEME_IPFS, SCHEME_IPNS]
 
 
 def isNativeIpfsUrl(url):
     if url.isValid():
         return url.scheme() in [SCHEME_IPFS, SCHEME_IPNS]
+
+
+def isEnsUrl(url):
+    if url.isValid():
+        return url.scheme() in [SCHEME_ENS, SCHEME_ENSR]
 
 
 class BaseURLSchemeHandler(QWebEngineUrlSchemeHandler):
@@ -215,13 +229,16 @@ class IPFSObjectProxyScheme:
         raise Exception('Implement urlProxiedPath()')
 
 
+# Aync signal fired when an ENS domain was resolved
+ensDomainResolved = AsyncSignal(str, IPFSPath)
+
+
 class ENSWhoisSchemeHandler(BaseURLSchemeHandler):
     """
     Deprecated ENS resolver (that was using api.whoisens.org)
     """
 
     contentReady = pyqtSignal(str, QWebEngineUrlRequestJob, str, bytes)
-    domainResolved = pyqtSignal(str, IPFSPath)
 
     def __init__(self, app, parent=None):
         super(ENSWhoisSchemeHandler, self).__init__(parent)
@@ -249,7 +266,7 @@ class ENSWhoisSchemeHandler(BaseURLSchemeHandler):
 
         path = await ensContentHash(domain, sslverify=self.app.sslverify)
         if path and path.valid:
-            self.domainResolved.emit(domain, path)
+            await ensDomainResolved.emit(domain, path)
             sPath = path.child(uPath) if uPath else path
             logUser.info('ENS: {domain} resolved to {res}'.format(
                 domain=domain, res=sPath.ipfsUrl))
@@ -316,7 +333,6 @@ class EthDNSSchemeHandler(BaseURLSchemeHandler):
     """
 
     contentReady = pyqtSignal(str, QWebEngineUrlRequestJob, str, bytes)
-    domainResolved = pyqtSignal(str, IPFSPath)
 
     def __init__(self, app, resolver=None, parent=None):
         super(EthDNSSchemeHandler, self).__init__(parent=parent)
@@ -349,7 +365,8 @@ class EthDNSSchemeHandler(BaseURLSchemeHandler):
         path = await self.ethResolver.resolveEnsDomain(domain)
 
         if path and path.valid:
-            self.domainResolved.emit(domain, path)
+            await ensDomainResolved.emit(domain, path)
+
             sPath = path.child(uPath) if uPath else path
             logUser.info('EthDNS: {domain} resolved to {res}'.format(
                 domain=domain, res=sPath.ipfsUrl))
@@ -437,7 +454,7 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
             log.debug('Error buffering request data')
             request.fail(QWebEngineUrlRequestJob.RequestFailed)
 
-    async def directoryListing(self, request, client, path):
+    async def directoryListing(self, request, ipfsop, path):
         currentIpfsPath = IPFSPath(path)
 
         if not currentIpfsPath.valid:
@@ -446,7 +463,7 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
 
         ctx = {}
         try:
-            listing = await client.core.ls(path)
+            listing = await ipfsop.listObject(path)
         except aioipfs.APIError:
             self.debug('Error listing directory for path: {0}'.format(path))
             return None
@@ -457,12 +474,9 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
         ctx['path'] = path
         ctx['links'] = []
 
-        for obj in listing['Objects']:
-            if not isinstance(obj, dict) or 'Hash' not in obj:
-                continue
-
-            if obj['Hash'] == path:
-                ctx['links'] += obj.get('Links', [])
+        if len(listing['Objects']) > 0:
+            obj = listing['Objects'].pop()
+            ctx['links'] += obj.get('Links', [])
 
         for lnk in ctx['links']:
             lType = lnk.get('Type')
@@ -490,7 +504,7 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
 
             if dec.errNoSuchLink():
                 return await self.directoryListing(
-                    request, ipfsop.client, path)
+                    request, ipfsop, path)
 
             return self.urlInvalid(request)
         else:
@@ -529,7 +543,8 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
         cType = await detectMimeTypeFromBuffer(data[0:512])
 
         if cType:
-            self.contentReady.emit(uid, request, ipfsPath, cType.type, data)
+            self.contentReady.emit(
+                uid, request, ipfsPath, cType.type, data)
         else:
             self.debug('Impossible to detect MIME type for URL: {0}'.format(
                 request.requestUrl().toString()))
@@ -684,7 +699,7 @@ class MultiObjectHostSchemeHandler(NativeIPFSSchemeHandler,
     def __init__(self, app, parent=None):
         super(MultiObjectHostSchemeHandler, self).__init__(app, parent=parent)
 
-        self.app.towers['schemes'].qMappingsChanged.connect(
+        self.app.towers['schemes'].qMappingsChanged.connectTo(
             self.onMappingsChanged)
 
         self.lock = asyncio.Lock()
@@ -710,19 +725,21 @@ class MultiObjectHostSchemeHandler(NativeIPFSSchemeHandler,
         ipfsPath = usedPath.child(path)
         return ipfsPath
 
-    def onMappingsChanged(self):
-        ensure(self.updateMappings())
+    async def onMappingsChanged(self):
+        await self.updateMappings()
 
     async def updateMappings(self):
-        mappings = self.app.marksLocal.qaGetMappings()
+        mappings = await database.hashmarkMappingsAll()
         for mapping in mappings:
             if mapping.name in self.mappings:
                 continue
 
+            await mapping.fetch_related('qahashmark')
+
             with await self.lock:
                 self.mappings[mapping.name] = {
-                    'path': IPFSPath(mapping.path),
-                    'rfrequency': mapping.ipnsFreq,
+                    'path': IPFSPath(mapping.qahashmark.path),
+                    'rfrequency': mapping.ipnsresolvefreq,
                     'rcache': None,
                     'rlast': None
                 }
@@ -849,7 +866,7 @@ class DAGWatchSchemeHandler(DAGProxySchemeHandler):
         return self.proxied
 
 
-class DWebSchemeHandler(NativeIPFSSchemeHandler):
+class DWebSchemeHandlerNative(NativeIPFSSchemeHandler):
     """
     IPFS dweb scheme handler, supporting URLs such as:
 
@@ -863,6 +880,7 @@ class DWebSchemeHandler(NativeIPFSSchemeHandler):
     @ipfsOp
     async def handleRequest(self, ipfsop, request, uid):
         rUrl = request.requestUrl()
+
         ipfsPath = IPFSPath(rUrl.toString())
 
         if not ipfsPath.valid:
@@ -873,9 +891,81 @@ class DWebSchemeHandler(NativeIPFSSchemeHandler):
                 return await self.fetchFromPath(ipfsop, request, ipfsPath, uid)
         except asyncio.TimeoutError:
             return self.reqFailed(request)
-        except Exception:
+        except Exception as err:
             # Any other error
+            self.debug(str(err))
             return self.reqFailed(request)
+
+
+class DWebSchemeHandlerGateway(BaseURLSchemeHandler):
+    """
+    IPFS dweb scheme handler, supporting URLs such as:
+
+        dweb:/ipfs/multihash
+        dweb:/ipns/domain.com/path
+        dweb://ipfs/multihash/...
+        fs:/ipfs/multihash
+        etc..
+
+    Uses redirects to the IPFS HTTP gateway
+    """
+
+    def __init__(self, app, parent=None):
+        super(DWebSchemeHandlerGateway, self).__init__(parent)
+        self.app = app
+
+    def redirectIpfs(self, request, path, url):
+        yUrl = URL(url.toString())
+
+        if len(yUrl.parts) < 3:
+            return self.urlInvalid(request)
+
+        newUrl = self.app.subUrl(path)
+
+        if url.hasFragment():
+            newUrl.setFragment(url.fragment())
+        if url.hasQuery():
+            newUrl.setQuery(url.query())
+
+        return request.redirect(newUrl)
+
+    def requestStarted(self, request):
+        url = request.requestUrl()
+
+        if url is None:
+            return
+
+        scheme = url.scheme()
+
+        if scheme in [SCHEME_FS, SCHEME_DWEB, SCHEME_DWEBGW]:
+            # Take leading slashes out of the way
+            urlStr = url.toString()
+            urlStr = re.sub(
+                r'^{scheme}:(\/)+'.format(scheme=scheme),
+                '{scheme}:/'.format(scheme=scheme),
+                urlStr
+            )
+            url = QUrl(urlStr)
+        else:
+            log.debug('Unsupported scheme')
+            self.urlInvalid(request)
+            return
+
+        path = url.path()
+        if not isinstance(path, str):
+            self.urlInvalid(request)
+            return
+
+        log.debug(
+            'IPFS scheme handler req: {url} {scheme} {path} {method}'.format(
+                url=url.toString(), scheme=scheme, path=path,
+                method=request.requestMethod()))
+
+        if path.startswith('/ipfs/') or path.startswith('/ipns/'):
+            try:
+                return self.redirectIpfs(request, path, url)
+            except Exception as err:
+                log.debug('Exception handling request: {}'.format(str(err)))
 
 
 class MultiDAGProxySchemeHandler(NativeIPFSSchemeHandler):

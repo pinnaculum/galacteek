@@ -692,7 +692,6 @@ class UserProfile(QObject):
         self.userLogInfo('Initialization complete')
 
         ensure(self.sendChatLogin())
-        ensure(self.sharedHManager.scanningTask())
         ensure(self.ctx.app.manuals.importManuals(self))
 
     async def sendChatLogin(self):

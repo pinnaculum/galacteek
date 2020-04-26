@@ -12,12 +12,16 @@ from galacteek import logUser
 from galacteek import ensure
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.crawl import runTitleParser
+from galacteek.ipfs.cidhelpers import IPFSPath
+from galacteek.ipfs.cidhelpers import qurlPercentDecode
 from galacteek.core.asynclib import asyncReadFile
 from galacteek.core.asynclib import asyncWriteFile
 
-from .helpers import questionBox
+from .helpers import runDialog
+from .dialogs import DownloadOpenObjectDialog
 from ..appsettings import *
 from .i18n import iUnknown
+from .i18n import iDownload
 
 
 def iFinishedDownload(filename):
@@ -41,27 +45,16 @@ class DownloadsManager(QObject):
         super(DownloadsManager, self).__init__(app)
         self.app = app
 
+    def shouldAutoOpen(self, iPath):
+        autoOpenExtensions = ['.pdf']
+        fname, ext = os.path.splitext(iPath.basename)
+        return ext in autoOpenExtensions
+
     def onDownloadRequested(self, downItem):
         if not downItem:
             return
 
-        downloadsLoc = self.app.settingsMgr.eGet(S_DOWNLOADS_PATH)
-
-        def progress(received, total):
-            pass
-
-        def finished(item):
-            filename = item.path() or iUnknown()
-            self.app.systemTrayMessage(
-                'Galacteek', iFinishedDownload(filename))
-
         downPath = downItem.path()
-        name = os.path.basename(downPath)
-        autoDownloadFor = ['qwe_download']
-
-        if name in autoDownloadFor:
-            downItem.accept()
-            return
 
         if downPath.startswith(self.app.tempDirWeb):
             downItem.finished.connect(
@@ -69,17 +62,45 @@ class DownloadsManager(QObject):
             downItem.accept()
             return
 
-        reply = questionBox('Download', 'Download {} ?'.format(name))
-        if reply is not True:
+        iPath = IPFSPath(qurlPercentDecode(downItem.url()), autoCidConv=True)
+        dialogPrechoice = 'download'
+
+        if iPath.valid:
+            if iPath.basename and self.shouldAutoOpen(iPath):
+                dialogPrechoice = 'open'
+
+        return runDialog(DownloadOpenObjectDialog, iPath,
+                         downItem,
+                         dialogPrechoice,
+                         accepted=self.onDialogAccepted)
+
+    def onDownloadProgress(self, received, total):
+        pass
+
+    def onDownloadFinished(self, item):
+        filename = item.path() or iUnknown()
+        self.app.systemTrayMessage(
+            iDownload(), iFinishedDownload(filename))
+
+    def onDialogAccepted(self, dialog):
+        choice = dialog.choice()
+        downItem = dialog.downloadItem
+
+        downPath = downItem.path()
+        name = os.path.basename(downPath)
+
+        if choice == 0:
+            downloadsLoc = self.app.settingsMgr.eGet(S_DOWNLOADS_PATH)
+
+            self.app.systemTrayMessage(iDownload(), iStartingDownload(name))
+
+            downItem.setPath(os.path.join(downloadsLoc, name))
+            downItem.finished.connect(functools.partial(
+                self.onDownloadFinished, downItem))
+            downItem.accept()
+        elif choice == 1:
             downItem.cancel()
-            return
-
-        self.app.systemTrayMessage('Galacteek', iStartingDownload(name))
-
-        downItem.setPath(os.path.join(downloadsLoc, name))
-        downItem.finished.connect(functools.partial(finished, downItem))
-        downItem.downloadProgress.connect(progress)
-        downItem.accept()
+            ensure(self.app.resourceOpener.open(dialog.objectPath))
 
     def pageSaved(self, downItem):
         saveFormat = downItem.savePageFormat()

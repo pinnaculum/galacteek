@@ -42,6 +42,7 @@ FORMS += galacteek/ui/addkeydialog.ui \
 	galacteek/ui/ipfscidinputdialog.ui \
 	galacteek/ui/ipfsinfos.ui \
 	galacteek/ui/ipfsmultiplecidinputdialog.ui \
+	galacteek/ui/iptagsmanager.ui \
 	galacteek/ui/keys.ui\
 	galacteek/ui/mediaplaylist.ui \
 	galacteek/ui/profileeditdialog.ui \

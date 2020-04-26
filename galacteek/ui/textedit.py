@@ -771,7 +771,7 @@ class TextEditorWidget(QWidget):
         if not ipfsPath.valid:
             return
 
-        data = await ipfsop.client.cat(ipfsPath.objPath)
+        data = await ipfsop.catObject(ipfsPath.objPath)
 
         if not data:
             return messageBox('File could not be read')

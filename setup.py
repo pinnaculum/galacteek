@@ -229,7 +229,7 @@ setup(
     license='GPL3',
     author='David Ferlier',
     author_email='galacteek@protonmail.com',
-    url='https://github.com/eversum/galacteek',
+    url='https://github.com/pinnaculum/galacteek',
     description='Browser for the distributed web',
     long_description=long_description,
     include_package_data=True,
@@ -246,6 +246,8 @@ setup(
         'galacteek.core',
         'galacteek.core.models',
         'galacteek.crypto',
+        'galacteek.database',
+        'galacteek.database.models',
         'galacteek.did',
         'galacteek.ipfs',
         'galacteek.ipfs.pubsub',
@@ -279,7 +281,7 @@ setup(
             'templates/usersite/assets/css/*',
             'templates/usersite/macros/*',
             'templates/imggallery/*.html',
-            'hashmarks/default/*.json'
+            'hashmarks/default/*.yaml'
         ]
     },
     entry_points={

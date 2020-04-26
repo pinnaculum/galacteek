@@ -13,6 +13,9 @@ import re
 import platform
 import async_timeout
 import time
+import aiojobs
+import shutil
+from distutils.version import StrictVersion
 
 from quamash import QEventLoop
 
@@ -35,6 +38,7 @@ from PyQt5.QtCore import QMimeDatabase
 from galacteek import log
 from galacteek import logUser
 from galacteek import ensure
+from galacteek import AsyncSignal
 from galacteek import pypicheck, GALACTEEK_NAME
 
 from galacteek.core.asynclib import asyncify
@@ -42,6 +46,12 @@ from galacteek.core.ctx import IPFSContext
 from galacteek.core.multihashmetadb import IPFSObjectMetadataDatabase
 from galacteek.core.clipboard import ClipboardTracker
 from galacteek.core.db import SqliteDatabase
+
+from galacteek import database
+from galacteek.database import models
+
+from galacteek.hashmarks import HashmarksSynchronizer
+
 from galacteek.core.models.atomfeeds import AtomFeedsModel
 from galacteek.core.signaltowers import DAGSignalsTower
 from galacteek.core.signaltowers import URLSchemesTower
@@ -49,12 +59,16 @@ from galacteek.core.signaltowers import DIDTower
 from galacteek.core.analyzer import ResourceAnalyzer
 
 from galacteek.core.schemes import SCHEME_MANUAL
-from galacteek.core.schemes import DWebSchemeHandler
+from galacteek.core.schemes import DWebSchemeHandlerNative
+from galacteek.core.schemes import DWebSchemeHandlerGateway
 from galacteek.core.schemes import EthDNSSchemeHandler
 from galacteek.core.schemes import EthDNSProxySchemeHandler
 from galacteek.core.schemes import NativeIPFSSchemeHandler
 from galacteek.core.schemes import ObjectProxySchemeHandler
 from galacteek.core.schemes import MultiObjectHostSchemeHandler
+
+from galacteek.dweb.ethereum import EthereumConnectionParams
+from galacteek.dweb.ethereum import MockEthereumController
 
 from galacteek.space.solarsystem import SolarSystem
 
@@ -64,6 +78,7 @@ from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.feeds import FeedFollower
+from galacteek.ipfs import distipfsfetch
 
 from galacteek.did.ipid import IPIDManager
 
@@ -75,8 +90,6 @@ from galacteek.core.webprofiles import MinimalProfile
 
 from galacteek.dweb.webscripts import ipfsClientScripts
 from galacteek.dweb.render import defaultJinjaEnv
-from galacteek.dweb.ethereum import EthereumController
-from galacteek.dweb.ethereum import EthereumConnectionParams
 
 from galacteek.ui import mainui
 from galacteek.ui import downloads
@@ -128,6 +141,60 @@ def iIpfsDaemonWaiting(count):
         'IPFS daemon: waiting for connection (try {0})'.format(count))
 
 
+def ipfsVersion():
+    try:
+        p = subprocess.Popen(['ipfs', 'version', '-n'], stdout=subprocess.PIPE)
+        out, err = p.communicate()
+        version = out.decode().strip()
+        version = re.sub('(-.*$)', '', version)
+        return StrictVersion(version)
+    except BaseException:
+        return None
+
+
+async def fetchGoIpfsWrapper(app, timeout=60 * 10):
+    try:
+        await asyncio.wait_for(fetchIpfsSoft(
+            app, 'go-ipfs', 'ipfs', '0.4.23'), timeout)
+    except asyncio.TimeoutError:
+        app.mainWindow.statusMessage(iGoIpfsFetchTimeout())
+        return None
+    except Exception:
+        app.mainWindow.statusMessage(iGoIpfsFetchError())
+        return None
+    else:
+        app.mainWindow.statusMessage(iGoIpfsFetchSuccess())
+        return app.which('ipfs')
+
+
+async def fetchFsMigrateWrapper(app, timeout=60 * 10):
+    try:
+        await asyncio.wait_for(fetchIpfsSoft(
+            app, 'fs-repo-migrations', 'fs-repo-migrations',
+            '1.5.1'), timeout)
+    except asyncio.TimeoutError:
+        app.mainWindow.statusMessage(iGoIpfsFetchTimeout())
+        return None
+    except Exception:
+        app.mainWindow.statusMessage(iGoIpfsFetchError())
+        return None
+    else:
+        app.mainWindow.statusMessage(iGoIpfsFetchSuccess())
+        return app.which('fs-repo-migrations')
+
+
+async def fetchIpfsSoft(app, software, executable, version):
+    async for msg in distipfsfetch.distIpfsExtract(
+            dstdir=app.ipfsBinLocation, software=software,
+            executable=executable, version=version, loop=app.loop,
+            sslverify=app.sslverify):
+        try:
+            code, text = msg
+            app.mainWindow.statusMessage(text)
+        except Exception as e:
+            app.debug(str(e))
+
+
 class IPFSConnectionParams(object):
     def __init__(self, host, apiport, gwport):
         self._host = host
@@ -169,11 +236,15 @@ class GalacteekApplication(QApplication):
     messageDisplayRequest = pyqtSignal(str, str)
     appImageImported = pyqtSignal(str)
 
+    dbConfigured = AsyncSignal(bool)
+
     def __init__(self, debug=False, profile='main', sslverify=True,
                  enableOrbital=False, progName=None, cmdArgs={}):
         QApplication.__init__(self, sys.argv)
 
         QCoreApplication.setApplicationName(GALACTEEK_NAME)
+
+        self.dbConfigured.connectTo(self.onDbConfigured)
 
         self.setQuitOnLastWindowClosed(False)
 
@@ -211,24 +282,13 @@ class GalacteekApplication(QApplication):
 
         self.setupAsyncLoop()
         self.setupPaths()
+
         self.initSettings()
-
         self.setupMainObjects()
-        self.setupDb()
-        self.setupClipboard()
         self.setupSchemeHandlers()
-        self.setupModels()
-
-        self.setupTranslator()
-        self.initSystemTray()
-        self.initMisc()
-        self.initEthereum()
-        self.initWebProfiles()
-        self.initDapps()
-        self.createMainWindow()
-
         self.applyStyle()
-        self.clipboardInit()
+
+        self.setupDb()
 
     @property
     def cmdArgs(self):
@@ -382,20 +442,13 @@ class GalacteekApplication(QApplication):
         self.systemTray.setContextMenu(systemTrayMenu)
 
     def initMisc(self):
-        self.solarSystem = SolarSystem()
-        self.mimeTypeIcons = preloadMimeIcons()
         self.multihashDb = IPFSObjectMetadataDatabase(self._mHashDbLocation,
                                                       loop=self.loop)
 
-        self.jinjaEnv = defaultJinjaEnv()
-
-        self.manuals = ManualsManager(self)
-        self.mimeDb = QMimeDatabase()
         self.resourceOpener = IPFSResourceOpener(parent=self)
 
         self.downloadsManager = downloads.DownloadsManager(self)
         self.marksLocal = IPFSMarks(self.localMarksFileLocation, backup=True)
-        self.importDefaultHashmarks(self.marksLocal)
 
         self.marksLocal.addCategory('general')
         self.marksLocal.addCategory('uncategorized')
@@ -405,10 +458,6 @@ class GalacteekApplication(QApplication):
         self.tempDir = QTemporaryDir()
         self.tempDirWeb = self.tempDirCreate(
             self.tempDir.path(), 'webdownloads')
-
-        self.ipidManager = IPIDManager(
-            resolveTimeout=self.settingsMgr.ipidIpnsTimeout
-        )
 
     def tempDirCreate(self, basedir, name=None):
         tmpdir = QDir(basedir)
@@ -422,7 +471,7 @@ class GalacteekApplication(QApplication):
         if tmpdir.mkpath(path):
             return path
 
-    def importDefaultHashmarks(self, marksLocal):
+    def __importOldHashmarks(self, marksLocal):
         pkg = 'galacteek.hashmarks.default'
         try:
             listing = pkg_resources.resource_listdir(pkg, '')
@@ -436,6 +485,30 @@ class GalacteekApplication(QApplication):
             marksLocal.follow('/ipns/ipfs.io', 'ipfs.io', resolveevery=3600)
         except Exception as e:
             self.debug(str(e))
+
+    async def setupHashmarks(self):
+        pkg = 'galacteek.hashmarks.default'
+
+        res = await database.hashmarkSourceSearch(
+            name='core',
+            url=pkg,
+            type=models.HashmarkSource.TYPE_PYMODULE
+        )
+
+        if not res:
+            await database.hashmarkSourceAdd(
+                type=models.HashmarkSource.TYPE_PYMODULE,
+                url=pkg,
+                name='core'
+            )
+            await self.hmSynchronizer.sync()
+
+        await database.hashmarkSourceAdd(
+            type=models.HashmarkSource.TYPE_GITREPOS,
+            url='https://github.com/galacteek/hashmarks-dwebland'
+        )
+
+        await self.scheduler.spawn(self.hmSynchronizer.syncTask())
 
     def setupTranslator(self):
         if self.translator:
@@ -451,12 +524,6 @@ class GalacteekApplication(QApplication):
         self.mainWindow = mainui.MainWindow(self)
         if show is True:
             self.mainWindow.show()
-
-        self.urlHistory = history.URLHistory(
-            self.sqliteDb,
-            enabled=self.settingsMgr.urlHistoryEnabled,
-            parent=self
-        )
 
     def onSystemTrayIconClicked(self, reason):
         if reason == QSystemTrayIcon.Unknown:
@@ -494,8 +561,9 @@ class GalacteekApplication(QApplication):
         await self.qSchemeHandler.start()
         await self.importLdContexts()
 
-        self.feedFollower = FeedFollower(self, self.marksLocal)
-        self.feedFollowerTask = self.task(self.feedFollower.process)
+        self.feedFollower = FeedFollower(self)
+        self.feedFollowerTask = await self.scheduler.spawn(
+            self.feedFollower.process())
 
         self.loop.call_soon(self.ipfsCtx.ipfsRepositoryReady.emit)
 
@@ -642,6 +710,8 @@ class GalacteekApplication(QApplication):
         return EthereumConnectionParams(rpcUrl, provType=provType)
 
     async def updateIpfsClient(self):
+        from galacteek.ipfs import ConnectionError
+
         connParams = self.getIpfsConnectionParams()
         client = aioipfs.AsyncIPFS(host=connParams.host,
                                    port=connParams.apiPort, loop=self.loop)
@@ -652,9 +722,13 @@ class GalacteekApplication(QApplication):
 
         IPFSOpRegistry.regDefault(self.ipfsOpMain)
 
-        self.loop.call_soon(self.ipfsCtx.ipfsConnectionReady.emit)
+        try:
+            await self.setupRepository()
+        except ConnectionError:
+            await messageBoxAsync(
+                'IPFS connection error (is your daemon running ?)')
 
-        await self.setupRepository()
+        self.loop.call_soon(self.ipfsCtx.ipfsConnectionReady.emit)
 
     async def stopIpfsServices(self):
         try:
@@ -664,16 +738,99 @@ class GalacteekApplication(QApplication):
                 err=str(err)))
 
         if self.feedFollowerTask is not None:
-            self.feedFollowerTask.cancel()
+            await self.feedFollowerTask.close()
 
     def setupDb(self):
+        ensure(self.setupOrmDb(self._mainDbLocation))
+
+    async def setupOrmDb(self, dbpath):
+        # Old database, just for Atom feeds right now
+
+        self.scheduler = await aiojobs.create_scheduler()
+
         self.sqliteDb = SqliteDatabase(self._sqliteDbLocation)
         ensure(self.sqliteDb.setup())
-
-    def setupModels(self):
         self.modelAtomFeeds = AtomFeedsModel(self.sqliteDb.feeds, parent=self)
 
+        self.urlHistory = history.URLHistory(
+            self.sqliteDb,
+            enabled=self.settingsMgr.urlHistoryEnabled,
+            parent=self
+        )
+
+        if not await database.initOrm(self._mainDbLocation):
+            await self.dbConfigured.emit(False)
+            return
+
+        await self.setupHashmarks()
+        await self.dbConfigured.emit(True)
+
+    async def onDbConfigured(self, configured):
+        if not configured:
+            return
+
+        self.debug('Database ready')
+
+        self.setupClipboard()
+        self.setupTranslator()
+        self.initSystemTray()
+        self.initMisc()
+        self.initEthereum()
+        self.initWebProfiles()
+        self.initDapps()
+        self.createMainWindow()
+        self.clipboardInit()
+
+        await self.setupIpfsConnection()
+
+    async def fetchGoIpfs(self):
+        ipfsPath = self.which('ipfs')
+        fsMigratePath = self.which('fs-repo-migrations')
+
+        if fsMigratePath is None and self.cmdArgs.forcegoipfsdl:
+            await fetchFsMigrateWrapper(self)
+
+        if ipfsPath is None or self.cmdArgs.forcegoipfsdl:
+            path = await fetchGoIpfsWrapper(self)
+            if path is None:
+                self.systemTrayMessage('Galacteek',
+                                       iGoIpfsFetchError())
+
+    async def setupIpfsConnection(self):
+        sManager = self.settingsMgr
+
+        await self.fetchGoIpfs()
+
+        if sManager.isTrue(CFG_SECTION_IPFSD, CFG_KEY_ENABLED):
+            fsMigratePath = shutil.which('fs-repo-migrations')
+            hasFsMigrate = fsMigratePath is not None
+
+            if hasFsMigrate is False and self.cmdArgs.migrate is True:
+                self.systemTrayMessage('Galacteek', iFsRepoMigrateNotFound())
+
+            enableMigrate = hasFsMigrate is True and \
+                self.cmdArgs.migrate is True
+
+            ipfsPath = self.which('ipfs')
+
+            await self.startIpfsDaemon(
+                goIpfsPath=ipfsPath,
+                migrateRepo=enableMigrate
+            )
+        else:
+            await self.updateIpfsClient()
+
     def setupMainObjects(self):
+        self.manuals = ManualsManager(self)
+        self.mimeDb = QMimeDatabase()
+        self.jinjaEnv = defaultJinjaEnv()
+        self.solarSystem = SolarSystem()
+        self.mimeTypeIcons = preloadMimeIcons()
+        self.hmSynchronizer = HashmarksSynchronizer()
+        self.ipidManager = IPIDManager(
+            resolveTimeout=self.settingsMgr.ipidIpnsTimeout
+        )
+
         self.towers = {
             'dags': DAGSignalsTower(self),
             'schemes': URLSchemesTower(self),
@@ -683,9 +840,10 @@ class GalacteekApplication(QApplication):
         self.rscAnalyzer = ResourceAnalyzer(parent=self)
 
         self.messageDisplayRequest.connect(
-            lambda msg, title: messageBox(msg, title=title))
+            lambda msg, title: ensure(messageBoxAsync(msg, title=title)))
         self.appImageImported.connect(
-            lambda cid: messageBox('AppImage was imported in IPFS!'))
+            lambda cid: ensure(messageBoxAsync(
+                'AppImage was imported in IPFS!')))
 
     def setupAsyncLoop(self):
         """
@@ -726,6 +884,8 @@ class GalacteekApplication(QApplication):
         self._orbitDataLocation = os.path.join(self.dataLocation, 'orbitdb')
         self._mHashDbLocation = os.path.join(self.dataLocation, 'mhashmetadb')
         self._sqliteDbLocation = os.path.join(self.dataLocation, 'db.sqlite')
+        self._mainDbLocation = os.path.join(
+            self.dataLocation, 'db_main.sqlite3')
         self.marksDataLocation = os.path.join(self.dataLocation, 'marks')
         self.uiDataLocation = os.path.join(self.dataLocation, 'ui')
         self.cryptoDataLocation = os.path.join(self.dataLocation, 'crypto')
@@ -767,12 +927,18 @@ class GalacteekApplication(QApplication):
 
         os.environ['PATH'] += os.pathsep + self.ipfsBinLocation
 
+    def which(self, prog='ipfs'):
+        path = self.ipfsBinLocation + os.pathsep + os.environ['PATH']
+        result = shutil.which(prog, path=path)
+        self.debug('Program {0} found at {1}'.format(prog, result))
+        return result
+
     def initSettings(self):
         self.settingsMgr = SettingsManager(path=self.settingsFileLocation)
         setDefaultSettings(self)
         self.settingsMgr.sync()
 
-    def startIpfsDaemon(self, goIpfsPath='ipfs', migrateRepo=False):
+    async def startIpfsDaemon(self, goIpfsPath='ipfs', migrateRepo=False):
         if self.ipfsd is not None:  # we only support one daemon for now
             return
 
@@ -804,11 +970,10 @@ class GalacteekApplication(QApplication):
             migrateRepo=migrateRepo, debug=self.debug,
             loop=self.loop)
 
-        self.task(self.startIpfsdTask, self.ipfsd)
+        await self.scheduler.spawn(self.startIpfsdTask(self.ipfsd))
 
     async def startIpfsdTask(self, ipfsd):
         started = await ipfsd.start()
-        self.mainWindow.statusMessage(iIpfsDaemonStarted())
 
         if started is False:
             return self.systemTrayMessage('IPFS', iIpfsDaemonProblem())
@@ -845,11 +1010,16 @@ class GalacteekApplication(QApplication):
             logUser.info(iIpfsDaemonInitProblem())
 
     def initEthereum(self):
-        self.ethereum = EthereumController(self.getEthParams(),
-                                           loop=self.loop, parent=self,
-                                           executor=self.executor)
-        if self.settingsMgr.ethereumEnabled:
-            ensure(self.ethereum.start())
+        try:
+            from galacteek.dweb.ethereum.ctrl import EthereumController
+
+            self.ethereum = EthereumController(self.getEthParams(),
+                                               loop=self.loop, parent=self,
+                                               executor=self.executor)
+            if self.settingsMgr.ethereumEnabled:
+                ensure(self.ethereum.start())
+        except ImportError:
+            self.ethereum = MockEthereumController()
 
     def setupClipboard(self):
         self.appClipboard = self.clipboard()
@@ -880,7 +1050,8 @@ class GalacteekApplication(QApplication):
         self.dappsRegistry = DappsRegistry(self.ethereum, parent=self)
 
     def setupSchemeHandlers(self):
-        self.ipfsSchemeHandler = DWebSchemeHandler(self)
+        self.dwebGwSchemeHandler = DWebSchemeHandlerGateway(self)
+        self.dwebSchemeHandler = DWebSchemeHandlerNative(self)
         self.ensSchemeHandler = EthDNSSchemeHandler(self)
         self.ensProxySchemeHandler = EthDNSProxySchemeHandler(self)
         self.nativeIpfsSchemeHandler = NativeIPFSSchemeHandler(
@@ -932,8 +1103,11 @@ class GalacteekApplication(QApplication):
         ensure(self.exitApp())
 
     async def exitApp(self):
+        await self.scheduler.close()
+
         try:
             await self.sqliteDb.close()
+            await database.closeOrm()
         except:
             pass
 
@@ -941,7 +1115,9 @@ class GalacteekApplication(QApplication):
             task.cancel()
 
         await self.stopIpfsServices()
-        await self.ethereum.stop()
+
+        if self.ethereum:
+            await self.ethereum.stop()
 
         if self.ipfsd:
             self.ipfsd.stop()

@@ -1,4 +1,6 @@
 __pycache__/
+*.swp
+*.swo
 *.orig
 *.py[cod]
 *$py.class

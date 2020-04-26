@@ -215,6 +215,7 @@ QLineEdit#hLibrarySearch {
 }
 
 QMenu::item#hashmarksSearchMenu {
+    font: 14pt "Montserrat";
     padding-left: 25px;
     padding-right: 25px;
 }
@@ -225,6 +226,15 @@ QMenu::item:selected#hashmarksMgrMenu {
     background-color: #4a9ea1;
 }
 
+QMenu#hashmarksMgrMenu {
+    font: 10pt "Inter UI";
+}
+
+/* Popular tags menu */
+
+QMenu#popularTagsMenu {
+    font: 9pt "Inter UI";
+}
 
 /* Menus */
 
@@ -294,7 +304,8 @@ QLineEdit#ipServicesSearcher {
     margin-right: 10px;
     margin-top: 5px;
     margin-bottom: 2px;
-    font: 12pt "Inter UI";
+    padding: 10px;
+    font: 11pt "Inter UI";
 }
 
 

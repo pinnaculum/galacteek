@@ -52,23 +52,34 @@ from pygments.lexers import get_lexer_by_name
 from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
+from galacteek import log
 from galacteek import ensure
-from galacteek.core import parseDate
+from galacteek import partialEnsure
 from galacteek.core.asynclib import asyncify
+from galacteek.core import utcDatetime
 from galacteek.dweb.markdown import markitdown
+
+from galacteek import database
+from galacteek.database.models.core import Hashmark
 
 from .helpers import getIcon
 from .helpers import getIconFromIpfs
-from .helpers import disconnectSig
 from .helpers import sizeFormat
 from .helpers import messageBox
+from .helpers import messageBoxAsync
+from .helpers import inputTextCustom
 from .i18n import iCancel
 from .i18n import iUnknown
-from .i18n import iLocalHashmarksCount
+from .i18n import iHashmarksDatabase
 from .i18n import iSearchHashmarks
 from .i18n import iSearchHashmarksAllAcross
 from .i18n import iSearchUseShiftReturn
 from .i18n import iHashmarkInfoToolTip
+from .i18n import iHashmarkSources
+from .i18n import iHashmarkSourcesDbSync
+from .i18n import iHashmarkSourcesAddGitRepo
+from .i18n import iHashmarkSourcesAddLegacyIpfsMarks
+from .i18n import iHashmarkSourceAlreadyRegistered
 
 
 class GalacteekTab(QWidget):
@@ -320,6 +331,44 @@ class IPFSObjectToolButton(QToolButton):
         super().mousePressEvent(event)
 
 
+class QAObjTagItemToolButton(QToolButton):
+    """
+    Used in the quickaccess toolbar
+    """
+    deleteRequest = pyqtSignal()
+
+    def __init__(self, item, icon=None, parent=None):
+        super(QAObjTagItemToolButton, self).__init__(parent=parent)
+        self.app = QApplication.instance()
+        if icon:
+            self.setIcon(icon)
+
+        self.item = item
+        self.clicked.connect(lambda: ensure(self.onClicked()))
+
+    async def hashmark(self):
+        return await database.hashmarksByObjTagLatest(self.item.tag)
+
+    async def onClicked(self):
+        hashmark = await self.hashmark()
+        if hashmark:
+            ensure(self.app.resourceOpener.open(
+                hashmark.path,
+                openingFrom='qa',
+                schemePreferred=hashmark.schemepreferred
+            ))
+
+    def mousePressEvent(self, event):
+        button = event.button()
+
+        if button == Qt.RightButton:
+            menu = QMenu(self)
+            menu.addAction('Remove', lambda: self.deleteRequest.emit())
+            menu.exec(self.mapToGlobal(event.pos()))
+
+        super().mousePressEvent(event)
+
+
 class HashmarkToolButton(QToolButton):
     """
     Used in the quickaccess toolbar
@@ -334,8 +383,7 @@ class HashmarkToolButton(QToolButton):
 
         self._hashmark = mark
 
-    @property
-    def hashmark(self):
+    async def hashmark(self):
         return self._hashmark
 
     def mousePressEvent(self, event):
@@ -350,37 +398,29 @@ class HashmarkToolButton(QToolButton):
 
 
 class _HashmarksCommon:
-    def makeAction(self, path, mark, loadIcon=True):
-        tLenMax = 64
-        title = mark['metadata'].get('title')
-        description = mark['metadata'].get('description')
-        datecreated = mark.get('datecreated')
-        icon = mark.get('icon')
+    def makeHashmarkAction(self, mark, loadIcon=True):
+        tLenMax = 48
+
+        path = mark.uri
+        title = mark.title
 
         if title and len(title) > tLenMax:
             title = '{0} ...'.format(title[0:tLenMax])
 
-        dt = parseDate(datecreated)
-        if dt:
-            dateHuman = dt.isoformat(' ', timespec='minutes')
-        else:
-            dateHuman = iUnknown()
-
         action = QAction(title, self)
-        action.setToolTip(
-            iHashmarkInfoToolTip(path, title, description, dateHuman))
+        action.setToolTip(iHashmarkInfoToolTip(mark))
 
         action.setData({
             'path': path,
             'mark': mark,
-            'iconcid': icon
+            'iconpath': mark.icon.path if mark.icon else None
         })
 
-        if not icon or not loadIcon:
+        if not mark.icon or not loadIcon:
             # Default icon
             action.setIcon(getIcon('ipfs-logo-128-white-outline.png'))
         else:
-            ensure(self.loadMarkIcon(action, icon))
+            ensure(self.loadMarkIcon(action, mark.icon.path))
 
         return action
 
@@ -402,45 +442,172 @@ class _HashmarksCommon:
 
 
 class HashmarkMgrButton(PopupToolButton, _HashmarksCommon):
-    hashmarkClicked = pyqtSignal(str, str)
+    hashmarkClicked = pyqtSignal(Hashmark)
 
     def __init__(self, marks, iconFile='hashmarks.png',
                  maxItemsPerCategory=128, parent=None):
         super(HashmarkMgrButton, self).__init__(parent=parent,
                                                 mode=QToolButton.InstantPopup)
 
+        self.app = QApplication.instance()
         self.setObjectName('hashmarksMgrButton')
-        self.menu.setObjectName('hashmarksMgrMenu')
-        self.menu.setToolTipsVisible(True)
+        self.setIcon(getIcon(iconFile))
+        self.setupMenu()
+
         self.hCount = 0
         self.marks = marks
         self.cMenus = {}
         self.maxItemsPerCategory = maxItemsPerCategory
-        self.setIcon(getIcon(iconFile))
 
-        disconnectSig(self.marks.changed, self.onChanged)
+        database.HashmarkAdded.connectTo(self.onMarkAdded)
+        database.HashmarkDeleted.connectTo(self.onMarkDeleted)
 
-        self.marks.changed.connect(self.onChanged)
-        self.marks.markAdded.connect(self.onMarkAdded)
-        self.marks.markDeleted.connect(self.onMarkDeleted)
+    def setupMenu(self):
+        self.menu.setObjectName('hashmarksMgrMenu')
+        self.menu.setToolTipsVisible(True)
 
-    def onMarkAdded(self):
-        ensure(self.updateIcons())
+        self.sourcesMenu = QMenu(iHashmarkSources())
+        self.sourcesMenu.setIcon(self.icon())
 
-    def onMarkDeleted(self, category, path):
-        if category in self.cMenus:
-            menu = self.cMenus[category]
+        self.popularTagsMenu = QMenu('Popular Tags')
+        self.popularTagsMenu.setObjectName('popularTagsMenu')
+        self.popularTagsMenu.setIcon(getIcon('hash.png'))
+        self.popularTagsMenu.aboutToShow.connect(
+            partialEnsure(self.onShowPopularTags))
+
+        self.syncAction = QAction(
+            self.icon(),
+            iHashmarkSourcesDbSync(),
+            self.sourcesMenu,
+            triggered=lambda: ensure(self.onSynchronize())
+        )
+
+        self.addGitSourceAction = QAction(
+            self.icon(),
+            iHashmarkSourcesAddGitRepo(),
+            self.sourcesMenu,
+            triggered=self.onAddGitHashmarkSource
+        )
+
+        self.addIpfsMarksSourceAction = QAction(
+            self.icon(),
+            iHashmarkSourcesAddLegacyIpfsMarks(),
+            self.sourcesMenu,
+            triggered=lambda: ensure(self.onAddIpfsMarksSource())
+        )
+
+        self.sourcesMenu.addAction(self.syncAction)
+        self.sourcesMenu.addSeparator()
+        self.sourcesMenu.addAction(self.addGitSourceAction)
+        self.sourcesMenu.addSeparator()
+        self.sourcesMenu.addAction(self.addIpfsMarksSourceAction)
+
+        self.menu.addMenu(self.sourcesMenu)
+        self.menu.addSeparator()
+        self.menu.addMenu(self.popularTagsMenu)
+        self.menu.addSeparator()
+        self.app.hmSynchronizer.syncing.connectTo(self.onSynchronizing)
+
+    async def onShowPopularTags(self):
+        self.popularTagsMenu.clear()
+
+        tags = await database.hashmarksPopularTags(limit=20)
+
+        for tag in tags:
+            menu = QMenu(tag.name, self.popularTagsMenu)
+            menu.setIcon(getIcon('ipfs-logo-128-white.png'))
+            menu.menuAction().setData(tag)
+            menu.triggered.connect(
+                lambda action: ensure(self.linkActivated(action)))
+            self.popularTagsMenu.addMenu(menu)
+
+            menu.aboutToShow.connect(
+                partialEnsure(self.onShowTagHashmarks, menu))
+
+    async def onFollowTag(self, tagName):
+        tag = await database.ipTagGet(tagName)
+        if tag:
+            tag.follow = True
+            await tag.save()
+
+    async def onShowTagHashmarks(self, menu):
+        menu.clear()
+        menu.setToolTipsVisible(True)
+        tag = menu.menuAction().data()
+
+        if 0:
+            menu.addAction(self.icon(), 'Follow this tag',
+                           lambda: partialEnsure(self.onFollowTag, tag.name))
+
+        hashmarks = await database.hashmarksByTags(
+            [tag.name], strict=True, limit=30)
+
+        for hashmark in hashmarks:
+            await hashmark._fetch_all()
+            menu.addAction(self.makeHashmarkAction(hashmark))
+
+    def onAddGitHashmarkSource(self):
+        url = inputTextCustom(title=iHashmarkSourcesAddGitRepo(),
+                              label='Git repository URL')
+        if url:
+            ensure(self.addGitHashmarkSource(url))
+
+    async def addGitHashmarkSource(self, url):
+        if url:
+            await database.hashmarkSourceAdd(
+                database.HashmarkSource.TYPE_GITREPOS,
+                url
+            )
+
+    async def onAddIpfsMarksSource(self):
+        ex = await database.hashmarkSourceSearch(
+            type=database.HashmarkSource.TYPE_IPFSMARKS_LEGACY
+        )
+
+        if ex:
+            return await messageBoxAsync(iHashmarkSourceAlreadyRegistered())
+
+        try:
+            await database.hashmarkSourceAdd(
+                database.HashmarkSource.TYPE_IPFSMARKS_LEGACY,
+                self.app.marksLocal.path,
+                name='ipfsmarks'
+            )
+        except Exception as err:
+            log.debug(str(err))
+
+    async def onSynchronizing(self, onoff):
+        self.syncAction.setEnabled(not onoff)
+
+    async def onSynchronize(self):
+        await self.app.hmSynchronizer.sync()
+
+    async def onMarkAdded(self, hashmark):
+        await hashmark._fetch_all()
+
+        if not hashmark.category:
+            # Uncategorized, no need then
+            return
+
+        menu = self.categoryMenu(hashmark.category.name)
+        menu.addAction(self.makeHashmarkAction(hashmark))
+
+        await self.updateIcons()
+
+    async def onMarkDeleted(self, mark):
+        await mark.fetch_related('category')
+
+        if mark.category.name in self.cMenus:
+            menu = self.cMenus[mark.category.name]
 
             for action in menu.actions():
                 data = action.data()
-                if data and data['path'] == path:
+
+                if data and data['mark'].url == mark.url:
                     menu.removeAction(action)
 
             if menu.isEmpty():
                 menu.hide()
-
-    def onChanged(self):
-        self.updateMenu()
 
     async def updateIcons(self):
         for mName, menu in self.cMenus.items():
@@ -449,59 +616,55 @@ class HashmarkMgrButton(PopupToolButton, _HashmarksCommon):
             for action in menu.actions():
                 data = action.data()
 
-                if 'iconloaded' not in data and data['iconcid']:
-                    ensure(self.loadMarkIcon(action, data['iconcid']))
+                if 'iconloaded' not in data and data['iconpath']:
+                    ensure(self.loadMarkIcon(action, data['iconpath']))
 
-    def updateMenu(self):
+    def categoryMenu(self, category):
+        if category not in self.cMenus:
+            self.cMenus[category] = QMenu(category)
+            self.cMenus[category].setToolTipsVisible(True)
+            self.cMenus[category].triggered.connect(
+                lambda action: ensure(self.linkActivated(action)))
+            self.cMenus[category].setObjectName('hashmarksMgrMenu')
+            self.cMenus[category].setIcon(getIcon('stroke-cube.png'))
+            self.menu.addMenu(self.cMenus[category])
+
+        return self.cMenus[category]
+
+    async def updateMenu(self):
         self.hCount = 0
-        categories = self.marks.getCategories()
+        categories = await database.categoriesNames()
 
         for category in categories:
-            marks = self.marks.getCategoryMarks(category)
-            mItems = marks.items()
+            marks = await database.hashmarksSearch(category=category)
 
-            if len(mItems) not in range(1, self.maxItemsPerCategory):
-                continue
-
-            if category not in self.cMenus:
-                self.cMenus[category] = QMenu(category)
-                self.cMenus[category].setToolTipsVisible(True)
-                self.cMenus[category].triggered.connect(self.linkActivated)
-                self.cMenus[category].setObjectName('hashmarksMgrMenu')
-                self.menu.addMenu(self.cMenus[category])
-
-            menu = self.cMenus[category]
-            menu.setIcon(getIcon('stroke-cube.png'))
+            menu = self.categoryMenu(category)
 
             def exists(path):
                 for action in menu.actions():
                     if action.data()['path'] == path:
                         return action
 
-            if len(mItems) in range(1, self.maxItemsPerCategory):
-                for path, mark in mItems:
-                    self.hCount += 1
+            for hashmark in marks:
+                if exists(hashmark.path):
+                    continue
 
-                    if exists(path):
-                        continue
-
-                    menu.addAction(self.makeAction(path, mark))
+                await hashmark._fetch_all()
+                menu.addAction(self.makeHashmarkAction(hashmark))
             else:
                 menu.hide()
 
-        self.setToolTip(iLocalHashmarksCount(self.hCount))
+        self.setToolTip(iHashmarksDatabase())
 
-    def linkActivated(self, action):
-        data = action.data()
-        path, mark = data['path'], data['mark']
+    async def linkActivated(self, action):
+        mark = action.data()['mark']
 
         if mark:
-            if 'metadata' not in mark:
-                return
-            self.hashmarkClicked.emit(
-                path,
-                mark['metadata']['title']
-            )
+            mark.visitcount += 1
+            mark.lastvisited = utcDatetime()
+            await mark.save()
+
+            self.hashmarkClicked.emit(mark)
 
 
 class HashmarksSearchWidgetAction(QWidgetAction):
@@ -541,7 +704,7 @@ class HashmarksSearchLine(QLineEdit):
 
 
 class HashmarksSearcher(PopupToolButton, _HashmarksCommon):
-    hashmarkClicked = pyqtSignal(str, str)
+    hashmarkClicked = pyqtSignal(Hashmark)
 
     def __init__(self, iconFile='hashmarks-library.png', parent=None,
                  mode=QToolButton.InstantPopup):
@@ -627,40 +790,41 @@ class HashmarksSearcher(PopupToolButton, _HashmarksCommon):
 
     @asyncify
     async def searchInCatalog(self, text):
+        from galacteek.core.iptags import ipTagsRFind
+
         resultsMenu = QMenu(text, self.menu)
         resultsMenu.setToolTipsVisible(True)
         resultsMenu.setObjectName('hashmarksSearchMenu')
         resultsMenu.triggered.connect(
-            lambda action: self.linkActivated(
-                action, closeMenu=True))
+            lambda action: ensure(self.linkActivated(
+                action, closeMenu=True)))
+
         resultsMenu.menuAction().setData({
             'query': text,
             'datecreated': datetime.now()
         })
 
-        sources = [marks for sender, marks in self._catalog.items()]
-        sources.append(self.app.marksLocal)
         showMax = 128
         added = 0
 
-        for marks in sources:
+        tags = ipTagsRFind(text)
+        if len(tags) > 0:
+            hashmarks = await database.hashmarksByTags(
+                tags, defaultPlanet=False
+            )
+        else:
+            hashmarks = await database.hashmarksSearch(text)
+
+        for hashmark in hashmarks:
             await asyncio.sleep(0)
+            await hashmark._fetch_all()
 
-            async for hashmark in marks.searchAllByMetadata({
-                'path': text,
-                'title': text,
-                'description': text,
-                'comment': text
-            }):
+            resultsMenu.addAction(self.makeHashmarkAction(hashmark))
 
-                await asyncio.sleep(0)
-                resultsMenu.addAction(self.makeAction(
-                    hashmark.path, hashmark.markData))
+            if added > showMax:
+                break
 
-                if added > showMax:
-                    break
-
-                added += 1
+            added += 1
 
         if len(resultsMenu.actions()) > 0:
             self.menu.addMenu(resultsMenu)
@@ -682,18 +846,15 @@ class HashmarksSearcher(PopupToolButton, _HashmarksCommon):
 
         self._catalog[nodeId] = ipfsMarks
 
-    def linkActivated(self, action, closeMenu=False):
-        data = action.data()
-        path, mark = data['path'], data['mark']
+    async def linkActivated(self, action, closeMenu=False):
+        mark = action.data()['mark']
 
         if mark:
-            if 'metadata' not in mark:
-                return
+            mark.visitcount += 1
+            mark.lastvisited = utcDatetime()
+            await mark.save()
 
-            self.hashmarkClicked.emit(
-                path,
-                mark['metadata']['title']
-            )
+            self.hashmarkClicked.emit(mark)
 
             self.searchLine.clear()
             if closeMenu:

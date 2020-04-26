@@ -37,6 +37,7 @@ from PyQt5 import QtWebEngineWidgets
 from galacteek import GALACTEEK_NAME
 from galacteek import ensure
 from galacteek import log
+from galacteek import database
 from galacteek.core.glogger import loggerMain
 from galacteek.core.glogger import loggerUser
 from galacteek.core.glogger import easyFormatString
@@ -637,18 +638,16 @@ class MainWindow(QMainWindow):
 
         # Hashmarks mgr button
 
-        # Shared hashmarks mgr button
+        # Hashmarks searcher
         self.hashmarksSearcher = HashmarksSearcher(parent=self)
         self.hashmarksSearcher.setToolTip(iHashmarksLibrary())
+        self.hashmarksSearcher.setShortcut(QKeySequence('Ctrl+Alt+h'))
 
         self.hashmarkMgrButton = HashmarkMgrButton(
             marks=self.app.marksLocal)
-        self.hashmarkMgrButton.menu.addAction(self.hashmarksManagerAction)
-        self.hashmarkMgrButton.menu.addSeparator()
         self.hashmarkMgrButton.menu.addMenu(self.hashmarksSearcher.menu)
 
         self.hashmarkMgrButton.menu.addSeparator()
-        self.hashmarkMgrButton.updateMenu()
 
         # Peers button
         self.peersButton = QToolButton(self)
@@ -728,8 +727,7 @@ class MainWindow(QMainWindow):
         self.toolbarMain.addWidget(self.textEditorButton)
 
         self.hashmarkMgrButton.hashmarkClicked.connect(self.onHashmarkClicked)
-        self.hashmarksSearcher.hashmarkClicked.connect(
-            self.onHashmarkClicked)
+        self.hashmarksSearcher.hashmarkClicked.connect(self.onHashmarkClicked)
 
         self.toolbarMain.addSeparator()
 
@@ -799,8 +797,6 @@ class MainWindow(QMainWindow):
         self.ipfsStatusCube.animationClicked.connect(self.onIpfsInfos)
         self.ipfsStatusCube.startClip()
 
-        self.ethereumStatusBtn = EthereumStatusButton(parent=self)
-
         self.statusbar = self.statusBar()
         self.userLogsButton = QToolButton(self)
         self.userLogsButton.setToolTip('Logs')
@@ -817,7 +813,9 @@ class MainWindow(QMainWindow):
 
         self.statusbar.addPermanentWidget(self.ipfsStatusCube)
 
+        self.ethereumStatusBtn = EthereumStatusButton(parent=self)
         self.statusbar.addPermanentWidget(self.ethereumStatusBtn)
+
         self.statusbar.addPermanentWidget(self.pinningStatusButton)
         self.statusbar.addPermanentWidget(self.pubsubStatusButton)
         self.statusbar.addPermanentWidget(self.userLogsButton)
@@ -846,7 +844,7 @@ class MainWindow(QMainWindow):
         self.app.ipfsCtx.pinFinished.connect(self.onPinFinished)
 
         # Misc signals
-        self.app.marksLocal.feedMarkAdded.connect(self.onFeedMarkAdded)
+        database.IPNSFeedMarkAdded.connectTo(self.onFeedMarkAdded)
         self.app.systemTray.messageClicked.connect(self.onSystrayMsgClicked)
 
         # Application signals
@@ -894,11 +892,11 @@ class MainWindow(QMainWindow):
     def onClearHistory(self):
         self.app.urlHistory.clear()
 
-    def onHashmarkClicked(self, path, title):
-        ipfsPath = IPFSPath(path, autoCidConv=True)
-
-        if ipfsPath.valid:
-            ensure(self.app.resourceOpener.open(ipfsPath))
+    def onHashmarkClicked(self, hashmark):
+        ensure(self.app.resourceOpener.open(
+            hashmark.path if hashmark.path else hashmark.url,
+            schemePreferred=hashmark.schemepreferred,
+            pin=True if hashmark.pin != 0 else False))
 
     def onMainToolbarMoved(self, orientation):
         self.toolbarMain.lastPos = self.toolbarMain.pos()
@@ -1003,6 +1001,7 @@ class MainWindow(QMainWindow):
         ensure(self.hashmarkMgrButton.updateIcons())
         ensure(self.app.marksLocal.pyramidsInit())
         ensure(self.app.sqliteDb.feeds.start())
+        ensure(self.hashmarkMgrButton.updateMenu())
 
         if self.app.enableOrbital and self.app.ipfsCtx.orbitConnector is None:
             self.app.ipfsCtx.orbitConnector = GalacteekOrbitConnector(
@@ -1036,20 +1035,16 @@ class MainWindow(QMainWindow):
         if self._lastFeedMark is not None:
             self.addBrowserTab().browseFsPath(self._lastFeedMark.path)
 
-    def onFeedMarkAdded(self, feedname, mark):
+    async def onFeedMarkAdded(self, feed, mark):
         self._lastFeedMark = mark
-
-        metadata = mark.markData.get('metadata', None)
-        if not metadata:
-            return
 
         message = """New entry in IPNS feed {feed}: {title}.
                  Click the message to open it""".format(
-            feed=feedname,
-            title=metadata['title'] if metadata['title'] else 'No title'
+            feed=feed.name,
+            title=mark.title if mark.title else 'No title'
         )
 
-        self.app.systemTrayMessage('IPNS', message, timeout=5000)
+        self.app.systemTrayMessage('IPNS', message, timeout=10000)
 
     def onIpfsInfos(self):
         dlg = IPFSInfosDialog(self.app)

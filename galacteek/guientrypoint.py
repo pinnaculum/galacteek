@@ -1,33 +1,17 @@
 # Galacteek, GUI startup entry point
 
-import asyncio
 import argparse
-import shutil
-import subprocess
 import sys
-import re
-from distutils.version import StrictVersion
 
 from PyQt5.QtCore import QProcess
 from PyQt5.QtWebEngine import QtWebEngine
 
 from galacteek import log
-from galacteek import ensure
 from galacteek import __version__
 from galacteek.core import glogger
 from galacteek.core.schemes import initializeSchemes
 
-from galacteek.ipfs import distipfsfetch
 from galacteek.ui.helpers import *  # noqa
-from galacteek.ui.i18n import (
-    iGoIpfsFetchTimeout,
-    iGoIpfsNotFound,
-    iGoIpfsTooOld,
-    iGoIpfsFetchAsk,
-    iGoIpfsFetchError,
-    iGoIpfsFetchSuccess,
-    iFsRepoMigrateNotFound
-)
 from galacteek import application
 from galacteek.appsettings import *  # noqa
 
@@ -40,47 +24,6 @@ else:
 
 
 appStarter = None
-
-
-def whichIpfs():
-    return shutil.which('ipfs')
-
-
-def ipfsVersion():
-    try:
-        p = subprocess.Popen(['ipfs', 'version', '-n'], stdout=subprocess.PIPE)
-        out, err = p.communicate()
-        version = out.decode().strip()
-        version = re.sub('(-.*$)', '', version)
-        return StrictVersion(version)
-    except BaseException:
-        return None
-
-
-async def fetchGoIpfsWrapper(app, timeout=60 * 10):
-    try:
-        await asyncio.wait_for(fetchGoIpfsDist(app), timeout)
-    except asyncio.TimeoutError:
-        app.mainWindow.statusMessage(iGoIpfsFetchTimeout())
-        return None
-    except Exception:
-        app.mainWindow.statusMessage(iGoIpfsFetchError())
-        return None
-    else:
-        app.mainWindow.statusMessage(iGoIpfsFetchSuccess())
-        return whichIpfs()
-
-
-async def fetchGoIpfsDist(app):
-    async for msg in distipfsfetch.distIpfsExtract(
-            dstdir=app.ipfsBinLocation, software='go-ipfs',
-            executable='ipfs', version='0.4.23', loop=app.loop,
-            sslverify=app.sslverify):
-        try:
-            code, text = msg
-            app.mainWindow.statusMessage(text)
-        except Exception as e:
-            app.debug(str(e))
 
 
 class ApplicationStarter:
@@ -131,57 +74,6 @@ def galacteekGui(args):
         sManager.setSetting(section, CFG_KEY_SWARMPORT, args.swarmport)
     if args.gatewayport:
         sManager.setSetting(section, CFG_KEY_HTTPGWPORT, args.gatewayport)
-
-    if sManager.isTrue(CFG_SECTION_IPFSD, CFG_KEY_ENABLED):
-        fsMigratePath = shutil.which('fs-repo-migrations')
-        hasFsMigrate = fsMigratePath is not None
-
-        if hasFsMigrate is False and args.migrate is True:
-            gApp.systemTrayMessage('Galacteek', iFsRepoMigrateNotFound())
-
-        enableMigrate = hasFsMigrate is True and args.migrate is True
-
-        # Look if we can find the ipfs executable
-        ipfsPath = whichIpfs()
-        minVersion = StrictVersion('0.4.7')
-
-        if ipfsPath is None or args.forcegoipfsdl:
-            if args.forcegoipfsdl:
-                fetchWanted = True
-            else:
-                fetchWanted = questionBox('go-ipfs', iGoIpfsFetchAsk())
-
-            def fetchFinished(fut):
-                path = fut.result()
-                if path is None:
-                    gApp.systemTrayMessage('Galacteek',
-                                           iGoIpfsFetchError())
-                else:
-                    gApp.startIpfsDaemon(goIpfsPath=path,
-                                         migrateRepo=enableMigrate)
-
-            if fetchWanted:
-                fut = ensure(fetchGoIpfsWrapper(gApp))
-                fut.add_done_callback(fetchFinished)
-            else:
-                gApp.systemTrayMessage('Galacteek',
-                                       iGoIpfsNotFound())
-        else:
-            iVersion = ipfsVersion()
-            if not iVersion or iVersion < minVersion:
-                # warning here
-                log.debug('go-ipfs version found {0} is too old'.format(
-                    iVersion))
-                gApp.systemTrayMessage('Galacteek',
-                                       iGoIpfsTooOld())
-
-            gApp.startIpfsDaemon(goIpfsPath=ipfsPath,
-                                 migrateRepo=enableMigrate)
-    else:
-        ensure(gApp.updateIpfsClient())
-
-    if args.noreleasecheck is False:
-        ensure(gApp.checkReleases())
 
     # Monitor event loop if aiomonitor is available
     # Use the context manager so loop cleanup/close is automatic
@@ -244,6 +136,7 @@ def start():
         '--no-release-check',
         action='store_true',
         dest='noreleasecheck',
+        default=True,
         help="Don't check for new releases on PyPI")
     parser.add_argument(
         '--no-ssl-verify',

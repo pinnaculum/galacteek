@@ -749,7 +749,7 @@ class FileManager(QWidget):
             self.gWindow.explore(cid)
 
         def hashmark(mPath, name):
-            addHashmark(self.app.marksLocal, mPath, name)
+            ensure(addHashmarkAsync(mPath, name))
 
         def copyHashToClipboard(itemHash):
             self.clipboard.setText(itemHash)

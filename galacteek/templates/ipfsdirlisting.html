@@ -107,7 +107,9 @@
             <td>
                 <a href="{{ lnk['href'] }}">{{ lnk['Name'] }}</a>
             </td>
-            <td>{{ lnk['Size'] }} bytes</td>
+  {% if lnk['Type'] == 2 %}
+            <td>{{ lnk['Size'] |filesizeformat(true) }}</td>
+  {% endif %}
           </tr>
   {% endfor %}
         </table>

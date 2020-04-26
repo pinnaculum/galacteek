@@ -44,15 +44,17 @@ from .widgets import URLDragAndDropProcessor
 from .helpers import getMimeIcon
 from .helpers import getIcon
 from .helpers import getIconFromIpfs
-from .helpers import runDialog
+from .helpers import runDialogAsync
 from .helpers import questionBox
 from .helpers import getImageFromIpfs
 from .helpers import inputTextLong
 from .helpers import messageBox
 from .dialogs import AddMultihashPyramidDialog
+from .hashmarks import addHashmarkAsync
 
 from .i18n import iRemove
 from .i18n import iHelp
+from .i18n import iHashmark
 
 
 def iCreateRawPyramid():
@@ -310,16 +312,16 @@ class MultihashPyramidsToolBar(QToolBar):
                 await ipfsop.keysRemove(key['Name'])
 
     def onAddPyramidRaw(self):
-        runDialog(AddMultihashPyramidDialog, self.app.marksLocal,
-                  MultihashPyramid.TYPE_STANDARD,
-                  title='New multihash pyramid',
-                  parent=self)
+        ensure(runDialogAsync(AddMultihashPyramidDialog, self.app.marksLocal,
+                              MultihashPyramid.TYPE_STANDARD,
+                              title='New multihash pyramid',
+                              parent=self))
 
     def onAddGallery(self):
-        runDialog(AddMultihashPyramidDialog, self.app.marksLocal,
-                  MultihashPyramid.TYPE_GALLERY,
-                  title='New image gallery',
-                  parent=self)
+        ensure(runDialogAsync(AddMultihashPyramidDialog, self.app.marksLocal,
+                              MultihashPyramid.TYPE_GALLERY,
+                              title='New image gallery',
+                              parent=self))
 
 
 class MultihashPyramidToolButton(PopupToolButton):
@@ -341,6 +343,7 @@ class MultihashPyramidToolButton(PopupToolButton):
         self._pyramidion = None
         self._publishedLast = None
         self._publishFailedCount = 0
+        self._publishJob = None
         self._pyrToolTip = None
 
         self.setAcceptDrops(True)
@@ -398,6 +401,11 @@ class MultihashPyramidToolButton(PopupToolButton):
                                         self,
                                         triggered=self.onPublishToDID)
         self.didPublishAction.setToolTip(iProfilePublishToDIDToolTip())
+
+        self.hashmarkAction = QAction(getIcon('hashmarks.png'),
+                                      iHashmark(),
+                                      self,
+                                      triggered=self.onHashmark)
 
         self.createExtraActions()
         self.buildMenu()
@@ -498,6 +506,8 @@ class MultihashPyramidToolButton(PopupToolButton):
         self.menu.addSeparator()
         self.menu.addAction(self.didPublishAction)
         self.menu.addSeparator()
+        self.menu.addAction(self.hashmarkAction)
+        self.menu.addSeparator()
         self.menu.addAction(self.deleteAction)
 
     def dragEnterEvent(self, event):
@@ -565,6 +575,12 @@ class MultihashPyramidToolButton(PopupToolButton):
 
     def onDeletePyramid(self):
         self.deleteRequest.emit()
+
+    def onHashmark(self):
+        ensure(addHashmarkAsync(
+            str(self.ipnsKeyPath), title=self.pyramid.name,
+            description=self.pyramid.description
+        ))
 
     def onPublishToDID(self):
         if questionBox('Publish', 'Publish to your DID ?'):
@@ -754,8 +770,12 @@ class MultihashPyramidToolButton(PopupToolButton):
 
         self.pyramidion = mark
 
+        if self._publishJob and self.publishInProgress:
+            self._publishJob.cancel()
+            self.publishInProgress = False
+
         if self.publishInProgress is False:
-            await self.publish(self.pyramidion, notify)
+            self._publishJob = ensure(self.publish(self.pyramidion, notify))
 
     async def publishWatcherTask(self):
         # Depending on the lifetime of the records we publish, decide upon
@@ -776,8 +796,6 @@ class MultihashPyramidToolButton(PopupToolButton):
             unpublishedMax = None
 
         while self.active:
-            await asyncio.sleep(20)
-
             if self.pyramidion:
                 if self.publishedLast is None:
                     # Publish on startup after random delay
@@ -795,6 +813,12 @@ class MultihashPyramidToolButton(PopupToolButton):
 
                     if unpublishedMax and delta.seconds > unpublishedMax:
                         await self.needsPublish.emit(self.pyramidion, True)
+            else:
+                # Wait for the pyramidion
+                await asyncio.sleep(10)
+                continue
+
+            await asyncio.sleep(180)
 
 
 class EDAGBuildingPyramidController(MultihashPyramidToolButton):
@@ -966,6 +990,8 @@ class GalleryPyramidController(EDAGBuildingPyramidController):
         self.menu.addSeparator()
         self.menu.addAction(self.didPublishAction)
         self.menu.addSeparator()
+        self.menu.addAction(self.hashmarkAction)
+        self.menu.addSeparator()
         self.menu.addAction(
             getIcon('pyramid-blue.png'), iHelp(), self.galleryHelpMessage)
         self.menu.setEnabled(False)
@@ -1017,7 +1043,7 @@ class GalleryPyramidController(EDAGBuildingPyramidController):
     def onBrowseGalleryIpns(self):
         objPath = self.ipnsKeyPath.child('index.html')
         ensure(self.app.resourceOpener.open(
-            objPath, minWebProfile='ipfs'))
+            objPath, minWebProfile='ipfs', schemePreferred='dweb'))
 
     def onBrowseGallery(self):
         if self.pyramid.latest:
@@ -1030,7 +1056,8 @@ class GalleryPyramidController(EDAGBuildingPyramidController):
     async def initDagExtra(self, ipfsop, edag):
         if 'index.html' not in edag.root:
             entry = await ipfsRender(self.app.jinjaEnv,
-                                     'imggallery/gallery.html')
+                                     'imggallery/gallery-dag.html',
+                                     dag=edag.root)
             edag.root['index.html'] = self.edag.mkLink(entry)
             edag.changed.emit()
 
@@ -1093,7 +1120,8 @@ class GalleryPyramidController(EDAGBuildingPyramidController):
         })
 
         entry = await ipfsRender(self.app.jinjaEnv,
-                                 'imggallery/gallery.html')
+                                 'imggallery/gallery-dag.html',
+                                 dag=self.edag.root)
         self.edag.root['index.html'] = self.edag.mkLink(entry)
         self.edag.changed.emit()
 
