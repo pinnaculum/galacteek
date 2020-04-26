@@ -3,6 +3,7 @@ import functools
 import binascii
 import multihash
 import multibase
+import asyncio
 
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtGui import QImage
@@ -223,7 +224,7 @@ def getHomePath():
     return pList[0] if len(pList) > 0 else os.getenv('HOME')
 
 
-def messageBox(message, title=None):
+def messageBoxCreate(message, title=None):
     from .clips import RotatingCubeClipSimple
     from .widgets import AnimatedButton
 
@@ -252,8 +253,17 @@ def messageBox(message, title=None):
     )
 
     msgBox.setWindowTitle(title if title else 'galacteek: Message')
-    msgBox.show()
-    return msgBox.exec_()
+    return msgBox
+
+
+async def messageBoxAsync(message, title=None):
+    mBox = messageBoxCreate(message, title=title)
+    mBox.show()
+    return await threadExec(mBox.exec_)
+
+
+def messageBox(message, title=None):
+    return ensure(messageBoxAsync(message, title=title))
 
 
 def questionBox(title, text, parent=None):
@@ -312,6 +322,10 @@ async def runDialogAsync(cls, *args, **kw):
     accepted = kw.pop('accepted', None)
     dlgW = cls(*args, **kw)
 
+    if hasattr(dlgW, 'initDialog') and asyncio.iscoroutinefunction(
+            dlgW.initDialog):
+        await dlgW.initDialog()
+
     if title:
         dlgW.setWindowTitle(title)
     if accepted:
@@ -332,9 +346,19 @@ def inputTextLong(title='', label='', text='', inputMethod=None,
                   parent=None):
     text, ok = QInputDialog.getText(
         parent, title, label, QLineEdit.Normal,
-        text, Qt.Dialog, inputMethod)
+        text, Qt.Dialog, inputMethod if inputMethod else Qt.ImhNone)
     if ok:
         return text
+
+
+def inputTextCustom(title='No title', label='Input', text='',
+                    width=500, height=200, parent=None):
+    dlg = QInputDialog(parent)
+    dlg.setInputMode(QInputDialog.TextInput)
+    dlg.setLabelText(label)
+    dlg.resize(width, height)
+    dlg.exec_()
+    return dlg.textValue()
 
 
 class IPFSTreeKeyFilter(QObject):

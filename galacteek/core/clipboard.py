@@ -268,7 +268,8 @@ class ClipboardTracker(QObject):
     async def streamResolve(self, ipfsop, item, count=2):
         matches = []
         async for entry in ipfsop.nameResolveStream(
-                item.ipfsPath.objPath, timeout='10s'):
+                item.ipfsPath.objPath, timeout='10s',
+                useCache='always'):
             matches.append(entry.get('Path'))
             if len(matches) > count:
                 break

@@ -576,10 +576,7 @@ class IPFSHashExplorerWidget(QWidget):
         self.hLayoutCtrl.addWidget(self.gitButton)
 
     def onHashmark(self):
-        addHashmark(self.app.marksLocal,
-                    str(self.rootPath), '',
-                    stats=self.app.ipfsCtx.objectStats.get(
-                        self.rootPath.objPath, {}))
+        ensure(addHashmarkAsync(str(self.rootPath)))
 
     def onGet(self):
         dirSel = directorySelect()
@@ -805,14 +802,14 @@ class IPFSHashExplorerWidget(QWidget):
         self.getProgress.show()
 
         async def onGetProgress(ref, bytesRead, arg):
-            per = int((bytesRead * 100) / statInfo.totalSize)
+            per = int((bytesRead / statInfo.totalSize) * 100)
             self.getLabel.setText('Downloaded: {0}'.format(
                 sizeFormat(bytesRead)))
             self.getProgress.setValue(per)
 
         await ipfsop.client.get(rPath, dstdir=dest,
                                 progress_callback=onGetProgress,
-                                chunk_size=32768)
+                                chunk_size=524288)
 
         self.getLabel.setText('Download finished')
         self.getProgress.hide()

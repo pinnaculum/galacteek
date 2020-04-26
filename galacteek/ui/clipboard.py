@@ -24,8 +24,10 @@ from PyQt5.QtCore import QFileInfo
 from PyQt5.QtCore import QIODevice
 
 from galacteek import ensure
+from galacteek import partialEnsure
 from galacteek import log
 from galacteek import logUser
+from galacteek import database
 
 from galacteek.appsettings import CFG_SECTION_BROWSER
 from galacteek.appsettings import CFG_KEY_HOMEURL
@@ -42,7 +44,7 @@ from galacteek.ipfs.mimetype import mimeTypeDagPb
 from galacteek.crypto.qrcode import IPFSQrDecoder
 from galacteek.crypto.qrcode import IPFSQrEncoder
 
-from .hashmarks import addHashmark
+from .hashmarks import addHashmarkAsync
 from .helpers import qrCodesMenuBuilder
 from .helpers import getMimeIcon
 from .helpers import getFavIconFromDir
@@ -149,6 +151,11 @@ def iClipItemIpldExplorer():
 def iClipItemMarkupRocks():
     return QCoreApplication.translate('clipboardManager',
                                       'Open with Markdown editor')
+
+
+def iClipItemEditText():
+    return QCoreApplication.translate('clipboardManager',
+                                      'Edit text file')
 
 
 def iClipItemDagView():
@@ -520,12 +527,12 @@ class ClipboardItemButton(PopupToolButton):
             getIcon('ipld-logo.png'),
             iClipboardEmpty(), self,
             shortcut=QKeySequence('Ctrl+i'),
-            triggered=self.onIpldExplore)
+            triggered=partialEnsure(self.onIpldExplore))
 
-        self.markupRocksAction = QAction(
-            getIcon('ipld-logo.png'),
+        self.editTextFileAction = QAction(
+            getMimeIcon('text/plain'),
             iClipboardEmpty(), self,
-            triggered=self.onMarkdownEdit)
+            triggered=self.onTextEdit)
 
         self.followFeedAction = QAction(
             getIcon('atom-feed.png'),
@@ -567,8 +574,7 @@ class ClipboardItemButton(PopupToolButton):
 
     def onHashmark(self):
         if self.item:
-            addHashmark(self.app.marksLocal, self.item.fullPath,
-                        self.item.basename)
+            ensure(addHashmarkAsync(self.item.fullPath, self.item.basename))
 
     def onSetAsHome(self):
         self.app.settingsMgr.setSetting(CFG_SECTION_BROWSER, CFG_KEY_HOMEURL,
@@ -652,7 +658,7 @@ class ClipboardItemButton(PopupToolButton):
         self.hashmarkAction.setText(iClipItemHashmark())
         self.downloadAction.setText(iClipItemDownload())
         self.ipldExplorerAction.setText(iClipItemIpldExplorer())
-        self.markupRocksAction.setText(iClipItemMarkupRocks())
+        self.editTextFileAction.setText(iClipItemEditText())
         self.pinAction.setText(iClipItemPin())
 
         self.setToolTip(self.tooltipMessage())
@@ -676,7 +682,7 @@ class ClipboardItemButton(PopupToolButton):
 
         elif self.item.mimeType.isText:
             self.menu.addSeparator()
-            self.menu.addAction(self.markupRocksAction)
+            self.menu.addAction(self.editTextFileAction)
 
         elif self.item.mimeType.isImage:
             self.updateIcon(getMimeIcon('image/x-generic'), animate=False)
@@ -830,29 +836,29 @@ class ClipboardItemButton(PopupToolButton):
         ensure(self.app.mainWindow.atomButton.atomFeedSubscribe(
             self.item.path))
 
-    def onIpldExplore(self):
+    async def onIpldExplore(self, *args):
         """
         Open the IPLD explorer application for the current clipboard item
         """
-        if self.item:
-            mark = self.app.marksLocal.searchSingleByMetadata({
-                'title': 'IPLD explorer'})
-            if mark:
-                link = os.path.join(
-                    mark.path, '#', 'explore', stripIpfs(self.item.path))
-                self.app.mainWindow.addBrowserTab().browseFsPath(link)
+        if not self.item:
+            return
 
-    def onMarkdownEdit(self):
-        """
-        Open markup.rocks for the current clipboard item
-        """
+        mark = await database.hashmarksByObjTagLatest('#dapp-ipldexplorer')
+        if mark:
+            link = os.path.join(
+                mark.path, '#', 'explore', stripIpfs(self.item.path))
+            self.app.mainWindow.addBrowserTab().browseFsPath(link)
+        else:
+            messageBox('IPLD explorer hashmark not found')
+
+    def onTextEdit(self):
         if self.item:
-            mark = self.app.marksLocal.searchSingleByMetadata({
-                'title': 'markup.rocks'})
-            if mark:
-                link = os.path.join(
-                    mark.path, '#', self.item.path.lstrip('/'))
-                self.app.mainWindow.addBrowserTab().browseFsPath(link)
+            ensure(self.rscOpener.open(
+                self.item.ipfsPath,
+                mimeType=self.item.mimeType,
+                editObject=True,
+                openingFrom='clipboardmgr'
+            ))
 
     def onPin(self):
         if self.item:
@@ -883,11 +889,13 @@ class ClipboardItemButton(PopupToolButton):
         downloadsDir = self.app.settingsMgr.downloadsDir
 
         async def progress(path, read, progButton):
-            progButton.downloadProgress.emit(read)
+            if divmod(read, 64)[1] == 0:
+                progButton.downloadProgress.emit(read)
 
         try:
             await ipfsop.client.get(
                 item.path, dstdir=downloadsDir,
+                chunk_size=262144,
                 progress_callback=progress,
                 progress_callback_arg=progButton)
         except aioipfs.APIError:

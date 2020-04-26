@@ -11,6 +11,7 @@ from PyQt5.QtGui import QColor
 
 from galacteek import ensure
 from galacteek.core.modelhelpers import UneditableItem
+from galacteek import database
 
 from .i18n import iUnknown
 from .i18n import iHashmarks
@@ -30,13 +31,13 @@ class URLHistory(QObject):
 
     def record(self, url, title):
         if self.enabled:
-            ensure(self.db.historyRecord(url, title))
+            ensure(database.urlHistoryRecord(url, title))
 
     def clear(self):
-        ensure(self.db.historyClear())
+        ensure(database.urlHistoryClear())
 
     async def match(self, input):
-        return await self.db.historySearch(input)
+        return await database.urlHistorySearch(input)
 
 
 class HistoryMatchesWidget(QTreeView):
@@ -61,7 +62,7 @@ class HistoryMatchesWidget(QTreeView):
         if isinstance(data, str) and data:
             self.historyItemSelected.emit(data)
 
-    def showMatches(self, marks, hMatches):
+    async def showMatches(self, marks, hMatches):
         self.model.clear()
         brush = QBrush(QColor('lightgrey'))
 
@@ -72,12 +73,14 @@ class HistoryMatchesWidget(QTreeView):
         self.model.invisibleRootItem().appendRow([mItem, mItemE])
 
         for match in marks:
-            title = match['title'][0:64] if match['title'] else iUnknown()
+            title = match.title[0:64] if match.title else iUnknown()
+
+            url = match.preferredUrl()
 
             itemT = UneditableItem(title)
-            item = UneditableItem(match['url'])
-            item.setToolTip(match['url'])
-            item.setData(match['url'], Qt.EditRole)
+            item = UneditableItem(url)
+            item.setToolTip(url)
+            item.setData(url, Qt.EditRole)
 
             mItem.appendRow([itemT, item])
 

@@ -2,6 +2,7 @@ import functools
 import os.path
 import re
 import aioipfs
+from yarl import URL
 
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QAction
@@ -37,6 +38,8 @@ from PyQt5.QtGui import QKeySequence
 from galacteek import log
 from galacteek import logUser
 from galacteek import ensure
+from galacteek import partialEnsure
+from galacteek import database
 
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs import cidhelpers
@@ -49,6 +52,7 @@ from galacteek.ipfs.cidhelpers import cidValid
 from galacteek.core.asynclib import asyncify
 
 from galacteek.core.schemes import isSchemeRegistered
+from galacteek.core.schemes import isEnsUrl
 from galacteek.core.schemes import SCHEME_ENS
 from galacteek.core.schemes import SCHEME_IPFS
 from galacteek.core.schemes import SCHEME_IPNS
@@ -423,6 +427,8 @@ class WebView(IPFSWebView):
                                       enablePlugins)
         self.webSettings.setAttribute(QWebEngineSettings.LocalStorageEnabled,
                                       True)
+        self.webSettings.setAttribute(QWebEngineSettings.PdfViewerEnabled,
+                                      False)
         self.webSettings.setAttribute(
             QWebEngineSettings.LocalContentCanAccessFileUrls, True)
         self.webSettings.setAttribute(
@@ -707,9 +713,10 @@ class WebView(IPFSWebView):
     def hashmarkPath(self, path):
         ipfsPath = IPFSPath(path, autoCidConv=True)
         if ipfsPath.valid:
-            addHashmark(self.browserTab.app.marksLocal,
-                        ipfsPath.fullPath,
-                        ipfsPath.basename if ipfsPath.basename else iUnknown())
+            ensure(addHashmarkAsync(
+                ipfsPath.fullPath,
+                title=ipfsPath.basename if ipfsPath.basename else
+                iUnknown()))
 
     def openInTab(self, path):
         tab = self.browserTab.gWindow.addBrowserTab()
@@ -874,22 +881,14 @@ class URLInputWidget(QLineEdit):
         if self.urlInput:
             markMatches = []
 
-            async for mark in self.app.marksLocal.searchAllByMetadata({
-                'title': self.urlInput,
-                'description': self.urlInput
-            }):
-                try:
-                    markMatches.append({
-                        'title': mark.markData['metadata']['title'],
-                        'url': IPFSPath(mark.path).ipfsUrl
-                    })
-                except Exception:
-                    continue
+            markMatches = await database.hashmarksSearch(
+                query=self.urlInput
+            )
 
             hMatches = await self.history.match(self.urlInput)
 
             if len(markMatches) > 0 or len(hMatches) > 0:
-                self.historyMatches.showMatches(markMatches, hMatches)
+                await self.historyMatches.showMatches(markMatches, hMatches)
                 self.historyMatches.show()
                 self.historyMatches.setFocus(Qt.OtherFocusReason)
 
@@ -976,25 +975,23 @@ class CurrentObjectController(PopupToolButton):
 
     def onHashmarkThisPage(self):
         if self.currentPath:
-            addHashmark(self.app.marksLocal,
-                        self.currentPath.fullPath,
-                        '')
+            ensure(addHashmarkAsync(self.currentPath.fullPath))
 
     def onHashmarkRoot(self):
         if self.currentPath:
             if self.currentPath.isIpfs:
                 rootCidPath = joinIpfs(self.currentPath.rootCidRepr)
-                addHashmark(self.app.marksLocal,
-                            rootCidPath,
-                            rootCidPath)
+                ensure(addHashmarkAsync(
+                    rootCidPath,
+                    title=rootCidPath))
             elif self.currentPath.isIpns:
                 root = self.currentPath.root()
                 if not root:
                     return messageBox(
                         iInvalidObjectPath(str(self.currentPath)))
 
-                addHashmark(self.app.marksLocal,
-                            str(root), str(root))
+                ensure(addHashmarkAsync(
+                    str(root), str(root)))
 
     def onVisited(self, ipfsPath):
         ensure(self.displayObjectInfos(ipfsPath))
@@ -1115,6 +1112,8 @@ class BrowserTab(GalacteekTab):
                 initialProfileName = minProfile
 
         webProfile = self.getWebProfileByName(initialProfileName)
+        self.icept = RequestInterceptor()
+        webProfile.setUrlRequestInterceptor(self.icept)
 
         self.webEngineView = WebView(
             self, webProfile,
@@ -1207,9 +1206,12 @@ class BrowserTab(GalacteekTab):
         self.jsConsoleAction.setCheckable(True)
         self.jsConsoleAction.toggled.connect(self.onJsConsoleToggle)
 
-        self.mapPathAction = QAction(getIconIpfsIce(),
-                                     iCreateQaMapping(), self,
-                                     triggered=self.onCreateMapping)
+        self.mapPathAction = QAction(
+            getIconIpfsIce(),
+            iCreateQaMapping(),
+            self,
+            triggered=partialEnsure(
+                self.onCreateMapping))
 
         self.loadFromCbAction = QAction(
             getIcon('clipboard.png'),
@@ -1381,14 +1383,14 @@ class BrowserTab(GalacteekTab):
 
         cTitle = self.currentPageTitle if self.currentPageTitle else ''
 
-        runDialog(
+        ensure(runDialogASync(
             TitleInputDialog, cTitle,
             accepted=functools.partial(
                 self.onMoveToMfsWithTitle,
                 self.currentIpfsObject,
                 mfsItem
             )
-        )
+        ))
 
     def onMoveToMfsWithTitle(self, ipfsPath, mfsItem, dialog):
         cTitle = dialog.tEdit.text().replace('/', '_')
@@ -1586,11 +1588,15 @@ class BrowserTab(GalacteekTab):
     def onJsConsoleToggle(self, checked):
         self.jsConsoleWidget.setVisible(checked)
 
-    def onCreateMapping(self):
+    async def onCreateMapping(self, *args):
         if not self.currentIpfsObject:
             return messageBox(iNotAnIpfsResource())
 
-        runDialog(QSchemeCreateMappingDialog, self.currentIpfsObject)
+        await runDialogAsync(
+            QSchemeCreateMappingDialog,
+            self.currentIpfsObject,
+            self.currentPageTitle
+        )
 
     def onClipboardIpfs(self, pathObj):
         pass
@@ -1653,12 +1659,18 @@ class BrowserTab(GalacteekTab):
         page.save(path, QWebEngineDownloadItem.CompleteHtmlSaveFormat)
 
     def onHashmarkPage(self):
-        if self.currentIpfsObject and self.currentIpfsObject.valid:
-            addHashmark(self.app.marksLocal,
-                        self.currentIpfsObject.fullPath,
-                        self.currentPageTitle,
-                        stats=self.app.ipfsCtx.objectStats.get(
-                            self.currentIpfsObject.path, {}))
+        if self.currentUrl and isEnsUrl(self.currentUrl):
+            ensure(addHashmarkAsync(
+                self.currentUrl.toString(),
+                title=self.currentPageTitle
+            ))
+        elif self.currentIpfsObject and self.currentIpfsObject.valid:
+            scheme = self.currentUrl.scheme()
+            ensure(addHashmarkAsync(
+                self.currentIpfsObject.fullPath,
+                title=self.currentPageTitle,
+                schemePreferred=scheme
+            ))
         else:
             messageBox(iNotAnIpfsResource())
 
@@ -1789,8 +1801,8 @@ class BrowserTab(GalacteekTab):
             if path.valid:
                 self.browseFsPath(path)
 
-        runDialog(IPFSCIDInputDialog, title=iEnterIpfsCIDDialog(),
-                  accepted=onValidated)
+        ensure(runDialogAsync(IPFSCIDInputDialog, title=iEnterIpfsCIDDialog(),
+                              accepted=onValidated))
 
     def onLoadIpfsMultipleCID(self):
         def onValidated(dlg):
@@ -1802,9 +1814,9 @@ class BrowserTab(GalacteekTab):
                     continue
                 self.gWindow.addBrowserTab().browseFsPath(path)
 
-        runDialog(IPFSMultipleCIDInputDialog,
-                  title=iEnterIpfsCIDDialog(),
-                  accepted=onValidated)
+        ensure(runDialogAsync(IPFSMultipleCIDInputDialog,
+                              title=iEnterIpfsCIDDialog(),
+                              accepted=onValidated))
 
     def onLoadIpns(self):
         text, ok = QInputDialog.getText(self,
@@ -1816,9 +1828,9 @@ class BrowserTab(GalacteekTab):
     def onFollowIpns(self):
         if self.currentIpfsObject and self.currentIpfsObject.isIpns:
             root = self.currentIpfsObject.root().objPath
-            runDialog(AddFeedDialog, self.app.marksLocal,
-                      root,
-                      title=iFollowIpnsDialog())
+            ensure(runDialogAsync(AddFeedDialog, self.app.marksLocal,
+                                  root,
+                                  title=iFollowIpnsDialog()))
 
     def onLoadHome(self):
         self.loadHomePage()
@@ -1846,7 +1858,6 @@ class BrowserTab(GalacteekTab):
         currentPage = self.webEngineView.page()
         currentPage.history().forward()
 
-    # def onUrlChanged(self, url):
     @asyncify
     async def onUrlChanged(self, url):
         if not url.isValid() or url.scheme() in ['data', SCHEME_Z]:
@@ -1856,7 +1867,6 @@ class BrowserTab(GalacteekTab):
             url.scheme().encode())
 
         if url.scheme() in [SCHEME_IPFS, SCHEME_IPNS, SCHEME_DWEB]:
-            # ipfs:// or ipns://
             self.urlZone.setStyleSheet('''
                 QLineEdit {
                     background-color: #C3D7DF;
@@ -1873,10 +1883,7 @@ class BrowserTab(GalacteekTab):
             self.followIpnsAction.setEnabled(
                 self.currentIpfsObject.isIpns)
             self.curObjectCtrl.show()
-        elif url.authority() == self.gatewayAuthority and 0:
-            # Old code (when the dweb scheme handler was still
-            # going through the go-ipfs http gw)
-            #
+        elif url.authority() == self.gatewayAuthority:
             # dweb:/ with IPFS gateway's authority
             # Content loaded from IPFS gateway, this is IPFS content
 
@@ -1889,7 +1896,7 @@ class BrowserTab(GalacteekTab):
                 log.debug('Current IPFS object: {0}'.format(
                     repr(self.currentIpfsObject)))
 
-                url = QUrl(self.currentIpfsObject.dwebUrl)
+                url = QUrl(self.currentIpfsObject.dwebGwUrl)
                 self.urlZone.clear()
                 self.urlZone.insert(url.toString())
 
@@ -1904,7 +1911,7 @@ class BrowserTab(GalacteekTab):
 
             # Activate the follow action if this is a root IPNS address
             self.followIpnsAction.setEnabled(
-                self.currentIpfsObject.isIpnsRoot)
+                self.currentIpfsObject.isIpns)
             self.curObjectCtrl.show()
         else:
             if sHandler and issubclass(
@@ -1956,6 +1963,12 @@ class BrowserTab(GalacteekTab):
     def onLoadFinished(self, ok):
         self.ui.stopButton.setEnabled(False)
 
+        if 0:
+            text, curUrl = self.urlZone.text(), self.currentUrl.toString()
+            if text != curUrl:
+                self.urlZone.clear()
+                self.urlZone.insert(curUrl)
+
     def onIconChanged(self, icon):
         self.gWindow.tabWidget.setTabIcon(self.tabPageIdx, icon)
 
@@ -1980,10 +1993,15 @@ class BrowserTab(GalacteekTab):
                     background-color: #4b9fa2;
                 }''')
 
-    def browseFsPath(self, path):
+    def browseFsPath(self, path, schemePreferred='ipfs'):
         def _handle(iPath):
-            if iPath.valid:
+            if iPath.valid and not schemePreferred or \
+                    schemePreferred == 'ipfs':
                 self.enterUrl(QUrl(iPath.ipfsUrl))
+            elif iPath.valid and schemePreferred == 'dweb':
+                self.enterUrl(QUrl(iPath.dwebUrl))
+            elif iPath.valid and schemePreferred == 'dwebgw':
+                self.enterUrl(QUrl(iPath.dwebGwUrl))
             else:
                 messageBox(iInvalidObjectPath(iPath.fullPath))
 
@@ -2021,7 +2039,11 @@ class BrowserTab(GalacteekTab):
         def onEnsTimeout():
             pass
 
-        # This should not be necessary starting with qt 5.13
+        if url.scheme() == SCHEME_DWEB:
+            yUrl = URL(url.toString())
+            if len(yUrl.parts) == 3:
+                url.setPath(url.path() + '/')
+
         if not url.path():
             url.setPath('/')
 

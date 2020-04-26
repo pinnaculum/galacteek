@@ -205,7 +205,7 @@ class IPFSAtomFeedParser:
 
         try:
             data = await ipfsop.waitFor(
-                ipfsop.client.cat(objPath), 10
+                ipfsop.catObject(objPath), 10
             )
 
             if not data:

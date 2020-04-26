@@ -1,6 +1,8 @@
 import functools
 import asyncio
 
+from aiohttp.client_exceptions import ClientConnectorError
+
 from PyQt5.QtWidgets import QApplication
 
 from galacteek import log
@@ -32,6 +34,7 @@ class ipfsClassW:
         self.name = wrapped.__name__
 
     async def _operation(self, inst, op, *args, **kw):
+        from galacteek.ipfs import ConnectionError
         try:
             resp = await self.wrapped(inst, op, *args, **kw)
         except GeneratorExit:
@@ -42,6 +45,9 @@ class ipfsClassW:
             log.debug('IPFSOp cancelled: {name}'.format(name=self.name))
         except RuntimeError as e:
             log.debug('IPFSOp runtime err: {}'.format(str(e)))
+        except ClientConnectorError as e:
+            raise ConnectionError(
+                'Client connection error: {}'.format(str(e)))
         else:
             return resp
 

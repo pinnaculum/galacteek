@@ -371,8 +371,8 @@ class PubsubMaster(QObject):
         tsks = [service.stop() for topic, service in self.services.items()]
         return await asyncio.gather(*tsks)
 
-    def startServices(self):
-        [service.start() for topic, service in self.services.items()]
+    async def startServices(self):
+        [await service.start() for topic, service in self.services.items()]
 
     @ipfsOp
     async def init(self, op):
@@ -544,7 +544,7 @@ class IPFSContext(QObject):
         await self.pinner.start()
 
         if pubsubEnable is True:
-            self.setupPubsub(pubsubHashmarksExch=pubsubHashmarksExch)
+            await self.setupPubsub(pubsubHashmarksExch=pubsubHashmarksExch)
 
     async def shutdown(self):
         if self.pinner:
@@ -554,17 +554,20 @@ class IPFSContext(QObject):
         await self.p2p.stop()
         await self.pubsub.stop()
 
-    def setupPubsub(self, pubsubHashmarksExch=False):
-        psServiceMain = PSMainService(self, self.app.ipfsClient)
+    async def setupPubsub(self, pubsubHashmarksExch=False):
+        psServiceMain = PSMainService(self, self.app.ipfsClient,
+                                      scheduler=self.app.scheduler)
         self.pubsub.reg(psServiceMain)
 
-        psServicePeers = PSPeersService(self, self.app.ipfsClient)
+        psServicePeers = PSPeersService(self, self.app.ipfsClient,
+                                        scheduler=self.app.scheduler)
         self.pubsub.reg(psServicePeers)
 
-        psServiceChat = PSChatService(self, self.app.ipfsClient)
+        psServiceChat = PSChatService(self, self.app.ipfsClient,
+                                      scheduler=self.app.scheduler)
         self.pubsub.reg(psServiceChat)
 
-        if pubsubHashmarksExch:
+        if pubsubHashmarksExch and 0:
             psServiceMarks = PSHashmarksExchanger(
                 self,
                 self.app.ipfsClient,
@@ -573,7 +576,7 @@ class IPFSContext(QObject):
             )
             self.pubsub.reg(psServiceMarks)
 
-        self.pubsub.startServices()
+        await self.pubsub.startServices()
 
     @ipfsOp
     async def profilesInit(self, ipfsop):

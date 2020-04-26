@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import QHBoxLayout
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWidgets import QGridLayout
 from PyQt5.QtWidgets import QFormLayout
+from PyQt5.QtWidgets import QAbstractItemView
 
 from PyQt5.QtCore import QSize
 from PyQt5.QtCore import QFile
@@ -19,6 +20,8 @@ from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import QRegExp
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QUrl
+from PyQt5.QtCore import QStringListModel
+from PyQt5.QtCore import QSortFilterProxyModel
 
 from PyQt5.QtGui import QClipboard
 from PyQt5.QtGui import QPixmap
@@ -28,9 +31,11 @@ from PyQt5.QtGui import QRegExpValidator
 from galacteek import GALACTEEK_NAME
 from galacteek import ensure
 from galacteek import logUser
+from galacteek import database
 
 from galacteek.core.ipfsmarks import *
 from galacteek.core.ipfsmarks import categoryValid
+from galacteek.core.iptags import ipTagsFormat
 from galacteek.ipfs import cidhelpers
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import ipfsOp
@@ -40,6 +45,7 @@ from . import ui_addfeeddialog
 from . import ui_ipfscidinputdialog, ui_ipfsmultiplecidinputdialog
 from . import ui_donatedialog
 from . import ui_qschemecreatemapping
+from . import ui_iptagsmanager
 
 from .helpers import *
 from .widgets import ImageWidget
@@ -52,6 +58,11 @@ from .i18n import iDoNotPin
 from .i18n import iPinSingle
 from .i18n import iPinRecursive
 from .i18n import iNoTitleProvided
+from .i18n import iNoCategory
+from .i18n import iHashmarkIPTagsEdit
+from .i18n import iDownload
+from .i18n import iDownloadOpenDialog
+from .i18n import iOpen
 
 
 def boldLabelStyle():
@@ -61,20 +72,18 @@ def boldLabelStyle():
 class AddHashmarkDialog(QDialog):
     def __init__(
             self,
-            marks,
             resource,
             title,
             description,
-            stats,
             pin=False,
             pinRecursive=False,
+            schemePreferred=None,
             parent=None):
         super().__init__(parent)
 
         self.ipfsResource = resource
-        self.marks = marks
-        self.stats = stats if stats else {}
         self.iconCid = None
+        self.schemePreferred = schemePreferred
 
         self.ui = ui_addhashmarkdialog.Ui_AddHashmarkDialog()
         self.ui.setupUi(self)
@@ -118,7 +127,14 @@ class AddHashmarkDialog(QDialog):
         if isinstance(description, str):
             self.ui.description.insertPlainText(description)
 
-        for cat in self.marks.getCategories():
+    async def initDialog(self):
+        await self.fillCategories()
+
+    async def fillCategories(self):
+        self.ui.category.addItem(iNoCategory())
+        self.ui.category.insertSeparator(0)
+
+        for cat in await database.categoriesNames():
             self.ui.category.addItem(cat)
 
     def onIconSelected(self, iconCid):
@@ -153,6 +169,9 @@ class AddHashmarkDialog(QDialog):
         self.ui.category.setEnabled(len(text) == 0)
 
     def accept(self):
+        ensure(self.process())
+
+    async def process(self):
         title = self.ui.title.text()
 
         if len(title) == 0:
@@ -167,33 +186,29 @@ class AddHashmarkDialog(QDialog):
 
         if len(newCat) > 0:
             category = cidhelpers.normp(newCat)
-        else:
+        elif self.ui.category.currentText() != iNoCategory():
             category = self.ui.category.currentText()
+        else:
+            category = None
 
-        pSingle = (self.ui.pinCombo.currentIndex() == 1)
-        pRecursive = (self.ui.pinCombo.currentIndex() == 2)
-
-        mark = IPFSHashMark.make(
+        hashmark = await database.hashmarkAdd(
             self.ipfsResource,
             title=title,
-            share=share,
             comment=self.ui.comment.text(),
             description=description,
-            pinSingle=pSingle,
-            pinRecursive=pRecursive,
             icon=self.iconCid,
-            datasize=self.stats.get(
-                'DataSize',
-                None),
-            cumulativesize=self.stats.get(
-                'CumulativeSize',
-                None),
-            numlinks=self.stats.get(
-                'NumLinks',
-                None))
+            category=category,
+            share=share,
+            pin=self.ui.pinCombo.currentIndex(),
+            schemepreferred=self.schemePreferred
+        )
 
-        self.marks.insertMark(mark, category)
         self.done(0)
+
+        await runDialogAsync(
+            HashmarkIPTagsDialog,
+            hashmark=hashmark
+        )
 
 
 class AddFeedDialog(QDialog):
@@ -218,16 +233,29 @@ class AddFeedDialog(QDialog):
             self.ui.feedName.setText(feedName)
 
     def accept(self):
-        share = self.ui.share.isChecked()
+        ensure(self.addFeed())
+
+    async def addFeed(self):
         autoPin = self.ui.autoPin.isChecked()
         feedName = self.ui.feedName.text()
 
         if len(feedName) == 0:
             return messageBox('Please specify a feed name')
 
-        self.marks.follow(self.ipfsResource, self.ui.feedName.text(),
-                          resolveevery=self.ui.resolve.value(),
-                          share=share, autoPin=autoPin)
+        mark = await database.hashmarkAdd(
+            self.ipfsResource,
+            tags=['#ipnsfeed']
+        )
+        mark.follow = True
+
+        feed = database.IPNSFeed(
+            name=feedName, autopin=autoPin,
+            feedhashmark=mark,
+            resolveevery=self.ui.resolve.value()
+        )
+        await mark.save()
+        await feed.save()
+
         self.done(0)
 
 
@@ -396,14 +424,7 @@ class AddMultihashPyramidDialog(QDialog):
         self.marks = marks
         self.pyramidType = pyramidType
         self.iconCid = None
-        self.customCategory = None
-
-        cat = QLabel('Category')
-        self.categoryCombo = QComboBox(self)
-        cat.setBuddy(self.categoryCombo)
-
-        for category in marks.getCategories():
-            self.categoryCombo.addItem(category)
+        self.customCategory = 'general'
 
         label = QLabel('Pyramid name')
         restrictRegexp = QRegExp("[0-9A-Za-z-_]+")  # noqa
@@ -416,10 +437,6 @@ class AddMultihashPyramidDialog(QDialog):
 
         buttonBox = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self)
-
-        catLayout = QHBoxLayout()
-        catLayout.addWidget(cat)
-        catLayout.addWidget(self.categoryCombo)
 
         catCustomLabel = QLabel('Or create new category')
         catCustomLayout = QHBoxLayout()
@@ -464,12 +481,9 @@ class AddMultihashPyramidDialog(QDialog):
         mainLayout.addLayout(nameLayout, 0, 0)
         mainLayout.addLayout(descrLayout, 1, 0)
         mainLayout.addWidget(HorizontalLine(self), 2, 0)
-        mainLayout.addLayout(catLayout, 3, 0)
-        mainLayout.addLayout(catCustomLayout, 4, 0)
-        mainLayout.addWidget(HorizontalLine(self), 5, 0)
-        mainLayout.addLayout(ipnsLTimeLayout, 6, 0)
-        mainLayout.addLayout(pickIconLayout, 7, 0)
-        mainLayout.addWidget(buttonBox, 8, 0)
+        mainLayout.addLayout(ipnsLTimeLayout, 3, 0)
+        mainLayout.addLayout(pickIconLayout, 4, 0)
+        mainLayout.addWidget(buttonBox, 5, 0)
 
         buttonBox.accepted.connect(self.accept)
         buttonBox.rejected.connect(self.reject)
@@ -492,8 +506,8 @@ class AddMultihashPyramidDialog(QDialog):
         descr = self.descrLine.text()
         lifetime = self.lifetimeCombo.currentText()
 
-        if len(pyramidName) == 0 or len(descr) == 0:
-            return messageBox('Please give a name and description')
+        if len(pyramidName) == 0:
+            return messageBox('Please specify the pyramid name')
 
         if isinstance(self.customCategory, str) and \
                 categoryValid(self.customCategory):
@@ -517,9 +531,7 @@ class AddMultihashPyramidDialog(QDialog):
                 'Multihash pyramid {pyr}: generating IPNS key ...'.format(
                     pyr=pyramidName))
             ipnsKey = await ipfsop.keyGen(ipnsKeyName)
-        except aioipfs.APIError:
-            return
-        else:
+
             if ipnsKey:
                 self.marks.pyramidNew(
                     pyramidName, category, self.iconCid,
@@ -529,6 +541,13 @@ class AddMultihashPyramidDialog(QDialog):
                     description=description)
                 logUser.info('Multihash pyramid {pyr}: created'.format(
                     pyr=pyramidName))
+            else:
+                raise Exception('Could not generate IPNS key')
+        except aioipfs.APIError as err:
+            messageBox('IPFS error while creating pyramid: {}'.format(
+                err.message))
+        except Exception as err:
+            messageBox('Error creating pyramid: {}'.format(str(err)))
 
     @ipfsOp
     async def injectQrcIcon(self, op, iconPath):
@@ -565,11 +584,12 @@ class AboutDialog(QDialog):
 
 
 class QSchemeCreateMappingDialog(QDialog):
-    def __init__(self, mappedPath, parent=None):
+    def __init__(self, mappedPath, title, parent=None):
         super().__init__(parent)
 
         self.app = QApplication.instance()
         self.mappedTo = mappedPath
+        self.title = title
 
         self.ui = ui_qschemecreatemapping.Ui_QSchemeMappingDialog()
         self.ui.setupUi(self)
@@ -582,21 +602,27 @@ class QSchemeCreateMappingDialog(QDialog):
         self.ui.mappingName.setValidator(QRegExpValidator(regexp))
 
     def accept(self):
+        ensure(self.addMapping())
+
+    async def addMapping(self):
         name = self.ui.mappingName.text()
         if not name:
             return messageBox('Please provide a mapping name')
 
-        if self.app.marksLocal.qaMap(
+        if await database.hashmarkMappingAdd(
                 name,
-                self.mappedTo,
-                ipnsResolveFrequency=self.ui.ipnsResolveFrequency.value()):
-            self.app.towers['schemes'].qMappingsChanged.emit()
+                self.title,
+                str(self.mappedTo),
+                ipnsresolvefreq=self.ui.ipnsResolveFrequency.value()):
+            await self.app.towers['schemes'].qMappingsChanged.emit()
+
             self.done(1)
             messageBox(
                 'You can now use the quick-access URL '
                 '<b>q://{name}</b>'.format(name=name)
             )
         else:
+            self.done(1)
             messageBox(
                 'An error ocurred, check that a mapping does not '
                 'already exist with that name')
@@ -731,3 +757,164 @@ class GenericTextInputDialog(QDialog):
 
     def accept(self):
         self.done(1)
+
+
+class UneditableStringListModel(QStringListModel):
+    def flags(self, index):
+        return Qt.ItemFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+
+
+class HashmarkIPTagsDialog(QDialog):
+    def __init__(
+            self,
+            hashmark,
+            parent=None):
+        super().__init__(parent)
+
+        self.app = QApplication.instance()
+        self.hashmark = hashmark
+
+        self.allTagsModel = UneditableStringListModel(self)
+        self.hmTagsModel = UneditableStringListModel(self)
+        self.allTagsProxyModel = QSortFilterProxyModel(self)
+        self.allTagsProxyModel.setSourceModel(self.allTagsModel)
+
+        self.ui = ui_iptagsmanager.Ui_IPTagsDialog()
+        self.ui.setupUi(self)
+
+        self.ui.hmTagsView.setModel(self.hmTagsModel)
+        self.ui.hmTagsView.setEditTriggers(
+            QAbstractItemView.NoEditTriggers
+        )
+        self.ui.hmTagsView.doubleClicked.connect(
+            self.onTagDoubleClicked
+        )
+
+        self.ui.addTagButton.clicked.connect(lambda: ensure(self.addTag()))
+        self.ui.lineEditTag.textChanged.connect(self.onTagEditChanged)
+        self.ui.lineEditTag.setValidator(
+            QRegExpValidator(QRegExp(r'[A-Za-z0-9-_@#]+')))
+        self.ui.lineEditTag.setMaxLength(128)
+
+        self.ui.tagHashmarkButton.clicked.connect(self.onTagHashmark)
+        self.ui.untagHashmarkButton.clicked.connect(self.untagHashmark)
+        self.ui.okButton.clicked.connect(lambda: ensure(self.validate()))
+        self.ui.noTagsButton.clicked.connect(self.reject)
+
+        self.setWindowTitle(iHashmarkIPTagsEdit())
+
+        self.setMinimumSize(
+            self.app.desktopGeometry.width() / 2,
+            (2 * self.app.desktopGeometry.height()) / 3
+        )
+
+    def onTagEditChanged(self, text):
+        self.allTagsProxyModel.setFilterRegExp(text)
+        self.ui.allTagsView.clearSelection()
+
+    def onTagDoubleClicked(self, idx):
+        ensure(self.tagHashmark([idx]))
+
+    def onTagHashmark(self):
+        ensure(self.tagHashmark())
+
+    def untagHashmark(self):
+        try:
+            for idx in self.ui.hmTagsView.selectedIndexes():
+                tag = self.hmTagsModel.data(
+                    idx,
+                    Qt.DisplayRole
+                )
+
+                if tag:
+                    tagList = self.hmTagsModel.stringList()
+                    tagList.remove(tag)
+                    self.hmTagsModel.setStringList(tagList)
+        except Exception:
+            pass
+
+    async def tagHashmark(self, indexes=None):
+        if indexes is None:
+            indexes = self.ui.allTagsView.selectedIndexes()
+
+        for idx in indexes:
+            tag = self.allTagsProxyModel.data(
+                idx,
+                Qt.DisplayRole
+            )
+
+            if tag and tag not in self.hmTagsModel.stringList():
+                self.hmTagsModel.setStringList(
+                    self.hmTagsModel.stringList() + [tag]
+                )
+
+    async def initDialog(self):
+        await self.hashmark._fetch_all()
+        await self.updateAllTags()
+
+    async def addTag(self):
+        tagname = self.ui.lineEditTag.text()
+        if not tagname:
+            return
+
+        await database.ipTagAdd(ipTagsFormat(tagname))
+        self.ui.lineEditTag.clear()
+        await self.updateAllTags()
+
+    async def updateAllTags(self):
+        tags = [t.name for t in await database.ipTagsAll()]
+        self.allTagsModel.setStringList(tags)
+        self.ui.allTagsView.setModel(self.allTagsProxyModel)
+        self.allTagsProxyModel.sort(0)
+
+    async def validate(self):
+        hmTags = self.hmTagsModel.stringList()
+        await database.hashmarkTagsUpdate(self.hashmark, hmTags)
+        self.done(1)
+
+
+class DownloadOpenObjectDialog(QDialog):
+    def __init__(self, ipfsPath, downItem, prechoice, parent=None):
+        super().__init__(parent)
+
+        self.setWindowTitle(iDownloadOpenDialog())
+        self.app = QApplication.instance()
+        self.downloadItem = downItem
+        self.objectPath = ipfsPath
+
+        self.choiceCombo = QComboBox(self)
+        self.choiceCombo.addItem(iDownload())
+        self.choiceCombo.addItem(iOpen())
+        self.choiceCombo.currentIndexChanged.connect(self.onChoiceChange)
+
+        if prechoice == 'open':
+            self.choiceCombo.setCurrentIndex(1)
+
+        label = QLabel(ipfsPath.ipfsUrl)
+        label.setMaximumWidth(self.app.desktopGeometry.width() / 2)
+        label.setWordWrap(True)
+        label.setStyleSheet(boldLabelStyle())
+
+        buttonBox = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self)
+
+        layout = QVBoxLayout()
+        layout.addWidget(label)
+        layout.addWidget(self.choiceCombo)
+        layout.addWidget(buttonBox)
+
+        buttonBox.accepted.connect(self.accept)
+        buttonBox.rejected.connect(self.reject)
+        self.setLayout(layout)
+
+    def onChoiceChange(self, idx):
+        pass
+
+    def choice(self):
+        return self.choiceCombo.currentIndex()
+
+    def accept(self):
+        self.done(1)
+
+    def reject(self):
+        self.done(0)

@@ -1,22 +1,22 @@
 import asyncio
-import time
+from datetime import datetime
+from datetime import timedelta
 
 from galacteek import log
-from galacteek.core.ipfsmarks import *  # noqa
+from galacteek import database
+
+from galacteek.ipfs import crawl
 from galacteek.ipfs.ipfsops import *  # noqa
 from galacteek.ipfs.wrappers import ipfsOp
-from galacteek.ipfs import crawl
+from galacteek.ipfs.cidhelpers import IPFSPath
 
 
 class FeedFollower(object):
     """
-    Follows an IPNS hash reference, in the sense that it will periodically
-    resolve the hash and register the resulting object path if it's new,
-    adding it as a mark inside the feed object
+    IPNS object follower
     """
 
-    def __init__(self, app, marks):
-        self.marks = marks
+    def __init__(self, app):
         self.app = app
 
     async def process(self):
@@ -26,67 +26,71 @@ class FeedFollower(object):
             pass
         except asyncio.TimeoutError:
             pass
-        except BaseException:
-            log.debug('IPNS follower: unknown error ocurred')
+        except BaseException as err:
+            log.debug('IPNS follower: unknown error ocurred: {}'.format(
+                str(err)))
 
     @ipfsOp
     async def processIpnsFeeds(self, op):
         while True:
-            feeds = self.marks.getFeeds()
+            now = datetime.now()
 
-            for ipnsp, feed in feeds:
-                now = int(time.time())
+            feeds = await database.ipnsFeedsNeedSync(minutes=2)
 
-                resolvedLast = feed.get('resolvedlast', None)
-                resolveEvery = feed.get('resolveevery', 3600)
-                autoPin = feed.get('autopin', False)
-                feedMarks = self.marks.getFeedMarks(ipnsp)
+            for feed in feeds:
+                await feed.fetch_related('feedhashmark')
 
-                if resolvedLast and resolvedLast > (now - resolveEvery):
-                    log.debug('{0} was resolved recently'.format(ipnsp))
-                    continue
+                autoPin = feed.autopin
 
-                resolved = await op.nameResolve(ipnsp, timeout=15,
-                                                recursive=True)
+                feedMarks = await feed.entries()
+
+                resolved = await op.nameResolve(feed.feedhashmark.path,
+                                                timeout=15,
+                                                recursive=True,
+                                                useCache='always')
                 if not resolved:
-                    log.debug('Could not resolve {0}'.format(ipnsp))
+                    log.debug('Could not resolve {0}'.format(
+                        feed.feedhashmark.path))
                     continue
 
-                resolvedPath = resolved.get('Path', None)
-                if not resolvedPath:
+                resolvedPathRaw = resolved.get('Path', None)
+                if not resolvedPathRaw:
                     log.debug(
                         'Could not resolve {0}: invalid path'.format(ipnsp))
                     continue
 
-                feed['resolvedlast'] = now
-
-                if resolvedPath in feedMarks.keys():
-                    # already registered
-                    log.debug('Not registering {0}'.format(resolvedPath))
+                resolvedPath = IPFSPath(resolvedPathRaw, autoCidConv=True)
+                if not resolvedPath.valid:
                     continue
 
-                # Register the mark
-                objStats = {}
-                stat = await op.objStat(resolvedPath, timeout=10)
-                if stat:
-                    objStats = stat
+                feed.resolvedlast = now
+                feed.resolvenext = now + timedelta(seconds=feed.resolveevery)
+                await feed.save()
 
-                title = await crawl.getTitle(op.client, resolvedPath)
+                exists = False
+                for mark in feedMarks:
+                    if mark.path == str(resolvedPath):
+                        # already registered
+                        exists = True
+                        break
 
-                mark = IPFSHashMark.make(
-                    resolvedPath, title=title,
-                    datasize=objStats.get('DataSize', None),
-                    cumulativesize=objStats.get('CumulativeSize', None),
-                    numlinks=objStats.get('NumLinks', None),
-                    share=feed.get('share', False)
+                if exists:
+                    continue
+
+                # Register the hashmark
+                title = await crawl.getTitle(op.client, str(resolvedPath))
+
+                mark = await database.hashmarkAdd(
+                    resolvedPath.objPath, title=title,
+                    parent=feed.feedhashmark
                 )
 
-                self.marks.feedAddMark(ipnsp, mark)
+                await database.IPNSFeedMarkAdded.emit(feed, mark)
 
                 if autoPin:
                     log.debug('Feed follower, autopinning {}'.format(
                         resolvedPath))
-                    await self.app.ipfsCtx.pinner.queue(resolvedPath,
+                    await self.app.ipfsCtx.pinner.queue(resolvedPath.objPath,
                                                         True, None)
 
-            await asyncio.sleep(120)
+            await asyncio.sleep(60)

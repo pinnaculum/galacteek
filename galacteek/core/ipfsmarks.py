@@ -901,6 +901,8 @@ class IPFSMarks(QObject):
             self.pyramidConfigured.emit(self.pyramidPathFormat(category, name))
             self.changed.emit()
             return sec[pyramidsKey][name]
+        else:
+            raise Exception('Pyramid already exists')
 
     def pyramidAccess(self, pyramidPath):
         category = os.path.dirname(pyramidPath)

@@ -1,0 +1,39 @@
+hashmarks:
+  - url: /ipfs/bafybeiemxf5abjwjbikoz4mc3a3dla6ual3jsgpdr4cjr3oz3evfyavhwq
+    title: Wikipedia mirror (English, 2017-05 snapshot)
+    description: Distributed wikipedia mirror (english)
+    comment: "Snapshot date: 2017-05"
+    date: "2018-08-04T18:00:00-00:00"
+    category: wikipedia
+    icon: /ipfs/QmVyP28H1r9DutKBEo7hpeV3ccPDuz2sJ4F4dcQwvsjMtd
+    tags:
+      - '#wikipedia'
+      - '#wiki'
+    objtags:
+      - '#wikipedia-en'
+
+  - url: /ipfs/bafybeicgmdpvw4duutrmdxl4a7gc52sxyuk7nz5gby77afwdteh3jc5bqa
+    title: Wikipedia mirror (Turkish, 2017-04 snapshot)
+    description: Distributed wikipedia mirror (turkish)
+    comment: "Snapshot date: 2017-04"
+    date: "2018-08-04T18:00:00-00:00"
+    category: wikipedia
+    icon: /ipfs/QmVyP28H1r9DutKBEo7hpeV3ccPDuz2sJ4F4dcQwvsjMtd
+    tags:
+      - '#wikipedia'
+      - '#wiki'
+    objtags:
+      - '#wikipedia-tr'
+
+  - url: /ipfs/bafybeidzzgkosmbogt2b7i6f3xgtkldloeifdlmeivvuvkwhafiyqyfmey
+    title: "Wikipedia mirror (Kurdish, 2017-05 snapshot)"
+    description: "Distributed wikipedia mirror (kurdish)"
+    comment: "Snapshot date: 2017-05"
+    date: "2018-08-04T18:00:00-00:00"
+    category: wikipedia
+    icon: /ipfs/QmVyP28H1r9DutKBEo7hpeV3ccPDuz2sJ4F4dcQwvsjMtd
+    tags:
+      - '#wikipedia'
+      - '#wiki'
+    objtags:
+      - '#wikipedia-krd'

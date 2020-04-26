@@ -104,7 +104,7 @@ def setDefaultSettings(gApp):
     sManager.setDefaultTrue(section, CFG_KEY_ENABLED)
     sManager.setDefaultFalse(section, CFG_KEY_NAMESYS_PUBSUB)
     sManager.setDefaultTrue(section, CFG_KEY_PUBSUB_USESIGNING)
-    sManager.setDefaultFalse(section, CFG_KEY_HTTPGWWRITABLE)
+    sManager.setDefaultTrue(section, CFG_KEY_HTTPGWWRITABLE)
 
     section = CFG_SECTION_BROWSER
     sManager.setDefaultSetting(section, CFG_KEY_HOMEURL, HOME_DEFAULT)

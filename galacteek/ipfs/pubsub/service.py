@@ -35,13 +35,15 @@ class PubsubService(object):
     def __init__(self, ipfsCtx, client, topic='galacteek.default',
                  runPeriodic=False, filterSelfMessages=True,
                  maxMsgTsDiff=None, minMsgTsDiff=None,
-                 maxMessageSize=32768):
+                 maxMessageSize=32768,
+                 scheduler=None):
         self.client = client
         self.ipfsCtx = ipfsCtx
         self.topic = topic
         self.inQueue = asyncio.Queue()
         self.errorsQueue = asyncio.Queue()
         self.lock = asyncio.Lock()
+        self.scheduler = scheduler
 
         self._receivedCount = 0
         self._errorsCount = 0
@@ -88,24 +90,33 @@ class PubsubService(object):
         self.debug('** Messages received: {0}, errors: {1}'.format(
             self.receivedCount, self.errorsCount))
 
-    def start(self):
+    async def start(self):
         """ Create the different tasks for this service """
-        self.tskServe = self.ipfsCtx.loop.create_task(self.serve())
-        self.tskProcess = self.ipfsCtx.loop.create_task(self.processMessages())
+
+        if not self.scheduler:
+            raise Exception('No scheduler specified')
+
+        self.tskServe = await self.scheduler.spawn(self.serve())
+        self.tskProcess = await self.scheduler.spawn(self.processMessages())
 
         if self.runPeriodic:
-            self.tskPeriodic = self.ipfsCtx.loop.create_task(self.periodic())
+            self.tskPeriodic = await self.scheduler.spawn(self.periodic())
 
     async def stop(self):
         await self.shutdown()
+
         for tsk in [self.tskServe, self.tskProcess, self.tskPeriodic]:
             if not tsk:
                 continue
 
-            tsk.cancel()
             try:
-                await tsk
-            except asyncio.CancelledError as cErr:
+                await tsk.close(timeout=500)
+            except asyncio.TimeoutError as tErr:
+                self.debug(
+                    'timeout while closing {task}: shutdown ERR: {err}'.format(
+                        task=tsk, err=str(tErr)))
+                continue
+            except Exception as cErr:
                 self.debug('task {task}: shutdown ERR: {err}'.format(
                     task=tsk, err=str(cErr)))
                 continue
@@ -358,15 +369,15 @@ class PSHashmarksExchanger(JSONPubsubService):
 
 
 class PSMainService(JSONPubsubService):
-    def __init__(self, ipfsCtx, client):
-        super().__init__(ipfsCtx, client, topic=TOPIC_MAIN)
+    def __init__(self, ipfsCtx, client, **kw):
+        super().__init__(ipfsCtx, client, topic=TOPIC_MAIN, **kw)
 
 
 class PSPeersService(JSONPubsubService):
-    def __init__(self, ipfsCtx, client):
+    def __init__(self, ipfsCtx, client, **kw):
         super().__init__(ipfsCtx, client, topic=TOPIC_PEERS,
                          runPeriodic=True,
-                         filterSelfMessages=False)
+                         filterSelfMessages=False, **kw)
 
         self._curProfile = None
         self._identEvery = 25
@@ -489,9 +500,9 @@ class PSPeersService(JSONPubsubService):
 
 
 class PSChatService(JSONPubsubService):
-    def __init__(self, ipfsCtx, client):
+    def __init__(self, ipfsCtx, client, **kw):
         super().__init__(ipfsCtx, client, topic=TOPIC_CHAT,
-                         filterSelfMessages=False)
+                         filterSelfMessages=False, **kw)
 
     async def processJsonMessage(self, sender, msg):
         msgType = msg.get('msgtype', None)

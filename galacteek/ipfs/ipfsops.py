@@ -574,8 +574,8 @@ class IPFSOperator(object):
         """
         try:
             resolved = await self.waitFor(
-                self.client.core.resolve(path, recursive=recursive),
-                timeout)
+                self.client.core.resolve(self.objectPathMap(path),
+                                         recursive=recursive), timeout)
         except asyncio.TimeoutError:
             self.debug('resolve timeout for {0}'.format(path))
             return None
@@ -616,7 +616,7 @@ class IPFSOperator(object):
             async with aiofiles.open(self._nsCachePath, 'w+t') as fd:
                 await fd.write(json.dumps(self.nsCache))
 
-    def nsCacheGet(self, path, maxLifetime=60 * 10, knownOrigin=False):
+    def nsCacheGet(self, path, maxLifetime=None, knownOrigin=False):
         entry = self.nsCache.get(path)
 
         if isinstance(entry, dict):
@@ -639,7 +639,7 @@ class IPFSOperator(object):
     async def nameResolve(self, path, timeout=20, recursive=False,
                           useCache='never',
                           cache='never',
-                          maxCacheLifetime=60 * 10,
+                          maxCacheLifetime=None,
                           cacheOrigin='unknown'):
         usingCache = useCache == 'always' or \
             (useCache == 'offline' and self.noPeers)
@@ -648,7 +648,9 @@ class IPFSOperator(object):
             if usingCache:
                 # The NS cache is used only for IPIDs when offline
 
-                rPath = self.nsCacheGet(path, maxLifetime=maxCacheLifetime)
+                rPath = self.nsCacheGet(
+                    path, maxLifetime=maxCacheLifetime,
+                    knownOrigin=True)
 
                 if rPath and IPFSPath(rPath).valid:
                     self.debug(
@@ -691,7 +693,10 @@ class IPFSOperator(object):
             if usingCache:
                 # The NS cache is used only for IPIDs when offline
 
-                rPath = self.nsCacheGet(path, maxLifetime=maxCacheLifetime)
+                rPath = self.nsCacheGet(
+                    path, maxLifetime=maxCacheLifetime,
+                    knownOrigin=True
+                )
 
                 if rPath and IPFSPath(rPath).valid:
                     self.debug(
@@ -825,8 +830,9 @@ class IPFSOperator(object):
 
     async def objStat(self, path, timeout=30):
         try:
-            stat = await self.waitFor(self.client.object.stat(path),
-                                      timeout)
+            stat = await self.waitFor(
+                self.client.object.stat(self.objectPathMap(path)),
+                timeout)
         except Exception:
             return None
         except aioipfs.APIError:
@@ -1066,11 +1072,15 @@ class IPFSOperator(object):
 
         if ipfsPath.isIpns:
             pSubPath = ipfsPath.subPath
-            cached = self.nsCacheGet(ipfsPath.root().objPath)
+            cached = self.nsCacheGet(
+                ipfsPath.root().objPath, knownOrigin=True)
 
             if cached:
                 if pSubPath:
-                    return IPFSPath(cached).child(pSubPath).objPath
+                    subp = IPFSPath(cached).child(pSubPath).objPath
+                    self.debug('objectPathMap: {0}: returning: {1}'.format(
+                        str(ipfsPath), subp))
+                    return subp
                 else:
                     return cached
 
@@ -1083,6 +1093,13 @@ class IPFSOperator(object):
             self.client.cat(
                 self.objectPathMap(path),
                 offset=offset, length=length
+            ), timeout
+        )
+
+    async def listObject(self, path, timeout=30):
+        return await self.waitFor(
+            self.client.core.ls(
+                self.objectPathMap(path)
             ), timeout
         )
 

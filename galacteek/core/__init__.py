@@ -1,10 +1,12 @@
 import uuid
 import socket
+
 from datetime import datetime
 from datetime import timezone
 from dateutil import parser as duparser
 from sys import version_info
 from jsonschema import validate
+from jsonschema import FormatChecker
 from jsonschema.exceptions import ValidationError
 from contextlib import closing
 
@@ -47,10 +49,11 @@ def nonce():
     return str(uuid.uuid4())
 
 
-def jsonSchemaValidate(data, schema):
+def jsonSchemaValidate(data, schema, **opts):
     try:
-        validate(data, schema)
-    except ValidationError:
+        validate(data, schema, format_checker=FormatChecker())
+    except ValidationError as err:
+        print('jsonSchemaValidate error: {}'.format(err))
         return False
     else:
         return True
@@ -64,3 +67,15 @@ def unusedTcpPort():
             return s.getsockname()[1]
     except Exception:
         return None
+
+
+class SingletonDecorator:
+    def __init__(self, _class):
+        self._class = _class
+        self.instance = None
+
+    def __call__(self, *args, **kwds):
+        if self.instance is None:
+            self.instance = self._class(*args, **kwds)
+
+        return self.instance

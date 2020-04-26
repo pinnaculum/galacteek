@@ -7,6 +7,7 @@ import aioipfs
 
 from galacteek import log
 from galacteek import ensure
+from galacteek import database
 from galacteek.ipfs.wrappers import ipfsOp
 
 
@@ -28,7 +29,7 @@ class PinningMaster(object):
         self._sCleanupLast = None
         self._maxStalledMessages = 48
 
-        ctx.app.marksLocal.markAdded.connect(self.onMarkAdded)
+        database.HashmarkAdded.connectTo(self.onMarkAdded)
 
     @property
     def ordersQueue(self):
@@ -46,12 +47,11 @@ class PinningMaster(object):
     def queuesNames(self):
         return list(self.pinStatus.keys())
 
-    def onMarkAdded(self, mPath, mData):
-        if 'pin' in mData and isinstance(mData['pin'], dict):
-            if mData['pin']['single'] is True:
-                ensure(self.queue(mPath, False, None, qname='hashmarks'))
-            elif mData['pin']['recursive'] is True:
-                ensure(self.queue(mPath, True, None, qname='hashmarks'))
+    async def onMarkAdded(self, hashmark):
+        if hashmark.pin == hashmark.PIN_SINGLE:
+            ensure(self.queue(hashmark.path, False, None, qname='hashmarks'))
+        elif hashmark.pin == hashmark.PIN_RECURSIVE:
+            ensure(self.queue(hashmark.path, True, None, qname='hashmarks'))
 
     def debug(self, msg, **kwargs):
         log.debug('Pinning service: {}'.format(msg), **kwargs)
@@ -230,12 +230,12 @@ class PinningMaster(object):
         self.ipfsCtx.pinQueueSizeChanged.emit(self.ordersQueue.qsize())
 
     async def start(self):
-        self._processTask = self.ipfsCtx.loop.create_task(self.process())
+        self._processTask = await self.ipfsCtx.app.scheduler.spawn(
+            self.process())
 
     async def stop(self):
         if self._processTask:
-            self._processTask.cancel()
-            await self._processTask
+            await self._processTask.close()
         self.saveStatus()
 
     def restoreStatus(self, data):

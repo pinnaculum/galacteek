@@ -165,6 +165,8 @@ class AsyncIPFSDaemon(object):
         # Set the IPFS_PATH environment variable
         os.environ['IPFS_PATH'] = self.repopath
 
+        log.debug('Using go-ipfs binary: {}'.format(self.goIpfsPath))
+
         if not os.path.isdir(self.repopath):
             os.mkdir(self.repopath)
 

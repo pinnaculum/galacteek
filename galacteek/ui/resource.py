@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import QUrl
 
 from galacteek import log
 from galacteek import logUser
@@ -30,6 +31,8 @@ from galacteek.ipfs.mimetype import detectMimeTypeFromBuffer
 from galacteek.ipfs.mimetype import mimeTypeDagUnknown
 
 from galacteek.ipfs.cidhelpers import IPFSPath
+
+from galacteek.core.schemes import isEnsUrl
 
 from .dag import DAGViewer
 from .textedit import TextEditorTab
@@ -62,13 +65,20 @@ class IPFSResourceOpener(QObject):
         self.setObjectName('resourceOpener')
         self.needUserConfirm.connectTo(self.onNeedUserConfirm)
 
+    def openEnsUrl(self, url, pin=False):
+        self.app.mainWindow.addBrowserTab(
+            minProfile='web3', pinBrowsed=pin).enterUrl(url)
+
     @ipfsOp
     async def open(self, ipfsop, pathRef,
                    mimeType=None,
                    openingFrom=None,
                    minWebProfile='ipfs',
+                   schemePreferred=None,
                    tryDecrypt=False,
                    fromEncrypted=False,
+                   editObject=False,
+                   pin=False,
                    burnAfterReading=False):
         """
         Open the resource referenced by rscPath according
@@ -78,6 +88,7 @@ class IPFSResourceOpener(QObject):
         :param openingFrom str: UI component making the open request
         :param minWebProfile str: Minimum Web profile to use
         :param tryDecrypt bool: Try to decrypt the object or not
+        :param editObject bool: Set Text Editor in edit mode for text files
         :param MIMEType mimeType: MIME type
         """
 
@@ -87,6 +98,11 @@ class IPFSResourceOpener(QObject):
         if isinstance(pathRef, IPFSPath):
             ipfsPath = pathRef
         elif isinstance(pathRef, str):
+            url = QUrl(pathRef)
+
+            if isEnsUrl(url):
+                return self.openEnsUrl(url, pin=pin)
+
             ipfsPath = IPFSPath(pathRef, autoCidConv=True)
         else:
             raise ValueError('Invalid input value')
@@ -128,10 +144,14 @@ class IPFSResourceOpener(QObject):
             indexPath = ipfsPath.child('index.html')
             stat = await ipfsop.objStat(indexPath.objPath, timeout=8)
 
+            schemePreferred = 'dweb' if indexPath.isIpns else None
+
             if stat:
                 # Browse the index
                 return self.app.mainWindow.addBrowserTab(
-                    minProfile=minWebProfile).browseFsPath(indexPath)
+                    minProfile=minWebProfile,
+                    pinBrowsed=pin).browseFsPath(
+                        indexPath, schemePreferred=schemePreferred)
 
             # Otherwise view the DAG
             view = DAGViewer(rscPath, self.app.mainWindow)
@@ -187,7 +207,10 @@ class IPFSResourceOpener(QObject):
                         '{path}: decryption impossible'.format(path=rscPath))
 
         if mimeType.isText:
-            tab = TextEditorTab(parent=self.app.mainWindow)
+            tab = TextEditorTab(
+                parent=self.app.mainWindow,
+                editing=editObject
+            )
             tab.editor.display(ipfsPath)
             self.objectOpened.emit(ipfsPath)
             return self.app.mainWindow.registerTab(
@@ -233,7 +256,9 @@ class IPFSResourceOpener(QObject):
         if mimeType.isDir or ipfsPath.isIpns or mimeType.isHtml:
             self.objectOpened.emit(ipfsPath)
             return self.app.mainWindow.addBrowserTab(
-                minProfile=minWebProfile).browseFsPath(ipfsPath)
+                minProfile=minWebProfile,
+                pinBrowsed=pin).browseFsPath(
+                    ipfsPath, schemePreferred=schemePreferred)
 
         if openingFrom in ['filemanager', 'qa', 'didlocal']:
             await self.needUserConfirm.emit(ipfsPath, mimeType, True)
