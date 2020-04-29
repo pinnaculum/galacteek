@@ -89,8 +89,9 @@ cp ../share/icons/galacteek.png $APPDIR/usr/share/icons/hicolor/512x512/apps
 find /usr/lib -iname 'libzbar.so*' -exec cp -av {} $APPDIR/usr/lib \;
 find /usr/lib -iname 'libjpeg.so*' -exec cp -av {} $APPDIR/usr/lib \;
 
-# Copy go-ipfs
+# Copy go-ipfs and fs-repo-migrations
 cp /tmp/go-ipfs/ipfs $APPDIR/usr/bin
+cp $HOME/bin/fs-repo-migrations $APPDIR/usr/bin
 
 # Remove unnecessary stuff
 pushd "$APPDIR"/usr
@@ -155,7 +156,8 @@ ARCH=x86_64 ./appimagetool-x86_64.AppImage -n $APPDIR $APPIMAGE_DEST
 APPIMAGE_CID=$(/tmp/go-ipfs/ipfs add -q -n --cid-version 1 $APPIMAGE_DEST)
 echo "==> CIDv1 $APPIMAGE_DEST: $APPIMAGE_CID"
 
-cp $HOME/bin/wasmer $APPDIR/usr/bin
-
-echo "AppDir successfully created, running appimagetool (wasmer image)"
-ARCH=x86_64 ./appimagetool-x86_64.AppImage -n $APPDIR $APPIMAGE_FULL_DEST
+if [ ! -z $TRAVIS_BRANCH ] && [ "$TRAVIS_BRANCH" = "master" ] ; then
+	cp $HOME/bin/wasmer $APPDIR/usr/bin
+	echo "AppDir successfully created, running appimagetool (wasmer image)"
+	ARCH=x86_64 ./appimagetool-x86_64.AppImage -n $APPDIR $APPIMAGE_FULL_DEST
+fi

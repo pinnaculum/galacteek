@@ -47,8 +47,9 @@ class IPFSDProtocol(asyncio.SubprocessProtocol):
     This handles output from the IPFS daemon
     """
 
-    def __init__(self, loop, exitFuture, startedFuture):
+    def __init__(self, loop, exitFuture, startedFuture, debug=False):
         self._loop = loop
+        self._debug = debug
         self._output = bytearray()
         self.eventStarted = asyncio.Event()
         self.exitFuture = exitFuture
@@ -78,6 +79,9 @@ class IPFSDProtocol(asyncio.SubprocessProtocol):
         # TODO: implement ipfs process supervisor independent of daemon output
 
         for line in msg.split('\n'):
+            if self._debug:
+                # go-ipfs output
+                log.debug(line)
             if re.search('Error: ipfs daemon is running', line):
                 self.errAlreadyRunning = True
             if re.search('Gateway.*server listening on', line):
@@ -263,7 +267,8 @@ class AsyncIPFSDaemon(object):
 
         f = self.loop.subprocess_exec(
             lambda: IPFSDProtocol(self.loop, self.exitFuture,
-                                  self.startedFuture),
+                                  self.startedFuture,
+                                  debug=self.debug),
             *args,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE)
