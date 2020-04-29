@@ -15,8 +15,10 @@ import async_timeout
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import joinIpns
 from galacteek.ipfs.cidhelpers import stripIpfs
+from galacteek.ipfs.cidhelpers import stripIpns
 from galacteek.ipfs.cidhelpers import cidConvertBase32
 from galacteek.ipfs.cidhelpers import IPFSPath
+from galacteek.ipfs.cidhelpers import ipnsKeyCidV1
 from galacteek.ipfs.multi import multiAddrTcp4
 
 from galacteek.core.asynclib import async_enterable
@@ -188,11 +190,13 @@ class IPFSOperator(object):
     """
 
     def __init__(self, client, ctx=None, rsaAgent=None, debug=False,
-                 offline=False, nsCachePath=None):
+                 offline=False, nsCachePath=None,
+                 objectMapping=False):
         self._lock = asyncio.Lock()
         self._id = uuid.uuid1()
         self._cache = {}
         self._offline = offline
+        self._objectMapping = objectMapping
         self._rsaAgent = rsaAgent
         self._nsCache = {}
         self._nsCachePath = nsCachePath
@@ -529,7 +533,7 @@ class IPFSOperator(object):
             return False
         return True
 
-    async def publish(self, path, key='self', timeout=60 * 4,
+    async def publish(self, path, key='self', timeout=60 * 6,
                       allow_offline=None, lifetime='24h',
                       resolve=True,
                       ttl=None, cache=None, cacheOrigin='unknown'):
@@ -544,6 +548,12 @@ class IPFSOperator(object):
 
                 await self.nsCacheSet(
                     joinIpns(key), path, origin=cacheOrigin)
+
+                # Also cache the v1 version
+                v1 = ipnsKeyCidV1(key)
+                if v1:
+                    await self.nsCacheSet(
+                        joinIpns(v1), path, origin=cacheOrigin)
 
             self.debug(
                 'Publishing {path} to {dst} '
@@ -673,6 +683,12 @@ class IPFSOperator(object):
             if cache and resolved:
                 await self.nsCacheSet(
                     path, resolved['Path'], origin=cacheOrigin)
+
+                # Also cache the v1 version
+                v1 = ipnsKeyCidV1(stripIpns(path))
+                if v1:
+                    await self.nsCacheSet(
+                        joinIpns(v1), resolved['Path'], origin=cacheOrigin)
 
             return resolved
 
@@ -1067,6 +1083,10 @@ class IPFSOperator(object):
             return {"/": cid['Hash']}
 
     def objectPathMap(self, path):
+        if self._objectMapping is False and 0:
+            # No object mapping (don't use any cache)
+            return path
+
         ipfsPath = path if isinstance(path, IPFSPath) else \
             IPFSPath(path, autoCidConv=True)
 

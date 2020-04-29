@@ -112,7 +112,7 @@ class IPFSResourceOpener(QObject):
 
         rscPath = ipfsPath.objPath
 
-        if self.app.mainWindow.pinAllGlobalChecked and not ipfsPath.isIpns:
+        if self.app.mainWindow.pinAllGlobalChecked:
             ensure(ipfsop.ctx.pinner.queue(rscPath, False,
                                            None,
                                            qname='default'))
@@ -143,8 +143,6 @@ class IPFSResourceOpener(QObject):
         if mimeType == mimeTypeDagUnknown:
             indexPath = ipfsPath.child('index.html')
             stat = await ipfsop.objStat(indexPath.objPath, timeout=8)
-
-            schemePreferred = 'dweb' if indexPath.isIpns else None
 
             if stat:
                 # Browse the index
@@ -253,7 +251,7 @@ class IPFSResourceOpener(QObject):
                 current=True
             )
 
-        if mimeType.isDir or ipfsPath.isIpns or mimeType.isHtml:
+        if mimeType.isDir or mimeType.isHtml:
             self.objectOpened.emit(ipfsPath)
             return self.app.mainWindow.addBrowserTab(
                 minProfile=minWebProfile,

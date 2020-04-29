@@ -406,7 +406,11 @@ class PeersTracker:
 
             self.model.rootItem.appendChild(peerItem)
 
-            await peerItem.updateServices()
+            try:
+                await peerItem.updateServices()
+            except Exception:
+                pass
+
             self.model.modelReset.emit()
 
     async def onPeersChange(self):
@@ -658,7 +662,7 @@ class PeersManager(GalacteekTab):
         ipfsPath = IPFSPath(path)
 
         try:
-            await self.app.sqliteDb.feeds.follow(ipfsPath.dwebUrl)
+            await self.app.sqliteDb.feeds.follow(ipfsPath.ipfsUrl)
         except Exception:
             # TODO
             pass

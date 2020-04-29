@@ -250,7 +250,7 @@ class AtomFeedsDatabase(QObject):
                     self.processedFeedEntry.emit(atomFeed, entry)
 
                     if feedSql['autopin_entries'] == 1 and \
-                            feedSql['scheme'] == 'dweb':
+                            feedSql['scheme'] == 'dweb' and 0:
                         path = IPFSPath(entry.id)
                         if path.valid:
                             log.debug('Atom: autopinning {id}'.format(
