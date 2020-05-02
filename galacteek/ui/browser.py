@@ -2008,8 +2008,6 @@ class BrowserTab(GalacteekTab):
                 self.enterUrl(QUrl(iPath.ipfsUrl))
             elif iPath.valid and schemePreferred == 'dweb':
                 self.enterUrl(QUrl(iPath.dwebUrl))
-            elif iPath.valid and schemePreferred == 'dwebgw':
-                self.enterUrl(QUrl(iPath.dwebGwUrl))
             else:
                 messageBox(iInvalidObjectPath(iPath.fullPath))
 

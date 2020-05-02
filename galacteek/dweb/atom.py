@@ -13,6 +13,7 @@ from galacteek.ipfs.cidhelpers import IPFSPath
 
 
 DWEB_ATOM_FEEDFN = 'dfeed.atom'
+DWEB_ATOM_FEEDGWFN = 'dfeed.publicgw.atom'
 
 
 class AtomFeedExistsError(Exception):

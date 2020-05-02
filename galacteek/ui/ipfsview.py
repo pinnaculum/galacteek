@@ -210,7 +210,7 @@ class IPFSHashItemModel(QStandardItemModel):
             nameItem = self.getNameItemFromIdx(idx)
 
             if nameItem:
-                url = QUrl('dweb:{}'.format(nameItem.getFullPath()))
+                url = QUrl(nameItem.ipfsPath.ipfsUrl)
                 urls.append(url)
 
         mimedata.setUrls(urls)
@@ -385,6 +385,8 @@ class IPFSHashExplorerWidget(QWidget):
                  mimeDetectionMethod='db',
                  addActions=True, autoOpenFiles=True,
                  showCidLabel=False,
+                 showGit=False,
+                 hideHashes=False,
                  autoOpenFolders=False, parent=None):
         super(IPFSHashExplorerWidget, self).__init__(parent)
 
@@ -393,6 +395,8 @@ class IPFSHashExplorerWidget(QWidget):
         self.gWindow = self.app.mainWindow
         self.mimeDetectionMethod = mimeDetectionMethod
         self.model = IPFSHashItemModel(self)
+        self.gitEnabled = showGit
+        self.hideHashes = hideHashes
 
         self.parentMultihash = None
         self.parentButton = None
@@ -445,6 +449,7 @@ class IPFSHashExplorerWidget(QWidget):
         self.tree = MultihashTreeView()
         self.tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.tree.setDragDropMode(QAbstractItemView.DragOnly)
+
         self.mainLayout.addWidget(self.tree)
 
         self.initModel()
@@ -626,7 +631,7 @@ class IPFSHashExplorerWidget(QWidget):
             self.openFile(nameItem, dataHash)
 
     def openFile(self, item, fileHash):
-        if item.mimeType is None or item.mimeType == 'text/html':
+        if item.mimeType is None:
             return self.browse(fileHash)
 
         if self.autoOpenFiles:
@@ -713,7 +718,7 @@ class IPFSHashExplorerWidget(QWidget):
                                                 QHeaderView.ResizeToContents)
         self.tree.sortByColumn(self.model.COL_NAME, Qt.AscendingOrder)
 
-        if self.app.settingsMgr.hideHashes:
+        if self.app.settingsMgr.hideHashes or self.hideHashes:
             self.tree.hideColumn(self.model.COL_HASH)
 
         rStat = await ipfsop.objStat(objPath)
@@ -785,7 +790,8 @@ class IPFSHashExplorerWidget(QWidget):
                     # Automatically open sub folders. Used by unit tests
                     self.directoryOpenRequest.emit(dataHash)
 
-                if nItemName.isDir() and entry['Name'] == '.git':
+                if nItemName.isDir() and entry['Name'] == '.git' and \
+                        self.gitEnabled is True:
                     # If there's a git repo here, add a control button
                     self.addGitControl(entry)
 

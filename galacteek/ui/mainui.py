@@ -1279,10 +1279,10 @@ class MainWindow(QMainWindow):
 
         if isinstance(path, IPFSPath) and path.valid:
             tab.editor.display(path)
-            tab.setToolTip(str(path))
 
         self.registerTab(tab, iTextEditor(),
-                         icon=getIcon('text-editor.png'), current=True)
+                         icon=getIcon('text-editor.png'), current=True,
+                         tooltip=str(path))
 
     def addIpfsSearchView(self):
         tab = ipfssearch.IPFSSearchTab(self)

@@ -3,6 +3,7 @@ from quamash import QThreadExecutor
 import asyncio
 import traceback
 import functools
+from asyncio_extras.file import open_async
 import aiofiles
 
 
@@ -175,12 +176,24 @@ def async_enterable(f):
     return wrapper
 
 
-async def asyncReadFile(path, mode='rb'):
+async def asyncReadFile(path, mode='rb', size=None):
     try:
         async with aiofiles.open(path, mode) as fd:
-            return await fd.read()
+            if size:
+                return await fd.read(size)
+            else:
+                return await fd.read()
     except BaseException:
         return None
+
+
+async def asyncReadTextFileChunked(path, mode='rt', chunksize=8192):
+    try:
+        async with open_async(path, mode) as f:
+            async for chunk in f.async_readchunks(chunksize):
+                yield chunk
+    except BaseException as err:
+        print(str(err))
 
 
 async def asyncWriteFile(path, data, mode='w+b'):
@@ -195,4 +208,4 @@ async def threadExec(fn, *args):
     loop = asyncio.get_event_loop()
 
     with QThreadExecutor(1) as texec:
-        await loop.run_in_executor(texec, fn, *args)
+        return await loop.run_in_executor(texec, fn, *args)

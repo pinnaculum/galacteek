@@ -429,6 +429,10 @@ def iOpen():
     return QCoreApplication.translate('GalacteekWindow', 'Open')
 
 
+def iEditObject():
+    return QCoreApplication.translate('GalacteekWindow', 'Edit object')
+
+
 def iDownload():
     return QCoreApplication.translate('GalacteekWindow', 'Download')
 

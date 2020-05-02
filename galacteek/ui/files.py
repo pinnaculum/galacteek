@@ -795,10 +795,11 @@ class FileManager(QWidget):
                        functools.partial(ensure, self.app.resourceOpener.open(
                            ipfsPath, openingFrom='filemanager',
                            tryDecrypt=self.rscOpenTryDecrypt)))
-        if nameItem.isFile():
+
+        if nameItem.isFile() or nameItem.isDir():
             menu.addAction(getIcon('text-editor.png'),
-                           'Edit',
-                           functools.partial(self.editFile,
+                           iEditObject(),
+                           functools.partial(self.editObject,
                                              nameItem.ipfsPath))
 
         if nameItem.isDir():
@@ -895,7 +896,7 @@ class FileManager(QWidget):
 
         ensure(dhtProvide(cid, recursive=recursive))
 
-    def editFile(self, ipfsPath):
+    def editObject(self, ipfsPath):
         self.gWindow.addEditorTab(path=ipfsPath)
 
     def onExploreItem(self):

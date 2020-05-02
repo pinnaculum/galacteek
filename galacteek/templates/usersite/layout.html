@@ -1,4 +1,5 @@
 {% from "usersite/macros/urls.html" import site_ipns_url %}
+{% from "usersite/macros/urls.html" import public_ipns_url %}
 <html>
     <head>
         <title>
@@ -30,6 +31,13 @@
                        alt="Distributed Atom Feed">
                         <img width="16" height="16"
                             src="{{ site_ipns_url(siteIpns, 'media/images/atom-feed.png') }}"/>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ site_ipns_url(siteIpns, 'dfeed.publicgw.atom') }}"
+                       alt="Distributed Atom Feed (gateway)">
+                        <img width="16" height="16"
+                            src="{{ public_ipns_url(siteIpns, 'media/images/atom-feed.png') }}"/>
                     </a>
                 </li>
             </ul>

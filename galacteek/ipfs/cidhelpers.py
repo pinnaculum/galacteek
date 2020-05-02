@@ -392,9 +392,8 @@ class IPFSPath:
         )
 
     @property
-    def dwebGwUrl(self):
-        return '{scheme}:{path}'.format(
-            scheme='dwebgw',
+    def publicGwUrl(self):
+        return 'https://ipfs.io{path}'.format(
             path=self.fullPath
         )
 
