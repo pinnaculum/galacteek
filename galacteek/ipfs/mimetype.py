@@ -10,6 +10,7 @@ import aioipfs
 from galacteek import log
 from galacteek.ipfs import ipfsOpFn
 from galacteek.ipfs.ipfsops import APIErrorDecoder
+from galacteek.core.asynclib import asyncReadFile
 
 
 try:
@@ -232,6 +233,13 @@ async def detectMimeTypeFromBuffer(buff):
                 return mimeTypeProcess(spl[1].strip(), buff)
     else:
         raise MimeDecodeError('No MIME detection method available')
+
+
+async def detectMimeTypeFromFile(filePath, bufferSize=131070):
+    buff = await asyncReadFile(filePath, size=bufferSize)
+
+    if buff:
+        return await detectMimeTypeFromBuffer(buff)
 
 
 @ipfsOpFn

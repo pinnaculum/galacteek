@@ -247,7 +247,9 @@ class ClipboardTracker(QObject):
 
     def setText(self, text):
         """ Sets the clipboard's text content """
-        self.clipboard.setText(text, self.clipboardPreferredMode())
+
+        for clip in [QClipboard.Selection, QClipboard.Clipboard]:
+            self.clipboard.setText(text, clip)
 
     def getText(self):
         """ Returns clipboard's text content from the preferred source """

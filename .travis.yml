@@ -1,13 +1,15 @@
 sudo: required
-dist: xenial
-language: generic
+dist: bionic
+language: go
+go:
+  - "1.14.2"
 
 os:
   - linux
   - osx
 
 before_install:
-  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then bash -xe travis/bootstrap-xenial.sh; fi
+  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then bash -xe travis/bootstrap-bionic.sh; fi
 
 install:
   - bash -xe travis/install.sh

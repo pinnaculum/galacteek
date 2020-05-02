@@ -68,6 +68,7 @@ from .i18n import iHashmark
 from .i18n import iIpfsQrEncode
 from .i18n import iHelp
 from .i18n import iLinkToMfsFolder
+from .i18n import iEditObject
 
 
 def iClipboardEmpty():
@@ -529,7 +530,7 @@ class ClipboardItemButton(PopupToolButton):
             shortcut=QKeySequence('Ctrl+i'),
             triggered=partialEnsure(self.onIpldExplore))
 
-        self.editTextFileAction = QAction(
+        self.editObjectAction = QAction(
             getMimeIcon('text/plain'),
             iClipboardEmpty(), self,
             triggered=self.onTextEdit)
@@ -658,7 +659,7 @@ class ClipboardItemButton(PopupToolButton):
         self.hashmarkAction.setText(iClipItemHashmark())
         self.downloadAction.setText(iClipItemDownload())
         self.ipldExplorerAction.setText(iClipItemIpldExplorer())
-        self.editTextFileAction.setText(iClipItemEditText())
+        self.editObjectAction.setText(iEditObject())
         self.pinAction.setText(iClipItemPin())
 
         self.setToolTip(self.tooltipMessage())
@@ -680,9 +681,12 @@ class ClipboardItemButton(PopupToolButton):
             if icon:
                 return self.updateIcon(icon)
 
+            self.menu.addSeparator()
+            self.menu.addAction(self.editObjectAction)
+
         elif self.item.mimeType.isText:
             self.menu.addSeparator()
-            self.menu.addAction(self.editTextFileAction)
+            self.menu.addAction(self.editObjectAction)
 
         elif self.item.mimeType.isImage:
             self.updateIcon(getMimeIcon('image/x-generic'), animate=False)

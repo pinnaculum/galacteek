@@ -57,6 +57,7 @@ from .i18n import iRemove
 from .i18n import iHelp
 from .i18n import iHashmark
 from .i18n import iOpen
+from .i18n import iEditObject
 
 
 def iCreateRawPyramid():
@@ -119,6 +120,12 @@ def iCopyIpnsAddress():
     return QCoreApplication.translate(
         'pyramidMaster',
         'Copy IPNS address to clipboard')
+
+
+def iCopyIpnsAddressGw():
+    return QCoreApplication.translate(
+        'pyramidMaster',
+        'Copy IPNS gateway address to clipboard')
 
 
 def iPyramidPublishCurrentClipboard():
@@ -375,6 +382,11 @@ class MultihashPyramidToolButton(PopupToolButton):
                                   self,
                                   triggered=self.onOpen)
 
+        self.editAction = QAction(getIcon('pyramid-aqua.png'),
+                                  iEditObject(),
+                                  self,
+                                  triggered=self.onEdit)
+
         self.publishCurrentClipAction = QAction(
             getIcon('clipboard.png'),
             iPyramidPublishCurrentClipboard(),
@@ -393,6 +405,11 @@ class MultihashPyramidToolButton(PopupToolButton):
                                       iCopyIpnsAddress(),
                                       self,
                                       triggered=self.onCopyIpns)
+        self.copyIpnsGwAction = QAction(getIcon('clipboard.png'),
+                                        iCopyIpnsAddressGw(),
+                                        self,
+                                        triggered=self.onCopyIpnsGw)
+
         self.generateQrAction = QAction(getIcon('ipfs-qrcode.png'),
                                         iPyramidGenerateQr(),
                                         self,
@@ -506,10 +523,15 @@ class MultihashPyramidToolButton(PopupToolButton):
         self.menu.addSeparator()
         self.menu.addAction(self.openLatestAction)
         self.menu.addSeparator()
+        self.menu.addAction(self.editAction)
+        self.menu.addSeparator()
         self.menu.addAction(self.publishCurrentClipAction)
         self.menu.addSeparator()
-        self.menu.addAction(self.popItemAction)
         self.menu.addAction(self.copyIpnsAction)
+        self.menu.addSeparator()
+        self.menu.addAction(self.copyIpnsGwAction)
+        self.menu.addSeparator()
+        self.menu.addAction(self.popItemAction)
         self.menu.addAction(self.generateQrAction)
         self.menu.addSeparator()
         self.menu.addAction(self.didPublishAction)
@@ -616,6 +638,10 @@ class MultihashPyramidToolButton(PopupToolButton):
             'Pyramid {pyr}: registered new hashmark: {path}'.format(
                 pyr=self.pyramid.path, path=str(ipfsPath)))
 
+        if self._publishJob and self.publishInProgress:
+            self._publishJob.cancel()
+            self.publishInProgress = False
+
     def sysTray(self, message):
         self.app.systemTrayMessage(
             'Pyramids',
@@ -633,6 +659,11 @@ class MultihashPyramidToolButton(PopupToolButton):
     def onOpen(self):
         ensure(self.app.resourceOpener.open(
             self.ipnsKeyPath, minWebProfile='ipfs'))
+
+    def onEdit(self):
+        ensure(self.app.resourceOpener.open(
+            self.ipnsKeyPath, minWebProfile='ipfs',
+            editObject=True))
 
     def onOpenLatest(self):
         """ Open latest object """
@@ -662,6 +693,10 @@ class MultihashPyramidToolButton(PopupToolButton):
 
     def onCopyIpns(self):
         self.app.setClipboardText(joinIpns(self.pyramid.ipnsKey))
+
+    def onCopyIpnsGw(self):
+        self.app.setClipboardText(
+            'https://ipfs.io{}'.format(joinIpns(self.pyramid.ipnsKey)))
 
     @ipfsOp
     async def generateQrCode(self, ipfsop, qrName, *paths):
@@ -782,10 +817,6 @@ class MultihashPyramidToolButton(PopupToolButton):
         """
 
         self.pyramidion = mark
-
-        if self._publishJob and self.publishInProgress:
-            self._publishJob.cancel()
-            self.publishInProgress = False
 
         if self.publishInProgress is False:
             self._publishJob = ensure(self.publish(self.pyramidion, notify))
@@ -991,6 +1022,8 @@ class GalleryPyramidController(EDAGBuildingPyramidController):
         self.menu.addAction(self.browseDirectAction)
         self.menu.addSeparator()
         self.menu.addAction(self.copyIpnsAction)
+        self.menu.addSeparator()
+        self.menu.addAction(self.copyIpnsGwAction)
         self.menu.addSeparator()
         self.menu.addAction(self.changeTitleAction)
         self.menu.addSeparator()

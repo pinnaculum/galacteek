@@ -1252,3 +1252,6 @@ class AnimatedLabel(QLabel):
     def startClip(self):
         if not self.clip.playing():
             self.clip.start()
+
+    def stopClip(self):
+        self.clip.stop()

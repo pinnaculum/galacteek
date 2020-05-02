@@ -12,12 +12,14 @@ from galacteek import ensure
 from galacteek import AsyncSignal
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.stat import StatInfo
+from galacteek.ipfs.cidhelpers import ipnsKeyCidV1
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import joinIpns
 from galacteek.core.analyzer import ResourceAnalyzer
 from galacteek.core import isoformat
 from galacteek.dweb import render
 from galacteek.dweb.atom import DWEB_ATOM_FEEDFN
+from galacteek.dweb.atom import DWEB_ATOM_FEEDGWFN
 
 from galacteek.ipfs.dag import EvolvingDAG
 
@@ -86,6 +88,7 @@ class UserWebsite:
         self._jinjaEnv = jinjaEnv
 
         self._atomFeedFn = DWEB_ATOM_FEEDFN
+        self._atomFeedGwFn = DWEB_ATOM_FEEDGWFN
 
         self._rscAnalyzer = ResourceAnalyzer(None)
         self._updating = False
@@ -262,19 +265,23 @@ class UserWebsite:
         self.edag.root['about.html'] = await self.renderLink(
             'usersite/about.html')
 
-    def createFeed(self):
+    def createFeed(self, ftype='ipfs'):
         # Create the feed
 
         sHandle = self.profile.userInfo.spaceHandle
 
         feed = FeedGenerator()
         feed.id(self.siteUrl)
-        feed.title("{0}'s dweb space".format(
-            sHandle.short))
+        feed.title("{0}'s dweb space".format(sHandle.short))
         feed.author({
             'name': self.profile.userInfo.iphandle
         })
-        feed.link(href=self.atomFeedPath.ipfsUrl, rel='self')
+
+        if ftype == 'ipfs':
+            feed.link(href=self.atomFeedPath.ipfsUrl, rel='self')
+        elif ftype == 'publicgw':
+            feed.link(href=self.atomFeedPath.publicGwUrl, rel='self')
+
         feed.language('en')
         return feed
 
@@ -299,6 +306,7 @@ class UserWebsite:
         blogPosts = []
 
         feed = self.createFeed()
+        feedgw = self.createFeed(ftype='publicgw')
 
         async with self.profile.dagUser as dag:
             if self.assetsEntry:
@@ -344,6 +352,7 @@ class UserWebsite:
                                reverse=True)
 
             self.feedAddPosts(blogPosts, feed)
+            self.feedAddPosts(blogPosts, feedgw, ftype='publicgw')
 
             requests = await dag.get(PINREQS_NODEKEY)
 
@@ -381,6 +390,9 @@ class UserWebsite:
             try:
                 atomFeed = feed.atom_str(pretty=True)
                 entry = await op.addBytes(atomFeed)
+                atomFeedGw = feedgw.atom_str(pretty=True)
+                entryGw = await op.addBytes(atomFeedGw)
+
                 if entry:
                     # Unpin the old feed (disabled for now)
                     if self._atomFeedFn in dag.root and 0:
@@ -390,6 +402,9 @@ class UserWebsite:
                             ensure(op.unpin(resolved))
 
                     dag.root[self._atomFeedFn] = dag.mkLink(entry)
+
+                if entryGw:
+                    dag.root[self._atomFeedGwFn] = dag.mkLink(entryGw)
             except Exception as err:
                 log.debug('Error generating Atom feed: {}'.format(
                     str(err)))
@@ -414,15 +429,21 @@ class UserWebsite:
             fEntry.published(req['date_published'])
             fEntry.author({'name': self.profile.userInfo.iphandle})
 
-    def feedAddPosts(self, blogPosts, feed):
+    def feedAddPosts(self, blogPosts, feed, ftype='ipfs'):
         for post in blogPosts:
             ppath = self.sitePath.child(os.path.join(
                 'blog', post['postname'], 'view'))
 
             fEntry = feed.add_entry()
             fEntry.title(post['title'])
-            fEntry.id(ppath.ipfsUrl)
-            fEntry.link(href=ppath.ipfsUrl, rel='alternate')
+
+            if ftype == 'ipfs':
+                url = ppath.ipfsUrl
+            elif ftype == 'publicgw':
+                url = ppath.publicGwUrl
+
+            fEntry.id(url)
+            fEntry.link(href=url, rel='alternate')
             fEntry.updated(post['date_modified'])
             fEntry.published(post['date_published'])
             fEntry.author({'name': self.profile.userInfo.iphandle})
@@ -434,11 +455,13 @@ class UserWebsite:
         coro = render.ipfsRender if not contained else \
             render.ipfsRenderContained
 
+        ipnsKeyV1 = ipnsKeyCidV1(self.ipnsKey)
+
         return await coro(self._jinjaEnv,
                           tmpl,
                           profile=self.profile,
                           dag=self.edag.dagRoot,
-                          siteIpns=self.ipnsKey,
+                          siteIpns=ipnsKeyV1,
                           atomFeedrUrl=self.atomFeedPath.ipfsUrl,
                           **kw)
 

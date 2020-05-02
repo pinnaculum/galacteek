@@ -1,9 +1,11 @@
 import functools
 import aiofiles
 import os.path
-import json
 import os
 import uuid
+import re
+import shutil
+from pathlib import Path
 from datetime import datetime
 
 from PyQt5.QtWidgets import QWidget
@@ -12,6 +14,8 @@ from PyQt5.QtWidgets import QScrollArea
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWidgets import QHBoxLayout
 from PyQt5.QtWidgets import QTextEdit
+from PyQt5.QtWidgets import QPlainTextEdit
+from PyQt5.QtWidgets import QPlainTextDocumentLayout
 from PyQt5.QtWidgets import QSpacerItem
 from PyQt5.QtWidgets import QSizePolicy
 from PyQt5.QtWidgets import QToolButton
@@ -20,16 +24,24 @@ from PyQt5.QtWidgets import QLabel
 from PyQt5.QtWidgets import QFrame
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QLineEdit
+from PyQt5.QtWidgets import QFileSystemModel
+from PyQt5.QtWidgets import QTreeView
+from PyQt5.QtWidgets import QMenu
 
+from PyQt5.QtCore import QFileInfo
 from PyQt5.QtCore import QDateTime
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QRegularExpression
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import QDir
 from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QModelIndex
+from PyQt5.QtCore import QItemSelectionModel
 
+from PyQt5.QtGui import QMouseEvent
 from PyQt5.QtGui import QTextDocument
 from PyQt5.QtGui import QTextFormat
+from PyQt5.QtGui import QTextCursor
 from PyQt5.QtGui import QColor
 from PyQt5.QtGui import QSyntaxHighlighter
 from PyQt5.QtGui import QTextCharFormat
@@ -38,19 +50,23 @@ from PyQt5.QtGui import QFont
 from galacteek import log
 from galacteek.ipfs.ipfsops import *
 from galacteek.core import isoformat
+from galacteek.core.asynclib import asyncReadTextFileChunked
 from galacteek.appsettings import *
 from galacteek.ipfs import ipfsOp
+from galacteek.ipfs import megabytes
+from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs.cidhelpers import IPFSPath
+from galacteek.ipfs.mimetype import detectMimeTypeFromFile
 from galacteek.dweb.markdown import markitdown
 
 from .helpers import *
 
-from .ipfsview import IPFSHashExplorerWidgetFollow
-from .widgets import PopupToolButton
+from .widgets import AnimatedLabel
 from .widgets import IPFSPathClipboardButton
 from .widgets import IPFSUrlLabel
 from .widgets import GalacteekTab
 from .widgets import CheckableToolButton
+from .clips import RotatingCubeRedFlash140d
 from .i18n import *
 
 
@@ -126,21 +142,55 @@ class PythonSyntaxHighlighter(QSyntaxHighlighter):
 
 
 defaultStyleSheet = '''
-    QTextEdit {
+    QPlainTextEdit {
         padding: 5px;
         color: #242424;
         background-color: #F0F7F7;
-        font: 11pt "Courier";
+        font: 14pt "Courier";
     }
 '''
 
 
-class Editor(QTextEdit):
+class EditorLegacy(QTextEdit):
     def __init__(self, parent, lineWrap=80, tabReplace=False):
         super(Editor, self).__init__(parent)
 
         self.setLineWrapMode(QTextEdit.FixedColumnWidth)
         self.setLineWrapColumnOrWidth(lineWrap)
+        self.setStyleSheet(defaultStyleSheet)
+        self.tabReplace = tabReplace
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Tab and self.tabReplace:
+            self.insertPlainText(' ' * 4)
+        else:
+            super().keyPressEvent(event)
+
+    def connectSignals(self):
+        disconnectSig(self.cursorPositionChanged, self.highlightCurrentLine)
+        self.cursorPositionChanged.connect(self.highlightCurrentLine)
+
+    def highlightCurrentLine(self):
+        extraSelections = []
+
+        if not self.isReadOnly():
+            selection = QTextEdit.ExtraSelection()
+            lineColor = QColor('#e2dd8e')
+
+            selection.format.setBackground(lineColor)
+            selection.format.setProperty(QTextFormat.FullWidthSelection, True)
+            selection.cursor = self.textCursor()
+            selection.cursor.clearSelection()
+            extraSelections.append(selection)
+
+        self.setExtraSelections(extraSelections)
+
+
+class Editor(QPlainTextEdit):
+    def __init__(self, parent, lineWrap=80, tabReplace=False):
+        super(Editor, self).__init__(parent)
+
+        self.setLineWrapMode(QPlainTextEdit.WidgetWidth)
         self.setStyleSheet(defaultStyleSheet)
         self.tabReplace = tabReplace
 
@@ -191,15 +241,24 @@ class Document(QTextDocument):
     modified = pyqtSignal()
     filenameChanged = pyqtSignal(str)
 
-    def __init__(self, encoding=None, name=None, text='', parent=None):
+    def __init__(self, encoding=None, name=None, text='', parent=None,
+                 textLayout=True):
         super().__init__(text, parent)
+
+        if textLayout is True:
+            self.setDocumentLayout(QPlainTextDocumentLayout(self))
 
         self._filename = name
         self._changed = False
         self._encoding = encoding if encoding else 'utf-8'
+        self._previewDocument = None
         self.setDefaultStyleSheet(defaultStyleSheet)
         self.setModified(False)
         self.modificationChanged.connect(self.onModifChange)
+
+    @property
+    def previewDocument(self):
+        return self._previewDocument
 
     @property
     def filename(self):
@@ -257,16 +316,54 @@ class TextEditorTab(GalacteekTab):
         else:
             self.setTabName(name, widget=self)
 
-        self.setToolTip(name)
-
     def onDocnameChanged(self, doc, name):
         if doc is self.editor.currentDocument:
             self.changeTabName(doc.filename)
 
     def onClose(self):
         if self.editor.checkChanges() is True:
+            self.editor.cleanup()
             return True
         return False
+
+
+class CheckoutTreeView(QTreeView):
+    doubleClick = pyqtSignal(QModelIndex, QFileInfo)
+    itemRightClick = pyqtSignal(QModelIndex, QMouseEvent, QFileInfo)
+
+    def mouseDoubleClickEvent(self, event):
+        idx = self.currentIndex()
+        fInfo = self.model().fileInfo(idx)
+
+        if fInfo:
+            path = Path(fInfo.absoluteFilePath())
+            if path.is_dir():
+                super(CheckoutTreeView, self).mouseDoubleClickEvent(event)
+            elif path.is_file():
+                self.doubleClick.emit(idx, fInfo)
+
+    def mousePressEvent(self, event):
+        item = self.indexAt(event.pos())
+
+        if item.isValid():
+            super(CheckoutTreeView, self).mousePressEvent(event)
+        else:
+            self.clearSelection()
+
+            self.selectionModel().setCurrentIndex(
+                QModelIndex(),
+                QItemSelectionModel.Select
+            )
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.RightButton:
+            idx = self.currentIndex()
+            fInfo = self.model().fileInfo(idx)
+
+            if fInfo:
+                self.itemRightClick.emit(idx, event, fInfo)
+        else:
+            super(CheckoutTreeView, self).mouseReleaseEvent(event)
 
 
 class TextEditorWidget(QWidget):
@@ -287,16 +384,38 @@ class TextEditorWidget(QWidget):
         self.setLayout(QVBoxLayout(self))
         self.textEditor = Editor(self)
 
-        self.localDirName = self.genUid()
-        self.localPath = os.path.join(
-            self.app.tempDir.path(), self.localDirName)
-        self.localDir = QDir(self.localPath)
+        self.checkoutPath = None
+
+        self.busyCube = AnimatedLabel(
+            RotatingCubeRedFlash140d(speed=100),
+            parent=self
+        )
+        self.busyCube.clip.setScaledSize(QSize(24, 24))
+        self.busyCube.startClip()
+        self.busyCube.hide()
 
         self._previewTimer = QTimer(self)
         self._previewTimer.timeout.connect(self.onPreviewRerender)
         self._editing = editing
         self._currentDocument = None
         self._unixDir = None
+
+        self.model = QFileSystemModel()
+
+        self.filesView = CheckoutTreeView(self)
+        self.filesView.setModel(self.model)
+        self.filesView.doubleClick.connect(self.onFsViewItemDoubleClicked)
+        self.filesView.itemRightClick.connect(self.onFsViewRightClicked)
+
+        self.model.setFilter(
+            QDir.Files | QDir.AllDirs | QDir.NoDot | QDir.NoDotDot
+        )
+        self.model.setRootPath(self.checkoutPath)
+
+        self.filesView.setVisible(False)
+        self.filesView.hideColumn(1)
+        self.filesView.hideColumn(2)
+        self.filesView.hideColumn(3)
 
         self.setObjectName('textEditor')
         self.inPreview = False
@@ -318,7 +437,8 @@ class TextEditorWidget(QWidget):
             icon=getIcon('folder-open.png'),
             toggled=self.onFsViewToggled, parent=self
         )
-        self.fsViewButton.setEnabled(False)
+        self.fsViewButton.setEnabled(True)
+        self.fsViewButton.setChecked(False)
 
         self.editButton = CheckableToolButton(
             toggled=self.onEditToggled, parent=self
@@ -330,15 +450,7 @@ class TextEditorWidget(QWidget):
         self.saveButton.setToolTip(iSave())
         self.saveButton.setEnabled(False)
 
-        strokeIcon = getIcon('stroke-cube.png')
-        self.fsControlButton = PopupToolButton(
-            mode=QToolButton.InstantPopup,
-            icon=strokeIcon
-        )
-        self.fsControlButton.setEnabled(False)
-
-        self.fsControlButton.menu.addAction(
-            strokeIcon, 'New file', self.onNewFile)
+        self.strokeIcon = getIcon('stroke-cube.png')
 
         self.editButton.setText(iEdit())
 
@@ -358,7 +470,7 @@ class TextEditorWidget(QWidget):
 
         self.filenameEntered.connect(self.onFilenameEntered)
 
-        self.ctrlLayout.addWidget(self.fsControlButton)
+        self.ctrlLayout.addWidget(self.busyCube)
         self.ctrlLayout.addWidget(self.editButton)
         self.ctrlLayout.addWidget(self.previewButton)
         self.ctrlLayout.addWidget(self.fsViewButton)
@@ -384,6 +496,7 @@ class TextEditorWidget(QWidget):
         self.previewWidget.hide()
 
         self.currentDocument = self.newDocument()
+        self.textHLayout.addWidget(self.filesView)
         self.textHLayout.addWidget(self.textEditor)
         self.textHLayout.addWidget(self.previewWidget)
 
@@ -399,9 +512,26 @@ class TextEditorWidget(QWidget):
         self.layout().addLayout(self.textVLayout)
 
         self.editing = editing
-
-        self.filesView = None
         self.rootMultihashChanged.connect(self.onSessionCidChanged)
+
+        self.filesView.setMinimumWidth(self.width() / 4)
+
+        self.textEditor.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.filesView.setSizePolicy(
+            QSizePolicy.Minimum, QSizePolicy.Expanding)
+
+    @property
+    def unixDirCid(self):
+        return self._unixDirCid
+
+    @property
+    def unixDir(self):
+        return self._unixDir
+
+    @unixDirCid.setter
+    def unixDirCid(self, cid):
+        self._unixDirCid = cid
 
     @property
     def editing(self):
@@ -418,8 +548,8 @@ class TextEditorWidget(QWidget):
         self.tabReplaceButton.setEnabled(self.editing)
         self.applyStylesheet()
 
-        if self.editing is True and self.unixDirCid is None:
-            ensure(self.sessionNew())
+        if self.editing is True and self.checkoutPath is None:
+            self.sessionNew()
 
     @property
     def currentDocument(self):
@@ -448,6 +578,89 @@ class TextEditorWidget(QWidget):
         self.currentDocument.contentsChanged.connect(self.onDocumentChanged)
 
         self.applyStylesheet()
+
+    async def changeDocument(self, document):
+        self.textEditor.setDocument(document)
+
+    def cleanup(self):
+        if os.path.isdir(self.checkoutPath):
+            log.debug('Cleaning up checkout directory: {}'.format(
+                self.checkoutPath))
+            shutil.rmtree(self.checkoutPath)
+
+    def busy(self, busy=True):
+        self.busyCube.setVisible(busy)
+        self.setEnabled(not busy)
+
+        if busy:
+            self.busyCube.startClip()
+        else:
+            self.busyCube.stopClip()
+
+    def onFsViewRightClicked(self, idx, event, fInfo):
+        pos = event.globalPos()
+        fullPath = fInfo.absoluteFilePath()
+
+        menu = QMenu(self)
+        menu.addAction(
+            self.strokeIcon,
+            'Add file', functools.partial(
+                self.fsAddFile, fullPath))
+        menu.addSeparator()
+        menu.addAction(
+            self.strokeIcon,
+            'Add directory', functools.partial(
+                self.fsAddDirectory, fullPath))
+
+        menu.exec_(pos)
+
+    def fsAddFile(self, root):
+        if not root:
+            rootDir = Path(self.checkoutPath)
+        else:
+            rootDir = Path(root)
+
+        if not rootDir.is_dir():
+            return
+
+        name = self.nameInput()
+        if name:
+            filepath = rootDir.joinpath(name)
+            if filepath.exists():
+                return messageBox('Already exists')
+
+            filepath.touch()
+            self.sessionViewUpdate()
+
+    def fsAddDirectory(self, root):
+        if not root:
+            rootDir = Path(self.checkoutPath)
+        else:
+            rootDir = Path(root)
+
+        if not rootDir.is_dir():
+            return
+
+        name = self.nameInput()
+        if name:
+            dirpath = rootDir.joinpath(name)
+            if dirpath.exists():
+                return messageBox('Already exists')
+
+            dirpath.mkdir()
+            self.sessionViewUpdate()
+
+    def onFsViewItemDoubleClicked(self, idx, fInfo):
+        fullPath = fInfo.absoluteFilePath()
+
+        if not self.checkoutPath:
+            return
+
+        if not os.path.isfile(fullPath):
+            return
+
+        filepath = re.sub(self.checkoutPath, '', fullPath).lstrip('/')
+        ensure(self.openFileFromCheckout(filepath))
 
     def onDocumentChanged(self):
         if self.previewWidget.isVisible():
@@ -493,11 +706,11 @@ class TextEditorWidget(QWidget):
     def applyStylesheet(self):
         if self.editing is True:
             self.textEditor.setStyleSheet('''
-                QTextEdit {
+                QPlainTextEdit {
                     background-color: #D2DBD6;
                     color: #242424;
                     padding: 5px;
-                    font: 12pt "Courier";
+                    font: 14pt "Courier";
                     font-weight: bold;
                 }
             ''')
@@ -505,18 +718,6 @@ class TextEditorWidget(QWidget):
         else:
             self.textEditor.highlightCurrentLine()
             self.textEditor.setStyleSheet(defaultStyleSheet)
-
-    @property
-    def unixDirCid(self):
-        return self._unixDirCid
-
-    @property
-    def unixDir(self):
-        return self._unixDir
-
-    @unixDirCid.setter
-    def unixDirCid(self, cid):
-        self._unixDirCid = cid
 
     def display(self, ipfsPath):
         if not isinstance(ipfsPath, IPFSPath) or not ipfsPath.valid:
@@ -527,9 +728,11 @@ class TextEditorWidget(QWidget):
     def genUid(self):
         return str(uuid.uuid4())
 
-    def newDocument(self, name=None, text='', encoding='utf-8'):
+    def newDocument(self, name=None, text='', encoding='utf-8',
+                    textLayout=True):
         self.textEditor.setStyleSheet(defaultStyleSheet)
-        return Document(name=name, text=text, parent=self, encoding=encoding)
+        return Document(name=name, text=text, parent=self, encoding=encoding,
+                        textLayout=textLayout)
 
     def markdownPreviewUpdate(self):
         textData = self.currentDocument.toPlainText()
@@ -543,11 +746,22 @@ class TextEditorWidget(QWidget):
 
     def showPreview(self):
         textData = self.currentDocument.toPlainText()
-        newDocument = self.newDocument(text=textData)
+        previewName = None
+
+        if self.currentDocument.filename and \
+                self.currentDocument.filename.endswith('.md'):
+            previewName = self.currentDocument.filename.replace(
+                '.md', '.html')
+
+        newDocument = self.newDocument(
+            name=previewName, text=textData,
+            textLayout=False
+        )
 
         try:
             html = markitdown(textData)
             newDocument.setHtml(html)
+            self.currentDocument._previewDocument = newDocument
         except Exception:
             newDocument.setPlainText(textData)
 
@@ -591,13 +805,6 @@ class TextEditorWidget(QWidget):
         if name and len(name) in range(1, 256):
             return name
 
-    def onNewDirectory(self):
-        name = self.nameInput(label='Directory name')
-
-        if name:
-            self.localDir.mkdir(name)
-            ensure(self.sync())
-
     def checkChanges(self):
         if self.currentDocument and self.currentDocument.changed is True:
             reply = questionBox(
@@ -634,49 +841,27 @@ class TextEditorWidget(QWidget):
         self.unixDirLabel.path = self.unixDirPath
         self.unixDirClipButton.path = self.unixDirPath
 
-        if not self.filesView:
-            self.filesView = IPFSHashExplorerWidgetFollow(
-                cid, parent=self,
-                addActions=False,
-                autoOpenFiles=False,
-                mimeDetectionMethod='magic')
-            self.filesView.fileOpenRequest.connect(
-                self.onFilesViewOpen)
-            self.filesView.setMaximumWidth(self.width() / 3)
-            self.textHLayout.addWidget(self.filesView)
-            self.fsViewButton.setEnabled(True)
-            self.filesView.hide()
-        else:
-            if self.filesView.rootHash != cid:
-                self.filesView.parentHash = None
-                self.filesView.changeMultihash(cid)
-                self.filesView.updateTree()
+    def sessionViewUpdate(self, root=None):
+        path = root if root else self.checkoutPath
+        self.model.setRootPath(path)
+        self.filesView.setRootIndex(self.model.index(path))
 
-    def onFilesViewOpen(self, ipfsPath):
-        ensure(self.showFromPath(ipfsPath))
+    # @ipfsOp
+    def sessionNew(self):
+        localDirName = self.genUid()
+        localPath = os.path.join(
+            self.app.tempDir.path(), localDirName)
 
-    @ipfsOp
-    async def sessionNew(self, ipfsop):
-        if not os.path.exists(self.localPath):
+        if not os.path.exists(localPath):
             try:
-                os.mkdir(self.localPath)
+                os.mkdir(localPath)
             except:
                 pass
 
-        p = os.path.join(self.localPath, '.info')
-        datet = datetime.now()
-        async with aiofiles.open(p, 'w+t') as fd:
-            await fd.write(json.dumps({
-                'created': isoformat(datet)
-            }))
-
-        if self.currentDocument and self.currentDocument.filename:
-            p = os.path.join(self.localPath, self.currentDocument.filename)
-            async with aiofiles.open(p, 'w+t') as fd:
-                await fd.write(self.currentDocument.toPlainText())
-
-        await self.sync()
-        self.fsControlButton.setEnabled(True)
+        ensure(self.sync())
+        self.sessionViewUpdate(localPath)
+        self.checkoutPath = localPath
+        return localPath
 
     def makeDatetime(self, date=None):
         datet = date if date else datetime.now()
@@ -686,7 +871,7 @@ class TextEditorWidget(QWidget):
     async def sync(self, ipfsop):
         try:
             async with ipfsop.offlineMode() as opoff:
-                entry = await opoff.addPath(self.localPath, wrap=False,
+                entry = await opoff.addPath(self.checkoutPath, wrap=False,
                                             hidden=True)
         except Exception as err:
             log.debug(str(err))
@@ -704,12 +889,21 @@ class TextEditorWidget(QWidget):
         if not document.filename:
             return
 
-        docPath = os.path.join(self.localPath, document.filename)
+        docPath = os.path.join(self.checkoutPath, document.filename)
         async with aiofiles.open(docPath, 'w+t') as fd:
             await fd.write(text)
 
+        if document.previewDocument:
+            pPath = os.path.join(self.checkoutPath,
+                                 document.previewDocument.filename)
+            text = document.previewDocument.toHtml()
+            async with aiofiles.open(pPath, 'w+t') as fd:
+                await fd.write(text)
+
         document.setModified(False)
         self.saveButton.setEnabled(False)
+
+        self.sessionViewUpdate(self.checkoutPath)
 
         entry = await self.sync()
         if entry:
@@ -732,7 +926,7 @@ class TextEditorWidget(QWidget):
             layout.addWidget(urlLabel)
             layout.addWidget(clipButton)
             layout.addItem(QSpacerItem(10, 10, QSizePolicy.Expanding,
-                           QSizePolicy.Minimum))
+                                       QSizePolicy.Minimum))
             layout.addWidget(publishButton)
 
             self.copiesLayout.insertLayout(0, layout)
@@ -744,8 +938,9 @@ class TextEditorWidget(QWidget):
         try:
             async for msg in ipfsop.client.dht.provide(entry['Hash']):
                 log.debug('Provide result: {}'.format(msg))
-        except Exception:
-            log.debug('Publish error')
+        except Exception as err:
+            messageBox('Could not publish')
+            log.debug(str(err))
             return False
         else:
             return True
@@ -771,23 +966,89 @@ class TextEditorWidget(QWidget):
         if not ipfsPath.valid:
             return
 
-        data = await ipfsop.catObject(ipfsPath.objPath)
+        self.busy()
 
-        if not data:
-            return messageBox('File could not be read')
+        try:
+            dstdir = self.sessionNew()
+            mimeType, stat = await self.app.rscAnalyzer(ipfsPath)
 
-        self.showNameInput(False)
+            if not stat:
+                self.busy(False)
+                messageBox('Stat failed')
 
-        encoding, textData = self.decode(data)
+            sInfo = StatInfo(stat)
+            if sInfo.totalSize > megabytes(32):
+                if not questionBox(
+                        'Stat size', 'Large object, fetch anyway ?'):
+                    self.busy(False)
+                    raise Exception('Object too large')
 
-        if ipfsPath.isRoot:
-            basename = None
+            if not await ipfsop.client.get(
+                ipfsPath.objPath,
+                dstdir=dstdir
+            ):
+                raise Exception('Fetch failed')
+        except Exception as err:
+            self.busy(False)
+            messageBox('Error fetching object: {}'.format(str(err)))
         else:
-            basename = ipfsPath.basename
+            rooted = os.path.join(dstdir, ipfsPath.basename)
 
-        doc = self.newDocument(name=basename, text=textData,
-                               encoding=encoding)
+            if os.path.isdir(rooted):
+                path = rooted
+            elif os.path.isfile(rooted):
+                path = dstdir
+            else:
+                path = dstdir
+
+            self.checkoutPath = path
+            self.sessionViewUpdate(self.checkoutPath)
+
+            for file in os.listdir(self.checkoutPath):
+                fp = os.path.join(self.checkoutPath, file)
+                mtype = await detectMimeTypeFromFile(fp)
+
+                if mtype and (mtype.isText or mtype.isHtml):
+                    await self.openFileFromCheckout(file)
+                    break
+
+            self.fsViewButton.setChecked(True)
+
+        self.busy(False)
+
+    async def isTextFile(self, path):
+        mtype = await detectMimeTypeFromFile(path)
+        return mtype and (mtype.isText or mtype.isHtml)
+
+    async def openFileFromCheckout(self, relpath):
+        if not self.checkChanges():
+            return
+
+        self.previewButton.setChecked(False)
+        fp = Path(os.path.join(self.checkoutPath, relpath))
+
+        if not fp.exists():
+            return
+
+        fsize = fp.stat().st_size
+
+        if fsize > 0 and not await self.isTextFile(str(fp)):
+            return messageBox('Not a text file')
+
+        self.busy()
+
+        basename = relpath
+        doc = self.newDocument(name=basename)
+        cursor = QTextCursor(doc)
+
+        async for chunk in asyncReadTextFileChunked(
+                str(fp), mode='rt'):
+            await asyncio.sleep(0.1)
+            cursor.insertText(chunk)
+
         self.currentDocument = doc
+        self.busy(False)
+        return doc
 
     def decode(self, data):
         for enc in ['utf-8', 'latin1', 'ascii']:

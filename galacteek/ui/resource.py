@@ -204,7 +204,7 @@ class IPFSResourceOpener(QObject):
                     logUser.debug(
                         '{path}: decryption impossible'.format(path=rscPath))
 
-        if mimeType.isText:
+        if mimeType.isText or editObject:
             tab = TextEditorTab(
                 parent=self.app.mainWindow,
                 editing=editObject

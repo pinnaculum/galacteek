@@ -8,7 +8,7 @@
 COMMIT_SHORT=$(echo $TRAVIS_COMMIT|cut -c 1-8)
 
 MINICONDA_DIST="Miniconda3-py37_4.8.2-Linux-x86_64.sh"
-GO_IPFS_VERSION=0.4.23
+GO_IPFS_VERSION=0.5.0
 GOIPFS_TGZ="go-ipfs_v${GO_IPFS_VERSION}_linux-amd64.tar.gz"
 GOIPFS_DISTURL="https://dist.ipfs.io/go-ipfs/v${GO_IPFS_VERSION}/${GOIPFS_TGZ}"
 
@@ -34,11 +34,18 @@ if ! [ -e $MINICONDA_DIST ]; then
     wget "https://repo.continuum.io/miniconda/${MINICONDA_DIST}"
 fi
 
-if ! [ -e $GOIPFS_TGZ ]; then
-    wget $GOIPFS_DISTURL
+if [ "$TRAVIS_BRANCH" = "catalyst" ]; then
+	# Compile from master
+	git clone https://github.com/ipfs/go-ipfs.git $HOME/go-ipfs.git
+	pushd $HOME/go-ipfs.git
+	make build
+	cp cmd/ipfs/ipfs $HOME/bin/ipfs
+	popd
+else
+	wget $GOIPFS_DISTURL
+	tar -C /tmp -xzvf ${GOIPFS_TGZ}
+	mv /tmp/go-ipfs/ipfs $HOME/bin/ipfs
 fi
-
-tar -C /tmp -xzvf ${GOIPFS_TGZ}
 
 APPDIR="galacteek.AppDir.${G_VERSION}"
 APPIPIP=$APPDIR/usr/bin/pip
@@ -90,7 +97,7 @@ find /usr/lib -iname 'libzbar.so*' -exec cp -av {} $APPDIR/usr/lib \;
 find /usr/lib -iname 'libjpeg.so*' -exec cp -av {} $APPDIR/usr/lib \;
 
 # Copy go-ipfs and fs-repo-migrations
-cp /tmp/go-ipfs/ipfs $APPDIR/usr/bin
+cp $HOME/bin/ipfs $APPDIR/usr/bin
 cp $HOME/bin/fs-repo-migrations $APPDIR/usr/bin
 
 # Remove unnecessary stuff
@@ -153,7 +160,7 @@ chmod +x appimagetool*.AppImage
 echo "AppDir successfully created, running appimagetool"
 ARCH=x86_64 ./appimagetool-x86_64.AppImage -n $APPDIR $APPIMAGE_DEST
 
-APPIMAGE_CID=$(/tmp/go-ipfs/ipfs add -q -n --cid-version 1 $APPIMAGE_DEST)
+APPIMAGE_CID=$($HOME/bin/ipfs add -q -n --cid-version 1 $APPIMAGE_DEST)
 echo "==> CIDv1 $APPIMAGE_DEST: $APPIMAGE_CID"
 
 if [ ! -z $TRAVIS_BRANCH ] && [ "$TRAVIS_BRANCH" = "master" ] ; then

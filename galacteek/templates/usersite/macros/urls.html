@@ -1,1 +1,2 @@
-{% macro site_ipns_url(ipnsId, suburl) %}dweb:/ipns/{{ ipnsId }}/{{ suburl }}{% endmacro %}
+{% macro site_ipns_url(ipnsId, suburl) %}ipns://{{ ipnsId }}/{{ suburl }}{% endmacro %}
+{% macro public_ipns_url(ipnsId, suburl) %}https://ipfs.io/ipns/{{ ipnsId }}/{{ suburl }}{% endmacro %}
