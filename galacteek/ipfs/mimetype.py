@@ -243,7 +243,7 @@ async def detectMimeTypeFromFile(filePath, bufferSize=131070):
 
 
 @ipfsOpFn
-async def detectMimeType(ipfsop, rscPath, bufferSize=131070, timeout=12):
+async def detectMimeType(ipfsop, rscPath, bufferSize=131070, timeout=15):
     """
     Returns the MIME type of a given IPFS resource
     Uses either python-magic if available, or runs the 'file' command

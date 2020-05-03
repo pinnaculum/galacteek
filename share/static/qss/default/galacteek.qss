@@ -331,3 +331,26 @@ QComboBox:on {
     padding-top: 4px;
     padding-left: 8px;
 }
+
+/* QSlider */
+
+QSlider::groove:horizontal {
+    border: 1px solid lightgray;
+    height: 4px;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #B1B1B1, stop:1 #c4c4c4);
+    margin: 2px 0;
+}
+
+QSlider::handle:horizontal {
+    background: #4b9fa2;
+    border: 1px solid #60cccf;
+    width: 24px;
+    height: 12px;
+    border-radius: 8px;
+    margin: -12px 0;
+}
+
+QSlider::sub-page:horizontal {
+    border: 1px solid lightgray;
+    background: #60cccf;
+}

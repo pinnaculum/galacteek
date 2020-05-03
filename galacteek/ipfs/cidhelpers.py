@@ -222,25 +222,25 @@ def domainValid(domain):
 # Regexps
 
 ipfsPathRe = re.compile(
-        r'^(\s*)?(?:fs:|dweb:|dwebgw:|https?://[\w:.-]+)?(?P<fullpath>(/ipfs/)?(?P<rootcid>[a-zA-Z0-9]{46,113})/?(?P<subpath>[\w<>":;,?!\*%&=@\$~/\s\.\-_\\\'()\+]{1,1024})?)#?(?P<fragment>[\w_\.\-\+,=/]{1,256})?$',  # noqa
+        r'^(\s*)?(?:fs:|dweb:|dwebgw:|https?://[\w:.-]+)?(?P<fullpath>(/ipfs/)?(?P<rootcid>[a-zA-Z0-9]{46,113})/?(?P<subpath>[\w|<>":;,?!\*%&=@\$~/\s\.\-_\\\'()\+]{1,1024})?)#?(?P<fragment>[\w_\.\-\+,=/]{1,256})?$',  # noqa
     flags=re.UNICODE)
 
 ipfsDomainPathRe = re.compile(
-        r'^(\s*)?(?:http)://(?P<rootcid>[a-z2-7]{59,113})\.ipfs\.(?:[\w]+):(?:[\d]+)/(?P<subpath>[\w<>"\/:;,?!\*%&=@\$~/\s\.\-_\\\'()\+]{0,1024})#?(?P<fragment>[\w_\.\-\+,=/]{1,256})?$',  # noqa
+        r'^(\s*)?(?:http)://(?P<rootcid>[a-z2-7]{59,113})\.ipfs\.(?:[\w]+):(?:[\d]+)/(?P<subpath>[\w|<>"\/:;,?!\*%&=@\$~/\s\.\-_\\\'()\+]{0,1024})#?(?P<fragment>[\w_\.\-\+,=/]{1,256})?$',  # noqa
     flags=re.UNICODE)
 
 # For ipfs://<cid-base32>
 ipfsPathDedRe = re.compile(
-    r'^(\s*)?(?:ipfs://)(?P<fullpath>(?P<rootcid>[a-z2-7]{59,113})/?(?P<subpath>[\w<>"*:;,?!%&=@\$~/\s\.\-_\\\'\+()]{1,1024})?)#?(?P<fragment>[\w_\+\.\-,=/]{1,256})?$',  # noqa
+    r'^(\s*)?(?:ipfs://)(?P<fullpath>(?P<rootcid>[a-z2-7]{59,113})/?(?P<subpath>[\w|<>"*:;,?!%&=@\$~/\s\.\-_\\\'\+()]{1,1024})?)#?(?P<fragment>[\w_\+\.\-,=/]{1,256})?$',  # noqa
     flags=re.UNICODE)
 
 # For rewriting (unlawful) ipfs://<cidv0> or ipfs://<cidv1-base58> to base32
 ipfsPathDedRe58 = re.compile(
-    r'^(\s*)?(?:ipfs://)(?P<fullpath>(?P<rootcid>[a-zA-Z0-9]{46,113})/?(?P<subpath>[\w<>"*:;,?!%&=@\$~/\s\.\-_\'\\\+()]{1,1024})?)#?(?P<fragment>[\w\-\+_\.,=/]{1,256})?$',  # noqa
+    r'^(\s*)?(?:ipfs://)(?P<fullpath>(?P<rootcid>[a-zA-Z0-9]{46,113})/?(?P<subpath>[\w|<>"*:;,?!%&=@\$~/\s\.\-_\'\\\+()]{1,1024})?)#?(?P<fragment>[\w\-\+_\.,=/]{1,256})?$',  # noqa
     flags=re.UNICODE)
 
 ipnsPathDedRe = re.compile(
-    r'^(\s*)?(?:(ipns|ipfs)://)(?P<fullpath>(?P<fqdn>[\w.-]+)/?(?P<subpath>[\w<>"*:;,\\?!%&=@\$~/\s\.\-_\'\+()]{1,1024})?)#?(?P<fragment>[\w\-\+_\.,=/]{1,256})?$',  # noqa
+    r'^(\s*)?(?:(ipns|ipfs)://)(?P<fullpath>(?P<fqdn>[\w.-]+)/?(?P<subpath>[\w|<>"*:;,\\?!%&=@\$~/\s\.\-_\'\+()]{1,1024})?)#?(?P<fragment>[\w\-\+_\.,=/]{1,256})?$',  # noqa
     flags=re.UNICODE)
 
 ipfsCidRe = re.compile(
@@ -253,7 +253,7 @@ ipnsKeyRe = re.compile(
     r'^(?P<key>(Qm[\w]{44}))$')
 
 ipnsPathRe = re.compile(
-        r'^(\s*)?(?:fs:|dweb:|dwebgw:|https?://[\w:.-]+)?(?P<fullpath>/ipns/(?P<fqdn>[\w\.-]+)/?(?P<subpath>[\w<>"*:;,?!%&=@\$~/\s\.\-_\'\\\+()]{1,1024})?)#?(?P<fragment>[\w\+\-_\.,=/]{1,256})?$',  # noqa
+        r'^(\s*)?(?:fs:|dweb:|dwebgw:|https?://[\w:.-]+)?(?P<fullpath>/ipns/(?P<fqdn>[\w\.-]+)/?(?P<subpath>[\w<>|"*:;,?!%&=@\$~/\s\.\-_\'\\\+()]{1,1024})?)#?(?P<fragment>[\w\+\-_\.,=/]{1,256})?$',  # noqa
     flags=re.UNICODE)
 
 

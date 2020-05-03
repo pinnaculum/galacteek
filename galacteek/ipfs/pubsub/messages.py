@@ -3,10 +3,8 @@ import collections
 
 from jsonschema import validate
 from jsonschema.exceptions import ValidationError
-from datetime import datetime
 
 from galacteek import log
-from galacteek.core import isoformat
 from galacteek.core import utcDatetimeIso
 from galacteek.core.iphandle import ipHandleRe
 from galacteek.core.jtraverse import traverseParser
@@ -705,8 +703,7 @@ class ChatRoomMessage(PubsubMessage):
     @staticmethod
     def make(sender, channel, message, links=[], attachments=[], date=None,
              level=0):
-        msgDate = date if date else isoformat(datetime.now(),
-                                              timespec='minutes')
+        msgDate = date if date else utcDatetimeIso()
         msg = ChatRoomMessage({
             'msgtype': ChatRoomMessage.TYPE,
             'version': 1,

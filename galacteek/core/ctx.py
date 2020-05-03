@@ -177,7 +177,7 @@ class Peers:
                 statInfo = StatInfo(stat)
 
                 if not statInfo.valid or statInfo.dataLargerThan(
-                        kilobytes(128)) or not mType or not mType.isImage:
+                        kilobytes(512)) or not mType or not mType.isImage:
                     log.debug('Invalid stat for QR: {}'.format(
                         iMsg.iphandleqrpngcid))
                     return
@@ -436,8 +436,8 @@ class P2PServices(QObject):
 
 class IPFSContext(QObject):
     # signals
-    ipfsConnectionReady = pyqtSignal()
-    ipfsRepositoryReady = pyqtSignal()
+    ipfsConnectionReady = AsyncSignal()
+    ipfsRepositoryReady = AsyncSignal()
 
     # profiles
     profilesAvailable = pyqtSignal(list)

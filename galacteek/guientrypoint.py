@@ -45,10 +45,8 @@ class ApplicationStarter:
 def galacteekGui(args):
     progName = args.binaryname if args.binaryname else sys.argv[0]
 
-    if args.debug:
-        glogger.basicConfig(level='DEBUG')
-    else:
-        glogger.basicConfig(level='INFO')
+    level = 'DEBUG' if args.debug else 'INFO'
+    glogger.basicConfig(level=level, colorized=args.logcolorized)
 
     # QtWebEngine init
     QtWebEngine.initialize()
@@ -112,6 +110,11 @@ def start():
         action='store_true',
         dest='monitor',
         help='Monitor application with aiomonitor')
+    parser.add_argument(
+        '--log-color',
+        action='store_true',
+        dest='logcolorized',
+        help='Colorized log output')
     parser.add_argument(
         '--seed',
         action='store_true',

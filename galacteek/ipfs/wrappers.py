@@ -31,7 +31,10 @@ def ipfsOpFn(func):
 class ipfsClassW:
     def __init__(self, wrapped):
         self.wrapped = wrapped
-        self.name = wrapped.__name__
+        self.__name__ = wrapped.__name__
+
+    def __repr__(self):
+        return self.__name__
 
     async def _operation(self, inst, op, *args, **kw):
         from galacteek.ipfs import ConnectionError
@@ -42,7 +45,7 @@ class ipfsClassW:
                 inst=inst))
             return None
         except asyncio.CancelledError:
-            log.debug('IPFSOp cancelled: {name}'.format(name=self.name))
+            log.debug('IPFSOp cancelled: {name}'.format(name=self.__name__))
         except RuntimeError as e:
             log.debug('IPFSOp runtime err: {}'.format(str(e)))
         except ClientConnectorError as e:
@@ -63,6 +66,8 @@ class ipfsOp(ipfsClassW):
             if op:
                 return await self._operation(inst, op, *args, **kw)
 
+        wrapper.__name__ = self.__name__
+        wrapper.__qualname__ = self.__name__
         return wrapper
 
 

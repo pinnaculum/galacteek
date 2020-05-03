@@ -1,4 +1,6 @@
 import traceback
+import asyncio
+import functools
 from datetime import datetime
 from datetime import timedelta
 
@@ -15,6 +17,17 @@ from galacteek.ipfs.cidhelpers import IPFSPath
 
 
 from galacteek.database.models.core import *
+
+databaseLock = asyncio.Lock()
+
+
+def dbLock(func):
+    @functools.wraps(func)
+    async def wrapper(*args, **kw):
+        async with databaseLock:
+            return await func(*args, **kw)
+
+    return wrapper
 
 
 async def initOrm(dbpath):

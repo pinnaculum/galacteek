@@ -450,6 +450,11 @@ def iMediaPlayer():
     return QCoreApplication.translate('GalacteekWindow', 'Media Player')
 
 
+def iMediaPlayerQueue():
+    return QCoreApplication.translate(
+        'GalacteekWindow', 'Queue in media player')
+
+
 def iChat():
     return QCoreApplication.translate('GalacteekWindow', 'Chat')
 

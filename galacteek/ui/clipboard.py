@@ -95,6 +95,12 @@ def iCopyPathToClipboard():
         "Copy full path to clipboard")
 
 
+def iCopyPubGwUrlToClipboard():
+    return QCoreApplication.translate(
+        'FileManagerForm',
+        "Copy public gatewayed URL to clipboard (ipfs.io)")
+
+
 def iCopyToClipboard():
     return QCoreApplication.translate(
         'clipboardManager',

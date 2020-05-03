@@ -351,7 +351,7 @@ class IPFSResourceOpener(QObject):
         filePathEsc = filePath.replace('"', r'\"')
         args = progArgs.replace('%f', filePathEsc)
 
-        log.debug('Object opener: executing: {}'.format(args))
+        log.info('Object opener: executing: {}'.format(args))
 
         try:
             proc = await asyncio.create_subprocess_shell(
@@ -378,7 +378,7 @@ class IPFSResourceOpener(QObject):
         Browse/open an IP service registered on an IPID
         """
 
-        logUser.info('Accessing IP service {}'.format(serviceId))
+        log.info('Accessing IP service {}'.format(serviceId))
 
         pService = await ipfsop.ipidManager.getServiceById(serviceId)
         if not pService:
@@ -397,7 +397,7 @@ class IPFSResourceOpener(QObject):
 
     @ipfsOp
     async def openIpServiceObject(self, ipfsop, serviceId, objectId):
-        logUser.info('Accessing IP service object {}'.format(objectId))
+        log.info('Accessing IP service object {}'.format(objectId))
 
         pService = await ipfsop.ipidManager.getServiceById(serviceId)
         if not pService:

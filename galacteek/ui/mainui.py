@@ -47,7 +47,6 @@ from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.cidhelpers import IPFSPath
 
-from galacteek.core.orbitdb import GalacteekOrbitConnector
 from galacteek.dweb.page import HashmarksPage, DWebView, WebTab
 from galacteek.core.modelhelpers import *
 
@@ -833,8 +832,9 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.BottomDockWidgetArea, self.pSearchDock)
 
         # Connect the IPFS context signals
-        self.app.ipfsCtx.ipfsConnectionReady.connect(self.onConnReady)
-        self.app.ipfsCtx.ipfsRepositoryReady.connect(self.onRepoReady)
+        self.app.ipfsCtx.ipfsConnectionReady.connectTo(self.onConnReady)
+        self.app.ipfsCtx.ipfsRepositoryReady.connectTo(self.onRepoReady)
+
         self.app.ipfsCtx.pubsub.psMessageRx.connect(self.onPubsubRx)
         self.app.ipfsCtx.pubsub.psMessageTx.connect(self.onPubsubTx)
         self.app.ipfsCtx.profilesAvailable.connect(self.onProfilesList)
@@ -991,27 +991,17 @@ class MainWindow(QMainWindow):
         for action in self.profilesActionGroup.actions():
             self.menuUserProfile.addAction(action)
 
-    def onRepoReady(self):
-        self.enableButtons()
-
+    async def onRepoReady(self):
         self.browseButton.normalIcon()
 
-        ensure(self.displayConnectionInfo())
-        ensure(self.qaToolbar.init())
-        ensure(self.hashmarkMgrButton.updateIcons())
-        ensure(self.app.marksLocal.pyramidsInit())
-        ensure(self.app.sqliteDb.feeds.start())
-        ensure(self.hashmarkMgrButton.updateMenu())
+        await self.displayConnectionInfo()
+        await self.app.marksLocal.pyramidsInit()
+        await self.app.sqliteDb.feeds.start()
+        await self.hashmarkMgrButton.updateMenu()
+        await self.hashmarkMgrButton.updateIcons()
+        await self.qaToolbar.init()
 
-        if self.app.enableOrbital and self.app.ipfsCtx.orbitConnector is None:
-            self.app.ipfsCtx.orbitConnector = GalacteekOrbitConnector(
-                orbitDataPath=self.app.orbitDataLocation,
-                servicePort=self.app.settingsMgr.getSetting(
-                    CFG_SECTION_ORBITDB,
-                    CFG_KEY_CONNECTOR_LISTENPORT
-                )
-            )
-            ensure(self.orbitStart())
+        self.enableButtons()
 
     @ipfsOp
     async def orbitStart(self, ipfsop):
@@ -1052,7 +1042,7 @@ class MainWindow(QMainWindow):
         self.app.task(dlg.loadInfos)
         dlg.exec_()
 
-    def onConnReady(self):
+    async def onConnReady(self):
         pass
 
     def onPubsubRx(self):

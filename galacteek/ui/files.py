@@ -47,6 +47,7 @@ from .widgets import GalacteekTab
 from .hashmarks import *  # noqa
 from .clipboard import iCopyCIDToClipboard
 from .clipboard import iCopyPathToClipboard
+from .clipboard import iCopyPubGwUrlToClipboard
 
 import aioipfs
 
@@ -731,18 +732,13 @@ class FileManager(QWidget):
         menu.exec(self.ui.treeFiles.mapToGlobal(point))
 
     def onContextMenu(self, point):
-        ensure(self.spawnContextMenu(point))
-
-    @ipfsOp
-    async def spawnContextMenu(self, ipfsop, point):
-        profile = ipfsop.ctx.currentProfile
         idx = self.ui.treeFiles.indexAt(point)
         if not idx.isValid():
             return self.onContextMenuVoid(point)
 
         nameItem = self.model.getNameItemFromIdx(idx)
         dataHash = self.model.getHashFromIdx(idx)
-        ipfsPath = nameItem.fullPath
+        ipfsPath = nameItem.ipfsPath
         menu = QMenu(self)
 
         def explore(cid):
@@ -771,7 +767,15 @@ class FileManager(QWidget):
             menu.addAction(getIcon('clipboard.png'),
                            iCopyPathToClipboard(),
                            functools.partial(self.app.setClipboardText,
-                                             ipfsPath))
+                                             str(ipfsPath)))
+
+        menu.addAction(getIcon('clipboard.png'),
+                       iCopyPubGwUrlToClipboard(),
+                       functools.partial(
+                           self.app.setClipboardText,
+                           ipfsPath.publicGwUrl
+        ))
+
         menu.addSeparator()
         menu.addAction(getIconIpfs64(), iDhtProvide(), functools.partial(
             self.onDhtProvide, dataHash, False))
@@ -785,22 +789,22 @@ class FileManager(QWidget):
 
         menu.addAction(getIcon('hashmarks.png'),
                        iHashmarkFile(),
-                       functools.partial(hashmark, ipfsPath,
+                       functools.partial(hashmark, str(ipfsPath),
                                          nameItem.entry['Name']))
         menu.addAction(getIconIpfs64(),
                        iBrowseFile(),
-                       functools.partial(self.browse, ipfsPath))
+                       functools.partial(self.browse, str(ipfsPath)))
         menu.addAction(getIcon('open.png'),
                        iOpen(),
                        functools.partial(ensure, self.app.resourceOpener.open(
-                           ipfsPath, openingFrom='filemanager',
+                           str(ipfsPath), openingFrom='filemanager',
                            tryDecrypt=self.rscOpenTryDecrypt)))
 
         if nameItem.isFile() or nameItem.isDir():
             menu.addAction(getIcon('text-editor.png'),
                            iEditObject(),
                            functools.partial(self.editObject,
-                                             nameItem.ipfsPath))
+                                             ipfsPath))
 
         if nameItem.isDir():
             menu.addAction(getIcon('folder-open.png'),
@@ -815,6 +819,19 @@ class FileManager(QWidget):
                 await op.publish(joinIpfs(oHash), key=keyName)
 
             self.app.ipfsTaskOp(publish, oHash, key)
+
+        # Media player actions
+        if nameItem.isFile():
+            menu.addAction(
+                getIcon('multimedia.png'),
+                iMediaPlayerQueue(), partialEnsure(
+                    self.mediaPlayerQueueFile, str(ipfsPath)))
+        elif nameItem.isDir():
+            menu.addAction(
+                getIcon('multimedia.png'),
+                iMediaPlayerQueue(), partialEnsure(
+                    self.mediaPlayerQueueDir, str(ipfsPath)))
+        menu.addSeparator()
 
         # Delete/unlink
         menu.addSeparator()
@@ -840,6 +857,16 @@ class FileManager(QWidget):
             publishMenu.addAction(action)
 
         publishMenu.triggered.connect(publishToKey)
+        ensure(self.buildDidPublishMenu(menu, str(ipfsPath)))
+
+        menu.addSeparator()
+        menu.addMenu(publishMenu)
+
+        menu.exec(self.ui.treeFiles.mapToGlobal(point))
+
+    @ipfsOp
+    async def buildDidPublishMenu(self, ipfsop, menu, ipfsPath):
+        profile = ipfsop.ctx.currentProfile
 
         # DID publishing menu
         try:
@@ -855,10 +882,6 @@ class FileManager(QWidget):
         else:
             menu.addMenu(didPublishMenu)
 
-        menu.addSeparator()
-        menu.addMenu(publishMenu)
-        menu.exec(self.ui.treeFiles.mapToGlobal(point))
-
     def onDidPublish(self, objPath, action):
         data = action.data()
         service = data['service']
@@ -872,6 +895,20 @@ class FileManager(QWidget):
     async def publishObjectOnDidService(self, service, ipfsPath):
         if service.type == IPService.SRV_TYPE_COLLECTION:
             await service.add(str(ipfsPath))
+
+    @ipfsOp
+    async def mediaPlayerQueueDir(self, ipfsop, ipfsPath):
+        async for objPath, parent in ipfsop.walk(str(ipfsPath)):
+            await self.mediaPlayerQueueFile(objPath)
+
+    @ipfsOp
+    async def mediaPlayerQueueFile(self, ipfsop, objPath):
+        mType, stat = await self.app.rscAnalyzer(objPath)
+        if not mType:
+            return
+
+        if mType.isAudio or mType.isVideo:
+            self.app.mainWindow.mediaPlayerQueue(objPath)
 
     def browse(self, path):
         self.gWindow.addBrowserTab().browseFsPath(
