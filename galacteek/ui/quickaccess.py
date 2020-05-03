@@ -43,6 +43,8 @@ class QuickAccessToolBar(QToolBar, URLDragAndDropProcessor):
     def __init__(self, parent):
         super(QuickAccessToolBar, self).__init__(parent=parent)
 
+        self.setEnabled(False)
+
         self.app = QCoreApplication.instance()
         self.lock = asyncio.Lock(loop=self.app.loop)
         self.setObjectName('toolbarQa')
@@ -228,3 +230,5 @@ class QuickAccessToolBar(QToolBar, URLDragAndDropProcessor):
 
         await self.registerDefaults()
         await self.load()
+
+        self.setEnabled(True)

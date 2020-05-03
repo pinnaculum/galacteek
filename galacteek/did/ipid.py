@@ -91,6 +91,7 @@ class IPService(metaclass=IPServiceRegistry):
     SRV_TYPE_ATOMFEED = 'DwebAtomFeedService'
     SRV_TYPE_VC = 'VerifiableCredentialService'
     SRV_TYPE_GENERICPYRAMID = 'GalacteekPyramidService'
+    SRV_TYPE_CHAT = 'GalacteekChatService'
 
     SRV_TYPE_LIVEPEER_STREAMING = 'P2PLivePeerStreamingService'
 

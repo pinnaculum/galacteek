@@ -62,6 +62,12 @@ class AsyncSignal(UserList):
                 continue
 
 
+def loopTime():
+    loop = asyncio.get_event_loop()
+    if loop:
+        return loop.time()
+
+
 def ensureGenericCallback(future):
     try:
         future.result()
@@ -71,10 +77,16 @@ def ensureGenericCallback(future):
 
 def ensure(coro, **kw):
     """ 'futcallback' should not be used in the coroutine's kwargs """
+
+    from galacteek import log
+
     callback = kw.pop('futcallback', ensureGenericCallback)
     future = asyncio.ensure_future(coro, **kw)
     if callback:
         future.add_done_callback(callback)
+
+    lTime = loopTime()
+    log.debug(f'Ensured new task (loop time: {lTime}): {future!r}')
     return future
 
 

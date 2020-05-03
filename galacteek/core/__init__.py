@@ -26,8 +26,8 @@ def utcDatetimeIso():
     return utcDatetime().isoformat()
 
 
-def datetimeIsoH():
-    return datetime.now().isoformat(sep=' ')
+def datetimeIsoH(timespec='seconds'):
+    return datetime.now().isoformat(sep=' ', timespec=timespec)
 
 
 def parseDate(date):

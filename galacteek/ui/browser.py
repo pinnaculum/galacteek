@@ -81,6 +81,7 @@ from .dialogs import *
 from .hashmarks import *
 from .i18n import *
 from .clipboard import iCopyPathToClipboard
+from .clipboard import iCopyPubGwUrlToClipboard
 from .clipboard import iClipboardEmpty
 from .history import HistoryMatchesWidget
 from .widgets import *
@@ -560,6 +561,11 @@ class WebView(IPFSWebView):
                            functools.partial(self.app.setClipboardText,
                                              str(ipfsPath)
                                              ))
+            menu.addAction(getIcon('clipboard.png'),
+                           iCopyPubGwUrlToClipboard(),
+                           functools.partial(self.app.setClipboardText,
+                                             ipfsPath.publicGwUrl
+                                             ))
             menu.addSeparator()
             menu.addAction(getIcon('open.png'), iOpen(), functools.partial(
                 ensure, self.app.resourceOpener.open(ipfsPath)))
@@ -615,6 +621,11 @@ class WebView(IPFSWebView):
                            iCopyPathToClipboard(),
                            functools.partial(self.app.setClipboardText,
                                              str(mediaIpfsPath)
+                                             ))
+            menu.addAction(getIcon('clipboard.png'),
+                           iCopyPubGwUrlToClipboard(),
+                           functools.partial(self.app.setClipboardText,
+                                             mediaIpfsPath.publicGwUrl
                                              ))
             menu.addSeparator()
             menu.addAction(getIcon('open.png'), iOpen(), functools.partial(

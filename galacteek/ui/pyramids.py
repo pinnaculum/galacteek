@@ -805,7 +805,7 @@ class MultihashPyramidToolButton(PopupToolButton):
                 'description': 'Generic pyramid: {}'.format(
                     self.pyramid.name
                 ),
-                'serviceEndpoint': self.indexIpnsPath.ipfsUrl
+                'serviceEndpoint': self.ipnsKeyPath.ipfsUrl
             })
         except IPIDServiceException as err:
             messageBox('IP Service error: {}'.format(str(err)))

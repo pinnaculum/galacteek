@@ -102,6 +102,10 @@ class TunnelDialerContext(object):
     async def __aexit__(self, *args):
         self.operator.debug('Tunnel dialer: {0} {1} {2}: aexit'.format(
             self.protocol, self.maddrHost, self.maddrPort))
+
+        if not self.operator.ctx:
+            return
+
         manager = self.operator.ctx.p2p.tunnelsMgr
 
         streams = await manager.streamsForListenAddr(self.maddr)
@@ -1122,6 +1126,29 @@ class IPFSOperator(object):
                 self.objectPathMap(path)
             ), timeout
         )
+
+    async def walk(self, path):
+        """
+        Walks over UnixFS nodes and yields only paths of
+        file objects.
+        """
+        try:
+            result = await self.listObject(path)
+        except aioipfs.APIError:
+            pass
+        else:
+            _olist = result.get('Objects', [])
+            if len(_olist) > 0:
+                links = _olist.pop()['Links']
+
+                for entry in links:
+                    if entry['Type'] == 1:
+                        async for value in self.walk(entry['Hash']):
+                            yield value
+                    elif entry['Type'] == 2:
+                        fPath = IPFSPath(path).child(entry['Name'])
+                        if fPath.valid:
+                            yield (str(fPath), path)
 
     async def dagPut(self, data, pin=False, offline=False):
         """

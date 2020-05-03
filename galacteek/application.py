@@ -564,7 +564,7 @@ class GalacteekApplication(QApplication):
         self.feedFollowerTask = await self.scheduler.spawn(
             self.feedFollower.process())
 
-        self.loop.call_soon(self.ipfsCtx.ipfsRepositoryReady.emit)
+        await self.ipfsCtx.ipfsRepositoryReady.emit()
 
         #
         # If the application's binary name is a valid CID, pin it!
@@ -727,7 +727,7 @@ class GalacteekApplication(QApplication):
             await messageBoxAsync(
                 'IPFS connection error (is your daemon running ?)')
 
-        self.loop.call_soon(self.ipfsCtx.ipfsConnectionReady.emit)
+        await self.ipfsCtx.ipfsConnectionReady.emit()
 
     async def stopIpfsServices(self):
         try:
@@ -1101,6 +1101,12 @@ class GalacteekApplication(QApplication):
         ensure(self.exitApp())
 
     async def exitApp(self):
+        try:
+            self.systemTray.hide()
+            self.systemTray.deleteLater()
+        except:
+            pass
+
         await self.scheduler.close()
 
         try:
@@ -1109,13 +1115,16 @@ class GalacteekApplication(QApplication):
         except:
             pass
 
+        await self.stopIpfsServices()
+
         for task in self.pendingTasks:
             task.cancel()
 
-        await self.stopIpfsServices()
+        await self.loop.shutdown_asyncgens()
 
-        if self.ethereum:
-            await self.ethereum.stop()
+        await self.ethereum.stop()
+
+        await self.ipfsClient.close()
 
         if self.ipfsd:
             self.ipfsd.stop()

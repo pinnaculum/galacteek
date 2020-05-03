@@ -6,6 +6,7 @@ from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.pubsub.messages import ChatRoomMessage
 from galacteek.ipfs.pubsub import TOPIC_CHAT
+from galacteek.core import datetimeIsoH
 from galacteek import ensure
 
 from .helpers import questionBox
@@ -44,13 +45,14 @@ class ChatRoomWidget(GalacteekTab):
                 ensure(self.app.resourceOpener.open(path, openingFrom='chat'))
 
     def onChatMessageReceived(self, message):
+        now = datetimeIsoH()
         self.ui.chatLog.moveCursor(QTextCursor.End, QTextCursor.MoveAnchor)
         self.ui.chatLog.insertPlainText('\n')
         self.ui.chatLog.insertHtml('<br>')
 
         formatted = '<p>'
         formatted += '<span style="color: black">({date})</span> '.format(
-            date=message.date)
+            date=now)
         formatted += '<span style="color: #006080">#{channel}</span> '.format(
             channel=message.channel)
         formatted += '<span style="color: #e67300">{sender}</span>: '.format(

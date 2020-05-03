@@ -1,4 +1,5 @@
 import os.path
+import functools
 
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QLabel
@@ -11,6 +12,7 @@ from PyQt5.QtWidgets import QStyle
 from PyQt5.QtWidgets import QSlider
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtWidgets import QSizePolicy
+from PyQt5.QtGui import QFont
 
 from PyQt5.QtMultimedia import QMediaPlayer
 from PyQt5.QtMultimedia import QMediaContent
@@ -24,6 +26,8 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QAbstractItemModel
 from PyQt5.QtCore import QModelIndex
 from PyQt5.QtCore import QTime
+from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QItemSelectionModel
 
 from galacteek.core.jsono import *
 from galacteek.ipfs.cidhelpers import joinIpfs
@@ -76,6 +80,12 @@ def iPlaylistExists():
         'A playlist with this name already exists')
 
 
+def iPlaylistRemoveMedia():
+    return QCoreApplication.translate(
+        'MediaPlayer',
+        'Remove media from playlist')
+
+
 def iPlaylistName():
     return QCoreApplication.translate(
         'MediaPlayer',
@@ -97,14 +107,6 @@ def mediaPlayerAvailable(player=None):
         player = QMediaPlayer()
     availability = player.availability()
     return availability == QMultimedia.Available
-
-
-class VideoWidget(QVideoWidget):
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Escape:
-            self.setFullScreen(False)
-
-        super(VideoWidget, self).keyPressEvent(event)
 
 
 def durationConvert(duration):
@@ -132,6 +134,64 @@ class JSONPlaylistV1(QJSONObj):
 
     def items(self):
         return self.root['playlist']['items']
+
+
+class MPlayerVideoWidget(QVideoWidget):
+    def __init__(self, player, parent=None):
+        super(MPlayerVideoWidget, self).__init__(parent)
+        self.player = player
+
+    def keyPressEvent(self, event):
+        mSecMove = 3000
+        pos = self.player.position()
+
+        if event.key() == Qt.Key_Escape:
+            self.viewFullScreen(False)
+
+        if event.key() == Qt.Key_Right:
+            self.player.setPosition(pos + mSecMove)
+        if event.key() == Qt.Key_Left:
+            pos = self.player.position()
+            if pos > mSecMove:
+                self.player.setPosition(pos - mSecMove)
+            else:
+                self.player.setPosition(0)
+
+        if event.key() == Qt.Key_Up:
+            pos = self.player.position()
+            self.player.setPosition(pos + mSecMove * 2)
+
+        if event.key() == Qt.Key_Down:
+            pos = self.player.position()
+            if pos > mSecMove * 2:
+                self.player.setPosition(pos - mSecMove * 2)
+            else:
+                self.player.setPosition(0)
+        if event.key() == Qt.Key_F:
+            self.viewFullScreen(not self.isFullScreen())
+
+        super(MPlayerVideoWidget, self).keyPressEvent(event)
+
+    def mouseDoubleClickEvent(self, event):
+        self.viewFullScreen(not self.isFullScreen())
+        super(MPlayerVideoWidget, self).mouseDoubleClickEvent(event)
+
+    def mousePressEvent(self, event):
+        self.changeFocus()
+        super(MPlayerVideoWidget, self).mousePressEvent(event)
+
+    def viewFullScreen(self, fullscreen):
+        self.setFullScreen(fullscreen)
+        if fullscreen:
+            self.setCursor(Qt.BlankCursor)
+        else:
+            self.setCursor(Qt.ArrowCursor)
+
+        self.changeFocus()
+
+    def changeFocus(self):
+        QTimer.singleShot(0, functools.partial(self.setFocus,
+                                               Qt.OtherFocusReason))
 
 
 class MediaPlayerTab(GalacteekTab):
@@ -183,6 +243,7 @@ class MediaPlayerTab(GalacteekTab):
             self.style().standardIcon(QStyle.SP_MediaSkipBackward))
 
         self.pListView = self.uipList.listView
+        self.pListView.mousePressEvent = self.playlistMousePressEvent
         self.pListView.setModel(self.model)
         self.pListView.setResizeMode(QListView.Adjust)
         self.pListView.setMinimumWidth(self.width() / 2)
@@ -192,7 +253,8 @@ class MediaPlayerTab(GalacteekTab):
         self.player = QMediaPlayer(self)
         self.player.setPlaylist(self.playlist)
 
-        self.videoWidget = VideoWidget(self)
+        self.videoWidget = MPlayerVideoWidget(self.player, self)
+        self.useUpdates(True)
         self.videoWidget.setSizePolicy(
             QSizePolicy.Expanding, QSizePolicy.Expanding)
 
@@ -203,8 +265,11 @@ class MediaPlayerTab(GalacteekTab):
         self.player.metaDataChanged.connect(self.onMetaData)
         self.player.durationChanged.connect(self.mediaDurationChanged)
         self.player.positionChanged.connect(self.mediaPositionChanged)
+        self.player.videoAvailableChanged.connect(self.onVideoAvailable)
+
         self.pListView.activated.connect(self.onListActivated)
         self.playlist.currentIndexChanged.connect(self.playlistPositionChanged)
+        self.playlist.currentMediaChanged.connect(self.playlistMediaChanged)
         self.playlist.mediaInserted.connect(self.playlistMediaInserted)
         self.playlist.mediaRemoved.connect(self.playlistMediaRemoved)
 
@@ -242,6 +307,8 @@ class MediaPlayerTab(GalacteekTab):
         self.fullscreenButton.setToolTip(iFullScreen())
 
         self.seekSlider = QSlider(Qt.Horizontal, sliderMoved=self.onSeek)
+        self.seekSlider.sliderReleased.connect(self.onSliderReleased)
+        self.seekSlider.setObjectName('mediaPlayerSlider')
         self.durationLabel = QLabel()
 
         vLayout = QVBoxLayout()
@@ -267,6 +334,7 @@ class MediaPlayerTab(GalacteekTab):
 
         self.vLayout.addLayout(hLayout)
         self.update()
+        self.videoWidget.changeFocus()
 
     @property
     def isPlaying(self):
@@ -280,11 +348,15 @@ class MediaPlayerTab(GalacteekTab):
     def isStopped(self):
         return self.playerState == self.stateStopped
 
+    def useUpdates(self, updates=True):
+        # Enable widget updates or not on the video widget
+        self.videoWidget.setUpdatesEnabled(updates)
+
     def update(self):
         self.app.task(self.updatePlaylistsMenu)
 
     def onFullScreen(self):
-        self.videoWidget.setFullScreen(True)
+        self.videoWidget.viewFullScreen(True)
 
     def onClearPlaylist(self):
         self.copyPathAction.setEnabled(False)
@@ -326,6 +398,39 @@ class MediaPlayerTab(GalacteekTab):
             action = QAction(entry['Name'], self)
             action.setData(entry)
             self.playlistsMenu.addAction(action)
+
+    def playlistShowContextMenu(self, event):
+        selModel = self.pListView.selectionModel()
+        idx = self.pListView.indexAt(event.pos())
+        if not idx.isValid():
+            return
+
+        path = self.model.data(idx)
+        if path:
+            selModel.reset()
+            selModel.select(
+                idx, QItemSelectionModel.Select
+            )
+
+            menu = QMenu(self)
+            menu.addAction(
+                getIcon('clear-all.png'),
+                iPlaylistRemoveMedia(), functools.partial(
+                    self.onRemoveMediaFromIndex, idx))
+            menu.exec_(event.globalPos())
+
+    def onRemoveMediaFromIndex(self, idx):
+        self.playlist.removeMedia(idx.row())
+
+    def playlistMousePressEvent(self, event):
+        if event.button() == Qt.RightButton:
+            self.pListView.selectionModel().reset()
+            self.playlistShowContextMenu(event)
+        else:
+            if not self.pListView.indexAt(event.pos()).isValid():
+                self.deselectPlaylistItems()
+
+            QListView.mousePressEvent(self.pListView, event)
 
     def onPlaylistsMenu(self, action):
         entry = action.data()
@@ -389,6 +494,8 @@ class MediaPlayerTab(GalacteekTab):
         self.uipList.savePlaylistButton.setEnabled(
             self.playlist.mediaCount() > 0)
 
+        self.model.modelReset.emit()
+
     def playlistGetPaths(self):
         return [u.path() for u in self.playlistGetUrls()]
 
@@ -427,6 +534,9 @@ class MediaPlayerTab(GalacteekTab):
         else:
             messageBox('Not a multimedia resource')
 
+    def onSliderReleased(self):
+        pass
+
     def onPlaylistNext(self):
         self.playlist.next()
 
@@ -449,13 +559,11 @@ class MediaPlayerTab(GalacteekTab):
         self.seekSlider.setRange(0, 0)
 
     def onSeek(self, seconds):
-        self.player.setPosition(seconds * 1000)
+        if self.player.isSeekable():
+            self.player.setPosition(seconds * 1000)
 
     def onTogglePlaylist(self):
-        if self.pListWidget.isHidden():
-            self.pListWidget.show()
-        else:
-            self.pListWidget.hide()
+        self.pListWidget.setVisible(self.pListWidget.isHidden())
 
     def onError(self, error):
         messageBox(iPlayerError(error))
@@ -523,6 +631,28 @@ class MediaPlayerTab(GalacteekTab):
     def playlistPositionChanged(self, position):
         self.pListView.setCurrentIndex(self.model.index(position, 0))
 
+    def deselectPlaylistItems(self):
+        self.pListView.selectionModel().reset()
+
+    def playlistMediaChanged(self, media):
+        selModel = self.pListView.selectionModel()
+
+        self.deselectPlaylistItems()
+
+        self.model.modelReset.emit()
+        idx = self.model.index(self.playlist.currentIndex(), 0)
+        if idx.isValid():
+            selModel.select(idx, QItemSelectionModel.Select)
+
+    def onVideoAvailable(self, available):
+        if available:
+            if self.isPlaying:
+                self.useUpdates(False)
+            elif self.isStopped or self.isPaused:
+                self.useUpdates(True)
+        else:
+            self.useUpdates(True)
+
     def mediaDurationChanged(self, duration):
         self.duration = duration / 1000
         self.seekSlider.setMaximum(self.duration)
@@ -543,37 +673,6 @@ class MediaPlayerTab(GalacteekTab):
         self.player.stop()
         self.player.setMedia(QMediaContent(None))
         return True
-
-    def keyPressEvent(self, event):
-        mSecMove = 3000
-
-        if event.key() == Qt.Key_Space:
-            if self.isPlaying:
-                self.player.pause()
-            elif self.isPaused:
-                self.player.play()
-        if event.key() == Qt.Key_Right:
-            pos = self.player.position()
-            self.player.setPosition(pos + mSecMove)
-        if event.key() == Qt.Key_Up:
-            pos = self.player.position()
-            self.player.setPosition(pos + mSecMove * 2)
-        if event.key() == Qt.Key_Left:
-            pos = self.player.position()
-            if pos > mSecMove:
-                self.player.setPosition(pos - mSecMove)
-            else:
-                self.player.setPosition(0)
-        if event.key() == Qt.Key_Down:
-            pos = self.player.position()
-            if pos > mSecMove * 2:
-                self.player.setPosition(pos - mSecMove * 2)
-            else:
-                self.player.setPosition(0)
-        if event.key() == Qt.Key_F:
-            self.videoWidget.setFullScreen(True)
-
-        super(MediaPlayerTab, self).keyPressEvent(event)
 
     def playerAvailable(self):
         return mediaPlayerAvailable(player=self.player)
@@ -610,7 +709,10 @@ class ListModel(QAbstractItemModel):
         self.dataChanged.emit(self.index(start, 0), self.index(end, 1))
 
     def data(self, index, role=Qt.DisplayRole):
-        if index.isValid() and role == Qt.DisplayRole:
+        if not index.isValid():
+            return
+
+        if role == Qt.DisplayRole:
             if index.column() == 0:
                 media = self.playlist.media(index.row())
                 if media is None:
@@ -623,4 +725,16 @@ class ListModel(QAbstractItemModel):
                 else:
                     return path
             return self.m_data[index]
+        elif role == Qt.FontRole:
+            curPlIndex = self.playlist.currentIndex()
+
+            font = QFont('Times', pointSize=12)
+
+            if curPlIndex == index.row():
+                font = QFont('Times', pointSize=14)
+                font.setBold(True)
+                return font
+            else:
+                return QFont('Times', pointSize=12)
+
         return None
