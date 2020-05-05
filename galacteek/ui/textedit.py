@@ -57,6 +57,7 @@ from galacteek.ipfs import megabytes
 from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.mimetype import detectMimeTypeFromFile
+from galacteek.ipfs.mimetype import detectMimeTypeFromBuffer
 from galacteek.dweb.markdown import markitdown
 
 from .helpers import *
@@ -559,13 +560,16 @@ class TextEditorWidget(QWidget):
     def currentDocument(self, doc):
         self._currentDocument = doc
         self.textEditor.setDocument(self.currentDocument)
+        self.previewWidget.setDocument(self.currentDocument.previewDocument)
 
         if self.currentDocument.filename:
             if self.currentDocument.filename.endswith('.py'):
                 self.highlighter = PythonSyntaxHighlighter(
                     self.currentDocument)
                 self.tabReplaceButton.setChecked(True)
-            if self.currentDocument.filename.endswith('.md'):
+            if self.currentDocument.filename.lower().endswith('.md'):
+                self.previewButton.setChecked(True)
+            if self.currentDocument.filename.lower().endswith('.html'):
                 self.previewButton.setChecked(True)
         else:
             self.highlighter = None
@@ -578,9 +582,6 @@ class TextEditorWidget(QWidget):
         self.currentDocument.contentsChanged.connect(self.onDocumentChanged)
 
         self.applyStylesheet()
-
-    async def changeDocument(self, document):
-        self.textEditor.setDocument(document)
 
     def cleanup(self):
         if os.path.isdir(self.checkoutPath):
@@ -641,7 +642,7 @@ class TextEditorWidget(QWidget):
         if not rootDir.is_dir():
             return
 
-        name = self.nameInput()
+        name = self.nameInput('Directory name')
         if name:
             dirpath = rootDir.joinpath(name)
             if dirpath.exists():
@@ -668,7 +669,7 @@ class TextEditorWidget(QWidget):
             self._previewTimer.start(1200)
 
     def onPreviewRerender(self):
-        self.markdownPreviewUpdate()
+        ensure(self.updatePreview())
         self._previewTimer.stop()
 
     def showNameInput(self, view=True):
@@ -731,43 +732,33 @@ class TextEditorWidget(QWidget):
     def newDocument(self, name=None, text='', encoding='utf-8',
                     textLayout=True):
         self.textEditor.setStyleSheet(defaultStyleSheet)
-        return Document(name=name, text=text, parent=self, encoding=encoding,
-                        textLayout=textLayout)
+        doc = Document(name=name, text=text, parent=self, encoding=encoding,
+                       textLayout=textLayout)
+        doc._previewDocument = Document(parent=doc, textLayout=False)
+        return doc
 
-    def markdownPreviewUpdate(self):
+    async def updatePreview(self):
         textData = self.currentDocument.toPlainText()
-        pDocument = self.previewWidget.document()
+        pDocument = self.currentDocument.previewDocument
 
         try:
-            html = markitdown(textData)
-            pDocument.setHtml(html)
-        except Exception:
-            pDocument.setPlainText(textData)
+            mimeType = await detectMimeTypeFromBuffer(textData.encode())
+        except:
+            pass
+
+        if mimeType and mimeType.isHtml:
+            pDocument.setHtml(textData)
+        else:
+            try:
+                html = markitdown(textData)
+                pDocument.setHtml(html)
+            except Exception:
+                pDocument.setPlainText(textData)
 
     def showPreview(self):
-        textData = self.currentDocument.toPlainText()
-        previewName = None
-
-        if self.currentDocument.filename and \
-                self.currentDocument.filename.endswith('.md'):
-            previewName = self.currentDocument.filename.replace(
-                '.md', '.html')
-
-        newDocument = self.newDocument(
-            name=previewName, text=textData,
-            textLayout=False
-        )
-
-        try:
-            html = markitdown(textData)
-            newDocument.setHtml(html)
-            self.currentDocument._previewDocument = newDocument
-        except Exception:
-            newDocument.setPlainText(textData)
-
-        self.previewWidget.setDocument(newDocument)
         self.previewWidget.setReadOnly(True)
         self.previewWidget.show()
+        ensure(self.updatePreview())
 
     def showText(self, textData, preview=False):
         if preview:
@@ -846,7 +837,6 @@ class TextEditorWidget(QWidget):
         self.model.setRootPath(path)
         self.filesView.setRootIndex(self.model.index(path))
 
-    # @ipfsOp
     def sessionNew(self):
         localDirName = self.genUid()
         localPath = os.path.join(
@@ -869,13 +859,16 @@ class TextEditorWidget(QWidget):
 
     @ipfsOp
     async def sync(self, ipfsop):
+        self.busy(True)
         try:
             async with ipfsop.offlineMode() as opoff:
                 entry = await opoff.addPath(self.checkoutPath, wrap=False,
                                             hidden=True)
         except Exception as err:
+            self.busy(False)
             log.debug(str(err))
         else:
+            self.busy(False)
             if not entry:
                 return
 
@@ -884,6 +877,7 @@ class TextEditorWidget(QWidget):
 
     @ipfsOp
     async def saveDocument(self, ipfsop, document, offline=True):
+        tbPyramids = self.app.mainWindow.toolbarPyramids
         text = document.toPlainText()
 
         if not document.filename:
@@ -894,11 +888,17 @@ class TextEditorWidget(QWidget):
             await fd.write(text)
 
         if document.previewDocument:
-            pPath = os.path.join(self.checkoutPath,
-                                 document.previewDocument.filename)
-            text = document.previewDocument.toHtml()
-            async with aiofiles.open(pPath, 'w+t') as fd:
-                await fd.write(text)
+            # Automatic markdown => html saving, disable for now
+            if document.filename.endswith('.md'):
+                document.previewDocument.filename = \
+                    document.filename.replace('.md', '.html')
+
+            if document.previewDocument.filename and 0:
+                pPath = os.path.join(self.checkoutPath,
+                                     document.previewDocument.filename)
+                text = document.previewDocument.toHtml()
+                async with aiofiles.open(pPath, 'w+t') as fd:
+                    await fd.write(text)
 
         document.setModified(False)
         self.saveButton.setEnabled(False)
@@ -912,6 +912,7 @@ class TextEditorWidget(QWidget):
 
             urlLabel = IPFSUrlLabel(path)
             clipButton = IPFSPathClipboardButton(path)
+            pyrDropButton = tbPyramids.getPyrDropButtonFor(path)
 
             now = QDateTime.currentDateTime()
             date = QLabel()
@@ -925,6 +926,7 @@ class TextEditorWidget(QWidget):
             layout.addWidget(date)
             layout.addWidget(urlLabel)
             layout.addWidget(clipButton)
+            layout.addWidget(pyrDropButton)
             layout.addItem(QSpacerItem(10, 10, QSizePolicy.Expanding,
                                        QSizePolicy.Minimum))
             layout.addWidget(publishButton)
@@ -950,13 +952,18 @@ class TextEditorWidget(QWidget):
             try:
                 result = future.result()
                 if result is True:
-                    pButton.setEnabled(False)
-                    pButton.setText('Published')
+                    pButton.setStyleSheet('''
+                        QToolButton {
+                            color: green;
+                        }'''
+                                          )
+                    pButton.setText('OK')
             except:
                 pButton.setText('ERR')
 
-        ensure(self.publishEntry(entry),
-               futcallback=finished)
+        ensure(self.publishEntry(entry), futcallback=finished)
+        pButton.setEnabled(False)
+        pButton.setText('Publishing ..')
 
     @ipfsOp
     async def showFromPath(self, ipfsop, ipfsPath):
@@ -974,7 +981,8 @@ class TextEditorWidget(QWidget):
 
             if not stat:
                 self.busy(False)
-                messageBox('Stat failed')
+                messageBox('Object stat failed')
+                return
 
             sInfo = StatInfo(stat)
             if sInfo.totalSize > megabytes(32):
@@ -1005,9 +1013,12 @@ class TextEditorWidget(QWidget):
             self.sessionViewUpdate(self.checkoutPath)
 
             for file in os.listdir(self.checkoutPath):
+                await asyncio.sleep(0)
+
                 fp = os.path.join(self.checkoutPath, file)
                 mtype = await detectMimeTypeFromFile(fp)
 
+                # Open first text file we find
                 if mtype and (mtype.isText or mtype.isHtml):
                     await self.openFileFromCheckout(file)
                     break

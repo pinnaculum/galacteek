@@ -5,7 +5,6 @@ from logbook import StringFormatterHandlerMixin
 
 from PyQt5.QtWidgets import QTabWidget
 from PyQt5.QtWidgets import QMainWindow
-from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QToolBar
 from PyQt5.QtWidgets import QMenu
@@ -79,6 +78,8 @@ from .peers import PeersServiceSearchDock
 from .pubsub import PubsubSnifferWidget
 from .pyramids import MultihashPyramidsToolBar
 from .quickaccess import QuickAccessToolBar
+from .daemonstats import BandwidthGraphView
+from .daemonstats import PeersCountGraphView
 from .helpers import *
 from .widgets import PopupToolButton
 from .widgets import HashmarkMgrButton
@@ -207,17 +208,15 @@ class MainWindowLogHandler(Handler, StringFormatterHandlerMixin):
             self.logsBrowser.moveCursor(QTextCursor.End)
 
 
-class IPFSInfosDialog(QDialog):
-    """
-    IPFS node/repository information dialog
-    """
+class IPFSDaemonStatusWidget(QWidget):
+    def __init__(self, bwStatsView, peersStatsView, parent=None):
+        super(IPFSDaemonStatusWidget, self).__init__(
+            parent, Qt.Popup | Qt.FramelessWindowHint)
 
-    def __init__(self, app, parent=None):
-        super().__init__(parent)
-
+        self.app = QApplication.instance()
         self.ui = ui_ipfsinfos.Ui_IPFSInfosDialog()
         self.ui.setupUi(self)
-        self.ui.okButton.clicked.connect(functools.partial(self.done, 1))
+        self.setWindowTitle(iIpfsInfos())
 
         self.labels = [self.ui.repoObjCount,
                        self.ui.repoVersion,
@@ -227,7 +226,13 @@ class IPFSInfosDialog(QDialog):
                        self.ui.agentVersion,
                        self.ui.protocolVersion]
 
-        self.enableLabels(False)
+        self.ui.bwRateStatsLayout.addWidget(bwStatsView)
+        self.ui.peersStatsLayout.addWidget(peersStatsView)
+
+        self.setMinimumWidth(self.app.desktopGeometry.width() / 2)
+        self.ui.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.ui.tabWidget.setStyleSheet(
+            "QTabWidget::pane { background-color: lightgray; }")
 
     def enableLabels(self, enable):
         for label in self.labels:
@@ -237,7 +242,8 @@ class IPFSInfosDialog(QDialog):
             label.setEnabled(enable)
 
     @ipfsOp
-    async def loadInfos(self, ipfsop):
+    async def update(self, ipfsop):
+        self.enableLabels(False)
         try:
             repoStat = await ipfsop.client.repo.stat()
             idInfo = await ipfsop.client.core.id()
@@ -794,6 +800,7 @@ class MainWindow(QMainWindow):
         )
         self.ipfsStatusCube.clip.setScaledSize(QSize(24, 24))
         self.ipfsStatusCube.animationClicked.connect(self.onIpfsInfos)
+        self.ipfsStatusCube.hovered.connect(self.onIpfsInfosHovered)
         self.ipfsStatusCube.startClip()
 
         self.statusbar = self.statusBar()
@@ -804,6 +811,16 @@ class MainWindow(QMainWindow):
         self.userLogsButton.toggled.connect(self.onShowUserLogs)
         self.logsPopupWindow.hidden.connect(
             functools.partial(self.userLogsButton.setChecked, False))
+
+        # Bandwidth graph
+        self.bwGraphView = BandwidthGraphView(parent=None)
+        self.peersGraphView = PeersCountGraphView(parent=None)
+        self.ipfsDaemonStatusWidget = IPFSDaemonStatusWidget(
+            self.bwGraphView, self.peersGraphView)
+
+        # IPFS information dialog
+        # self.ipfsInfosDialog = IPFSInfosDialog(
+        #    self.bwGraphView, self.peersGraphView)
 
         self.lastLogLabel = QLabel(self.statusbar)
         self.lastLogLabel.setAlignment(Qt.AlignLeft)
@@ -822,7 +839,7 @@ class MainWindow(QMainWindow):
         # Connection status timer
         self.timerStatus = QTimer(self)
         self.timerStatus.timeout.connect(self.onMainTimerStatus)
-        self.timerStatus.start(20000)
+        self.timerStatus.start(7000)
 
         self.enableButtons(False)
 
@@ -1037,10 +1054,25 @@ class MainWindow(QMainWindow):
         self.app.systemTrayMessage('IPNS', message, timeout=10000)
 
     def onIpfsInfos(self):
-        dlg = IPFSInfosDialog(self.app)
-        dlg.setWindowTitle(iIpfsInfos())
-        self.app.task(dlg.loadInfos)
-        dlg.exec_()
+        if not self.ipfsInfosDialog.isVisible():
+            ensure(runDialogAsync(self.ipfsInfosDialog))
+
+    def onIpfsInfosHovered(self, hovered):
+        if hovered is False:
+            return
+
+        statusCubePos = self.ipfsStatusCube.mapToGlobal(self.pos())
+
+        popupPoint = QPoint(
+            statusCubePos.x() - self.ipfsDaemonStatusWidget.width() -
+            self.ipfsStatusCube.width(),
+            statusCubePos.y() - self.ipfsDaemonStatusWidget.height() -
+            (2 * self.ipfsStatusCube.height())
+        )
+
+        self.ipfsDaemonStatusWidget.move(popupPoint)
+        self.ipfsDaemonStatusWidget.setVisible(hovered)
+        ensure(self.ipfsDaemonStatusWidget.update())
 
     async def onConnReady(self):
         pass
@@ -1164,6 +1196,7 @@ class MainWindow(QMainWindow):
     async def displayConnectionInfo(self, ipfsop):
         try:
             info = await ipfsop.client.core.id()
+            bwStats = await ipfsop.client.stats.bw()
         except BaseException:
             self.setConnectionInfoMessage(iErrNoCx())
             return
@@ -1182,6 +1215,12 @@ class MainWindow(QMainWindow):
             return
 
         await ipfsop.peersCountStatus(peersCount)
+
+        # Notify the bandwidth graph with the stats
+        if isinstance(bwStats, dict):
+            await self.bwGraphView.bwStatsFetched.emit(bwStats)
+
+        await self.peersGraphView.peersCountFetched.emit(peersCount)
 
         # TODO: compute something more precise, probably based on the
         # swarm's high/low config

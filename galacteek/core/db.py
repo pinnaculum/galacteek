@@ -7,6 +7,7 @@ from datetime import datetime
 
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import QCoreApplication
 
 from galacteek import log
 from galacteek import ensure
@@ -73,13 +74,13 @@ class AtomFeedsDatabase(QObject):
     def __init__(self, database, parent=None):
         super(AtomFeedsDatabase, self).__init__(parent)
 
+        self.app = QCoreApplication.instance()
         self.loop = asyncio.get_event_loop()
         self.parser = IPFSAtomFeedParser()
         self.sqliteDb = database
         self.lock = asyncio.Lock()
 
         self._handled_by_id = weakref.WeakValueDictionary()
-        self._process_task = None
 
     @property
     def db(self):
@@ -359,8 +360,7 @@ class AtomFeedsDatabase(QObject):
         await self.db.commit()
 
     async def start(self):
-        if not self._process_task:
-            self._process_task = self.loop.create_task(self.processTask())
+        await self.app.scheduler.spawn(self.processTask())
 
     async def processTask(self):
         while True:

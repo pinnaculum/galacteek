@@ -1234,9 +1234,12 @@ class AnimatedLabel(QLabel):
     """
 
     animationClicked = pyqtSignal()
+    hovered = pyqtSignal(bool)
 
     def __init__(self, clip, loop=True, parent=None):
         super().__init__(parent)
+
+        self.setMouseTracking(True)
 
         self.clip = clip
 
@@ -1255,3 +1258,11 @@ class AnimatedLabel(QLabel):
 
     def stopClip(self):
         self.clip.stop()
+
+    def enterEvent(self, event):
+        self.hovered.emit(True)
+        super(AnimatedLabel, self).enterEvent(event)
+
+    def leaveEvent(self, event):
+        self.hovered.emit(False)
+        super(AnimatedLabel, self).enterEvent(event)

@@ -379,6 +379,10 @@ def iPeers():
     return QCoreApplication.translate('GalacteekWindow', 'Peers')
 
 
+def iPeersCount():
+    return QCoreApplication.translate('GalacteekWindow', 'Peers count')
+
+
 def iIpfsSearchText(text):
     return QCoreApplication.translate('GalacteekWindow',
                                       'Search: {0}').format(text)

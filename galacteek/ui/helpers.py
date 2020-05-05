@@ -4,6 +4,7 @@ import binascii
 import multihash
 import multibase
 import asyncio
+import inspect
 
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtGui import QImage
@@ -317,10 +318,14 @@ def runDialog(cls, *args, **kw):
     return dlgW
 
 
-async def runDialogAsync(cls, *args, **kw):
+async def runDialogAsync(dlgarg, *args, **kw):
     title = kw.pop('title', None)
     accepted = kw.pop('accepted', None)
-    dlgW = cls(*args, **kw)
+
+    if inspect.isclass(dlgarg):
+        dlgW = dlgarg(*args, **kw)
+    else:
+        dlgW = dlgarg
 
     if hasattr(dlgW, 'initDialog') and asyncio.iscoroutinefunction(
             dlgW.initDialog):

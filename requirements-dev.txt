@@ -1,6 +1,6 @@
+aiomonitor
 flake8
 pipenv-to-requirements
-py-solc-x>=0.4.0
 pytest
 pytest-asyncio
 pytest-qt

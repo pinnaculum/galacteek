@@ -1,7 +1,7 @@
 aiodns>=2.0.0
 aiofiles>=0.4.0
 aiohttp>=3.4.4
-aioipfs>=0.4.6
+aioipfs>=0.4.7
 aiojobs>=0.2.2
 aiosqlite>=0.10.0
 async-generator>=1.10
@@ -27,6 +27,7 @@ pycryptodomex>=3.6.6
 pygments>=2.3.1
 pyld>=1.0.5
 pyqt5==5.13.2
+pyqtchart==5.13.1
 pyqtwebengine==5.13.2
 python-magic>=0.4.15
 pyyaml>=5.3.0
