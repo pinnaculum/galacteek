@@ -1103,7 +1103,6 @@ class GalacteekApplication(QApplication):
     async def exitApp(self):
         try:
             self.systemTray.hide()
-            self.systemTray.deleteLater()
         except:
             pass
 

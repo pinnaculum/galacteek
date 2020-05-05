@@ -49,6 +49,7 @@ export PATH=$PATH:$HOME/bin
 $PYTHONEX -m venv venvg
 source venvg/bin/activate
 
+$PIP install --upgrade pip
 $PIP install -r requirements.txt
 $PIP install -r requirements-dev.txt
 

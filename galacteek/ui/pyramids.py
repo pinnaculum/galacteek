@@ -149,6 +149,13 @@ def iPyramidGenerateIndexQr():
     )
 
 
+def iPyramidDropper():
+    return QCoreApplication.translate(
+        'pyramidMaster',
+        'Choose a pyramid to publish this object to'
+    )
+
+
 def iGalleryBrowse():
     return QCoreApplication.translate(
         'pyramidMaster',
@@ -168,6 +175,16 @@ def iGalleryChangeTitle():
         'pyramidMaster',
         "Change image gallery's title"
     )
+
+
+class PyramidsDropButton(PopupToolButton):
+    def __init__(self, *args, **kw):
+        super(PyramidsDropButton, self).__init__(
+            mode=QToolButton.InstantPopup,
+            icon=getIcon('pyramid-blue.png'),
+            *args, **kw
+        )
+        self.setToolTip(iPyramidDropper())
 
 
 class MultihashPyramidsToolBar(QToolBar):
@@ -291,6 +308,35 @@ class MultihashPyramidsToolBar(QToolBar):
             button.setIcon(getMimeIcon('unknown'))
 
         self.pyramids[pyramidPath] = button
+
+    def pyramidsIdsList(self):
+        return self.pyramids.keys()
+
+    def getPyrDropButtonFor(self, ipfsPath):
+        """
+        Returns a tool button to choose a pyramid to drop
+        an object to
+        """
+
+        button = PyramidsDropButton()
+
+        for pyrpath in self.pyramidsIdsList():
+            pyr = self.pyramids.get(pyrpath)
+            if not pyr:
+                continue
+
+            # Emit ipfsObjectDropped when selected
+            # Ask confirmation here ?
+
+            button.menu.addAction(
+                pyr.icon(),
+                pyrpath,
+                functools.partial(
+                    pyr.ipfsObjectDropped.emit,
+                    ipfsPath
+                ))
+
+        return button
 
     def publishNeeded(self, pyramidPath, mark):
         if pyramidPath in self.pyramids:
@@ -692,11 +738,11 @@ class MultihashPyramidToolButton(PopupToolButton):
                 )
 
     def onCopyIpns(self):
-        self.app.setClipboardText(joinIpns(self.pyramid.ipnsKey))
+        self.app.setClipboardText(self.ipnsKeyPath)
 
     def onCopyIpnsGw(self):
         self.app.setClipboardText(
-            'https://ipfs.io{}'.format(joinIpns(self.pyramid.ipnsKey)))
+            'https://ipfs.io{}'.format(self.ipnsKeyPath))
 
     @ipfsOp
     async def generateQrCode(self, ipfsop, qrName, *paths):
