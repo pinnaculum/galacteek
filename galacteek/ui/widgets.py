@@ -38,6 +38,8 @@ from PyQt5.QtCore import QFile
 from PyQt5.QtCore import QIODevice
 from PyQt5.QtCore import QVariant
 from PyQt5.QtCore import QPoint
+from PyQt5.QtCore import QByteArray
+from PyQt5.QtCore import QBuffer
 
 from PyQt5.QtGui import QRegExpValidator
 from PyQt5.QtGui import QImage
@@ -978,7 +980,37 @@ class IconSelector(QComboBox):
         ':/share/icons/mimetypes/application-pdf.png',
         ':/share/icons/mimetypes/application-epub+zip.png',
         ':/share/icons/mimetypes/application-x-directory.png',
-        ':/share/icons/mimetypes/text-html.png'
+        ':/share/icons/mimetypes/text-html.png',
+        'qta:ei.book',
+        'qta:ei.bulb',
+        'qta:ei.certificate',
+        'qta:ei.cog',
+        'qta:ei.fire',
+        'qta:ei.fork',
+        'qta:ei.github-text',
+        'qta:ei.github',
+        'qta:ei.globe',
+        'qta:ei.heart',
+        'qta:ei.livejournal',
+        'qta:ei.mic',
+        'qta:ei.network',
+        'qta:ei.picture',
+        'qta:ei.podcast',
+        'qta:ei.qrcode',
+        'qta:fa.code',
+        'qta:fa.cube',
+        'qta:fa.github',
+        'qta:fa.linux',
+        'qta:fa.paragraph',
+        'qta:fa.resistance',
+        'qta:fa.star-half-full',
+        'qta:fa.wikipedia',
+        'qta:fa5.file-pdf',
+        'qta:fa5b.canadian-maple-leaf',
+        'qta:fa5b.galactic-republic',
+        'qta:fa5b.gitraken',
+        'qta:fa5b.grav',
+        'qta:fa5s.dice-d6'
     ]
 
     def __init__(self, parent=None, offline=False, allowEmpty=False):
@@ -1013,13 +1045,43 @@ class IconSelector(QComboBox):
     def injectIconFromIndex(self, idx):
         iconPath = self.itemData(idx)
         if iconPath:
-            ensure(self.injectQrcIcon(iconPath))
+            if iconPath.startswith('qta:'):
+                ensure(self.injectQaIcon(idx, iconPath))
+            else:
+                ensure(self.injectQrcIcon(iconPath))
 
     def onIndexChanged(self, idx):
         if self.allowEmpty and idx == 0:
             self.emptyIconSelected.emit()
         else:
             self.injectIconFromIndex(idx)
+
+    @ipfsOp
+    async def injectQaIcon(self, ipfsop, idx, iconPath):
+        """
+        Inject a QtAwesome font in the IPFS repository
+        (PNG, fixed-size 128x128)
+        """
+
+        icon = self.itemIcon(idx)
+
+        try:
+            size = QSize(128, 128)
+            pixmap = icon.pixmap(size)
+            array = QByteArray()
+            buffer = QBuffer(array)
+            buffer.open(QIODevice.WriteOnly)
+            pixmap.save(buffer, 'png')
+            buffer.close()
+        except Exception as err:
+            log.debug('QtAwesome inject error: {}'.format(str(err)))
+        else:
+            entry = await ipfsop.addBytes(array.data(), offline=self.offline)
+            if entry:
+                self.iconCid = entry['Hash']
+                self.iconSelected.emit(self.iconCid)
+                self.setToolTip(self.iconCid)
+                return True
 
     @ipfsOp
     async def injectQrcIcon(self, op, iconPath):
