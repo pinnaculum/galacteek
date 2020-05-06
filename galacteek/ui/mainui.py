@@ -1201,8 +1201,6 @@ class MainWindow(QMainWindow):
             self.setConnectionInfoMessage(iErrNoCx())
             return
 
-        print('got stats', bwStats)
-
         nodeId = info.get('ID', iUnknown())
         nodeAgent = info.get('AgentVersion', iUnknownAgent())
 

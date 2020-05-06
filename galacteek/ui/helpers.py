@@ -38,6 +38,8 @@ from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs import ipfsOpFn
 from galacteek.ipfs import kilobytes
 
+import qtawesome as qta
+
 
 from .i18n import iIpfsQrCodes
 from .i18n import iUnknown
@@ -48,7 +50,12 @@ def getIcon(iconName):
     if iconName in app._icons:
         return app._icons[iconName]
 
-    if iconName.startswith(':/'):
+    if iconName.startswith('qta:'):
+        try:
+            return qta.icon(iconName.replace('qta:', ''))
+        except Exception:
+            return None
+    elif iconName.startswith(':/'):
         iconPath = iconName
     else:
         iconPath = ':/share/icons/{}'.format(iconName)
