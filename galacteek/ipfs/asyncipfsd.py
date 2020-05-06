@@ -216,7 +216,7 @@ class AsyncIPFSDaemon(object):
                              boolarg(not self.pubsubSigning))
 
         await ipfsConfigJson(self.goIpfsPath,
-                             'Swarm.DisableBandwidthMetrics', 'true')
+                             'Swarm.DisableBandwidthMetrics', 'false')
 
         # Maximum storage
         await ipfsConfig(self.goIpfsPath, 'Datastore.StorageMax',

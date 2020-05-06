@@ -34,6 +34,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QRegularExpression
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import QDir
+from PyQt5.QtCore import QUrl
 from PyQt5.QtCore import QTimer
 from PyQt5.QtCore import QModelIndex
 from PyQt5.QtCore import QItemSelectionModel
@@ -46,6 +47,8 @@ from PyQt5.QtGui import QColor
 from PyQt5.QtGui import QSyntaxHighlighter
 from PyQt5.QtGui import QTextCharFormat
 from PyQt5.QtGui import QFont
+
+import qtawesome as qta
 
 from galacteek import log
 from galacteek.ipfs.ipfsops import *
@@ -62,6 +65,7 @@ from galacteek.dweb.markdown import markitdown
 
 from .helpers import *
 
+from .widgets import IPFSWebView
 from .widgets import AnimatedLabel
 from .widgets import IPFSPathClipboardButton
 from .widgets import IPFSUrlLabel
@@ -81,9 +85,32 @@ def iEdit():
                                       'Edit')
 
 
-def iMarkdownPreview():
+def iFilesystemView():
     return QCoreApplication.translate('textEditor',
-                                      'Markdown preview')
+                                      'Filesystem view')
+
+
+def iEditorView():
+    return QCoreApplication.translate('textEditor',
+                                      'Editor view')
+
+
+def iPreview():
+    return QCoreApplication.translate('textEditor',
+                                      'Preview')
+
+
+def iAutoMarkdownToHtmlSave():
+    return QCoreApplication.translate(
+        'textEditor',
+        'Automatic markdown to HTML saving'
+    )
+
+
+def iOfflineMode():
+    return QCoreApplication.translate(
+        'textEditor',
+        'Offline mode (announce your content manually later)')
 
 
 class PythonSyntaxHighlighter(QSyntaxHighlighter):
@@ -185,6 +212,24 @@ class EditorLegacy(QTextEdit):
             extraSelections.append(selection)
 
         self.setExtraSelections(extraSelections)
+
+
+def filenameIsMarkdown(filename):
+    return os.path.splitext(filename)[1] in [
+        '.md',
+        '.mdown',
+        '.mkd',
+        '.mkdn',
+        '.markdown',
+        '.mdwn'
+    ]
+
+
+def filenameIsHtml(filename):
+    return os.path.splitext(filename)[1] in [
+        '.html',
+        '.htm',
+    ]
 
 
 class Editor(QPlainTextEdit):
@@ -367,6 +412,10 @@ class CheckoutTreeView(QTreeView):
             super(CheckoutTreeView, self).mouseReleaseEvent(event)
 
 
+class PreviewWidget(IPFSWebView):
+    pass
+
+
 class TextEditorWidget(QWidget):
     """
     Simple Editor widget that stores the edited files in a unixfs node
@@ -428,11 +477,32 @@ class TextEditorWidget(QWidget):
 
         self.ctrlLayout = QHBoxLayout()
 
+        self.editorViewButton = CheckableToolButton(
+            icon=qta.icon('fa.edit'),
+            toggled=self.onEditorViewToggled, parent=self
+        )
+
+        self.editorViewButton.setToolTip(iEditorView())
+
+        self.offlineModeButton = CheckableToolButton(
+            icon=getIcon('offline.png')
+        )
+        self.offlineModeButton.setChecked(True)
+        self.offlineModeButton.setToolTip(iOfflineMode())
+
+        self.autoMdHtmlSaveButton = CheckableToolButton(
+            icon=qta.icon('fa5b.markdown')
+        )
+        self.autoMdHtmlSaveButton.setToolTip(iAutoMarkdownToHtmlSave())
+        self.autoMdHtmlSaveButton.hide()
+
         self.previewButton = CheckableToolButton(
             icon=getIcon('document-preview.png'),
             toggled=self.onPreviewToggled, parent=self
         )
-        self.previewButton.setToolTip(iMarkdownPreview())
+        self.previewButton.setToolTip(iPreview())
+
+        self.editorViewButton.setChecked(True)
 
         self.fsViewButton = CheckableToolButton(
             icon=getIcon('folder-open.png'),
@@ -440,6 +510,7 @@ class TextEditorWidget(QWidget):
         )
         self.fsViewButton.setEnabled(True)
         self.fsViewButton.setChecked(False)
+        self.fsViewButton.setToolTip(iFilesystemView())
 
         self.editButton = CheckableToolButton(
             toggled=self.onEditToggled, parent=self
@@ -473,8 +544,13 @@ class TextEditorWidget(QWidget):
 
         self.ctrlLayout.addWidget(self.busyCube)
         self.ctrlLayout.addWidget(self.editButton)
+        self.ctrlLayout.addItem(
+            QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Minimum))
+        self.ctrlLayout.addWidget(self.editorViewButton)
         self.ctrlLayout.addWidget(self.previewButton)
         self.ctrlLayout.addWidget(self.fsViewButton)
+        self.ctrlLayout.addWidget(self.offlineModeButton)
+        self.ctrlLayout.addWidget(self.autoMdHtmlSaveButton)
         self.ctrlLayout.addWidget(self.saveButton)
 
         self.ctrlLayout.addWidget(self.nameInputLabel)
@@ -493,7 +569,7 @@ class TextEditorWidget(QWidget):
         self.textHLayout = QHBoxLayout()
         self.textVLayout.addLayout(self.textHLayout)
 
-        self.previewWidget = QTextEdit(self)
+        self.previewWidget = PreviewWidget(parent=self)
         self.previewWidget.hide()
 
         self.currentDocument = self.newDocument()
@@ -560,16 +636,16 @@ class TextEditorWidget(QWidget):
     def currentDocument(self, doc):
         self._currentDocument = doc
         self.textEditor.setDocument(self.currentDocument)
-        self.previewWidget.setDocument(self.currentDocument.previewDocument)
 
         if self.currentDocument.filename:
             if self.currentDocument.filename.endswith('.py'):
                 self.highlighter = PythonSyntaxHighlighter(
                     self.currentDocument)
                 self.tabReplaceButton.setChecked(True)
-            if self.currentDocument.filename.lower().endswith('.md'):
+            if filenameIsMarkdown(self.currentDocument.filename):
                 self.previewButton.setChecked(True)
-            if self.currentDocument.filename.lower().endswith('.html'):
+                self.autoMdHtmlSaveButton.show()
+            if filenameIsHtml(self.currentDocument.filename):
                 self.previewButton.setChecked(True)
         else:
             self.highlighter = None
@@ -668,6 +744,12 @@ class TextEditorWidget(QWidget):
             self._previewTimer.stop()
             self._previewTimer.start(1200)
 
+    def onEditorViewToggled(self, toggle):
+        if self.previewButton.isChecked():
+            self.textEditor.setVisible(toggle)
+        else:
+            self.editorViewButton.setChecked(True)
+
     def onPreviewRerender(self):
         ensure(self.updatePreview())
         self._previewTimer.stop()
@@ -746,17 +828,24 @@ class TextEditorWidget(QWidget):
         except:
             pass
 
+        if self.currentDocument.filename:
+            await self.writeDocument(self.currentDocument)
+
         if mimeType and mimeType.isHtml:
-            pDocument.setHtml(textData)
+            if self.currentDocument.filename:
+                url = self.checkoutChildFileUrl(self.currentDocument.filename)
+                self.previewWidget.setUrl(url)
+            else:
+                self.previewWidget.setHtml(textData)
         else:
             try:
                 html = markitdown(textData)
                 pDocument.setHtml(html)
+                self.previewWidget.setHtml(html)
             except Exception:
                 pDocument.setPlainText(textData)
 
     def showPreview(self):
-        self.previewWidget.setReadOnly(True)
         self.previewWidget.show()
         ensure(self.updatePreview())
 
@@ -823,7 +912,10 @@ class TextEditorWidget(QWidget):
         if checked:
             self.showPreview()
         else:
-            self.previewWidget.hide()
+            if self.editorViewButton.isChecked():
+                self.previewWidget.setVisible(checked)
+            else:
+                self.previewButton.setChecked(True)
 
     def onSessionCidChanged(self, cid):
         log.debug('Session now at CID: {}'.format(cid))
@@ -861,9 +953,12 @@ class TextEditorWidget(QWidget):
     async def sync(self, ipfsop):
         self.busy(True)
         try:
-            async with ipfsop.offlineMode() as opoff:
-                entry = await opoff.addPath(self.checkoutPath, wrap=False,
-                                            hidden=True)
+            entry = await ipfsop.addPath(
+                self.checkoutPath,
+                wrap=False,
+                hidden=True,
+                offline=self.offlineModeButton.isChecked()
+            )
         except Exception as err:
             self.busy(False)
             log.debug(str(err))
@@ -875,6 +970,21 @@ class TextEditorWidget(QWidget):
             self.rootMultihashChanged.emit(entry['Hash'])
             return entry
 
+    def checkoutChildPath(self, path):
+        if self.checkoutPath:
+            return Path(os.path.join(self.checkoutPath, path))
+
+    def checkoutChildFileUrl(self, path):
+        return QUrl('file://{0}'.format(self.checkoutChildPath(path)))
+
+    async def writeDocument(self, document):
+        docPath = self.checkoutChildPath(document.filename)
+        text = document.toPlainText()
+
+        async with aiofiles.open(docPath, 'w+t') as fd:
+            log.debug('Writing document: {}'.format(docPath))
+            await fd.write(text)
+
     @ipfsOp
     async def saveDocument(self, ipfsop, document, offline=True):
         tbPyramids = self.app.mainWindow.toolbarPyramids
@@ -883,17 +993,15 @@ class TextEditorWidget(QWidget):
         if not document.filename:
             return
 
-        docPath = os.path.join(self.checkoutPath, document.filename)
-        async with aiofiles.open(docPath, 'w+t') as fd:
-            await fd.write(text)
+        await self.writeDocument(self.currentDocument)
 
         if document.previewDocument:
-            # Automatic markdown => html saving, disable for now
-            if document.filename.endswith('.md'):
+            if filenameIsMarkdown(document.filename):
                 document.previewDocument.filename = \
                     document.filename.replace('.md', '.html')
 
-            if document.previewDocument.filename and 0:
+            if document.previewDocument.filename and \
+                    self.autoMdHtmlSaveButton.isChecked():
                 pPath = os.path.join(self.checkoutPath,
                                      document.previewDocument.filename)
                 text = document.previewDocument.toHtml()
@@ -929,7 +1037,9 @@ class TextEditorWidget(QWidget):
             layout.addWidget(pyrDropButton)
             layout.addItem(QSpacerItem(10, 10, QSizePolicy.Expanding,
                                        QSizePolicy.Minimum))
-            layout.addWidget(publishButton)
+
+            if self.offlineModeButton.isChecked():
+                layout.addWidget(publishButton)
 
             self.copiesLayout.insertLayout(0, layout)
             self.editHistory.show()
