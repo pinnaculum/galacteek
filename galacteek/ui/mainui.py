@@ -1197,9 +1197,11 @@ class MainWindow(QMainWindow):
         try:
             info = await ipfsop.client.core.id()
             bwStats = await ipfsop.client.stats.bw()
-        except BaseException:
+        except Exception:
             self.setConnectionInfoMessage(iErrNoCx())
             return
+
+        print('got stats', bwStats)
 
         nodeId = info.get('ID', iUnknown())
         nodeAgent = info.get('AgentVersion', iUnknownAgent())

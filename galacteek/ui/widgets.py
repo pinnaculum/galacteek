@@ -1051,6 +1051,7 @@ class IPFSWebView(QWebEngineView):
             self.app.desktopGeometry.width() / 8,
             self.app.desktopGeometry.height() / 8
         ))
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
 
 class MarkdownView(IPFSWebView):

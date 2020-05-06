@@ -2940,18 +2940,38 @@ Chemin: {0}, nodes traitées: {1}</translation>
 <context>
     <name>textEditor</name>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="80"/>
+        <location filename="../../galacteek/ui/textedit.py" line="84"/>
         <source>Edit</source>
         <translation type="unfinished">Edition</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="75"/>
+        <location filename="../../galacteek/ui/textedit.py" line="79"/>
         <source>Save</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="85"/>
-        <source>Markdown preview</source>
+        <location filename="../../galacteek/ui/textedit.py" line="89"/>
+        <source>Filesystem view</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/textedit.py" line="94"/>
+        <source>Editor view</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/textedit.py" line="99"/>
+        <source>Preview</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/textedit.py" line="104"/>
+        <source>Automatic markdown to HTML saving</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/textedit.py" line="111"/>
+        <source>Offline mode (announce your content manually later)</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

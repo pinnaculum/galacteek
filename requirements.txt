@@ -33,6 +33,7 @@ python-magic>=0.4.15
 pyyaml>=5.3.0
 pyzbar>=0.1.8
 qrcode>=6.1
+qtawesome>=0.7.2
 quamash>=0.6.1
 strict-rfc3339>=0.7
 tortoise-orm==0.16.5
