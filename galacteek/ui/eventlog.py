@@ -114,6 +114,6 @@ class EventLogWidget(GalacteekTab):
         except Exception:
             log.debug('Unknown error ocurred while reading ipfs log')
 
-    def onClose(self):
+    async def onClose(self):
         self.tskLog.cancel()
         return True

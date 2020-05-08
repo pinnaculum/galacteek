@@ -7,6 +7,7 @@ from PyQt5.QtCore import (pyqtSignal, QObject)
 
 from galacteek import log
 from galacteek import ensure
+from galacteek import AsyncSignal
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import IPFSPath
@@ -263,7 +264,8 @@ class EvolvingDAG(QObject, DAGOperations):
     changed = pyqtSignal()
     dagCidChanged = pyqtSignal(str)
     metadataEntryChanged = pyqtSignal()
-    available = pyqtSignal(object)
+
+    available = AsyncSignal(object)
 
     keyCidLatest = 'cidlatest'
 
@@ -377,12 +379,12 @@ class EvolvingDAG(QObject, DAGOperations):
             self.loaded.set_result(True)
 
         self.parser = traverseParser(self.dagRoot)
-        self.loop.call_soon(self.available.emit, self.dagRoot)
+        await self.available.emit(self.dagRoot)
 
     @ipfsOp
     async def ipfsSave(self, op):
         self.debug('Saving (acquiring lock)')
-        with await self.lock:
+        async with self.lock:
             prevCid = self.dagCid
             history = self.dagMeta.setdefault('history', [])
             maxItems = self.dagMetaMaxHistoryItems
@@ -445,7 +447,7 @@ class EvolvingDAG(QObject, DAGOperations):
         history = self.dagMeta['history']
         prevCid = self.dagMeta[self.keyCidLatest]
 
-        with await self.lock:
+        async with self.lock:
             if len(history) >= 2:
                 newCid = history[0]
 

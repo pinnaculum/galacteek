@@ -23,7 +23,7 @@ from galacteek.ipfs.cidhelpers import stripIpfs
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs.wrappers import ipfsOp
-from galacteek.ipfs.pubsub.messages import ChatRoomMessage
+from galacteek.ipfs.pubsub.messages.chat import ChatRoomMessage
 from galacteek.ipfs.pubsub.service import PSMainService
 from galacteek.ipfs.pubsub.service import PSChatService
 from galacteek.ipfs.pubsub.service import PSHashmarksExchanger
@@ -191,7 +191,7 @@ class Peers:
                         qr=iMsg.iphandleqrpngcid, peer=iMsg.peer))
                     peerValidated = True
 
-                ensure(op.pin(iMsg.iphandleqrpngcid))
+                ensure(op.ctx.pin(iMsg.iphandleqrpngcid))
 
             # Load the IPID
             ipid = await self.app.ipidManager.load(
@@ -359,6 +359,9 @@ class PubsubMaster(QObject):
 
     def reg(self, service):
         self._services[service.topic] = service
+
+    def byTopic(self, topic):
+        return self._services.get(topic)
 
     def status(self):
         [service.logStatus() for topic, service in self.services.items()]

@@ -27,7 +27,7 @@ from galacteek.core.iphandle import SpaceHandle
 from galacteek.crypto.qrcode import IPFSQrEncoder
 
 from galacteek.ipfs.pubsub import TOPIC_PEERS
-from galacteek.ipfs.pubsub.messages import PeerIpHandleChosen
+from galacteek.ipfs.pubsub.messages.core import PeerIpHandleChosen
 
 from .dids import buildIpServicesMenu
 from .helpers import filesSelectImages

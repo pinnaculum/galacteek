@@ -840,13 +840,18 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/chatroom.ui" line="31"/>
+        <location filename="../../galacteek/ui/chatroom.ui" line="62"/>
         <source>Message</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/chatroom.ui" line="54"/>
+        <location filename="../../galacteek/ui/chatroom.ui" line="85"/>
         <source>Send</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/chatroom.ui" line="36"/>
+        <source>Chat users</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1186,7 +1191,7 @@ p, li { white-space: pre-wrap; }
         <translation type="obsolete">Naviguer sur le chemin IPFS: {0}</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="98"/>
+        <location filename="../../galacteek/ui/mainui.py" line="99"/>
         <source>
 Path: {0}, nodes processed: {1}</source>
         <translation>
@@ -1659,7 +1664,7 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="105"/>
+        <location filename="../../galacteek/ui/mainui.py" line="106"/>
         <source>
         &lt;p align=&apos;center&apos;&gt;
         &lt;img src=&apos;:/share/icons/galacteek-incandescent.png&apos; /&gt;

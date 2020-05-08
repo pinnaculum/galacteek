@@ -44,12 +44,12 @@ class MutableIPFSJson(QObject):
         self.__dict__.update(kw)
 
         self.changed.connect(self.onChanged)
-        self.available.connect(self.onObjAvailable)
+        self.available.connectTo(self.onObjAvailable)
 
     def debug(self, msg):
         log.debug('MFS JSON {0}: {1}'.format(self.mfsFilePath, msg))
 
-    def onObjAvailable(self, r):
+    async def onObjAvailable(self, r):
         self._avail = True
 
     def onChanged(self):

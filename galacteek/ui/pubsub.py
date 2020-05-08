@@ -13,13 +13,16 @@ from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtGui import QTextCursor
 from PyQt5.QtCore import Qt
 
-from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.core import datetimeIsoH
-from galacteek import ensure
-from galacteek import log
+
+from galacteek.core.ps import keyPsJson
+from galacteek.core.ps import psSubscriber
 
 from .helpers import getIcon
 from .widgets import GalacteekTab
+
+
+subscriber = psSubscriber('pubsub_sniffer')
 
 
 class PubsubSnifferWidget(GalacteekTab):
@@ -37,15 +40,11 @@ class PubsubSnifferWidget(GalacteekTab):
         horizHeader.setSectionResizeMode(QHeaderView.ResizeToContents)
         self.vLayout.addWidget(self.tableWidget)
 
-        ensure(self.startListening())
+        subscriber.add_async_listener(keyPsJson, self.onJsonMessage)
 
-    @ipfsOp
-    async def startListening(self, ipfsop):
-        for topic, service in ipfsop.ctx.pubsub.services.items():
-            log.debug('Listening on topic {}'.format(topic))
-            service.rawMessageReceived.connectTo(self.rawMsgReceived)
+    async def onJsonMessage(self, key, message):
+        sender, topic, jsonMsg = message
 
-    async def rawMsgReceived(self, sender, topic, message):
         dItem = QTableWidgetItem(datetimeIsoH())
         tItem = QTableWidgetItem(topic)
         sItem = QTableWidgetItem(sender)
@@ -53,7 +52,7 @@ class PubsubSnifferWidget(GalacteekTab):
         viewButton = QToolButton()
         viewButton.setIcon(getIcon('search-engine.png'))
         viewButton.clicked.connect(functools.partial(
-            self.viewRawMessage, message))
+            self.viewJsonMessage, jsonMsg))
 
         for item in [dItem, tItem, sItem]:
             item.setFlags(
@@ -66,20 +65,10 @@ class PubsubSnifferWidget(GalacteekTab):
         self.tableWidget.setItem(curRow, 2, sItem)
         self.tableWidget.setCellWidget(curRow, 3, viewButton)
 
-    def viewRawMessage(self, message):
+    def viewJsonMessage(self, msgJson):
         """
         :param message bytes: raw message data
         """
-
-        try:
-            msgText = message.decode()
-        except Exception:
-            return
-
-        try:
-            msgJson = json.loads(msgText)
-        except Exception:
-            msgJson = None
 
         dlg = QDialog()
         layout = QVBoxLayout()
@@ -91,19 +80,12 @@ class PubsubSnifferWidget(GalacteekTab):
 
         msgView = QTextBrowser(dlg)
         layout.addWidget(msgView)
-        if msgJson:
-            msgView.insertPlainText(
-                json.dumps(msgJson, indent=4))
-        else:
-            msgView.insertPlainText(msgText)
+        msgView.insertPlainText(
+            json.dumps(msgJson, indent=4))
 
         msgView.moveCursor(QTextCursor.Start)
 
-        # msgView.show()
         dlg.exec_()
 
-    def onClose(self):
-        for topic, service in self.app.ipfsCtx.pubsub.services.items():
-            service.rawMessageReceived.disconnect(self.rawMsgReceived)
-
+    async def onClose(self):
         return True

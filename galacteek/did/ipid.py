@@ -562,7 +562,7 @@ class IPIdentifier(DAGOperations):
         self._lastResolve = time.time()
 
         if pin is True:
-            await ipfsop.pin(dagCid)
+            await ipfsop.ctx.pin(dagCid, qname='ipid')
 
         self.message('Load: IPNS key resolved to {}'.format(dagCid))
 

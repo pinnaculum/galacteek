@@ -22,6 +22,7 @@ from galacteek.ipfs.cidhelpers import ipnsKeyCidV1
 from galacteek.ipfs.multi import multiAddrTcp4
 
 from galacteek.core.asynclib import async_enterable
+from galacteek.core.asynclib import asyncReadFile
 from galacteek.core import jsonSchemaValidate
 from galacteek.ld.ldloader import aioipfs_document_loader
 from galacteek.ld import asyncjsonld as jsonld
@@ -1075,8 +1076,8 @@ class IPFSOperator(object):
             return None
 
         try:
-            with open(specPath, 'r') as fd:
-                return json.load(fd)
+            data = await asyncReadFile(specPath, mode='rt')
+            return json.loads(data)
         except Exception as err:
             self.debug(str(err))
 

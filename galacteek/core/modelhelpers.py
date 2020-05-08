@@ -7,6 +7,7 @@ from PyQt5.QtCore import QModelIndex
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import QStringListModel
 
 
 """ Helper functions to operate on QT item models """
@@ -134,3 +135,8 @@ class UneditableItem(QStandardItem, QObject):
         else:
             super(UneditableItem, self).__init__(text)
         self.setEditable(False)
+
+
+class UneditableStringListModel(QStringListModel):
+    def flags(self, index):
+        return Qt.ItemFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)

@@ -35,6 +35,7 @@ from PyQt5 import QtWebEngineWidgets
 
 from galacteek import GALACTEEK_NAME
 from galacteek import ensure
+from galacteek import partialEnsure
 from galacteek import log
 from galacteek import database
 from galacteek.core.glogger import loggerMain
@@ -579,8 +580,6 @@ class MainWindow(QMainWindow):
         self.browseButton.menu.addSeparator()
         self.browseButton.menu.addAction(self.editorOpenAction)
         self.browseButton.menu.addSeparator()
-        self.browseButton.menu.addAction(self.chatAction)
-        self.browseButton.menu.addSeparator()
         self.browseButton.menu.addAction(self.mPlayerOpenAction)
         self.browseButton.menu.addSeparator()
 
@@ -671,6 +670,9 @@ class MainWindow(QMainWindow):
             parent=self.toolbarMain
         )
 
+        # Chat center button
+        self.chatCenterButton = chat.ChatCenterButton(parent=self.toolbarMain)
+
         # Settings button
         settingsIcon = getIcon('settings.png')
         self.settingsToolButton = QToolButton(self)
@@ -724,6 +726,8 @@ class MainWindow(QMainWindow):
         self.toolbarMain.addWidget(self.hashmarkMgrButton)
         self.toolbarMain.addWidget(self.hashmarksSearcher)
         self.toolbarMain.addWidget(self.profileButton)
+        self.toolbarMain.addSeparator()
+        self.toolbarMain.addWidget(self.chatCenterButton)
         self.toolbarMain.addWidget(self.peersButton)
         self.toolbarMain.addWidget(self.atomButton)
 
@@ -765,7 +769,8 @@ class MainWindow(QMainWindow):
         self.tabWidget = QTabWidget(self)
         self.tabWidget.setObjectName('tabWidget')
         self.tabWidget.setTabsClosable(True)
-        self.tabWidget.tabCloseRequested.connect(self.onTabCloseRequest)
+        self.tabWidget.tabCloseRequested.connect(
+            partialEnsure(self.onTabCloseRequest))
         self.tabWidget.setElideMode(Qt.ElideMiddle)
         self.tabWidget.setUsesScrollButtons(True)
 
@@ -777,9 +782,6 @@ class MainWindow(QMainWindow):
         tabKeyFilter = TabWidgetKeyFilter(self)
         tabKeyFilter.nextPressed.connect(self.cycleTabs)
         self.tabWidget.installEventFilter(tabKeyFilter)
-
-        # Chat room
-        self.chatRoomWidget = chat.ChatRoomWidget(self)
 
         self.webProfile = QtWebEngineWidgets.QWebEngineProfile.defaultProfile()
 
@@ -1131,6 +1133,7 @@ class MainWindow(QMainWindow):
                 self.peersButton,
                 self.textEditorButton,
                 self.atomButton,
+                self.chatCenterButton,
                 self.hashmarkMgrButton,
                 self.hashmarksSearcher,
                 self.profileButton]:
@@ -1239,7 +1242,7 @@ class MainWindow(QMainWindow):
         if modifiers & Qt.ControlModifier:
             if event.key() == Qt.Key_W:
                 idx = self.tabWidget.currentIndex()
-                self.onTabCloseRequest(idx)
+                ensure(self.onTabCloseRequest(idx))
 
         super(MainWindow, self).keyPressEvent(event)
 
@@ -1288,13 +1291,13 @@ class MainWindow(QMainWindow):
         if tab:
             tab.playFromPath(path, mediaName=mediaName)
 
-    def onTabCloseRequest(self, idx):
+    async def onTabCloseRequest(self, idx):
         tab = self.tabWidget.widget(idx)
 
         if tab not in self.allTabs:
             return False
 
-        if tab.onClose() is True:
+        if await tab.onClose() is True:
             self.tabWidget.removeTab(idx)
             self.allTabs.remove(tab)
             del tab
@@ -1437,8 +1440,6 @@ class MainWindow(QMainWindow):
         if tab:
             tab.focusMessage()
             return self.tabWidget.setCurrentWidget(tab)
-
-        self.chatRoomWidget.focusMessage()
 
         self.registerTab(self.chatRoomWidget, self.tabnChat,
                          icon=getIcon('chat.png'), current=True)

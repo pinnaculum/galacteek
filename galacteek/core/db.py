@@ -10,7 +10,6 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import QCoreApplication
 
 from galacteek import log
-from galacteek import ensure
 from galacteek.ipfs import ipfsOp
 from galacteek.dweb.atom import IPFSAtomFeedParser
 from galacteek.dweb.atom import IPFSAtomFeedEntry
@@ -141,7 +140,7 @@ class AtomFeedsDatabase(QObject):
             raise ValueError('Does not resolve')
 
         # Pin the resolved object (yeah!)
-        await ipfsop.pin(resolved)
+        await ipfsop.ctx.pin(resolved, qname='atom')
 
         #
         # Here's why Atom's a great choice over RSS for the dweb
@@ -256,7 +255,7 @@ class AtomFeedsDatabase(QObject):
                         if path.valid:
                             log.debug('Atom: autopinning {id}'.format(
                                 id=entry.id))
-                            ensure(ipfsop.pin(path.objPath))
+                            await ipfsop.ctx.pin(path.objPath, qname='atom')
                 else:
                     for exent in entries:
                         if exent['entry_id'] == entry.id:

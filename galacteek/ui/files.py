@@ -613,7 +613,7 @@ class FileManager(QWidget):
 
         self.ui.offlineButton.setToolTip(iOfflineModeToolTip())
 
-    def onClose(self):
+    async def onClose(self):
         if not self.busy:
             self.disconnectDropSignals()
             return True
