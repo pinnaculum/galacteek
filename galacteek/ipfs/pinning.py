@@ -27,7 +27,7 @@ class PinningMaster(object):
         self._statusFilePath = statusFilePath
         self._checkPinned = checkPinned
         self._sCleanupLast = None
-        self._maxStalledMessages = 48
+        self._maxStalledMessages = 24
 
         database.HashmarkAdded.connectTo(self.onMarkAdded)
 

@@ -23,8 +23,6 @@ from galacteek import AsyncSignal
 from galacteek.ipfs.mutable import MutableIPFSJson, CipheredIPFSJson
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.encrypt import IpfsRSAAgent
-from galacteek.ipfs.pubsub import TOPIC_CHAT
-from galacteek.ipfs.pubsub.messages import ChatRoomMessage
 from galacteek.ipfs.dag import EvolvingDAG
 
 from galacteek.did import didIdentRe
@@ -41,6 +39,7 @@ from galacteek.core.ipfsmarks import IPFSMarks
 
 from galacteek.core.userdag import UserDAG
 from galacteek.core.userdag import UserWebsite
+from galacteek.core.edags.chatchannels import ChannelsDAG
 from galacteek.core import utcDatetimeIso
 
 from galacteek.crypto.qrcode import IPFSQrEncoder
@@ -482,6 +481,10 @@ class UserProfile(QObject):
         return self._dagUser  # the DAG for this user
 
     @property
+    def dagChatChannels(self):
+        return self._dagChatChannels
+
+    @property
     def root(self):
         return self._rootDir  # profile's root dir in the MFS
 
@@ -634,6 +637,10 @@ class UserProfile(QObject):
     def pathUserDagMeta(self):
         return os.path.join(self.pathData, 'dag.main')
 
+    @property
+    def pathChatChannelsDagMeta(self):
+        return os.path.join(self.pathEDags, 'chatchannels.edag')
+
     def setFilesModel(self, model):
         self.filesModel = model
 
@@ -676,8 +683,13 @@ class UserProfile(QObject):
         self.userLogInfo('Loading DAG ..')
         self._dagUser = UserDAG(self.pathUserDagMeta, loop=self.ctx.loop)
 
+        self._dagChatChannels = ChannelsDAG(
+            self.pathChatChannelsDagMeta, loop=self.ctx.loop)
+
         ensure(self.dagUser.load())
         await self.dagUser.loaded
+
+        await self.dagChatChannels.load()
 
         await self.ipHandles.load()
 
@@ -703,12 +715,7 @@ class UserProfile(QObject):
         ensure(self.ctx.app.manuals.importManuals(self))
 
     async def sendChatLogin(self):
-        if self.userInfo.iphandleValid:
-            msg = ChatRoomMessage.make(
-                self.userInfo.iphandle,
-                ChatRoomMessage.CHANNEL_GENERAL,
-                'logged in')
-            await self.ctx.pubsub.send(TOPIC_CHAT, msg)
+        pass
 
     @ipfsOp
     async def cryptoInit(self, op):

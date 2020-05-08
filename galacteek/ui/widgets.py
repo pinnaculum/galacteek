@@ -101,10 +101,18 @@ class GalacteekTab(QWidget):
         if idx >= 0:
             self.gWindow.tabWidget.setTabText(idx, name)
 
+    def setTabIcon(self, icon, widget=None):
+        idx = self.tabIndex(w=widget)
+        if idx >= 0:
+            self.gWindow.tabWidget.setTabIcon(idx, icon)
+
+    def tabBar(self):
+        return self.gWindow.tabWidget.tabBar()
+
     def addToLayout(self, widget):
         self.vLayout.addWidget(widget)
 
-    def onClose(self):
+    async def onClose(self):
         return True
 
     @ipfsOp

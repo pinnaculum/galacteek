@@ -14,15 +14,22 @@ from galacteek.ipfs.pubsub import TOPIC_PEERS
 from galacteek.ipfs.pubsub import TOPIC_CHAT
 from galacteek.ipfs.pubsub import TOPIC_HASHMARKS
 
-from galacteek.ipfs.pubsub.messages import MarksBroadcastMessage
-from galacteek.ipfs.pubsub.messages import PeerIdentMessageV3
-from galacteek.ipfs.pubsub.messages import PeerLogoutMessage
-from galacteek.ipfs.pubsub.messages import PeerIpHandleChosen
-from galacteek.ipfs.pubsub.messages import ChatRoomMessage
+from galacteek.ipfs.pubsub.messages.core import MarksBroadcastMessage
+from galacteek.ipfs.pubsub.messages.core import PeerIdentMessageV3
+from galacteek.ipfs.pubsub.messages.core import PeerLogoutMessage
+from galacteek.ipfs.pubsub.messages.core import PeerIpHandleChosen
+
+from galacteek.ipfs.pubsub.messages.chat import ChatRoomMessage
+from galacteek.ipfs.pubsub.messages.chat import ChatStatusMessage
+from galacteek.ipfs.pubsub.messages.chat import ChatChannelsListMessage
 
 from galacteek.ipfs.wrappers import ipfsOp
+
 from galacteek.core.asynclib import asyncify
 from galacteek.core.ipfsmarks import IPFSMarks
+from galacteek.core.ps import keyChatChannels
+from galacteek.core.ps import keyPsJson
+from galacteek.core.ps import gHub
 
 import aioipfs
 
@@ -93,7 +100,7 @@ class PubsubService(object):
     async def start(self):
         """ Create the different tasks for this service """
 
-        if not self.scheduler:
+        if self.scheduler is None:
             raise Exception('No scheduler specified')
 
         self.tskServe = await self.scheduler.spawn(self.serve())
@@ -263,6 +270,7 @@ class JSONPubsubService(PubsubService):
                     data['from'].decode()
 
                 try:
+                    gHub.publish(keyPsJson, (sender, self.topic, msg))
                     await self.processJsonMessage(sender, msg)
                 except Exception as exc:
                     self.debug(
@@ -278,6 +286,38 @@ class JSONPubsubService(PubsubService):
 
     async def processJsonMessage(self, sender, msg):
         """ Implement this method to process incoming JSON messages"""
+        return True
+
+
+class JSONLDPubsubService(JSONPubsubService):
+    """
+    JSON-LD pubsub listener, handling incoming messages as JSON-LD
+    """
+
+    def __init__(self, *args, autoExpand=False, **kw):
+        super().__init__(*args, **kw)
+
+        self.autoExpand = autoExpand
+
+    @ipfsOp
+    async def expand(self, ipfsop, data):
+        try:
+            async with ipfsop.ldOps() as ld:
+                return await ld.expandDocument(data)
+        except Exception:
+            pass
+
+    async def processJsonMessage(self, sender, msg):
+        if self.autoExpand:
+            expanded = await self.expand(msg)
+            if expanded:
+                print('Received JSON message', msg)
+                print('Expanded LD message', expanded)
+                return await self.processLdMessage(sender, expanded)
+        else:
+            JSONPubsubService.processJsonMessage(self, sender, msg)
+
+    async def processLdMessage(self, sender, msg):
         return True
 
 
@@ -502,28 +542,91 @@ class PSPeersService(JSONPubsubService):
 class PSChatService(JSONPubsubService):
     def __init__(self, ipfsCtx, client, **kw):
         super().__init__(ipfsCtx, client, topic=TOPIC_CHAT,
+                         runPeriodic=True,
                          filterSelfMessages=False, **kw)
 
     async def processJsonMessage(self, sender, msg):
         msgType = msg.get('msgtype', None)
 
-        if msgType == ChatRoomMessage.TYPE:
-            self.debug('Chat message received')
-            await self.handleChatMessage(msg)
+        if msgType == ChatChannelsListMessage.TYPE:
+            await self.handleChannelsListMessage(msg)
 
-    async def handleChatMessage(self, msg):
+    @ipfsOp
+    async def handleChannelsListMessage(self, ipfsop, msg):
+        cMsg = ChatChannelsListMessage(msg)
+        if not cMsg.valid():
+            self.debug('Invalid channels message')
+            return
+
+        # Publish to the hub
+        gHub.publish(keyChatChannels, cMsg)
+
+    @ipfsOp
+    async def periodic(self, ipfsop):
+        while True:
+            await asyncio.sleep(60)
+
+            profile = ipfsop.ctx.currentProfile
+            channelsDag = profile.dagChatChannels
+
+            msg = ChatChannelsListMessage.make(channelsDag.channelsSorted)
+            await self.send(msg)
+
+
+def chatChannelTopic(channel):
+    return 'galacteek.chat.channels.{}'.format(channel)
+
+
+class PSChatChannelService(JSONLDPubsubService):
+    def __init__(self, ipfsCtx, client, channel: str, psKey,
+                 **kw):
+
+        topic = chatChannelTopic(channel)
+        self.psKey = psKey
+
+        super().__init__(ipfsCtx, client, topic=topic,
+                         filterSelfMessages=False, **kw)
+
+    async def processJsonMessage(self, sender, msg):
+        msgType = msg.get('msgtype', None)
+
+        peerCtx = self.ipfsCtx.peers.getByPeerId(sender)
+        if not peerCtx:
+            self.debug('Message from unregistered peer: {}'.format(
+                sender))
+            return
+
+        if msgType == ChatRoomMessage.TYPE:
+            await self.handleChatMessage(sender, peerCtx, msg)
+        elif msgType == ChatStatusMessage.TYPE:
+            await self.handleStatusMessage(sender, peerCtx, msg)
+
+    async def handleChatMessage(self, sender, peerCtx, msg):
         cMsg = ChatRoomMessage(msg)
         if not cMsg.valid():
             self.debug('Invalid chat message')
             return
 
-        self.ipfsCtx.pubsub.chatRoomMessageReceived.emit(cMsg)
+        cMsg.peerCtx = peerCtx
+        gHub.publish(self.psKey, cMsg)
+
+    async def handleStatusMessage(self, sender, peerCtx, msg):
+        sMsg = ChatStatusMessage(msg)
+        if not sMsg.valid():
+            self.debug('Invalid chat message')
+            return
+
+        print('STATUS', sMsg.data)
+
+        sMsg.peerCtx = peerCtx
+        gHub.publish(self.psKey, sMsg)
 
 
-__all__ = [
-    'PubsubService',
-    'PSHashmarksExchanger',
-    'PSMainService',
-    'PSChatService',
-    'PSPeersService'
-]
+if 0:
+    __all__ = [
+        'PubsubService',
+        'PSHashmarksExchanger',
+        'PSMainService',
+        'PSChatService',
+        'PSPeersService'
+    ]

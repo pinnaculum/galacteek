@@ -669,7 +669,7 @@ class MediaPlayerTab(GalacteekTab):
         if not self.seekSlider.isSliderDown():
             self.seekSlider.setValue(progress)
 
-    def onClose(self):
+    async def onClose(self):
         self.player.stop()
         self.player.setMedia(QMediaContent(None))
         return True

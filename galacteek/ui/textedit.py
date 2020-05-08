@@ -366,7 +366,7 @@ class TextEditorTab(GalacteekTab):
         if doc is self.editor.currentDocument:
             self.changeTabName(doc.filename)
 
-    def onClose(self):
+    async def onClose(self):
         if self.editor.checkChanges() is True:
             self.editor.cleanup()
             return True
