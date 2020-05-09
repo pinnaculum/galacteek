@@ -17,13 +17,16 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QRegExpValidator
 
 from galacteek import ensure
+from galacteek import partialEnsure
 from galacteek.ipfs import ipfsOp
 
 from .widgets import MarkdownInputWidget
-from .helpers import runDialog
+from .helpers import runDialogAsync
 from .helpers import getMimeIcon
 from .helpers import getIcon
 from .helpers import messageBox
+
+from .dialogs import IPTagsSelectDialog
 
 
 def iNewBlogPost():
@@ -49,7 +52,7 @@ class UserWebsiteManager(QObject):
         self.postError.connect(lambda err: messageBox(err))
 
     def onNewPost(self):
-        runDialog(WebsiteAddPostDialog, manager=self)
+        ensure(runDialogAsync(WebsiteAddPostDialog, manager=self))
 
 
 class WebsiteAddPostDialog(QDialog):
@@ -81,12 +84,12 @@ class WebsiteAddPostDialog(QDialog):
         mainLayout.addWidget(buttonBox)
         self.setLayout(mainLayout)
 
-        buttonBox.accepted.connect(self.accept)
+        buttonBox.accepted.connect(partialEnsure(self.accept))
         buttonBox.rejected.connect(self.reject)
 
         self.title.setFocus(Qt.OtherFocusReason)
 
-    def accept(self):
+    async def accept(self):
         self.contents = self.markdownInput.markdownText()
         title = self.title.text()
 
@@ -94,14 +97,17 @@ class WebsiteAddPostDialog(QDialog):
             return messageBox('Please provide a title and post body')
 
         self.setEnabled(False)
-        ensure(self.blogPost(title, self.contents))
+        tagsDialog = await runDialogAsync(IPTagsSelectDialog)
+
+        await self.blogPost(title, self.contents, tagsDialog.destTags)
 
     @ipfsOp
-    async def blogPost(self, ipfsop, title, body):
+    async def blogPost(self, ipfsop, title, body, tags):
         profile = ipfsop.ctx.currentProfile
 
         try:
-            await profile.userWebsite.blogPost(title, body)
+            await profile.userWebsite.blogPost(
+                title, body, tags=tags)
         except Exception as err:
             messageBox(str(err))
             self.setEnabled(True)

@@ -1,5 +1,23 @@
 {% from "usersite/macros/urls.html" import site_ipns_url %}
 
+{% macro render_blog_post_tags(post, from_index=false) %}
+  {% if post.tags %}
+    <b>Tags</b>:
+
+    {% for tag in post.tags %}
+    {% set planet, ptag = tag.split('#') %}
+    {% set planet = planet|replace('@', '') %}
+
+    {% if from_index %}
+    <a href="_tags/{{planet}}/{{ptag}}/index.html">{{ tag }}</a>
+    {% else %}
+    {{ tag }}
+    {% endif %}
+
+    {% endfor %}
+  {% endif %}
+{% endmacro %}
+
 {# Adapted from lektor's macro #}
 {% macro render_blog_post(post, from_index=false) %}
   <div class="blog-post">
@@ -8,12 +26,16 @@
      <a href="{{ post.postname }}/view">{{ post.title }}</a>
     </h2>
 
+    {{ render_blog_post_tags(post, from_index=from_index) }}
+
     <p class="blog-meta">
       written by <b>{{ post.author }}</b>
       at {{ post.date_published|dtclean }}
     </p>
   {% else %}
     <h2 class="blog-title">{{ post.title }}</h2>
+
+    {{ render_blog_post_tags(post, from_index=from_index) }}
 
     <p class="blog-meta">
     written by <b>{{ post.author }}</b> at {{ post.date_published|dtclean }}

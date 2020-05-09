@@ -519,16 +519,10 @@ class IPIdentifier(DAGOperations):
 
     @ipfsOp
     async def resolve(self, ipfsop, resolveTimeout=30):
-        useCache = 'always' if self._localId else 'offline'
-        maxCache = None if self._localId else (60 * 60 * 5)
-
-        return await ipfsop.nameResolve(
+        return await ipfsop.nameResolveStreamFirst(
             joinIpns(self.ipnsKey),
-            timeout=resolveTimeout,
-            cache='always',
-            cacheOrigin='ipidmanager',
-            useCache=useCache,
-            maxCacheLifetime=maxCache)
+            timeout=resolveTimeout
+        )
 
     async def refresh(self):
         if not self._lastResolve or \

@@ -764,29 +764,27 @@ class UneditableStringListModel(QStringListModel):
         return Qt.ItemFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
 
 
-class HashmarkIPTagsDialog(QDialog):
-    def __init__(
-            self,
-            hashmark,
-            parent=None):
+class IPTagsSelectDialog(QDialog):
+    def __init__(self, parent=None):
         super().__init__(parent)
 
         self.app = QApplication.instance()
-        self.hashmark = hashmark
+
+        self.destTags = []
 
         self.allTagsModel = UneditableStringListModel(self)
-        self.hmTagsModel = UneditableStringListModel(self)
+        self.destTagsModel = UneditableStringListModel(self)
         self.allTagsProxyModel = QSortFilterProxyModel(self)
         self.allTagsProxyModel.setSourceModel(self.allTagsModel)
 
         self.ui = ui_iptagsmanager.Ui_IPTagsDialog()
         self.ui.setupUi(self)
 
-        self.ui.hmTagsView.setModel(self.hmTagsModel)
-        self.ui.hmTagsView.setEditTriggers(
+        self.ui.destTagsView.setModel(self.destTagsModel)
+        self.ui.destTagsView.setEditTriggers(
             QAbstractItemView.NoEditTriggers
         )
-        self.ui.hmTagsView.doubleClicked.connect(
+        self.ui.destTagsView.doubleClicked.connect(
             self.onTagDoubleClicked
         )
 
@@ -796,12 +794,10 @@ class HashmarkIPTagsDialog(QDialog):
             QRegExpValidator(QRegExp(r'[A-Za-z0-9-_@#]+')))
         self.ui.lineEditTag.setMaxLength(128)
 
-        self.ui.tagHashmarkButton.clicked.connect(self.onTagHashmark)
-        self.ui.untagHashmarkButton.clicked.connect(self.untagHashmark)
+        self.ui.tagItButton.clicked.connect(self.onTagObject)
+        self.ui.untagItButton.clicked.connect(self.untagObject)
         self.ui.okButton.clicked.connect(lambda: ensure(self.validate()))
         self.ui.noTagsButton.clicked.connect(self.reject)
-
-        self.setWindowTitle(iHashmarkIPTagsEdit())
 
         self.setMinimumSize(
             self.app.desktopGeometry.width() / 2,
@@ -813,27 +809,27 @@ class HashmarkIPTagsDialog(QDialog):
         self.ui.allTagsView.clearSelection()
 
     def onTagDoubleClicked(self, idx):
-        ensure(self.tagHashmark([idx]))
+        ensure(self.tagObject([idx]))
 
-    def onTagHashmark(self):
-        ensure(self.tagHashmark())
+    def onTagObject(self):
+        ensure(self.tagObject())
 
-    def untagHashmark(self):
+    def untagObject(self):
         try:
-            for idx in self.ui.hmTagsView.selectedIndexes():
-                tag = self.hmTagsModel.data(
+            for idx in self.ui.destTagsView.selectedIndexes():
+                tag = self.destTagsModel.data(
                     idx,
                     Qt.DisplayRole
                 )
 
                 if tag:
-                    tagList = self.hmTagsModel.stringList()
+                    tagList = self.destTagsModel.stringList()
                     tagList.remove(tag)
-                    self.hmTagsModel.setStringList(tagList)
+                    self.destTagsModel.setStringList(tagList)
         except Exception:
             pass
 
-    async def tagHashmark(self, indexes=None):
+    async def tagObject(self, indexes=None):
         if indexes is None:
             indexes = self.ui.allTagsView.selectedIndexes()
 
@@ -843,13 +839,12 @@ class HashmarkIPTagsDialog(QDialog):
                 Qt.DisplayRole
             )
 
-            if tag and tag not in self.hmTagsModel.stringList():
-                self.hmTagsModel.setStringList(
-                    self.hmTagsModel.stringList() + [tag]
+            if tag and tag not in self.destTagsModel.stringList():
+                self.destTagsModel.setStringList(
+                    self.destTagsModel.stringList() + [tag]
                 )
 
     async def initDialog(self):
-        await self.hashmark._fetch_all()
         await self.updateAllTags()
 
     async def addTag(self):
@@ -868,7 +863,32 @@ class HashmarkIPTagsDialog(QDialog):
         self.allTagsProxyModel.sort(0)
 
     async def validate(self):
-        hmTags = self.hmTagsModel.stringList()
+        self.destTags = self.destTagsModel.stringList()
+        self.done(1)
+
+
+class HashmarkIPTagsDialog(IPTagsSelectDialog):
+    def __init__(
+            self,
+            hashmark,
+            parent=None):
+        super(HashmarkIPTagsDialog, self).__init__(parent)
+
+        self.app = QApplication.instance()
+        self.hashmark = hashmark
+        self.setWindowTitle(iHashmarkIPTagsEdit())
+
+        self.setMinimumSize(
+            self.app.desktopGeometry.width() / 2,
+            (2 * self.app.desktopGeometry.height()) / 3
+        )
+
+    async def initDialog(self):
+        await self.hashmark._fetch_all()
+        await self.updateAllTags()
+
+    async def validate(self):
+        hmTags = self.destTagsModel.stringList()
         await database.hashmarkTagsUpdate(self.hashmark, hmTags)
         self.done(1)
 

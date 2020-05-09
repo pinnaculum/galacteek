@@ -69,7 +69,7 @@
           </spacer>
          </item>
          <item>
-          <widget class="QPushButton" name="untagHashmarkButton">
+          <widget class="QPushButton" name="untagItButton">
            <property name="text">
             <string/>
            </property>
@@ -86,7 +86,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="tagHashmarkButton">
+          <widget class="QPushButton" name="tagItButton">
            <property name="text">
             <string/>
            </property>
@@ -122,12 +122,12 @@
          <item>
           <widget class="QLabel" name="label_3">
            <property name="text">
-            <string>Hashmark tags</string>
+            <string/>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QListView" name="hmTagsView"/>
+          <widget class="QListView" name="destTagsView"/>
          </item>
         </layout>
        </item>
