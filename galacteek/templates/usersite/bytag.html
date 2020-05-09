@@ -1,0 +1,14 @@
+{% from "usersite/macros/blog.html" import render_blog_post %}
+{% extends "usersite/layout.html" %}
+{% block body %}
+
+<div class="blog-posts">
+  <p>Posts with tag <b>{{ tag }}</b></p>
+  <ul>
+  {% for post in tagposts %}
+  <li><a href="ipfs://{{ post.view['/'] }}">{{ post['title'] }}</a></li>
+  {% endfor %}
+  </ul>
+</div>
+
+{% endblock %}

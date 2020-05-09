@@ -6,7 +6,7 @@ from galacteek.ipfs.pubsub.messages import LDMessage
 
 
 class ChatChannelsListMessage(PubsubMessage):
-    TYPE = 'chat_channelslist_message'
+    TYPE = 'ChatChannelsListMessage'
 
     schema = {
         "type": "object",
@@ -123,7 +123,7 @@ class ChatRoomMessage(LDMessage):
             'msgtype': ChatRoomMessage.TYPE,
             'version': 1,
             'ChatRoomMessage': {
-                'type': type,
+                'chatmsgtype': type,
                 'date': msgDate,
                 'message': message,
                 'links': links,
@@ -135,7 +135,7 @@ class ChatRoomMessage(LDMessage):
 
     @property
     def chatMessageType(self):
-        return self.jsonAttr('ChatRoomMessage.type')
+        return self.jsonAttr('ChatRoomMessage.chatmsgtype')
 
     @property
     def message(self):

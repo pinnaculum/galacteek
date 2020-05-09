@@ -543,7 +543,7 @@ class IPFSOperator(object):
                       resolve=True,
                       ttl=None, cache=None, cacheOrigin='unknown'):
         usingCache = cache == 'always' or \
-            (cache == 'offline' and self.noPeers)
+            (cache == 'offline' and self.noPeers and 0)
         aOffline = allow_offline if isinstance(allow_offline, bool) else \
             self.noPeers
         try:
@@ -589,7 +589,7 @@ class IPFSOperator(object):
         """
         try:
             resolved = await self.waitFor(
-                self.client.core.resolve(self.objectPathMap(path),
+                self.client.core.resolve(await self.objectPathMapper(path),
                                          recursive=recursive), timeout)
         except asyncio.TimeoutError:
             self.debug('resolve timeout for {0}'.format(path))
@@ -657,7 +657,7 @@ class IPFSOperator(object):
                           maxCacheLifetime=None,
                           cacheOrigin='unknown'):
         usingCache = useCache == 'always' or \
-            (useCache == 'offline' and self.noPeers)
+            (useCache == 'offline' and self.noPeers and 0)
         cache = cache == 'always' or (cache == 'offline' and self.noPeers)
         try:
             if usingCache:
@@ -701,10 +701,11 @@ class IPFSOperator(object):
                                 timeout=20,
                                 useCache='never',
                                 cache='never',
+                                cacheOrigin='unknown',
                                 recursive=True,
                                 maxCacheLifetime=60 * 10):
         usingCache = useCache == 'always' or \
-            (useCache == 'offline' and self.noPeers)
+            (useCache == 'offline' and self.noPeers and 0)
         cache = cache == 'always' or (cache == 'offline' and self.noPeers)
         rTimeout = '{t}s'.format(t=timeout) if isinstance(timeout, int) else \
             timeout
@@ -721,8 +722,8 @@ class IPFSOperator(object):
 
                 if rPath and IPFSPath(rPath).valid:
                     self.debug(
-                        'nameResolve: Feeding entry from NS cache: {}'.format(
-                            rPath))
+                        'nameResolve: Feeding from cache: {0} for {1}'.format(
+                            rPath, path))
                     yield {
                         'Path': rPath
                     }
@@ -741,6 +742,29 @@ class IPFSOperator(object):
             self.debug('streamed resolve timeout for {0}'.format(path))
         except aioipfs.APIError as e:
             self.debug('streamed resolve error: {}'.format(e.message))
+
+    async def nameResolveStreamFirst(self, path, count=1,
+                                     timeout=8,
+                                     cache='never',
+                                     cacheOrigin='unknown',
+                                     *args, **kw):
+        matches = []
+        async for entry in self.nameResolveStream(
+                path,
+                timeout=timeout,
+                cache=cache, cacheOrigin=cacheOrigin,
+                *args, **kw):
+            found = entry.get('Path')
+            if found:
+                matches.append(found)
+
+            if len(matches) >= count:
+                break
+
+        if len(matches) > 0:
+            return {
+                'Path': matches[-1]
+            }
 
     async def purge(self, hashRef, rungc=False):
         """ Unpins an object and optionally runs the garbage collector """
@@ -852,7 +876,7 @@ class IPFSOperator(object):
     async def objStat(self, path, timeout=30):
         try:
             stat = await self.waitFor(
-                self.client.object.stat(self.objectPathMap(path)),
+                self.client.object.stat(await self.objectPathMapper(path)),
                 timeout)
         except Exception:
             return None
@@ -1087,6 +1111,26 @@ class IPFSOperator(object):
         elif isinstance(cid, dict) and 'Hash' in cid:
             return {"/": cid['Hash']}
 
+    async def objectPathMapper(self, path):
+        ipfsPath = path if isinstance(path, IPFSPath) else \
+            IPFSPath(path, autoCidConv=True)
+
+        if ipfsPath.isIpns:
+            resolved = await self.nameResolveStreamFirst(path)
+
+            if resolved:
+                srPath = resolved['Path']
+                self.debug(
+                    'objectPathMapper: {o}: stream-resolved to {r}'.format(
+                        o=path, r=srPath))
+                return srPath
+            else:
+                self.debug(
+                    'objectPathMapper: {o}: stream-resolve failed'.format(
+                        o=path))
+
+        return path
+
     def objectPathMap(self, path):
         if self._objectMapping is False and 0:
             # No object mapping (don't use any cache)
@@ -1116,7 +1160,7 @@ class IPFSOperator(object):
     async def catObject(self, path, offset=None, length=None, timeout=30):
         return await self.waitFor(
             self.client.cat(
-                self.objectPathMap(path),
+                await self.objectPathMapper(path),
                 offset=offset, length=length
             ), timeout
         )
@@ -1124,7 +1168,7 @@ class IPFSOperator(object):
     async def listObject(self, path, timeout=30):
         return await self.waitFor(
             self.client.core.ls(
-                self.objectPathMap(path)
+                await self.objectPathMapper(path)
             ), timeout
         )
 
@@ -1190,7 +1234,7 @@ class IPFSOperator(object):
         """
 
         output = await self.waitFor(
-            self.client.dag.get(self.objectPathMap(dagPath)), timeout)
+            self.client.dag.get(await self.objectPathMapper(dagPath)), timeout)
 
         if output is not None:
             return json.loads(output)

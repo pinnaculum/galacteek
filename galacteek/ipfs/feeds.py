@@ -44,10 +44,11 @@ class FeedFollower(object):
 
                 feedMarks = await feed.entries()
 
-                resolved = await op.nameResolve(feed.feedhashmark.path,
-                                                timeout=15,
-                                                recursive=True,
-                                                useCache='always')
+                resolved = await op.nameResolveStreamFirst(
+                    feed.feedhashmark.path,
+                    timeout=15
+                )
+
                 if not resolved:
                     log.debug('Could not resolve {0}'.format(
                         feed.feedhashmark.path))

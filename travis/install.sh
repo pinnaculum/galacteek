@@ -3,7 +3,7 @@
 set -x
 set -e
 
-GO_IPFS_VERSION=0.5.0
+GO_IPFS_VERSION=0.5.1
 FS_MIGRATE_VERSION=1.5.1
 
 PIP=pip3

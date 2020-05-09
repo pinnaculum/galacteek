@@ -30,6 +30,7 @@ from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QVBoxLayout
 
 from galacteek import ensure
+from galacteek import partialEnsure
 from galacteek import threadExec
 from galacteek.ipfs.mimetype import mimeTypeDagUnknown
 from galacteek.ipfs.mimetype import mimeTypeDagPb
@@ -341,7 +342,10 @@ async def runDialogAsync(dlgarg, *args, **kw):
     if title:
         dlgW.setWindowTitle(title)
     if accepted:
-        dlgW.accepted.connect(functools.partial(accepted, dlgW))
+        if asyncio.iscoroutinefunction(accepted):
+            dlgW.accepted.connect(partialEnsure(accepted, dlgW))
+        else:
+            dlgW.accepted.connect(functools.partial(accepted, dlgW))
 
     dlgW.show()
     await threadExec(dlgW.exec_)

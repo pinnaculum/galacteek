@@ -1154,7 +1154,7 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/userwebsite.py" line="30"/>
+        <location filename="../../galacteek/ui/userwebsite.py" line="33"/>
         <source>New blog post</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1742,11 +1742,6 @@ Path: {0}, nodes processed: {1}</source>
     <message>
         <location filename="../../galacteek/ui/iptagsmanager.ui" line="47"/>
         <source>All tags</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/iptagsmanager.ui" line="125"/>
-        <source>Hashmark tags</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

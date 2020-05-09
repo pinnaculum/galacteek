@@ -15,6 +15,7 @@ from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs.cidhelpers import ipnsKeyCidV1
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import joinIpns
+from galacteek.ipfs.cidhelpers import stripIpfs
 from galacteek.core.analyzer import ResourceAnalyzer
 from galacteek.core import isoformat
 from galacteek.dweb import render
@@ -139,17 +140,20 @@ class UserWebsite:
 
     @property
     def dagBlog(self):
-        return self.dagRoot['blog']
+        return self.dagRoot[BLOG_NODEKEY]
 
     def debug(self, msg):
         return self.profile.debug(msg)
 
     @ipfsOp
     async def blogEntries(self, op):
-        return await self.edag.list(path='blog')
+        listing = await self.edag.list(path=BLOG_NODEKEY)
+        return [entry for entry in listing if entry != 'index.html' and
+                not entry.startswith('_')]
 
     @ipfsOp
-    async def blogPost(self, ipfsop, title, msg, category=None, author=None):
+    async def blogPost(self, ipfsop, title, msg, category=None,
+                       tags=None, author=None):
         async with self.edag:
             sHandle = self.profile.userInfo.spaceHandle
 
@@ -171,8 +175,8 @@ class UserWebsite:
                     'title': title,
                     'uuid': uid,
                     'postname': postName,  # name of the post's DAG node
-                    'tags': [],
-                    'category': 'test',
+                    'tags': tags if tags else [],
+                    'category': None,
                     'author': author if author else username,
                     'date_published': isoformat(now),
                     'date_modified': isoformat(now)
@@ -188,6 +192,46 @@ class UserWebsite:
 
         await ipfsop.sleep(2)
         await self.update()
+        await ipfsop.sleep(1)
+
+        result = await self.dagUser.resolve(
+            os.path.join(BLOG_NODEKEY, postName, 'view'))
+        resolved = IPFSPath(result, autoCidConv=True)
+
+        if isinstance(tags, list) and resolved.isIpfsRoot and resolved.valid:
+            # Register the post by tag
+
+            async with self.edag as dag:
+                byTags = dag.root[BLOG_NODEKEY][TAGS_NODEKEY]
+
+                for tag in tags:
+                    if tag is None:
+                        continue
+
+                    planet, ptag = tag.split('#')
+                    if not planet or not ptag:
+                        continue
+
+                    planet = planet.replace('@', '')
+
+                    byTags.setdefault(planet, {})
+                    byTags[planet].setdefault(ptag, {
+                        '_posts': []
+                    })
+
+                    byTags[planet][ptag]['_posts'].append({
+                        'name': postName,
+                        'title': title,
+                        'view': {
+                            '/': stripIpfs(str(resolved))
+                        }
+                    })
+                    byTags[planet][ptag]['index.html'] = await self.renderLink(
+                        'usersite/bytag.html',
+                        contained=True,
+                        tag=tag,
+                        tagposts=byTags[planet][ptag]['_posts']
+                    )
 
         logUser.info('Your blog post is online')
         return True

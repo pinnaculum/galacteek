@@ -276,6 +276,7 @@ setup(
             'docs/manual/en/html/_images/*',
             'docs/manual/en/html/_static/*',
             'ld/contexts/*',
+            'ld/contexts/messages/*',
             'templates/*.html',
             'templates/layouts/*',
             'templates/usersite/*.html',
