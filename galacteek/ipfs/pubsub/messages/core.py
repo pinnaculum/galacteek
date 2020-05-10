@@ -305,6 +305,7 @@ class PeerIdentMessageV2(PubsubMessage):
                 "required": ["peerid"]
             },
         },
+        "required": ["msgtype", "msg"]
     }
 
     @staticmethod
@@ -455,6 +456,7 @@ class PeerIdentMessageV3(PubsubMessage):
                 "required": ["peerid"]
             },
         },
+        "required": ["msgtype", "msg"]
     }
 
     @staticmethod
@@ -548,7 +550,8 @@ class PeerIpHandleChosen(PubsubMessage):
                     "iphandleqrpngcid"
                 ]
             }
-        }
+        },
+        "required": ["msgtype", "msg"]
     }
 
     @staticmethod
@@ -592,6 +595,7 @@ class PeerLogoutMessage(PubsubMessage):
                 "required": ["peerid"]
             },
         },
+        "required": ["msgtype", "msg"]
     }
 
     @staticmethod

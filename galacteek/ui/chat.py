@@ -363,13 +363,18 @@ class ChatRoomWidget(GalacteekTab):
 
         if len(message.links) > 0:
             for obj in message.links:
-                path = IPFSPath(obj, autoCidConv=True)
-                if not path.valid:
+                if not isinstance(obj, str):
                     continue
-                formatted += '<p style="margin-left: 30px">Link '
-                formatted += '<a href="{objhref}">{name}<a>'.format(
-                    objhref=path.ipfsUrl, name=path.objPath)
-                formatted += '</p>'
+                try:
+                    path = IPFSPath(obj, autoCidConv=True)
+                    if not path.valid:
+                        continue
+                    formatted += '<p style="margin-left: 30px">Link '
+                    formatted += '<a href="{objhref}">{name}<a>'.format(
+                        objhref=path.ipfsUrl, name=path.objPath)
+                    formatted += '</p>'
+                except Exception:
+                    continue
 
         self.ui.chatLog.insertHtml('<br>')
         self.ui.chatLog.insertHtml(formatted)

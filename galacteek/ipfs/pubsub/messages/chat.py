@@ -18,12 +18,15 @@ class ChatChannelsListMessage(PubsubMessage):
                     "channels": {
                         "type": "array",
                         "items": {
-                            "type": "string"
+                            "type": "string",
+                            "pattern": r"^#[a-zA-Z-_]{1,64}"
                         }
                     }
-                }
+                },
+                "required": ["channels"]
             }
-        }
+        },
+        "required": ["msgtype", "msg"]
     }
 
     @staticmethod
@@ -94,9 +97,10 @@ class ChatRoomMessage(LDMessage):
         "type": "object",
         "properties": {
             "msgtype": {"type": "string"},
-            "msg": {
+            "ChatRoomMessage": {
                 "type": "object",
                 "properties": {
+                    "chatmsgtype": {"type": "integer"},
                     "date": {"type": "string"},
                     "message": {"type": "string"},
                     "level": {"type": "integer"},
@@ -104,12 +108,17 @@ class ChatRoomMessage(LDMessage):
                     "attachments": {"type": "array"}
                 },
                 "required": [
+                    "chatmsgtype",
                     "message",
                     "date",
                     "level"
                 ]
             },
         },
+        "required": [
+            "msgtype",
+            "ChatRoomMessage"
+        ]
     }
 
     @ipfsOp
@@ -156,4 +165,9 @@ class ChatRoomMessage(LDMessage):
     def valid(self):
         schemaOk = self.validSchema(schema=ChatRoomMessage.schema)
         if schemaOk:
-            return len(self.message) < 1024
+            return len(self.message) < 1024 and self.chatMessageType in [
+                ChatRoomMessage.CHATMSG_TYPE_MESSAGE,
+                ChatRoomMessage.CHATMSG_TYPE_JOINED,
+                ChatRoomMessage.CHATMSG_TYPE_LEFT,
+                ChatRoomMessage.CHATMSG_TYPE_HEARTBEAT
+            ]
