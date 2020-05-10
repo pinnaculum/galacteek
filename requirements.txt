@@ -27,6 +27,7 @@ py-multihash>=0.2.3
 pycryptodomex>=3.6.6
 pygments>=2.3.1
 pyld>=1.0.5
+pypika>=0.36.5
 pyqt5==5.13.2
 pyqtchart==5.13.1
 pyqtwebengine==5.13.2
@@ -38,4 +39,4 @@ qrcode>=6.1
 qtawesome>=0.7.2
 quamash>=0.6.1
 strict-rfc3339>=0.7
-tortoise-orm==0.16.6
+tortoise-orm>=0.16.10
