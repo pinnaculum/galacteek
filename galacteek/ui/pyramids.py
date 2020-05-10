@@ -754,11 +754,11 @@ class MultihashPyramidToolButton(PopupToolButton):
                 )
 
     def onCopyIpns(self):
-        self.app.setClipboardText(self.ipnsKeyPath)
+        self.app.setClipboardText(str(self.ipnsKeyPath))
 
     def onCopyIpnsGw(self):
         self.app.setClipboardText(
-            'https://ipfs.io{}'.format(self.ipnsKeyPath))
+            'https://ipfs.io{}'.format(str(self.ipnsKeyPath)))
 
     @ipfsOp
     async def generateQrCode(self, ipfsop, qrName, *paths):

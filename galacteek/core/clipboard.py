@@ -267,32 +267,10 @@ class ClipboardTracker(QObject):
             self.current = existing
 
     @ipfsOp
-    async def streamResolve(self, ipfsop, item, count=2):
-        matches = []
-        async for entry in ipfsop.nameResolveStream(
-                item.ipfsPath.objPath, timeout='10s',
-                useCache='always'):
-            matches.append(entry.get('Path'))
-            if len(matches) > count:
-                break
-
-        if len(matches) > 0:
-            latest = matches[-1]
-            if isinstance(latest, str):
-                item._resolvedPath = IPFSPath(latest, autoCidConv=True)
-                item.ipnsNameResolved.emit(item.resolvedPath)
-                return item.resolvedPath
-
-    @ipfsOp
     async def scanItem(self, ipfsop, cItem):
         mimetype = None
         path = cItem.path
         mHashMeta = await self.app.multihashDb.get(path)
-
-        if cItem.ipfsPath.isIpnsRoot:
-            rPath = await self.streamResolve(cItem)
-            if rPath:
-                path = str(rPath)
 
         if mHashMeta:
             # Already have metadata for this object
@@ -326,7 +304,7 @@ class ClipboardTracker(QObject):
             if statInfo and isinstance(statInfo, dict):
                 metadata['stat'] = statInfo
 
-            if len(metadata) > 0:
+            if len(metadata) > 0 and not cItem.ipfsPath.isIpns:
                 await self.app.multihashDb.store(
                     path,
                     **metadata
