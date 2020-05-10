@@ -2435,17 +2435,17 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="160"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="167"/>
         <source>Browse image gallery</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="167"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="174"/>
         <source>Browse image gallery (IPNS)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="174"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="181"/>
         <source>Change image gallery&apos;s title</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2469,6 +2469,11 @@ Path: {0}, nodes processed: {1}</source>
         <source>Choose a pyramid to publish this object to</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="160"/>
+        <source>Drop object to a pyramid</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>resourceOpener</name>
@@ -2481,37 +2486,37 @@ Path: {0}, nodes processed: {1}</source>
 <context>
     <name>textEditor</name>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="79"/>
+        <location filename="../../galacteek/ui/textedit.py" line="80"/>
         <source>Save</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="84"/>
+        <location filename="../../galacteek/ui/textedit.py" line="85"/>
         <source>Edit</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="89"/>
+        <location filename="../../galacteek/ui/textedit.py" line="90"/>
         <source>Filesystem view</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="94"/>
+        <location filename="../../galacteek/ui/textedit.py" line="95"/>
         <source>Editor view</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="99"/>
+        <location filename="../../galacteek/ui/textedit.py" line="100"/>
         <source>Preview</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="104"/>
+        <location filename="../../galacteek/ui/textedit.py" line="105"/>
         <source>Automatic markdown to HTML saving</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="111"/>
+        <location filename="../../galacteek/ui/textedit.py" line="112"/>
         <source>Offline mode (announce your content manually later)</source>
         <translation type="unfinished"></translation>
     </message>
