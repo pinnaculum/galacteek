@@ -312,6 +312,18 @@ class ChatRoomWidget(GalacteekTab):
                 if p['handle'] == handle:
                     self.participantsModel.removeRow(p['row'])
 
+    async def removeInactiveUsers(self):
+        now = time.time()
+        data = await self.participantsData()
+
+        async with self.lock:
+            for p in data:
+                try:
+                    if (now - float(p['hbts'])) > 60 * 3:
+                        self.participantsModel.removeRow(p['row'])
+                except Exception:
+                    continue
+
     async def onChatMessageReceived(self, key, message):
         now = datetimeNow()
 
@@ -408,6 +420,8 @@ class ChatRoomWidget(GalacteekTab):
                     type=ChatRoomMessage.CHATMSG_TYPE_HEARTBEAT
                 )
             )
+
+            await self.removeInactiveUsers()
 
     async def onClose(self):
         await self.hbTask.close()
