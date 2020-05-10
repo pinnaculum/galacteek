@@ -8,7 +8,7 @@
 
 .. image:: https://travis-ci.org/pinnaculum/galacteek.svg?branch=master
     :target: https://travis-ci.org/pinnaculum/galacteek
-.. image:: https://raw.githubusercontent.com/pinnaculum/galacteek/raw/master/share/icons/donate.png
+.. image:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/share/icons/donate.png
     :target: https://github.com/sponsors/pinnaculum
 
 **galacteek** is a multi-platform Qt5-based browser/toolbox
