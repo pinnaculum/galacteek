@@ -70,6 +70,7 @@ from .helpers import sizeFormat
 from .helpers import messageBox
 from .helpers import messageBoxAsync
 from .helpers import inputTextCustom
+
 from .i18n import iCancel
 from .i18n import iUnknown
 from .i18n import iHashmarksDatabase
@@ -377,6 +378,22 @@ class QAObjTagItemToolButton(QToolButton):
             menu.exec(self.mapToGlobal(event.pos()))
 
         super().mousePressEvent(event)
+
+
+class HashmarkThisButton(QToolButton):
+    def __init__(self, ipfsPath, parent=None):
+        super(HashmarkThisButton, self).__init__(parent=parent)
+        self.setIcon(getIcon('hashmarks.png'))
+        self.ipfsPath = ipfsPath
+
+        self.setToolTip(
+            'Hashmark object: {}'.format(str(self.ipfsPath)))
+
+        self.clicked.connect(self.onClicked)
+
+    def onClicked(self):
+        from .hashmarks import addHashmarkAsync
+        ensure(addHashmarkAsync(str(self.ipfsPath)))
 
 
 class HashmarkToolButton(QToolButton):

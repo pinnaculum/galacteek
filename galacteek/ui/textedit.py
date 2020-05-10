@@ -71,6 +71,7 @@ from .widgets import IPFSPathClipboardButton
 from .widgets import IPFSUrlLabel
 from .widgets import GalacteekTab
 from .widgets import CheckableToolButton
+from .widgets import HashmarkThisButton
 from .clips import RotatingCubeRedFlash140d
 from .i18n import *
 
@@ -1026,6 +1027,8 @@ class TextEditorWidget(QWidget):
             date = QLabel()
             date.setText(now.toString('hh:mm:ss'))
 
+            hmarkButton = HashmarkThisButton(str(path))
+
             publishButton = QToolButton()
             publishButton.setText('Publish')
             publishButton.clicked.connect(functools.partial(
@@ -1034,6 +1037,7 @@ class TextEditorWidget(QWidget):
             layout.addWidget(date)
             layout.addWidget(urlLabel)
             layout.addWidget(clipButton)
+            layout.addWidget(hmarkButton)
             layout.addWidget(pyrDropButton)
             layout.addItem(QSpacerItem(10, 10, QSizePolicy.Expanding,
                                        QSizePolicy.Minimum))

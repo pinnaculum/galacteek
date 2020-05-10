@@ -740,6 +740,7 @@ class FileManager(QWidget):
         dataHash = self.model.getHashFromIdx(idx)
         ipfsPath = nameItem.ipfsPath
         menu = QMenu(self)
+        pyrDropButton = self.app.mainWindow.getPyrDropButtonFor(ipfsPath)
 
         def explore(cid):
             self.gWindow.explore(cid)
@@ -831,6 +832,9 @@ class FileManager(QWidget):
                 getIcon('multimedia.png'),
                 iMediaPlayerQueue(), partialEnsure(
                     self.mediaPlayerQueueDir, str(ipfsPath)))
+        menu.addSeparator()
+
+        menu.addMenu(pyrDropButton.menu)
         menu.addSeparator()
 
         # Delete/unlink
