@@ -342,7 +342,7 @@ class ChatRoomWidget(GalacteekTab):
 
         if message.chatMessageType == ChatRoomMessage.CHATMSG_TYPE_MESSAGE:
             if not self.isVisible():
-                self.setTabIcon(getIcon('qta:mdi.chat-alert-outline'))
+                self.setTabIcon(getIcon('chat-active.png'))
             else:
                 self.setTabIcon(getIcon('qta:mdi.chat-outline'))
 
