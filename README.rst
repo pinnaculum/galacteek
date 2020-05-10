@@ -8,6 +8,8 @@
 
 .. image:: https://travis-ci.org/pinnaculum/galacteek.svg?branch=master
     :target: https://travis-ci.org/pinnaculum/galacteek
+.. image:: https://raw.githubusercontent.com/pinnaculum/galacteek/raw/master/share/icons/donate.png
+    :target: https://github.com/sponsors/pinnaculum
 
 **galacteek** is a multi-platform Qt5-based browser/toolbox
 for the IPFS_ peer-to-peer network.
@@ -18,28 +20,32 @@ Installation
 * **AppImage (Linux)**: `Galacteek-0.4.21-x86_64.AppImage <https://github.com/pinnaculum/galacteek/releases/download/v0.4.21/Galacteek-0.4.21-x86_64.AppImage>`_
 * **DMG (MacOS)**: `Galacteek-0.4.21.dmg <https://github.com/pinnaculum/galacteek/releases/download/v0.4.21/Galacteek-0.4.21.dmg>`_
 
-*MacOS notes*: After opening/mounting the DMG image, hold Control and click on the
+*On Linux*: Be sure to install all the **gstreamer** packages on your
+system to be able to use the mediaplayer.
+
+*On MacOS*: After opening/mounting the DMG image, hold Control and click on the
 **galacteek** icon, and select **Open** and accept. You probably need to
 allow the system to install applications *from anywhere* in the security
 settings.
 
 See the releases_ page for all releases.
 
-Command-line usage
-==================
+Screenshots
+===========
 
-Use the *-d* command-line switch to enable debugging output. Using *--profile* gives
-you the ability to have separate application profiles (*main* is the default
-profile). Use *--help* for all options.
+.. figure:: https://gitlab.com/galacteek/galacteek/raw/master/screenshots/browse-wikipedia-small.png
+    :target: https://gitlab.com/galacteek/galacteek/raw/master/screenshots/browse-wikipedia.png
+    :align: center
+    :alt: Browsing the Wikipedia mirror over IPFS
 
-Enable colorized log output with **--log-color**
+    Browsing the Wikipedia mirror over IPFS
 
-Use the **--no-ipfsscheme-mutex** switch to disable mutexes in the native IPFS scheme
-handler.
+.. figure:: https://gitlab.com/galacteek/galacteek/raw/master/screenshots/qr-codes-mezcla.png
+    :target: https://gitlab.com/galacteek/galacteek/raw/master/screenshots/qr-codes-mezcla.png
+    :align: center
+    :alt: QR codes
 
-*Development*: Use *--monitor* to enable event-loop monitoring with aiomonitor_
-(install aiomonitor_ manually as it's not a dependency).
-Then connect to the aiomonitor_ interface with **nc localhost 50101**
+    IPFS QR codes
 
 Features
 ========
@@ -65,33 +71,32 @@ should enable pubsub and p2p streams, or some features won't be available.
 - Image viewer
 - QR codes from images
 
+Command-line usage
+==================
+
+Use the *-d* command-line switch to enable debugging output. Using *--profile* gives
+you the ability to have separate application profiles (*main* is the default
+profile). Use *--help* for all options.
+
+Enable colorized log output with **--log-color**
+
+Use the **--no-ipfsscheme-mutex** switch to disable mutexes in the native IPFS scheme
+handler.
+
+*Development*: Use *--monitor* to enable event-loop monitoring with aiomonitor_
+(install aiomonitor_ manually as it's not a dependency).
+Then connect to the aiomonitor_ interface with **nc localhost 50101**
+
 Keyboard shortcuts
 ==================
 
 Please see the shortcuts_ page (or from the application, click on the
 Information icon in the toolbar, which will open the documentation).
 
-Screenshots
-===========
-
-.. figure:: https://gitlab.com/galacteek/galacteek/raw/master/screenshots/browse-wikipedia-small.png
-    :target: https://gitlab.com/galacteek/galacteek/raw/master/screenshots/browse-wikipedia.png
-    :align: center
-    :alt: Browsing the Wikipedia mirror over IPFS
-
-    Browsing the Wikipedia mirror over IPFS
-
-.. figure:: https://gitlab.com/galacteek/galacteek/raw/master/screenshots/qr-codes-mezcla.png
-    :target: https://gitlab.com/galacteek/galacteek/raw/master/screenshots/qr-codes-mezcla.png
-    :align: center
-    :alt: QR codes
-
-    IPFS QR codes
-
 Contributions
 =============
 
-Code contributions that can help:
+Contributions that can help:
 
 - Write DID services (a chat service using JSON-LD for example)
 - Translations (french, spanish)
@@ -109,10 +114,10 @@ Platforms supported
 Requirements
 ============
 
-- python3 >= 3.6
-- go-ipfs_ >= 0.4.7
-- PyQt5 >= 5.12.2
-- PyQtWebengine >= 5.12
+- python3 >= 3.7
+- go-ipfs_ >= 0.5.0
+- PyQt5 >= 5.13.2
+- PyQtWebengine >= 5.13.2
 - gstreamer (on Linux) for media player support
 - git
 - quamash_

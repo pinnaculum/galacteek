@@ -370,7 +370,7 @@ class DIDRsaKeyStore:
         self.__profile = profile
 
     def _privateKeyForDid(self, did):
-        from Crypto.PublicKey import RSA
+        from Cryptodome.PublicKey import RSA
 
         match = didIdentRe.match(did)
         if not match:

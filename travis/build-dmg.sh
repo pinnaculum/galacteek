@@ -69,6 +69,7 @@ cp "$OLD_CWD"/share/icons/galacteek.icns galacteek.app/Contents/Resources/share/
 # copy go-ipfs
 mkdir -p galacteek.app/Contents/Resources/bin
 cp $HOME/bin/ipfs galacteek.app/Contents/Resources/bin
+cp $HOME/bin/fs-repo-migrations galacteek.app/Contents/Resources/bin
 
 # Install libmagic (disabled for now, python-magic finds the library
 # but raises an exception, still something to change here)
