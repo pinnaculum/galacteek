@@ -58,16 +58,17 @@ or from the filemanager.</p>
 page if it’s a valid IPFS object. From the clipboard manager
 you can create hashmarks as well, by opening the menu of the
 clipboard item of your choice and clicking on the <em>Hashmark</em> action.</p>
-<p>Hashmarks are given a category, a title, description and icon (that
-will be stored within IPFS). Flagging a hashmark as <em>shared</em> means
-that it will be shared on the network with other peers (off by default).
-Received hashmarks are RSA-encrypted in your IPFS repository with
-your profile’s RSA key, and searchable from the hashmarks library.</p>
+<p>Hashmarks are given a a title, description and icon (that
+will be stored within IPFS). You can also tag hashmarks
+and give them an optional category.</p>
+<p>Hashmarks collections can be synchronized from external git
+repositories (the main repository is <em>dwebland</em>), so you need
+to have git installed on your machine.</p>
 <div class="section" id="local-hashmarks-menu">
 <h2>Local Hashmarks menu<a class="headerlink" href="#local-hashmarks-menu" title="Permalink to this headline">¶</a></h2>
 <a class="reference internal image-reference" href="_images/hashmarks.png"><img alt="_images/hashmarks.png" src="_images/hashmarks.png" style="width: 64px; height: 64px;" /></a>
 <p>From the toolbar, clicking on the hashmarks icon opens a menu
-giving access to all your local hashmarks, by category.</p>
+giving access to all your hashmarks, by category.</p>
 <p>Clicking an item will trigger the opening of the corresponding
 object, depending on its type (the file type of the object
 is automatically detected and cached by the application). There
@@ -75,20 +76,25 @@ are built-in viewers/renderers for things like text files,
 images, multimedia files etc.. For files that cannot be
 rendered by the application (for example PDF files), the system’s
 default application will be used to open the file.</p>
+<p>On Linux, you can use the <em>xdg-mime</em> command to change which
+application will be used to open certain types of files,
+for example this will use <em>mupdf</em> to open PDF files:</p>
+<blockquote>
+<div>xdg-mime default mupdf.desktop application/pdf</div></blockquote>
 </div>
 <div class="section" id="searching">
 <h2>Searching<a class="headerlink" href="#searching" title="Permalink to this headline">¶</a></h2>
 <a class="reference internal image-reference" href="_images/hashmarks-library.png"><img alt="_images/hashmarks-library.png" src="_images/hashmarks-library.png" style="width: 64px; height: 64px;" /></a>
 <p>The hashmarks library button gives you the ability to search
-for content in the global hashmarks database (local hashmarks
-and hashmarks sent from other peers). To quickly access
-the hashmarks search you can press <strong>Mod+Control+h</strong>
+for content in the hashmarks database.</p>
+<p>To quickly access the hashmarks search you can press <strong>Mod+Control+h</strong>
 (<strong>Alt+Control+h</strong> on Linux or <strong>Command+Control+h</strong>
 on MacOS), or just click on the hashmarks library button
 in the toolbar.</p>
 <p>Your search query will be applied to the title, description,
-comment or object path (so you can search for CIDs) of hashmarks.
-The search is case-insensitive.</p>
+comment or object path (so you can search for CIDs) of hashmarks,
+as well as tags associated with the hashmark (so you can use
+<em>#ipfs</em> or <em>&#64;Earth#dweb</em> for example). The search is case-insensitive.</p>
 <p>After typing a search query, run the search by pressing
 <strong>Shift + Return</strong>.</p>
 </div>
@@ -99,8 +105,8 @@ The search is case-insensitive.</p>
 an IPNS path (e.g <strong>/ipns/awesome.ipfs.io</strong>), open the IPFS
 menu on the left, and click on <strong>Follow IPNS resource</strong>).</p>
 <p>The IPNS name or key will be periodically resolved (the resolve frequency
-is configurable). The resolved entries are added as hashmarks inside
-the IPNS feed and can be browsed from the hashmarks manager.</p>
+is configurable) and you will be notified in the system tray when
+new content is available.</p>
 </div>
 
 

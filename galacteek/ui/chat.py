@@ -43,6 +43,7 @@ from .helpers import messageBox
 from .helpers import runDialogAsync
 from .widgets import GalacteekTab
 from .widgets import PopupToolButton
+from .i18n import iChat
 
 from . import ui_chatchannelslist
 from . import ui_chatchannelnew
@@ -173,6 +174,8 @@ class ChatCenterButton(PopupToolButton):
             mode=QToolButton.InstantPopup,
             *args, **kw
         )
+
+        self.setToolTip(iChat())
 
         self.app = QApplication.instance()
         self.menu.addAction(

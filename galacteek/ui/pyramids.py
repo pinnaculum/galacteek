@@ -1154,8 +1154,10 @@ class GalleryPyramidController(EDAGBuildingPyramidController):
 
     @ipfsOp
     async def changeGalleryTitle(self, ipfsop, title):
+        await self.cancelPublishJob()
         async with self.edag as edag:
             edag.root['metadata']['title'] = title
+            await self.renderGallery()
 
     def onGenerateIndexQrCode(self):
         qrName = 'ipfsqr.pyrindex.{}.png'.format(self.pyramid.name)
@@ -1240,11 +1242,14 @@ class GalleryPyramidController(EDAGBuildingPyramidController):
             }
         })
 
+        await self.renderGallery()
+        self.edag.changed.emit()
+
+    async def renderGallery(self):
         entry = await ipfsRender(self.app.jinjaEnv,
                                  'imggallery/gallery-dag.html',
                                  dag=self.edag.root)
         self.edag.root['index.html'] = self.edag.mkLink(entry)
-        self.edag.changed.emit()
 
     def updateToolTip(self):
         self._pyrToolTip = '''

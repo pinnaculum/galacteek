@@ -92,6 +92,7 @@ class AddHashmarkDialog(QDialog):
         self.ui.resourceLabel.setToolTip(self.ipfsResource)
         self.ui.newCategory.textChanged.connect(self.onNewCatChanged)
         self.ui.title.setText(title)
+        self.ui.share.hide()
 
         pix = QPixmap.fromImage(QImage(':/share/icons/hashmarks.png'))
         pix = pix.scaledToWidth(32)

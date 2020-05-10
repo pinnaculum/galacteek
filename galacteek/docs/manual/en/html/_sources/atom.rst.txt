@@ -29,8 +29,10 @@ Subscribing to a feed
 From a peer
 ^^^^^^^^^^^
 
-Open the peers manager and for the peer that you want to follow,
-select *Follow (Atom feed)*.
+Open the peers manager and double-click on the peer that you want
+to follow, showing you the list of services for this peer.
+Look for the *feed* service and double-click on it. This will
+subscribe to this peer's Atom feed.
 
 From a URL
 ^^^^^^^^^^

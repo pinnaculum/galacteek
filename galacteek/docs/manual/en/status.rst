@@ -11,3 +11,6 @@ In the status bar, the rotating cube gives an indication on
 the quality of your connection to the IPFS peer-to-peer network.
 
 The more peers you're wired to, the faster the cube will rotate.
+
+Passing the mouse over the cube will show you live graphs
+on peers and bandwidth usage.

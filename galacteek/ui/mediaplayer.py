@@ -283,6 +283,7 @@ class MediaPlayerTab(GalacteekTab):
         self.clipboardButton = QToolButton(clicked=self.onClipboardClicked)
         self.clipboardButton.setIcon(getIconClipboard())
         self.clipboardButton.setEnabled(False)
+        self.clipboardButton.setToolTip('Load media from clipboard')
 
         self.pinButton = QToolButton(clicked=self.onPinMediaClicked)
         self.pinButton.setIcon(getIcon('pin.png'))
@@ -451,7 +452,7 @@ class MediaPlayerTab(GalacteekTab):
         exists = await ipfsop.filesStat(objPath)
 
         if exists:
-            return messageBox(iPlaylistExists())
+            await ipfsop.filesRm(objPath)
 
         ent = await ipfsop.client.core.add_json(obj.root)
 

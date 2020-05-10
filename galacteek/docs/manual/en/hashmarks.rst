@@ -21,21 +21,25 @@ page if it's a valid IPFS object. From the clipboard manager
 you can create hashmarks as well, by opening the menu of the
 clipboard item of your choice and clicking on the *Hashmark* action.
 
-Hashmarks are given a category, a title, description and icon (that
-will be stored within IPFS). Flagging a hashmark as *shared* means
-that it will be shared on the network with other peers (off by default).
-Received hashmarks are RSA-encrypted in your IPFS repository with
-your profile's RSA key, and searchable from the hashmarks library.
+Hashmarks are given a a title, description and icon (that
+will be stored within IPFS). You can also tag hashmarks
+and give them an optional category.
 
-Local Hashmarks menu
---------------------
+Hashmarks collections can be synchronized from external git
+repositories (the main repository is *dwebland*), so you need
+to have git installed on your machine.
+
+Hashmarks menu
+--------------
 
 .. image:: ../../../../share/icons/hashmarks.png
     :width: 64
     :height: 64
 
 From the toolbar, clicking on the hashmarks icon opens a menu
-giving access to all your local hashmarks, by category.
+giving access to all your hashmarks, by category.
+
+The *Popupar tags* shows the most active tags.
 
 Clicking an item will trigger the opening of the corresponding
 object, depending on its type (the file type of the object
@@ -45,6 +49,12 @@ images, multimedia files etc.. For files that cannot be
 rendered by the application (for example PDF files), the system's
 default application will be used to open the file.
 
+On Linux, you can use the *xdg-mime* command to change which
+application will be used to open certain types of files,
+for example this will use *mupdf* to open PDF files:
+
+    xdg-mime default mupdf.desktop application/pdf
+
 Searching
 ---------
 
@@ -53,16 +63,17 @@ Searching
     :height: 64
 
 The hashmarks library button gives you the ability to search
-for content in the global hashmarks database (local hashmarks
-and hashmarks sent from other peers). To quickly access
-the hashmarks search you can press **Mod+Control+h**
+for content in the hashmarks database.
+
+To quickly access the hashmarks search you can press **Mod+Control+h**
 (**Alt+Control+h** on Linux or **Command+Control+h**
 on MacOS), or just click on the hashmarks library button
 in the toolbar.
 
 Your search query will be applied to the title, description,
-comment or object path (so you can search for CIDs) of hashmarks.
-The search is case-insensitive.
+comment or object path (so you can search for CIDs) of hashmarks,
+as well as tags associated with the hashmark (so you can use
+*#ipfs* or *@Earth#dweb* for example). The search is case-insensitive.
 
 After typing a search query, run the search by pressing
 **Shift + Return**.
@@ -75,5 +86,5 @@ an IPNS path (e.g **/ipns/awesome.ipfs.io**), open the IPFS
 menu on the left, and click on **Follow IPNS resource**).
 
 The IPNS name or key will be periodically resolved (the resolve frequency
-is configurable). The resolved entries are added as hashmarks inside
-the IPNS feed and can be browsed from the hashmarks manager.
+is configurable) and you will be notified in the system tray when
+new content is available.

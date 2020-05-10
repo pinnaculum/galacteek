@@ -7,7 +7,7 @@ Pyramids
     :width: 64
     :height: 64
 
-Multihash pyramids are a way to give a unique address on the
+Pyramids are a way to give a unique address on the
 network to content that you are regularly updating. It could be a
 website you're working on, a blog, a code repository, a distributed
 web app that you want to share with the world without the hassle of
@@ -45,9 +45,10 @@ stack and will be published to the pyramid's :term:`IPNS` key.
 
 You can also add the current clipboard item to the pyramid, by using
 the *Add current clipboard item to the pyramid* action in the pyramid's
-menu.
+menu. From the filemanager and the editor, you can easily transfer
+objects to a pyramid.
 
-From the pyramid's menu you can copy the IPNS address of the pyramid,
+From the pyramid's menu you can also copy the IPNS address of the pyramid,
 as well as create a QR code image for the IPNS key.
 
 DAG building pyramids
