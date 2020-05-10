@@ -562,13 +562,15 @@ class PSChatService(JSONPubsubService):
             self.debug('Invalid channels message')
             return
 
+        self.debug('Received valid chat channels list message')
+
         # Publish to the hub
         gHub.publish(keyChatChannels, cMsg)
 
     @ipfsOp
     async def periodic(self, ipfsop):
         while True:
-            await asyncio.sleep(60)
+            await asyncio.sleep(90)
 
             profile = ipfsop.ctx.currentProfile
             channelsDag = profile.dagChatChannels

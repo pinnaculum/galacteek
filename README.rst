@@ -26,6 +26,7 @@ system to be able to use the mediaplayer.
 allow the system to install applications *from anywhere* in the security
 settings.
 
+You'll need to have *git* installed to sync hashmarks repositories.
 See the releases_ page for all releases.
 
 .. image:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/share/icons/donate.png
