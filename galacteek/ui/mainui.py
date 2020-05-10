@@ -1352,7 +1352,7 @@ class MainWindow(QMainWindow):
     def onHelpDonate(self):
         tab = self.app.mainWindow.addBrowserTab()
         tab.enterUrl(
-            QUrl('https://patreon.com/{}'.format(GALACTEEK_NAME)))
+            QUrl('https://github.com/sponsors/pinnaculum'))
 
     def addBrowserTab(self, label='No page loaded', pinBrowsed=False,
                       minProfile=None, current=True):

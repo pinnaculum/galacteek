@@ -57,6 +57,7 @@ wheel = "*"
 tox = "*"
 vyper = "==0.1.0b10"
 aiomonitor = "*"
+sphinx = "==1.8.5"
 
 [requires]
 python_version = "3.6"

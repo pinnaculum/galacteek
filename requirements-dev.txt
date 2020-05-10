@@ -5,6 +5,7 @@ pytest
 pytest-asyncio
 pytest-qt
 pytest-xvfb
+sphinx==1.8.5
 tox
 vyper==0.1.0b10
 wheel
