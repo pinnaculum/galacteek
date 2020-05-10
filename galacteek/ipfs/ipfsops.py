@@ -863,8 +863,10 @@ class IPFSOperator(object):
         Lists objects in a given path and yields them
         """
         try:
-            listing = await self.client.ls(path, headers=True,
-                                           resolve_type=resolve_type)
+            listing = await self.client.ls(
+                await self.objectPathMapper(path),
+                headers=True,
+                resolve_type=resolve_type)
             objects = listing.get('Objects', [])
 
             for obj in objects:
@@ -890,8 +892,8 @@ class IPFSOperator(object):
         if exStat:
             return exStat
         try:
-            self.ctx.objectStats[path] = await self.objStat(path,
-                                                            timeout=timeout)
+            self.ctx.objectStats[path] = await self.objStat(
+                await self.objectPathMapper(path), timeout=timeout)
             return self.ctx.objectStats[path]
         except aioipfs.APIError:
             self.ctx.objectStats[path] = None

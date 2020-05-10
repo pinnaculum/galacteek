@@ -964,7 +964,7 @@ class ClipboardItemsStack(QStackedWidget):
             button = self.addItemButton(item=item)
             self.setCurrentWidget(button)
         else:
-            if btn.item and not btn.item.valid:
+            if btn.item and (not btn.item.valid or btn.item.ipfsPath.isIpns):
                 # Rescan the item
                 ensure(self.app.clipTracker.scanItem(btn.item))
             self.setCurrentWidget(btn)
