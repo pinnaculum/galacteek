@@ -311,8 +311,6 @@ class JSONLDPubsubService(JSONPubsubService):
         if self.autoExpand:
             expanded = await self.expand(msg)
             if expanded:
-                print('Received JSON message', msg)
-                print('Expanded LD message', expanded)
                 return await self.processLdMessage(sender, expanded)
         else:
             JSONPubsubService.processJsonMessage(self, sender, msg)
@@ -543,10 +541,16 @@ class PSChatService(JSONPubsubService):
     def __init__(self, ipfsCtx, client, **kw):
         super().__init__(ipfsCtx, client, topic=TOPIC_CHAT,
                          runPeriodic=True,
-                         filterSelfMessages=False, **kw)
+                         filterSelfMessages=True, **kw)
 
     async def processJsonMessage(self, sender, msg):
         msgType = msg.get('msgtype', None)
+
+        peerCtx = self.ipfsCtx.peers.getByPeerId(sender)
+        if not peerCtx:
+            self.debug('Message from unregistered peer: {}'.format(
+                sender))
+            return
 
         if msgType == ChatChannelsListMessage.TYPE:
             await self.handleChannelsListMessage(msg)
@@ -598,8 +602,6 @@ class PSChatChannelService(JSONLDPubsubService):
 
         if msgType == ChatRoomMessage.TYPE:
             await self.handleChatMessage(sender, peerCtx, msg)
-        elif msgType == ChatStatusMessage.TYPE:
-            await self.handleStatusMessage(sender, peerCtx, msg)
 
     async def handleChatMessage(self, sender, peerCtx, msg):
         cMsg = ChatRoomMessage(msg)
@@ -616,17 +618,5 @@ class PSChatChannelService(JSONLDPubsubService):
             self.debug('Invalid chat message')
             return
 
-        print('STATUS', sMsg.data)
-
         sMsg.peerCtx = peerCtx
         gHub.publish(self.psKey, sMsg)
-
-
-if 0:
-    __all__ = [
-        'PubsubService',
-        'PSHashmarksExchanger',
-        'PSMainService',
-        'PSChatService',
-        'PSPeersService'
-    ]
