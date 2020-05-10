@@ -1,5 +1,5 @@
 
-.. image:: https://gitlab.com/galacteek/galacteek/raw/master/share/icons/galacteek-incandescent-128.png
+.. image:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/share/icons/galacteek-incandescent-128.png
     :align: center
     :width: 128
     :height: 128
@@ -8,8 +8,6 @@
 
 .. image:: https://travis-ci.org/pinnaculum/galacteek.svg?branch=master
     :target: https://travis-ci.org/pinnaculum/galacteek
-.. image:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/share/icons/donate.png
-    :target: https://github.com/sponsors/pinnaculum
 
 **galacteek** is a multi-platform Qt5-based browser/toolbox
 for the IPFS_ peer-to-peer network.
@@ -30,18 +28,21 @@ settings.
 
 See the releases_ page for all releases.
 
+.. image:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/share/icons/donate.png
+    :target: https://github.com/sponsors/pinnaculum
+
 Screenshots
 ===========
 
-.. figure:: https://gitlab.com/galacteek/galacteek/raw/master/screenshots/browse-wikipedia-small.png
-    :target: https://gitlab.com/galacteek/galacteek/raw/master/screenshots/browse-wikipedia.png
+.. figure:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/screenshots/browse-wikipedia-small.png
+    :target: https://raw.githubusercontent.com/pinnaculum/galacteek/master/screenshots/browse-wikipedia.png
     :align: center
     :alt: Browsing the Wikipedia mirror over IPFS
 
     Browsing the Wikipedia mirror over IPFS
 
-.. figure:: https://gitlab.com/galacteek/galacteek/raw/master/screenshots/qr-codes-mezcla.png
-    :target: https://gitlab.com/galacteek/galacteek/raw/master/screenshots/qr-codes-mezcla.png
+.. figure:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/screenshots/qr-codes-mezcla.png
+    :target: https://raw.githubusercontent.com/pinnaculum/galacteek/master/screenshots/qr-codes-mezcla.png
     :align: center
     :alt: QR codes
 
