@@ -715,6 +715,7 @@ class ClipboardItemButton(PopupToolButton):
         self.menu.addMenu(self.mfsMenu)
 
         if self.item.mimeType in [mimeTypeDagUnknown, mimeTypeDagPb]:
+            self.updateIcon(getIcon('ipld.png'))
             self.downloadAction.setEnabled(False)
             self.mfsMenu.setEnabled(False)
 
