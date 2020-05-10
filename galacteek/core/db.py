@@ -10,6 +10,7 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import QCoreApplication
 
 from galacteek import log
+from galacteek import ensure
 from galacteek.ipfs import ipfsOp
 from galacteek.dweb.atom import IPFSAtomFeedParser
 from galacteek.dweb.atom import IPFSAtomFeedEntry
@@ -128,7 +129,7 @@ class AtomFeedsDatabase(QObject):
         if not path.valid:
             raise ValueError('Wrong URL')
 
-        scheme = 'dweb'
+        scheme = path.scheme if path.scheme else 'dweb'
 
         try:
             feed = await self.parser.parse(path)
@@ -250,12 +251,14 @@ class AtomFeedsDatabase(QObject):
                     self.processedFeedEntry.emit(atomFeed, entry)
 
                     if feedSql['autopin_entries'] == 1 and \
-                            feedSql['scheme'] == 'dweb' and 0:
+                            feedSql['scheme'] in ['ipns', 'ipfs', 'dweb']:
                         path = IPFSPath(entry.id)
                         if path.valid:
                             log.debug('Atom: autopinning {id}'.format(
                                 id=entry.id))
-                            await ipfsop.ctx.pin(path.objPath, qname='atom')
+                            ensure(
+                                ipfsop.ctx.pin(path.objPath, qname='atom')
+                            )
                 else:
                     for exent in entries:
                         if exent['entry_id'] == entry.id:

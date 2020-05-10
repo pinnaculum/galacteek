@@ -937,7 +937,7 @@ class IPFSMarks(QObject):
             del sec[pyramidsKey][name]
             self.changed.emit()
 
-    def pyramidAdd(self, pyramidPath, path):
+    def pyramidAdd(self, pyramidPath, path, unique=False):
         sec, category, name = self.pyramidAccess(pyramidPath)
 
         if not sec:
@@ -949,6 +949,14 @@ class IPFSMarks(QObject):
 
             if count >= pyramid.get('maxhashmarks', pyramidMaxHmarksDefault):
                 pyramid[pyramidsMarksKey].pop(0)
+
+            # Don't register something that's already there
+            if unique:
+                for item in pyramid[pyramidsMarksKey]:
+                    _marksPaths = item.keys()
+                    if path in _marksPaths:
+                        log.debug(f'Hashmark {path} already in pyramid {name}')
+                        return False
 
             exmark = self.find(path)
 
@@ -977,7 +985,7 @@ class IPFSMarks(QObject):
 
         return False
 
-    def pyramidPop(self, pyramidPath):
+    def pyramidPop(self, pyramidPath, emitPublish=True):
         # Pop a hashmark off the list and republish
 
         pyramid = self.pyramidGet(pyramidPath)
@@ -991,7 +999,8 @@ class IPFSMarks(QObject):
             mark = self.pyramidGetLatestHashmark(pyramidPath)
             if mark:
                 pyramid.latest = mark.path
-                self.pyramidNeedsPublish.emit(pyramidPath, mark)
+                if emitPublish:
+                    self.pyramidNeedsPublish.emit(pyramidPath, mark)
             else:
                 pyramid.latest = None
 

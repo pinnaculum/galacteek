@@ -168,7 +168,8 @@ class PinningMaster(object):
             stalledCn = 0
             lastPTime = None
 
-            async for pinned in op.client.pin.add(path, recursive=recursive):
+            async for pinned in op.client.pin.add(
+                    await op.objectPathMapper(path), recursive=recursive):
                 await asyncio.sleep(0)
 
                 now = time.time()
@@ -220,7 +221,8 @@ class PinningMaster(object):
                 pItem['pinned'] = True
                 pItem['ts_pinned'] = now
                 self.ipfsCtx.pinFinished.emit(path)
-                self._emitItemsCount()
+
+            self._emitItemsCount()
 
             return (path, 0, 'OK')
 

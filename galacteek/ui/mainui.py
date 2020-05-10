@@ -801,7 +801,6 @@ class MainWindow(QMainWindow):
             parent=self
         )
         self.ipfsStatusCube.clip.setScaledSize(QSize(24, 24))
-        self.ipfsStatusCube.animationClicked.connect(self.onIpfsInfos)
         self.ipfsStatusCube.hovered.connect(self.onIpfsInfosHovered)
         self.ipfsStatusCube.startClip()
 
@@ -819,10 +818,6 @@ class MainWindow(QMainWindow):
         self.peersGraphView = PeersCountGraphView(parent=None)
         self.ipfsDaemonStatusWidget = IPFSDaemonStatusWidget(
             self.bwGraphView, self.peersGraphView)
-
-        # IPFS information dialog
-        # self.ipfsInfosDialog = IPFSInfosDialog(
-        #    self.bwGraphView, self.peersGraphView)
 
         self.lastLogLabel = QLabel(self.statusbar)
         self.lastLogLabel.setAlignment(Qt.AlignLeft)
@@ -1054,10 +1049,6 @@ class MainWindow(QMainWindow):
         )
 
         self.app.systemTrayMessage('IPNS', message, timeout=10000)
-
-    def onIpfsInfos(self):
-        if not self.ipfsInfosDialog.isVisible():
-            ensure(runDialogAsync(self.ipfsInfosDialog))
 
     def onIpfsInfosHovered(self, hovered):
         if hovered is False:
@@ -1460,3 +1451,6 @@ class MainWindow(QMainWindow):
 
     def onSearchServices(self):
         self.pSearchDock.searchMode()
+
+    def getPyrDropButtonFor(self, ipfsPath):
+        return self.toolbarPyramids.getPyrDropButtonFor(ipfsPath)

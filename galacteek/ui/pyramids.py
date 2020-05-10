@@ -156,6 +156,13 @@ def iPyramidDropper():
     )
 
 
+def iPyramidDropObject():
+    return QCoreApplication.translate(
+        'pyramidMaster',
+        'Drop object to a pyramid'
+    )
+
+
 def iGalleryBrowse():
     return QCoreApplication.translate(
         'pyramidMaster',
@@ -184,6 +191,8 @@ class PyramidsDropButton(PopupToolButton):
             icon=getIcon('pyramid-blue.png'),
             *args, **kw
         )
+        self.menu.setTitle(iPyramidDropObject())
+        self.menu.setIcon(getIcon('pyramid-blue.png'))
         self.setToolTip(iPyramidDropper())
 
 
@@ -363,7 +372,7 @@ class MultihashPyramidsToolBar(QToolBar):
             pass
         else:
             if key:
-                log.info('Removing IPNS key: {}'.format(key))
+                log.debug('Removing IPNS key: {}'.format(key))
                 await ipfsop.keysRemove(key['Name'])
 
     def onAddPyramidRaw(self):
@@ -414,7 +423,8 @@ class MultihashPyramidToolButton(PopupToolButton):
         self.needsPublish = AsyncSignal(dict, bool)
         self.needsPublish.connectTo(self.pyramidNeedsPublish)
 
-        self.ipfsObjectDropped.connect(self.onObjectDropped)
+        self.ipfsObjectDropped.connect(
+            lambda path: ensure(self.onObjectDropped(path)))
         self.clicked.connect(self.onOpenLatest)
         self.updateToolTip()
 
@@ -519,6 +529,8 @@ class MultihashPyramidToolButton(PopupToolButton):
 
     @publishInProgress.setter
     def publishInProgress(self, value):
+        self.debug('Publish in progress: {}'.format(value))
+
         if isinstance(value, bool):
             self._publishInProgress = value
             if value is True:
@@ -528,7 +540,7 @@ class MultihashPyramidToolButton(PopupToolButton):
                     }
                 ''')
             else:
-                self.app.loop.call_later(2, self.resetStyleSheet)
+                self.app.loop.call_later(1, self.resetStyleSheet)
 
     @property
     def pyrToolTip(self):
@@ -676,17 +688,21 @@ class MultihashPyramidToolButton(PopupToolButton):
             qrName = 'ipfsqr.{}.png'.format(self.pyramid.ipnsKey)
             ensure(self.generateQrCode(qrName, self.ipnsKeyPath))
 
-    def onObjectDropped(self, ipfsPath):
+    async def cancelPublishJob(self):
+        if self._publishJob:
+            await self._publishJob.close()
+            self._publishJob = None
+            await asyncio.sleep(1)
+
+    async def onObjectDropped(self, ipfsPath):
+        await self.cancelPublishJob()
+
         self.app.marksLocal.pyramidAdd(self.pyramid.path, str(ipfsPath))
         self.updateToolTip()
         self.app.systemTrayMessage(
             'Pyramids',
             'Pyramid {pyr}: registered new hashmark: {path}'.format(
                 pyr=self.pyramid.path, path=str(ipfsPath)))
-
-        if self._publishJob and self.publishInProgress:
-            self._publishJob.cancel()
-            self.publishInProgress = False
 
     def sysTray(self, message):
         self.app.systemTrayMessage(
@@ -813,6 +829,10 @@ class MultihashPyramidToolButton(PopupToolButton):
             self.publishInProgress = False
             self.debug('Publish error: {msg}'.format(msg=err.message))
             return False
+        except asyncio.CancelledError:
+            self.publishInProgress = False
+            self.debug('Publish was cancelled!')
+            return False
         except Exception:
             self.publishInProgress = False
             self.debug('Unknown exception while publishing')
@@ -823,6 +843,7 @@ class MultihashPyramidToolButton(PopupToolButton):
             if result:
                 # Publish successfull
                 self._publishedLast = datetime.now()
+                self._publishFailedCount = 0
 
                 if notify is True:
                     self.sysTray('Pyramid was published!')
@@ -865,7 +886,8 @@ class MultihashPyramidToolButton(PopupToolButton):
         self.pyramidion = mark
 
         if self.publishInProgress is False:
-            self._publishJob = ensure(self.publish(self.pyramidion, notify))
+            self._publishJob = await self.app.scheduler.spawn(
+                self.publish(self.pyramidion, notify))
 
     async def publishWatcherTask(self):
         # Depending on the lifetime of the records we publish, decide upon
@@ -918,7 +940,7 @@ class EDAGBuildingPyramidController(MultihashPyramidToolButton):
 
     edagClass = EvolvingDAG
 
-    def onObjectDropped(self, ipfsPath):
+    async def onObjectDropped(self, ipfsPath):
         pass
 
     def buildMenu(self):
@@ -943,13 +965,18 @@ class EDAGBuildingPyramidController(MultihashPyramidToolButton):
         TODO: improve the EDAG rewind API so that we can know
         which object we're moving away from
         """
+        await self.cancelPublishJob()
         try:
-            self.app.marksLocal.pyramidPop(self.pyramid.path)
             await self.edag.rewind()
         except DAGRewindException:
             self.info('Cannot rewind DAG (no DAG history)')
         else:
             self.info('DAG rewind successfull')
+
+            self.app.marksLocal.pyramidPop(
+                self.pyramid.path,
+                emitPublish=True
+            )
 
     @ipfsOp
     async def cleanup(self, ipfsop):
@@ -996,7 +1023,8 @@ class EDAGBuildingPyramidController(MultihashPyramidToolButton):
         path = IPFSPath(cidStr)
 
         if path.valid:
-            self.app.marksLocal.pyramidAdd(self.pyramid.path, str(path))
+            self.app.marksLocal.pyramidAdd(
+                self.pyramid.path, str(path), unique=True)
 
 
 class GalleryDAG(EvolvingDAG):
@@ -1040,8 +1068,9 @@ class GalleryPyramidController(EDAGBuildingPyramidController):
         if entry:
             await self.analyzeImageObject(IPFSPath(entry['Hash']))
 
-    def onObjectDropped(self, ipfsPath):
-        ensure(self.analyzeImageObject(ipfsPath))
+    async def onObjectDropped(self, ipfsPath):
+        await self.cancelPublishJob()
+        await self.analyzeImageObject(ipfsPath)
 
     def createExtraActions(self):
         super().createExtraActions()

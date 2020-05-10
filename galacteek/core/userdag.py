@@ -1,6 +1,7 @@
 import os.path
 import uuid
 import pkg_resources
+import markdown
 from datetime import datetime
 from datetime import timezone
 
@@ -490,6 +491,11 @@ class UserWebsite:
             fEntry.link(href=url, rel='alternate')
             fEntry.updated(post['date_modified'])
             fEntry.published(post['date_published'])
+            fEntry.content(
+                content=markdown.markdown(post['body']),
+                type='html'
+            )
+
             fEntry.author({'name': self.profile.userInfo.iphandle})
 
             for tag in post['tags']:
