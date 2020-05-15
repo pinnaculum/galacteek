@@ -10,7 +10,7 @@
     :target: https://travis-ci.org/pinnaculum/galacteek
 
 .. image:: https://badges.gitter.im/galacteek/community.svg
-   :target: https://gitter.im/galacteek/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge
+   :target: https://gitter.im/galacteek/galacteek?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge
 
 **galacteek** is a multi-platform Qt5-based browser/toolbox
 for the IPFS_ peer-to-peer network.
