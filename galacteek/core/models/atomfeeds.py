@@ -135,6 +135,9 @@ class AtomFeedsModel(QStandardItemModel):
     def root(self):
         return self.itemRoot
 
+    def updateRoot(self):
+        self.itemRoot.update()
+
     def markEntryAsRead(self, entryItem):
         entryItem.entry.status = entryItem.entry.ENTRY_STATUS_READ
         if entryItem.entry.srow_id:

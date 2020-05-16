@@ -21,7 +21,6 @@ from . import ui_atomfeeds
 from .dialogs import AddAtomFeedDialog
 from .widgets import GalacteekTab
 from .widgets import IPFSWebView
-from .helpers import messageBox
 from .helpers import runDialog
 
 
@@ -96,22 +95,22 @@ class AtomFeedsView(QWidget):
         if isinstance(item, AtomFeedItem):
             menu = QMenu(self)
             menu.addAction('Remove feed',
-                           functools.partial(self.removeFeed, item))
+                           functools.partial(self.onRemoveFeed, item))
 
             menu.exec(self.ui.treeFeeds.mapToGlobal(point))
 
-    def removeFeed(self, feedItem):
-        ensure(self.app.sqliteDb.feeds.unfollow(
-            feedItem.feedId))
+    def onRemoveFeed(self, feedItem):
+        ensure(self.removeFeedFromItem(feedItem))
+
+    async def removeFeedFromItem(self, feedItem):
+        result = await self.app.sqliteDb.feeds.unfollow(feedItem.feedId)
+
+        if result is True:
+            self.model.updateRoot()
 
     def onAddFeed(self):
         def urlAccepted(dlg):
             url = dlg.textValue()
-            qUrl = QUrl(url)
-
-            if not qUrl.isValid() or not qUrl.scheme():
-                return messageBox('Invalid URL')
-
             ensure(self.app.mainWindow.atomButton.atomFeedSubscribe(url))
 
         runDialog(AddAtomFeedDialog, accepted=urlAccepted)
