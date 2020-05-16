@@ -121,6 +121,19 @@ class AtomFeedsDatabase(QObject):
                 return True
 
     @ipfsOp
+    async def resolveAtomPath(self, ipfsop, path):
+        iPath = IPFSPath(path, autoCidConv=True)
+        if not iPath.valid:
+            return None
+
+        if iPath.isIpns:
+            result = await ipfsop.nameResolveStreamFirst(path, timeout=10)
+            if result:
+                return result['Path']
+        else:
+            return iPath.objPath
+
+    @ipfsOp
     async def follow(self, ipfsop, url):
         if not isinstance(url, str):
             raise ValueError('Wrong URL')
@@ -131,14 +144,14 @@ class AtomFeedsDatabase(QObject):
 
         scheme = path.scheme if path.scheme else 'dweb'
 
-        try:
-            feed = await self.parser.parse(path)
-        except AtomParseFeedError:
-            return False
-
-        resolved = await ipfsop.resolve(str(path))
+        resolved = await self.resolveAtomPath(str(path))
         if not resolved:
             raise ValueError('Does not resolve')
+
+        try:
+            feed = await self.parser.parse(resolved)
+        except AtomParseFeedError:
+            return False
 
         # Pin the resolved object (yeah!)
         await ipfsop.ctx.pin(resolved, qname='atom')
@@ -204,11 +217,21 @@ class AtomFeedsDatabase(QObject):
     async def processFeed(self, ipfsop, feedSql):
         with await self.lock:
             path = IPFSPath(feedSql['url'])
-            resolved = await ipfsop.resolve(path.objPath)
+
+            log.debug('Atom Feed (URL: {url}): Resolving {objpath}'.format(
+                url=feedSql['url'], objpath=path.objPath))
+
+            resolved = await self.resolveAtomPath(path.objPath)
 
             if not resolved:
                 # TODO
+                log.debug('Atom Feed (URL {url}): resolve failed'.format(
+                    url=feedSql['url']))
                 return
+            else:
+                log.debug('Atom Feed (URL: {url}): Resolved to {r}'.format(
+                    url=feedSql['url'], r=resolved))
+                await ipfsop.ctx.pin(resolved, qname='atom')
 
             await ipfsop.sleep()
 
@@ -226,50 +249,60 @@ class AtomFeedsDatabase(QObject):
             atomFeed = self.feedFromId(feedSql['feed_id'])
 
             if not atomFeed or needParse:
-                try:
-                    atomFeed = await self.parser.parse(resolved)
-                except AtomParseFeedError:
-                    log.debug('Atom: failed to parse {p}'.format(
-                        p=resolved))
+                atomFeed = await self.atomParseObject(resolved)
+                if not atomFeed:
                     return False
 
-            self._handled_by_id[atomFeed.id] = atomFeed
-
-            entries = await self.searchEntries(atomFeed.id)
-            existingIds = [ent['entry_id'] for ent in entries]
-
-            for entry in atomFeed.entries:
-                await asyncio.sleep(0.2)
-                if not isinstance(entry.id, str):
-                    continue
-
-                if entry.id not in existingIds:
-                    _rid = await self.addEntry(feedSql['id'], entry.id)
-
-                    entry.status = IPFSAtomFeedEntry.ENTRY_STATUS_NEW
-                    entry.srow_id = _rid
-                    self.processedFeedEntry.emit(atomFeed, entry)
-
-                    if feedSql['autopin_entries'] == 1 and \
-                            feedSql['scheme'] in ['ipns', 'ipfs', 'dweb']:
-                        path = IPFSPath(entry.id)
-                        if path.valid:
-                            log.debug('Atom: autopinning {id}'.format(
-                                id=entry.id))
-                            ensure(
-                                ipfsop.ctx.pin(path.objPath, qname='atom')
-                            )
-                else:
-                    for exent in entries:
-                        if exent['entry_id'] == entry.id:
-                            entry.status = exent['status']
-                            entry.srow_id = exent['id']
-                            self.processedFeedEntry.emit(atomFeed,
-                                                         entry)
+            await self.loadFeedEntries(feedSql, atomFeed)
 
             # Mark the object as processed
             await self.feedObjectHistoryUpdateStatus(historyObjId,
                                                      resolved, 1)
+
+    async def atomParseObject(self, path):
+        try:
+            atomFeed = await self.parser.parse(path)
+        except AtomParseFeedError:
+            log.debug('Atom: failed to parse {p}'.format(
+                p=path))
+        else:
+            return atomFeed
+
+    @ipfsOp
+    async def loadFeedEntries(self, ipfsop, feedSql, atomFeed):
+        entries = await self.searchEntries(atomFeed.id)
+        existingIds = [ent['entry_id'] for ent in entries]
+
+        self._handled_by_id[atomFeed.id] = atomFeed
+
+        for entry in atomFeed.entries:
+            await asyncio.sleep(0.2)
+            if not isinstance(entry.id, str):
+                continue
+
+            if entry.id not in existingIds:
+                _rid = await self.addEntry(feedSql['id'], entry.id)
+
+                entry.status = IPFSAtomFeedEntry.ENTRY_STATUS_NEW
+                entry.srow_id = _rid
+                self.processedFeedEntry.emit(atomFeed, entry)
+
+                if feedSql['autopin_entries'] == 1 and \
+                        feedSql['scheme'] in ['ipns', 'ipfs', 'dweb']:
+                    path = IPFSPath(entry.id)
+                    if path.valid:
+                        log.debug('Atom: autopinning {id}'.format(
+                            id=entry.id))
+                        ensure(
+                            ipfsop.ctx.pin(path.objPath, qname='atom')
+                        )
+            else:
+                for exent in entries:
+                    if exent['entry_id'] == entry.id:
+                        entry.status = exent['status']
+                        entry.srow_id = exent['id']
+                        self.processedFeedEntry.emit(atomFeed,
+                                                     entry)
 
     async def searchEntries(self, feedId):
         query = '''
@@ -309,6 +342,21 @@ class AtomFeedsDatabase(QObject):
         '''
 
         params = {'feedid': feedId, 'objpath': objPath}
+        cursor = await self.db.execute(query, params)
+        return await cursor.fetchone()
+
+    async def feedObjectHistoryLast(self, feedId):
+        query = '''
+        SELECT objpath
+        FROM atom_feed_history
+        INNER JOIN atom_feeds ON
+            atom_feeds.id = atom_feed_history.atom_feed_id
+        WHERE atom_feeds.id=:feedid
+        ORDER BY atom_feed_history.id DESC
+        LIMIT 1
+        '''
+
+        params = {'feedid': feedId}
         cursor = await self.db.execute(query, params)
         return await cursor.fetchone()
 
@@ -364,7 +412,26 @@ class AtomFeedsDatabase(QObject):
     async def start(self):
         await self.app.scheduler.spawn(self.processTask())
 
+    async def preload(self):
+        feeds = await self.allFeeds()
+
+        try:
+            for feed in feeds:
+                last = await self.feedObjectHistoryLast(feed['id'])
+
+                if last:
+                    atomFeed = await self.atomParseObject(last['objpath'])
+                    if not atomFeed:
+                        continue
+
+                    await self.loadFeedEntries(feed, atomFeed)
+        except Exception as err:
+            log.debug('Exception preloading feeds: {e}'.format(
+                e=str(err)))
+
     async def processTask(self):
+        await self.preload()
+
         while True:
             try:
                 feeds = await self.allFeeds()

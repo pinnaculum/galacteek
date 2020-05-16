@@ -1331,7 +1331,8 @@ class AtomFeedsToolbarButton(QToolButton):
             await self.app.sqliteDb.feeds.follow(url)
         except AtomFeedExistsError:
             self.subscribeResult.emit(url, 1)
-        except Exception:
+        except Exception as err:
+            log.debug(str(err))
             self.subscribeResult.emit(url, 2)
         else:
             self.subscribeResult.emit(url, 3)
