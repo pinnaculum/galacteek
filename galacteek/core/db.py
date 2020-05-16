@@ -366,9 +366,16 @@ class AtomFeedsDatabase(QObject):
 
     async def processTask(self):
         while True:
-            feeds = await self.allFeeds()
+            try:
+                feeds = await self.allFeeds()
 
-            for feed in feeds:
-                await self.processFeed(feed)
+                for feed in feeds:
+                    try:
+                        await self.processFeed(feed)
+                    except Exception as err:
+                        log.debug('Exception processing feed: {e}'.format(
+                            e=str(err)))
 
-            await asyncio.sleep(60)
+                await asyncio.sleep(60)
+            except asyncio.CancelledError:
+                return

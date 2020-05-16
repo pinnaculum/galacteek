@@ -221,3 +221,51 @@ async def threadExec(fn, *args):
 
     with QThreadExecutor(1) as texec:
         return await loop.run_in_executor(texec, fn, *args)
+
+
+def _all_tasks(loop=None):
+    """For compat with py3.5 and py3.6"""
+    try:
+        return asyncio.all_tasks(loop=loop)
+    except AttributeError:
+        return {t for t in asyncio.Task.all_tasks(loop=loop) if not t.done()}
+
+
+async def cancelAllTasks(*, timeout=None, raise_timeout_error=False):
+    """
+    From sakaio.sakaio.cancel_all_tasks (version 3.0 not on pypi)
+
+    https://github.com/nitely/sakaio
+    """
+
+    from galacteek import log
+
+    def _warn_pending():
+        running = _all_tasks(loop=loop)
+        if running:
+            log.warning(
+                'There are {tc} pending tasks, first 10: {first}',
+                tc=len(running), first=list(running)[:10])
+
+    loop = asyncio.get_event_loop()
+    running = _all_tasks(loop=loop)
+
+    for t in running:
+        t.cancel()
+
+    for f in asyncio.as_completed(running, timeout=timeout, loop=loop):
+        try:
+            await f
+        except asyncio.CancelledError:
+            pass
+        except asyncio.TimeoutError:
+            _warn_pending()
+            if raise_timeout_error:
+                raise
+        except Exception:
+            log.warning('Task Error!', exc_info=True)
+            pass
+
+    # Tasks scheduled by clean-ups or
+    # by tasks ignoring cancellation
+    _warn_pending()

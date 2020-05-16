@@ -15,6 +15,7 @@ import async_timeout
 import time
 import aiojobs
 import shutil
+
 from distutils.version import StrictVersion
 
 from quamash import QEventLoop
@@ -42,6 +43,7 @@ from galacteek import AsyncSignal
 from galacteek import pypicheck, GALACTEEK_NAME
 
 from galacteek.core.asynclib import asyncify
+from galacteek.core.asynclib import cancelAllTasks
 from galacteek.core.ctx import IPFSContext
 from galacteek.core.multihashmetadb import IPFSObjectMetadataDatabase
 from galacteek.core.clipboard import ClipboardTracker
@@ -260,6 +262,7 @@ class GalacteekApplication(QApplication):
         self._progCid = None
         self._system = platform.system()
         self._urlSchemes = {}
+        self._shuttingDown = False
 
         self._icons = {}
         self._ipfsIconsCache = {}
@@ -743,9 +746,13 @@ class GalacteekApplication(QApplication):
         ensure(self.setupOrmDb(self._mainDbLocation))
 
     async def setupOrmDb(self, dbpath):
-        # Old database, just for Atom feeds right now
+        self.scheduler = await aiojobs.create_scheduler(
+            close_timeout=1.5,
+            limit=150,
+            pending_limit=1000
+        )
 
-        self.scheduler = await aiojobs.create_scheduler()
+        # Old database, just for Atom feeds right now
 
         self.sqliteDb = SqliteDatabase(self._sqliteDbLocation)
         ensure(self.sqliteDb.setup())
@@ -1101,12 +1108,14 @@ class GalacteekApplication(QApplication):
         ensure(self.exitApp())
 
     async def exitApp(self):
+        self._shuttingDown = True
+
+        self.mainWindow.stopTimers()
+
         try:
             self.systemTray.hide()
         except:
             pass
-
-        await self.scheduler.close()
 
         try:
             await self.sqliteDb.close()
@@ -1114,15 +1123,14 @@ class GalacteekApplication(QApplication):
         except:
             pass
 
+        await self.scheduler.close()
+
         await self.stopIpfsServices()
 
-        for task in self.pendingTasks:
-            task.cancel()
-
+        await cancelAllTasks(timeout=5)
         await self.loop.shutdown_asyncgens()
 
         await self.ethereum.stop()
-
         await self.ipfsClient.close()
 
         if self.ipfsd:

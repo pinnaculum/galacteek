@@ -1224,6 +1224,9 @@ class MainWindow(QMainWindow):
             iConnectStatus(nodeId, nodeAgent, peersCount))
         self.ipfsStatusCube.clip.setSpeed(5 + min(connQuality, 80))
 
+    def stopTimers(self):
+        self.timerStatus.stop()
+
     def onMainTimerStatus(self):
         ensure(self.displayConnectionInfo())
 
