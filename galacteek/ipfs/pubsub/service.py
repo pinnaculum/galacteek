@@ -117,7 +117,7 @@ class PubsubService(object):
                 continue
 
             try:
-                await tsk.close(timeout=500)
+                await tsk.close()
             except asyncio.TimeoutError as tErr:
                 self.debug(
                     'timeout while closing {task}: shutdown ERR: {err}'.format(

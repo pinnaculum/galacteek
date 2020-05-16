@@ -67,6 +67,16 @@ def iInvalidDagCID(dagCid):
                                       'Invalid DAG CID: {0}').format(dagCid)
 
 
+def iServicesSearchHelp():
+    return QCoreApplication.translate(
+        'PeersManager',
+        '''
+            <p>Type the IP handle of a peer to search for services</p>
+            <p>Using <b>/</b> after the handle will popup the services
+            list. Hit enter to enter the service</p>
+        ''')
+
+
 def iPeerToolTip(peerId, ipHandle, did, validated, authenticated):
     return QCoreApplication.translate(
         'PeersManager',
@@ -435,6 +445,7 @@ class PeersServiceSearcher(QLineEdit):
 
         self.setClearButtonEnabled(True)
         self.setObjectName('ipServicesSearcher')
+        self.setToolTip(iServicesSearchHelp())
 
         self.app = QApplication.instance()
         self.model = model
@@ -493,7 +504,8 @@ class PeersServiceSearchDockWidget(QWidget):
 
 class PeersServiceSearchDock(QDockWidget):
     def __init__(self, peersTracker, parent):
-        super(PeersServiceSearchDock, self).__init__('Services search', parent)
+        super(PeersServiceSearchDock, self).__init__(
+            'IP services searcher', parent)
 
         self.setObjectName('ipServicesSearchDock')
 
@@ -513,7 +525,6 @@ class PeersServiceSearchDock(QDockWidget):
         self.searchWidget.hide()
 
         self.setWidget(self.searchWidget)
-        self.searcher.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         self.hide()
 
     def onServiceEntered(self, serviceId):
@@ -524,6 +535,12 @@ class PeersServiceSearchDock(QDockWidget):
         self.searchWidget.setVisible(True)
         self.setVisible(True)
         self.searcher.setFocus(Qt.OtherFocusReason)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            self.hide()
+        else:
+            super().keyPressEvent(event)
 
 
 class PeersManager(GalacteekTab):
@@ -549,10 +566,6 @@ class PeersManager(GalacteekTab):
             self.onContextMenu)
         self.ui.peersMgrView.doubleClicked.connect(self.onDoubleClick)
         self.ui.peersMgrView.setDragDropMode(QAbstractItemView.DragOnly)
-
-        self.peersSearcher = PeersServiceSearcher(
-            self.peersTracker.model, self)
-        self.ui.hLayoutTop.addWidget(self.peersSearcher)
 
         self.app.ipfsCtx.peers.changed.connectTo(self.onPeersChange)
         self.app.ipfsCtx.peers.peerAdded.connectTo(self.onPeerAdded)

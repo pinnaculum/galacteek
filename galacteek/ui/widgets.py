@@ -1,4 +1,5 @@
 import asyncio
+import mimetypes
 from datetime import datetime
 
 from PyQt5.QtWidgets import QFrame
@@ -1145,6 +1146,72 @@ class MarkdownView(IPFSWebView):
     pass
 
 
+class MarkdownTextEdit(QTextEdit):
+    """
+    Custom QTextEdit widget for markdown editing
+
+    Drag-and-dropping an IPFS object to this widget will insert
+    a markdown link in the editor
+    """
+
+    redrawPreview = pyqtSignal()
+
+    def dragEnterEvent(self, event):
+        event.accept()
+
+    def handleObjectDrop(self, path):
+        path = IPFSPath(path, autoCidConv=True)
+        if path.valid:
+            name, mtype = path.basename, None
+
+            if name:
+                mtype, enc = mimetypes.guess_type(name)
+
+            if mtype and mtype.startswith('image'):
+                # Image link
+                self.insertPlainText(
+                    '[![{name}]({url})]({url})'.format(
+                        name=name,
+                        url=path.ipfsUrl
+                    )
+                )
+            else:
+                # Standard link
+                self.insertPlainText(
+                    '[{name}]({url})'.format(
+                        name=name,
+                        url=path.ipfsUrl
+                    )
+                )
+            return True
+
+        return False
+
+    def dropEvent(self, event):
+        mimeData = event.mimeData()
+
+        if mimeData is None:
+            event.ignore()
+            return
+
+        if mimeData.hasUrls():
+            for url in mimeData.urls():
+                if not url.isValid():
+                    continue
+
+                self.handleObjectDrop(url.toString())
+
+            event.ignore()
+            self.redrawPreview.emit()
+
+        elif mimeData.hasText():
+            if self.handleObjectDrop(mimeData.text()):
+                event.ignore()
+                self.redrawPreview.emit()
+        else:
+            event.accept()
+
+
 class MarkdownInputWidget(QWidget):
     """
     General purpose markdown input editor, with (almost) live
@@ -1173,7 +1240,9 @@ class MarkdownInputWidget(QWidget):
         helpLayout.addItem(
             QSpacerItem(10, 10, QSizePolicy.Expanding, QSizePolicy.Minimum))
 
-        self.textEditUser = QTextEdit(self)
+        self.textEditUser = MarkdownTextEdit(self)
+        self.textEditUser.redrawPreview.connect(self.onTimerOut)
+        self.textEditUser.setAcceptDrops(True)
         self.textEditUser.textChanged.connect(self.onEdited)
         self.textEditMarkdown = MarkdownView(parent=self)
 
@@ -1226,6 +1295,8 @@ class MarkdownInputWidget(QWidget):
             self.textEditMarkdown.setHtml(html)
         except Exception:
             pass
+
+        self.updateTimer.stop()
 
 
 class AtomFeedsToolbarButton(QToolButton):

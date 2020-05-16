@@ -490,7 +490,6 @@ class MultihashPyramidToolButton(PopupToolButton):
         self.buildMenu()
         self.resetStyleSheet()
         ensure(self.initialize())
-        self.watcherTask = self.app.task(self.publishWatcherTask)
 
     @property
     def pyramid(self):
@@ -564,11 +563,13 @@ class MultihashPyramidToolButton(PopupToolButton):
     async def stop(self):
         if self.watcherTask:
             try:
-                self.watcherTask.cancel()
+                await self.watcherTask.close()
             except BaseException:
                 self.debug('Could not cancel watcher task')
 
     async def initialize(self):
+        self.watcherTask = await self.app.scheduler.spawn(
+            self.publishWatcherTask())
         mark = self.app.marksLocal.pyramidGetLatestHashmark(self.pyramid.path)
         if mark:
             self.pyramidion = mark

@@ -71,8 +71,9 @@ class WebsiteAddPostDialog(QDialog):
         mainLayout = QVBoxLayout()
 
         self.title = QLineEdit()
-        regexp = QRegExp(r"[A-Za-z0-9_-\s\']+")
+        regexp = QRegExp(r"[\w_-\s@\'\",\.]+")
         self.title.setValidator(QRegExpValidator(regexp))
+        self.title.setMaxLength(92)
 
         titleLayout = QHBoxLayout()
         titleLayout.addWidget(QLabel('Title'))
@@ -80,6 +81,12 @@ class WebsiteAddPostDialog(QDialog):
 
         self.markdownInput = MarkdownInputWidget(self)
         mainLayout.addLayout(titleLayout)
+
+        mainLayout.addWidget(QLabel(
+            '''<p align="center">You can drag-and-drop IPFS files
+                in the Markdown input editor</p>'''
+        ))
+
         mainLayout.addWidget(self.markdownInput)
         mainLayout.addWidget(buttonBox)
         self.setLayout(mainLayout)
