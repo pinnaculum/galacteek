@@ -974,6 +974,7 @@ class GalacteekApplication(QApplication):
             nice=sManager.getInt(section, CFG_KEY_NICE),
             pubsubEnable=pubsubEnabled, corsEnable=corsEnabled,
             migrateRepo=migrateRepo, debug=self.debug,
+            offline=self.cmdArgs.offline,
             loop=self.loop)
 
         await self.scheduler.spawn(self.startIpfsdTask(self.ipfsd))

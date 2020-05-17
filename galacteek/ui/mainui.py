@@ -81,6 +81,7 @@ from .pyramids import MultihashPyramidsToolBar
 from .quickaccess import QuickAccessToolBar
 from .daemonstats import BandwidthGraphView
 from .daemonstats import PeersCountGraphView
+from .camera import CameraController
 from .helpers import *
 from .widgets import PopupToolButton
 from .widgets import HashmarkMgrButton
@@ -618,6 +619,9 @@ class MainWindow(QMainWindow):
         self.atomButton.clicked.connect(self.onShowAtomFeeds)
         self.atomFeedsViewWidget = AtomFeedsView(self.app.modelAtomFeeds)
 
+        # Camera controller
+        self.cameraController = CameraController(parent=self)
+
         # Edit-Profile button
         self.menuUserProfile = QMenu(self)
         self.profilesActionGroup = QActionGroup(self)
@@ -734,6 +738,7 @@ class MainWindow(QMainWindow):
         self.toolbarMain.addSeparator()
         self.toolbarMain.addWidget(self.fileManagerButton)
         self.toolbarMain.addWidget(self.textEditorButton)
+        self.toolbarMain.addWidget(self.cameraController)
 
         self.hashmarkMgrButton.hashmarkClicked.connect(self.onHashmarkClicked)
         self.hashmarksSearcher.hashmarkClicked.connect(self.onHashmarkClicked)
@@ -1008,6 +1013,8 @@ class MainWindow(QMainWindow):
     async def onRepoReady(self):
         self.browseButton.normalIcon()
 
+        self.fileManagerWidget.setupModel()
+
         await self.displayConnectionInfo()
         await self.app.marksLocal.pyramidsInit()
         await self.app.sqliteDb.feeds.start()
@@ -1125,6 +1132,7 @@ class MainWindow(QMainWindow):
                 self.textEditorButton,
                 self.atomButton,
                 self.chatCenterButton,
+                self.cameraController,
                 self.hashmarkMgrButton,
                 self.hashmarksSearcher,
                 self.profileButton]:

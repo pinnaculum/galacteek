@@ -271,6 +271,7 @@ class FileManager(QWidget):
         self.ui.offlineButton.setCheckable(True)
         self.ui.offlineButton.toggled.connect(self.onOfflineToggle)
         self.ui.offlineButton.setChecked(False)
+        self.ui.offlineButton.setVisible(False)
 
         # Connect the tree view actions
         self.ui.treeFiles.doubleClicked.connect(self.onDoubleClicked)
@@ -714,6 +715,10 @@ class FileManager(QWidget):
 
         if self.app.settingsMgr.hideHashes:
             self.ui.treeFiles.hideColumn(2)
+
+    def refreshItem(self, item):
+        self.app.task(self.listFiles, item.path,
+                      parentItem=item, maxdepth=1)
 
     def changeDisplayItem(self, item):
         self.displayedItem = item

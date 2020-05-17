@@ -858,27 +858,27 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>Galacteek</name>
     <message>
-        <location filename="../../galacteek/application.py" line="114"/>
+        <location filename="../../galacteek/application.py" line="116"/>
         <source>IPFS daemon started</source>
         <translation>Démon IPFS: démarré</translation>
     </message>
     <message>
-        <location filename="../../galacteek/application.py" line="118"/>
+        <location filename="../../galacteek/application.py" line="120"/>
         <source>IPFS daemon&apos;s gateway started</source>
         <translation>Démon IPFS: passerelle HTTP démarrée</translation>
     </message>
     <message>
-        <location filename="../../galacteek/application.py" line="123"/>
+        <location filename="../../galacteek/application.py" line="125"/>
         <source>IPFS daemon is ready</source>
         <translation>Démon IPFS: prêt</translation>
     </message>
     <message>
-        <location filename="../../galacteek/application.py" line="127"/>
+        <location filename="../../galacteek/application.py" line="129"/>
         <source>Problem starting IPFS daemon</source>
         <translation>Démon IPFS: problème de démarrage</translation>
     </message>
     <message>
-        <location filename="../../galacteek/application.py" line="132"/>
+        <location filename="../../galacteek/application.py" line="134"/>
         <source>Problem initializing the IPFS daemon (check the ports configuration)</source>
         <translation>Démon IPFS: problème lors de l&apos;initialisation (vérifiez les ports)</translation>
     </message>
@@ -1191,7 +1191,7 @@ p, li { white-space: pre-wrap; }
         <translation type="obsolete">Naviguer sur le chemin IPFS: {0}</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="99"/>
+        <location filename="../../galacteek/ui/mainui.py" line="100"/>
         <source>
 Path: {0}, nodes processed: {1}</source>
         <translation>
@@ -1664,7 +1664,7 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="106"/>
+        <location filename="../../galacteek/ui/mainui.py" line="107"/>
         <source>
         &lt;p align=&apos;center&apos;&gt;
         &lt;img src=&apos;:/share/icons/galacteek-incandescent.png&apos; /&gt;
@@ -2362,7 +2362,7 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/peers.py" line="71"/>
+        <location filename="../../galacteek/ui/peers.py" line="81"/>
         <source>
         &lt;p&gt;
             Peer ID: {0}
@@ -2372,6 +2372,15 @@ Chemin: {0}, nodes traitées: {1}</translation>
         &lt;p&gt;{3}&lt;/p&gt;
         &lt;p&gt;{4}&lt;/p&gt;
         &lt;/p&gt;
+        </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/peers.py" line="71"/>
+        <source>
+            &lt;p&gt;Type the IP handle of a peer to search for services&lt;/p&gt;
+            &lt;p&gt;Using &lt;b&gt;/&lt;/b&gt; after the handle will popup the services
+            list. Hit enter to enter the service&lt;/p&gt;
         </source>
         <translation type="unfinished"></translation>
     </message>

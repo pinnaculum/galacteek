@@ -427,7 +427,7 @@ class TextEditorWidget(QWidget):
     documentNameChanged = pyqtSignal(Document, str)
     filenameEntered = pyqtSignal(str)
 
-    def __init__(self, offline=True, editing=False, sessionDagCid=None,
+    def __init__(self, offline=False, editing=False, sessionDagCid=None,
                  parent=None):
         super(TextEditorWidget, self).__init__(parent)
 
@@ -488,7 +488,9 @@ class TextEditorWidget(QWidget):
         self.offlineModeButton = CheckableToolButton(
             icon=getIcon('offline.png')
         )
-        self.offlineModeButton.setChecked(True)
+        self.offlineModeButton.setChecked(offline)
+        self.offlineModeButton.setEnabled(False)
+        self.offlineModeButton.setVisible(False)
         self.offlineModeButton.setToolTip(iOfflineMode())
 
         self.autoMdHtmlSaveButton = CheckableToolButton(

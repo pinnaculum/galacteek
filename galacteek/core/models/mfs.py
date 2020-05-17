@@ -194,11 +194,9 @@ class MFSItemModel(QStandardItemModel):
                                        path=profile.pathQrCodes,
                                        icon=getIcon('ipfs-qrcode.png'))
         self.itemTemporary = MFSRootItem(iTemporaryFiles(),
-                                         alwaysOffline=True,
                                          path=profile.pathTmp,
                                          icon=getIcon('folder-temp.png'))
         self.itemEncrypted = MFSRootItem(iEncryptedFiles(),
-                                         alwaysOffline=True,
                                          path=profile.pathEncryptedFiles,
                                          icon=getIcon('key-diago.png'))
 

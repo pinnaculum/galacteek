@@ -158,6 +158,11 @@ def start():
         dest='forcegoipfsdl',
         help="Force go-ipfs download")
     parser.add_argument(
+        '--offline',
+        action='store_true',
+        dest='offline',
+        help="Run IPFS daemon in offline mode")
+    parser.add_argument(
         '--enable-orbital',
         action='store_true',
         dest='enableorbital',
