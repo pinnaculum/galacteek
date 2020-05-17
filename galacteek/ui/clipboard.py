@@ -552,6 +552,18 @@ class ClipboardItemButton(PopupToolButton):
             shortcut=QKeySequence('Ctrl+p'),
             triggered=self.onPin)
 
+        self.copyPathToCbAction = QAction(
+            getIcon('clipboard.png'),
+            iClipboardEmpty(), self,
+            triggered=self.onCopyPathToClipboard
+        )
+
+        self.copyGwPathToCbAction = QAction(
+            getIcon('clipboard.png'),
+            iClipboardEmpty(), self,
+            triggered=self.onCopyGwPathToClipboard
+        )
+
         self.geoAnimation = QPropertyAnimation(self, b'geometry')
 
     @property
@@ -586,6 +598,12 @@ class ClipboardItemButton(PopupToolButton):
     def onSetAsHome(self):
         self.app.settingsMgr.setSetting(CFG_SECTION_BROWSER, CFG_KEY_HOMEURL,
                                         self.item.ipfsPath.ipfsUrl)
+
+    def onCopyPathToClipboard(self):
+        self.app.setClipboardText(str(self.item.ipfsPath))
+
+    def onCopyGwPathToClipboard(self):
+        self.app.setClipboardText(self.item.ipfsPath.publicGwUrl)
 
     def onOpenWithProgram(self):
         self.openWithProgram()
@@ -667,6 +685,8 @@ class ClipboardItemButton(PopupToolButton):
         self.ipldExplorerAction.setText(iClipItemIpldExplorer())
         self.editObjectAction.setText(iEditObject())
         self.pinAction.setText(iClipItemPin())
+        self.copyPathToCbAction.setText(iCopyPathToClipboard())
+        self.copyGwPathToCbAction.setText(iCopyPubGwUrlToClipboard())
 
         self.setToolTip(self.tooltipMessage())
 
@@ -707,6 +727,11 @@ class ClipboardItemButton(PopupToolButton):
 
         if mIcon:
             self.updateIcon(mIcon)
+
+        self.menu.addSeparator()
+        self.menu.addAction(self.copyPathToCbAction)
+        self.menu.addAction(self.copyGwPathToCbAction)
+        self.menu.addSeparator()
 
         self.mfsMenu = ipfsop.ctx.currentProfile.createMfsMenu(
             title=iLinkToMfsFolder(), parent=self)

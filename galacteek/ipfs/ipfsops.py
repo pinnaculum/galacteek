@@ -368,7 +368,8 @@ class IPFSOperator(object):
 
     async def filesList(self, path):
         try:
-            listing = await self.client.files.ls(path, long=True)
+            listing = await self.client.files.ls(
+                await self.objectPathMapper(path), long=True)
         except aioipfs.APIError as err:
             self.debug(err.message)
             return None
@@ -916,6 +917,7 @@ class IPFSOperator(object):
                       callback=None, cidversion=1, offline=False,
                       dagformat='balanced', rawleaves=False,
                       hashfunc='sha2-256',
+                      pin=True,
                       hidden=False, only_hash=False, chunker=None):
         """
         Add files from ``path`` in the repo, and returns the top-level
@@ -950,6 +952,7 @@ class IPFSOperator(object):
                                                only_hash=only_hash,
                                                hash=hashfunc,
                                                wrap_with_directory=wrap,
+                                               pin=pin,
                                                **exopts):
                 await self.sleep()
                 added = entry

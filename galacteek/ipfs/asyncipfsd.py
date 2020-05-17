@@ -136,7 +136,7 @@ class AsyncIPFSDaemon(object):
                  swarmLowWater=10, swarmHighWater=20, nice=20,
                  pubsubEnable=False, noBootstrap=False, corsEnable=True,
                  pubsubRouter='floodsub', namesysPubsub=False,
-                 pubsubSigning=False,
+                 pubsubSigning=False, offline=False,
                  p2pStreams=True, migrateRepo=False, routingMode='dht',
                  gwWritable=False, storageMax=20, debug=False, loop=None):
 
@@ -162,6 +162,7 @@ class AsyncIPFSDaemon(object):
         self.migrateRepo = migrateRepo
         self.gwWritable = gwWritable
         self.routingMode = routingMode
+        self.offline = offline
         self.nice = nice
         self.debug = debug
 
@@ -264,6 +265,9 @@ class AsyncIPFSDaemon(object):
 
         if self.migrateRepo:
             args.append('--migrate')
+
+        if self.offline:
+            args.append('--offline')
 
         f = self.loop.subprocess_exec(
             lambda: IPFSDProtocol(self.loop, self.exitFuture,

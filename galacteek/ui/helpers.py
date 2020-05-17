@@ -372,6 +372,7 @@ def inputTextCustom(title='No title', label='Input', text='',
     dlg = QInputDialog(parent)
     dlg.setInputMode(QInputDialog.TextInput)
     dlg.setLabelText(label)
+    dlg.setTextValue(text)
     dlg.resize(width, height)
     dlg.exec_()
     return dlg.textValue()

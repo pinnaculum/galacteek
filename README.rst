@@ -67,6 +67,7 @@ should enable pubsub and p2p streams, or some features won't be available.
 - Browsing sessions with automatic pinning (pins every page you browse)
 - Distributed chat with pubsub (chat channels syncronized with CRDT+DAG)
 - File manager with drag-and-drop support
+- Webcam to IPFS capture (image and videos)
 - Run WASM binaries with wasmer_ (use *Open* on a WASM object from the
   clipboard manager)
 - Search content with the ipfs-search_ search engine
@@ -82,6 +83,8 @@ Command-line usage
 Use the *-d* command-line switch to enable debugging output. Using *--profile* gives
 you the ability to have separate application profiles (*main* is the default
 profile). Use *--help* for all options.
+
+You can run the IPFS daemon in *offline* mode, using **--offline**
 
 Enable colorized log output with **--log-color**
 
