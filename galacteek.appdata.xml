@@ -35,32 +35,17 @@
         </screenshot>
     </screenshots>
 
-    <url type="homepage">https://github.com/eversum/galacteek</url>
-    <url type="donation">https://www.patreon.com/galacteek</url>
+    <url type="homepage">https://github.com/pinnaculum/galacteek</url>
+    <url type="donation">https://github.com/sponsors/pinnaculum</url>
 
     <provides>
         <binary>galacteek</binary>
     </provides>
 
     <releases>
-        <release version="0.4.7" date="2019-06-24">
+        <release version="0.4.24" date="2020-05-17">
             <description>
-                <p>Release 0.4.7</p>
-            </description>
-        </release>
-        <release version="0.4.6" date="2019-06-20">
-            <description>
-                <p>Release 0.4.6</p>
-            </description>
-        </release>
-        <release version="0.4.5" date="2019-06-13">
-            <description>
-                <p>Release 0.4.5</p>
-            </description>
-        </release>
-        <release version="0.4.4" date="2019-06-05">
-            <description>
-                <p>Release 0.4.4</p>
+                <p>Release 0.4.24</p>
             </description>
         </release>
     </releases>
