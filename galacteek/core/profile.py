@@ -27,6 +27,7 @@ from galacteek.ipfs.dag import EvolvingDAG
 
 from galacteek.did import didIdentRe
 from galacteek.did.ipid import IPIdentifier
+from galacteek.did.ipid import IPService
 
 from galacteek.core.iphandle import ipHandleGen
 from galacteek.core.iphandle import SpaceHandle
@@ -885,7 +886,7 @@ class UserProfile(QObject):
         blogPath = IPFSPath(joinIpns(self.keyRootId)).child('blog')
         await ipid.addServiceRaw({
             'id': ipid.didUrl(path='/blog'),
-            'type': 'DwebBlogService',
+            'type': IPService.SRV_TYPE_DWEBBLOG,
             'serviceEndpoint': blogPath.ipfsUrl
         }, publish=False)
 
@@ -893,7 +894,7 @@ class UserProfile(QObject):
         feedPath = IPFSPath(joinIpns(self.keyRootId)).child('dfeed.atom')
         await ipid.addServiceRaw({
             'id': ipid.didUrl(path='/feed'),
-            'type': 'DwebAtomFeedService',
+            'type': IPService.SRV_TYPE_ATOMFEED,
             'serviceEndpoint': feedPath.ipfsUrl,
             'description': 'Dweb Atom feed'
         }, publish=False)

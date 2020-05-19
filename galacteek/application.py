@@ -297,6 +297,10 @@ class GalacteekApplication(QApplication):
         return self._cmdArgs
 
     @property
+    def offline(self):
+        return self.cmdArgs.offline
+
+    @property
     def system(self):
         return self._system
 
@@ -558,7 +562,8 @@ class GalacteekApplication(QApplication):
                 '/share/static/docs/markdown-reference.html')
 
         await self.ipfsCtx.setup(pubsubEnable=pubsubEnabled,
-                                 pubsubHashmarksExch=hExchEnabled)
+                                 pubsubHashmarksExch=hExchEnabled,
+                                 offline=self.offline)
         await self.ipfsCtx.profilesInit()
         await self.qSchemeHandler.start()
         await self.importLdContexts()
@@ -1132,7 +1137,9 @@ class GalacteekApplication(QApplication):
         await self.loop.shutdown_asyncgens()
 
         await self.ethereum.stop()
-        await self.ipfsClient.close()
+
+        if self.ipfsClient:
+            await self.ipfsClient.close()
 
         if self.ipfsd:
             self.ipfsd.stop()

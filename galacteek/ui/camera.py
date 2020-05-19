@@ -181,6 +181,8 @@ class CameraView(QMainWindow):
         self.isCapturingImage = False
         self.videoLocation = None
 
+        self.showMaximized()
+
     def keyPressEvent(self, event):
         if event.isAutoRepeat():
             return
@@ -393,3 +395,4 @@ class CameraView(QMainWindow):
 
     def closeEvent(self, event):
         self.camera.stop()
+        super().closeEvent(event)

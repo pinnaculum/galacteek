@@ -21,6 +21,9 @@ from PyQt5.QtCore import QUrl
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QVariant
 from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import QBuffer
+from PyQt5.QtCore import QByteArray
+from PyQt5.QtCore import QIODevice
 from PyQt5.QtGui import QPixmap
 
 from galacteek import ensure
@@ -33,6 +36,7 @@ from galacteek.core.models import BaseAbstractItem
 from galacteek.core.iphandle import SpaceHandle
 from galacteek.dweb.atom import DWEB_ATOM_FEEDFN
 from galacteek.did import didExplode
+from galacteek.did.ipid import IPService
 
 from .dids import buildIpServicesMenu
 from . import ui_peersmgr
@@ -77,19 +81,20 @@ def iServicesSearchHelp():
         ''')
 
 
-def iPeerToolTip(peerId, ipHandle, did, validated, authenticated):
+def iPeerToolTip(avatarUrl, peerId, ipHandle, did, validated, authenticated):
     return QCoreApplication.translate(
         'PeersManager',
         '''
+        <p><img src="{0}"/></p>
         <p>
-            Peer ID: {0}
+            Peer ID: {1}
         </p>
-        <p>Space Handle: {1}</p>
-        <p>DID: <b>{2}</b></p>
-        <p>{3}</p>
+        <p>Space Handle: {2}</p>
+        <p>DID: <b>{3}</b></p>
         <p>{4}</p>
+        <p>{5}</p>
         </p>
-        ''').format(peerId, ipHandle, did,
+        ''').format(avatarUrl, peerId, ipHandle, did,
                     'QR Validated' if validated is True else 'Not validated',
                     'DID Auth OK' if authenticated is True else 'No Auth')
 
@@ -102,6 +107,9 @@ class PeerBaseItem(BaseAbstractItem):
 
     def tooltip(self, col):
         return ''
+
+    def icon(self):
+        return getIcon('unknown-file.png')
 
 
 class PeerTreeItem(PeerBaseItem):
@@ -119,10 +127,25 @@ class PeerTreeItem(PeerBaseItem):
 
     def tooltip(self, col):
         handle = SpaceHandle(self.ctx.ident.iphandle)
+
+        data = QByteArray()
+        buffer = QBuffer(data)
+        buffer.open(QIODevice.WriteOnly)
+        self.ctx.avatarPixmapScaled(128, 128).save(buffer, 'PNG')
+        buffer.close()
+
+        avatarUrl = 'data:image/png;base64, {}'.format(
+            bytes(buffer.data().toBase64()).decode()
+        )
+
         return iPeerToolTip(
-            self.ctx.peerId, str(handle), self.ctx.ipid.did,
+            avatarUrl,
+            self.ctx.peerId,
+            str(handle),
+            self.ctx.ipid.did,
             self.ctx.validated,
-            self.ctx.authenticated)
+            self.ctx.authenticated
+        )
 
     def data(self, column):
         handle = self.ctx.spaceHandle
@@ -155,6 +178,9 @@ class PeerTreeItem(PeerBaseItem):
             if service.container:
                 await pSItem.updateContained()
 
+    def icon(self):
+        return self.ctx.avatarPixmapScaled(32, 32)
+
 
 class PeerServiceObjectTreeItem(PeerBaseItem):
     itemType = 'serviceObject'
@@ -170,6 +196,9 @@ class PeerServiceObjectTreeItem(PeerBaseItem):
 
     def userData(self, column):
         pass
+
+    def icon(self):
+        return getIconIpfs64()
 
     def tooltip(self, col):
         return self.sObject.get('id')
@@ -204,6 +233,22 @@ class PeerServiceTreeItem(PeerBaseItem):
 
     def tooltip(self, col):
         return self.service.id
+
+    def icon(self):
+        if not self.service:
+            return None
+
+        if self.service.type == IPService.SRV_TYPE_DWEBBLOG:
+            return getIcon('blog.png')
+        elif self.service.type == IPService.SRV_TYPE_ATOMFEED:
+            return getIcon('atom-feed.png')
+        elif self.service.type == IPService.SRV_TYPE_COLLECTION:
+            return getIcon('folder-open.png')
+        elif self.service.type in [IPService.SRV_TYPE_GENERICPYRAMID,
+                                   IPService.SRV_TYPE_GALLERY]:
+            return getIcon('pyramid-aqua.png')
+        else:
+            return getIconIpfs64()
 
     def data(self, column):
         if column == 0:
@@ -279,6 +324,9 @@ class PeersModel(QAbstractItemModel):
 
         elif role == Qt.DisplayRole or role == Qt.EditRole:
             return item.data(index.column())
+
+        elif role == Qt.DecorationRole:
+            return item.icon()
 
         elif role == Qt.ToolTipRole:
             return item.tooltip(index.column())
@@ -402,6 +450,8 @@ class PeersTracker:
                     self.model.index(peerItem.row(), 0),
                     self.model.index(peerItem.row() + 1, 0)
                 )
+                # ensure(peerItem.ctx.fetchAvatar())
+                await peerItem.ctx.fetchAvatar()
 
     async def onPeerAdded(self, peerId):
         peerCtx = self.ctx.peers.getByPeerId(peerId)
@@ -413,6 +463,7 @@ class PeersTracker:
     async def addPeerToModel(self, peerId, peerCtx):
         with await self.model.lock:
             peerItem = PeerTreeItem(peerCtx, parent=self.model.rootItem)
+            ensure(peerCtx.fetchAvatar())
 
             self.model.rootItem.appendChild(peerItem)
 
@@ -566,6 +617,7 @@ class PeersManager(GalacteekTab):
             self.onContextMenu)
         self.ui.peersMgrView.doubleClicked.connect(self.onDoubleClick)
         self.ui.peersMgrView.setDragDropMode(QAbstractItemView.DragOnly)
+        self.ui.peersMgrView.setHeaderHidden(True)
 
         self.app.ipfsCtx.peers.changed.connectTo(self.onPeersChange)
         self.app.ipfsCtx.peers.peerAdded.connectTo(self.onPeerAdded)

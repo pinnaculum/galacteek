@@ -89,6 +89,8 @@ class IPService(metaclass=IPServiceRegistry):
     SRV_TYPE_DWEBBLOG = 'DwebBlogService'
     SRV_TYPE_GALLERY = 'DwebGalleryService'
     SRV_TYPE_ATOMFEED = 'DwebAtomFeedService'
+    SRV_TYPE_AVATAR = 'DwebAvatarService'
+
     SRV_TYPE_VC = 'VerifiableCredentialService'
     SRV_TYPE_GENERICPYRAMID = 'GalacteekPyramidService'
     SRV_TYPE_CHAT = 'GalacteekChatService'
@@ -169,6 +171,8 @@ class IPService(metaclass=IPServiceRegistry):
             srvStr = 'Generic pyramid'
         elif self.type == self.SRV_TYPE_ATOMFEED:
             srvStr = 'Atom feed'
+        elif self.type == self.SRV_TYPE_AVATAR:
+            srvStr = 'User avatar'
         else:
             srvStr = 'Unknown service'
 
@@ -182,7 +186,8 @@ class IPGenericService(IPService):
         IPService.SRV_TYPE_ATOMFEED,
         IPService.SRV_TYPE_DWEBBLOG,
         IPService.SRV_TYPE_GALLERY,
-        IPService.SRV_TYPE_GENERICPYRAMID
+        IPService.SRV_TYPE_GENERICPYRAMID,
+        IPService.SRV_TYPE_AVATAR
     ]
 
 
