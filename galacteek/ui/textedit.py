@@ -47,6 +47,7 @@ from PyQt5.QtGui import QColor
 from PyQt5.QtGui import QSyntaxHighlighter
 from PyQt5.QtGui import QTextCharFormat
 from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QKeySequence
 
 import qtawesome as qta
 
@@ -524,6 +525,7 @@ class TextEditorWidget(QWidget):
         self.saveButton.clicked.connect(self.onSave)
         self.saveButton.setToolTip(iSave())
         self.saveButton.setEnabled(False)
+        self.saveButton.setShortcut(QKeySequence('Ctrl+s'))
 
         self.strokeIcon = getIcon('stroke-cube.png')
 
@@ -640,6 +642,18 @@ class TextEditorWidget(QWidget):
         self._currentDocument = doc
         self.textEditor.setDocument(self.currentDocument)
 
+        self.applyOptionsForDocument()
+
+        self.documentChanged.emit(self.currentDocument)
+        self.currentDocument.setModified(False)
+
+        self.currentDocument.modified.connect(
+            functools.partial(self.saveButton.setEnabled, True))
+        self.currentDocument.contentsChanged.connect(self.onDocumentChanged)
+
+        self.applyStylesheet()
+
+    def applyOptionsForDocument(self):
         if self.currentDocument.filename:
             if self.currentDocument.filename.endswith('.py'):
                 self.highlighter = PythonSyntaxHighlighter(
@@ -652,15 +666,6 @@ class TextEditorWidget(QWidget):
                 self.previewButton.setChecked(True)
         else:
             self.highlighter = None
-
-        self.documentChanged.emit(self.currentDocument)
-        self.currentDocument.setModified(False)
-
-        self.currentDocument.modified.connect(
-            functools.partial(self.saveButton.setEnabled, True))
-        self.currentDocument.contentsChanged.connect(self.onDocumentChanged)
-
-        self.applyStylesheet()
 
     def cleanup(self):
         if os.path.isdir(self.checkoutPath):
@@ -998,6 +1003,8 @@ class TextEditorWidget(QWidget):
 
         await self.writeDocument(self.currentDocument)
 
+        self.applyOptionsForDocument()
+
         if document.previewDocument:
             if filenameIsMarkdown(document.filename):
                 document.previewDocument.filename = \
@@ -1008,6 +1015,7 @@ class TextEditorWidget(QWidget):
                 pPath = os.path.join(self.checkoutPath,
                                      document.previewDocument.filename)
                 text = document.previewDocument.toHtml()
+
                 async with aiofiles.open(pPath, 'w+t') as fd:
                     await fd.write(text)
 

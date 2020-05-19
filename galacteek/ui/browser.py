@@ -935,6 +935,11 @@ class CurrentObjectController(PopupToolButton):
         self.setIcon(getIcon('cube-orange.png'))
         self.setAutoRaise(True)
 
+        self.exploreDirectoryAction = QAction(
+            getIcon('folder-open.png'),
+            iExploreDirectory(),
+            self,
+            triggered=self.onExploreDirectory)
         self.dagViewAction = QAction(getIcon('ipld.png'),
                                      iDagView(), self,
                                      triggered=self.onDAGView)
@@ -956,6 +961,8 @@ class CurrentObjectController(PopupToolButton):
 
         self.setDefaultAction(self.dagViewAction)
 
+        self.menu.addAction(self.exploreDirectoryAction)
+        self.menu.addSeparator()
         self.menu.addAction(self.copyCurPathAction)
         self.menu.addSeparator()
         self.menu.addAction(self.qaLinkAction)
@@ -973,6 +980,9 @@ class CurrentObjectController(PopupToolButton):
         if self.currentPath:
             self.app.mainWindow.qaToolbar.ipfsObjectDropped.emit(
                 self.currentPath)
+
+    def onExploreDirectory(self):
+        self.app.mainWindow.explore(self.currentPath.objPath)
 
     def onDAGView(self):
         self.dagViewRequested.emit(self.currentPath)

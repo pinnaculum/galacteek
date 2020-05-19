@@ -19,6 +19,7 @@ from PyQt5.QtGui import QImage
 from galacteek import ensure
 from galacteek import log
 from galacteek.ipfs.wrappers import ipfsOp
+from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import joinIpns
 from galacteek.core.iphandle import ipHandleUsername
 from galacteek.core.iphandle import ipHandleGen
@@ -28,6 +29,8 @@ from galacteek.crypto.qrcode import IPFSQrEncoder
 
 from galacteek.ipfs.pubsub import TOPIC_PEERS
 from galacteek.ipfs.pubsub.messages.core import PeerIpHandleChosen
+
+from galacteek.did.ipid import IPService
 
 from .dids import buildIpServicesMenu
 from .helpers import filesSelectImages
@@ -280,6 +283,21 @@ class ProfileEditDialog(QDialog):
         await op.sleep(2)
         await self.loadIcon()
 
+        # Update the avatar DID service
+        ipid = await self.profile.userInfo.ipIdentifier()
+        avatarServiceId = ipid.didUrl(path='/avatar')
+
+        if not await ipid.searchServiceById(avatarServiceId):
+            await ipid.addServiceRaw({
+                'id': avatarServiceId,
+                'type': IPService.SRV_TYPE_AVATAR,
+                'serviceEndpoint': joinIpfs(entry['Hash']),
+                'description': 'User Avatar'
+            }, publish=True)
+        else:
+            async with ipid.editService(avatarServiceId) as editor:
+                editor.service['serviceEndpoint'] = joinIpfs(entry['Hash'])
+
     def save(self):
         if self.profile.userInfo.iphandleValid:
             if not questionBox('Confirmation',
@@ -305,7 +323,8 @@ class ProfileEditDialog(QDialog):
         async with profile.userInfo as userInfo:
             userInfo.curIdentity['iphandleqr']['png'] = userInfo.mkLink(qrPng)
 
-        await ipfsop.ctx.pubsub.send(TOPIC_PEERS, msg)
+        if not self.app.offline:
+            await ipfsop.ctx.pubsub.send(TOPIC_PEERS, msg)
 
     @ipfsOp
     async def encodeIpHandleQr(self, ipfsop, iphandle, format='raw',
@@ -373,7 +392,8 @@ class ProfileEditDialog(QDialog):
             userInfo.curIdentity['iphandleqr']['raw'] = userInfo.mkLink(qrRaw)
             userInfo.curIdentity['iphandleqr']['png'] = userInfo.mkLink(qrPng)
 
-        await ipfsop.ctx.pubsub.send(TOPIC_PEERS, msg)
+        if not self.app.offline:
+            await ipfsop.ctx.pubsub.send(TOPIC_PEERS, msg)
 
     @ipfsOp
     async def ipHandleAvailable(self, ipfsop, iphandle):
@@ -441,7 +461,9 @@ class ProfileEditDialog(QDialog):
         username = self.ui.username.text().strip()
         vPlanet = self.ui.vPlanet.currentText()
 
-        await ipfsop.ctx.pubsub.services[TOPIC_PEERS].sendLogoutMessage()
+        if not self.app.offline:
+            await ipfsop.ctx.pubsub.services[TOPIC_PEERS].sendLogoutMessage()
+
         for iphandle in self.peeredIpHandlesGen(
                 ipfsop.ctx.node.id,
                 vPlanet, username):
@@ -458,7 +480,8 @@ class ProfileEditDialog(QDialog):
 
                 break
 
-        await ipfsop.ctx.pubsub.services[TOPIC_PEERS].sendLogoutMessage()
+        if not self.app.offline:
+            await ipfsop.ctx.pubsub.services[TOPIC_PEERS].sendLogoutMessage()
 
         self.ui.updateButton.setEnabled(False)
         self.infoMessage('Your IP handle and DID were updated')
@@ -479,7 +502,9 @@ class ProfileEditDialog(QDialog):
         vPlanet = self.ui.vPlanet.currentText()
         available = False
 
-        await ipfsop.ctx.pubsub.services[TOPIC_PEERS].sendLogoutMessage()
+        if not self.app.offline:
+            await ipfsop.ctx.pubsub.services[TOPIC_PEERS].sendLogoutMessage()
+
         self.profile.userInfo.root['iphandle'] = None
 
         if not await self.app.ethereum.connected():

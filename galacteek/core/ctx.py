@@ -7,6 +7,10 @@ import os.path
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import QObject
+from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QSize
+from PyQt5.QtGui import QImage
+from PyQt5.QtGui import QPixmap
 
 from galacteek import log
 from galacteek import logUser
@@ -35,6 +39,8 @@ from galacteek.ipfs import tunnel
 from galacteek.did.ipid import ipidFormatValid
 from galacteek.did.ipid import IPIdentifier
 
+from galacteek.ui.helpers import getImageFromIpfs
+
 from galacteek.core.profile import UserProfile
 from galacteek.core.softident import gSoftIdent
 from galacteek.core.iphandle import SpaceHandle
@@ -58,6 +64,9 @@ class PeerCtx:
         self._validated = validated
         self._authenticated = authenticated
 
+        self._avatarPath = None
+        self._avatarImage = self.defaultAvatarImage()
+
         self.sInactive = AsyncSignal(str)
 
     @property
@@ -67,6 +76,10 @@ class PeerCtx:
     @property
     def ident(self):
         return self._ident
+
+    @property
+    def avatarImage(self):
+        return self._avatarImage
 
     @property
     def ipid(self):
@@ -114,6 +127,61 @@ class PeerCtx:
             await self.sInactive.emit(self.peerId)
         else:
             ensureLater(120, self.watch)
+
+    def defaultAvatarImage(self):
+        if isinstance(self.spaceHandle.vPlanet, str):
+            image = QImage(
+                ':/share/icons/planets/{planet}.png'.format(
+                    planet=self.spaceHandle.vPlanet.lower()
+                )
+            )
+
+            if not image.isNull():
+                return image
+
+        return QImage(':/share/icons/ipfs-cube-64.png')
+
+    def avatarPixmapScaled(self, width=64, height=64):
+        return QPixmap.fromImage(self.avatarImage).scaled(
+            QSize(width, height),
+            Qt.KeepAspectRatio,
+            Qt.SmoothTransformation
+        )
+
+    @ipfsOp
+    async def fetchAvatar(self, ipfsop):
+        avatarServiceId = self.ipid.didUrl(path='/avatar')
+        service = await self.ipid.searchServiceById(avatarServiceId)
+
+        if service:
+            avatarPath = IPFSPath(service.endpoint)
+
+            if not avatarPath.valid:
+                log.debug(f'Invalid avatar for peer {self.peerId}')
+
+            self._avatarPath = avatarPath
+
+            statInfo = StatInfo(
+                await ipfsop.objStat(str(avatarPath),
+                                     timeout=15)
+            )
+
+            if not statInfo.valid or statInfo.dataLargerThan(
+                    kilobytes(768)):
+                log.debug(f'Invalid avatar for peer {self.peerId}')
+                return
+
+            await ipfsop.ctx.pin(str(avatarPath), qname='ipid-avatar')
+
+            log.debug(
+                f'Getting avatar for peer {self.peerId} from {avatarPath}')
+
+            image = await getImageFromIpfs(str(avatarPath))
+
+            if image and not image.isNull():
+                self._avatarImage = image
+            else:
+                log.debug(f'Could not fetch avatar for peer {self.peerId}')
 
 
 class Peers:
@@ -534,22 +602,23 @@ class IPFSContext(QObject):
 
     @ipfsOp
     async def setup(self, ipfsop, pubsubEnable=True,
-                    pubsubHashmarksExch=False, p2pEnable=True):
+                    pubsubHashmarksExch=False, p2pEnable=True,
+                    offline=False):
         self.rsaExec = RSAExecutor(loop=self.loop,
                                    executor=self.app.executor)
-        await self.importSoftIdent()
 
+        await self.importSoftIdent()
         await self.node.init()
         await self.peers.init()
 
-        if p2pEnable is True:
+        if p2pEnable is True and not offline:
             await self.p2p.init()
 
         self.pinner = pinning.PinningMaster(
             self, statusFilePath=self.app.pinStatusLocation)
         await self.pinner.start()
 
-        if pubsubEnable is True:
+        if pubsubEnable is True and not offline:
             await self.setupPubsub(pubsubHashmarksExch=pubsubHashmarksExch)
 
     async def shutdown(self):

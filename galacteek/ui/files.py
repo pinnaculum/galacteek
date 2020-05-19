@@ -99,10 +99,6 @@ def iDeleteFile():
     return QCoreApplication.translate('FileManagerForm', 'Delete file')
 
 
-def iExploreDir():
-    return QCoreApplication.translate('FileManagerForm', 'Explore directory')
-
-
 def iUnlinkFile():
     return QCoreApplication.translate('FileManagerForm', 'Unlink file')
 
@@ -814,7 +810,7 @@ class FileManager(QWidget):
 
         if nameItem.isDir():
             menu.addAction(getIcon('folder-open.png'),
-                           iExploreDir(),
+                           iExploreDirectory(),
                            functools.partial(explore, dataHash))
 
         def publishToKey(action):

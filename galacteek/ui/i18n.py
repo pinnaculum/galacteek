@@ -433,6 +433,10 @@ def iOpen():
     return QCoreApplication.translate('GalacteekWindow', 'Open')
 
 
+def iExploreDirectory():
+    return QCoreApplication.translate('GalacteekWindow', 'Explore directory')
+
+
 def iEditObject():
     return QCoreApplication.translate('GalacteekWindow', 'Edit object')
 

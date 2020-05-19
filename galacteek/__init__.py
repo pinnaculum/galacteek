@@ -46,7 +46,7 @@
 # ..............................................................................
 #
 
-__version__ = '0.4.24'
+__version__ = '0.4.25'
 
 from galacteek.core.asynclib import *  # noqa
 from galacteek.core import glogger
