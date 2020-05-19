@@ -212,7 +212,7 @@ class CameraView(QMainWindow):
         array = QByteArray()
         buffer = QBuffer(array)
         buffer.open(QIODevice.WriteOnly)
-        scaledImage.save(buffer, imgFormat)
+        img.save(buffer, imgFormat)
         buffer.close()
 
         await self.importImageBuffer(buffer, imgFormat.lower())
