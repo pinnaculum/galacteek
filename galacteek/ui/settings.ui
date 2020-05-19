@@ -138,10 +138,74 @@
             <bool>true</bool>
            </property>
            <layout class="QGridLayout" name="gridLayout_5">
+            <item row="0" column="1">
+             <widget class="QSpinBox" name="ipfsdSwarmPort">
+              <property name="maximumSize">
+               <size>
+                <width>100</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="minimum">
+               <number>1024</number>
+              </property>
+              <property name="maximum">
+               <number>32768</number>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="0">
+             <widget class="QLabel" name="label_13">
+              <property name="text">
+               <string>Pubsub routing</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="3">
+             <widget class="QCheckBox" name="writableHttpGw">
+              <property name="text">
+               <string>Writable HTTP gateway</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_8">
+              <property name="text">
+               <string>Routing mode</string>
+              </property>
+             </widget>
+            </item>
             <item row="2" column="0">
              <widget class="QLabel" name="label_17">
               <property name="text">
                <string>HTTP gateway port</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="2">
+             <widget class="QLabel" name="label_19">
+              <property name="text">
+               <string>Maximum swarm connections</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="3">
+             <widget class="QSpinBox" name="swarmMinConns">
+              <property name="minimum">
+               <number>20</number>
+              </property>
+              <property name="maximum">
+               <number>1000</number>
+              </property>
+              <property name="singleStep">
+               <number>5</number>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="2">
+             <widget class="QLabel" name="label_5">
+              <property name="text">
+               <string>Maximum storage (Gb)</string>
               </property>
              </widget>
             </item>
@@ -161,6 +225,74 @@
               </property>
              </widget>
             </item>
+            <item row="1" column="3">
+             <widget class="QSpinBox" name="swarmMaxConns">
+              <property name="minimum">
+               <number>150</number>
+              </property>
+              <property name="maximum">
+               <number>2000</number>
+              </property>
+              <property name="singleStep">
+               <number>5</number>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="1">
+             <widget class="QComboBox" name="pubsubRoutingMode">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pusub routing mode (gossipsub is more bandwidth-efficient)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="2">
+             <widget class="QLabel" name="label_9">
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="2">
+             <widget class="QLabel" name="label_18">
+              <property name="text">
+               <string>Minimum swarm connections</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_15">
+              <property name="text">
+               <string>API port</string>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="3">
+             <widget class="QCheckBox" name="namesysPubsub">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enable IPNS over pubsub (updating of IPNS records over pubsub channels)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+              <property name="text">
+               <string>Enable IPNS over Pubsub</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="3">
+             <widget class="QSpinBox" name="storageMax">
+              <property name="minimum">
+               <number>5</number>
+              </property>
+              <property name="maximum">
+               <number>2048</number>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_14">
+              <property name="text">
+               <string>Swarm port</string>
+              </property>
+             </widget>
+            </item>
             <item row="2" column="1">
              <widget class="QSpinBox" name="ipfsdGwPort">
               <property name="maximumSize">
@@ -177,102 +309,11 @@
               </property>
              </widget>
             </item>
-            <item row="0" column="2">
-             <widget class="QLabel" name="label_18">
-              <property name="text">
-               <string>Minimum swarm connections</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="3">
-             <widget class="QSpinBox" name="swarmMinConns">
-              <property name="minimum">
-               <number>20</number>
-              </property>
-              <property name="maximum">
-               <number>1000</number>
-              </property>
-              <property name="singleStep">
-               <number>5</number>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="2">
-             <widget class="QLabel" name="label_19">
-              <property name="text">
-               <string>Maximum swarm connections</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="1">
-             <widget class="QSpinBox" name="ipfsdSwarmPort">
-              <property name="maximumSize">
-               <size>
-                <width>100</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="minimum">
-               <number>1024</number>
-              </property>
-              <property name="maximum">
-               <number>32768</number>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QLabel" name="label_15">
-              <property name="text">
-               <string>API port</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="3">
-             <widget class="QSpinBox" name="swarmMaxConns">
-              <property name="minimum">
-               <number>150</number>
-              </property>
-              <property name="maximum">
-               <number>2000</number>
-              </property>
-              <property name="singleStep">
-               <number>5</number>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="0">
-             <widget class="QLabel" name="label_14">
-              <property name="text">
-               <string>Swarm port</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="2">
-             <widget class="QLabel" name="label_5">
-              <property name="text">
-               <string>Maximum storage (Gb)</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="3">
-             <widget class="QSpinBox" name="storageMax">
-              <property name="minimum">
-               <number>5</number>
-              </property>
-              <property name="maximum">
-               <number>2048</number>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="0">
-             <widget class="QLabel" name="label_8">
-              <property name="text">
-               <string>Routing mode</string>
-              </property>
-             </widget>
-            </item>
             <item row="3" column="1">
              <widget class="QComboBox" name="routingMode">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Routing mode (dht is the default, dhtclient does not act as a full node on the DHT)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
               <item>
                <property name="text">
                 <string>dht</string>
@@ -285,34 +326,13 @@
               </item>
              </widget>
             </item>
-            <item row="3" column="3">
-             <widget class="QCheckBox" name="writableHttpGw">
-              <property name="text">
-               <string>Writable HTTP gateway</string>
+            <item row="5" column="3">
+             <widget class="QCheckBox" name="fileStore">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use the IPFS Filestore system (avoids file duplication)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
-             </widget>
-            </item>
-            <item row="3" column="2">
-             <widget class="QLabel" name="label_9">
               <property name="text">
-               <string/>
-              </property>
-             </widget>
-            </item>
-            <item row="4" column="0">
-             <widget class="QLabel" name="label_13">
-              <property name="text">
-               <string>Pubsub routing</string>
-              </property>
-             </widget>
-            </item>
-            <item row="4" column="1">
-             <widget class="QComboBox" name="pubsubRoutingMode"/>
-            </item>
-            <item row="4" column="3">
-             <widget class="QCheckBox" name="namesysPubsub">
-              <property name="text">
-               <string>Enable IPNS over Pubsub</string>
+               <string>Enable Filestore</string>
               </property>
              </widget>
             </item>

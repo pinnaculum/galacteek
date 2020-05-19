@@ -976,6 +976,7 @@ class GalacteekApplication(QApplication):
             pubsubRouter=sManager.getSetting(section, CFG_KEY_PUBSUB_ROUTER),
             namesysPubsub=sManager.isTrue(section, CFG_KEY_NAMESYS_PUBSUB),
             pubsubSigning=sManager.isTrue(section, CFG_KEY_PUBSUB_USESIGNING),
+            fileStore=sManager.isTrue(section, CFG_KEY_FILESTORE),
             nice=sManager.getInt(section, CFG_KEY_NICE),
             pubsubEnable=pubsubEnabled, corsEnable=corsEnabled,
             migrateRepo=migrateRepo, debug=self.debug,

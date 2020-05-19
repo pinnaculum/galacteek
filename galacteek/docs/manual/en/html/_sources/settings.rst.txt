@@ -35,6 +35,11 @@ floodsub and is backwards-compatible with the default *floodsub* protocol.
 The **IPNS over pubsub** setting enables the publishing of IPNS records
 over pubsub. This is an experimental feature.
 
+Checking the **Filestore** setting will enable the use of the
+IPFS filestore system when importing content from the filemanager.
+Using this feature means you can add content to IPFS without
+duplicating the content in the IPFS datastore.
+
 **Note**: switching from a local to custom daemon (or vice versa) will make you
 lose access to the content that you might have published using the previous
 settings, so use with care. Use separate *application profiles* with the

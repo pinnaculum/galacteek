@@ -1256,6 +1256,10 @@ class FileManager(QWidget):
         return True
 
     @ipfsOp
+    async def daemonFilestoreEnabled(self, ipfsop):
+        return await op.daemonConfigGet('Experimental.FilestoreEnabled')
+
+    @ipfsOp
     async def addFiles(self, op, files, parent):
         """ Add every file with an optional wrapper directory """
 
@@ -1281,6 +1285,7 @@ class FileManager(QWidget):
                                     rawleaves=self.useRawLeaves,
                                     chunker=self.chunkingAlg,
                                     hashfunc=self.hashFunction,
+                                    useFileStore=True,
                                     callback=onEntry)
 
             if root is None:
@@ -1320,6 +1325,7 @@ class FileManager(QWidget):
                                     rawleaves=self.useRawLeaves,
                                     chunker=self.chunkingAlg,
                                     hashfunc=self.hashFunction,
+                                    useFileStore=True,
                                     wrap=wrapEnabled)
 
         if not dirEntry:

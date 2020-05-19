@@ -21,6 +21,7 @@ CFG_KEY_APIPORT = 'apiport'
 CFG_KEY_SWARMPORT = 'swarmport'
 CFG_KEY_HTTPGWPORT = 'httpgwport'
 CFG_KEY_HTTPGWWRITABLE = 'httpgwwritable'
+CFG_KEY_FILESTORE = 'filestore'
 CFG_KEY_NAMESYS_PUBSUB = 'namesyspubsub'
 CFG_KEY_PUBSUB_ROUTER = 'pubsub_router'
 CFG_KEY_PUBSUB_USESIGNING = 'pubsub_usesigning'
@@ -105,6 +106,7 @@ def setDefaultSettings(gApp):
     sManager.setDefaultFalse(section, CFG_KEY_NAMESYS_PUBSUB)
     sManager.setDefaultTrue(section, CFG_KEY_PUBSUB_USESIGNING)
     sManager.setDefaultTrue(section, CFG_KEY_HTTPGWWRITABLE)
+    sManager.setDefaultFalse(section, CFG_KEY_FILESTORE)
 
     section = CFG_SECTION_BROWSER
     sManager.setDefaultSetting(section, CFG_KEY_HOMEURL, HOME_DEFAULT)
