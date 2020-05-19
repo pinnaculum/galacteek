@@ -7,6 +7,8 @@ import tempfile
 import uuid
 import aiofiles
 import pkg_resources
+from pathlib import Path
+from datetime import datetime
 
 from PyQt5.QtCore import QFile
 
@@ -23,6 +25,7 @@ from galacteek.ipfs.multi import multiAddrTcp4
 
 from galacteek.core.asynclib import async_enterable
 from galacteek.core.asynclib import asyncReadFile
+from galacteek.core.jtraverse import traverseParser
 from galacteek.core import jsonSchemaValidate
 from galacteek.ld.ldloader import aioipfs_document_loader
 from galacteek.ld import asyncjsonld as jsonld
@@ -292,6 +295,25 @@ class IPFSOperator(object):
             return None
         except asyncio.CancelledError:
             self.debug('Cancelled coroutine {0}'.format(fncall))
+
+    async def daemonConfig(self):
+        try:
+            config = await self.client.config.show()
+            if not isinstance(config, dict):
+                return json.loads(config)
+            else:
+                return config
+        except Exception:
+            return None
+
+    async def daemonConfigGet(self, attr):
+        config = await self.daemonConfig()
+        if config:
+            try:
+                parser = traverseParser(config)
+                return parser.traverse(attr)
+            except Exception:
+                return None
 
     async def getCommands(self):
         if self.availCommands is not None:
@@ -917,7 +939,7 @@ class IPFSOperator(object):
                       callback=None, cidversion=1, offline=False,
                       dagformat='balanced', rawleaves=False,
                       hashfunc='sha2-256',
-                      pin=True,
+                      pin=True, useFileStore=False,
                       hidden=False, only_hash=False, chunker=None):
         """
         Add files from ``path`` in the repo, and returns the top-level
@@ -934,6 +956,10 @@ class IPFSOperator(object):
         added = None
         exopts = {}
         callbackvalid = asyncio.iscoroutinefunction(callback)
+        origPath = Path(path)
+
+        if not origPath.exists():
+            return None
 
         if dagformat == 'trickle':
             exopts['trickle'] = True
@@ -944,11 +970,59 @@ class IPFSOperator(object):
         if rawleaves:
             exopts['raw_leaves'] = rawleaves
 
+        fileStoreEnabled = await self.daemonConfigGet(
+            'Experimental.FilestoreEnabled')
+
+        goIpfsPathEnv = os.environ.get('IPFS_PATH')
+        ipfsRepoPath = Path(goIpfsPathEnv) if goIpfsPathEnv else None
+
+        if fileStoreEnabled and useFileStore and ipfsRepoPath:
+            # We'll only use the filestore in standalone mode, because
+            # the filestore at the moment requires symlinking from $IPFS_PATH
+            #
+            # Root filestore path from where we symlink
+            #
+            # $IPFS_PATH/_gfstore/YYYYMM/<timefloat>
+
+            fStorePath = ipfsRepoPath.joinpath(
+                '_gfstore/{sep}/{t}'.format(
+                    sep=datetime.today().strftime('%Y%m'),
+                    t=time.time()
+                )
+            )
+
+            try:
+                if not fStorePath.exists():
+                    # Create the root from where we store symlinks
+                    fStorePath.mkdir(parents=True)
+
+                # Link path uses original path's basename
+                linkPath = fStorePath.joinpath(origPath.name)
+
+                if not linkPath.exists():
+                    linkPath.symlink_to(
+                        path,
+                        target_is_directory=origPath.is_dir()
+                    )
+
+                    # Linking OK, set the right options for the filestore
+                    # Dereference symlinks when using the filestore
+                    exopts['dereference_args'] = True
+                    exopts['nocopy'] = True
+
+                    # What we pass to go-ipfs is the symlink path
+                    path = str(linkPath)
+            except Exception as err:
+                # Can't symlink ? Won't use the filestore
+                self.debug(
+                    f'Error linking {linkPath} to the filestore: {err}')
+
         try:
             async for entry in self.client.add(path, quiet=True,
                                                recursive=recursive,
                                                cid_version=cidversion,
-                                               offline=offline, hidden=hidden,
+                                               offline=offline,
+                                               hidden=hidden,
                                                only_hash=only_hash,
                                                hash=hashfunc,
                                                wrap_with_directory=wrap,

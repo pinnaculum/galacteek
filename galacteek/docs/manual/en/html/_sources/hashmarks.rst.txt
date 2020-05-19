@@ -29,8 +29,8 @@ Hashmarks collections can be synchronized from external git
 repositories (the main repository is *dwebland*), so you need
 to have git installed on your machine.
 
-Local Hashmarks menu
---------------------
+Hashmarks menu
+--------------
 
 .. image:: ../../../../share/icons/hashmarks.png
     :width: 64
@@ -38,6 +38,8 @@ Local Hashmarks menu
 
 From the toolbar, clicking on the hashmarks icon opens a menu
 giving access to all your hashmarks, by category.
+
+The *Popupar tags* shows the most active tags.
 
 Clicking an item will trigger the opening of the corresponding
 object, depending on its type (the file type of the object

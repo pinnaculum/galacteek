@@ -104,6 +104,8 @@ class SettingsDialog(QDialog):
                         self.sManager.isTrue(section, CFG_KEY_HTTPGWWRITABLE))
         self.setChecked(self.ui.namesysPubsub,
                         self.sManager.isTrue(section, CFG_KEY_NAMESYS_PUBSUB))
+        self.setChecked(self.ui.fileStore,
+                        self.sManager.isTrue(section, CFG_KEY_FILESTORE))
 
         # IPFS connection
         section = CFG_SECTION_IPFSCONN1
@@ -195,6 +197,8 @@ class SettingsDialog(QDialog):
                                   self.isChecked(self.ui.writableHttpGw))
         self.sManager.setBoolFrom(section, CFG_KEY_NAMESYS_PUBSUB,
                                   self.isChecked(self.ui.namesysPubsub))
+        self.sManager.setBoolFrom(section, CFG_KEY_FILESTORE,
+                                  self.isChecked(self.ui.fileStore))
 
         section = CFG_SECTION_IPFSCONN1
         self.setS(section, CFG_KEY_HOST, self.ui.customIpfsHost.text())

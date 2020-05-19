@@ -137,6 +137,7 @@ class AsyncIPFSDaemon(object):
                  pubsubEnable=False, noBootstrap=False, corsEnable=True,
                  pubsubRouter='floodsub', namesysPubsub=False,
                  pubsubSigning=False, offline=False,
+                 fileStore=False,
                  p2pStreams=True, migrateRepo=False, routingMode='dht',
                  gwWritable=False, storageMax=20, debug=False, loop=None):
 
@@ -152,6 +153,7 @@ class AsyncIPFSDaemon(object):
         self.swarmHighWater = swarmHighWater
         self.storageMax = storageMax
         self.initRepo = initRepo
+        self.fileStore = fileStore
         self.namesysPubsub = namesysPubsub
         self.pubsubEnable = pubsubEnable
         self.pubsubRouter = pubsubRouter
@@ -227,6 +229,12 @@ class AsyncIPFSDaemon(object):
         if self.p2pStreams:
             await ipfsConfigJson(self.goIpfsPath,
                                  'Experimental.Libp2pStreamMounting',
+                                 'true'
+                                 )
+
+        if self.fileStore:
+            await ipfsConfigJson(self.goIpfsPath,
+                                 'Experimental.FilestoreEnabled',
                                  'true'
                                  )
 
