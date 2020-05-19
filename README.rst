@@ -18,8 +18,8 @@ for the IPFS_ peer-to-peer network.
 Installation
 ============
 
-* **AppImage (Linux)**: `Galacteek-0.4.24-x86_64.AppImage <https://github.com/pinnaculum/galacteek/releases/download/v0.4.24/Galacteek-0.4.24-x86_64.AppImage>`_
-* **DMG (MacOS)**: `Galacteek-0.4.24.dmg <https://github.com/pinnaculum/galacteek/releases/download/v0.4.24/Galacteek-0.4.24.dmg>`_
+* **AppImage (Linux)**: `Galacteek-0.4.25-x86_64.AppImage <https://github.com/pinnaculum/galacteek/releases/download/v0.4.25/Galacteek-0.4.25-x86_64.AppImage>`_
+* **DMG (MacOS)**: `Galacteek-0.4.25.dmg <https://github.com/pinnaculum/galacteek/releases/download/v0.4.25/Galacteek-0.4.25.dmg>`_
 
 *On Linux*: Be sure to install all the **gstreamer** packages on your
 system to be able to use the mediaplayer.
