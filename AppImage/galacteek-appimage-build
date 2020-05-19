@@ -164,9 +164,3 @@ ARCH=x86_64 ./appimagetool-x86_64.AppImage -n $APPDIR $APPIMAGE_DEST
 
 APPIMAGE_CID=$($HOME/bin/ipfs add -q -n --cid-version 1 $APPIMAGE_DEST)
 echo "==> CIDv1 $APPIMAGE_DEST: $APPIMAGE_CID"
-
-if [ ! -z $TRAVIS_BRANCH ] && [ "$TRAVIS_BRANCH" = "master" ] ; then
-	cp $HOME/bin/wasmer $APPDIR/usr/bin
-	echo "AppDir successfully created, running appimagetool (wasmer image)"
-	ARCH=x86_64 ./appimagetool-x86_64.AppImage -n $APPDIR $APPIMAGE_FULL_DEST
-fi
