@@ -128,15 +128,18 @@ class PeerTreeItem(PeerBaseItem):
     def tooltip(self, col):
         handle = SpaceHandle(self.ctx.ident.iphandle)
 
-        data = QByteArray()
-        buffer = QBuffer(data)
-        buffer.open(QIODevice.WriteOnly)
-        self.ctx.avatarPixmapScaled(128, 128).save(buffer, 'PNG')
-        buffer.close()
+        try:
+            data = QByteArray()
+            buffer = QBuffer(data)
+            buffer.open(QIODevice.WriteOnly)
+            self.ctx.avatarPixmapScaled(128, 128).save(buffer, 'PNG')
+            buffer.close()
 
-        avatarUrl = 'data:image/png;base64, {}'.format(
-            bytes(buffer.data().toBase64()).decode()
-        )
+            avatarUrl = 'data:image/png;base64, {}'.format(
+                bytes(buffer.data().toBase64()).decode()
+            )
+        except Exception:
+            avatarUrl = ':/share/icons/unknown-file.png'
 
         return iPeerToolTip(
             avatarUrl,
