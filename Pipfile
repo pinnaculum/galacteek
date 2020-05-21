@@ -46,6 +46,7 @@ qtawesome = ">=0.7.2"
 python3-crdt = ">=1.0.3"
 aiopubsub = ">=2.1.5"
 pypika = ">=0.36.5"
+asyncache = ">=0.1.1"
 
 [dev-packages]
 pytest = "*"
