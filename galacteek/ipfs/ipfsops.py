@@ -7,8 +7,11 @@ import tempfile
 import uuid
 import aiofiles
 import pkg_resources
+
 from pathlib import Path
 from datetime import datetime
+from asyncache import cached
+from cachetools import TTLCache
 
 from PyQt5.QtCore import QFile
 
@@ -1196,12 +1199,19 @@ class IPFSOperator(object):
         elif isinstance(cid, dict) and 'Hash' in cid:
             return {"/": cid['Hash']}
 
+    @cached(TTLCache(1024, 45))
+    async def objectPathMapCacheResolve(self, path):
+        """
+        Simple async TTL cache for results from nameResolveStreamFirst()
+        """
+        return await self.nameResolveStreamFirst(path)
+
     async def objectPathMapper(self, path):
         ipfsPath = path if isinstance(path, IPFSPath) else \
             IPFSPath(path, autoCidConv=True)
 
         if ipfsPath.isIpns:
-            resolved = await self.nameResolveStreamFirst(path)
+            resolved = await self.objectPathMapCacheResolve(path)
 
             if resolved:
                 srPath = resolved['Path']
