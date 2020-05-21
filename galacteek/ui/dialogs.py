@@ -12,6 +12,9 @@ from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWidgets import QGridLayout
 from PyQt5.QtWidgets import QFormLayout
 from PyQt5.QtWidgets import QAbstractItemView
+from PyQt5.QtWidgets import QPushButton
+from PyQt5.QtWidgets import QCheckBox
+from PyQt5.QtWidgets import QSpinBox
 
 from PyQt5.QtCore import QSize
 from PyQt5.QtCore import QFile
@@ -426,6 +429,7 @@ class AddMultihashPyramidDialog(QDialog):
         self.pyramidType = pyramidType
         self.iconCid = None
         self.customCategory = 'general'
+        self.autoSyncPath = None
 
         label = QLabel('Pyramid name')
         restrictRegexp = QRegExp("[0-9A-Za-z-_]+")  # noqa
@@ -462,6 +466,56 @@ class AddMultihashPyramidDialog(QDialog):
         nameLayout.addWidget(label)
         nameLayout.addWidget(self.nameLine)
 
+        extraLayout = QVBoxLayout()
+
+        if pyramidType == MultihashPyramid.TYPE_AUTOSYNC:
+            layout1 = QHBoxLayout()
+            layout2 = QHBoxLayout()
+
+            self.checkBoxHiddenFiles = QCheckBox('Import hidden files')
+            self.checkBoxHiddenFiles.setCheckState(Qt.Unchecked)
+            self.checkBoxFileStore = QCheckBox('Use Filestore if available')
+            self.checkBoxFileStore.setCheckState(Qt.Unchecked)
+            self.checkBoxUnpinPrev = QCheckBox('Unpin old content')
+            self.checkBoxUnpinPrev.setCheckState(Qt.Unchecked)
+            self.checkBoxStartupSync = QCheckBox('Sync on startup')
+            self.checkBoxStartupSync.setCheckState(Qt.Unchecked)
+
+            self.spinBoxSyncDelay = QSpinBox()
+            self.spinBoxSyncDelay.setMinimum(1)
+            self.spinBoxSyncDelay.setMaximum(3600)
+            self.spinBoxSyncDelay.setValue(10)
+
+            self.ignRulesPath = QLineEdit()
+            self.ignRulesPath.setMaxLength(32)
+            self.ignRulesPath.setText('.gitignore')
+
+            layout1.addWidget(QLabel('Import delay (seconds)'))
+            layout1.addWidget(self.spinBoxSyncDelay)
+
+            layout2.addWidget(QLabel('Ignore rules path'))
+            layout2.addWidget(self.ignRulesPath)
+
+            labelOr = QLabel('or')
+            labelOr.setAlignment(Qt.AlignCenter)
+
+            self.syncDirButton = QPushButton('Choose a directory to auto-sync')
+            self.syncDirButton.clicked.connect(self.onChooseSyncDir)
+            self.syncFileButton = QPushButton('Choose a file to auto-sync')
+            self.syncFileButton.clicked.connect(self.onChooseSyncFile)
+            self.syncPathLabel = QLabel('No path selected')
+            self.syncPathLabel.setAlignment(Qt.AlignCenter)
+            extraLayout.addWidget(self.syncPathLabel)
+            extraLayout.addWidget(self.syncDirButton)
+            extraLayout.addWidget(labelOr)
+            extraLayout.addWidget(self.syncFileButton)
+            extraLayout.addWidget(self.checkBoxHiddenFiles)
+            extraLayout.addWidget(self.checkBoxFileStore)
+            extraLayout.addWidget(self.checkBoxUnpinPrev)
+            extraLayout.addWidget(self.checkBoxStartupSync)
+            extraLayout.addLayout(layout1)
+            extraLayout.addLayout(layout2)
+
         self.iconSelector = IconSelector()
         self.iconSelector.iconSelected.connect(self.onIconSelected)
 
@@ -482,15 +536,34 @@ class AddMultihashPyramidDialog(QDialog):
         mainLayout.addLayout(nameLayout, 0, 0)
         mainLayout.addLayout(descrLayout, 1, 0)
         mainLayout.addWidget(HorizontalLine(self), 2, 0)
-        mainLayout.addLayout(ipnsLTimeLayout, 3, 0)
-        mainLayout.addLayout(pickIconLayout, 4, 0)
-        mainLayout.addWidget(buttonBox, 5, 0)
+        mainLayout.addLayout(extraLayout, 3, 0)
+        mainLayout.addWidget(HorizontalLine(self), 4, 0)
+        mainLayout.addLayout(ipnsLTimeLayout, 5, 0)
+        mainLayout.addLayout(pickIconLayout, 6, 0)
+        mainLayout.addWidget(buttonBox, 7, 0)
 
         buttonBox.accepted.connect(self.accept)
         buttonBox.rejected.connect(self.reject)
         self.setLayout(mainLayout)
 
         self.nameLine.setFocus(Qt.OtherFocusReason)
+
+        self.setMinimumWidth(
+            self.app.desktopGeometry.width() / 3
+        )
+        self.setWindowIcon(getIcon('pyramid-aqua.png'))
+
+    def onChooseSyncDir(self):
+        path = directorySelect()
+        if path:
+            self.autoSyncPath = path
+            self.syncPathLabel.setText(path)
+
+    def onChooseSyncFile(self):
+        path = fileSelect()
+        if path:
+            self.autoSyncPath = path
+            self.syncPathLabel.setText(path)
 
     def onIconSelected(self, iconCid):
         self.iconCid = iconCid
@@ -503,6 +576,7 @@ class AddMultihashPyramidDialog(QDialog):
         self.done(0)
 
     def accept(self):
+        extra = {}
         pyramidName = self.nameLine.text()
         descr = self.descrLine.text()
         lifetime = self.lifetimeCombo.currentText()
@@ -516,17 +590,30 @@ class AddMultihashPyramidDialog(QDialog):
         else:
             category = self.categoryCombo.currentText()
 
+        if self.pyramidType == MultihashPyramid.TYPE_AUTOSYNC:
+            if self.autoSyncPath is None:
+                return messageBox(
+                    'Please select a file/directory to auto-sync')
+
+            extra['autosyncpath'] = self.autoSyncPath
+            extra['syncdelay'] = self.spinBoxSyncDelay.value() * 1000
+            extra['importhidden'] = self.checkBoxHiddenFiles.isChecked()
+            extra['ignorerulespath'] = self.ignRulesPath.text().strip()
+            extra['usefilestore'] = self.checkBoxFileStore.isChecked()
+            extra['unpinprevious'] = self.checkBoxUnpinPrev.isChecked()
+            extra['startupsync'] = self.checkBoxStartupSync.isChecked()
+
         ipnsKeyName = 'galacteek.pyramids.{cat}.{name}'.format(
             cat=category.replace('/', '_'), name=pyramidName)
 
         self.done(1)
 
         ensure(self.createPyramid(pyramidName, category, ipnsKeyName,
-                                  descr, lifetime))
+                                  descr, lifetime, extra))
 
     @ipfsOp
     async def createPyramid(self, ipfsop, pyramidName, category, ipnsKeyName,
-                            description, ipnsLifetime):
+                            description, ipnsLifetime, extra):
         try:
             logUser.info(
                 'Multihash pyramid {pyr}: generating IPNS key ...'.format(
@@ -539,7 +626,8 @@ class AddMultihashPyramidDialog(QDialog):
                     ipnskey=ipnsKey['Id'],
                     lifetime=ipnsLifetime,
                     type=self.pyramidType,
-                    description=description)
+                    description=description,
+                    extra=extra)
                 logUser.info('Multihash pyramid {pyr}: created'.format(
                     pyr=pyramidName))
             else:

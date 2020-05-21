@@ -226,17 +226,15 @@ class AsyncIPFSDaemon(object):
                          '{0}GB'.format(self.storageMax))
 
         # P2P streams
-        if self.p2pStreams:
-            await ipfsConfigJson(self.goIpfsPath,
-                                 'Experimental.Libp2pStreamMounting',
-                                 'true'
-                                 )
+        await ipfsConfigJson(self.goIpfsPath,
+                             'Experimental.Libp2pStreamMounting',
+                             boolarg(self.p2pStreams)
+                             )
 
-        if self.fileStore:
-            await ipfsConfigJson(self.goIpfsPath,
-                                 'Experimental.FilestoreEnabled',
-                                 'true'
-                                 )
+        await ipfsConfigJson(self.goIpfsPath,
+                             'Experimental.FilestoreEnabled',
+                             boolarg(self.fileStore)
+                             )
 
         # CORS
         if self.corsEnable:

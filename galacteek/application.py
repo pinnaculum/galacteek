@@ -282,6 +282,8 @@ class GalacteekApplication(QApplication):
         self.desktopWidget = QDesktopWidget()
         self.desktopGeometry = self.desktopWidget.screenGeometry()
 
+        self.setWindowIcon(getIcon('galacteek.png'))
+
         self.setupAsyncLoop()
         self.setupPaths()
 

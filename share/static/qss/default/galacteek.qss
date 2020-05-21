@@ -71,6 +71,62 @@ QTreeView::item:open {
 
 QLabel {
     color: #244e66;
+    font: 12pt "Montserrat";
+}
+
+QTreeView {
+    font: 13pt "Montserrat";
+    padding: 4px;
+}
+
+QTreeView#mfsTree {
+    padding: 8px;
+}
+
+QTreeView::item#mfsTree {
+    padding: 8px;
+}
+
+QTreeView::item:hover {
+    background-color: #eec146;
+    border: 1px solid #4b9fa2;
+}
+
+QTreeView::item:selected {
+    background-color: #60cccf;
+    border: 1px solid #4b9fa2;
+    color: black;
+}
+
+QTreeWidget::item#dagTree {
+    padding: 0;
+    margin: 0;
+}
+
+QTreeWidget::item:hover#dagTree,
+QTreeWidget::item:selected#dagTree {
+    margin: 0;
+    padding: 0;
+    border: 0px;
+}
+
+QTreeView::branch {
+    background: palette(base);
+}
+
+QTreeView::branch:open:has-children:!has-siblings,
+QTreeView::branch:open:has-children:has-siblings {
+    image: url(:/share/icons/treeview/branch_open.png);
+}
+
+QTreeView::branch:has-children:!has-siblings:closed,
+QTreeView::branch:closed:has-children:has-siblings {
+    image: url(:/share/icons/treeview/branch_closed.png);
+}
+
+QTreeView::branch:open:has-children:!has-siblings:hover,
+QTreeView::branch:open:has-children:has-siblings:hover {
+    image: url(:/share/icons/treeview/branch_open.png);
 }
 
 QToolBox {
@@ -278,25 +334,6 @@ QDialog#profileEditDialog {
     background-color: #DBDBDB;
 }
 
-/* Peers View */
-
-QTreeView#peersMgrView {
-    font: 13pt "Inter UI";
-    background-color: #DDE5DD;
-}
-
-QTreeView::item#peersMgrView {
-    padding: 6px;
-}
-
-QTreeView::item:open#peersMgrView {
-    color: #AA3D2B;
-}
-
-QTreeView::item:selected#peersMgrView {
-    color: #4a9ea1;
-}
-
 /* IP Services search widgets */
 
 QLineEdit#ipServicesSearcher {
@@ -307,7 +344,6 @@ QLineEdit#ipServicesSearcher {
     padding: 10px;
     font: 11pt "Inter UI";
 }
-
 
 QLineEdit QAbstractItemView {
     background-color: #7f8491;

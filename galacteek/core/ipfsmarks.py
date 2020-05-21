@@ -199,8 +199,8 @@ class IPFSHashMark(collections.UserDict):
 class MultihashPyramid(collections.UserDict):
     # Types
     TYPE_STANDARD = 0
-
     TYPE_GALLERY = 1
+    TYPE_AUTOSYNC = 2
 
     # Flags
     FLAG_MODIFIABLE_BYUSER = 0x01
@@ -246,6 +246,10 @@ class MultihashPyramid(collections.UserDict):
         return self.p['description']
 
     @property
+    def extra(self):
+        return self.p.get('extra', {})
+
+    @property
     def ipnsKey(self):
         return self.p['ipns']['publishtokey']
 
@@ -266,7 +270,9 @@ class MultihashPyramid(collections.UserDict):
              internal=False, publishdelay=0, comment=None, flags=0,
              allowoffline=False, lifetime='48h',
              maxhashmarks=pyramidMaxHmarksDefault,
-             type=None):
+             type=None, extra=None):
+
+        extraOpts = extra if isinstance(extra, dict) else {}
         datecreated = utcDatetimeIso()
         pyramid = MultihashPyramid({
             name: {
@@ -287,6 +293,7 @@ class MultihashPyramid(collections.UserDict):
                 'internal': internal,
                 'maxhashmarks': maxhashmarks,
                 'flags': flags,
+                'extra': extraOpts,
                 pyramidsMarksKey: []  # list of hashmarks in the pyramid
             }
         })
@@ -879,7 +886,8 @@ class IPFSMarks(QObject):
                 self.pyramidNeedsPublish.emit(pyramidPath, mark)
 
     def pyramidNew(self, name, category, icon, description=None, ipnskey=None,
-                   lifetime='48h', type=MultihashPyramid.TYPE_STANDARD):
+                   lifetime='48h', type=MultihashPyramid.TYPE_STANDARD,
+                   extra=None):
         sec = self.enterCategory(category, create=True)
 
         if not sec:
@@ -895,7 +903,8 @@ class IPFSMarks(QObject):
                 ipnskey=ipnskey, icon=icon,
                 lifetime=lifetime,
                 flags=MultihashPyramid.FLAG_MODIFIABLE_BYUSER,
-                type=type
+                type=type,
+                extra=extra
             )
             sec[pyramidsKey].update(pyramid)
             self.pyramidConfigured.emit(self.pyramidPathFormat(category, name))

@@ -1,6 +1,7 @@
 import asyncio
 import functools
 import time
+import weakref
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QWidget
@@ -218,6 +219,10 @@ class ChatCenterButton(PopupToolButton):
             ensure(self.chans.createChannel(channel))
 
 
+class ParticipantItem(QStandardItem):
+    pass
+
+
 class ParticipantsModel(QStandardItemModel):
     def flags(self, index):
         return Qt.ItemFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
@@ -227,8 +232,19 @@ class ParticipantsModel(QStandardItemModel):
             self.index(
                 row,
                 col
-            )
+            ),
+            Qt.DisplayRole
         )
+
+    def data(self, index, role):
+        if role == Qt.DecorationRole:
+            item = self.itemFromIndex(index)
+            if isinstance(item, ParticipantItem):
+                ctx = item.peerCtx()
+                if ctx:
+                    return ctx.avatarPixmapScaled(32, 32)
+
+        return super().data(index, role)
 
 
 class ChatRoomWidget(GalacteekTab):
@@ -274,6 +290,9 @@ class ChatRoomWidget(GalacteekTab):
             if questionBox('Open link', 'Open <b>{}</b> ?'.format(str(path))):
                 ensure(self.app.resourceOpener.open(path, openingFrom='chat'))
 
+    async def onTabChanged(self):
+        self.setTabIcon(getIcon('qta:mdi.chat-outline'))
+
     async def participantsHandles(self):
         return [p['handle'] for p in await self.participantsData()]
 
@@ -294,7 +313,8 @@ class ChatRoomWidget(GalacteekTab):
 
         async with self.lock:
             if sHandleShort not in participants:
-                itemHandle = QStandardItem(sHandleShort)
+                itemHandle = ParticipantItem(sHandleShort)
+                itemHandle.peerCtx = weakref.ref(message.peerCtx)
                 itemTs = QStandardItem(str(time.time()))
 
                 self.participantsModel.invisibleRootItem().appendRow(

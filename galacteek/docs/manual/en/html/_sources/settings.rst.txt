@@ -38,7 +38,8 @@ over pubsub. This is an experimental feature.
 Checking the **Filestore** setting will enable the use of the
 IPFS filestore system when importing content from the filemanager.
 Using this feature means you can add content to IPFS without
-duplicating the content in the IPFS datastore.
+duplicating the content in the IPFS datastore. **Note**: this
+is an experimental feature.
 
 **Note**: switching from a local to custom daemon (or vice versa) will make you
 lose access to the content that you might have published using the previous

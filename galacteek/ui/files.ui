@@ -228,6 +228,22 @@
           </spacer>
          </item>
          <item>
+          <widget class="QPushButton" name="cancelButton">
+           <property name="maximumSize">
+            <size>
+             <width>350</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">color: red;</string>
+           </property>
+           <property name="text">
+            <string>Cancel operation</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QPushButton" name="collapseAll">
            <property name="text">
             <string>Collapse all</string>
@@ -296,19 +312,6 @@
      <item>
       <layout class="QHBoxLayout" name="hLayoutFilesView">
        <item>
-        <widget class="QTreeView" name="treeFiles">
-         <attribute name="headerCascadingSectionResizes">
-          <bool>false</bool>
-         </attribute>
-         <attribute name="headerDefaultSectionSize">
-          <number>200</number>
-         </attribute>
-         <attribute name="headerStretchLastSection">
-          <bool>true</bool>
-         </attribute>
-        </widget>
-       </item>
-       <item>
         <layout class="QHBoxLayout" name="hLayoutBrowser">
          <item>
           <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -353,17 +356,21 @@
     </layout>
    </item>
    <item>
-    <widget class="QLabel" name="statusLabel">
-     <property name="minimumSize">
-      <size>
-       <width>200</width>
-       <height>0</height>
-      </size>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-    </widget>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item alignment="Qt::AlignLeft">
+      <widget class="QLabel" name="mfsStatusLabel">
+       <property name="minimumSize">
+        <size>
+         <width>200</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
   </layout>
  </widget>

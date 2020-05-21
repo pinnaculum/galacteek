@@ -1108,12 +1108,13 @@ class TextEditorWidget(QWidget):
                 messageBox('Object stat failed')
                 return
 
-            sInfo = StatInfo(stat)
-            if sInfo.totalSize > megabytes(32):
-                if not questionBox(
-                        'Stat size', 'Large object, fetch anyway ?'):
-                    self.busy(False)
-                    raise Exception('Object too large')
+            if 0:
+                sInfo = StatInfo(stat)
+                if sInfo.totalSize > megabytes(32):
+                    if not questionBox(
+                            'Stat size', 'Large object, fetch anyway ?'):
+                        self.busy(False)
+                        raise Exception('Object too large')
 
             if not await ipfsop.client.get(
                 ipfsPath.objPath,

@@ -17,7 +17,7 @@ galacteek's manual (english)
     File manager <filemanager>
     Browsing <browsing>
     Pinning <pinning>
-    Multihash Pyramids <pyramids>
+    Pyramids <pyramids>
     Atom feeds <atom>
     QR codes <qrcodes>
     Glossary <glossary>

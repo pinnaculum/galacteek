@@ -52,14 +52,24 @@ the :term:`DAG`. When using this option, these nodes won't have
 any UnixFS wrapper (it saves space in the repository, this is used
 in the IPFS Wikipedia mirror for instance).
 
+Use the filestore
+^^^^^^^^^^^^^^^^^
+
+If you've enabled the filestore on your local daemon and
+want to use it when importing content from the filemanager,
+check this option.
+
+*Note*: the content that you've imported using the filestore will
+only be available when this feature is enabled on the daemon.
+Files imported in the filestore and linked in the MFS will
+trigger *timeouts* (when listing the MFS path) if the filestore
+feature is disabled on the daemon.
+
 Selecting the working folder
 ----------------------------
 
 The folder selector button lets you select the current working folder
 in your filesystem (see :term:`MFS`).
-
-The *Temporary* and *Encrypted files* folders are by default in *offline*
-mode.
 
 Adding files in the *Encrypted files* folder will self-encrypt them with
 your profile's RSA key (only you will be able to open them). When you open
@@ -83,8 +93,10 @@ can change this in the settings).
     :height: 64
 
 If you click on the **Add directory** icon you are prompted with a selection
-dialog for directories only. This will recursively import the directory,
-including dotfiles (files and directories starting with *.* on Linux)
+dialog for directories only. This will recursively import the directory.
+You can then choose if you want to import hidden files, and if you
+want to enable the usage of *.gitignore* files (git ignore rules files)
+if there's a *.gitignore* file in the selected directory.
 
 Because the application accesses IPFS in an *asynchronous* manner, importing
 even large amounts of data should not cause the application to hang or becoming
@@ -105,20 +117,6 @@ repository. Multiple selection is supported by holding the *Control* or *Shift*
 keys.
 
 Drag-and-dropping content from other applications is supported as well.
-
-Offline mode
-------------
-
-The *Offline mode* button, when toggled, sets the filemanager in offline
-mode for the current folder (it is a per-folder switch). In this mode,
-adding new files to your node will not trigger an
-announcement on the :term:`DHT` (meaning that other nodes will have no knowledge
-yet that your node provides these files).
-
-Later on, if you want to manually announce to the network that you provide
-some files, right-click a file or directory and select
-**Announce (DHT provide)** (for a directory, use the recursive version to
-recursively announce the entire graph).
 
 File context menu
 ------------------

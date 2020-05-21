@@ -82,7 +82,8 @@ def modelDelete(model, search):
 @async_generator
 async def modelWalkAsync(model, parent=QModelIndex(), search=None,
                          columns=None, delete=False, dump=False,
-                         maxdepth=0, depth=0):
+                         maxdepth=0, depth=0,
+                         role=None):
     for row in range(0, model.rowCount(parent)):
         await asyncio.sleep(0)
 
@@ -95,7 +96,7 @@ async def modelWalkAsync(model, parent=QModelIndex(), search=None,
             index = model.index(row, col, parent)
             if not index:
                 continue
-            data = model.data(index, Qt.EditRole)
+            data = model.data(index, role if role else Qt.EditRole)
             if search:
                 if search == data:
                     if delete:
@@ -108,22 +109,25 @@ async def modelWalkAsync(model, parent=QModelIndex(), search=None,
                 await yield_from_(modelWalkAsync(
                     model, parent=index0,
                     search=search, columns=columns, delete=delete,
-                    dump=dump, maxdepth=maxdepth, depth=depth))
+                    dump=dump, maxdepth=maxdepth, depth=depth,
+                    role=role))
                 depth += 1
 
 
 async def modelSearchAsync(model, parent=QModelIndex(), search=None,
-                           columns=None, delete=False, maxdepth=0, depth=0):
+                           columns=None, delete=False, maxdepth=0, depth=0,
+                           role=None):
     items = []
     async for v in modelWalkAsync(model, parent=parent, columns=columns,
                                   search=search, delete=delete,
-                                  maxdepth=maxdepth, depth=depth):
+                                  maxdepth=maxdepth, depth=depth, role=role):
         items.append(v)
     return items
 
 
-async def modelDeleteAsync(model, search):
-    return await modelSearchAsync(model, search=search, delete=True)
+async def modelDeleteAsync(model, search, role=None):
+    return await modelSearchAsync(
+        model, search=search, delete=True, role=role)
 
 
 class UneditableItem(QStandardItem, QObject):

@@ -116,7 +116,7 @@ class PeerTreeItem(PeerBaseItem):
     itemType = 'peer'
 
     def __init__(self, peerCtx, parent=None):
-        super().__init__(parent=parent)
+        super(PeerTreeItem, self).__init__(data=None, parent=parent)
         self.ctx = peerCtx
 
     def columnCount(self):
@@ -224,7 +224,7 @@ class PeerServiceTreeItem(PeerBaseItem):
     itemType = 'service'
 
     def __init__(self, service, parent=None):
-        super().__init__(parent=parent)
+        super(PeerServiceTreeItem, self).__init__(parent=parent)
         self.service = service
         self.peerItem = parent
 
@@ -380,6 +380,9 @@ class PeersModel(QAbstractItemModel):
         if childItem is None:
             return QModelIndex()
 
+        if not isinstance(childItem, PeerBaseItem):
+            return QModelIndex()
+
         parentItem = childItem.parent()
 
         if parentItem == self.rootItem:
@@ -453,7 +456,6 @@ class PeersTracker:
                     self.model.index(peerItem.row(), 0),
                     self.model.index(peerItem.row() + 1, 0)
                 )
-                # ensure(peerItem.ctx.fetchAvatar())
                 await peerItem.ctx.fetchAvatar()
 
     async def onPeerAdded(self, peerId):

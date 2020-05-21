@@ -23,6 +23,7 @@ from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import ipnsKeyCidV1
 from galacteek.ipfs.multi import multiAddrTcp4
 
+from galacteek.core.asynccache import amlrucache
 from galacteek.core.asynclib import async_enterable
 from galacteek.core.asynclib import asyncReadFile
 from galacteek.core.jtraverse import traverseParser
@@ -296,17 +297,17 @@ class IPFSOperator(object):
         except asyncio.CancelledError:
             self.debug('Cancelled coroutine {0}'.format(fncall))
 
+    @amlrucache
     async def daemonConfig(self):
         try:
-            config = await self.client.config.show()
-            if not isinstance(config, dict):
-                return json.loads(config)
-            else:
-                return config
+            return await self.client.config.show()
         except Exception:
             return None
 
     async def daemonConfigGet(self, attr):
+        """
+        Get an attribute from the daemon's config JSON document
+        """
         config = await self.daemonConfig()
         if config:
             try:
@@ -390,8 +391,7 @@ class IPFSOperator(object):
 
     async def filesList(self, path):
         try:
-            listing = await self.client.files.ls(
-                await self.objectPathMapper(path), long=True)
+            listing = await self.client.files.ls(path, long=True)
         except aioipfs.APIError as err:
             self.debug(err.message)
             return None
@@ -940,6 +940,7 @@ class IPFSOperator(object):
                       dagformat='balanced', rawleaves=False,
                       hashfunc='sha2-256',
                       pin=True, useFileStore=False,
+                      ignRulesPath=None,
                       hidden=False, only_hash=False, chunker=None):
         """
         Add files from ``path`` in the repo, and returns the top-level
@@ -966,6 +967,9 @@ class IPFSOperator(object):
 
         if isinstance(chunker, str):
             exopts['chunker'] = chunker
+
+        if ignRulesPath:
+            exopts['ignore_rules_path'] = ignRulesPath
 
         if rawleaves:
             exopts['raw_leaves'] = rawleaves
@@ -996,7 +1000,7 @@ class IPFSOperator(object):
                     # Create the root from where we store symlinks
                     fStorePath.mkdir(parents=True)
 
-                # Link path uses original path's basename
+                # Link path uses the original path's basename
                 linkPath = fStorePath.joinpath(origPath.name)
 
                 if not linkPath.exists():
@@ -1010,21 +1014,20 @@ class IPFSOperator(object):
                     exopts['dereference_args'] = True
                     exopts['nocopy'] = True
 
-                    # What we pass to go-ipfs is the symlink path
+                    # What we pass to go-ipfs now is the symlink path
                     path = str(linkPath)
             except Exception as err:
                 # Can't symlink ? Won't use the filestore
                 self.debug(
-                    f'Error linking {linkPath} to the filestore: {err}')
+                    f'Error symlinking {linkPath} to the filestore: {err}')
 
         try:
             async for entry in self.client.add(path, quiet=True,
                                                recursive=recursive,
                                                cid_version=cidversion,
-                                               offline=offline,
-                                               hidden=hidden,
                                                only_hash=only_hash,
                                                hash=hashfunc,
+                                               hidden=hidden,
                                                wrap_with_directory=wrap,
                                                pin=pin,
                                                **exopts):
@@ -1035,8 +1038,11 @@ class IPFSOperator(object):
         except aioipfs.APIError as err:
             self.debug(err.message)
             return None
+        except asyncio.CancelledError:
+            self.debug('addPath: cancelled')
+            return None
         except Exception as e:
-            self.debug('addEntry: unknown exception {}'.format(str(e)))
+            self.debug('addPath: unknown exception {}'.format(str(e)))
             return None
         else:
             return added

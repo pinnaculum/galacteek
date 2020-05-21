@@ -28,7 +28,7 @@ def amlrucache(f):
     """
     @wraps(f)
     def wrapper(self, *args, **kwargs):
-        _cache = getattr(self, 'cache', LRUCache(128))
+        _cache = getattr(self, 'cache', LRUCache(16))
         key = repr(self)
 
         try:

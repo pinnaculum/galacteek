@@ -79,6 +79,37 @@ objects to a pyramid.</p>
 as well as create a QR code image for the IPNS key.</p>
 </div>
 </div>
+<div class="section" id="auto-sync-pyramid">
+<h2>Auto-sync pyramid<a class="headerlink" href="#auto-sync-pyramid" title="Permalink to this headline">¶</a></h2>
+<p>This type of pyramid will automatically synchronize to IPFS a file or
+directory that you choose when you create the pyramid. Whenever
+the contents of that file/directory changes, it will be
+reimported to IPFS and associated with the IPNS key.</p>
+<div class="section" id="id2">
+<h3>Usage<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<p>From the right toolbar, click on the blue pyramid button
+and then select <em>Create auto-sync pyramid</em>. Select the file
+or directory that you want to automatically sync.
+You can choose if you want to import <em>hidden</em> files, and
+select the delay (in seconds) after which the autosync
+will start when some changes are detected.</p>
+<p>If you are synchronizing a folder, you can use a
+<em>.gitignore</em> file at the folder’s root to specify rules
+to ignore certain files.</p>
+<p>When enabling the <em>Filestore</em> option, the import will use
+the IPFS <em>filestore</em> storage if available on this IPFS
+daemon, to avoid file duplication.</p>
+<p>When using the <em>Unpin old content</em> option, previously
+imported content will be unpinned recursively before
+syncing.</p>
+<p><em>Note</em>: As explained in Qt’s documentation, the act of monitoring
+files and directories for modifications consumes system resources.
+This implies there is a limit to the number of files and directories
+your process can monitor simultaneously. On Linux you can modify
+the maximum number of <em>inotify user watches</em> with the command
+<strong>sysctl fs.inotify.max_user_watches=&lt;num&gt;</strong></p>
+</div>
+</div>
 <div class="section" id="dag-building-pyramids">
 <h2>DAG building pyramids<a class="headerlink" href="#dag-building-pyramids" title="Permalink to this headline">¶</a></h2>
 <p>These types of pyramids have a <a class="reference internal" href="glossary.html#term-dag"><span class="xref std std-term">DAG</span></a> associated to them.

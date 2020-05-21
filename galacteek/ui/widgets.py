@@ -117,6 +117,9 @@ class GalacteekTab(QWidget):
     async def onClose(self):
         return True
 
+    async def onTabChanged(self):
+        return True
+
     @ipfsOp
     async def initialize(self, op):
         pass

@@ -778,6 +778,7 @@ class MainWindow(QMainWindow):
             partialEnsure(self.onTabCloseRequest))
         self.tabWidget.setElideMode(Qt.ElideMiddle)
         self.tabWidget.setUsesScrollButtons(True)
+        self.tabWidget.currentChanged.connect(self.onTabChanged)
 
         self.centralWidget.wLayout.addWidget(self.tabWidget)
 
@@ -1292,6 +1293,11 @@ class MainWindow(QMainWindow):
         tab = self.addMediaPlayerTab()
         if tab:
             tab.playFromPath(path, mediaName=mediaName)
+
+    def onTabChanged(self, idx):
+        tab = self.tabWidget.widget(idx)
+        if tab:
+            ensure(tab.onTabChanged())
 
     async def onTabCloseRequest(self, idx):
         tab = self.tabWidget.widget(idx)
