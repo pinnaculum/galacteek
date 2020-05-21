@@ -38,6 +38,17 @@ if [ "$TRAVIS_OS_NAME" = "osx" ]; then
 	tar -C $HOME -xzvf fs-repo-migrations_v${FS_MIGRATE_VERSION}_darwin-amd64.tar.gz
 fi
 
+if [ "$TRAVIS_OS_NAME" = "windows" ]; then
+	wget https://dist.ipfs.io/go-ipfs/v${GO_IPFS_VERSION}/go-ipfs_v${GO_IPFS_VERSION}_windows-amd64.zip
+	unzip go-ipfs_v${GO_IPFS_VERSION}_windows-amd64.zip -d $HOME
+
+	wget https://dist.ipfs.io/fs-repo-migrations/v${FS_MIGRATE_VERSION}/fs-repo-migrations_v${FS_MIGRATE_VERSION}_windows-amd64.zip
+	unzip fs-repo-migrations_v${FS_MIGRATE_VERSION}_windows-amd64.zip -d $HOME
+	PIP=pip
+	PYTHONEX=python
+fi
+
+
 mv $HOME/go-ipfs/ipfs $HOME/bin
 mv $HOME/fs-repo-migrations/fs-repo-migrations $HOME/bin
 
@@ -49,7 +60,12 @@ export PYTHONPATH=$PYTHONPATH:/usr/local/lib/python3.7/dist-packages
 export PATH=$PATH:$HOME/bin
 
 $PYTHONEX -m venv venvg
-source venvg/bin/activate
+
+if [ "$TRAVIS_OS_NAME" = "windows" ]; then
+	./venvg/Scripts/activate.bat
+else
+	source venvg/bin/activate
+fi
 
 $PIP install --upgrade pip
 $PIP install wheel

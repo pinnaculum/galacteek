@@ -5,6 +5,22 @@ language: generic
 os:
   - linux
   - osx
+  - windows
+
+matrix:
+  include:
+    - name: "Python 3.7.2"
+      os: windows
+      language: shell
+      before_install:
+        - choco install python --version 3.7.2
+        - choco install unzip
+        - python --version
+        - python -m pip install --upgrade pip
+        - pip3 install --upgrade pytest
+        - pip3 install codecov
+        - pip3 install pyinstaller
+      env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
 
 before_install:
   - if [ "$TRAVIS_OS_NAME" == "linux" ]; then bash -xe travis/bootstrap-ubuntu.sh; fi
@@ -15,6 +31,7 @@ install:
 script:
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then bash -xe travis/build-dmg.sh; fi
   - if [ "$TRAVIS_OS_NAME" == "linux" ]; then cd AppImage; bash -xe galacteek-appimage-build; cd ..; fi
+  - if [ "$TRAVIS_OS_NAME" == "windows" ]; then bash -xe travis/build-pyinstaller.sh; fi
 
 after_success:
   - bash travis/upload-images.sh

@@ -13,3 +13,7 @@ fi
 if [ "$TRAVIS_OS_NAME" = "osx" ]; then
 	bash travis/upload.sh Galacteek*.dmg
 fi
+
+if [ "$TRAVIS_OS_NAME" = "windows" ]; then
+	bash travis/upload.sh dist/galacteek.exe
+fi
