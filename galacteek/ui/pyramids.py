@@ -17,9 +17,11 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QSize
 from PyQt5.QtCore import QBuffer
 from PyQt5.QtCore import QPoint
+from PyQt5.QtCore import QTimer
 
 from galacteek import ensure
 from galacteek import ensureLater
+from galacteek import partialEnsure
 from galacteek import log
 from galacteek import logUser
 from galacteek import AsyncSignal
@@ -36,6 +38,7 @@ from galacteek.core import utcDatetimeIso
 from galacteek.core.ipfsmarks import MultihashPyramid
 from galacteek.core.profile import UserProfile
 from galacteek.crypto.qrcode import IPFSQrEncoder
+from galacteek.core.fswatcher import FileWatcher
 
 from galacteek.did.ipid import IPService
 from galacteek.did.ipid import IPIDServiceException
@@ -63,13 +66,19 @@ from .i18n import iEditObject
 def iCreateRawPyramid():
     return QCoreApplication.translate(
         'pyramidMaster',
-        'Create pyramid (basic)')
+        'Create pyramid')
 
 
 def iCreateGallery():
     return QCoreApplication.translate(
         'pyramidMaster',
         'Create image gallery')
+
+
+def iCreateAutoSyncPyramid():
+    return QCoreApplication.translate(
+        'pyramidMaster',
+        'Create auto-sync pyramid')
 
 
 def iOpenLatestInPyramid():
@@ -88,6 +97,12 @@ def iPopItemFromPyramid():
     return QCoreApplication.translate(
         'pyramidMaster',
         'Pop item off the pyramid')
+
+
+def iForcePyramidSync():
+    return QCoreApplication.translate(
+        'pyramidMaster',
+        'Force sync')
 
 
 def iRewindDAG():
@@ -224,13 +239,24 @@ class MultihashPyramidsToolBar(QToolBar):
             mode=QToolButton.InstantPopup
         )
         self.pyramidsControlButton.setObjectName('pyramidsController')
+
+        # Basic pyramid (manual drag-and-drop)
         self.pyramidsControlButton.menu.addAction(
             getIcon('pyramid-aqua.png'),
             iCreateRawPyramid(), self.onAddPyramidRaw)
         self.pyramidsControlButton.menu.addSeparator()
+
+        # Auto-sync pyramid (automatically syncs files)
+        self.pyramidsControlButton.menu.addAction(
+            getIcon('pyramid-aqua.png'),
+            iCreateAutoSyncPyramid(),
+            self.onAddPyramidAutoSync)
+        self.pyramidsControlButton.menu.addSeparator()
+
         self.pyramidsControlButton.menu.addAction(
             getMimeIcon('image/x-generic'),
             iCreateGallery(), self.onAddGallery)
+        self.pyramidsControlButton.menu.addSeparator()
 
         self.pyramidsControlButton.menu.addSeparator()
 
@@ -268,6 +294,7 @@ class MultihashPyramidsToolBar(QToolBar):
             await self.removeIpnsKey(pyramidButton.pyramid.ipnsKey)
             await pyramidButton.stop()
             await pyramidButton.cleanup()
+            await pyramidButton.didUnpublishService()
 
             if pyramidButton.pyramid.path in self.pyramids:
                 del self.pyramids[pyramidButton.pyramid.path]
@@ -300,9 +327,10 @@ class MultihashPyramidsToolBar(QToolBar):
 
         if pyramid.type == MultihashPyramid.TYPE_STANDARD:
             button = MultihashPyramidToolButton(pyramid, parent=self)
-
         elif pyramid.type == MultihashPyramid.TYPE_GALLERY:
             button = GalleryPyramidController(pyramid, parent=self)
+        elif pyramid.type == MultihashPyramid.TYPE_AUTOSYNC:
+            button = AutoSyncPyramidButton(pyramid, parent=self)
         else:
             # TODO
             return
@@ -385,6 +413,12 @@ class MultihashPyramidsToolBar(QToolBar):
         ensure(runDialogAsync(AddMultihashPyramidDialog, self.app.marksLocal,
                               MultihashPyramid.TYPE_GALLERY,
                               title='New image gallery',
+                              parent=self))
+
+    def onAddPyramidAutoSync(self):
+        ensure(runDialogAsync(AddMultihashPyramidDialog, self.app.marksLocal,
+                              MultihashPyramid.TYPE_AUTOSYNC,
+                              title='New autosync pyramid',
                               parent=self))
 
 
@@ -487,7 +521,7 @@ class MultihashPyramidToolButton(PopupToolButton):
                                       triggered=self.onHashmark)
 
         self.createExtraActions()
-        self.buildMenu()
+
         self.resetStyleSheet()
         ensure(self.initialize())
 
@@ -532,18 +566,18 @@ class MultihashPyramidToolButton(PopupToolButton):
 
         if isinstance(value, bool):
             self._publishInProgress = value
+
             if value is True:
-                self.setStyleSheet('''
-                    QToolButton {
-                        background-color: #B7CDC2;
-                    }
-                ''')
+                self.chBgColor('#B7CDC2')
             else:
                 self.app.loop.call_later(1, self.resetStyleSheet)
 
     @property
     def pyrToolTip(self):
         return self._pyrToolTip
+
+    def chBgColor(self, color):
+        self.setStyleSheet(f'background-color: {color}')
 
     def debug(self, msg):
         logUser.debug('{pyramid}: {msg}'.format(
@@ -568,6 +602,7 @@ class MultihashPyramidToolButton(PopupToolButton):
                 self.debug('Could not cancel watcher task')
 
     async def initialize(self):
+        self.buildMenu()
         self.watcherTask = await self.app.scheduler.spawn(
             self.publishWatcherTask())
         mark = self.app.marksLocal.pyramidGetLatestHashmark(self.pyramid.path)
@@ -577,27 +612,25 @@ class MultihashPyramidToolButton(PopupToolButton):
     def createExtraActions(self):
         pass
 
+    def buildMenuWithActions(self, actions):
+        for action in actions:
+            self.menu.addAction(action)
+            self.menu.addSeparator()
+
     def buildMenu(self):
-        self.menu.addAction(self.openAction)
-        self.menu.addSeparator()
-        self.menu.addAction(self.openLatestAction)
-        self.menu.addSeparator()
-        self.menu.addAction(self.editAction)
-        self.menu.addSeparator()
-        self.menu.addAction(self.publishCurrentClipAction)
-        self.menu.addSeparator()
-        self.menu.addAction(self.copyIpnsAction)
-        self.menu.addSeparator()
-        self.menu.addAction(self.copyIpnsGwAction)
-        self.menu.addSeparator()
-        self.menu.addAction(self.popItemAction)
-        self.menu.addAction(self.generateQrAction)
-        self.menu.addSeparator()
-        self.menu.addAction(self.didPublishAction)
-        self.menu.addSeparator()
-        self.menu.addAction(self.hashmarkAction)
-        self.menu.addSeparator()
-        self.menu.addAction(self.deleteAction)
+        self.buildMenuWithActions([
+            self.openAction,
+            self.openLatestAction,
+            self.editAction,
+            self.publishCurrentClipAction,
+            self.copyIpnsAction,
+            self.copyIpnsGwAction,
+            self.popItemAction,
+            self.generateQrAction,
+            self.didPublishAction,
+            self.hashmarkAction,
+            self.deleteAction
+        ])
 
     def dragEnterEvent(self, event):
         URLDragAndDropProcessor.dragEnterEvent(self, event)
@@ -607,18 +640,27 @@ class MultihashPyramidToolButton(PopupToolButton):
         else:
             self.flashToolTip('Pyramid: {path}'.format(path=self.pyramid.path))
 
-        self.setStyleSheet('''
-            QToolButton {
-                background-color: #EB2121;
-            }
-        ''')
+        self.chBgColor('#EB2121')
+
+        if 0:
+            self.setStyleSheet('''
+                QToolButton {
+                    background-color: #EB2121;
+                }
+            ''')
 
     def dropEvent(self, event):
         URLDragAndDropProcessor.dropEvent(self, event)
-        self.resetStyleSheet()
+        self.updateBgColor()
 
     def dragLeaveEvent(self, event):
-        self.resetStyleSheet()
+        self.updateBgColor()
+
+    def updateBgColor(self):
+        if not self.publishInProgress:
+            self.resetStyleSheet()
+        else:
+            self.chBgColor('#B7CDC2')
 
     def resetStyleSheet(self):
         self.setStyleSheet('''
@@ -856,6 +898,21 @@ class MultihashPyramidToolButton(PopupToolButton):
                     count=self._publishFailedCount))
                 return False
 
+    def didPyramidUrl(self, ipid):
+        return ipid.didUrl(
+            path='/pyramids/{}'.format(
+                self.pyramid.name
+            )
+        )
+
+    @ipfsOp
+    async def didUnpublishService(self, ipfsop):
+        profile = ipfsop.ctx.currentProfile
+        ipid = await profile.userInfo.ipIdentifier()
+
+        if ipid:
+            await ipid.removeServiceById(self.didPyramidUrl(ipid))
+
     @ipfsOp
     async def didPublishService(self, ipfsop):
         profile = ipfsop.ctx.currentProfile
@@ -864,11 +921,7 @@ class MultihashPyramidToolButton(PopupToolButton):
 
         try:
             await ipid.addServiceRaw({
-                'id': ipid.didUrl(
-                    path='/pyramids/{}'.format(
-                        self.pyramid.name
-                    )
-                ),
+                'id': self.didPyramidUrl(ipid),
                 'type': IPService.SRV_TYPE_GENERICPYRAMID,
                 'description': 'Generic pyramid: {}'.format(
                     self.pyramid.name
@@ -932,6 +985,167 @@ class MultihashPyramidToolButton(PopupToolButton):
                 continue
 
             await asyncio.sleep(180)
+
+
+class AutoSyncPyramidButton(MultihashPyramidToolButton):
+    def __init__(self, *args, **kw):
+        super(AutoSyncPyramidButton, self).__init__(*args, **kw)
+
+        self.lock = asyncio.Lock()
+        self.watcher = FileWatcher()
+        self.watcher.watch(self.watchedPath)
+        self.watcher.pathChanged.connect(self.onPathChanged)
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(partialEnsure(self.onTimeout))
+
+        self.forceSyncAction = QAction(getIcon('pyramid-stack.png'),
+                                       iForcePyramidSync(),
+                                       self,
+                                       triggered=self.onForceSync)
+
+    def updateToolTip(self):
+        self._pyrToolTip = '''
+            <p>
+                <img width='64' height='64'
+                    src=':/share/icons/pyramid-hierarchy.png'/>
+            </p>
+            <p>
+                Auto-sync pyramid: <b>{path}</b>
+                ({itemscount} item(s) in the stack)
+            </p>
+            <p>
+                Auto-synced file/directory path:
+                <b>{watchedpath}</b>
+            </p>
+
+            <p>Description: {descr}</p>
+            <p>IPNS key: <b>{ipns}</b></p>
+            <p>IPNS key (CIDv1): <b>{ipnsv1}</b></p>
+
+            <p>
+                <img width='16' height='16'
+                    src=':/share/icons/pyramid-stack.png'/>
+                Latest (pyramidion): <b>{latest}</b>
+            </p>
+        '''.format(
+            path=self.pyramid.path,
+            descr=self.pyramid.description,
+            ipns=self.pyramid.ipnsKey,
+            ipnsv1=ipnsKeyCidV1(self.pyramid.ipnsKey),
+            itemscount=self.pyramid.marksCount,
+            watchedpath=self.watchedPath,
+            latest=self.pyramid.latest if self.pyramid.latest else
+            iEmptyPyramid()
+        )
+        self.setToolTip(self.pyrToolTip)
+
+    def buildMenu(self):
+        self.buildMenuWithActions([
+            self.openAction,
+            self.openLatestAction,
+            self.forceSyncAction,
+            self.copyIpnsAction,
+            self.copyIpnsGwAction,
+            self.generateQrAction,
+            self.didPublishAction,
+            self.hashmarkAction,
+            self.deleteAction
+        ])
+
+    def onForceSync(self):
+        self.timerEnrage(now=True)
+
+    def onPathChanged(self, path):
+        self.debug(f'Watched path ({self.watchedPath}) changed')
+        self.timerEnrage()
+
+    def timerEnrage(self, now=False):
+        self.timer.stop()
+        self.timer.start(self.delay if not now else 100)
+
+    async def onObjectDropped(self, ipfsPath):
+        messageBox('Cannot drop content on this pyramid')
+
+    async def initialize(self):
+        await super().initialize()
+
+        if not self.pyramidion or self.startupSync:
+            # First import
+            self.timerEnrage(now=True)
+
+    async def onTimeout(self):
+        self.timer.stop()
+        self.debug(
+            f'Watched path ({self.watchedPath}): delay finished, importing')
+
+        async with self.lock:
+            await self.cancelPublishJob()
+
+            if await self.reinject(self.watchedPath):
+                self.debug(f'Watched path ({self.watchedPath}): Import OK')
+
+    @ipfsOp
+    async def reinject(self, ipfsop, path):
+        """
+        Reinject watched path
+        """
+
+        self.chBgColor('orange')
+
+        if self.pyramidion and self.unpinPrevious:
+            log.debug(f'Unpinning pyramidion {self.pyramidion.path}')
+
+            if await ipfsop.unpin(self.pyramidion.path):
+                log.debug(f'Unpinning pyramidion {self.pyramidion.path}: OK')
+
+            await ipfsop.sleep()
+
+        entry = await ipfsop.addPath(
+            path,
+            recursive=True,
+            useFileStore=self.useFileStore,
+            hidden=self.importHiddenFiles,
+            ignRulesPath=self.ignoreRulesPath
+        )
+
+        self.resetStyleSheet()
+
+        if entry:
+            await ipfsop.sleep()
+            path = IPFSPath(entry['Hash'], autoCidConv=True)
+            self.app.marksLocal.pyramidAdd(
+                self.pyramid.path, str(path), unique=True)
+            return True
+
+        return False
+
+    @property
+    def delay(self):
+        return int(self.pyramid.extra.get('syncdelay', 5000))
+
+    @property
+    def importHiddenFiles(self):
+        return self.pyramid.extra.get('importhidden')
+
+    @property
+    def ignoreRulesPath(self):
+        return self.pyramid.extra['ignorerulespath']
+
+    @property
+    def useFileStore(self):
+        return self.pyramid.extra['usefilestore']
+
+    @property
+    def unpinPrevious(self):
+        return self.pyramid.extra['unpinprevious']
+
+    @property
+    def startupSync(self):
+        return self.pyramid.extra['startupsync']
+
+    @property
+    def watchedPath(self):
+        return self.pyramid.extra['autosyncpath']
 
 
 class EDAGBuildingPyramidController(MultihashPyramidToolButton):
@@ -1094,26 +1308,20 @@ class GalleryPyramidController(EDAGBuildingPyramidController):
                                          triggered=self.onChangeTitle)
 
     def buildMenu(self):
-        self.menu.addAction(self.browseIpnsAction)
-        self.menu.addAction(self.browseDirectAction)
-        self.menu.addSeparator()
-        self.menu.addAction(self.copyIpnsAction)
-        self.menu.addSeparator()
-        self.menu.addAction(self.copyIpnsGwAction)
-        self.menu.addSeparator()
-        self.menu.addAction(self.changeTitleAction)
-        self.menu.addSeparator()
-        self.menu.addAction(self.generateIndexQrAction)
-        self.menu.addAction(self.generateQrAction)
-        self.menu.addSeparator()
-        self.menu.addAction(self.rewindDagAction)
-        self.menu.addSeparator()
-        self.menu.addAction(self.deleteAction)
-        self.menu.addSeparator()
-        self.menu.addAction(self.didPublishAction)
-        self.menu.addSeparator()
-        self.menu.addAction(self.hashmarkAction)
-        self.menu.addSeparator()
+        self.buildMenuWithActions([
+            self.browseIpnsAction,
+            self.browseDirectAction,
+            self.copyIpnsAction,
+            self.copyIpnsGwAction,
+            self.changeTitleAction,
+            self.generateIndexQrAction,
+            self.generateQrAction,
+            self.rewindDagAction,
+            self.deleteAction,
+            self.didPublishAction,
+            self.hashmarkAction
+        ])
+
         self.menu.addAction(
             getIcon('pyramid-blue.png'), iHelp(), self.galleryHelpMessage)
         self.menu.setEnabled(False)

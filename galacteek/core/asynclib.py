@@ -243,7 +243,7 @@ async def cancelAllTasks(*, timeout=None, raise_timeout_error=False):
     def _warn_pending():
         running = _all_tasks(loop=loop)
         if running:
-            log.warning(
+            log.debug(
                 'There are {tc} pending tasks, first 10: {first}',
                 tc=len(running), first=list(running)[:10])
 

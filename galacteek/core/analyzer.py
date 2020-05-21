@@ -65,6 +65,8 @@ class ResourceAnalyzer(QObject):
         if mimetype and mimetype.valid:
             return mimetype, statInfo
 
+        return None, None
+
     @ipfsOp
     async def decodeQrCodes(self, ipfsop, path):
         try:

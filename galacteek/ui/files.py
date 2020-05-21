@@ -2,6 +2,7 @@ import os.path
 import asyncio
 import functools
 import async_timeout
+from pathlib import Path
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QAction
@@ -15,6 +16,8 @@ from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QFileSystemModel
 from PyQt5.QtWidgets import QHeaderView
 
+from PyQt5.QtCore import QModelIndex
+from PyQt5.QtCore import QItemSelectionModel
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QDir
@@ -22,6 +25,7 @@ from PyQt5.QtCore import QSize
 from PyQt5.QtCore import pyqtSignal
 
 from galacteek import ensure
+from galacteek import partialEnsure
 from galacteek import GALACTEEK_NAME
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import IPFSPath
@@ -44,6 +48,8 @@ from . import dag
 from .i18n import *  # noqa
 from .helpers import *  # noqa
 from .widgets import GalacteekTab
+from .widgets import AnimatedLabel
+from .clips import RotatingCubeRedFlash140d
 from .hashmarks import *  # noqa
 from .clipboard import iCopyCIDToClipboard
 from .clipboard import iCopyPathToClipboard
@@ -59,9 +65,24 @@ def iFileImportError():
         'FileManagerForm', 'Error importing file {}')
 
 
+def iFileImportCancelled():
+    return QCoreApplication.translate(
+        'FileManagerForm', 'Cancelled import')
+
+
 def iAddedFile(name):
     return QCoreApplication.translate('FileManagerForm',
                                       'Added {0}').format(name)
+
+
+def iImportHiddenFiles():
+    return QCoreApplication.translate('FileManagerForm',
+                                      'Import hidden files ?')
+
+
+def iUseGitIgnoreRules():
+    return QCoreApplication.translate('FileManagerForm',
+                                      'Use .gitignore rules ?')
 
 
 def iImportedCount(count):
@@ -150,6 +171,12 @@ def iRawBlocksForLeaves():
         'Use raw blocks for leaf nodes')
 
 
+def iUseFilestore():
+    return QCoreApplication.translate(
+        'FileManagerForm',
+        'Use filestore if available')
+
+
 def iDAGGenerationFormat():
     return QCoreApplication.translate(
         'FileManagerForm',
@@ -175,6 +202,28 @@ def iOfflineModeToolTip():
         'immediately announced on the DHT')
 
 
+class MFSTreeView(QTreeView):
+    def mousePressEvent(self, event):
+        item = self.indexAt(event.pos())
+
+        if item.isValid():
+            super(MFSTreeView, self).mousePressEvent(event)
+        else:
+            self.clearSelection()
+
+            self.selectionModel().setCurrentIndex(
+                QModelIndex(),
+                QItemSelectionModel.Select
+            )
+
+    def resizeEvent(self, event):
+        self.header().setMinimumSectionSize(
+            self.size().width() / 3)
+        self.header().setMaximumSectionSize(
+            self.size().width() / 2)
+        super().resizeEvent(event)
+
+
 class FileManager(QWidget):
     statusReady = 0
     statusBusy = 1
@@ -190,11 +239,11 @@ class FileManager(QWidget):
         self.lock = asyncio.Lock()
         self.model = None
         self._offlineMode = False
+        self._importTask = None
 
         self.ui = ui_files.Ui_FileManagerForm()
         self.ui.setupUi(self)
 
-        self.status = self.statusReady
         self.hashFunction = 'sha2-256'
 
         # Build file browser
@@ -206,6 +255,15 @@ class FileManager(QWidget):
 
         self.ui.localFileManagerSwitch.setCheckable(True)
 
+        self.busyCube = AnimatedLabel(
+            RotatingCubeRedFlash140d(speed=100),
+            parent=self
+        )
+        self.busyCube.clip.setScaledSize(QSize(24, 24))
+        self.busyCube.hide()
+
+        self.ui.fsControlLayout.insertWidget(0, self.busyCube)
+
         # Connect the various buttons
         self.ui.helpButton.clicked.connect(
             lambda: self.app.manuals.browseManualPage('filemanager.html'))
@@ -216,6 +274,8 @@ class FileManager(QWidget):
         self.ui.localFileManagerSwitch.toggled.connect(
             self.onLocalFileManagerToggled)
         self.ui.fileManagerButton.clicked.connect(self.onLocalFileManager)
+        self.ui.cancelButton.hide()
+        self.ui.cancelButton.clicked.connect(self.onCancelOperation)
 
         # FS options button
         fsOptsMenu = QMenu(self)
@@ -231,8 +291,12 @@ class FileManager(QWidget):
         self.rawLeavesAction = QAction(
             iRawBlocksForLeaves(), fsMiscOptsMenu)
         self.rawLeavesAction.setCheckable(True)
+        self.fileStoreAction = QAction(
+            iUseFilestore(), fsMiscOptsMenu)
+        self.fileStoreAction.setCheckable(True)
 
         fsMiscOptsMenu.addAction(self.rawLeavesAction)
+        fsMiscOptsMenu.addAction(self.fileStoreAction)
 
         self.dagFormatGroup = QActionGroup(fsDagFormatMenu)
         self.dagFormatGroup.triggered.connect(self.onDagFormatChanged)
@@ -269,13 +333,19 @@ class FileManager(QWidget):
         self.ui.offlineButton.setChecked(False)
         self.ui.offlineButton.setVisible(False)
 
+        self.mfsTree = MFSTreeView()
+        self.ui.hLayoutFilesView.insertWidget(0, self.mfsTree)
+
         # Connect the tree view actions
-        self.ui.treeFiles.doubleClicked.connect(self.onDoubleClicked)
-        self.ui.treeFiles.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.ui.treeFiles.customContextMenuRequested.connect(
+        self.mfsTree.doubleClicked.connect(self.onDoubleClicked)
+        self.mfsTree.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.mfsTree.customContextMenuRequested.connect(
             self.onContextMenu)
-        self.ui.treeFiles.expanded.connect(self.onExpanded)
-        self.ui.treeFiles.collapsed.connect(self.onCollapsed)
+        self.mfsTree.expanded.connect(self.onExpanded)
+        self.mfsTree.collapsed.connect(self.onCollapsed)
+        self.mfsTree.header().setVisible(False)
+        self.mfsTree.setObjectName('mfsTreeView')
+        self.mfsTree.header().setMinimumSectionSize(400)
 
         self.ui.comboIconSize.addItem('Small')
         self.ui.comboIconSize.addItem('Medium')
@@ -286,30 +356,31 @@ class FileManager(QWidget):
         self.ui.collapseAll.hide()
 
         # Connect the event filter
-        evfilter = IPFSTreeKeyFilter(self.ui.treeFiles)
+        evfilter = IPFSTreeKeyFilter(self.mfsTree)
         evfilter.copyHashPressed.connect(self.onCopyItemHash)
         evfilter.copyPathPressed.connect(self.onCopyItemPath)
         evfilter.returnPressed.connect(self.onReturn)
         evfilter.explorePressed.connect(self.onExploreItem)
-        self.ui.treeFiles.installEventFilter(evfilter)
+        self.mfsTree.installEventFilter(evfilter)
 
         self.displayedItemChanged.connect(self.onItemChange)
 
         # Setup the tree view
-        self.ui.treeFiles.setExpandsOnDoubleClick(True)
-        self.ui.treeFiles.setItemsExpandable(True)
-        self.ui.treeFiles.setSortingEnabled(True)
-        self.ui.treeFiles.sortByColumn(0, Qt.AscendingOrder)
-        self.ui.treeFiles.setIconSize(QSize(16, 16))
+        self.mfsTree.setExpandsOnDoubleClick(True)
+        self.mfsTree.setItemsExpandable(True)
+        self.mfsTree.setSortingEnabled(True)
+        self.mfsTree.sortByColumn(0, Qt.AscendingOrder)
+        self.mfsTree.setIconSize(QSize(16, 16))
 
         self.iconFolder = getIcon('folder-open.png')
         self.iconFile = getIcon('file.png')
 
         # Configure drag-and-drop
-        self.ui.treeFiles.setAcceptDrops(True)
-        self.ui.treeFiles.setDragDropMode(QAbstractItemView.DragDrop)
+        self.mfsTree.setAcceptDrops(True)
+        self.mfsTree.setDragDropMode(QAbstractItemView.DragDrop)
 
         self.ipfsKeys = []
+        self.busy(False)
 
     @property
     def gWindow(self):
@@ -340,13 +411,33 @@ class FileManager(QWidget):
         return self.rawLeavesAction.isChecked()
 
     @property
+    def useFileStore(self):
+        return self.fileStoreAction.isChecked()
+
+    @property
     def displayPath(self):
         if self.displayedItem:
             return self.displayedItem.path
 
     @property
-    def busy(self):
+    def isBusy(self):
         return self.status == self.statusBusy
+
+    def busy(self, busy=True, showClip=False):
+        if busy:
+            self.status = self.statusBusy
+        else:
+            self.status = self.statusReady
+
+        self.mfsTree.setEnabled(not busy)
+
+        if busy and showClip:
+            self.busyCube.setVisible(busy)
+            self.busyCube.startClip()
+            self.busyCube.clip.setSpeed(150)
+        else:
+            self.busyCube.setVisible(False)
+            self.busyCube.stopClip()
 
     @property
     def rscOpenTryDecrypt(self):
@@ -536,8 +627,8 @@ class FileManager(QWidget):
         if not self.model:
             return
 
-        self.ui.treeFiles.setModel(self.model)
-        self.ui.treeFiles.header().setSectionResizeMode(
+        self.mfsTree.setModel(self.model)
+        self.mfsTree.header().setSectionResizeMode(
             QHeaderView.ResizeToContents)
 
         if self.displayedItem is None:
@@ -569,8 +660,13 @@ class FileManager(QWidget):
         if self.displayedItem is self.model.itemEncrypted:
             self.ui.addDirectoryButton.setEnabled(False)
 
+    def showCancel(self, show=True):
+        self.ui.cancelButton.setVisible(show)
+        if show is False:
+            self._importTask = None
+
     def currentItem(self):
-        currentIdx = self.ui.treeFiles.currentIndex()
+        currentIdx = self.mfsTree.currentIndex()
         if currentIdx.isValid():
             return self.model.getNameItemFromIdx(currentIdx)
 
@@ -595,10 +691,10 @@ class FileManager(QWidget):
         else:
             return
 
-        self.ui.treeFiles.setIconSize(size)
+        self.mfsTree.setIconSize(size)
 
     def onCollapseAll(self):
-        self.ui.treeFiles.collapseAll()
+        self.mfsTree.collapseAll()
 
         if self.displayedItem:
             self.displayedItem.expandedItemsCount = 0
@@ -611,7 +707,7 @@ class FileManager(QWidget):
         self.ui.offlineButton.setToolTip(iOfflineModeToolTip())
 
     async def onClose(self):
-        if not self.busy:
+        if not self.isBusy:
             self.disconnectDropSignals()
             return True
         return False
@@ -644,7 +740,7 @@ class FileManager(QWidget):
         self.scheduleAddFiles([path])
 
     def onDropDirectory(self, path):
-        self.scheduleAddDirectory(path)
+        ensure(self.scheduleAddDirectory(path, False, False))
 
     def onCopyItemHash(self):
         currentItem = self.currentItem()
@@ -679,7 +775,7 @@ class FileManager(QWidget):
         self.ui.pathSelector.setCurrentIndex(0)
 
     def onPathSelector(self, idx):
-        if self.busy:
+        if self.isBusy:
             return
 
         text = self.ui.pathSelector.itemText(idx)
@@ -709,31 +805,25 @@ class FileManager(QWidget):
         elif text == iEncryptedFiles():
             self.changeDisplayItem(self.model.itemEncrypted)
 
-        if self.app.settingsMgr.hideHashes:
-            self.ui.treeFiles.hideColumn(2)
-
     def refreshItem(self, item):
         self.app.task(self.listFiles, item.path,
                       parentItem=item, maxdepth=1)
 
     def changeDisplayItem(self, item):
         self.displayedItem = item
-        self.ui.treeFiles.setRootIndex(self.displayedItem.index())
+        self.mfsTree.setRootIndex(self.displayedItem.index())
         self.updateTree()
-        self.ui.treeFiles.expand(self.displayedItem.index())
+        self.mfsTree.expand(self.displayedItem.index())
 
         if isinstance(item, MFSRootItem):
             self.displayedItemChanged.emit(item)
 
-        if self.app.settingsMgr.hideHashes:
-            self.ui.treeFiles.hideColumn(2)
-
     def onContextMenuVoid(self, point):
         menu = QMenu(self)
-        menu.exec(self.ui.treeFiles.mapToGlobal(point))
+        menu.exec(self.mfsTree.mapToGlobal(point))
 
     def onContextMenu(self, point):
-        idx = self.ui.treeFiles.indexAt(point)
+        idx = self.mfsTree.indexAt(point)
         if not idx.isValid():
             return self.onContextMenuVoid(point)
 
@@ -741,6 +831,8 @@ class FileManager(QWidget):
         dataHash = self.model.getHashFromIdx(idx)
         ipfsPath = nameItem.ipfsPath
         menu = QMenu(self)
+        actionsMenu = QMenu('Object', menu)
+        actionsMenu.setIcon(getIcon('ipfs-logo-128-white.png'))
         pyrDropButton = self.app.mainWindow.getPyrDropButtonFor(ipfsPath)
 
         def explore(cid):
@@ -779,39 +871,53 @@ class FileManager(QWidget):
         ))
 
         menu.addSeparator()
-        menu.addAction(getIconIpfs64(), iDhtProvide(), functools.partial(
-            self.onDhtProvide, dataHash, False))
-        menu.addAction(getIconIpfs64(), iDhtProvideRecursive(),
-                       functools.partial(self.onDhtProvide, dataHash, True))
-        menu.addSeparator()
+        actionsMenu.addAction(
+            getIconIpfs64(),
+            iDhtProvide(),
+            functools.partial(
+                self.onDhtProvide,
+                dataHash,
+                False))
+        actionsMenu.addAction(
+            getIconIpfs64(),
+            iDhtProvideRecursive(),
+            functools.partial(
+                self.onDhtProvide,
+                dataHash,
+                True))
+        actionsMenu.addSeparator()
 
-        menu.addAction(getIcon('ipld.png'), iDagView(),
-                       functools.partial(self.onDagView, dataHash))
-        menu.addSeparator()
+        actionsMenu.addAction(getIcon('ipld.png'), iDagView(),
+                              functools.partial(self.onDagView, dataHash))
+        actionsMenu.addSeparator()
 
-        menu.addAction(getIcon('hashmarks.png'),
-                       iHashmarkFile(),
-                       functools.partial(hashmark, str(ipfsPath),
-                                         nameItem.entry['Name']))
-        menu.addAction(getIconIpfs64(),
-                       iBrowseFile(),
-                       functools.partial(self.browse, str(ipfsPath)))
-        menu.addAction(getIcon('open.png'),
-                       iOpen(),
-                       functools.partial(ensure, self.app.resourceOpener.open(
-                           str(ipfsPath), openingFrom='filemanager',
-                           tryDecrypt=self.rscOpenTryDecrypt)))
+        actionsMenu.addAction(getIcon('hashmarks.png'),
+                              iHashmarkFile(),
+                              functools.partial(hashmark, str(ipfsPath),
+                                                nameItem.entry['Name']))
+        actionsMenu.addAction(getIconIpfs64(),
+                              iBrowseFile(),
+                              functools.partial(self.browse, str(ipfsPath)))
+        actionsMenu.addAction(
+            getIcon('open.png'),
+            iOpen(),
+            functools.partial(
+                ensure,
+                self.app.resourceOpener.open(
+                    str(ipfsPath),
+                    openingFrom='filemanager',
+                    tryDecrypt=self.rscOpenTryDecrypt)))
 
         if nameItem.isFile() or nameItem.isDir():
-            menu.addAction(getIcon('text-editor.png'),
-                           iEditObject(),
-                           functools.partial(self.editObject,
-                                             ipfsPath))
+            actionsMenu.addAction(getIcon('text-editor.png'),
+                                  iEditObject(),
+                                  functools.partial(self.editObject,
+                                                    ipfsPath))
 
         if nameItem.isDir():
-            menu.addAction(getIcon('folder-open.png'),
-                           iExploreDirectory(),
-                           functools.partial(explore, dataHash))
+            actionsMenu.addAction(getIcon('folder-open.png'),
+                                  iExploreDirectory(),
+                                  functools.partial(explore, dataHash))
 
         def publishToKey(action):
             key = action.data()['key']['Name']
@@ -824,15 +930,18 @@ class FileManager(QWidget):
 
         # Media player actions
         if nameItem.isFile():
-            menu.addAction(
+            actionsMenu.addAction(
                 getIcon('multimedia.png'),
                 iMediaPlayerQueue(), partialEnsure(
                     self.mediaPlayerQueueFile, str(ipfsPath)))
         elif nameItem.isDir():
-            menu.addAction(
+            actionsMenu.addAction(
                 getIcon('multimedia.png'),
                 iMediaPlayerQueue(), partialEnsure(
                     self.mediaPlayerQueueDir, str(ipfsPath)))
+
+        menu.addMenu(actionsMenu)
+
         menu.addSeparator()
 
         menu.addMenu(pyrDropButton.menu)
@@ -840,10 +949,14 @@ class FileManager(QWidget):
 
         # Delete/unlink
         menu.addSeparator()
-        menu.addAction(iUnlinkFile(), functools.partial(
-            self.scheduleUnlink, nameItem, dataHash))
-        menu.addAction(iDeleteFile(), functools.partial(
-            self.scheduleDelete, nameItem, dataHash))
+        menu.addAction(
+            getIcon('clear-all.png'),
+            iUnlinkFile(), functools.partial(
+                self.scheduleUnlink, nameItem, dataHash))
+        menu.addAction(
+            getIcon('clear-all.png'),
+            iDeleteFile(), functools.partial(
+                self.scheduleDelete, nameItem, dataHash))
         menu.addSeparator()
 
         # Populate publish menu
@@ -867,7 +980,7 @@ class FileManager(QWidget):
         menu.addSeparator()
         menu.addMenu(publishMenu)
 
-        menu.exec(self.ui.treeFiles.mapToGlobal(point))
+        menu.exec(self.mfsTree.mapToGlobal(point))
 
     @ipfsOp
     async def buildDidPublishMenu(self, ipfsop, menu, ipfsPath):
@@ -981,7 +1094,7 @@ class FileManager(QWidget):
 
     def onSearchFiles(self):
         search = self.ui.searchFiles.text()
-        self.ui.treeFiles.keyboardSearch(search)
+        self.mfsTree.keyboardSearch(search)
 
     def onMkDirClicked(self):
         dirName = QInputDialog.getText(self, 'Directory name',
@@ -992,7 +1105,7 @@ class FileManager(QWidget):
 
     def onRefreshClicked(self):
         self.updateTree()
-        self.ui.treeFiles.setFocus(Qt.OtherFocusReason)
+        self.mfsTree.setFocus(Qt.OtherFocusReason)
 
     def onAddDirClicked(self):
         dialog = QFileDialog(None)
@@ -1007,7 +1120,22 @@ class FileManager(QWidget):
         self.dialogLastDirSelected = dialog.directory()
 
         if isinstance(dirs, list):
-            self.scheduleAddDirectory(dirs.pop())
+            dir = Path(dirs.pop())
+            gitign = dir.joinpath('.gitignore')
+            useGitIgn = False
+
+            hidden = questionBox(
+                iImportHiddenFiles(),
+                iImportHiddenFiles()
+            )
+
+            if gitign.exists():
+                useGitIgn = questionBox(
+                    iUseGitIgnoreRules(),
+                    iUseGitIgnoreRules()
+                )
+
+            ensure(self.scheduleAddDirectory(str(dir), hidden, useGitIgn))
 
     def statusAdded(self, name):
         self.statusSet(iAddedFile(name))
@@ -1016,7 +1144,10 @@ class FileManager(QWidget):
         self.statusSet(iLoading(name))
 
     def statusSet(self, msg):
-        self.ui.statusLabel.setText(msg)
+        self.ui.mfsStatusLabel.setText(msg)
+
+    def statusEmpty(self):
+        self.ui.mfsStatusLabel.setText('')
 
     def onAddFilesClicked(self):
         dialog = QFileDialog(None)
@@ -1031,19 +1162,23 @@ class FileManager(QWidget):
         self.scheduleAddFiles(files, parent=self.displayPath)
 
     def scheduleAddFiles(self, path, parent=None):
-        if self.busy:
+        if self.isBusy:
             return
 
         if parent is None:
             parent = self.displayPath
 
-        return self.app.task(self.addFiles, path, parent)
+        self._importTask = self.app.task(
+            self.addFiles, path, parent)
+        self.ui.cancelButton.show()
 
-    def scheduleAddDirectory(self, path):
-        if self.busy or self.inEncryptedFolder:
+    async def scheduleAddDirectory(self, path, hidden, useGitIgn):
+        if self.isBusy or self.inEncryptedFolder:
             return
 
-        return self.app.task(self.addDirectory, path)
+        self._importTask = self.app.task(
+            self.addDirectory, path, hidden, useGitIgn)
+        self.ui.cancelButton.show()
 
     def scheduleUnlink(self, item, cid):
         reply = questionBox('Unlink',
@@ -1075,11 +1210,11 @@ class FileManager(QWidget):
     @ipfsOp
     async def listFiles(self, ipfsop, path, parentItem, maxdepth=0,
                         autoexpand=False, timeout=20):
-        if self.busy:
+        if self.isBusy:
             return
 
         self.enableButtons(flag=False)
-        self.status = self.statusBusy
+        self.busy()
 
         await self.listPathWithTimeout(ipfsop, path, parentItem,
                                        maxdepth=maxdepth,
@@ -1087,7 +1222,7 @@ class FileManager(QWidget):
                                        timeout=timeout)
 
         self.enableButtons()
-        self.status = self.statusReady
+        self.busy(False)
 
     async def listPathWithTimeout(self, ipfsop, path, parentItem, **kw):
         timeout = kw.pop('timeout', 10)
@@ -1106,15 +1241,16 @@ class FileManager(QWidget):
         if not parentItem or not parentItem.path:
             return
 
-        self.statusSet(iListingMFSPath(path))
-
         listing = await op.filesList(path)
         if not listing:
             return
 
-        parentItemSibling = self.model.sibling(parentItem.row(), 2,
+        parentItemSibling = self.model.sibling(parentItem.row(), 0,
                                                parentItem.index())
-        parentItemHash = self.model.data(parentItemSibling)
+        if parentItemSibling.isValid():
+            parentItemHash = self.model.getHashFromIdx(parentItemSibling)
+        else:
+            parentItemHash = None
 
         for entry in listing:
             await asyncio.sleep(0)
@@ -1128,7 +1264,9 @@ class FileManager(QWidget):
                         # was deleted and needs to be purged from the model
                         # to let the new entry show up
                         await modelhelpers.modelDeleteAsync(
-                            self.model, child.entry['Hash'])
+                            self.model, child.entry['Hash'],
+                            role=self.model.CidRole
+                        )
                         break
                 if child.entry['Hash'] == entry['Hash']:
                     found = True
@@ -1142,12 +1280,16 @@ class FileManager(QWidget):
                 icon = self.iconFolder
 
             cidString = cidConvertBase32(entry['Hash'])
-            nItemName = MFSNameItem(entry, entry['Name'], icon)
-            nItemName.mimeFromDb(self.app.mimeDb)
+            nItemName = MFSNameItem(entry, entry['Name'], icon, cidString)
+
+            if entry['Type'] == 1:
+                nItemName.mimeDirectory(self.app.mimeDb)
+            else:
+                nItemName.mimeFromDb(self.app.mimeDb)
+
             nItemName.setParentHash(parentItemHash)
             nItemSize = MFSItem(sizeFormat(entry['Size']))
-            nItemCID = MFSItem(cidString)
-            nItemCID.setToolTip(cidInfosMarkup(cidString))
+            nItemName.setToolTip(mfsItemInfosMarkup(nItemName))
 
             if not icon and nItemName.mimeTypeName:
                 # If we have a better icon matching the file's type..
@@ -1161,13 +1303,12 @@ class FileManager(QWidget):
             # Set its path in the MFS
             nItemName.path = os.path.join(parentItem.path, entry['Name'])
 
-            nItem = [nItemName, nItemSize, nItemCID]
-
+            nItem = [nItemName, nItemSize]
             parentItem.appendRow(nItem)
 
             if entry['Type'] == 1:  # directory
                 if autoexpand is True:
-                    self.ui.treeFiles.setExpanded(nItemName.index(), True)
+                    self.mfsTree.setExpanded(nItemName.index(), True)
 
                 if maxdepth > depth:
                     # We used to await listPath() here but it sucks
@@ -1185,7 +1326,7 @@ class FileManager(QWidget):
                         maxdepth=maxdepth, depth=depth + 1))
 
         if autoexpand is True:
-            self.ui.treeFiles.expand(parentItem.index())
+            self.mfsTree.expand(parentItem.index())
 
         self.model.refreshed.emit(parentItem)
 
@@ -1202,11 +1343,16 @@ class FileManager(QWidget):
 
             # Purge the item's cid in the model
             # Purge its parent as well because the parent cid will change
-            await modelhelpers.modelDeleteAsync(self.model, cid)
+            await modelhelpers.modelDeleteAsync(
+                self.model, cid,
+                role=self.model.CidRole
+            )
 
             if item.parentHash:
                 await modelhelpers.modelDeleteAsync(
-                    self.model, item.parentHash)
+                    self.model, item.parentHash,
+                    role=self.model.CidRole
+                )
 
             ensure(ipfsop.purge(cid))
             log.debug('{0}: deleted'.format(cid))
@@ -1224,12 +1370,15 @@ class FileManager(QWidget):
             await op.sleep()
             if entry['Hash'] == cid:
                 await op.filesDelete(_dir, entry['Name'], recursive=True)
-                await modelhelpers.modelDeleteAsync(self.model, cid)
+                await modelhelpers.modelDeleteAsync(
+                    self.model, cid,
+                    role=self.model.CidRole
+                )
 
     @ipfsOp
     async def addFilesSelfEncrypt(self, op, files, parent):
         self.enableButtons(flag=False)
-        self.status = self.statusBusy
+        self.busy(showClip=True)
 
         async def onEntry(entry):
             self.statusAdded(entry['Name'])
@@ -1251,7 +1400,7 @@ class FileManager(QWidget):
 
         self.statusSet(iImportedCount(count))
         self.enableButtons()
-        self.status = self.statusReady
+        self.busy(False)
         self.updateTree()
         return True
 
@@ -1270,7 +1419,7 @@ class FileManager(QWidget):
             CFG_SECTION_UI, CFG_KEY_WRAPSINGLEFILES)
 
         self.enableButtons(flag=False)
-        self.status = self.statusBusy
+        self.busy(showClip=True)
 
         async def onEntry(entry):
             self.statusAdded(entry['Name'])
@@ -1280,16 +1429,16 @@ class FileManager(QWidget):
             await op.sleep()
 
             root = await op.addPath(file, wrap=wrapEnabled,
-                                    offline=self.offlineMode,
                                     dagformat=self.dagGenerationFormat,
                                     rawleaves=self.useRawLeaves,
                                     chunker=self.chunkingAlg,
                                     hashfunc=self.hashFunction,
-                                    useFileStore=True,
+                                    useFileStore=self.useFileStore,
                                     callback=onEntry)
 
             if root is None:
                 self.statusSet(iFileImportError())
+                self.showCancel(False)
                 continue
 
             base = os.path.basename(file)
@@ -1299,38 +1448,50 @@ class FileManager(QWidget):
             await self.linkEntry(op, root, parent, base)
             count += 1
 
-        self.statusSet(iImportedCount(count))
+        self.statusEmpty()
         self.enableButtons()
-        self.status = self.statusReady
+        self.showCancel(False)
+        self.busy(False)
         self.updateTree()
         return True
 
+    def onCancelOperation(self):
+        if self._importTask:
+            self._importTask.cancel()
+            self.statusSet(iFileImportCancelled())
+
     @ipfsOp
-    async def addDirectory(self, op, path):
+    async def addDirectory(self, op, path, hidden, useGitIgn):
         wrapEnabled = self.app.settingsMgr.isTrue(
             CFG_SECTION_UI, CFG_KEY_WRAPDIRECTORIES)
 
         self.enableButtons(flag=False)
-        self.status = self.statusBusy
+        self.busy(showClip=True)
+
         basename = os.path.basename(path)
         dirEntry = None
 
         async def onEntry(entry):
             self.statusAdded(entry['Name'])
 
-        dirEntry = await op.addPath(path, callback=onEntry,
-                                    hidden=True, recursive=True,
-                                    offline=self.offlineMode,
-                                    dagformat=self.dagGenerationFormat,
-                                    rawleaves=self.useRawLeaves,
-                                    chunker=self.chunkingAlg,
-                                    hashfunc=self.hashFunction,
-                                    useFileStore=True,
-                                    wrap=wrapEnabled)
+        dirEntry = await op.addPath(
+            path,
+            callback=onEntry,
+            hidden=hidden, recursive=True,
+            dagformat=self.dagGenerationFormat,
+            rawleaves=self.useRawLeaves,
+            chunker=self.chunkingAlg,
+            hashfunc=self.hashFunction,
+            useFileStore=self.useFileStore,
+            ignRulesPath='.gitignore' if useGitIgn else None,
+            wrap=wrapEnabled
+        )
 
         if not dirEntry:
             # Nothing went through ?
             self.enableButtons()
+            self.showCancel(False)
+            self.busy(False)
             return False
 
         if wrapEnabled is True:
@@ -1339,8 +1500,11 @@ class FileManager(QWidget):
         await self.linkEntry(op, dirEntry, self.displayPath, basename)
 
         self.enableButtons()
-        self.status = self.statusReady
+        self.busy(False)
         self.updateTree()
+        self.showCancel(False)
+        self.statusEmpty()
+
         return True
 
     async def linkEntry(self, op, entry, dest, basename):

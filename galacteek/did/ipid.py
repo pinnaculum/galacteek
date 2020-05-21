@@ -712,6 +712,19 @@ class IPIdentifier(DAGOperations):
                 if _inst:
                     return _inst
 
+    async def removeServiceById(self, _id: str):
+        """
+        Remove the service with the give DID identifier
+        """
+        try:
+            for srv in self._document['service']:
+                if srv['id'] == _id:
+                    self._document['service'].remove(srv)
+                    await self.flush()
+        except Exception as err:
+            print(str(err))
+            pass
+
     @async_enterable
     async def editService(self, _id: str, sync=True):
         """

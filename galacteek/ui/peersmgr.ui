@@ -41,7 +41,11 @@
       </layout>
      </item>
      <item>
-      <widget class="QTreeView" name="peersMgrView"/>
+      <widget class="QTreeView" name="peersMgrView">
+       <attribute name="headerVisible">
+        <bool>false</bool>
+       </attribute>
+      </widget>
      </item>
     </layout>
    </item>

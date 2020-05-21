@@ -89,17 +89,25 @@ class MFSRootItem(MFSItem):
         self.offline = True if alwaysOffline else offline
         self.alwaysOffline = alwaysOffline
 
+        # Root items have no CIDs
+        self.cidString = None
+
 
 class MFSNameItem(MFSItem):
-    def __init__(self, entry, text, icon):
+    def __init__(self, entry, text, icon, cidString):
         super().__init__(text, icon=icon)
 
         self._entry = entry
         self._mimeType = None
+        self._cidString = cidString
 
     @property
     def entry(self):
         return self._entry
+
+    @property
+    def cidString(self):
+        return self._cidString
 
     @property
     def ipfsPath(self):
@@ -115,6 +123,9 @@ class MFSNameItem(MFSItem):
 
     def mimeFromDb(self, db):
         self._mimeType = db.mimeTypeForFile(self.entry['Name'])
+
+    def mimeDirectory(self, db):
+        self._mimeType = db.mimeTypeForName('inode/directory')
 
     @property
     def mimeCategory(self):
@@ -152,6 +163,9 @@ class MFSItemModel(QStandardItemModel):
     refreshed = pyqtSignal(MFSNameItem)
 
     needExpand = pyqtSignal(QModelIndex)
+
+    # Specific roles
+    CidRole = 0x0108
 
     def __init__(self):
         QStandardItemModel.__init__(self)
@@ -221,9 +235,7 @@ class MFSItemModel(QStandardItemModel):
         ]
 
         self.filesystem = self.fsCore + self.fsExtra
-
         self.itemRoot.appendRows(self.filesystem)
-
         self.initialized = True
 
     @ipfsOp
@@ -302,21 +314,36 @@ class MFSItemModel(QStandardItemModel):
             return False
 
     def getHashFromIdx(self, idx):
-        idxHash = self.index(idx.row(), 2, idx.parent())
-        return self.data(idxHash)
+        item = self.getNameItemFromIdx(idx)
+        if item:
+            return item.cidString
 
     def getNameFromIdx(self, idx):
         idxName = self.index(idx.row(), 0, idx.parent())
-        return self.data(idxName)
+        if idxName.isValid():
+            return self.data(idxName)
 
     def getNameItemFromIdx(self, idx):
         idxName = self.index(idx.row(), 0, idx.parent())
-        return self.itemFromIndex(idxName)
+        if idxName.isValid():
+            return self.itemFromIndex(idxName)
+
+    def data(self, index, role):
+        if not index.isValid():
+            return None
+
+        item = self.itemFromIndex(index)
+
+        if role == self.CidRole and isinstance(item, MFSNameItem):
+            # For the CidRole we return the CID associated with the item
+            return item.cidString
+        else:
+            return super().data(index, role)
 
 
 def createMFSModel():
     # Setup the model
     model = MFSItemModel()
     model.setHorizontalHeaderLabels(
-        [iFileName(), iFileSize(), iCID()])
+        [iFileName(), iFileSize()])
     return model

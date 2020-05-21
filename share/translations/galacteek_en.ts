@@ -529,62 +529,62 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.ui" line="330"/>
+        <location filename="../../galacteek/ui/files.ui" line="333"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Open local file manager&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.ui" line="278"/>
+        <location filename="../../galacteek/ui/files.ui" line="294"/>
         <source>Search</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="58"/>
+        <location filename="../../galacteek/ui/files.py" line="64"/>
         <source>Error importing file {}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="73"/>
+        <location filename="../../galacteek/ui/files.py" line="94"/>
         <source>Loading file {0}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="78"/>
+        <location filename="../../galacteek/ui/files.py" line="99"/>
         <source>Loading {0}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="95"/>
+        <location filename="../../galacteek/ui/files.py" line="116"/>
         <source>Open with</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="99"/>
+        <location filename="../../galacteek/ui/files.py" line="120"/>
         <source>Delete file</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="103"/>
+        <location filename="../../galacteek/ui/files.py" line="124"/>
         <source>Unlink file</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="107"/>
+        <location filename="../../galacteek/ui/files.py" line="128"/>
         <source>Hashmark</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="111"/>
+        <location filename="../../galacteek/ui/files.py" line="132"/>
         <source>Browse</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="115"/>
+        <location filename="../../galacteek/ui/files.py" line="136"/>
         <source>Select directory</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="119"/>
+        <location filename="../../galacteek/ui/files.py" line="140"/>
         <source>Select one or more files to import</source>
         <translation type="unfinished"></translation>
     </message>
@@ -619,7 +619,7 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="63"/>
+        <location filename="../../galacteek/ui/files.py" line="74"/>
         <source>Added {0}</source>
         <translation type="unfinished"></translation>
     </message>
@@ -639,32 +639,32 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="124"/>
+        <location filename="../../galacteek/ui/files.py" line="145"/>
         <source>Offline mode</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="136"/>
+        <location filename="../../galacteek/ui/files.py" line="157"/>
         <source>Announce (DHT provide)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="142"/>
+        <location filename="../../galacteek/ui/files.py" line="163"/>
         <source>Announce (DHT provide, recursive)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="172"/>
+        <location filename="../../galacteek/ui/files.py" line="199"/>
         <source>Offline mode: in this mode your files will not be immediately announced on the DHT</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.ui" line="256"/>
+        <location filename="../../galacteek/ui/files.ui" line="272"/>
         <source>Icon size</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.ui" line="233"/>
+        <location filename="../../galacteek/ui/files.ui" line="249"/>
         <source>Collapse all</source>
         <translation type="unfinished"></translation>
     </message>
@@ -679,7 +679,7 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="68"/>
+        <location filename="../../galacteek/ui/files.py" line="89"/>
         <source>Imported {0} file(s)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -694,12 +694,12 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="83"/>
+        <location filename="../../galacteek/ui/files.py" line="104"/>
         <source>Listing MFS path: {0}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="89"/>
+        <location filename="../../galacteek/ui/files.py" line="110"/>
         <source>Timeout while listing MFS path: {0}</source>
         <translation type="unfinished"></translation>
     </message>
@@ -709,38 +709,63 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="148"/>
+        <location filename="../../galacteek/ui/files.py" line="169"/>
         <source>Use raw blocks for leaf nodes</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="154"/>
+        <location filename="../../galacteek/ui/files.py" line="181"/>
         <source>DAG generation format</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="160"/>
+        <location filename="../../galacteek/ui/files.py" line="187"/>
         <source>Balanced</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="166"/>
+        <location filename="../../galacteek/ui/files.py" line="193"/>
         <source>Trickle</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="128"/>
+        <location filename="../../galacteek/ui/files.py" line="149"/>
         <source>Chunker</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="132"/>
+        <location filename="../../galacteek/ui/files.py" line="153"/>
         <source>Hash function</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../galacteek/ui/clipboard.py" line="99"/>
         <source>Copy public gatewayed URL to clipboard (ipfs.io)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/files.py" line="79"/>
+        <source>Import hidden files ?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/files.py" line="84"/>
+        <source>Use .gitignore rules ?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/files.ui" line="242"/>
+        <source>Cancel operation</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/files.py" line="69"/>
+        <source>Cancelled import</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/files.py" line="175"/>
+        <source>Use filestore if available</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -2104,7 +2129,7 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="396"/>
+        <location filename="../../galacteek/ui/settings.ui" line="399"/>
         <source>HTTP gateway port</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2119,7 +2144,7 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="373"/>
+        <location filename="../../galacteek/ui/settings.ui" line="376"/>
         <source>API port</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2129,37 +2154,37 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="351"/>
+        <location filename="../../galacteek/ui/settings.ui" line="354"/>
         <source>Use a custom IPFS daemon</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="366"/>
+        <location filename="../../galacteek/ui/settings.ui" line="369"/>
         <source>Host</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="448"/>
+        <location filename="../../galacteek/ui/settings.ui" line="451"/>
         <source>Restart the application after changing the IPFS connection settings.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="553"/>
+        <location filename="../../galacteek/ui/settings.ui" line="556"/>
         <source>UI</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="608"/>
+        <location filename="../../galacteek/ui/settings.ui" line="611"/>
         <source>Wrap files with a directory (preserves filenames)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="621"/>
+        <location filename="../../galacteek/ui/settings.ui" line="624"/>
         <source>Wrap directories with a directory</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="596"/>
+        <location filename="../../galacteek/ui/settings.ui" line="599"/>
         <source>File manager</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2169,12 +2194,12 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="575"/>
+        <location filename="../../galacteek/ui/settings.ui" line="578"/>
         <source>Language</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="644"/>
+        <location filename="../../galacteek/ui/settings.ui" line="647"/>
         <source>Browser</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2184,12 +2209,12 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="316"/>
+        <location filename="../../galacteek/ui/settings.ui" line="319"/>
         <source>dht</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="321"/>
+        <location filename="../../galacteek/ui/settings.ui" line="324"/>
         <source>dhtclient</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2199,42 +2224,42 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="652"/>
+        <location filename="../../galacteek/ui/settings.ui" line="655"/>
         <source>Enable navigation history</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="462"/>
+        <location filename="../../galacteek/ui/settings.ui" line="465"/>
         <source>Ethereum</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="484"/>
+        <location filename="../../galacteek/ui/settings.ui" line="487"/>
         <source>Provider type</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="500"/>
+        <location filename="../../galacteek/ui/settings.ui" line="503"/>
         <source>http</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="505"/>
+        <location filename="../../galacteek/ui/settings.ui" line="508"/>
         <source>websocket</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="513"/>
+        <location filename="../../galacteek/ui/settings.ui" line="516"/>
         <source>RPC URL</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="470"/>
+        <location filename="../../galacteek/ui/settings.ui" line="473"/>
         <source>Enable Ethereum connector</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="659"/>
+        <location filename="../../galacteek/ui/settings.ui" line="662"/>
         <source>Default web profile</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2249,12 +2274,12 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="634"/>
+        <location filename="../../galacteek/ui/settings.ui" line="637"/>
         <source>Hide CIDs in tree views</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="332"/>
+        <location filename="../../galacteek/ui/settings.ui" line="335"/>
         <source>Enable Filestore</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2269,8 +2294,13 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/settings.ui" line="329"/>
+        <location filename="../../galacteek/ui/settings.ui" line="332"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use the IPFS Filestore system (avoids file duplication)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/settings.ui" line="315"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Routing mode (dht is the default, dhtclient does not act as a full node on the DHT)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -2410,98 +2440,108 @@ Path: {0}, nodes processed: {1}</source>
 <context>
     <name>pyramidMaster</name>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="76"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="85"/>
         <source>Open latest item in the pyramid</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="82"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="91"/>
         <source>Pyramid is empty</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="88"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="97"/>
         <source>Pop item off the pyramid</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="120"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="135"/>
         <source>Copy IPNS address to clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="132"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="147"/>
         <source>Add current clipboard item to the pyramid</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="139"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="154"/>
         <source>Generate pyramid&apos;s QR code</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="64"/>
-        <source>Create pyramid (basic)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="70"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="73"/>
         <source>Create image gallery</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="94"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="109"/>
         <source>Rewind DAG</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="113"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="128"/>
         <source>Rewinding the DAG cancels the latest operation/transformation in the DAG&apos;s history</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="146"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="161"/>
         <source>Generate index&apos;s QR code</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="167"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="182"/>
         <source>Browse image gallery</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="174"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="189"/>
         <source>Browse image gallery (IPNS)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="181"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="196"/>
         <source>Change image gallery&apos;s title</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="100"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="115"/>
         <source>Publish on my DID</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="106"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="121"/>
         <source>Register this pyramid as a service in the list of IP services on your DID (Decentralized Identifier)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="126"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="141"/>
         <source>Copy IPNS gateway address to clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="153"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="168"/>
         <source>Choose a pyramid to publish this object to</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="160"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="175"/>
         <source>Drop object to a pyramid</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="67"/>
+        <source>Create pyramid</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="79"/>
+        <source>Create auto-sync pyramid</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="103"/>
+        <source>Force sync</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

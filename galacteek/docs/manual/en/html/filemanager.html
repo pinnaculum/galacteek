@@ -80,13 +80,22 @@ the <a class="reference internal" href="glossary.html#term-dag"><span class="xre
 any UnixFS wrapper (it saves space in the repository, this is used
 in the IPFS Wikipedia mirror for instance).</p>
 </div>
+<div class="section" id="use-the-filestore">
+<h3>Use the filestore<a class="headerlink" href="#use-the-filestore" title="Permalink to this headline">¶</a></h3>
+<p>If you’ve enabled the filestore on your local daemon and
+want to use it when importing content from the filemanager,
+check this option.</p>
+<p><em>Note</em>: the content that you’ve imported using the filestore will
+only be available when this feature is enabled on the daemon.
+Files imported in the filestore and linked in the MFS will
+trigger <em>timeouts</em> (when listing the MFS path) if the filestore
+feature is disabled on the daemon.</p>
+</div>
 </div>
 <div class="section" id="selecting-the-working-folder">
 <h2>Selecting the working folder<a class="headerlink" href="#selecting-the-working-folder" title="Permalink to this headline">¶</a></h2>
 <p>The folder selector button lets you select the current working folder
 in your filesystem (see <a class="reference internal" href="glossary.html#term-mfs"><span class="xref std std-term">MFS</span></a>).</p>
-<p>The <em>Temporary</em> and <em>Encrypted files</em> folders are by default in <em>offline</em>
-mode.</p>
 <p>Adding files in the <em>Encrypted files</em> folder will self-encrypt them with
 your profile’s RSA key (only you will be able to open them). When you open
 an encrypted file it is first decrypted into an (unpinned, unannounced) IPFS
@@ -101,8 +110,10 @@ your files will be wrapped with a directory in order to preserve filenames (you
 can change this in the settings).</p>
 <a class="reference internal image-reference" href="_images/add-folder.png"><img alt="_images/add-folder.png" src="_images/add-folder.png" style="width: 64px; height: 64px;" /></a>
 <p>If you click on the <strong>Add directory</strong> icon you are prompted with a selection
-dialog for directories only. This will recursively import the directory,
-including dotfiles (files and directories starting with <em>.</em> on Linux)</p>
+dialog for directories only. This will recursively import the directory.
+You can then choose if you want to import hidden files, and if you
+want to enable the usage of <em>.gitignore</em> files (git ignore rules files)
+if there’s a <em>.gitignore</em> file in the selected directory.</p>
 <p>Because the application accesses IPFS in an <em>asynchronous</em> manner, importing
 even large amounts of data should not cause the application to hang or becoming
 unresponsive so you can perform other tasks meanwhile, but the file manager
@@ -117,18 +128,6 @@ manager to the IPFS file manager on the left and they will be imported to your
 repository. Multiple selection is supported by holding the <em>Control</em> or <em>Shift</em>
 keys.</p>
 <p>Drag-and-dropping content from other applications is supported as well.</p>
-</div>
-<div class="section" id="offline-mode">
-<h2>Offline mode<a class="headerlink" href="#offline-mode" title="Permalink to this headline">¶</a></h2>
-<p>The <em>Offline mode</em> button, when toggled, sets the filemanager in offline
-mode for the current folder (it is a per-folder switch). In this mode,
-adding new files to your node will not trigger an
-announcement on the <a class="reference internal" href="glossary.html#term-dht"><span class="xref std std-term">DHT</span></a> (meaning that other nodes will have no knowledge
-yet that your node provides these files).</p>
-<p>Later on, if you want to manually announce to the network that you provide
-some files, right-click a file or directory and select
-<strong>Announce (DHT provide)</strong> (for a directory, use the recursive version to
-recursively announce the entire graph).</p>
 </div>
 <div class="section" id="file-context-menu">
 <h2>File context menu<a class="headerlink" href="#file-context-menu" title="Permalink to this headline">¶</a></h2>

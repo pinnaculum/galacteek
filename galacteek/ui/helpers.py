@@ -292,6 +292,13 @@ def filesSelect(filter='(*.*)'):
         return result[0]
 
 
+def fileSelect(filter='(*.*)'):
+    result = QFileDialog.getOpenFileName(None,
+                                         '', getHomePath(), filter)
+    if result:
+        return result[0]
+
+
 def filesSelectImages():
     return filesSelect(
         filter='Images (*.xpm *.jpg *.jpeg *.png *.svg)')
@@ -447,7 +454,7 @@ def sizeFormat(size):
     if size > 1024:
         return '{0:.2f} kb'.format(size / 1024)
     if size == 0:
-        return '0'
+        return ''
     return '{0} bytes'.format(size)
 
 
@@ -492,3 +499,30 @@ def cidInfosMarkup(cidString):
                mhashfuncvaluehex=hex(mhash.code),
                mhashdigest=binascii.b2a_hex(mhash.digest).decode('ascii'),
                mhashascii=binascii.b2a_hex(cid.multihash).decode('ascii'))
+
+
+def mfsItemInfosMarkup(mfsItem):
+    try:
+        cid = getCID(mfsItem.cidString)
+        baseEncoding = multibase.multibase.get_codec(mfsItem.cidString)
+    except:
+        return '<p>Invalid CID</p>'
+
+    if mfsItem.mimeTypeName:
+        mimeicon = ':/share/icons/mimetypes/{m}.png'.format(
+            m=mfsItem.mimeTypeName.replace('/', '-', 1))
+    else:
+        mimeicon = ':/share/icons/mimetypes/unknown.png'
+
+    return '''
+    <p><img src="{mimeicon}" height="32" width="32"></p>
+    <p>MFS filename: <b>{name}</b></p>
+    <p>MIME type: {mimetype}</p>
+    <p>CID: <b>{cids}</b></p>
+    <p>Multibase encoding: <b>{mbase}</b></p>
+    '''.format(name=mfsItem.text(),
+               mimetype=mfsItem.mimeTypeName,
+               mimeicon=mimeicon,
+               cids=mfsItem.cidString,
+               mbase=baseEncoding.encoding if baseEncoding else iUnknown()
+               )

@@ -51,6 +51,43 @@ objects to a pyramid.
 From the pyramid's menu you can also copy the IPNS address of the pyramid,
 as well as create a QR code image for the IPNS key.
 
+Auto-sync pyramid
+-----------------
+
+This type of pyramid will automatically synchronize to IPFS a file or
+directory that you choose when you create the pyramid. Whenever
+the contents of that file/directory changes, it will be
+reimported to IPFS and associated with the IPNS key.
+
+Usage
+^^^^^
+
+From the right toolbar, click on the blue pyramid button
+and then select *Create auto-sync pyramid*. Select the file
+or directory that you want to automatically sync.
+You can choose if you want to import *hidden* files, and
+select the delay (in seconds) after which the autosync
+will start when some changes are detected.
+
+If you are synchronizing a folder, you can use a
+*.gitignore* file at the folder's root to specify rules
+to ignore certain files.
+
+When enabling the *Filestore* option, the import will use
+the IPFS *filestore* storage if available on this IPFS
+daemon, to avoid file duplication.
+
+When using the *Unpin old content* option, previously
+imported content will be unpinned recursively before
+syncing.
+
+*Note*: As explained in Qt's documentation, the act of monitoring
+files and directories for modifications consumes system resources.
+This implies there is a limit to the number of files and directories
+your process can monitor simultaneously. On Linux you can modify
+the maximum number of *inotify user watches* with the command
+**sysctl fs.inotify.max_user_watches=<num>**
+
 DAG building pyramids
 ---------------------
 
