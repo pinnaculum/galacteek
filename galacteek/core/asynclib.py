@@ -6,6 +6,8 @@ import functools
 from asyncio_extras.file import open_async
 import aiofiles
 
+from PyQt5.QtWidgets import QApplication
+
 
 class AsyncSignal(UserList):
     """
@@ -80,13 +82,17 @@ def ensure(coro, **kw):
 
     from galacteek import log
 
+    app = QApplication.instance()
+
     callback = kw.pop('futcallback', ensureGenericCallback)
     future = asyncio.ensure_future(coro, **kw)
     if callback:
         future.add_done_callback(callback)
 
-    lTime = loopTime()
-    log.debug(f'Ensured new task (loop time: {lTime}): {future!r}')
+    if app.cmdArgs.asynciodebug:
+        lTime = loopTime()
+        log.debug(f'Ensured new task (loop time: {lTime}): {future!r}')
+
     return future
 
 

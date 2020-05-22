@@ -116,12 +116,14 @@ def iOpenWith():
     return QCoreApplication.translate('FileManagerForm', 'Open with')
 
 
-def iDeleteFile():
-    return QCoreApplication.translate('FileManagerForm', 'Delete file')
+def iDeleteFileOrDir():
+    return QCoreApplication.translate(
+        'FileManagerForm', 'Delete file/directory')
 
 
-def iUnlinkFile():
-    return QCoreApplication.translate('FileManagerForm', 'Unlink file')
+def iUnlinkFileOrDir():
+    return QCoreApplication.translate(
+        'FileManagerForm', 'Unlink file/directory')
 
 
 def iHashmarkFile():
@@ -940,6 +942,12 @@ class FileManager(QWidget):
                 iMediaPlayerQueue(), partialEnsure(
                     self.mediaPlayerQueueDir, str(ipfsPath)))
 
+        actionsMenu.addSeparator()
+        actionsMenu.addAction(getIcon('pin.png'),
+                              iUnpin(),
+                              partialEnsure(self.unpinObject, dataHash)
+                              )
+
         menu.addMenu(actionsMenu)
 
         menu.addSeparator()
@@ -951,11 +959,11 @@ class FileManager(QWidget):
         menu.addSeparator()
         menu.addAction(
             getIcon('clear-all.png'),
-            iUnlinkFile(), functools.partial(
+            iUnlinkFileOrDir(), functools.partial(
                 self.scheduleUnlink, nameItem, dataHash))
         menu.addAction(
             getIcon('clear-all.png'),
-            iDeleteFile(), functools.partial(
+            iDeleteFileOrDir(), functools.partial(
                 self.scheduleDelete, nameItem, dataHash))
         menu.addSeparator()
 
@@ -1009,6 +1017,10 @@ class FileManager(QWidget):
             return
 
         ensure(self.publishObjectOnDidService(service, ipfsPath))
+
+    @ipfsOp
+    async def unpinObject(self, ipfsop, cid):
+        await ipfsop.unpin(cid)
 
     async def publishObjectOnDidService(self, service, ipfsPath):
         if service.type == IPService.SRV_TYPE_COLLECTION:

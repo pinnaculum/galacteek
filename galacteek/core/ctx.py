@@ -13,7 +13,6 @@ from PyQt5.QtGui import QImage
 from PyQt5.QtGui import QPixmap
 
 from galacteek import log
-from galacteek import logUser
 from galacteek import GALACTEEK_NAME
 from galacteek import ensure
 from galacteek import ensureLater
@@ -592,9 +591,6 @@ class IPFSContext(QObject):
 
     @softIdent.setter
     def softIdent(self, ident):
-        msg = 'Software ident changed to: CID {}'.format(ident['Hash'])
-        log.debug(msg)
-        logUser.info(msg)
         self._softIdent = ident
 
     def hasRsc(self, name):
