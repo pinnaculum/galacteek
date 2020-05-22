@@ -981,7 +981,8 @@ class GalacteekApplication(QApplication):
             fileStore=sManager.isTrue(section, CFG_KEY_FILESTORE),
             nice=sManager.getInt(section, CFG_KEY_NICE),
             pubsubEnable=pubsubEnabled, corsEnable=corsEnabled,
-            migrateRepo=migrateRepo, debug=self.debug,
+            migrateRepo=migrateRepo,
+            debug=self.cmdArgs.goipfsdebug,
             offline=self.cmdArgs.offline,
             loop=self.loop)
 

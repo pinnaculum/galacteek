@@ -566,6 +566,10 @@ def iPin():
     return QCoreApplication.translate('GalacteekWindow', 'Pin')
 
 
+def iUnpin():
+    return QCoreApplication.translate('GalacteekWindow', 'Unpin')
+
+
 def iPinSingle():
     return QCoreApplication.translate('GalacteekWindow', 'Pin (single)')
 

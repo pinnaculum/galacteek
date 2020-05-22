@@ -10,7 +10,6 @@ import pkg_resources
 
 from pathlib import Path
 from datetime import datetime
-from asyncache import cached
 from cachetools import TTLCache
 
 from PyQt5.QtCore import QFile
@@ -27,6 +26,7 @@ from galacteek.ipfs.cidhelpers import ipnsKeyCidV1
 from galacteek.ipfs.multi import multiAddrTcp4
 
 from galacteek.core.asynccache import amlrucache
+from galacteek.core.asynccache import cachedcoromethod
 from galacteek.core.asynclib import async_enterable
 from galacteek.core.asynclib import asyncReadFile
 from galacteek.core.jtraverse import traverseParser
@@ -76,13 +76,10 @@ class IPFSOperatorOfflineContext(object):
 
     async def __aenter__(self):
         self.operator.offline = True
-        log.debug('IPFS Operator in offline mode: {}'.format(
-            self.operator.offline))
         return self.operator
 
     async def __aexit__(self, *args):
         self.operator.offline = self.prevOff
-        log.debug('IPFS Operator in online mode')
 
 
 class TunnelDialerContext(object):
@@ -194,6 +191,10 @@ nsCacheSchema = {
         }
     }
 }
+
+
+# Stream-resolve cache
+sResolveCache = TTLCache(512, 30)
 
 
 class IPFSOperator(object):
@@ -632,7 +633,6 @@ class IPFSOperator(object):
         await self.gotNoPeers.emit()
 
     async def peersCountStatus(self, peerCount):
-        self.debug('{c} peers found'.format(c=peerCount))
         self.noPeers = False
         await self.gotPeers.emit(peerCount)
 
@@ -646,7 +646,6 @@ class IPFSOperator(object):
         except Exception as e:
             self.debug(str(e))
         else:
-            self.debug('Loaded NS cache')
             self._nsCache = cache
 
     async def nsCacheSave(self):
@@ -874,7 +873,6 @@ class IPFSOperator(object):
         Update a pin
         """
 
-        self.debug('pinUpdate: previous: {0}, new: {1}'.format(old, new))
         try:
             result = await self.client.pin.update(old, new, unpin=unpin)
         except aioipfs.APIError as e:
@@ -1039,7 +1037,7 @@ class IPFSOperator(object):
                 if callbackvalid:
                     await callback(entry)
         except aioipfs.APIError as err:
-            self.debug(err.message)
+            self.debug('addPath: API error: {}'.format(err.message))
             return None
         except asyncio.CancelledError:
             self.debug('addPath: cancelled')
@@ -1199,12 +1197,23 @@ class IPFSOperator(object):
         elif isinstance(cid, dict) and 'Hash' in cid:
             return {"/": cid['Hash']}
 
-    @cached(TTLCache(1024, 45))
+    @cachedcoromethod(sResolveCache)
     async def objectPathMapCacheResolve(self, path):
         """
         Simple async TTL cache for results from nameResolveStreamFirst()
         """
         return await self.nameResolveStreamFirst(path)
+
+    def sResolveCacheClear(self, time=None):
+        sResolveCache.expire(time)
+
+    def sResolveCacheLog(self):
+        self.debug('sResolveCacheDump: start')
+
+        for path, r in sResolveCache.items():
+            self.debug(f'sResolveCache: path {path} => {r}')
+
+        self.debug('sResolveCacheDump: end')
 
     async def objectPathMapper(self, path):
         ipfsPath = path if isinstance(path, IPFSPath) else \
@@ -1214,11 +1223,7 @@ class IPFSOperator(object):
             resolved = await self.objectPathMapCacheResolve(path)
 
             if resolved:
-                srPath = resolved['Path']
-                self.debug(
-                    'objectPathMapper: {o}: stream-resolved to {r}'.format(
-                        o=path, r=srPath))
-                return srPath
+                return resolved['Path']
             else:
                 self.debug(
                     'objectPathMapper: {o}: stream-resolve failed'.format(
@@ -1569,7 +1574,7 @@ class IPFSOperator(object):
                 peer
             resp = await self.client.p2p.dial(proto, address, peerAddr)
         except aioipfs.APIError as err:
-            log.debug(err.message)
+            log.debug('Stream dial error: {}'.format(err.message))
             return TunnelDialerContext(self, peer, proto, None)
         else:
             log.debug('Stream dial {0} {1}: OK'.format(peer, proto))

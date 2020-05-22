@@ -6,7 +6,6 @@ import sys
 from PyQt5.QtCore import QProcess
 from PyQt5.QtWebEngine import QtWebEngine
 
-from galacteek import log
 from galacteek import __version__
 from galacteek.core import glogger
 from galacteek.core.schemes import initializeSchemes
@@ -82,7 +81,6 @@ def galacteekGui(args):
                 loop.run_forever()
     else:
         with loop:
-            log.debug('Inside context manager')
             loop.run_forever()
 
 
@@ -167,6 +165,16 @@ def start():
         action='store_true',
         dest='enableorbital',
         help="Enable orbit-db connector")
+    parser.add_argument(
+        '--goipfs-debug',
+        action='store_true',
+        dest='goipfsdebug',
+        help="Enable go-ipfs daemon debug output")
+    parser.add_argument(
+        '--asyncio-tasks-debug',
+        action='store_true',
+        dest='asynciodebug',
+        help="Enable asyncio tasks debug output")
 
     parser.add_argument('-d', action='store_true',
                         dest='debug', help='Activate debugging')

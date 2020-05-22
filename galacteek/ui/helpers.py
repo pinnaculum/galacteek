@@ -503,7 +503,6 @@ def cidInfosMarkup(cidString):
 
 def mfsItemInfosMarkup(mfsItem):
     try:
-        cid = getCID(mfsItem.cidString)
         baseEncoding = multibase.multibase.get_codec(mfsItem.cidString)
     except:
         return '<p>Invalid CID</p>'

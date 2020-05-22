@@ -55,7 +55,7 @@ class BaseTimedGraph(QChartView):
         self.axisX = QDateTimeAxis()
         self.axisX.setTickCount(5)
         self.axisX.setFormat('hh:mm:ss')
-        self.axisX.setTitleText('Date')
+        self.axisX.setTitleText('Time')
         self.chart.addAxis(self.axisX, Qt.AlignBottom)
 
         self.axisY = QValueAxis()

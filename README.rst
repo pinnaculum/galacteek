@@ -35,6 +35,20 @@ See the releases_ page for all releases.
 .. image:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/share/icons/donate.png
     :target: https://github.com/sponsors/pinnaculum
 
+Screencasts
+===========
+
+.. figure:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/share/screencasts/browsing-ipfsio.gif
+    :align: center
+
+.. figure:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/share/screencasts/filemanager-dirimport.gif
+    :align: center
+    :alt: Filemanager import
+
+.. figure:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/share/screencasts/pyramid-drop1.gif
+    :align: center
+    :alt: Pyramid publish
+
 Screenshots
 ===========
 
@@ -44,13 +58,6 @@ Screenshots
     :alt: Browsing the Wikipedia mirror over IPFS
 
     Browsing the Wikipedia mirror over IPFS
-
-.. figure:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/screenshots/qr-codes-mezcla.png
-    :target: https://raw.githubusercontent.com/pinnaculum/galacteek/master/screenshots/qr-codes-mezcla.png
-    :align: center
-    :alt: QR codes
-
-    IPFS QR codes
 
 Features
 ========
@@ -158,9 +165,7 @@ from the ipfs-logo_ project's repository is included, unchanged.
 .. _ipfs-search: https://ipfs-search.com
 .. _ipfs-css: https://github.com/ipfs-shipyard/ipfs-css
 .. _releases: https://github.com/pinnaculum/galacteek/releases
-.. _srip: https://www.flaticon.com/authors/srip
 .. _pyzbar: https://github.com/NaturalHistoryMuseum/pyzbar/
-.. _qreader: https://github.com/ewino/qreader/
 .. _shortcuts: http://htmlpreview.github.io/?https://raw.githubusercontent.com/pinnaculum/galacteek/master/galacteek/docs/manual/en/html/shortcuts.html
 .. _urlschemes: https://github.com/pinnaculum/galacteek/blob/master/galacteek/docs/manual/en/browsing.rst#supported-url-formats
 .. _releases: https://github.com/pinnaculum/galacteek/releases

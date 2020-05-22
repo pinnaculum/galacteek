@@ -2,8 +2,9 @@ import asyncio
 
 from functools import wraps
 from cachetools import LRUCache
+from cachetools import keys
 
-__all__ = ['amlrucache']
+__all__ = ['amlrucache', 'cachedcoromethod']
 
 
 def _wrap_coroutine_storage(cache_dict, key, future):
@@ -46,3 +47,29 @@ def amlrucache(f):
             return val
 
     return wrapper
+
+
+def cachedcoromethod(cache, key=keys.hashkey):
+    """
+    Caches results from a coroutine method in cache
+    """
+    def decorator(method):
+        async def wrapper(self, *args, **kwargs):
+            k = key(*args, **kwargs)
+            try:
+                return cache[k]
+            except KeyError:
+                pass
+
+            value = await method(self, *args, **kwargs)
+
+            try:
+                cache[k] = value
+            except ValueError:
+                pass
+
+            return value
+
+        return wraps(method)(wrapper)
+
+    return decorator
