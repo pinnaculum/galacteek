@@ -41,13 +41,17 @@ Screencasts
 .. figure:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/share/screencasts/browsing-ipfsio.gif
     :align: center
 
+    Browsing ipns://ipfs.io
+
 .. figure:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/share/screencasts/filemanager-dirimport.gif
     :align: center
-    :alt: Filemanager import
+
+    Filemanager drag-and-drop
 
 .. figure:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/share/screencasts/pyramid-drop1.gif
     :align: center
-    :alt: Pyramid publish
+
+    Publish a directory to a pyramid
 
 Screenshots
 ===========
