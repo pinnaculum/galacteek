@@ -217,8 +217,7 @@ QToolButton#jsConsoleButton::checked {
 }
 
 QTreeView#historySearchResults {
-    background-color: #B7CDC2;
-    margin: 4px;
+    margin: 2px;
     margin-left: 12px;
     font: 11pt "Inter UI";
 }

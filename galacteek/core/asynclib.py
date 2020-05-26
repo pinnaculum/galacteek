@@ -89,7 +89,8 @@ def ensure(coro, **kw):
     if callback:
         future.add_done_callback(callback)
 
-    if app.cmdArgs.asynciodebug:
+    if app and hasattr(app, 'cmdArgs') and app.cmdArgs.asynciodebug:
+        # Save the cost of debug() calls here..
         lTime = loopTime()
         log.debug(f'Ensured new task (loop time: {lTime}): {future!r}')
 

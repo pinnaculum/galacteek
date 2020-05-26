@@ -370,7 +370,7 @@ class EthDNSSchemeHandler(BaseURLSchemeHandler):
             sPath = path.child(uPath) if uPath else path
             logUser.info('EthDNS: {domain} resolved to {res}'.format(
                 domain=domain, res=sPath.ipfsUrl))
-            return request.redirect(QUrl(sPath.ipfsUrl))
+            return request.redirect(QUrl(sPath.dwebUrl))
         else:
             logUser.info('EthDNS: {domain} resolve failed'.format(
                 domain=domain))
@@ -408,7 +408,7 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
     objectServed = pyqtSignal(IPFSPath, str, float)
 
     def __init__(self, app, parent=None, validCidQSize=32, reqTimeout=60 * 10,
-                 noMutexes=False):
+                 noMutexes=True):
         super(NativeIPFSSchemeHandler, self).__init__(
             parent=parent,
             noMutexes=noMutexes)

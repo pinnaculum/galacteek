@@ -201,7 +201,7 @@ async def hashmarkAdd(path: str,
         extra['url'] = ipfsPath.ipfsUrl
     else:
         url = QUrl(path)
-        if url.isValid() and url.scheme() == 'ens':
+        if url.isValid() and url.scheme() in ['ens', 'ensr']:
             extra['url'] = url.toString()
 
     if isinstance(icon, str):
