@@ -1914,10 +1914,6 @@ class BrowserTab(GalacteekTab):
             # dweb:/ with IPFS gateway's authority
             # Content loaded from IPFS gateway, this is IPFS content
 
-            if 0:
-                urlString = url.toDisplayString(
-                    QUrl.RemoveAuthority | QUrl.RemoveScheme)
-
             self._currentIpfsObject = IPFSPath(
                 url.toString(), autoCidConv=True)
 
@@ -1936,7 +1932,7 @@ class BrowserTab(GalacteekTab):
 
                 self._currentUrl = url
             else:
-                log.debug('Invalid IPFS path: {0}'.format(urlString))
+                log.debug('Invalid IPFS path: {0}'.format(url.toString()))
 
             # Activate the follow action if this is a root IPNS address
             self.followIpnsAction.setEnabled(

@@ -147,6 +147,8 @@ find lib/python3.7/site-packages/PyQt5/Qt/qml/ -name *.qml -exec rm {} \;
 find lib/python3.7/site-packages/PyQt5/Qt/qml/ -name *.qmlc -exec rm {} \;
 find lib/python3.7/site-packages/PyQt5/Qt/qml/QtQuick -exec rm {} \;
 
+python3 -m compileall lib/python3.7/site-packages/galacteek
+
 popd
 
 # Copy the AppRun

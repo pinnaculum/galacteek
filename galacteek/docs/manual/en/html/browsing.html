@@ -81,12 +81,14 @@ The following URL formats are supported:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ipfs</span><span class="p">:</span><span class="o">//</span><span class="p">{</span><span class="n">cidv1base32</span><span class="p">}</span><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">resource</span>
 <span class="n">ipfs</span><span class="p">:</span><span class="o">//</span><span class="p">{</span><span class="n">fqdn</span><span class="o">-</span><span class="k">with</span><span class="o">-</span><span class="n">dnslink</span><span class="p">}</span><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">resource</span>
 <span class="n">ipns</span><span class="p">:</span><span class="o">//</span><span class="p">{</span><span class="n">fqdn</span><span class="o">-</span><span class="k">with</span><span class="o">-</span><span class="n">dnslink</span><span class="p">}</span><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">resource</span>
+<span class="n">ipns</span><span class="p">:</span><span class="o">//</span><span class="p">{</span><span class="n">libp2p</span><span class="o">-</span><span class="n">key</span><span class="o">-</span><span class="ow">in</span><span class="o">-</span><span class="n">base32</span><span class="p">}</span><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">resource</span>
 </pre></div>
 </div>
 <p>Examples:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ipfs</span><span class="p">:</span><span class="o">//</span><span class="n">bafybeibp7sff6wwowsimitrxcpdoqnknyreesvtn24qrnx7gxkhqhzj2fi</span><span class="o">/</span>
 <span class="n">ipfs</span><span class="p">:</span><span class="o">//</span><span class="n">awesome</span><span class="o">.</span><span class="n">ipfs</span><span class="o">.</span><span class="n">io</span><span class="o">/</span><span class="n">articles</span><span class="o">/</span>
 <span class="n">ipns</span><span class="p">:</span><span class="o">//</span><span class="n">ipfs</span><span class="o">.</span><span class="n">io</span><span class="o">/</span>
+<span class="n">ipns</span><span class="p">:</span><span class="o">//</span><span class="n">bafzbeibj2g3uu4lm22xriznrfc22tocvtzdkoo7mqm46v7x3fkelkd6d6i</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span>
 </pre></div>
 </div>
 <p>If you use a valid base58-encoded <a class="reference internal" href="glossary.html#term-cid"><span class="xref std std-term">CID</span></a> (whatever the CID version)
@@ -108,6 +110,9 @@ use the <em>go-ipfs</em> daemon’s HTTP gateway</p>
 <h3>dweb:/<a class="headerlink" href="#dweb" title="Permalink to this headline">¶</a></h3>
 <p>This is the legacy scheme and it will automatically be used when
 accessing content rooted under <a class="reference internal" href="glossary.html#term-cidv0"><span class="xref std std-term">CIDv0</span></a> objects.</p>
+<p>This scheme uses the <em>go-ipfs</em> HTTP gateway. You should use
+this scheme for example when accessing websites that use
+the <em>Fetch API</em>.</p>
 <p>Since version <em>0.4.12</em>, automatic <a class="reference internal" href="glossary.html#term-cid-upgrade"><span class="xref std std-term">CID upgrade</span></a> is enabled as much
 as possible, meaning that the <em>ipfs://</em> URL scheme will
 automatically be used whenever possible.
@@ -139,7 +144,7 @@ via EthDNS.</p>
 as a URL in the address bar.</p>
 <p>The <em>ensr://</em> URL scheme is a resolve-and-redirect scheme, meaning
 that you will be redirected to the IPFS website referenced on ENS,
-switching to the <em>ipfs://</em> scheme.</p>
+switching to the <em>dweb://</em> scheme.</p>
 <p>The <em>ens://</em> URL scheme is a resolve-and-proxy scheme: rather than
 being redirected, the URL is preserved and the scheme handler
 transparently proxies the resolved IPFS object referenced in the

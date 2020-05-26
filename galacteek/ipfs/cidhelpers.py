@@ -226,7 +226,7 @@ ipfsPathRe = re.compile(
     flags=re.UNICODE)
 
 ipfsDomainPathRe = re.compile(
-        r'^(\s*)?(?:http)://(?P<rootcid>[a-z2-7]{59,113})\.ipfs\.(?:[\w]+):(?:[\d]+)/(?P<subpath>[\w|<>"\/:;,?!\*%&=@\$~/\s\.\-_\\\'()\+]{0,1024})#?(?P<fragment>[\w_\.\-\+,=/]{1,256})?$',  # noqa
+        r'^(\s*)?(?:http)://(?P<objectref>[\w.-]{1,113})\.(?P<gwscheme>(ipfs|ipns))\.(?:[\w]+):(?:[\d]+)/(?P<subpath>[\w|<>"\/:;,?!\*%&=@\$~/\s\.\-_\\\'()\+]{0,1024})#?(?P<fragment>[\w_\.\-\+,=/]{1,256})?$',  # noqa
     flags=re.UNICODE)
 
 # For ipfs://<cid-base32>
@@ -441,22 +441,34 @@ class IPFSPath:
         ma = ipfsRegSearchDomainPath(self.input)
         if ma:
             gdict = ma.groupdict()
-            cidStr = gdict.get('rootcid')
+            objRef = gdict.get('objectref')
             subpath = gdict.get('subpath')
+            scheme = gdict.get('gwscheme')
 
-            if not self.parseCid(cidStr):
-                return False
+            if scheme == 'ipfs':
+                if not self.parseCid(objRef):
+                    return False
 
-            if subpath:
-                self._rscPath = os.path.join(
-                    joinIpfs(cidStr),
-                    subpath
-                )
-            else:
-                self._rscPath = joinIpfs(self.rootCidRepr) + '/'
+                if subpath:
+                    self._rscPath = os.path.join(
+                        joinIpfs(self.rootCidRepr),
+                        subpath
+                    )
+                else:
+                    self._rscPath = joinIpfs(self.rootCidRepr) + '/'
+            elif scheme == 'ipns':
+                if subpath:
+                    self._rscPath = os.path.join(
+                        joinIpns(objRef),
+                        subpath
+                    )
+                else:
+                    self._rscPath = joinIpns(objRef) + '/'
+
+                self._ipnsId = objRef
 
             self._subPath = subpath
-            self._scheme = 'ipfs'
+            self._scheme = scheme
             self._fragment = gdict.get('fragment')
             return True
 

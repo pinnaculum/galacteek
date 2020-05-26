@@ -51,12 +51,14 @@ The following URL formats are supported::
     ipfs://{cidv1base32}/path/to/resource
     ipfs://{fqdn-with-dnslink}/path/to/resource
     ipns://{fqdn-with-dnslink}/path/to/resource
+    ipns://{libp2p-key-in-base32}/path/to/resource
 
 Examples::
 
     ipfs://bafybeibp7sff6wwowsimitrxcpdoqnknyreesvtn24qrnx7gxkhqhzj2fi/
     ipfs://awesome.ipfs.io/articles/
     ipns://ipfs.io/
+    ipns://bafzbeibj2g3uu4lm22xriznrfc22tocvtzdkoo7mqm46v7x3fkelkd6d6i/docs/
 
 If you use a valid base58-encoded :term:`CID` (whatever the CID version)
 with the *ipfs://* URL scheme, the CID will automatically be
@@ -78,6 +80,10 @@ dweb:/
 
 This is the legacy scheme and it will automatically be used when
 accessing content rooted under :term:`CIDv0` objects.
+
+This scheme uses the *go-ipfs* HTTP gateway. You should use
+this scheme for example when accessing websites that use
+the *Fetch API*.
 
 Since version *0.4.12*, automatic :term:`CID upgrade` is enabled as much
 as possible, meaning that the *ipfs://* URL scheme will
@@ -113,7 +119,7 @@ as a URL in the address bar.
 
 The *ensr://* URL scheme is a resolve-and-redirect scheme, meaning
 that you will be redirected to the IPFS website referenced on ENS,
-switching to the *ipfs://* scheme.
+switching to the *dweb://* scheme.
 
 The *ens://* URL scheme is a resolve-and-proxy scheme: rather than
 being redirected, the URL is preserved and the scheme handler
