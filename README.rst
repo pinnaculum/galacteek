@@ -18,8 +18,8 @@ for the IPFS_ peer-to-peer network.
 Installation
 ============
 
-* **AppImage (Linux)**: `Galacteek-0.4.26-x86_64.AppImage <https://github.com/pinnaculum/galacteek/releases/download/v0.4.26/Galacteek-0.4.26-x86_64.AppImage>`_
-* **DMG (MacOS)**: `Galacteek-0.4.26.dmg <https://github.com/pinnaculum/galacteek/releases/download/v0.4.26/Galacteek-0.4.26.dmg>`_
+* **AppImage (Linux)**: `Galacteek-0.4.27-x86_64.AppImage <https://github.com/pinnaculum/galacteek/releases/download/v0.4.27/Galacteek-0.4.27-x86_64.AppImage>`_
+* **DMG (MacOS)**: `Galacteek-0.4.27.dmg <https://github.com/pinnaculum/galacteek/releases/download/v0.4.27/Galacteek-0.4.27.dmg>`_
 
 *On Linux*: Be sure to install all the **gstreamer** packages on your
 system to be able to use the mediaplayer.
@@ -82,6 +82,7 @@ should enable pubsub and p2p streams, or some features won't be available.
 - Run WASM binaries with wasmer_ (use *Open* on a WASM object from the
   clipboard manager)
 - Search content with the ipfs-search_ search engine
+- Use the IPFS filestore to avoid file duplication
 - Atom feeds (subscribe to feeds on the dweb)
 - ENS_ (Ethereum Name Service) resolving (access to ENS+IPFS websites)
 - Basic built-in media player with IPFS-stored playlists
@@ -98,9 +99,6 @@ profile). Use *--help* for all options.
 You can run the IPFS daemon in *offline* mode, using **--offline**
 
 Enable colorized log output with **--log-color**
-
-Use the **--no-ipfsscheme-mutex** switch to disable mutexes in the native IPFS scheme
-handler.
 
 *Development*: Use *--monitor* to enable event-loop monitoring with aiomonitor_
 (install aiomonitor_ manually as it's not a dependency).
@@ -129,6 +127,9 @@ Platforms supported
 - Linux (main target)
 - MacOS
 - FreeBSD (or any BSD OS, with manual build)
+
+Because of the nature of the software's stack (asyncio/Quamash),
+support for any other platform is unlikely.
 
 Requirements
 ============
