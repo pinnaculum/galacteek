@@ -5,6 +5,7 @@ import os
 import uuid
 import re
 import shutil
+import difflib
 from pathlib import Path
 from datetime import datetime
 
@@ -27,6 +28,8 @@ from PyQt5.QtWidgets import QLineEdit
 from PyQt5.QtWidgets import QFileSystemModel
 from PyQt5.QtWidgets import QTreeView
 from PyQt5.QtWidgets import QMenu
+from PyQt5.QtWidgets import QTextBrowser
+from PyQt5.QtWidgets import QDialog
 
 from PyQt5.QtCore import QFileInfo
 from PyQt5.QtCore import QDateTime
@@ -52,12 +55,13 @@ from PyQt5.QtGui import QKeySequence
 import qtawesome as qta
 
 from galacteek import log
+from galacteek import partialEnsure
 from galacteek.ipfs.ipfsops import *
 from galacteek.core import isoformat
 from galacteek.core.asynclib import asyncReadTextFileChunked
+from galacteek.core.asynclib import threadExec
 from galacteek.appsettings import *
 from galacteek.ipfs import ipfsOp
-from galacteek.ipfs import megabytes
 from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.mimetype import detectMimeTypeFromFile
@@ -82,6 +86,31 @@ def iSave():
                                       'Save')
 
 
+def iAddNewFile():
+    return QCoreApplication.translate('textEditor',
+                                      'Create new file')
+
+
+def iImportFile():
+    return QCoreApplication.translate('textEditor',
+                                      'Import file')
+
+
+def iImportError():
+    return QCoreApplication.translate('textEditor',
+                                      'Import error')
+
+
+def iImportDir():
+    return QCoreApplication.translate('textEditor',
+                                      'Import directory')
+
+
+def iAddNewDir():
+    return QCoreApplication.translate('textEditor',
+                                      'Create new directory')
+
+
 def iEdit():
     return QCoreApplication.translate('textEditor',
                                       'Edit')
@@ -100,6 +129,11 @@ def iEditorView():
 def iPreview():
     return QCoreApplication.translate('textEditor',
                                       'Preview')
+
+
+def iObjectDiff():
+    return QCoreApplication.translate('textEditor',
+                                      'Object diff')
 
 
 def iAutoMarkdownToHtmlSave():
@@ -450,6 +484,7 @@ class TextEditorWidget(QWidget):
         self._previewTimer.timeout.connect(self.onPreviewRerender)
         self._editing = editing
         self._currentDocument = None
+        self._localCheckoutChanged = False
         self._unixDir = None
 
         self.model = QFileSystemModel()
@@ -532,6 +567,7 @@ class TextEditorWidget(QWidget):
         self.editButton.setText(iEdit())
 
         self.unixDirCid = None
+        self.unixDirPath = None
         self.unixDirDescrLabel = QLabel('Current session:')
         self.unixDirLabel = IPFSUrlLabel(
             None, invalidPathLabel='No session yet')
@@ -634,6 +670,15 @@ class TextEditorWidget(QWidget):
             self.sessionNew()
 
     @property
+    def localCheckoutChanged(self):
+        return self._localCheckoutChanged
+
+    @localCheckoutChanged.setter
+    def localCheckoutChanged(self, val):
+        self._localCheckoutChanged = val
+        self.saveButton.setEnabled(val)
+
+    @property
     def currentDocument(self):
         return self._currentDocument
 
@@ -685,19 +730,44 @@ class TextEditorWidget(QWidget):
     def onFsViewRightClicked(self, idx, event, fInfo):
         pos = event.globalPos()
         fullPath = fInfo.absoluteFilePath()
+        _path = Path(fullPath)
 
         menu = QMenu(self)
+
+        if not _path.exists() or _path.is_dir():
+            menu.addAction(
+                self.strokeIcon,
+                iAddNewFile(), functools.partial(
+                    self.fsAddFile, fullPath))
+            menu.addSeparator()
+            menu.addAction(
+                self.strokeIcon,
+                iAddNewDir(), functools.partial(
+                    self.fsAddDirectory, fullPath))
+            menu.addSeparator()
+
+            menu.addAction(
+                self.strokeIcon,
+                iImportFile(), functools.partial(
+                    self.fsImportFile, fullPath))
+            menu.addSeparator()
+            menu.addAction(
+                self.strokeIcon,
+                iImportDir(), functools.partial(
+                    self.fsImportDirectory, fullPath))
+            menu.addSeparator()
+
         menu.addAction(
-            self.strokeIcon,
-            'Add file', functools.partial(
-                self.fsAddFile, fullPath))
-        menu.addSeparator()
-        menu.addAction(
-            self.strokeIcon,
-            'Add directory', functools.partial(
-                self.fsAddDirectory, fullPath))
+            getIcon('clear-all.png'),
+            'Delete', functools.partial(
+                self.fsDelete, fullPath))
 
         menu.exec_(pos)
+
+    def fsDelete(self, path):
+        if path:
+            if questionBox(iRemove(), iRemoveFileAsk()):
+                ensure(self._fsDelete(path))
 
     def fsAddFile(self, root):
         if not root:
@@ -716,6 +786,79 @@ class TextEditorWidget(QWidget):
 
             filepath.touch()
             self.sessionViewUpdate()
+
+    def fsImportFile(self, root):
+        if not root:
+            rootDir = Path(self.checkoutPath)
+        else:
+            rootDir = Path(root)
+
+        filepath = fileSelect()
+
+        if filepath:
+            ensure(self._fsImportFile(filepath, str(rootDir)))
+
+    async def _fsDelete(self, filepath):
+        self.busy()
+
+        try:
+            if os.path.isdir(filepath):
+                await self.app.loop.run_in_executor(
+                    self.app.executor,
+                    shutil.rmtree,
+                    filepath
+                )
+            elif os.path.isfile(filepath):
+                os.unlink(filepath)
+        except Exception:
+            pass
+
+        self.localCheckoutChanged = True
+        self.busy(False)
+
+    async def _fsImportFile(self, filepath, rootDir):
+        self.busy()
+
+        try:
+            await self.app.loop.run_in_executor(
+                self.app.executor,
+                shutil.copy,
+                filepath,
+                rootDir
+            )
+        except Exception:
+            messageBox(iImportError())
+
+        self.localCheckoutChanged = True
+        self.busy(False)
+
+    async def _fsImportDirectory(self, dirpath, dstDir):
+        self.busy()
+
+        try:
+            await self.app.loop.run_in_executor(
+                self.app.executor,
+                shutil.copytree,
+                dirpath,
+                dstDir
+            )
+        except Exception:
+            messageBox(iImportError())
+
+        self.localCheckoutChanged = True
+        self.busy(False)
+
+    def fsImportDirectory(self, root):
+        if not root:
+            rootDir = Path(self.checkoutPath)
+        else:
+            rootDir = Path(root)
+
+        dirpath = directorySelect()
+
+        if dirpath:
+            dstPath = rootDir.joinpath(os.path.basename(dirpath))
+            ensure(self._fsImportDirectory(dirpath, str(dstPath)))
 
     def fsAddDirectory(self, root):
         if not root:
@@ -883,10 +1026,13 @@ class TextEditorWidget(QWidget):
             self.filesView.setVisible(view)
 
     def onSave(self):
-        if self.currentDocument.filename is None:
-            self.showNameInput(True)
+        if self.currentDocument.changed:
+            if self.currentDocument.filename is None:
+                self.showNameInput(True)
+            else:
+                ensure(self.saveDocument(self.currentDocument))
         else:
-            ensure(self.saveDocument(self.currentDocument))
+            ensure(self.syncSession())
 
     def nameInput(self, label='File name'):
         name = inputText(label=label)
@@ -894,11 +1040,14 @@ class TextEditorWidget(QWidget):
             return name
 
     def checkChanges(self):
+        if self.localCheckoutChanged is True:
+            return questionBox(
+                'Unsaved changes',
+                'This session has unsynced content, continue ?')
         if self.currentDocument and self.currentDocument.changed is True:
-            reply = questionBox(
+            return questionBox(
                 'Unsaved changes',
                 'The current document was not saved, continue ?')
-            return reply
         return True
 
     def onNewFile(self):
@@ -971,6 +1120,7 @@ class TextEditorWidget(QWidget):
             self.busy(False)
             log.debug(str(err))
         else:
+            self.localCheckoutChanged = False
             self.busy(False)
             if not entry:
                 return
@@ -994,8 +1144,93 @@ class TextEditorWidget(QWidget):
             await fd.write(text)
 
     @ipfsOp
+    async def onShowDiff(self, ipfsop, path, prevPath, changes, *extra):
+        """
+        Show the object diff in a QTextBrowser
+
+        TODO: refactor, at least ..
+        """
+
+        dlg = QDialog()
+        dlg.setWindowTitle(iObjectDiff())
+        layout = QVBoxLayout()
+        dlg.setLayout(layout)
+        dlg.setWindowFlag(Qt.WindowMinimizeButtonHint, True)
+        dlg.setWindowFlag(Qt.WindowMaximizeButtonHint, True)
+        dlg.setWindowFlag(Qt.WindowCloseButtonHint, True)
+        dlg.setMinimumSize(
+            (2 * self.app.desktopGeometry.width()) / 3,
+            (2 * self.app.desktopGeometry.height()) / 3,
+        )
+
+        dBrowser = QTextBrowser(dlg)
+        layout.addWidget(dBrowser)
+
+        for change in changes:
+            objPath = change.get('Path')
+            before = change.get('Before')
+            after = change.get('After')
+            beforeCid = before.get('/') if before else None
+            afterCid = after.get('/') if after else None
+
+            if change['Type'] == 2 and beforeCid and afterCid:
+                try:
+                    _bData = await ipfsop.catObject(beforeCid)
+                    _aData = await ipfsop.catObject(afterCid)
+
+                    diff = difflib.HtmlDiff().make_file(
+                        _bData.decode().split('\n'),
+                        _aData.decode().split('\n'),
+                        fromdesc=objPath if objPath else '',
+                        todesc=objPath if objPath else '',
+                        context=True,
+                        numlines=10
+                    )
+
+                    dBrowser.insertHtml(diff)
+                except Exception:
+                    continue
+            elif change['Type'] == 0 and afterCid:
+                try:
+                    _aData = await ipfsop.catObject(afterCid)
+                    lines = _aData.decode().split('\n')
+
+                    diff = difflib.HtmlDiff().make_file(
+                        [],
+                        lines,
+                        fromdesc='',
+                        todesc=objPath if objPath else '',
+                        context=True,
+                        numlines=len(lines)
+                    )
+
+                    dBrowser.insertHtml(diff)
+                except Exception:
+                    continue
+            elif change['Type'] == 1 and beforeCid:
+                try:
+                    _bData = await ipfsop.catObject(beforeCid)
+                    lines = _bData.decode().split('\n')
+
+                    diff = difflib.HtmlDiff().make_file(
+                        lines,
+                        [],
+                        todesc='',
+                        fromdesc=objPath if objPath else '',
+                        context=True,
+                        numlines=len(lines)
+                    )
+
+                    dBrowser.insertHtml(diff)
+                except Exception:
+                    continue
+
+        dBrowser.moveCursor(QTextCursor.Start)
+        dlg.showMaximized()
+        await threadExec(dlg.exec_)
+
+    @ipfsOp
     async def saveDocument(self, ipfsop, document, offline=True):
-        tbPyramids = self.app.mainWindow.toolbarPyramids
         text = document.toPlainText()
 
         if not document.filename:
@@ -1020,18 +1255,42 @@ class TextEditorWidget(QWidget):
                     await fd.write(text)
 
         document.setModified(False)
-        self.saveButton.setEnabled(False)
 
         self.sessionViewUpdate(self.checkoutPath)
+
+        await self.syncSession()
+
+    @ipfsOp
+    async def syncSession(self, ipfsop):
+        # Previous session's IPFS path
+        prevSessPath = self.unixDirPath
 
         entry = await self.sync()
         if entry:
             layout = QHBoxLayout()
             path = IPFSPath(entry['Hash'])
 
+            diffButton = None
+            if prevSessPath:
+                # Generate an object diff tooltip
+                changes = await ipfsop.objectDiff(prevSessPath, path)
+
+                if isinstance(changes, list):
+                    diffButton = QToolButton()
+                    diffButton.setIcon(getIcon('code-fork.png'))
+                    diffButton.setToolTip(
+                        objectDiffSummaryShort(changes)
+                    )
+                    diffButton.clicked.connect(
+                        partialEnsure(
+                            self.onShowDiff,
+                            path, prevSessPath, changes
+                        )
+                    )
+
             urlLabel = IPFSUrlLabel(path)
             clipButton = IPFSPathClipboardButton(path)
-            pyrDropButton = tbPyramids.getPyrDropButtonFor(path)
+            pyrDropButton = self.app.mainWindow.getPyrDropButtonFor(path)
 
             now = QDateTime.currentDateTime()
             date = QLabel()
@@ -1047,6 +1306,10 @@ class TextEditorWidget(QWidget):
             layout.addWidget(date)
             layout.addWidget(urlLabel)
             layout.addWidget(clipButton)
+
+            if diffButton:
+                layout.addWidget(diffButton)
+
             layout.addWidget(hmarkButton)
             layout.addWidget(pyrDropButton)
             layout.addItem(QSpacerItem(10, 10, QSizePolicy.Expanding,
@@ -1057,6 +1320,8 @@ class TextEditorWidget(QWidget):
 
             self.copiesLayout.insertLayout(0, layout)
             self.editHistory.show()
+
+            self.saveButton.setEnabled(False)
 
     @ipfsOp
     async def publishEntry(self, ipfsop, entry):
@@ -1108,13 +1373,7 @@ class TextEditorWidget(QWidget):
                 messageBox('Object stat failed')
                 return
 
-            if 0:
-                sInfo = StatInfo(stat)
-                if sInfo.totalSize > megabytes(32):
-                    if not questionBox(
-                            'Stat size', 'Large object, fetch anyway ?'):
-                        self.busy(False)
-                        raise Exception('Object too large')
+            sInfo = StatInfo(stat)
 
             if not await ipfsop.client.get(
                 ipfsPath.objPath,
@@ -1149,6 +1408,7 @@ class TextEditorWidget(QWidget):
                     break
 
             self.fsViewButton.setChecked(True)
+            self.rootMultihashChanged.emit(sInfo.cid)
 
         self.busy(False)
 

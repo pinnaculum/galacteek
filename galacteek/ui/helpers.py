@@ -525,3 +525,30 @@ def mfsItemInfosMarkup(mfsItem):
                cids=mfsItem.cidString,
                mbase=baseEncoding.encoding if baseEncoding else iUnknown()
                )
+
+
+def objectDiffSummaryShort(changes):
+    """
+    HTML Markup for a short object diff summary
+    """
+
+    markup = '<p>Object diff</p>'
+
+    def changeMarkup(change):
+        if change['Type'] == 2:
+            return '<b>Modified</b>: {}'.format(
+                change.get('Path', iUnknown()))
+        elif change['Type'] == 1:
+            return '<b>Removed</b>: {}'.format(
+                change.get('Path', iUnknown()))
+        elif change['Type'] == 0:
+            return '<b>Added</b>: {}'.format(
+                change.get('Path', iUnknown()))
+
+    markup += '<ul>'
+    for change in changes:
+        markup += '<li>{}</li>'.format(changeMarkup(change))
+
+    markup += '</ul>'
+
+    return markup
