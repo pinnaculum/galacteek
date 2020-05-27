@@ -791,6 +791,20 @@ class IPFSOperator(object):
                 'Path': matches[-1]
             }
 
+    async def objectDiff(self, obja, objb, verbose=True):
+        """
+        Returns the diff between two objects
+        """
+        try:
+            diff = await self.client.object.diff(
+                obja, objb, verbose=verbose)
+        except aioipfs.APIError as e:
+            self.debug(
+                f'objectDiff error: {obja} {objb}: {e.message}')
+        else:
+            if isinstance(diff, dict) and 'Changes' in diff:
+                return diff['Changes']
+
     async def purge(self, hashRef, rungc=False):
         """ Unpins an object and optionally runs the garbage collector """
         try:

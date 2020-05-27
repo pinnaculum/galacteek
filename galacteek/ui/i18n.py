@@ -467,6 +467,12 @@ def iChat():
     return QCoreApplication.translate('GalacteekWindow', 'Chat')
 
 
+def iChatMessageNotification(channel, handle):
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        '{0}: new message from {1}').format(channel, handle)
+
+
 def iLangEnglish():
     return QCoreApplication.translate('Galacteek', 'English')
 
