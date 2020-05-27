@@ -45,6 +45,7 @@ from .helpers import runDialogAsync
 from .widgets import GalacteekTab
 from .widgets import PopupToolButton
 from .i18n import iChat
+from .i18n import iChatMessageNotification
 
 from . import ui_chatchannelslist
 from . import ui_chatchannelnew
@@ -365,6 +366,17 @@ class ChatRoomWidget(GalacteekTab):
                 self.setTabIcon(getIcon('chat-active.png'))
             else:
                 self.setTabIcon(getIcon('qta:mdi.chat-outline'))
+
+            # System tray notification if the main window is not visible
+            if not self.app.mainWindow.isActiveWindow():
+                self.app.systemTrayMessage(
+                    iChat(),
+                    iChatMessageNotification(
+                        self.channel,
+                        message.peerCtx.spaceHandle.short
+                    ),
+                    timeout=4000
+                )
 
             formatted += '<p> {message}</p>'.format(
                 message=markitdown(message.message))

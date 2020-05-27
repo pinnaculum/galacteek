@@ -53,6 +53,11 @@ Screencasts
 
     Publish a directory to a pyramid
 
+.. figure:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/share/screencasts/bwstats.gif
+    :align: center
+
+    Live bandwidth stats
+
 Screenshots
 ===========
 
