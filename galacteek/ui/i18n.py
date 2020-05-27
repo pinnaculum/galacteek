@@ -497,6 +497,13 @@ def iRemove():
     return QCoreApplication.translate('Galacteek', 'Remove')
 
 
+def iRemoveFileAsk():
+    return QCoreApplication.translate(
+        'Galacteek',
+        'Are you sure you want to remove this file/directory ?'
+    )
+
+
 def iInvalidInput():
     return QCoreApplication.translate('GalacteekWindow', 'Invalid input')
 
