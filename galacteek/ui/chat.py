@@ -39,7 +39,7 @@ from galacteek.core.modelhelpers import UneditableStringListModel
 
 from .helpers import getIcon
 from .helpers import inputTextCustom
-from .helpers import questionBox
+from .helpers import questionBoxAsync
 from .helpers import messageBox
 from .helpers import runDialogAsync
 from .widgets import GalacteekTab
@@ -272,7 +272,8 @@ class ChatRoomWidget(GalacteekTab):
         self.ui.setupUi(self.chatWidget)
         self.ui.chatLog.setOpenExternalLinks(False)
         self.ui.chatLog.setOpenLinks(False)
-        self.ui.chatLog.anchorClicked.connect(self.onAnchorClicked)
+        self.ui.chatLog.anchorClicked.connect(
+            partialEnsure(self.onAnchorClicked))
 
         self.ui.sendButton.clicked.connect(self.onSendMessage)
         self.ui.message.returnPressed.connect(self.onSendMessage)
@@ -285,10 +286,11 @@ class ChatRoomWidget(GalacteekTab):
     def focusMessage(self):
         self.ui.message.setFocus(Qt.OtherFocusReason)
 
-    def onAnchorClicked(self, url):
+    async def onAnchorClicked(self, url):
         path = IPFSPath(url.toString(), autoCidConv=True)
         if path.valid:
-            if questionBox('Open link', 'Open <b>{}</b> ?'.format(str(path))):
+            if await questionBoxAsync(
+                    'Open link', 'Open <b>{}</b> ?'.format(str(path))):
                 ensure(self.app.resourceOpener.open(path, openingFrom='chat'))
 
     async def onTabChanged(self):

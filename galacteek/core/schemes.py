@@ -9,6 +9,7 @@ import collections
 import time
 from yarl import URL
 from datetime import datetime
+from cachetools import TTLCache
 
 from PyQt5.QtWebEngineCore import QWebEngineUrlSchemeHandler
 from PyQt5.QtWebEngineCore import QWebEngineUrlScheme
@@ -35,6 +36,7 @@ from galacteek.ipfs.cidhelpers import domainValid
 from galacteek.ipfs.ipfsops import APIErrorDecoder
 from galacteek.dweb.render import renderTemplate
 from galacteek.dweb.enswhois import ensContentHash
+from galacteek.core.asynccache import cachedcoromethod
 
 from galacteek.ipdapps import dappsRegisterSchemes
 
@@ -290,6 +292,26 @@ class EthDNSResolver:
     def debug(self, msg):
         log.debug('EthDNS resolver: {}'.format(msg))
 
+    @cachedcoromethod(TTLCache(128, 120))
+    async def _resolve(self, domain):
+        """
+        TTL-cached EthDNS resolver
+        """
+        result = await self.dnsResolver.query(domain, 'TXT')
+
+        if not result:
+            self.debug('Failed to resolve {}'.format(domain))
+            return None
+
+        for entry in result:
+            # Grab the dnslink
+
+            match = re.search('^dnslink=(.*)$', entry.text)
+            if not match:
+                continue
+
+            return match.group(1)
+
     async def resolveEnsDomain(self, domain, timeout=15):
         """
         Resolve an ENS domain with EthDNS, and return the
@@ -304,20 +326,7 @@ class EthDNSResolver:
 
         try:
             with async_timeout.timeout(timeout):
-                result = await self.dnsResolver.query(domainWLink, 'TXT')
-
-                if not result:
-                    self.debug('Failed to resolve {}'.format(domain))
-                    return None
-
-                for entry in result:
-                    # Grab the dnslink
-
-                    match = re.search('^dnslink=(.*)$', entry.text)
-                    if not match:
-                        continue
-
-                    return IPFSPath(match.group(1), autoCidConv=True)
+                return await self._resolve(domainWLink)
         except asyncio.TimeoutError:
             self.debug('Timeout resolving domain {}'.format(domain))
         except Exception as err:
@@ -357,22 +366,21 @@ class EthDNSSchemeHandler(BaseURLSchemeHandler):
         uPath = rUrl.path()
 
         if not domain or len(domain) > 512 or not domainValid(domain):
-            logUser.info('EthDNS: invalid domain request')
+            log.info('EthDNS: invalid domain request')
             return self.urlInvalid(request)
 
-        logUser.info('EthDNS: resolving {0}'.format(domain))
-
-        path = await self.ethResolver.resolveEnsDomain(domain)
+        pathRaw = await self.ethResolver.resolveEnsDomain(domain)
+        path = IPFSPath(pathRaw, autoCidConv=True)
 
         if path and path.valid:
             await ensDomainResolved.emit(domain, path)
 
             sPath = path.child(uPath) if uPath else path
-            logUser.info('EthDNS: {domain} resolved to {res}'.format(
+            log.debug('EthDNS: {domain} resolved to {res}'.format(
                 domain=domain, res=sPath.ipfsUrl))
             return request.redirect(QUrl(sPath.dwebUrl))
         else:
-            logUser.info('EthDNS: {domain} resolve failed'.format(
+            log.info('EthDNS: {domain} resolve failed'.format(
                 domain=domain))
             return self.urlNotFound(request)
 
@@ -629,7 +637,8 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
                 if data:
                     return await self.renderData(request, ipfsPath, data, uid)
         else:
-            return await self.renderData(request, ipfsPath, data, uid)
+            if data:
+                return await self.renderData(request, ipfsPath, data, uid)
 
     def requestStarted(self, request):
         if not request.requestUrl().isValid():
@@ -1078,14 +1087,11 @@ class EthDNSProxySchemeHandler(NativeIPFSSchemeHandler, IPFSObjectProxyScheme):
     This does not redirect to the IPFS object, but rather acts as a proxy.
     """
 
-    def __init__(self, app, resolver=None, parent=None, cacheMaxEntries=64):
+    def __init__(self, app, resolver=None, parent=None):
         super(EthDNSProxySchemeHandler, self).__init__(app, parent)
 
         self.ethResolver = resolver if resolver else \
             EthDNSResolver(self.app.loop)
-        self._ensCache = collections.OrderedDict()
-        self._ensCacheMaxEntries = cacheMaxEntries
-        self._ensExpires = 60 * 10
 
     def debug(self, msg):
         log.debug('EthDNS proxy: {}'.format(msg))
@@ -1097,32 +1103,10 @@ class EthDNSProxySchemeHandler(NativeIPFSSchemeHandler, IPFSObjectProxyScheme):
         if not domain or len(domain) > 512 or not domainValid(domain):
             return None
 
-        now = time.time()
-        lastDnsLink = lastResolved = None
-        cached = self._ensCache.get(domain, None)
-
-        if cached:
-            lastDnsLink = cached['dnslinkp']
-            lastResolved = cached['rlast']
-
-        linkExpired = lastResolved and (now - lastResolved) > self._ensExpires
-
-        if not lastDnsLink or linkExpired:
-            logUser.info('EthDNS: resolving {0}'.format(domain))
-            path = await self.ethResolver.resolveEnsDomain(domain)
-        else:
-            path = lastDnsLink
+        pathRaw = await self.ethResolver.resolveEnsDomain(domain)
+        path = IPFSPath(pathRaw, autoCidConv=True)
 
         if path and path.valid:
-            if not cached:
-                if len(self._ensCache) >= self._ensCacheMaxEntries:
-                    self._ensCache.popitem(last=False)
-
-                self._ensCache[domain] = {
-                    'dnslinkp': path,
-                    'rlast': now
-                }
-
             return path.child(uPath) if uPath else path
 
     @ipfsOp

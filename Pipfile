@@ -47,6 +47,8 @@ python3-crdt = ">=1.0.3"
 aiopubsub = ">=2.1.5"
 pypika = ">=0.36.5"
 asyncache = ">=0.1.1"
+mkdocs = ">=1.1.2"
+mkdocs-blog-plugin = ">=0.25"
 
 [dev-packages]
 pytest = "*"

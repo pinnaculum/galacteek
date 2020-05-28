@@ -35,7 +35,7 @@ from galacteek.did.ipid import IPService
 from .dids import buildIpServicesMenu
 from .helpers import filesSelectImages
 from .helpers import getIcon
-from .helpers import questionBox
+from .helpers import questionBoxAsync
 from .clips import RotatingCubeClipSimple
 from .widgets import PopupToolButton
 from . import ui_profileeditdialog
@@ -186,7 +186,8 @@ class ProfileEditDialog(QDialog):
         self.ui.lockButton.toggled.connect(self.onLockChange)
         self.ui.lockButton.setChecked(True)
         self.ui.changeIconButton.clicked.connect(self.changeIcon)
-        self.ui.updateButton.clicked.connect(self.save)
+        self.ui.updateButton.clicked.connect(
+            lambda: ensure(self.save()))
         self.ui.updateButton.setEnabled(False)
         self.ui.closeButton.clicked.connect(self.close)
 
@@ -298,16 +299,17 @@ class ProfileEditDialog(QDialog):
             async with ipid.editService(avatarServiceId) as editor:
                 editor.service['serviceEndpoint'] = joinIpfs(entry['Hash'])
 
-    def save(self):
+    async def save(self):
         if self.profile.userInfo.iphandleValid:
-            if not questionBox('Confirmation',
-                               'Are you sure you want to request '
-                               'a new IP handle and DID ?'
-                               ):
+            if not await questionBoxAsync(
+                'Confirmation',
+                'Are you sure you want to request '
+                'a new IP handle and DID ?'
+            ):
                 return
 
         self.enableDialog(toggle=False)
-        ensure(self.saveProfile())
+        await self.saveProfile()
 
     @ipfsOp
     async def ipHandleLockIpfs(self, ipfsop, iphandle, qrRaw, qrPng):

@@ -1,5 +1,4 @@
 import asyncio
-import functools
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QHeaderView
@@ -13,6 +12,7 @@ from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QFont
 
 from galacteek import ensure
+from galacteek import partialEnsure
 from galacteek.core.models.atomfeeds import AtomFeedEntryItem
 from galacteek.core.models.atomfeeds import AtomFeedItem
 from galacteek.dweb.page import BasePage
@@ -21,7 +21,7 @@ from . import ui_atomfeeds
 from .dialogs import AddAtomFeedDialog
 from .widgets import GalacteekTab
 from .widgets import IPFSWebView
-from .helpers import runDialog
+from .helpers import runDialogAsync
 
 
 class EmptyPage(BasePage):
@@ -95,25 +95,20 @@ class AtomFeedsView(QWidget):
         if isinstance(item, AtomFeedItem):
             menu = QMenu(self)
             menu.addAction('Remove feed',
-                           functools.partial(self.onRemoveFeed, item))
+                           partialEnsure(self.onRemoveFeed, item))
 
             menu.exec(self.ui.treeFeeds.mapToGlobal(point))
 
-    def onRemoveFeed(self, feedItem):
-        ensure(self.removeFeedFromItem(feedItem))
-
-    async def removeFeedFromItem(self, feedItem):
-        result = await self.app.sqliteDb.feeds.unfollow(feedItem.feedId)
-
-        if result is True:
-            self.model.updateRoot()
+    async def onRemoveFeed(self, feedItem):
+        await self.app.sqliteDb.feeds.unfollow(feedItem.feedId)
+        self.model.updateRoot()
 
     def onAddFeed(self):
         def urlAccepted(dlg):
             url = dlg.textValue()
             ensure(self.app.mainWindow.atomButton.atomFeedSubscribe(url))
 
-        runDialog(AddAtomFeedDialog, accepted=urlAccepted)
+        ensure(runDialogAsync(AddAtomFeedDialog, accepted=urlAccepted))
 
     def onEntryAdded(self, entryItem):
         if entryItem.entry.status == entryItem.entry.ENTRY_STATUS_NEW:

@@ -97,7 +97,8 @@ class KeysTab(GalacteekTab):
         self.ui.setupUi(self.keysW)
 
         self.ui.addKeyButton.clicked.connect(self.onAddKeyClicked)
-        self.ui.deleteKeyButton.clicked.connect(self.onDelKeyClicked)
+        self.ui.deleteKeyButton.clicked.connect(
+            lambda *args: ensure(self.onDelKeyClicked()))
 
         self.model = QStandardItemModel(parent=self)
 
@@ -120,7 +121,7 @@ class KeysTab(GalacteekTab):
         self.ui.treeKeys.header().setSectionResizeMode(
             1, QHeaderView.ResizeToContents)
 
-    def onDelKeyClicked(self):
+    async def onDelKeyClicked(self):
         idx = self.ui.treeKeys.currentIndex()
         if not idx.isValid():
             return messageBox('Invalid key')
@@ -131,7 +132,7 @@ class KeysTab(GalacteekTab):
         if not keyName:
             return
 
-        reply = questionBox(
+        reply = await questionBoxAsync(
             'Delete key', 'Delete IPNS key <b>{key}</b> ?'.format(key=keyName))
 
         if reply is True:

@@ -73,6 +73,7 @@ class IPFSResourceOpener(QObject):
     async def open(self, ipfsop, pathRef,
                    mimeType=None,
                    openingFrom=None,
+                   pyramidOrigin=None,
                    minWebProfile='ipfs',
                    schemePreferred=None,
                    tryDecrypt=False,
@@ -207,7 +208,8 @@ class IPFSResourceOpener(QObject):
         if mimeType.isText or editObject:
             tab = TextEditorTab(
                 parent=self.app.mainWindow,
-                editing=editObject
+                editing=editObject,
+                pyramidOrigin=pyramidOrigin
             )
             tab.editor.display(ipfsPath)
             self.objectOpened.emit(ipfsPath)

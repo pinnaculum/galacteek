@@ -959,11 +959,11 @@ class FileManager(QWidget):
         menu.addSeparator()
         menu.addAction(
             getIcon('clear-all.png'),
-            iUnlinkFileOrDir(), functools.partial(
+            iUnlinkFileOrDir(), partialEnsure(
                 self.scheduleUnlink, nameItem, dataHash))
         menu.addAction(
             getIcon('clear-all.png'),
-            iDeleteFileOrDir(), functools.partial(
+            iDeleteFileOrDir(), partialEnsure(
                 self.scheduleDelete, nameItem, dataHash))
         menu.addSeparator()
 
@@ -1124,11 +1124,11 @@ class FileManager(QWidget):
 
         dialog.setFileMode(QFileDialog.DirectoryOnly)
         dialog.filesSelected.connect(
-            lambda dirs: self.onDirsSelected(dialog, dirs))
+            lambda dirs: ensure(self.onDirsSelected(dialog, dirs)))
 
         return dialog.exec_()
 
-    def onDirsSelected(self, dialog, dirs):
+    async def onDirsSelected(self, dialog, dirs):
         self.dialogLastDirSelected = dialog.directory()
 
         if isinstance(dirs, list):
@@ -1136,13 +1136,13 @@ class FileManager(QWidget):
             gitign = dir.joinpath('.gitignore')
             useGitIgn = False
 
-            hidden = questionBox(
+            hidden = await questionBoxAsync(
                 iImportHiddenFiles(),
                 iImportHiddenFiles()
             )
 
             if gitign.exists():
-                useGitIgn = questionBox(
+                useGitIgn = await questionBoxAsync(
                     iUseGitIgnoreRules(),
                     iUseGitIgnoreRules()
                 )
@@ -1192,19 +1192,20 @@ class FileManager(QWidget):
             self.addDirectory, path, hidden, useGitIgn)
         self.ui.cancelButton.show()
 
-    def scheduleUnlink(self, item, cid):
-        reply = questionBox('Unlink',
-                            'Do you really want to unlink this item ?')
+    async def scheduleUnlink(self, item, cid):
+        reply = await questionBoxAsync(
+            'Unlink', 'Do you really want to unlink this item ?')
         if reply:
-            ensure(self.unlinkFileFromHash(item, cid))
+            await self.unlinkFileFromHash(item, cid)
 
-    def scheduleDelete(self, item, cid):
-        reply = questionBox(
+    async def scheduleDelete(self, item, cid):
+        reply = await questionBoxAsync(
             'Delete',
-            'Do you really want to delete: <b>{}</b>'.format(cid)
+            'Do you really want to delete the object with CID: '
+            '<b>{}</b> ?'.format(cid)
         )
         if reply:
-            ensure(self.deleteFromCID(item, cid))
+            await self.deleteFromCID(item, cid)
 
     def updateTree(self):
         self.app.task(self.listFiles, self.displayPath,

@@ -16,6 +16,7 @@ from PyQt5.QtCore import QSize
 from PyQt5.QtCore import QEvent
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import QDir
+from PyQt5.QtCore import QFile
 from PyQt5.QtCore import pyqtSignal
 
 from PyQt5.QtWidgets import QStyle
@@ -28,6 +29,7 @@ from PyQt5.QtWidgets import QLabel
 from PyQt5.QtWidgets import QLineEdit
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QVBoxLayout
+from PyQt5.QtWidgets import QDialogButtonBox
 
 from galacteek import ensure
 from galacteek import partialEnsure
@@ -265,6 +267,42 @@ def messageBoxCreate(message, title=None):
     return msgBox
 
 
+def questionBoxCreate(message, title=None):
+    app = QApplication.instance()
+
+    msgBox = QDialog()
+    msgBox.setObjectName('questionBox')
+    msgBox._question_result = False
+
+    buttonBox = QDialogButtonBox(
+        QDialogButtonBox.Yes | QDialogButtonBox.No
+    )
+    buttonBox.setCenterButtons(True)
+
+    def _callback(box, val):
+        box._question_result = val
+        box.done(0)
+
+    buttonBox.accepted.connect(lambda: _callback(msgBox, True))
+    buttonBox.rejected.connect(lambda: _callback(msgBox, False))
+
+    label = QLabel(message)
+    label.setAlignment(Qt.AlignCenter)
+    label.setWordWrap(True)
+
+    layout = QVBoxLayout()
+    layout.addWidget(label)
+    layout.addWidget(buttonBox)
+
+    msgBox.setLayout(layout)
+    msgBox.setMinimumWidth(
+        app.desktopGeometry.width() / 3
+    )
+    msgBox.setWindowTitle(title if title else 'galacteek: Question')
+
+    return msgBox
+
+
 async def messageBoxAsync(message, title=None):
     mBox = messageBoxCreate(message, title=title)
     mBox.show()
@@ -278,6 +316,13 @@ def messageBox(message, title=None):
 def questionBox(title, text, parent=None):
     box = QMessageBox.question(parent, title, text)
     return box == QMessageBox.Yes
+
+
+async def questionBoxAsync(title, text, parent=None):
+    box = questionBoxCreate(text, title=title)
+    box.show()
+    await threadExec(box.exec_)
+    return box._question_result
 
 
 def directorySelect(caption=''):
@@ -383,6 +428,16 @@ def inputTextCustom(title='No title', label='Input', text='',
     dlg.resize(width, height)
     dlg.exec_()
     return dlg.textValue()
+
+
+def qrcFileData(path):
+    qrcFile = QFile(path)
+
+    try:
+        qrcFile.open(QFile.ReadOnly)
+        return qrcFile.readAll().data()
+    except BaseException:
+        pass
 
 
 class IPFSTreeKeyFilter(QObject):

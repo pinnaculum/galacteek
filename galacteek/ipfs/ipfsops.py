@@ -6,6 +6,7 @@ import json
 import tempfile
 import uuid
 import aiofiles
+import shutil
 import pkg_resources
 
 from pathlib import Path
@@ -80,6 +81,35 @@ class IPFSOperatorOfflineContext(object):
 
     async def __aexit__(self, *args):
         self.operator.offline = self.prevOff
+
+
+class GetContext(object):
+    def __init__(self, operator, path, dstdir, **kwargs):
+        self.operator = operator
+        self.path = IPFSPath(path)
+        self.dstdir = Path(dstdir)
+        self.finaldir = None
+
+    async def __aenter__(self):
+        try:
+            await self.operator.client.core.get(
+                str(self.path), dstdir=str(self.dstdir))
+        except Exception as err:
+            self.operator.debug(f'Unknown error: {self.path}: {err}')
+            return self
+        except aioipfs.APIError as err:
+            self.operator.debug(f'Get error: {self.path}: {err}')
+            return self
+        else:
+            self.finaldir = self.dstdir.joinpath(self.path.basename)
+            self.operator.debug(
+                f'Get {self.path}: OK, fetched in {self.finaldir}')
+            return self
+
+    async def __aexit__(self, *args):
+        self.operator.debug(
+            f'Get {self.path}: cleaning up {self.dstdir}')
+        await self.operator.asyncRmTree(self.dstdir)
 
 
 class TunnelDialerContext(object):
@@ -284,6 +314,14 @@ class IPFSOperator(object):
 
     async def __aexit__(self, *args):
         return
+
+    async def asyncRmTree(self, path):
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(
+            None,
+            shutil.rmtree,
+            path
+        )
 
     async def sleep(self, t=0):
         await asyncio.sleep(t)
@@ -1606,6 +1644,10 @@ class IPFSOperator(object):
             return TunnelDialerContext(self, peer, proto, maddr)
         else:
             return TunnelDialerContext(self, peer, proto, address)
+
+    @async_enterable
+    async def getContexted(self, path, dstdir, **kwargs):
+        return GetContext(self, path, dstdir, **kwargs)
 
 
 class IPFSOpRegistry:

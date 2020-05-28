@@ -129,6 +129,17 @@ QTreeView::branch:open:has-children:has-siblings:hover {
     image: url(:/share/icons/treeview/branch_open.png);
 }
 
+QListView::item:hover {
+    background-color: #eec146;
+    border: 1px solid #4b9fa2;
+}
+
+QListView::item:selected {
+    background-color: #60cccf;
+    border: 1px solid #4b9fa2;
+    color: black;
+}
+
 QToolBox {
     background-color: #f6fafb;
 }
