@@ -438,7 +438,11 @@ def iExploreDirectory():
 
 
 def iEditObject():
-    return QCoreApplication.translate('GalacteekWindow', 'Edit object')
+    return QCoreApplication.translate('GalacteekWindow', 'Edit')
+
+
+def iEditInputObject():
+    return QCoreApplication.translate('GalacteekWindow', 'Edit input')
 
 
 def iDownload():

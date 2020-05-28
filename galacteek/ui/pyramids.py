@@ -3,6 +3,7 @@ import aioipfs
 import asyncio
 import random
 from datetime import datetime
+from pathlib import Path
 
 from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QToolTip
@@ -36,7 +37,9 @@ from galacteek.ipfs.dag import DAGRewindException
 from galacteek.dweb.render import ipfsRender
 from galacteek.core import utcDatetimeIso
 from galacteek.core.ipfsmarks import MultihashPyramid
+from galacteek.core.ipfsmarks import IPFSHashMark
 from galacteek.core.profile import UserProfile
+from galacteek.core.asynclib import asyncWriteFile
 from galacteek.crypto.qrcode import IPFSQrEncoder
 from galacteek.core.fswatcher import FileWatcher
 
@@ -49,10 +52,11 @@ from .helpers import getMimeIcon
 from .helpers import getIcon
 from .helpers import getIconFromIpfs
 from .helpers import runDialogAsync
-from .helpers import questionBox
+from .helpers import questionBoxAsync
 from .helpers import getImageFromIpfs
 from .helpers import inputTextLong
 from .helpers import messageBox
+from .helpers import qrcFileData
 from .dialogs import AddMultihashPyramidDialog
 from .hashmarks import addHashmarkAsync
 
@@ -79,6 +83,12 @@ def iCreateAutoSyncPyramid():
     return QCoreApplication.translate(
         'pyramidMaster',
         'Create auto-sync pyramid')
+
+
+def iCreateWebsiteMkdocs():
+    return QCoreApplication.translate(
+        'pyramidMaster',
+        'Create website (mkdocs)')
 
 
 def iOpenLatestInPyramid():
@@ -223,6 +233,7 @@ class MultihashPyramidsToolBar(QToolBar):
         self.app.marksLocal.pyramidNeedsPublish.connect(self.publishNeeded)
         self.app.marksLocal.pyramidChanged.connect(self.onPyramidChanged)
         self.app.marksLocal.pyramidEmpty.connect(self.onPyramidEmpty)
+        self.app.marksLocal.pyramidAddedMark.connect(self.onPyramidNewMark)
 
         self.setObjectName('toolbarPyramids')
         self.setToolTip('Hashmark pyramids toolbar')
@@ -258,6 +269,13 @@ class MultihashPyramidsToolBar(QToolBar):
             iCreateGallery(), self.onAddGallery)
         self.pyramidsControlButton.menu.addSeparator()
 
+        self.pyramidsControlButton.menu.addAction(
+            getMimeIcon('text/html'),
+            iCreateWebsiteMkdocs(),
+            self.onAddPyramidWebsiteMkdocs
+        )
+        self.pyramidsControlButton.menu.addSeparator()
+
         self.pyramidsControlButton.menu.addSeparator()
 
         self.pyramidsControlButton.menu.addAction(
@@ -276,8 +294,8 @@ class MultihashPyramidsToolBar(QToolBar):
         newSize = QSize(current.width() * 2, current.height() * 2)
         self.setIconSize(newSize)
 
-    def removePyramidAsk(self, pyramidButton, action):
-        reply = questionBox(
+    async def removePyramidAsk(self, pyramidButton, action):
+        reply = await questionBoxAsync(
             iRemove(),
             'Remove pyramid <b>{pyr}</b> and its IPNS key ?'.format(
                 pyr=pyramidButton.pyramid.name
@@ -315,6 +333,11 @@ class MultihashPyramidsToolBar(QToolBar):
         if pyramidPath in self.pyramids:
             self.pyramids[pyramidPath].emptyNow.emit()
 
+    def onPyramidNewMark(self, pyramidPath, mark, mtype):
+        if pyramidPath in self.pyramids:
+            ensure(self.pyramids[pyramidPath].markAdded.emit(
+                mark, mtype))
+
     def onPyramidConfigured(self, pyramidPath):
         if pyramidPath in self.pyramids:
             # Already configured ?
@@ -331,12 +354,14 @@ class MultihashPyramidsToolBar(QToolBar):
             button = GalleryPyramidController(pyramid, parent=self)
         elif pyramid.type == MultihashPyramid.TYPE_AUTOSYNC:
             button = AutoSyncPyramidButton(pyramid, parent=self)
+        elif pyramid.type == MultihashPyramid.TYPE_WEBSITE_MKDOCS:
+            button = WebsiteMkdocsPyramidButton(pyramid, parent=self)
         else:
             # TODO
             return
 
         action = self.addWidget(button)
-        button.deleteRequest.connect(functools.partial(
+        button.deleteRequest.connect(partialEnsure(
             self.removePyramidAsk, button, action))
 
         if pyramid.icon:
@@ -349,7 +374,7 @@ class MultihashPyramidsToolBar(QToolBar):
     def pyramidsIdsList(self):
         return self.pyramids.keys()
 
-    def getPyrDropButtonFor(self, ipfsPath):
+    def getPyrDropButtonFor(self, ipfsPath, origin=None):
         """
         Returns a tool button to choose a pyramid to drop
         an object to
@@ -364,6 +389,10 @@ class MultihashPyramidsToolBar(QToolBar):
 
             # Emit ipfsObjectDropped when selected
             # Ask confirmation here ?
+
+            if origin and origin != pyrpath:
+                # Only show origin pyramid
+                continue
 
             button.menu.addAction(
                 pyr.icon(),
@@ -421,6 +450,12 @@ class MultihashPyramidsToolBar(QToolBar):
                               title='New autosync pyramid',
                               parent=self))
 
+    def onAddPyramidWebsiteMkdocs(self):
+        ensure(runDialogAsync(AddMultihashPyramidDialog, self.app.marksLocal,
+                              MultihashPyramid.TYPE_WEBSITE_MKDOCS,
+                              title='New website (mkdocs)',
+                              parent=self))
+
 
 class MultihashPyramidToolButton(PopupToolButton):
     deleteRequest = pyqtSignal()
@@ -435,6 +470,9 @@ class MultihashPyramidToolButton(PopupToolButton):
         if icon:
             self.setIcon(icon)
 
+        self.markAdded = AsyncSignal(IPFSHashMark, str)
+
+        self.lock = asyncio.Lock()
         self.active = True
         self._publishInProgress = False
         self._pyramid = pyramid
@@ -477,11 +515,16 @@ class MultihashPyramidToolButton(PopupToolButton):
                                   self,
                                   triggered=self.onEdit)
 
+        self.inputEditAction = QAction(getIcon('pyramid-aqua.png'),
+                                       iEditObject(),
+                                       self,
+                                       triggered=self.onInputEdit)
+
         self.publishCurrentClipAction = QAction(
             getIcon('clipboard.png'),
             iPyramidPublishCurrentClipboard(),
             self,
-            triggered=self.onPublishClipboardItem
+            triggered=lambda *args: ensure(self.onPublishClipboardItem())
         )
         self.publishCurrentClipAction.setEnabled(False)
 
@@ -509,10 +552,12 @@ class MultihashPyramidToolButton(PopupToolButton):
                                     self,
                                     triggered=self.onDeletePyramid)
 
-        self.didPublishAction = QAction(getIcon('ipservice.png'),
-                                        iProfilePublishToDID(),
-                                        self,
-                                        triggered=self.onPublishToDID)
+        self.didPublishAction = QAction(
+            getIcon('ipservice.png'),
+            iProfilePublishToDID(),
+            self,
+            triggered=lambda *args: ensure(self.onPublishToDID()))
+
         self.didPublishAction.setToolTip(iProfilePublishToDIDToolTip())
 
         self.hashmarkAction = QAction(getIcon('hashmarks.png'),
@@ -715,9 +760,9 @@ class MultihashPyramidToolButton(PopupToolButton):
             description=self.pyramid.description
         ))
 
-    def onPublishToDID(self):
-        if questionBox('Publish', 'Publish to your DID ?'):
-            ensure(self.didPublishService())
+    async def onPublishToDID(self):
+        if await questionBoxAsync('Publish', 'Publish to your DID ?'):
+            await self.didPublishService()
 
     def onPyrChange(self):
         self.updateToolTip()
@@ -770,6 +815,9 @@ class MultihashPyramidToolButton(PopupToolButton):
             self.ipnsKeyPath, minWebProfile='ipfs',
             editObject=True))
 
+    def onInputEdit(self):
+        pass
+
     def onOpenLatest(self):
         """ Open latest object """
         if not isinstance(self.pyramid.latest, str) or not self.pyramidion:
@@ -784,12 +832,11 @@ class MultihashPyramidToolButton(PopupToolButton):
         self.clipboardItem = clipItem
         self.publishCurrentClipAction.setEnabled(True)
 
-    def onPublishClipboardItem(self):
+    async def onPublishClipboardItem(self):
         if self.clipboardItem:
-            reply = questionBox(
+            reply = await questionBoxAsync(
                 'Publish',
-                'Publish clipboard item (<b>{0}</b>) to this pyramid ?'.format(
-                    str(self.clipboardItem.path))
+                'Publish current clipboard item to this pyramid ?'
             )
             if reply is True:
                 self.app.marksLocal.pyramidAdd(
@@ -991,7 +1038,6 @@ class AutoSyncPyramidButton(MultihashPyramidToolButton):
     def __init__(self, *args, **kw):
         super(AutoSyncPyramidButton, self).__init__(*args, **kw)
 
-        self.lock = asyncio.Lock()
         self.watcher = FileWatcher()
         self.watcher.watch(self.watchedPath)
         self.watcher.pathChanged.connect(self.onPathChanged)
@@ -1146,6 +1192,172 @@ class AutoSyncPyramidButton(MultihashPyramidToolButton):
     @property
     def watchedPath(self):
         return self.pyramid.extra['autosyncpath']
+
+
+class ContinuousPyramid(MultihashPyramidToolButton):
+    def __init__(self, *args, **kw):
+        super(ContinuousPyramid, self).__init__(*args, **kw)
+
+        self.markAdded.connectTo(self.onMarkAdded)
+
+    async def onMarkAdded(self, mark, mtype):
+        pass
+
+    def onInputEdit(self):
+        mark = self.app.marksLocal.pyramidGetLatestInputHashmark(
+            self.pyramid.path)
+        if mark:
+            ensure(self.app.resourceOpener.open(
+                mark.path, editObject=True,
+                pyramidOrigin=self.pyramid.path))
+
+    @ipfsOp
+    async def pyramidInputNew(self, ipfsop, fspath):
+        entry = await ipfsop.addPath(fspath, recursive=True)
+        if entry:
+            path = IPFSPath(entry['Hash'])
+            self.app.marksLocal.pyramidAdd(
+                self.pyramid.path, str(path), unique=True,
+                type='inputmark')
+
+    @ipfsOp
+    async def pyramidInputNewObject(self, ipfsop, ipfsPath):
+        tmpdir = self.app.tempDirCreate(self.app.tempDir.path())
+
+        async with ipfsop.getContexted(ipfsPath, tmpdir) as get:
+            if get.finaldir:
+                await self. pyramidInputNew(str(get.finaldir))
+
+    @ipfsOp
+    async def pyramidOutputNew(self, ipfsop, fspath):
+        entry = await ipfsop.addPath(fspath, recursive=True)
+        if entry:
+            path = IPFSPath(entry['Hash'])
+            self.app.marksLocal.pyramidAdd(
+                self.pyramid.path, str(path), unique=True,
+                type='mark')
+
+
+class WebsiteMkdocsPyramidButton(ContinuousPyramid):
+    """
+    This pyramid generates websites with the great MKDocs.
+    The input objects are IPFS UnixFS directories holding
+    an MKDocs website (in markdown). The output is the generated
+    website in HTML generated by MKDocs.
+    """
+
+    def buildMenu(self):
+        self.buildMenuWithActions([
+            self.openAction,
+            self.openLatestAction,
+            self.inputEditAction,
+            self.copyIpnsAction,
+            self.copyIpnsGwAction,
+            self.generateQrAction,
+            self.didPublishAction,
+            self.hashmarkAction,
+            self.deleteAction
+        ])
+
+    async def onObjectDropped(self, ipfsPath):
+        await self.cancelPublishJob()
+        async with self.lock:
+            await self.pyramidInputNewObject(str(ipfsPath))
+
+    async def onMarkAdded(self, mark, mtype):
+        if mtype == 'inputmark':
+            await self.mkdocsProcessInput(mark.path)
+
+    async def mkdocsRun(self, args: list, **opts):
+        try:
+            proc = await asyncio.create_subprocess_shell(
+                ' '.join(['mkdocs'] + args),
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                **opts
+            )
+            stdout, stderr = await proc.communicate()
+        except BaseException:
+            return -1, None
+        else:
+            return proc.returncode, stdout
+
+    @ipfsOp
+    async def mkdocsProcessInput(self, ipfsop, dIpfsPath):
+        self.chBgColor('orange')
+        tmpdir = self.app.tempDirCreate(self.app.tempDir.path())
+
+        async with ipfsop.getContexted(dIpfsPath, tmpdir) as get:
+            code, stdout = await self.mkdocsRun(
+                ['build', '-q'], cwd=str(get.finaldir))
+
+            self.resetStyleSheet()
+
+            if code == 0:
+                outputdir = get.finaldir.joinpath('site')
+                await self.pyramidOutputNew(str(outputdir))
+
+    @ipfsOp
+    async def mkdocsNew(self, ipfsop):
+        tmpdir = self.app.tempDirCreate(self.app.tempDir.path())
+        tmpdirp = Path(tmpdir)
+
+        code, stdout = await self.mkdocsRun(['new', '-q', tmpdir])
+        if code == 0:
+            favicon = qrcFileData(':/share/icons/ipfs-favicon.ico')
+
+            imgpath = tmpdirp.joinpath('docs/img')
+            imgpath.mkdir(parents=True, exist_ok=True)
+            faviconPath = imgpath.joinpath('favicon.ico')
+            configPath = tmpdirp.joinpath('mkdocs.yml')
+
+            if favicon:
+                await asyncWriteFile(str(faviconPath), bytes(favicon))
+
+            await asyncWriteFile(
+                str(configPath),
+                'site_name: My dwebsite',
+                mode='w+t'
+            )
+
+            await self.pyramidInputNew(tmpdir)
+
+    async def initialize(self):
+        await super().initialize()
+
+        if not self.pyramidion:
+            await self.mkdocsNew()
+
+    def updateToolTip(self):
+        self._pyrToolTip = '''
+            <p>
+                <img width='64' height='64'
+                    src=':/share/icons/mimetypes/text-html.png'/>
+            </p>
+            <p>
+                MKDocs website pyramid: <b>{path}</b>
+                ({itemscount} item(s) in the stack)
+            </p>
+
+            <p>Description: {descr}</p>
+            <p>IPNS key: <b>{ipns}</b></p>
+            <p>IPNS key (CIDv1): <b>{ipnsv1}</b></p>
+
+            <p>
+                <img width='16' height='16'
+                    src=':/share/icons/pyramid-stack.png'/>
+                Latest (pyramidion): <b>{latest}</b>
+            </p>
+        '''.format(
+            path=self.pyramid.path,
+            descr=self.pyramid.description,
+            ipns=self.pyramid.ipnsKey,
+            ipnsv1=ipnsKeyCidV1(self.pyramid.ipnsKey),
+            itemscount=self.pyramid.marksCount,
+            latest=self.pyramid.latest if self.pyramid.latest else
+            iEmptyPyramid()
+        )
+        self.setToolTip(self.pyrToolTip)
 
 
 class EDAGBuildingPyramidController(MultihashPyramidToolButton):
@@ -1326,10 +1538,6 @@ class GalleryPyramidController(EDAGBuildingPyramidController):
             getIcon('pyramid-blue.png'), iHelp(), self.galleryHelpMessage)
         self.menu.setEnabled(False)
         self.menu.setToolTipsVisible(True)
-
-    def onPublishToDID(self):
-        if questionBox('Publish', 'Publish to your DID ?'):
-            ensure(self.didPublishService())
 
     @ipfsOp
     async def didPublishService(self, ipfsop):

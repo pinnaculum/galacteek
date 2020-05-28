@@ -1469,5 +1469,6 @@ class MainWindow(QMainWindow):
     def onSearchServices(self):
         self.pSearchDock.searchMode()
 
-    def getPyrDropButtonFor(self, ipfsPath):
-        return self.toolbarPyramids.getPyrDropButtonFor(ipfsPath)
+    def getPyrDropButtonFor(self, ipfsPath, origin=None):
+        return self.toolbarPyramids.getPyrDropButtonFor(
+            ipfsPath, origin=origin)

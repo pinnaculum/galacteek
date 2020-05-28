@@ -64,6 +64,7 @@ from galacteek.appsettings import *
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs.cidhelpers import IPFSPath
+from galacteek.ipfs.mimetype import detectMimeType
 from galacteek.ipfs.mimetype import detectMimeTypeFromFile
 from galacteek.ipfs.mimetype import detectMimeTypeFromBuffer
 from galacteek.dweb.markdown import markitdown
@@ -367,12 +368,14 @@ class Document(QTextDocument):
 
 
 class TextEditorTab(GalacteekTab):
-    def __init__(self, editing=False, parent=None):
+    def __init__(self, editing=False, pyramidOrigin=None, parent=None):
         super(TextEditorTab, self).__init__(parent)
 
         self.editor = TextEditorWidget(
             editing=editing,
-            parent=self)
+            pyramidOrigin=pyramidOrigin,
+            parent=self
+        )
         self.editor.documentChanged.connect(self.onDocChange)
         self.editor.documentNameChanged.connect(self.onDocnameChanged)
 
@@ -403,7 +406,14 @@ class TextEditorTab(GalacteekTab):
             self.changeTabName(doc.filename)
 
     async def onClose(self):
-        if self.editor.checkChanges() is True:
+        if await self.editor.checkChanges() is True:
+            if self.editor.localCheckoutChanged is True:
+                unsaved = await questionBoxAsync(
+                    'Unsaved changes',
+                    'This session has unsynced content, continue ?')
+                if unsaved is False:
+                    return unsaved
+
             self.editor.cleanup()
             return True
         return False
@@ -463,7 +473,8 @@ class TextEditorWidget(QWidget):
     filenameEntered = pyqtSignal(str)
 
     def __init__(self, offline=False, editing=False, sessionDagCid=None,
-                 parent=None):
+                 pyramidOrigin=None,
+                 pyramidAutoPush=False, parent=None):
         super(TextEditorWidget, self).__init__(parent)
 
         self.app = QApplication.instance()
@@ -471,6 +482,8 @@ class TextEditorWidget(QWidget):
         self.textEditor = Editor(self)
 
         self.checkoutPath = None
+        self.pyramidOrigin = pyramidOrigin
+        self.pyramidAutoPush = pyramidAutoPush
 
         self.busyCube = AnimatedLabel(
             RotatingCubeRedFlash140d(speed=100),
@@ -759,15 +772,15 @@ class TextEditorWidget(QWidget):
 
         menu.addAction(
             getIcon('clear-all.png'),
-            'Delete', functools.partial(
-                self.fsDelete, fullPath))
+            'Delete',
+            partialEnsure(self.fsDelete, fullPath)
+        )
 
         menu.exec_(pos)
 
-    def fsDelete(self, path):
-        if path:
-            if questionBox(iRemove(), iRemoveFileAsk()):
-                ensure(self._fsDelete(path))
+    async def fsDelete(self, path):
+        if path and await questionBoxAsync(iRemove(), iRemoveFileAsk()):
+            await self._fsDelete(path)
 
     def fsAddFile(self, root):
         if not root:
@@ -785,6 +798,7 @@ class TextEditorWidget(QWidget):
                 return messageBox('Already exists')
 
             filepath.touch()
+            self.localCheckoutChanged = True
             self.sessionViewUpdate()
 
     def fsImportFile(self, root):
@@ -876,6 +890,7 @@ class TextEditorWidget(QWidget):
                 return messageBox('Already exists')
 
             dirpath.mkdir()
+            self.localCheckoutChanged = True
             self.sessionViewUpdate()
 
     def onFsViewItemDoubleClicked(self, idx, fInfo):
@@ -1039,26 +1054,12 @@ class TextEditorWidget(QWidget):
         if name and len(name) in range(1, 256):
             return name
 
-    def checkChanges(self):
-        if self.localCheckoutChanged is True:
-            return questionBox(
-                'Unsaved changes',
-                'This session has unsynced content, continue ?')
+    async def checkChanges(self):
         if self.currentDocument and self.currentDocument.changed is True:
-            return questionBox(
+            return await questionBoxAsync(
                 'Unsaved changes',
                 'The current document was not saved, continue ?')
         return True
-
-    def onNewFile(self):
-        if not self.checkChanges():
-            return
-
-        name = self.nameInput()
-
-        if name:
-            self.currentDocument = self.newDocument(name=name)
-            self.editing = True
 
     def onEditToggled(self, checked):
         self.editing = checked
@@ -1166,6 +1167,11 @@ class TextEditorWidget(QWidget):
         dBrowser = QTextBrowser(dlg)
         layout.addWidget(dBrowser)
 
+        async def getTextContent(cid):
+            mType = await detectMimeType(cid, bufferSize=1024)
+            if mType and mType.isText:
+                return await ipfsop.catObject(cid)
+
         for change in changes:
             objPath = change.get('Path')
             before = change.get('Before')
@@ -1175,8 +1181,18 @@ class TextEditorWidget(QWidget):
 
             if change['Type'] == 2 and beforeCid and afterCid:
                 try:
-                    _bData = await ipfsop.catObject(beforeCid)
-                    _aData = await ipfsop.catObject(afterCid)
+                    _bData = await getTextContent(beforeCid)
+                    _aData = await getTextContent(afterCid)
+
+                    if not _bData:
+                        dBrowser.insertHtml(
+                            '<p>Ignoring object {}</p>'.format(beforeCid))
+                        continue
+
+                    if not _aData:
+                        dBrowser.insertHtml(
+                            '<p>Ignoring object {}</p>'.format(afterCid))
+                        continue
 
                     diff = difflib.HtmlDiff().make_file(
                         _bData.decode().split('\n'),
@@ -1192,7 +1208,13 @@ class TextEditorWidget(QWidget):
                     continue
             elif change['Type'] == 0 and afterCid:
                 try:
-                    _aData = await ipfsop.catObject(afterCid)
+                    _aData = await getTextContent(afterCid)
+
+                    if not _aData:
+                        dBrowser.insertHtml(
+                            '<p>Ignoring object {}</p>'.format(afterCid))
+                        continue
+
                     lines = _aData.decode().split('\n')
 
                     diff = difflib.HtmlDiff().make_file(
@@ -1209,7 +1231,13 @@ class TextEditorWidget(QWidget):
                     continue
             elif change['Type'] == 1 and beforeCid:
                 try:
-                    _bData = await ipfsop.catObject(beforeCid)
+                    _bData = await getTextContent(beforeCid)
+
+                    if not _bData:
+                        dBrowser.insertHtml(
+                            '<p>Ignoring object {}</p>'.format(beforeCid))
+                        continue
+
                     lines = _bData.decode().split('\n')
 
                     diff = difflib.HtmlDiff().make_file(
@@ -1290,7 +1318,9 @@ class TextEditorWidget(QWidget):
 
             urlLabel = IPFSUrlLabel(path)
             clipButton = IPFSPathClipboardButton(path)
-            pyrDropButton = self.app.mainWindow.getPyrDropButtonFor(path)
+            pyrDropButton = self.app.mainWindow.getPyrDropButtonFor(
+                path, origin=self.pyramidOrigin
+            )
 
             now = QDateTime.currentDateTime()
             date = QLabel()
@@ -1356,7 +1386,7 @@ class TextEditorWidget(QWidget):
 
     @ipfsOp
     async def showFromPath(self, ipfsop, ipfsPath):
-        if not self.checkChanges():
+        if not await self.checkChanges():
             return
 
         if not ipfsPath.valid:
@@ -1417,7 +1447,7 @@ class TextEditorWidget(QWidget):
         return mtype and (mtype.isText or mtype.isHtml)
 
     async def openFileFromCheckout(self, relpath):
-        if not self.checkChanges():
+        if not await self.checkChanges():
             return
 
         self.previewButton.setChecked(False)

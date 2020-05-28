@@ -88,6 +88,32 @@ your process can monitor simultaneously. On Linux you can modify
 the maximum number of *inotify user watches* with the command
 **sysctl fs.inotify.max_user_watches=<num>**
 
+MKDocs website
+--------------
+
+MKDocs_ is a fast, simple and downright gorgeous static site
+generator that's geared towards building project documentation.
+Documentation source files are written in Markdown, and configured
+with a single YAML configuration file.
+
+Although it's geared towards documentation projects, you can use MKDocs
+to build any type of website (including blogs) thanks to its plugin
+system and the power of Markdown.
+
+Usage
+^^^^^
+
+After creating an MKDocs pyramid the default website will be generated.
+To edit the website, just click on the pyramid and select *Edit input*,
+which will open the text editor, from which you can modify the
+structure of the MKDocs project. Once you have made changes to the
+project and want to update your website, use the pyramid drop button
+in the editor to push the new version, and the website will be
+automatically regenerated.
+
+For more information on how to use MKDocs please consult the
+`MKDocs user guide <https://www.mkdocs.org/user-guide/writing-your-docs/>`_
+
 DAG building pyramids
 ---------------------
 
@@ -112,3 +138,6 @@ or rewind the DAG. Rewinding the DAG cancels the latest
 DAG operation (for example if you've added an image that
 you now want to remove, just rewind the DAG once, and
 the DAG will be restored to the previous object in the history).
+
+
+.. _MKDocs: https://www.mkdocs.org/

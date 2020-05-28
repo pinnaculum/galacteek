@@ -33,6 +33,7 @@ class MarksEncoder(json.JSONEncoder):
 marksKey = '_marks'
 pyramidsKey = '_pyramids'
 pyramidsMarksKey = '_pyramidmarks'
+pyramidsInputMarksKey = '_inputmarks'
 pyramidMaxHmarksDefault = 16
 
 
@@ -202,6 +203,8 @@ class MultihashPyramid(collections.UserDict):
     TYPE_GALLERY = 1
     TYPE_AUTOSYNC = 2
 
+    TYPE_WEBSITE_MKDOCS = 3
+
     # Flags
     FLAG_MODIFIABLE_BYUSER = 0x01
 
@@ -212,6 +215,10 @@ class MultihashPyramid(collections.UserDict):
     @property
     def marks(self):
         return self.p[pyramidsMarksKey]
+
+    @property
+    def inputmarks(self):
+        return self.p[pyramidsInputMarksKey]
 
     @property
     def marksCount(self):
@@ -294,6 +301,7 @@ class MultihashPyramid(collections.UserDict):
                 'maxhashmarks': maxhashmarks,
                 'flags': flags,
                 'extra': extraOpts,
+                pyramidsInputMarksKey: [],
                 pyramidsMarksKey: []  # list of hashmarks in the pyramid
             }
         })
@@ -345,7 +353,7 @@ class IPFSMarks(QObject):
     feedMarkAdded = pyqtSignal(str, IPFSHashMark)
 
     pyramidConfigured = pyqtSignal(str)
-    pyramidAddedMark = pyqtSignal(str, IPFSHashMark)
+    pyramidAddedMark = pyqtSignal(str, IPFSHashMark, str)
     pyramidCapstoned = pyqtSignal(str)
     pyramidNeedsPublish = pyqtSignal(str, IPFSHashMark)
     pyramidChanged = pyqtSignal(str)
@@ -863,18 +871,34 @@ class IPFSMarks(QObject):
     def pyramidPathFormat(self, category, name):
         return os.path.join(category, name)
 
-    def pyramidGetLatestHashmark(self, pyramidPath):
+    def pyramidGetLatestHashmark(self, pyramidPath, type='mark'):
         pyramid = self.pyramidGet(pyramidPath)
         if not pyramid:
             return None
 
         if pyramid.marksCount > 0:
             try:
-                latest = pyramid.marks[-1]
+                if type == 'mark':
+                    latest = pyramid.marks[-1]
+                elif type == 'inputmark':
+                    latest = pyramid.inputmarks[-1]
+
                 (mPath, mark), = latest.items()
                 return IPFSHashMark.fromJson(mPath, mark)
             except:
                 return None
+
+    def pyramidGetLatestInputHashmark(self, pyramidPath):
+        pyramid = self.pyramidGet(pyramidPath)
+        if not pyramid:
+            return None
+
+        try:
+            latest = pyramid.inputmarks[-1]
+            (mPath, mark), = latest.items()
+            return IPFSHashMark.fromJson(mPath, mark)
+        except:
+            return None
 
     def onPyramidCapstone(self, pyramidPath):
         pyramid = self.pyramidGet(pyramidPath)
@@ -946,22 +970,30 @@ class IPFSMarks(QObject):
             del sec[pyramidsKey][name]
             self.changed.emit()
 
-    def pyramidAdd(self, pyramidPath, path, unique=False):
+    def pyramidAdd(self, pyramidPath, path, unique=False,
+                   type='mark'):
         sec, category, name = self.pyramidAccess(pyramidPath)
 
         if not sec:
             return False
 
+        if type == 'mark':
+            key = pyramidsMarksKey
+        elif type == 'inputmark':
+            key = pyramidsInputMarksKey
+        else:
+            raise ValueError('Invalid mark type')
+
         if name in sec[pyramidsKey]:
             pyramid = sec[pyramidsKey][name]
-            count = len(pyramid[pyramidsMarksKey])
+            count = len(pyramid[key])
 
             if count >= pyramid.get('maxhashmarks', pyramidMaxHmarksDefault):
-                pyramid[pyramidsMarksKey].pop(0)
+                pyramid[key].pop(0)
 
             # Don't register something that's already there
             if unique:
-                for item in pyramid[pyramidsMarksKey]:
+                for item in pyramid[key]:
                     _marksPaths = item.keys()
                     if path in _marksPaths:
                         log.debug(f'Hashmark {path} already in pyramid {name}')
@@ -982,12 +1014,15 @@ class IPFSMarks(QObject):
                                          pinSingle=True,
                                          icon=pyramid['icon'],
                                          )
-            pyramid[pyramidsMarksKey].append(mark.data)
+            pyramid[key].append(mark.data)
             pyramid['latest'] = path
 
-            self.pyramidAddedMark.emit(pyramidPath, mark)
+            self.pyramidAddedMark.emit(pyramidPath, mark, type)
             self.pyramidChanged.emit(pyramidPath)
-            self.pyramidCapstoned.emit(pyramidPath)
+
+            if type == 'mark':
+                self.pyramidCapstoned.emit(pyramidPath)
+
             self.changed.emit()
 
             return True

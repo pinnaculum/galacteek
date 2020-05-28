@@ -28,7 +28,7 @@ from galacteek import ensure
 from galacteek.ui.widgets import PopupToolButton
 from galacteek.ui.helpers import getIcon
 from galacteek.ui.helpers import messageBox
-from galacteek.ui.helpers import questionBox
+from galacteek.ui.helpers import questionBoxAsync
 from galacteek.ui.helpers import inputTextCustom
 from galacteek.ipfs import ipfsOp
 
@@ -174,7 +174,8 @@ class CameraView(QMainWindow):
         self.ui.closeButton.clicked.connect(self.onClose)
         self.ui.recordButton.clicked.connect(self.record)
         self.ui.pauseButton.clicked.connect(self.pause)
-        self.ui.stopButton.clicked.connect(self.stop)
+        self.ui.stopButton.clicked.connect(
+            lambda: ensure(self.stop()))
         self.ui.muteButton.toggled.connect(self.setMuted)
         self.ui.pauseButton.hide()
 
@@ -230,11 +231,11 @@ class CameraView(QMainWindow):
     def pause(self):
         self.mediaRecorder.pause()
 
-    def stop(self):
+    async def stop(self):
         self.mediaRecorder.stop()
         self.ui.statusbar.showMessage('')
 
-        if self.videoLocation and questionBox(
+        if self.videoLocation and await questionBoxAsync(
                 'Video import', 'Import video to your repository ?'):
 
             filePath = self.videoLocation.toLocalFile()
