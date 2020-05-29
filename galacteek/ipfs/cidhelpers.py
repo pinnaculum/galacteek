@@ -221,26 +221,34 @@ def domainValid(domain):
 
 # Regexps
 
+pathChars = r'\w|<>"\/:;,!\*%&=@\$~/\s\.\-_\\\'()\+'
+
+query = r'(?P<query>[\w?=&:;+]*)?'
+
+fragment = r'#?(?P<fragment>[\w_\.\-\+,;:=/?]{1,256})?$'
+
+
 ipfsPathRe = re.compile(
-        r'^(\s*)?(?:fs:|dweb:|dwebgw:|https?://[\w:.-]+)?(?P<fullpath>(/ipfs/)?(?P<rootcid>[a-zA-Z0-9]{46,113})/?(?P<subpath>[\w|<>":;,?!\*%&=@\$~/\s\.\-_\\\'()\+]{1,1024})?)#?(?P<fragment>[\w_\.\-\+,=/]{1,256})?$',  # noqa
+        r'^(\s*)?(?:fs:|dweb:|dwebgw:|https?://[\w:.-]+)?(?P<fullpath>(/ipfs/)?(?P<rootcid>[a-zA-Z0-9]{46,113})/?(?P<subpath>[' + pathChars + ']{1,1024})?)' + query + fragment,  # noqa
     flags=re.UNICODE)
 
+
 ipfsDomainPathRe = re.compile(
-        r'^(\s*)?(?:http)://(?P<objectref>[\w.-]{1,113})\.(?P<gwscheme>(ipfs|ipns))\.(?:[\w]+):(?:[\d]+)/(?P<subpath>[\w|<>"\/:;,?!\*%&=@\$~/\s\.\-_\\\'()\+]{0,1024})#?(?P<fragment>[\w_\.\-\+,=/]{1,256})?$',  # noqa
+        r'^(\s*)?(?:http)://(?P<objectref>[\w.-]{1,113})\.(?P<gwscheme>(ipfs|ipns))\.(?:[\w]+):(?:[\d]+)/(?P<subpath>[' + pathChars + ']{0,1024})' + query + fragment,  # noqa
     flags=re.UNICODE)
 
 # For ipfs://<cid-base32>
 ipfsPathDedRe = re.compile(
-    r'^(\s*)?(?:ipfs://)(?P<fullpath>(?P<rootcid>[a-z2-7]{59,113})/?(?P<subpath>[\w|<>"*:;,?!%&=@\$~/\s\.\-_\\\'\+()]{1,1024})?)#?(?P<fragment>[\w_\+\.\-,=/]{1,256})?$',  # noqa
+    r'^(\s*)?(?:ipfs://)(?P<fullpath>(?P<rootcid>[a-z2-7]{59,113})/?(?P<subpath>[' + pathChars + ']{1,1024})?)' + query + fragment,  # noqa
     flags=re.UNICODE)
 
 # For rewriting (unlawful) ipfs://<cidv0> or ipfs://<cidv1-base58> to base32
 ipfsPathDedRe58 = re.compile(
-    r'^(\s*)?(?:ipfs://)(?P<fullpath>(?P<rootcid>[a-zA-Z0-9]{46,113})/?(?P<subpath>[\w|<>"*:;,?!%&=@\$~/\s\.\-_\'\\\+()]{1,1024})?)#?(?P<fragment>[\w\-\+_\.,=/]{1,256})?$',  # noqa
+    r'^(\s*)?(?:ipfs://)(?P<fullpath>(?P<rootcid>[a-zA-Z0-9]{46,113})/?(?P<subpath>[' + pathChars + ']{1,1024})?)' + query + fragment,  # noqa
     flags=re.UNICODE)
 
 ipnsPathDedRe = re.compile(
-    r'^(\s*)?(?:(ipns|ipfs)://)(?P<fullpath>(?P<fqdn>[\w.-]+)/?(?P<subpath>[\w|<>"*:;,\\?!%&=@\$~/\s\.\-_\'\+()]{1,1024})?)#?(?P<fragment>[\w\-\+_\.,=/]{1,256})?$',  # noqa
+    r'^(\s*)?(?:(ipns|ipfs)://)(?P<fullpath>(?P<fqdn>[\w.-]+)/?(?P<subpath>[' + pathChars + ']{1,1024})?)' + query + fragment,  # noqa
     flags=re.UNICODE)
 
 ipfsCidRe = re.compile(
@@ -253,7 +261,7 @@ ipnsKeyRe = re.compile(
     r'^(?P<key>(Qm[\w]{44}))$')
 
 ipnsPathRe = re.compile(
-        r'^(\s*)?(?:fs:|dweb:|dwebgw:|https?://[\w:.-]+)?(?P<fullpath>/ipns/(?P<fqdn>[\w\.-]+)/?(?P<subpath>[\w<>|"*:;,?!%&=@\$~/\s\.\-_\'\\\+()]{1,1024})?)#?(?P<fragment>[\w\+\-_\.,=/]{1,256})?$',  # noqa
+        r'^(\s*)?(?:fs:|dweb:|dwebgw:|https?://[\w:.-]+)?(?P<fullpath>/ipns/(?P<fqdn>[\w\.-]+)/?(?P<subpath>[' + pathChars + ']{1,1024})?)' + query + fragment,  # noqa
     flags=re.UNICODE)
 
 
@@ -273,6 +281,7 @@ class IPFSPath:
         self._scheme = None
         self._resolvedCid = None
         self._ipnsId = None
+        self._query = None
         self._valid = self.__analyze()
 
     @property
@@ -290,6 +299,10 @@ class IPFSPath:
     @property
     def scheme(self):
         return self._scheme
+
+    @property
+    def query(self):
+        return self._query
 
     @property
     def ipnsId(self):
@@ -450,7 +463,7 @@ class IPFSPath:
                     return False
 
                 if subpath:
-                    self._rscPath = os.path.join(
+                    self._rscPath = self.pathjoin(
                         joinIpfs(self.rootCidRepr),
                         subpath
                     )
@@ -458,7 +471,7 @@ class IPFSPath:
                     self._rscPath = joinIpfs(self.rootCidRepr) + '/'
             elif scheme == 'ipns':
                 if subpath:
-                    self._rscPath = os.path.join(
+                    self._rscPath = self.pathjoin(
                         joinIpns(objRef),
                         subpath
                     )
@@ -467,6 +480,7 @@ class IPFSPath:
 
                 self._ipnsId = objRef
 
+            self._query = gdict.get('query')
             self._subPath = subpath
             self._scheme = scheme
             self._fragment = gdict.get('fragment')
@@ -486,13 +500,14 @@ class IPFSPath:
             subpath = gdict.get('subpath')
 
             if subpath:
-                self._rscPath = os.path.join(
+                self._rscPath = self.pathjoin(
                     joinIpfs(self.rootCidRepr),
                     subpath
                 )
             else:
                 self._rscPath = joinIpfs(self.rootCidRepr)
 
+            self._query = gdict.get('query')
             self._fragment = gdict.get('fragment')
             self._subPath = subpath
             self._scheme = 'ipfs'
@@ -511,13 +526,14 @@ class IPFSPath:
 
             subpath = gdict.get('subpath')
             if subpath:
-                self._rscPath = os.path.join(
+                self._rscPath = self.pathjoin(
                     joinIpfs(self.rootCidRepr),
                     subpath
                 )
             else:
                 self._rscPath = joinIpfs(self.rootCidRepr)
 
+            self._query = gdict.get('query')
             self._fragment = gdict.get('fragment')
             self._subPath = gdict.get('subpath')
             self._scheme = 'ipfs'
@@ -532,7 +548,7 @@ class IPFSPath:
             _id = ipnsId32 if ipnsId32 else gdict.get('fqdn')
 
             if subpath:
-                self._rscPath = os.path.join(
+                self._rscPath = self.pathjoin(
                     joinIpns(_id),
                     subpath
                 )
@@ -540,6 +556,7 @@ class IPFSPath:
                 self._rscPath = joinIpns(_id)
 
             self._ipnsId = _id
+            self._query = gdict.get('query')
             self._fragment = gdict.get('fragment')
             self._subPath = gdict.get('subpath')
             self._scheme = 'ipns'
@@ -557,6 +574,9 @@ class IPFSPath:
             return True
 
         return False
+
+    def pathjoin(self, path1, path2):
+        return os.path.join(path1, path2.lstrip('/'))
 
     def parseCid(self, cidStr):
         if not cidValid(cidStr):

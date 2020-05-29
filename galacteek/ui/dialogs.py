@@ -442,6 +442,7 @@ class AddMultihashPyramidDialog(QDialog):
 
         buttonBox = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self)
+        buttonBox.setCenterButtons(True)
 
         catCustomLabel = QLabel('Or create new category')
         catCustomLayout = QHBoxLayout()
@@ -659,6 +660,7 @@ class AboutDialog(QDialog):
         buttonBox = QDialogButtonBox(
             QDialogButtonBox.Ok, self)
         buttonBox.accepted.connect(self.accept)
+        buttonBox.setCenterButtons(True)
 
         self.setWindowTitle('About')
 
@@ -739,6 +741,7 @@ class ResourceOpenConfirmDialog(QDialog):
         )
         buttonBox.accepted.connect(self.accept)
         buttonBox.rejected.connect(self.reject)
+        buttonBox.setCenterButtons(True)
 
         layout = QVBoxLayout()
 
@@ -780,6 +783,7 @@ class TitleInputDialog(QDialog):
         )
         buttonBox.accepted.connect(self.accept)
         buttonBox.rejected.connect(self.reject)
+        buttonBox.setCenterButtons(True)
 
         layout = QVBoxLayout()
         layout.addWidget(QLabel(iTitle()))
@@ -819,6 +823,7 @@ class GenericTextInputDialog(QDialog):
         )
         buttonBox.accepted.connect(self.accept)
         buttonBox.rejected.connect(self.reject)
+        buttonBox.setCenterButtons(True)
 
         layout = QVBoxLayout()
         layout.addWidget(QLabel(label))
@@ -1006,6 +1011,7 @@ class DownloadOpenObjectDialog(QDialog):
 
         buttonBox = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self)
+        buttonBox.setCenterButtons(True)
 
         layout = QVBoxLayout()
         layout.addWidget(label)
