@@ -993,7 +993,7 @@ class MainWindow(QMainWindow):
                 # Refresh the file manager
                 filesM = self.findTabFileManager()
                 if filesM:
-                    filesM.setupModel()
+                    filesM.fileManager.setupModel()
                     filesM.pathSelectorDefault()
 
     def onProfilesList(self, pList):
