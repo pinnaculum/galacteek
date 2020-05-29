@@ -453,7 +453,7 @@ class ChatRoomWidget(GalacteekTab):
 
     async def heartbeatTask(self):
         while True:
-            await asyncio.sleep(30)
+            await asyncio.sleep(15)
             await self.psService.send(
                 await ChatRoomMessage.make(
                     type=ChatRoomMessage.CHATMSG_TYPE_HEARTBEAT

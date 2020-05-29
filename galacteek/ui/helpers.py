@@ -253,6 +253,7 @@ def messageBoxCreate(message, title=None):
     button.startClip()
 
     label = QLabel(message)
+    label.setWordWrap(True)
     label.setAlignment(Qt.AlignCenter)
     layout = QVBoxLayout()
     layout.addWidget(label)

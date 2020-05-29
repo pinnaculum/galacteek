@@ -1921,23 +1921,28 @@ class BrowserTab(GalacteekTab):
                 log.debug('Current IPFS object: {0}'.format(
                     repr(self.currentIpfsObject)))
 
-                url = QUrl(self.currentIpfsObject.dwebUrl)
+                nurl = QUrl(self.currentIpfsObject.dwebUrl)
+                if url.hasFragment():
+                    nurl.setFragment(url.fragment())
+                if url.hasQuery():
+                    nurl.setQuery(url.query())
+
                 self.urlZone.clear()
-                self.urlZone.insert(url.toString())
+                self.urlZone.insert(nurl.toString())
 
                 self.ui.hashmarkThisPage.setEnabled(True)
                 self.ui.pinToolButton.setEnabled(True)
 
                 self.ipfsObjectVisited.emit(self.currentIpfsObject)
 
-                self._currentUrl = url
-            else:
-                log.debug('Invalid IPFS path: {0}'.format(url.toString()))
+                self._currentUrl = nurl
 
-            # Activate the follow action if this is a root IPNS address
-            self.followIpnsAction.setEnabled(
-                self.currentIpfsObject.isIpns)
-            self.curObjectCtrl.show()
+                # Activate the follow action if this is a root IPNS address
+                self.followIpnsAction.setEnabled(
+                    self.currentIpfsObject.isIpns)
+                self.curObjectCtrl.show()
+            else:
+                log.debug(iInvalidUrl(url.toString()))
         else:
             if sHandler and issubclass(
                     sHandler.__class__, IPFSObjectProxyScheme):
