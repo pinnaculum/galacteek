@@ -977,29 +977,32 @@ class CurrentObjectController(PopupToolButton):
         self.menu.addSeparator()
 
     def onQaLink(self):
-        if self.currentPath:
+        if self.currentPath and self.currentPath.valid:
             self.app.mainWindow.qaToolbar.ipfsObjectDropped.emit(
                 self.currentPath)
 
     def onExploreDirectory(self):
-        self.app.mainWindow.explore(self.currentPath.objPath)
+        if self.currentPath and self.currentPath.valid:
+            self.app.mainWindow.explore(self.currentPath.objPath)
 
     def onDAGView(self):
-        self.dagViewRequested.emit(self.currentPath)
+        if self.currentPath and self.currentPath.valid:
+            self.dagViewRequested.emit(self.currentPath)
 
     def onParentDAGView(self):
-        self.dagViewRequested.emit(self.currentPath.parent())
+        if self.currentPath and self.currentPath.valid:
+            self.dagViewRequested.emit(self.currentPath.parent())
 
     def onCopyPathToCb(self):
-        if self.currentPath:
+        if self.currentPath and self.currentPath.valid:
             self.app.setClipboardText(str(self.currentPath))
 
     def onHashmarkThisPage(self):
-        if self.currentPath:
+        if self.currentPath and self.currentPath.valid:
             ensure(addHashmarkAsync(self.currentPath.fullPath))
 
     def onHashmarkRoot(self):
-        if self.currentPath:
+        if self.currentPath and self.currentPath.valid:
             if self.currentPath.isIpfs:
                 rootCidPath = joinIpfs(self.currentPath.rootCidRepr)
                 ensure(addHashmarkAsync(
