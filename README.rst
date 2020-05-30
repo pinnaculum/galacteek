@@ -185,7 +185,7 @@ from the ipfs-logo_ project's repository is included, unchanged.
 .. _shortcuts: http://htmlpreview.github.io/?https://raw.githubusercontent.com/pinnaculum/galacteek/master/galacteek/docs/manual/en/html/shortcuts.html
 .. _urlschemes: https://github.com/pinnaculum/galacteek/blob/master/galacteek/docs/manual/en/browsing.rst#supported-url-formats
 .. _releases: https://github.com/pinnaculum/galacteek/releases
-.. _BUILDING: https://github.com/pinnaculum/galacteek/BUILDING.rst
+.. _BUILDING: https://github.com/pinnaculum/galacteek/blob/master/BUILDING.rst
 .. _ENS: https://ens.domains/
 .. _in-web-browsers: https://github.com/ipfs/in-web-browsers
 .. _AppImage: https://appimage.org/
