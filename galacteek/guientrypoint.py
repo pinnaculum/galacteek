@@ -1,6 +1,7 @@
 # Galacteek, GUI startup entry point
 
 import argparse
+import faulthandler
 import sys
 
 from PyQt5.QtCore import QProcess
@@ -47,6 +48,9 @@ def galacteekGui(args):
     level = 'DEBUG' if args.debug else 'INFO'
     glogger.basicConfig(level=level, colorized=args.logcolorized)
 
+    if args.debug:
+        faulthandler.enable()
+
     # QtWebEngine init
     QtWebEngine.initialize()
 
@@ -84,10 +88,8 @@ def galacteekGui(args):
             loop.run_forever()
 
 
-def start():
-    global appStarter
+def buildArgsParser():
     parser = argparse.ArgumentParser()
-
     parser.add_argument('--version', dest='version',
                         action='store_true',
                         help='Show version number')
@@ -178,6 +180,13 @@ def start():
 
     parser.add_argument('-d', action='store_true',
                         dest='debug', help='Activate debugging')
+    return parser
+
+
+def start():
+    global appStarter
+
+    parser = buildArgsParser()
     args = parser.parse_args()
 
     if args.version is True:

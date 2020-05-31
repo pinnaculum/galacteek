@@ -3,8 +3,9 @@ flake8
 pytest
 pytest-asyncio
 pytest-qt
-pytest-xvfb
+pytest-faulthandler
 sphinx==1.8.5
 tox
+tox-wheel
 vyper>=0.1.0b17
 wheel

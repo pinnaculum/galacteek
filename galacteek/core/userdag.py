@@ -405,7 +405,7 @@ class UserWebsite:
                 for idx, request in enumerate(requests):
                     path = '{0}/{1}'.format(PINREQS_NODEKEY, idx)
                     if not await dag.get(
-                            '{path}/view'.format(path=path, idx=idx)):
+                            '{path}/view'.format(path=path)):
                         self.dagRequests[idx]['view'] = \
                             await self.renderLink(
                                 'usersite/pinrequest.html',

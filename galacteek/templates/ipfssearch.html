@@ -4,7 +4,7 @@
 
     <style>
       body {
-        background-color: #c4c4c4;
+        background-color: #E0DEDE;
       }
 
       label {
@@ -75,6 +75,7 @@
       }
 
       select {
+        background-color: #C3D7DF;
         padding: 4px 4px;
         border: none;
         border-radius: 4px;
@@ -166,9 +167,13 @@
     </style>
 
     <script type="text/javascript">
-      function renderHit(hit, div) {
+      function renderHit(engine, hit, div) {
         markup = `
     <p style="text-align: left">
+      <img src="qrc:///share/icons/${ engine }.png"
+        width="16" height="16"
+        title="Search engine: ${ engine }"/>
+
       <a class="hitlink" style="margin-right: 15px" href="${hit.url}" onclick='event.preventDefault(); window.openIpfs("${hit.path}")' >${hit.title}</a>
       <a href="#" onclick='event.preventDefault(); window.hashmark("${hit.path}")'><img src="qrc:///share/icons/hashmarks.png" width="16" height="16"/></a>
       <a href="#" onclick='event.preventDefault(); window.ipfssearch.pinObject("${hit.path }")'><img src="qrc:///share/icons/pin.png" width="16" height="16"/></a>
@@ -271,15 +276,13 @@
           channel.objects.ipfssearch.search()
         })
 
-        window.ipfssearch.resultReady.connect(function(cid, hit) {
+        window.ipfssearch.resultReady.connect(function(engine, cid, hit) {
           var resDiv = document.getElementById('results')
           var elem = document.createElement("div", cid);
           elem.setAttribute('id', cid);
           elem.setAttribute('class', 'grayout');
-          renderHit(hit, elem);
+          renderHit(engine, hit, elem);
           resDiv.appendChild(elem);
-
-
         });
 
         window.ipfssearch.clear.connect(function() {
@@ -290,7 +293,7 @@
           document.getElementById('statusmessage').innerHTML = ""
         })
 
-        window.ipfssearch.objectStatAvailable.connect(function(cid, stat, hit) {
+        window.ipfssearch.objectStatAvailable.connect(function(cid, stat) {
           var element = document.getElementById(cid)
           if (element) {
             element.style.display = 'block'

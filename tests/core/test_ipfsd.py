@@ -5,7 +5,7 @@ import asyncio
 
 class TestIPFSD:
     @pytest.mark.asyncio
-    async def test_basic(self, event_loop, ipfsdaemon, iclient, ipfsop):
+    async def test_basic(self, event_loop, ipfsdaemon, ipfsop):
         async def tests(op):
             await op.client.core.id()
 

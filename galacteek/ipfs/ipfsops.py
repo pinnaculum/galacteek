@@ -431,7 +431,7 @@ class IPFSOperator(object):
             self.debug(err.message)
             return None
 
-    async def filesList(self, path):
+    async def filesList(self, path, sort=False):
         try:
             listing = await self.client.files.ls(path, long=True)
         except aioipfs.APIError as err:
@@ -440,6 +440,9 @@ class IPFSOperator(object):
 
         if 'Entries' not in listing or listing['Entries'] is None:
             return []
+
+        if sort is True:
+            return sorted(listing['Entries'])
 
         return listing['Entries']
 
@@ -690,7 +693,7 @@ class IPFSOperator(object):
         if not self._nsCachePath:
             return
 
-        with await self._lock:
+        async with self._lock:
             async with aiofiles.open(self._nsCachePath, 'w+t') as fd:
                 await fd.write(json.dumps(self.nsCache))
 
@@ -985,8 +988,8 @@ class IPFSOperator(object):
 
         return await self.addPath(path, recursive=recursive, only_hash=True)
 
-    async def hashComputeString(self, s):
-        return await self.addString(s, only_hash=True)
+    async def hashComputeString(self, s, **kw):
+        return await self.addString(s, only_hash=True, **kw)
 
     async def addPath(self, path, recursive=True, wrap=False,
                       callback=None, cidversion=1, offline=False,

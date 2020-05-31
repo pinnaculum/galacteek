@@ -267,6 +267,13 @@ def iSharedHashmarks():
     return QCoreApplication.translate('GalacteekWindow', 'Shared hashmarks')
 
 
+def iSearchIpfsContent():
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Search content on IPFS (ipfs-search/cyber)'
+    )
+
+
 def iSearchHashmarks():
     return QCoreApplication.translate('GalacteekWindow', 'Search hashmarks')
 

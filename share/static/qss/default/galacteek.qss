@@ -111,7 +111,7 @@ QTreeWidget::item:selected#dagTree {
 }
 
 QTreeView::branch {
-    background: palette(base);
+    background: #f6fafb;
 }
 
 QTreeView::branch:open:has-children:!has-siblings,

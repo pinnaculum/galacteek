@@ -58,8 +58,8 @@ async def distIpfsExtract(dstdir='.', software='go-ipfs', executable='ipfs',
         software=software, version=version, arch=arch, os=osType, ext=arExt)
 
     url = 'https://{site}/{software}/v{version}/{filename}'.format(
-        software=software, site=site, version=version, arch=arch,
-        os=osType, ext=arExt, filename=fileName)
+        software=software, site=site, version=version,
+        filename=fileName)
 
     tmpFile = tempfile.NamedTemporaryFile(suffix=arExt, delete=False)
     arPath = tmpFile.name

@@ -43,6 +43,8 @@ mv $HOME/fs-repo-migrations/fs-repo-migrations $HOME/bin
 
 $HOME/bin/ipfs init
 
+nohup $HOME/bin/ipfs daemon &
+
 export PYTHONPATH=$PYTHONPATH:/usr/local/lib/python3.7/dist-packages
 export PATH=$PATH:$HOME/bin
 
@@ -52,6 +54,8 @@ source venvg/bin/activate
 $PIP install --upgrade pip
 $PIP install -r requirements.txt
 $PIP install -r requirements-dev.txt
+
+tox -e py37
 
 $PYTHONEX setup.py build install
 $PYTHONEX setup.py sdist bdist_wheel

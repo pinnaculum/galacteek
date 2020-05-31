@@ -9,9 +9,6 @@
 .. image:: https://travis-ci.org/pinnaculum/galacteek.svg?branch=master
     :target: https://travis-ci.org/pinnaculum/galacteek
 
-.. image:: https://badges.gitter.im/galacteek/community.svg
-   :target: https://gitter.im/galacteek/galacteek?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge
-
 **galacteek** is a multi-platform Qt5-based browser/toolbox
 for the IPFS_ peer-to-peer network.
 
@@ -82,11 +79,12 @@ should enable pubsub and p2p streams, or some features won't be available.
   (Verifiable Credentials with RSA-PSS)
 - Browsing sessions with automatic pinning (pins every page you browse)
 - Distributed chat with pubsub (chat channels syncronized with CRDT+DAG)
-- File manager with drag-and-drop support
+- File manager with drag-and-drop support and timeframes (per-day view
+  of files in the MFS)
 - Webcam to IPFS capture (image and videos)
 - Run WASM binaries with wasmer_ (use *Open* on a WASM object from the
   clipboard manager)
-- Search content with the ipfs-search_ search engine
+- Search content with the ipfs-search_ search engine as well as with cyber_
 - Use the IPFS filestore to avoid file duplication
 - Atom feeds (subscribe to feeds on the dweb)
 - ENS_ (Ethereum Name Service) resolving (access to ENS+IPFS websites)
@@ -191,3 +189,4 @@ from the ipfs-logo_ project's repository is included, unchanged.
 .. _AppImage: https://appimage.org/
 .. _IPID: https://github.com/jonnycrunch/ipid
 .. _wasmer: https://wasmer.io/
+.. _cyber: https://cybercongress.ai

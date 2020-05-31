@@ -138,8 +138,24 @@ def cidUpgrade(cid):
     """
     Converts a cid.CIDv0 instance to a cid.CIDv1
     """
-    if issubclass(cid.__class__, BaseCID) and cid.version == 0:
-        return cid.to_v1()
+
+    try:
+        if issubclass(cid.__class__, BaseCID) and cid.version == 0:
+            return cid.to_v1()
+    except Exception:
+        return None
+
+
+def cidDowngrade(cid):
+    """
+    Converts a cid.CIDv1 instance to a cid.CIDv0
+    """
+
+    try:
+        if issubclass(cid.__class__, BaseCID) and cid.version == 1:
+            return cid.to_v0()
+    except Exception:
+        return None
 
 
 def cidConvertBase32(cid):
@@ -229,12 +245,12 @@ fragment = r'#?(?P<fragment>[\w_\.\-\+,;:=/?]{1,256})?$'
 
 
 ipfsPathRe = re.compile(
-        r'^(\s*)?(?:fs:|dweb:|dwebgw:|https?://[\w:.-]+)?(?P<fullpath>(/ipfs/)?(?P<rootcid>[a-zA-Z0-9]{46,113})/?(?P<subpath>[' + pathChars + ']{1,1024})?)' + query + fragment,  # noqa
+    r'^(\s*)?(?:fs:|dweb:|dwebgw:|https?://[\w:.-]+)?(?P<fullpath>(/ipfs/)?(?P<rootcid>[a-zA-Z0-9]{46,113})/?(?P<subpath>[' + pathChars + ']{1,1024})?)' + query + fragment,  # noqa
     flags=re.UNICODE)
 
 
 ipfsDomainPathRe = re.compile(
-        r'^(\s*)?(?:http)://(?P<objectref>[\w.-]{1,113})\.(?P<gwscheme>(ipfs|ipns))\.(?:[\w]+):(?:[\d]+)/(?P<subpath>[' + pathChars + ']{0,1024})' + query + fragment,  # noqa
+    r'^(\s*)?(?:http)://(?P<objectref>[\w.-]{1,113})\.(?P<gwscheme>(ipfs|ipns))\.(?:[\w]+):(?:[\d]+)/(?P<subpath>[' + pathChars + ']{0,1024})' + query + fragment,  # noqa
     flags=re.UNICODE)
 
 # For ipfs://<cid-base32>
@@ -261,7 +277,7 @@ ipnsKeyRe = re.compile(
     r'^(?P<key>(Qm[\w]{44}))$')
 
 ipnsPathRe = re.compile(
-        r'^(\s*)?(?:fs:|dweb:|dwebgw:|https?://[\w:.-]+)?(?P<fullpath>/ipns/(?P<fqdn>[\w\.-]+)/?(?P<subpath>[' + pathChars + ']{1,1024})?)' + query + fragment,  # noqa
+    r'^(\s*)?(?:fs:|dweb:|dwebgw:|https?://[\w:.-]+)?(?P<fullpath>/ipns/(?P<fqdn>[\w\.-]+)/?(?P<subpath>[' + pathChars + ']{1,1024})?)' + query + fragment,  # noqa
     flags=re.UNICODE)
 
 

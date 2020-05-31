@@ -4,12 +4,17 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QObject
 
 from galacteek import log
+from galacteek import ensure
 
 from galacteek.ipfs import ipfsOp
 
 from galacteek.ipfs.cidhelpers import IPFSPath
+from galacteek.ipfs.cidhelpers import getCID
+from galacteek.ipfs.cidhelpers import cidDowngrade
 from galacteek.ipfs.mimetype import MIMEType
 from galacteek.ipfs.mimetype import detectMimeType
+from galacteek.ipfs.stat import StatInfo
+from galacteek.ipfs.ipfssearch import objectMetadata
 
 from galacteek.crypto.qrcode import IPFSQrDecoder
 
@@ -62,10 +67,30 @@ class ResourceAnalyzer(QObject):
                 stat=statInfo
             )
 
+            # Fetch additional metadata in another task
+            ensure(self.fetchMetadata(path, statInfo))
+
         if mimetype and mimetype.valid:
             return mimetype, statInfo
 
         return None, None
+
+    async def fetchMetadata(self, path, stat):
+        sInfo = StatInfo(stat)
+
+        cidobj = getCID(sInfo.cid)
+        cid = cidDowngrade(cidobj)
+
+        if not cid:
+            return
+
+        metadata = await objectMetadata(str(cid))
+
+        if metadata:
+            await self.app.multihashDb.store(
+                path,
+                objmetadata=metadata
+            )
 
     @ipfsOp
     async def decodeQrCodes(self, ipfsop, path):

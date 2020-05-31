@@ -575,6 +575,7 @@ class GalacteekApplication(QApplication):
             self.feedFollower.process())
 
         await self.ipfsCtx.ipfsRepositoryReady.emit()
+        self.ipfsCtx._ipfsRepositoryReady.emit()
 
         #
         # If the application's binary name is a valid CID, pin it!

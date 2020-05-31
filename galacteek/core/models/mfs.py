@@ -1,4 +1,6 @@
 import os.path
+from datetime import datetime
+from datetime import timedelta
 
 from PyQt5.QtWidgets import QApplication
 
@@ -51,11 +53,16 @@ class MFSItem(UneditableItem):
     def setParentHash(self, pHash):
         self._parentHash = pHash
 
-    def childrenItems(self):
+    def childrenItems(self, type=None):
         for row in range(0, self.rowCount()):
             child = self.child(row, 0)
+
             if child:
-                yield child
+                if type:
+                    if isinstance(child, type):
+                        yield child
+                else:
+                    yield child
 
     def findChildByMultihash(self, multihash):
         for item in self.childrenItems():
@@ -66,10 +73,12 @@ class MFSItem(UneditableItem):
 
     def findChildByName(self, name):
         for item in self.childrenItems():
-            if not isinstance(item, MFSNameItem):
-                continue
-            if item.entry['Name'] == name:
-                return item
+            if isinstance(item, MFSNameItem):
+                if item.entry['Name'] == name:
+                    return item
+            elif isinstance(item, MFSTimeFrameItem):
+                if item.text() == name:
+                    return item
 
 
 class MFSRootItem(MFSItem):
@@ -91,6 +100,41 @@ class MFSRootItem(MFSItem):
 
         # Root items have no CIDs
         self.cidString = None
+
+
+class MFSTimeFrameItem(MFSItem):
+    """
+    Model item that holds MFS files which were written
+    at a date corresponding to this item's time frame
+    (right now it's a 1-day time frame but we can extend
+    to 3-days or 1 week if it proves to be cumbersome in
+    the UI)
+    """
+
+    def __init__(self, date, text, icon=None):
+        super(MFSTimeFrameItem, self).__init__(text, icon=icon)
+
+        self.date = date
+        self.cidString = None
+
+    def inRange(self, dateFrom, dateTo):
+        return (self.date >= dateFrom and self.date <= dateTo)
+
+    def isToday(self):
+        return self.isDay(datetime.today())
+
+    def isPast3Days(self):
+        return any(
+            self.isPastDay(d) is True for d in range(1, 4)
+        )
+
+    def isPastDay(self, bdays):
+        return self.isDay(datetime.today() - timedelta(days=bdays))
+
+    def isDay(self, day):
+        return (day.year == self.date.year and
+                day.month == self.date.month and
+                day.day == self.date.day)
 
 
 class MFSNameItem(MFSItem):
@@ -166,6 +210,7 @@ class MFSItemModel(QStandardItemModel):
 
     # Specific roles
     CidRole = 0x0108
+    TimeFrameRole = 0x0109
 
     def __init__(self):
         QStandardItemModel.__init__(self)
@@ -264,9 +309,10 @@ class MFSItemModel(QStandardItemModel):
                     await ipfsop.sleep()
 
                     if not exists:
-                        await files.linkEntry(ipfsop, entry,
-                                              model.itemQrCodes.path,
-                                              entry['Name'])
+                        await files.linkEntryNoMetadata(
+                            entry,
+                            model.itemQrCodes.path,
+                            entry['Name'])
 
                     tmpFile.remove()
 
@@ -315,7 +361,7 @@ class MFSItemModel(QStandardItemModel):
 
     def getHashFromIdx(self, idx):
         item = self.getNameItemFromIdx(idx)
-        if item:
+        if item and hasattr(item, 'cidString'):
             return item.cidString
 
     def getNameFromIdx(self, idx):
@@ -326,7 +372,9 @@ class MFSItemModel(QStandardItemModel):
     def getNameItemFromIdx(self, idx):
         idxName = self.index(idx.row(), 0, idx.parent())
         if idxName.isValid():
-            return self.itemFromIndex(idxName)
+            item = self.itemFromIndex(idxName)
+            if isinstance(item, MFSNameItem):
+                return item
 
     def data(self, index, role):
         if not index.isValid():
@@ -337,6 +385,8 @@ class MFSItemModel(QStandardItemModel):
         if role == self.CidRole and isinstance(item, MFSNameItem):
             # For the CidRole we return the CID associated with the item
             return item.cidString
+        elif role == self.TimeFrameRole and isinstance(item, MFSTimeFrameItem):
+            return item.text()
         else:
             return super().data(index, role)
 
