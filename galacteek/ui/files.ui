@@ -52,6 +52,23 @@
           <widget class="QComboBox" name="pathSelector"/>
          </item>
          <item>
+          <widget class="QToolButton" name="datesPickButton">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Time frame selector&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="galacteek.qrc">
+             <normaloff>:/share/icons/clock.png</normaloff>:/share/icons/clock.png</iconset>
+           </property>
+           <property name="checkable">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
           <spacer name="horizontalSpacer">
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
@@ -308,6 +325,9 @@
         </layout>
        </item>
       </layout>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="hLayoutTimeFrame"/>
      </item>
      <item>
       <layout class="QHBoxLayout" name="hLayoutFilesView">

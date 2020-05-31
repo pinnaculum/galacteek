@@ -1,5 +1,6 @@
 import pytest
 import aioipfs
+import asyncio
 
 from galacteek.core import glogger
 from galacteek.ipfs.ipfsops import IPFSOperator

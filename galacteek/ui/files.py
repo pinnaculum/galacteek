@@ -2,6 +2,10 @@ import os.path
 import asyncio
 import functools
 import async_timeout
+import time
+import re
+from datetime import datetime
+from datetime import date
 from pathlib import Path
 
 from PyQt5.QtWidgets import QApplication
@@ -22,11 +26,17 @@ from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QDir
 from PyQt5.QtCore import QSize
+from PyQt5.QtCore import QDate
 from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import QSortFilterProxyModel
+
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QImage
 
 from galacteek import ensure
 from galacteek import partialEnsure
 from galacteek import GALACTEEK_NAME
+from galacteek import AsyncSignal
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import cidConvertBase32
@@ -38,12 +48,14 @@ from galacteek.appsettings import *
 from galacteek.core import modelhelpers
 from galacteek.core.models.mfs import MFSItem
 from galacteek.core.models.mfs import MFSNameItem
+from galacteek.core.models.mfs import MFSTimeFrameItem
 from galacteek.core.models.mfs import MFSRootItem
 
 from galacteek.did.ipid import IPService
 
 from .dids import buildPublishingMenu
 from . import ui_files
+from . import ui_timeframeselector
 from . import dag
 from .i18n import *  # noqa
 from .helpers import *  # noqa
@@ -226,6 +238,65 @@ class MFSTreeView(QTreeView):
         super().resizeEvent(event)
 
 
+class CustomSortFilterProxyModel(QSortFilterProxyModel):
+    def filterAcceptsRow(self, sourceRow, sourceParent):
+        return False
+
+
+class TimeFrameSelectorWidget(QWidget):
+    datesChanged = AsyncSignal(QDate, QDate)
+
+    def __init__(self, parent=None):
+        super(TimeFrameSelectorWidget, self).__init__(
+            parent)
+
+        self.ui = ui_timeframeselector.Ui_TimeFrameSelector()
+        self.ui.setupUi(self)
+
+        self.ui.tfIconLabel.setPixmap(
+            QPixmap.fromImage(
+                QImage(':/share/icons/clock.png')
+            ).scaledToWidth(32)
+        )
+
+        self.ui.dateTo.setDate(self.today())
+        self.ui.dateFrom.setDate(self.today().addDays(
+            -(30 * 3)))
+
+        self.ui.dateFrom.dateChanged.connect(self.onDateFromChanged)
+        self.ui.dateTo.dateChanged.connect(self.onDateToChanged)
+
+    def onDateFromChanged(self, date):
+        if date > self.ui.dateTo.date():
+            return messageBox('Invalid start date')
+
+        ensure(self.datesChanged.emit(date, self.ui.dateTo.date()))
+
+    def onDateToChanged(self, date):
+        if date < self.ui.dateFrom.date():
+            return messageBox('Invalid end date')
+
+        ensure(self.datesChanged.emit(self.ui.dateFrom.date(), date))
+
+    def qDateToDate(self, _date):
+        return date(
+            _date.year(),
+            _date.month(),
+            _date.day()
+        )
+
+    @property
+    def dateFrom(self):
+        return self.qDateToDate(self.ui.dateFrom.date())
+
+    @property
+    def dateTo(self):
+        return self.qDateToDate(self.ui.dateTo.date())
+
+    def today(self):
+        return QDate.currentDate()
+
+
 class FileManager(QWidget):
     statusReady = 0
     statusBusy = 1
@@ -236,7 +307,6 @@ class FileManager(QWidget):
         super().__init__(parent)
 
         self.app = QApplication.instance()
-        self.clipboard = self.app.appClipboard
 
         self.lock = asyncio.Lock()
         self.model = None
@@ -247,10 +317,21 @@ class FileManager(QWidget):
         self.ui.setupUi(self)
 
         self.hashFunction = 'sha2-256'
+        self.mfsMetadataRe = re.compile(
+            r'_mfsmeta_(?P<time>\d*)_(?P<mtime>\d*)' +
+            r'_(?P<size>\d*)_(?P<name>.*)$'
+        )
 
         # Build file browser
         self.displayedItem = None
         self.createFileManager()
+
+        self.timeFrameSelector = TimeFrameSelectorWidget()
+        self.timeFrameSelector.datesChanged.connectTo(
+            self.onTimeFrameChanged)
+        self.timeFrameSelector.hide()
+
+        self.ui.hLayoutTimeFrame.addWidget(self.timeFrameSelector)
 
         self.filesDialog = QFileDialog(None)
         self.dialogLastDirSelected = None
@@ -263,6 +344,8 @@ class FileManager(QWidget):
         )
         self.busyCube.clip.setScaledSize(QSize(24, 24))
         self.busyCube.hide()
+
+        self.ui.datesPickButton.toggled.connect(self.onDatePickToggled)
 
         self.ui.fsControlLayout.insertWidget(0, self.busyCube)
 
@@ -371,7 +454,6 @@ class FileManager(QWidget):
         self.mfsTree.setExpandsOnDoubleClick(True)
         self.mfsTree.setItemsExpandable(True)
         self.mfsTree.setSortingEnabled(True)
-        self.mfsTree.sortByColumn(0, Qt.AscendingOrder)
         self.mfsTree.setIconSize(QSize(16, 16))
 
         self.iconFolder = getIcon('folder-open.png')
@@ -420,6 +502,14 @@ class FileManager(QWidget):
     def displayPath(self):
         if self.displayedItem:
             return self.displayedItem.path
+
+    @property
+    def tfDateFrom(self):
+        return self.timeFrameSelector.dateFrom
+
+    @property
+    def tfDateTo(self):
+        return self.timeFrameSelector.dateTo
 
     @property
     def isBusy(self):
@@ -527,6 +617,10 @@ class FileManager(QWidget):
 
         fsChunkerMenu.addActions(self.chunkerGroup.actions())
         return fsChunkerMenu
+
+    def sortMfsTree(self, enabled=True, order=Qt.AscendingOrder):
+        self.mfsTree.setSortingEnabled(enabled)
+        self.mfsTree.sortByColumn(0, order)
 
     def createFileManager(self):
         self.fManagerModel = QFileSystemModel()
@@ -671,6 +765,13 @@ class FileManager(QWidget):
         currentIdx = self.mfsTree.currentIndex()
         if currentIdx.isValid():
             return self.model.getNameItemFromIdx(currentIdx)
+
+    def onDatePickToggled(self, toggled):
+        self.timeFrameSelector.setVisible(toggled)
+
+    async def onTimeFrameChanged(self, dateFrom, dateTo):
+        self.updateTree()
+        await self.applyTimeFrame()
 
     def onDagFormatChanged(self, action):
         pass
@@ -829,6 +930,11 @@ class FileManager(QWidget):
         if not idx.isValid():
             return self.onContextMenuVoid(point)
 
+        item = self.model.itemFromIndex(idx)
+
+        if not isinstance(item, MFSNameItem):
+            return
+
         nameItem = self.model.getNameItemFromIdx(idx)
         dataHash = self.model.getHashFromIdx(idx)
         ipfsPath = nameItem.ipfsPath
@@ -844,7 +950,7 @@ class FileManager(QWidget):
             ensure(addHashmarkAsync(mPath, name))
 
         def copyHashToClipboard(itemHash):
-            self.clipboard.setText(itemHash)
+            self.app.appClipboard.setText(itemHash)
 
         def openWithMediaPlayer(itemHash):
             parentHash = nameItem.parentHash
@@ -1079,8 +1185,13 @@ class FileManager(QWidget):
         if not idx.isValid():
             return
 
-        nameItem = self.model.getNameItemFromIdx(idx)
         item = self.model.itemFromIndex(idx)
+
+        if not isinstance(item, MFSNameItem):
+            return
+
+        nameItem = self.model.getNameItemFromIdx(idx)
+
         dataHash = self.model.getHashFromIdx(idx)
 
         if nameItem.isFile():
@@ -1208,6 +1319,7 @@ class FileManager(QWidget):
             await self.deleteFromCID(item, cid)
 
     def updateTree(self):
+
         self.app.task(self.listFiles, self.displayPath,
                       parentItem=self.displayedItem, maxdepth=1)
 
@@ -1227,6 +1339,7 @@ class FileManager(QWidget):
             return
 
         self.enableButtons(flag=False)
+        self.sortMfsTree(False)
         self.busy()
 
         await self.listPathWithTimeout(ipfsop, path, parentItem,
@@ -1234,42 +1347,31 @@ class FileManager(QWidget):
                                        autoexpand=autoexpand,
                                        timeout=timeout)
 
+        self.sortMfsTree(True)
         self.enableButtons()
         self.busy(False)
 
     async def listPathWithTimeout(self, ipfsop, path, parentItem, **kw):
         timeout = kw.pop('timeout', 10)
         try:
-            with async_timeout.timeout(timeout):
-                await self.listPath(ipfsop, path, parentItem, **kw)
+            async with self.lock:
+                with async_timeout.timeout(timeout):
+                    await self.listPath(ipfsop, path, parentItem, **kw)
         except asyncio.TimeoutError:
             self.statusSet(iListingMFSTimeout(path))
         except aioipfs.APIError as err:
             self.statusSet(iIpfsError(err.message))
         except Exception:
-            pass
+            import traceback
+            traceback.print_exc()
 
-    async def listPath(self, op, path, parentItem, depth=0, maxdepth=1,
-                       autoexpand=False, timeout=10):
-        if not parentItem or not parentItem.path:
-            return
+    async def findInParent(self, parentItem, entry):
+        for child in parentItem.childrenItems():
+            if isinstance(child, MFSTimeFrameItem):
+                async for e in self.findInParent(child, entry):
+                    yield e
 
-        listing = await op.filesList(path)
-        if not listing:
-            return
-
-        parentItemSibling = self.model.sibling(parentItem.row(), 0,
-                                               parentItem.index())
-        if parentItemSibling.isValid():
-            parentItemHash = self.model.getHashFromIdx(parentItemSibling)
-        else:
-            parentItemHash = None
-
-        for entry in listing:
-            await asyncio.sleep(0)
-
-            found = False
-            for child in parentItem.childrenItems():
+            elif isinstance(child, MFSNameItem):
                 if child.entry['Name'] == entry['Name']:
                     if entry['Hash'] != child.entry['Hash']:
                         # The parent has a child item with the same
@@ -1280,20 +1382,97 @@ class FileManager(QWidget):
                             self.model, child.entry['Hash'],
                             role=self.model.CidRole
                         )
-                        break
                 if child.entry['Hash'] == entry['Hash']:
-                    found = True
-                    break
+                    yield child.entry
 
-            if found:
+            await asyncio.sleep(0)
+
+    async def applyTimeFrame(self):
+        async with self.lock:
+            try:
+                for item in self.displayedItem.childrenItems(
+                        type=MFSTimeFrameItem):
+                    if not item.inRange(
+                            self.tfDateFrom,
+                            self.tfDateTo):
+                        await modelhelpers.modelDeleteAsync(
+                            self.model, item.text(),
+                            role=self.model.TimeFrameRole
+                        )
+            except Exception as err:
+                log.debug(str(err))
+
+    def mfsMetadataMatch(self, mfsEntryName):
+        return self.mfsMetadataRe.match(mfsEntryName)
+
+    async def listPath(self, op, path, parentItem, depth=0, maxdepth=1,
+                       autoexpand=False, timeout=10):
+        if not parentItem or not parentItem.path:
+            return
+
+        listing = await op.filesList(path)
+        if not listing:
+            return
+
+        try:
+            parentItemSibling = self.model.sibling(parentItem.row(), 0,
+                                                   parentItem.index())
+        except Exception as err:
+            log.debug(f'Sibling error: {err}')
+            return
+
+        if parentItemSibling.isValid():
+            parentItemHash = self.model.getHashFromIdx(parentItemSibling)
+        else:
+            parentItemHash = None
+
+        modelParent = None
+
+        for entry in listing:
+            await asyncio.sleep(0)
+
+            found = [e async for e in self.findInParent(parentItem, entry)]
+            if len(found) > 0:
                 continue
 
             icon = None
             if entry['Type'] == 1:  # directory
                 icon = self.iconFolder
 
+            match = self.mfsMetadataMatch(entry['Name'])
+
+            if match:
+                try:
+                    mdict = match.groupdict()
+                    time = int(mdict.get('time'))
+                    entryName = mdict.get('name')
+
+                    _dt = datetime.fromtimestamp(time)
+                    _date = date(_dt.year, _dt.month, _dt.day)
+
+                    dateText = _dt.strftime('%Y-%m-%d')
+                except Exception:
+                    continue
+
+                result = parentItem.findChildByName(dateText)
+                if result:
+                    modelParent = result
+                else:
+                    modelParent = MFSTimeFrameItem(
+                        _date, dateText, icon=getIcon('clock.png'))
+
+                    if modelParent.inRange(
+                            self.tfDateFrom,
+                            self.tfDateTo):
+                        parentItem.appendRow([modelParent, MFSItem('')])
+                    else:
+                        continue
+            else:
+                entryName = entry['Name']
+                modelParent = parentItem
+
             cidString = cidConvertBase32(entry['Hash'])
-            nItemName = MFSNameItem(entry, entry['Name'], icon, cidString)
+            nItemName = MFSNameItem(entry, entryName, icon, cidString)
 
             if entry['Type'] == 1:
                 nItemName.mimeDirectory(self.app.mimeDb)
@@ -1316,8 +1495,7 @@ class FileManager(QWidget):
             # Set its path in the MFS
             nItemName.path = os.path.join(parentItem.path, entry['Name'])
 
-            nItem = [nItemName, nItemSize]
-            parentItem.appendRow(nItem)
+            modelParent.appendRow([nItemName, nItemSize])
 
             if entry['Type'] == 1:  # directory
                 if autoexpand is True:
@@ -1337,6 +1515,10 @@ class FileManager(QWidget):
                         nItemName.path,
                         nItemName,
                         maxdepth=maxdepth, depth=depth + 1))
+
+            if isinstance(modelParent, MFSTimeFrameItem):
+                if modelParent.isToday() or modelParent.isPast3Days():
+                    self.mfsTree.expand(modelParent.index())
 
         if autoexpand is True:
             self.mfsTree.expand(parentItem.index())
@@ -1408,12 +1590,13 @@ class FileManager(QWidget):
 
             base = os.path.basename(file)
 
-            await self.linkEntry(op, root, parent, base)
+            await self.linkEntry(file, root, parent, base)
             count += 1
 
         self.statusSet(iImportedCount(count))
         self.enableButtons()
         self.busy(False)
+        self.showCancel(False)
         self.updateTree()
         return True
 
@@ -1458,7 +1641,7 @@ class FileManager(QWidget):
             if wrapEnabled is True:
                 base += '.dirw'
 
-            await self.linkEntry(op, root, parent, base)
+            await self.linkEntry(file, root, parent, base)
             count += 1
 
         self.statusEmpty()
@@ -1510,7 +1693,7 @@ class FileManager(QWidget):
         if wrapEnabled is True:
             basename += '.dirw'
 
-        await self.linkEntry(op, dirEntry, self.displayPath, basename)
+        await self.linkEntry(path, dirEntry, self.displayPath, basename)
 
         self.enableButtons()
         self.busy(False)
@@ -1520,7 +1703,14 @@ class FileManager(QWidget):
 
         return True
 
-    async def linkEntry(self, op, entry, dest, basename):
+    async def linkEntry(self, fpath, entry, dest, basename=None):
+        path = Path(fpath)
+        return await self.linkEntryWithMetadata(
+            fpath, entry, dest,
+            basename=basename if basename else path.name)
+
+    @ipfsOp
+    async def linkEntryNoMetadata(self, op, entry, dest, basename):
         for lIndex in range(0, 16):
             await op.sleep()
             if lIndex == 0:
@@ -1533,6 +1723,24 @@ class FileManager(QWidget):
                 linkS = await op.filesLink(entry, dest, name=lNew)
                 if linkS:
                     return lNew
+
+    @ipfsOp
+    async def linkEntryWithMetadata(self, ipfsop,
+                                    fpath: str,
+                                    entry: dict,
+                                    mfsDestDir: str,
+                                    basename: str):
+        path = Path(fpath)
+
+        try:
+            stat = path.stat()
+            t = int(time.time())
+            mtime = int(stat.st_mtime)
+
+            linkName = f'_mfsmeta_{t}_{mtime}_{stat.st_size}_{basename}'
+            await ipfsop.filesLink(entry, mfsDestDir, name=linkName)
+        except Exception:
+            log.debug(f'Cannot link {entry} to {mfsDestDir} in the MFS')
 
 
 class FileManagerTab(GalacteekTab):

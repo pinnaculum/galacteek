@@ -214,7 +214,7 @@ class Peers:
         return [pCtx.ident.iphandle for peerId, pCtx in self.byPeerId.items()]
 
     async def unregister(self, peerId):
-        with await self.lock:
+        async with self.lock:
             if peerId in self.byPeerId:
                 del self.byPeerId[peerId]
             await self.peerLogout.emit(peerId)
@@ -271,7 +271,7 @@ class Peers:
                 log.debug('Cannot load DID: {}'.format(personDid))
                 return
 
-            with await self.lock:
+            async with self.lock:
                 pCtx = PeerCtx(self.ctx, iMsg.peer, iMsg, ipid,
                                pingavg=avgPing if avgPing else 0,
                                pinglast=now if avgPing else 0,
@@ -291,7 +291,7 @@ class Peers:
             # This peer is already registered
             # What we ought to do here is just to refresh the DID document
 
-            with await self.lock:
+            async with self.lock:
                 pCtx = self.getByPeerId(iMsg.peer)
                 if pCtx:
                     log.debug('Updating ident for peer {}'.format(iMsg.peer))
@@ -508,6 +508,8 @@ class IPFSContext(QObject):
     # signals
     ipfsConnectionReady = AsyncSignal()
     ipfsRepositoryReady = AsyncSignal()
+
+    _ipfsRepositoryReady = pyqtSignal()  # for pytest
 
     # profiles
     profilesAvailable = pyqtSignal(list)

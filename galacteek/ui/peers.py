@@ -414,7 +414,7 @@ class PeersModel(QAbstractItemModel):
         return success
 
     async def peerLookup(self, peerId):
-        with await self.lock:
+        async with self.lock:
             for item in self.rootItem.childItems:
                 if not isinstance(item, PeerTreeItem):
                     continue
@@ -435,7 +435,7 @@ class PeersTracker:
         self.ctx.peers.peerLogout.connectTo(self.onPeerLogout)
 
     async def onPeerLogout(self, peerId):
-        with await self.model.lock:
+        async with self.model.lock:
             for item in self.model.rootItem.childItems:
                 if not isinstance(item, PeerTreeItem):
                     continue
@@ -466,7 +466,7 @@ class PeersTracker:
         await self.addPeerToModel(peerId, peerCtx)
 
     async def addPeerToModel(self, peerId, peerCtx):
-        with await self.model.lock:
+        async with self.model.lock:
             peerItem = PeerTreeItem(peerCtx, parent=self.model.rootItem)
             ensure(peerCtx.fetchAvatar())
 

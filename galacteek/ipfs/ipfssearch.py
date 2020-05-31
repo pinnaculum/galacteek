@@ -1,9 +1,9 @@
 from urllib.parse import quote
 
 from galacteek import log
-from galacteek.ipfs.cidhelpers import cidConvertBase32
 
 import aiohttp
+import async_timeout
 
 ipfsSearchApiHost = 'api.ipfs-search.com'
 
@@ -17,20 +17,21 @@ class IPFSSearchResults:
 
     @property
     def hits(self):
+        return [{
+            'hit': hit,
+            'pageCount': self.pageCount,
+            'page': self.page,
+            'engine': 'ipfs-search'
+        } for hit in sorted(
+            self.results['hits'],
+            reverse=True,
+            key=lambda hit: hit['score']
+        )]
         return self.results.get('hits', [])
 
     @property
     def hitsCount(self):
         return len(self.hits)
-
-    def findByHash(self, hashV):
-        for hit in self.hits:
-            hitHash = hit.get('hash', None)
-            if not hitHash:
-                continue
-
-            if cidConvertBase32(hitHash) == cidConvertBase32(hashV):
-                return hit
 
 
 emptyResults = IPFSSearchResults(0, {})
@@ -63,15 +64,21 @@ async def getPageResults(query, page, filters={}, sslverify=True):
         return None
 
 
-async def getMetadata(cid, sslverify=True):
+async def objectMetadata(cid, timeout=10, sslverify=True):
+    """
+    Returns object metadata for a CID from ipfs-search.com
+    """
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get('https://{host}/v1/metadata/{cid}'.format(
-                    host=ipfsSearchApiHost, cid=cid),
-                    verify_ssl=sslverify) as resp:
-                return await resp.json()
+        with async_timeout.timeout(timeout):
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    'https://{host}/v1/metadata/{cid}'.format(
+                        host=ipfsSearchApiHost, cid=cid),
+                        verify_ssl=sslverify) as resp:
+                    payload = await resp.json()
+                    return payload['metadata']
     except Exception:
-        log.debug('Error occured while fetching metadata')
+        log.debug(f'Error occured while fetching metadata for CID: {cid}')
         return None
 
 
@@ -79,8 +86,6 @@ async def search(query, pageStart=0, preloadPages=0,
                  filters={}, sslverify=True):
     page1Results = await getPageResults(query, pageStart, filters=filters,
                                         sslverify=sslverify)
-    if page1Results is None:
-        return
 
     yield page1Results
     pageCount = page1Results.pageCount

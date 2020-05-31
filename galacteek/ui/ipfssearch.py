@@ -25,9 +25,11 @@ from PyQt5.QtGui import QFont
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import stripIpfs
 from galacteek.ipfs.cidhelpers import IPFSPath
+from galacteek.ipfs.cidhelpers import cidConvertBase32
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import ipfsOp
-from galacteek.ipfs import ipfssearch
+from galacteek.ipfs.search import multiSearch
+from galacteek.ipfs.stat import StatInfo
 from galacteek.dweb.render import renderTemplate
 from galacteek import ensure
 from galacteek import log
@@ -187,8 +189,8 @@ class SearchResultsPage(BaseSearchPage):
 
 
 class IPFSSearchHandler(QObject):
-    resultReady = pyqtSignal(str, QVariant)
-    objectStatAvailable = pyqtSignal(str, dict, dict)
+    resultReady = pyqtSignal(str, str, QVariant)
+    objectStatAvailable = pyqtSignal(str, dict)
 
     filtersChanged = pyqtSignal()
     clear = pyqtSignal()
@@ -206,7 +208,7 @@ class IPFSSearchHandler(QObject):
         self.app = QApplication.instance()
 
         self.vPageCurrent = 0
-        self.pagesPerVpage = 2
+        self.pagesPerVpage = 1
         self.pageCount = 0
         self.searchQuery = ''
 
@@ -298,22 +300,24 @@ class IPFSSearchHandler(QObject):
             self.app.setClipboardText(path)
 
     def findByHash(self, mHash):
-        for results in self._cResults:
-            found = results.findByHash(mHash)
-            if found:
-                return found
+        for result in self._cResults:
+            hit = result['hit']
+            hitHash = hit.get('hash')
+
+            if not hitHash:
+                continue
+
+            if cidConvertBase32(hitHash) == cidConvertBase32(mHash):
+                return hit
 
     @pyqtSlot(str)
     def hashmark(self, path):
         hashV = stripIpfs(path)
         hit = self.findByHash(hashV)
 
-        if not hit:
-            return
-
-        title = hit.get('title', iUnknown()) if hit else ''
+        title = hit.get('title', iUnknown()) if hit else hashV
         descr = hit.get('description', iUnknown()) if hit else ''
-        type = hit.get('type', None)
+        type = hit.get('type') if hit else None
         pinSingle = (type == 'file')
         pinRecursive = (type == 'directory')
 
@@ -349,6 +353,8 @@ class IPFSSearchHandler(QObject):
             filters['metadata.Content-Type'] = 'audio*'
         elif cType == 'text':
             filters['metadata.Content-Type'] = 'text*'
+        elif cType == 'web':
+            filters['metadata.Content-Type'] = 'text/html'
 
         return filters
 
@@ -375,70 +381,99 @@ class IPFSSearchHandler(QObject):
             'first-seen': hit.get('first-seen', iUnknown())
         }
 
-        self.resultReady.emit(hitHash, QVariant(pHit))
+        self.resultReady.emit('ipfs-search', hitHash, QVariant(pHit))
 
-    async def fetchObjectStat(self, ipfsop, hit):
-        cid = hit['hash']
+    async def sendCyberHit(self, hit):
+        hitHash = hit.get('hash')
+
+        ipfsPath = IPFSPath(hitHash)
+        if not ipfsPath.valid:
+            return
+
+        mType, stat = await self.app.rscAnalyzer(ipfsPath)
+        if not mType or not stat:
+            return
+
+        sInfo = StatInfo(stat)
+
+        pHit = {
+            'hash': hitHash,
+            'path': str(ipfsPath),
+            'url': ipfsPath.ipfsUrl,
+            'mimetype': str(mType),
+            'title': hitHash,
+            'size': sInfo.totalSize,
+            'sizeformatted': sizeFormat(sInfo.totalSize),
+            'description': None,
+            'type': iUnknown(),
+            'first-seen': iUnknown()
+        }
+
+        self.resultReady.emit('cyber', hitHash, QVariant(pHit))
+        self.objectStatAvailable.emit(hitHash, stat)
+
+    async def fetchObjectStat(self, ipfsop, cid):
         path = joinIpfs(cid)
 
-        mType, stat = await self.app.rscAnalyzer(path)
-        if stat:
-            self.objectStatAvailable.emit(cid, stat, hit)
+        try:
+            mType, stat = await self.app.rscAnalyzer(path)
+            if stat:
+                self.objectStatAvailable.emit(cid, stat)
+        except Exception:
+            pass
 
     @ipfsOp
-    async def runSearch(self, ipfsop, searchQuery, timeout=60):
+    async def runSearch(self, ipfsop, searchQuery, timeout=30):
         pageStart = self.vPageCurrent * self.pagesPerVpage
-        pageCount = 0
-        gotResults = False
         statusEmitted = False
+        gotResults = False
 
         try:
             with async_timeout.timeout(timeout):
-                async for sr in ipfssearch.search(
+                async for pageCount, result in multiSearch(
                         searchQuery,
-                        pageStart=pageStart,
-                        preloadPages=self.pagesPerVpage,
+                        page=pageStart,
                         filters=self.filters,
                         sslverify=self.app.sslverify):
+                    await asyncio.sleep(0)
                     gotResults = True
 
-                    await asyncio.sleep(0)
-                    pageCount = sr.pageCount
-
-                    if not isinstance(pageCount, int) or pageCount <= 0:
-                        break
-
-                    vpCount = pageCount / self.pagesPerVpage
-
                     if not statusEmitted:
-                        self.vPageStatus.emit(self.vPageCurrent + 1,
-                                              vpCount if vpCount > 0 else 1)
+                        self.vPageStatus.emit(
+                            self.vPageCurrent + 1,
+                            pageCount if pageCount > 0 else 1)
                         statusEmitted = True
 
-                    self._cResults.append(sr)
-                    self.pageCount = pageCount
+                    hit = result['hit']
+                    engine = result['engine']
 
-                    for hit in sr.hits:
+                    self._cResults.append(result)
+
+                    if engine == 'ipfs-search':
                         self.sendHit(hit)
-
-                        await asyncio.sleep(0.2)
-
+                        self._tasks.append(ensure(
+                            self.fetchObjectStat(
+                                ipfsop, hit['hash'])))
+                    else:
                         self._tasks.append(
-                            ensure(self.fetchObjectStat(ipfsop, hit)))
+                            ensure(self.sendCyberHit(hit)))
         except asyncio.TimeoutError:
             self.searchTimeout.emit(timeout)
-            return
+            return False
         except asyncio.CancelledError:
-            return
+            return False
         except Exception as e:
             log.debug(
                 'IPFSSearch: unknown exception while searching: {}'.format(
                     str(e)))
+            return False
 
-        if not gotResults:
-            self.searchError.emit()
-        else:
+        if gotResults:
             self.searchComplete.emit()
+            return True
+        else:
+            self.searchError.emit()
+            return False
 
 
 class IPFSSearchView(QWidget):

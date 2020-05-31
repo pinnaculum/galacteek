@@ -724,6 +724,7 @@ class MainWindow(QMainWindow):
         self.ipfsSearchButton = ipfssearch.IPFSSearchButton(self)
         self.ipfsSearchButton.setShortcut(QKeySequence('Ctrl+Alt+s'))
         self.ipfsSearchButton.setIcon(self.ipfsSearchButton.iconNormal)
+        self.ipfsSearchButton.setToolTip(iSearchIpfsContent())
         self.ipfsSearchButton.clicked.connect(self.addIpfsSearchView)
 
         self.toolbarMain.addWidget(self.browseButton)
@@ -991,10 +992,11 @@ class MainWindow(QMainWindow):
             if action.data() == pName:
                 action.setChecked(True)
                 # Refresh the file manager
-                filesM = self.findTabFileManager()
-                if filesM:
-                    filesM.fileManager.setupModel()
-                    filesM.pathSelectorDefault()
+                tab = self.findTabFileManager()
+
+                if tab:
+                    tab.fileManager.setupModel()
+                    tab.fileManager.pathSelectorDefault()
 
     def onProfilesList(self, pList):
         currentList = [action.data() for action in

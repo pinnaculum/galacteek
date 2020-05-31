@@ -95,7 +95,7 @@ class PinningMaster(object):
 
         toDelete = []
         try:
-            with await self.lock:
+            async with self.lock:
                 for qname, queue in self.pinStatus.items():
                     for path, pinData in queue.items():
                         if pinData['pinned'] is False:
@@ -136,7 +136,7 @@ class PinningMaster(object):
             return self.pinStatus[qname].get(path, None)
 
     async def pathDelete(self, path):
-        with await self.lock:
+        async with self.lock:
             for qname, queue in self.pinStatus.items():
                 if path in queue:
                     self.debug('Deleting item {item}'.format(
