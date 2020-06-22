@@ -23,11 +23,10 @@ class IPFSSearchResults:
             'page': self.page,
             'engine': 'ipfs-search'
         } for hit in sorted(
-            self.results['hits'],
+            self.results.get('hits', []),
             reverse=True,
             key=lambda hit: hit['score']
         )]
-        return self.results.get('hits', [])
 
     @property
     def hitsCount(self):
@@ -61,7 +60,7 @@ async def getPageResults(query, page, filters={}, sslverify=True):
                                    sslverify=sslverify)
         return IPFSSearchResults(page, results)
     except Exception:
-        return None
+        return emptyResults
 
 
 async def objectMetadata(cid, timeout=10, sslverify=True):
