@@ -399,6 +399,7 @@ class IPFSSearchHandler(QObject):
         pHit = {
             'hash': hitHash,
             'path': str(ipfsPath),
+            'cyberlink': hit['cyberlink'],
             'url': ipfsPath.ipfsUrl,
             'mimetype': str(mType),
             'title': hitHash,

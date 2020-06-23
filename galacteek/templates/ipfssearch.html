@@ -21,6 +21,7 @@
 
       input {
         font: 14pt "Montserrat";
+        padding: 20px;
       }
 
       div#results {
@@ -178,8 +179,15 @@
       <a href="#" onclick='event.preventDefault(); window.hashmark("${hit.path}")'><img src="qrc:///share/icons/hashmarks.png" width="16" height="16"/></a>
       <a href="#" onclick='event.preventDefault(); window.ipfssearch.pinObject("${hit.path }")'><img src="qrc:///share/icons/pin.png" width="16" height="16"/></a>
       <a href="#" onclick='event.preventDefault(); window.ipfssearch.clipboardInput("${hit.path}")'><img src="qrc:///share/icons/clipboard.png" width="16" height="16"/></a>
-
       `;
+
+        if (engine == 'cyber') {
+          markup += `
+          <img src="qrc:///share/icons/${ engine }.png"
+            width="16" height="16"
+            title="Cyberlink ${hit.cyberlink.source} => ${hit.cyberlink.target}"/>
+            `;
+        }
 
         if (hit['type'] == 'directory') {
           markup += `
@@ -418,7 +426,7 @@
       <p id="statusmessage"/>
     </div>
 
-    <div width="100%" id="controls" style="display: none">
+    <div width="100%" id="controls" style="margin-left: 20px; display: none">
       <a class="pagecontrol" style="margin-right: 10px" href="#"
         id="pageprev" onclick="window.previousPage();">Previous page</a>
       <span id="pageinfo"></span>

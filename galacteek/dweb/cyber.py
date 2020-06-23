@@ -68,7 +68,11 @@ async def cyberSearch(ipfsop, query: str, page=0, perPage=10, sslverify=True):
             return {
                 'hash': r['cid'],
                 'title': r['cid'],
-                'score': r['rank']
+                'score': r['rank'],
+                'cyberlink': {
+                    'source': entry['Hash'],
+                    'target': r['cid']
+                }
             }
 
         return CyberSearchResults(
