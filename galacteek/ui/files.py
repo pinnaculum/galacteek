@@ -32,6 +32,7 @@ from PyQt5.QtCore import QSortFilterProxyModel
 
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtGui import QImage
+from PyQt5.QtGui import QKeySequence
 
 from galacteek import ensure
 from galacteek import partialEnsure
@@ -346,6 +347,7 @@ class FileManager(QWidget):
         self.busyCube.hide()
 
         self.ui.datesPickButton.toggled.connect(self.onDatePickToggled)
+        self.ui.refreshButton.setShortcut(QKeySequence('Ctrl+r'))
 
         self.ui.fsControlLayout.insertWidget(0, self.busyCube)
 
@@ -770,8 +772,7 @@ class FileManager(QWidget):
         self.timeFrameSelector.setVisible(toggled)
 
     async def onTimeFrameChanged(self, dateFrom, dateTo):
-        self.updateTree()
-        await self.applyTimeFrame()
+        self.updateTree(timeFrameUpdate=True)
 
     def onDagFormatChanged(self, action):
         pass
@@ -1227,7 +1228,7 @@ class FileManager(QWidget):
                           dirName[0])
 
     def onRefreshClicked(self):
-        self.updateTree()
+        self.updateTree(timeFrameUpdate=True)
         self.mfsTree.setFocus(Qt.OtherFocusReason)
 
     def onAddDirClicked(self):
@@ -1318,10 +1319,10 @@ class FileManager(QWidget):
         if reply:
             await self.deleteFromCID(item, cid)
 
-    def updateTree(self):
-
+    def updateTree(self, timeFrameUpdate=False):
         self.app.task(self.listFiles, self.displayPath,
-                      parentItem=self.displayedItem, maxdepth=1)
+                      parentItem=self.displayedItem, maxdepth=1,
+                      timeFrameUpdate=timeFrameUpdate)
 
     @ipfsOp
     async def updateKeys(self, ipfsop):
@@ -1334,7 +1335,8 @@ class FileManager(QWidget):
 
     @ipfsOp
     async def listFiles(self, ipfsop, path, parentItem, maxdepth=0,
-                        autoexpand=False, timeout=20):
+                        autoexpand=False, timeout=20,
+                        timeFrameUpdate=False):
         if self.isBusy:
             return
 
@@ -1346,6 +1348,9 @@ class FileManager(QWidget):
                                        maxdepth=maxdepth,
                                        autoexpand=autoexpand,
                                        timeout=timeout)
+
+        if timeFrameUpdate:
+            await self.applyTimeFrame()
 
         self.sortMfsTree(True)
         self.enableButtons()
@@ -1395,6 +1400,8 @@ class FileManager(QWidget):
                     if not item.inRange(
                             self.tfDateFrom,
                             self.tfDateTo):
+                        log.debug('applyTimeFrame: purging {}'.format(
+                            item.text()))
                         await modelhelpers.modelDeleteAsync(
                             self.model, item.text(),
                             role=self.model.TimeFrameRole

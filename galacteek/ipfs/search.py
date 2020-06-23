@@ -6,10 +6,10 @@ import itertools
 
 
 def alternate(s1, s2):
-    xs = s1.hits
-    ys = s2.hits
-    head = itertools.chain.from_iterable(zip(xs, ys))
-    return itertools.chain(head, xs[len(ys):], ys[len(xs):])
+    hits1 = s1.hits
+    hits2 = s2.hits
+    head = itertools.chain.from_iterable(zip(hits1, hits2))
+    return itertools.chain(head, hits1[len(hits2):], hits2[len(hits1):])
 
 
 async def multiSearch(query, page=0,
