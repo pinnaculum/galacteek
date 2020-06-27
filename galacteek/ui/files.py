@@ -192,6 +192,12 @@ def iUseFilestore():
         'Use filestore if available')
 
 
+def iUseTimeMetadata():
+    return QCoreApplication.translate(
+        'FileManagerForm',
+        'Use time metadata (MFS linking)')
+
+
 def iDAGGenerationFormat():
     return QCoreApplication.translate(
         'FileManagerForm',
@@ -215,6 +221,13 @@ def iOfflineModeToolTip():
         'FileManagerForm',
         'Offline mode: in this mode your files will not be '
         'immediately announced on the DHT')
+
+
+def iSearchFilesHelp():
+    return QCoreApplication.translate(
+        'FileManagerForm',
+        'Search your files (regular expression)'
+    )
 
 
 class MFSTreeView(QTreeView):
@@ -251,6 +264,8 @@ class TimeFrameSelectorWidget(QWidget):
         super(TimeFrameSelectorWidget, self).__init__(
             parent)
 
+        self.app = QApplication.instance()
+
         self.ui = ui_timeframeselector.Ui_TimeFrameSelector()
         self.ui.setupUi(self)
 
@@ -266,6 +281,26 @@ class TimeFrameSelectorWidget(QWidget):
 
         self.ui.dateFrom.dateChanged.connect(self.onDateFromChanged)
         self.ui.dateTo.dateChanged.connect(self.onDateToChanged)
+        self.ui.mfsTimeMetadata.setChecked(
+            self.app.settingsMgr.isTrue(
+                CFG_SECTION_FILEMANAGER,
+                CFG_KEY_TIME_METADATA
+            )
+        )
+        self.ui.mfsTimeMetadata.stateChanged.connect(
+            self.onTimeMetadataToggled
+        )
+
+    @property
+    def useTimeMetadata(self):
+        return self.ui.mfsTimeMetadata.checkState() == Qt.Checked
+
+    def onTimeMetadataToggled(self, state):
+        self.app.settingsMgr.setBoolFrom(
+            CFG_SECTION_FILEMANAGER,
+            CFG_KEY_TIME_METADATA,
+            state == Qt.Checked
+        )
 
     def onDateFromChanged(self, date):
         if date > self.ui.dateTo.date():
@@ -357,7 +392,9 @@ class FileManager(QWidget):
         self.ui.addFileButton.clicked.connect(self.onAddFilesClicked)
         self.ui.addDirectoryButton.clicked.connect(self.onAddDirClicked)
         self.ui.refreshButton.clicked.connect(self.onRefreshClicked)
-        self.ui.searchFiles.returnPressed.connect(self.onSearchFiles)
+        self.ui.searchFiles.returnPressed.connect(
+            partialEnsure(self.onSearchFiles))
+        self.ui.searchFiles.setToolTip(iSearchFilesHelp())
         self.ui.localFileManagerSwitch.toggled.connect(
             self.onLocalFileManagerToggled)
         self.ui.fileManagerButton.clicked.connect(self.onLocalFileManager)
@@ -368,6 +405,21 @@ class FileManager(QWidget):
         fsOptsMenu = QMenu(self)
         fsDagFormatMenu = QMenu(iDAGGenerationFormat(), self)
         fsDagFormatMenu.setIcon(getIcon('ipld.png'))
+
+        fsIconSizeMenu = QMenu('Icon size', self)
+        self.iconSizeGroup = QActionGroup(fsIconSizeMenu)
+        self.iconSizeGroup.triggered.connect(self.onIconSize)
+        self.actionSmallIcon = QAction('Small', self.iconSizeGroup)
+        self.actionSmallIcon.setCheckable(True)
+        self.actionSmallIcon.setChecked(True)
+        self.actionMediumIcon = QAction('Medium', self.iconSizeGroup)
+        self.actionMediumIcon.setCheckable(True)
+        self.actionLargeIcon = QAction('Large', self.iconSizeGroup)
+        self.actionLargeIcon.setCheckable(True)
+        self.iconSizeGroup.addAction(self.actionSmallIcon)
+        self.iconSizeGroup.addAction(self.actionMediumIcon)
+        self.iconSizeGroup.addAction(self.actionLargeIcon)
+        fsIconSizeMenu.addActions(self.iconSizeGroup.actions())
 
         fsChunkerMenu = self.buildChunkerMenu()
         fsHashFuncMenu = self.buildHashFuncMenu()
@@ -408,6 +460,8 @@ class FileManager(QWidget):
         fsOptsMenu.addMenu(fsHashFuncMenu)
         fsOptsMenu.addSeparator()
         fsOptsMenu.addMenu(fsMiscOptsMenu)
+        fsOptsMenu.addSeparator()
+        fsOptsMenu.addMenu(fsIconSizeMenu)
 
         self.ui.fsOptionsButton.setPopupMode(QToolButton.InstantPopup)
         self.ui.fsOptionsButton.setMenu(fsOptsMenu)
@@ -434,11 +488,6 @@ class FileManager(QWidget):
         self.mfsTree.setObjectName('mfsTreeView')
         self.mfsTree.header().setMinimumSectionSize(400)
 
-        self.ui.comboIconSize.addItem('Small')
-        self.ui.comboIconSize.addItem('Medium')
-        self.ui.comboIconSize.addItem('Large')
-        self.ui.comboIconSize.currentIndexChanged.connect(self.onIconSize)
-
         self.ui.collapseAll.clicked.connect(self.onCollapseAll)
         self.ui.collapseAll.hide()
 
@@ -456,7 +505,6 @@ class FileManager(QWidget):
         self.mfsTree.setExpandsOnDoubleClick(True)
         self.mfsTree.setItemsExpandable(True)
         self.mfsTree.setSortingEnabled(True)
-        self.mfsTree.setIconSize(QSize(16, 16))
 
         self.iconFolder = getIcon('folder-open.png')
         self.iconFile = getIcon('file.png')
@@ -471,6 +519,10 @@ class FileManager(QWidget):
     @property
     def gWindow(self):
         return self.app.mainWindow
+
+    @property
+    def mfsSelModel(self):
+        return self.mfsTree.selectionModel()
 
     @property
     def profile(self):
@@ -783,17 +835,21 @@ class FileManager(QWidget):
     def onHashFunctionChanged(self, action):
         self.hashFunction = action.text()
 
-    def onIconSize(self, index):
-        size = None
-
-        if index == 0:
+    def onIconSize(self, action):
+        if action is self.actionSmallIcon:
             size = QSize(16, 16)
-        elif index == 1:
+        elif action is self.actionMediumIcon:
             size = QSize(24, 24)
-        elif index == 2:
+        elif action is self.actionLargeIcon:
             size = QSize(32, 32)
         else:
             return
+
+        self.app.settingsMgr.setSetting(
+            CFG_SECTION_FILEMANAGER,
+            CFG_KEY_ICONSIZE,
+            action.text().lower()
+        )
 
         self.mfsTree.setIconSize(size)
 
@@ -1216,9 +1272,49 @@ class FileManager(QWidget):
             self.app.task(self.listFiles, item.path, parentItem=item,
                           autoexpand=True)
 
-    def onSearchFiles(self):
-        search = self.ui.searchFiles.text()
-        self.mfsTree.keyboardSearch(search)
+    def expandIndexBackwards(self, idx):
+        while idx.isValid():
+            self.mfsTree.expand(idx)
+            idx = idx.parent()
+
+    async def onSearchFiles(self):
+        searchQuery = self.ui.searchFiles.text()
+
+        if searchQuery:
+            try:
+                re.compile(searchQuery)
+            except re.error:
+                return messageBox('Invalid expression')
+
+            self.mfsSelModel.clearSelection()
+
+            # List everything (no depth limit)
+            await self.listFiles(self.displayPath,
+                                 parentItem=self.displayedItem, maxdepth=0,
+                                 timeout=60,
+                                 subTask=False)
+
+            # Run the search
+            await self.runSearch(searchQuery)
+
+    async def runSearch(self, text, index=None):
+        idx = index if index else self.displayedItem.index()
+        caseIdx = self.ui.comboSearchCase.currentIndex()
+
+        reflags = re.IGNORECASE if caseIdx == 1 else 0
+
+        async for idx in modelhelpers.modelWalkAsync(
+            self.model, searchre=text,
+            reflags=reflags,
+            parent=idx,
+            role=self.model.FileNameRole
+        ):
+            await asyncio.sleep(0)
+            self.expandIndexBackwards(idx)
+            self.mfsSelModel.select(
+                idx,
+                QItemSelectionModel.Select | QItemSelectionModel.Rows
+            )
 
     def onMkDirClicked(self):
         dirName = QInputDialog.getText(self, 'Directory name',
@@ -1334,9 +1430,10 @@ class FileManager(QWidget):
         self.updateTree()
 
     @ipfsOp
-    async def listFiles(self, ipfsop, path, parentItem, maxdepth=0,
+    async def listFiles(self, ipfsop, path, parentItem, maxdepth=1,
                         autoexpand=False, timeout=20,
-                        timeFrameUpdate=False):
+                        timeFrameUpdate=False,
+                        **kw):
         if self.isBusy:
             return
 
@@ -1344,24 +1441,25 @@ class FileManager(QWidget):
         self.sortMfsTree(False)
         self.busy()
 
-        await self.listPathWithTimeout(ipfsop, path, parentItem,
-                                       maxdepth=maxdepth,
-                                       autoexpand=autoexpand,
-                                       timeout=timeout)
+        async with self.lock:
+            await self.listPathWithTimeout(ipfsop, path, parentItem,
+                                           maxdepth=maxdepth,
+                                           autoexpand=autoexpand,
+                                           timeout=timeout,
+                                           **kw)
 
-        if timeFrameUpdate:
-            await self.applyTimeFrame()
+            if timeFrameUpdate:
+                await self.applyTimeFrame()
 
         self.sortMfsTree(True)
         self.enableButtons()
         self.busy(False)
 
     async def listPathWithTimeout(self, ipfsop, path, parentItem, **kw):
-        timeout = kw.pop('timeout', 10)
+        timeout = kw.pop('timeout', 20)
         try:
-            async with self.lock:
-                with async_timeout.timeout(timeout):
-                    await self.listPath(ipfsop, path, parentItem, **kw)
+            with async_timeout.timeout(timeout):
+                await self.listPath(ipfsop, path, parentItem, **kw)
         except asyncio.TimeoutError:
             self.statusSet(iListingMFSTimeout(path))
         except aioipfs.APIError as err:
@@ -1373,8 +1471,8 @@ class FileManager(QWidget):
     async def findInParent(self, parentItem, entry):
         for child in parentItem.childrenItems():
             if isinstance(child, MFSTimeFrameItem):
-                async for e in self.findInParent(child, entry):
-                    yield e
+                async for _tfchild in self.findInParent(child, entry):
+                    yield _tfchild
 
             elif isinstance(child, MFSNameItem):
                 if child.entry['Name'] == entry['Name']:
@@ -1388,32 +1486,34 @@ class FileManager(QWidget):
                             role=self.model.CidRole
                         )
                 if child.entry['Hash'] == entry['Hash']:
-                    yield child.entry
+                    yield child
 
             await asyncio.sleep(0)
 
     async def applyTimeFrame(self):
-        async with self.lock:
-            try:
-                for item in self.displayedItem.childrenItems(
-                        type=MFSTimeFrameItem):
-                    if not item.inRange(
-                            self.tfDateFrom,
-                            self.tfDateTo):
-                        log.debug('applyTimeFrame: purging {}'.format(
-                            item.text()))
-                        await modelhelpers.modelDeleteAsync(
-                            self.model, item.text(),
-                            role=self.model.TimeFrameRole
-                        )
-            except Exception as err:
-                log.debug(str(err))
+        try:
+            for item in self.displayedItem.childrenItems(
+                    type=MFSTimeFrameItem):
+                if not item.inRange(
+                        self.tfDateFrom,
+                        self.tfDateTo):
+                    log.debug('applyTimeFrame: purging {}'.format(
+                        item.text()))
+                    await modelhelpers.modelDeleteAsync(
+                        self.model, item.text(),
+                        role=self.model.TimeFrameRole
+                    )
+
+                await asyncio.sleep(0)
+        except Exception as err:
+            log.debug('applyTimeFrame error: {}'.format(str(err)))
 
     def mfsMetadataMatch(self, mfsEntryName):
         return self.mfsMetadataRe.match(mfsEntryName)
 
     async def listPath(self, op, path, parentItem, depth=0, maxdepth=1,
-                       autoexpand=False, timeout=10):
+                       subTask=True,
+                       autoexpand=False, timeout=20):
         if not parentItem or not parentItem.path:
             return
 
@@ -1436,15 +1536,13 @@ class FileManager(QWidget):
         modelParent = None
 
         for entry in listing:
+            entryExists = False
+
             await asyncio.sleep(0)
 
-            found = [e async for e in self.findInParent(parentItem, entry)]
-            if len(found) > 0:
-                continue
-
-            icon = None
-            if entry['Type'] == 1:  # directory
-                icon = self.iconFolder
+            eFound = [e async for e in self.findInParent(parentItem, entry)]
+            if len(eFound) > 0:
+                entryExists = True
 
             match = self.mfsMetadataMatch(entry['Name'])
 
@@ -1478,37 +1576,44 @@ class FileManager(QWidget):
                 entryName = entry['Name']
                 modelParent = parentItem
 
-            cidString = cidConvertBase32(entry['Hash'])
-            nItemName = MFSNameItem(entry, entryName, icon, cidString)
-
-            if entry['Type'] == 1:
-                nItemName.mimeDirectory(self.app.mimeDb)
+            if entryExists:
+                nItemName = eFound.pop()
             else:
-                nItemName.mimeFromDb(self.app.mimeDb)
+                icon = None
+                if entry['Type'] == 1:  # directory
+                    icon = self.iconFolder
 
-            nItemName.setParentHash(parentItemHash)
-            nItemSize = MFSItem(sizeFormat(entry['Size']))
-            nItemName.setToolTip(mfsItemInfosMarkup(nItemName))
+                cidString = cidConvertBase32(entry['Hash'])
+                nItemName = MFSNameItem(entry, entryName, icon, cidString)
 
-            if not icon and nItemName.mimeTypeName:
-                # If we have a better icon matching the file's type..
+                if entry['Type'] == 1:
+                    nItemName.mimeDirectory(self.app.mimeDb)
+                else:
+                    nItemName.mimeFromDb(self.app.mimeDb)
 
-                mType = MIMEType(nItemName.mimeTypeName)
-                mIcon = getIconFromMimeType(mType, defaultIcon='unknown')
+                nItemName.setParentHash(parentItemHash)
+                nItemSize = MFSItem(sizeFormat(entry['Size']))
+                nItemName.setToolTip(mfsItemInfosMarkup(nItemName))
 
-                if mIcon:
-                    nItemName.setIcon(mIcon)
+                if not icon and nItemName.mimeTypeName:
+                    # If we have a better icon matching the file's type..
 
-            # Set its path in the MFS
-            nItemName.path = os.path.join(parentItem.path, entry['Name'])
+                    mType = MIMEType(nItemName.mimeTypeName)
+                    mIcon = getIconFromMimeType(mType, defaultIcon='unknown')
 
-            modelParent.appendRow([nItemName, nItemSize])
+                    if mIcon:
+                        nItemName.setIcon(mIcon)
+
+                # Set its path in the MFS
+                nItemName.path = os.path.join(parentItem.path, entry['Name'])
+
+                modelParent.appendRow([nItemName, nItemSize])
 
             if entry['Type'] == 1:  # directory
                 if autoexpand is True:
                     self.mfsTree.setExpanded(nItemName.index(), True)
 
-                if maxdepth > depth:
+                if maxdepth > depth or maxdepth == 0:
                     # We used to await listPath() here but it sucks
                     # tremendously if you have a dead CID in the MFS which
                     # will make the ls timeout and hang the filemanager.
@@ -1517,11 +1622,18 @@ class FileManager(QWidget):
                     # subfolders are being listed in background tasks, which
                     # is fine
 
-                    ensure(self.listPathWithTimeout(
+                    coro = self.listPathWithTimeout(
                         op,
                         nItemName.path,
                         nItemName,
-                        maxdepth=maxdepth, depth=depth + 1))
+                        maxdepth=maxdepth, depth=depth + 1,
+                        timeout=timeout)
+
+                    if subTask is True:
+                        ensure(coro)
+                    else:
+                        # Used for searching (all directories are expanded)
+                        await coro
 
             if isinstance(modelParent, MFSTimeFrameItem):
                 if modelParent.isToday() or modelParent.isPast3Days():
@@ -1712,9 +1824,15 @@ class FileManager(QWidget):
 
     async def linkEntry(self, fpath, entry, dest, basename=None):
         path = Path(fpath)
-        return await self.linkEntryWithMetadata(
-            fpath, entry, dest,
-            basename=basename if basename else path.name)
+
+        if self.timeFrameSelector.useTimeMetadata:
+            return await self.linkEntryWithMetadata(
+                fpath, entry, dest,
+                basename=basename if basename else path.name)
+        else:
+            return await self.linkEntryNoMetadata(
+                entry, dest,
+                basename=basename if basename else path.name)
 
     @ipfsOp
     async def linkEntryNoMetadata(self, op, entry, dest, basename):

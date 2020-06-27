@@ -436,6 +436,15 @@ class MainWindow(QMainWindow):
     def __init__(self, app):
         super(MainWindow, self).__init__()
 
+        self.setWindowFlags(
+            Qt.Window |
+            Qt.CustomizeWindowHint |
+            Qt.WindowTitleHint |
+            Qt.WindowCloseButtonHint |
+            Qt.WindowMinimizeButtonHint |
+            Qt.WindowMaximizeButtonHint
+        )
+
         self.showMaximized()
         self._app = app
         self._allTabs = []
@@ -1426,7 +1435,7 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         event.ignore()
-        self.showMinimized()
+        self.hide()
 
     def addHashmarksTab(self):
         ft = self.findTabWithName(self.tabnHashmarks)

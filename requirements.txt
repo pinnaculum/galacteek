@@ -42,3 +42,4 @@ qtawesome>=0.7.2
 quamash>=0.6.1
 strict-rfc3339>=0.7
 tortoise-orm>=0.16.12
+filelock>=3.0.1

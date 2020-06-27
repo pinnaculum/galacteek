@@ -81,6 +81,8 @@ def modelDelete(model, search):
 
 @async_generator
 async def modelWalkAsync(model, parent=QModelIndex(), search=None,
+                         searchre=None,
+                         reflags=re.IGNORECASE,
                          columns=None, delete=False, dump=False,
                          maxdepth=0, depth=0,
                          role=None):
@@ -103,23 +105,32 @@ async def modelWalkAsync(model, parent=QModelIndex(), search=None,
                         model.removeRow(row, parent)
                         model.submit()
                     await yield_(index)
+            if searchre:
+                if re.search(searchre, str(data), reflags):
+                    await yield_(index)
         await asyncio.sleep(0)
         if model.hasChildren(index0):
             if maxdepth == 0 or (maxdepth > depth):
                 await yield_from_(modelWalkAsync(
                     model, parent=index0,
-                    search=search, columns=columns, delete=delete,
+                    search=search, searchre=searchre,
+                    reflags=reflags,
+                    columns=columns, delete=delete,
                     dump=dump, maxdepth=maxdepth, depth=depth,
                     role=role))
                 depth += 1
 
 
 async def modelSearchAsync(model, parent=QModelIndex(), search=None,
+                           searchre=None,
+                           reflags=re.IGNORECASE,
                            columns=None, delete=False, maxdepth=0, depth=0,
                            role=None):
     items = []
     async for v in modelWalkAsync(model, parent=parent, columns=columns,
-                                  search=search, delete=delete,
+                                  search=search, searchre=searchre,
+                                  reflags=reflags,
+                                  delete=delete,
                                   maxdepth=maxdepth, depth=depth, role=role):
         items.append(v)
     return items

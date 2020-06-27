@@ -15,6 +15,8 @@ import async_timeout
 import time
 import aiojobs
 import shutil
+from pathlib import Path
+from filelock import FileLock
 
 from distutils.version import StrictVersion
 
@@ -287,13 +289,6 @@ class GalacteekApplication(QApplication):
         self.setupAsyncLoop()
         self.setupPaths()
 
-        self.initSettings()
-        self.setupMainObjects()
-        self.setupSchemeHandlers()
-        self.applyStyle()
-
-        self.setupDb()
-
     @property
     def cmdArgs(self):
         return self._cmdArgs
@@ -478,21 +473,6 @@ class GalacteekApplication(QApplication):
         path = tmpdir.absoluteFilePath(uid)
         if tmpdir.mkpath(path):
             return path
-
-    def __importOldHashmarks(self, marksLocal):
-        pkg = 'galacteek.hashmarks.default'
-        try:
-            listing = pkg_resources.resource_listdir(pkg, '')
-            for fn in listing:
-                if fn.endswith('.json'):
-                    path = pkg_resources.resource_filename(pkg, fn)
-                    marks = IPFSMarks(path, autosave=False)
-                    marksLocal.merge(marks)
-
-            # Follow ipfs.io
-            marksLocal.follow('/ipns/ipfs.io', 'ipfs.io', resolveevery=3600)
-        except Exception as e:
-            self.debug(str(e))
 
     async def setupHashmarks(self):
         pkg = 'galacteek.hashmarks.default'
@@ -883,6 +863,32 @@ class GalacteekApplication(QApplication):
     def task(self, fn, *args, **kw):
         return self.loop.create_task(fn(*args, **kw))
 
+    def configure(self):
+        self.initSettings()
+        self.setupMainObjects()
+        self.setupSchemeHandlers()
+        self.applyStyle()
+        self.setupDb()
+
+    def acquireLock(self):
+        lpath = Path(self._pLockLocation)
+
+        if not lpath.exists():
+            lpath.touch()
+
+        self.lock = FileLock(lpath, timeout=2)
+
+        try:
+            self.lock.acquire()
+        except Exception:
+            return questionBox(
+                'Lock',
+                'The profile lock could not be acquired '
+                '(another instance could be running). Ignore ?'
+            )
+
+        return True
+
     def setupPaths(self):
         qtDataLocation = QStandardPaths.writableLocation(
             QStandardPaths.DataLocation)
@@ -898,6 +904,7 @@ class GalacteekApplication(QApplication):
         self._orbitDataLocation = os.path.join(self.dataLocation, 'orbitdb')
         self._mHashDbLocation = os.path.join(self.dataLocation, 'mhashmetadb')
         self._sqliteDbLocation = os.path.join(self.dataLocation, 'db.sqlite')
+        self._pLockLocation = os.path.join(self.dataLocation, 'profile.lock')
         self._mainDbLocation = os.path.join(
             self.dataLocation, 'db_main.sqlite3')
         self.marksDataLocation = os.path.join(self.dataLocation, 'marks')
@@ -970,6 +977,8 @@ class GalacteekApplication(QApplication):
             self.ipfsDataLocation, goIpfsPath=goIpfsPath,
             apiport=sManager.getInt(section, CFG_KEY_APIPORT),
             swarmport=sManager.getInt(section, CFG_KEY_SWARMPORT),
+            swarmportQuic=sManager.getInt(section, CFG_KEY_SWARMPORT_QUIC),
+            swarmProtos=sManager.swarmProtosList,
             gatewayport=sManager.getInt(section, CFG_KEY_HTTPGWPORT),
             swarmLowWater=sManager.getInt(section, CFG_KEY_SWARMLOWWATER),
             swarmHighWater=sManager.getInt(section, CFG_KEY_SWARMHIGHWATER),
@@ -1120,6 +1129,8 @@ class GalacteekApplication(QApplication):
 
     async def exitApp(self):
         self._shuttingDown = True
+
+        self.lock.release()
 
         self.mainWindow.stopTimers()
 

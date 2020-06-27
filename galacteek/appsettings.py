@@ -6,6 +6,7 @@ CFG_SECTION_IPFS = 'ipfs'
 CFG_SECTION_BROWSER = 'browser'
 CFG_SECTION_IPFSCONN1 = 'ipfsconn1'
 CFG_SECTION_UI = 'ui'
+CFG_SECTION_FILEMANAGER = 'filemanager'
 CFG_SECTION_HISTORY = 'history'
 CFG_SECTION_USERINFO = 'userinfo'
 CFG_SECTION_ETHEREUM = 'ethereum'
@@ -19,6 +20,8 @@ CFG_KEY_ENABLED = 'enabled'
 # These keys are for ipfsdaemon and ipfsconn sections
 CFG_KEY_APIPORT = 'apiport'
 CFG_KEY_SWARMPORT = 'swarmport'
+CFG_KEY_SWARMPORT_QUIC = 'swarmport_quic'
+CFG_KEY_SWARM_QUIC = 'swarm_enablequic'
 CFG_KEY_HTTPGWPORT = 'httpgwport'
 CFG_KEY_HTTPGWWRITABLE = 'httpgwwritable'
 CFG_KEY_FILESTORE = 'filestore'
@@ -41,6 +44,10 @@ CFG_KEY_ALLOWHTTPBROWSING = 'httpbrowsing'
 CFG_KEY_JSAPI = 'jsapi'
 CFG_KEY_PPAPIPLUGINS = 'ppapiplugins'
 CFG_KEY_DEFAULTWEBPROFILE = 'defaultwebprofile'
+
+# Filemanager
+CFG_KEY_TIME_METADATA = 'link_time_metadata'
+CFG_KEY_ICONSIZE = 'iconsize'
 
 # History
 CFG_KEY_HISTORYENABLED = 'enabled'
@@ -93,6 +100,7 @@ def setDefaultSettings(gApp):
     section = CFG_SECTION_IPFSD
     sManager.setDefaultSetting(section, CFG_KEY_APIPORT, 5001)
     sManager.setDefaultSetting(section, CFG_KEY_SWARMPORT, 4001)
+    sManager.setDefaultSetting(section, CFG_KEY_SWARMPORT_QUIC, 4001)
     sManager.setDefaultSetting(section, CFG_KEY_HTTPGWPORT, 8080)
     sManager.setDefaultSetting(section, CFG_KEY_SWARMHIGHWATER, 900)
     sManager.setDefaultSetting(section, CFG_KEY_SWARMLOWWATER, 600)
@@ -107,6 +115,7 @@ def setDefaultSettings(gApp):
     sManager.setDefaultTrue(section, CFG_KEY_PUBSUB_USESIGNING)
     sManager.setDefaultTrue(section, CFG_KEY_HTTPGWWRITABLE)
     sManager.setDefaultFalse(section, CFG_KEY_FILESTORE)
+    sManager.setDefaultTrue(section, CFG_KEY_SWARM_QUIC)
 
     section = CFG_SECTION_BROWSER
     sManager.setDefaultSetting(section, CFG_KEY_HOMEURL, HOME_DEFAULT)
@@ -141,6 +150,10 @@ def setDefaultSettings(gApp):
     sManager.setDefaultFalse(section, CFG_KEY_HIDEHASHES)
     sManager.setDefaultSetting(section, CFG_KEY_LANG, 'en')
     sManager.setDefaultFalse(section, CFG_KEY_BROWSER_AUTOPIN)
+
+    section = CFG_SECTION_FILEMANAGER
+    sManager.setDefaultFalse(section, CFG_KEY_TIME_METADATA)
+    sManager.setDefaultSetting(section, CFG_KEY_ICONSIZE, 'small')
 
     section = CFG_SECTION_HISTORY
     sManager.setDefaultFalse(section, CFG_KEY_HISTORYENABLED)
@@ -314,3 +327,14 @@ class SettingsManager(object):
     @property
     def ipidIpnsTimeout(self):
         return self.getInt(CFG_SECTION_IPID, CFG_KEY_IPNSRESOLVETIMEOUT)
+
+    @property
+    def swarmQuicEnabled(self):
+        return self.isTrue(CFG_SECTION_IPFSD, CFG_KEY_SWARM_QUIC)
+
+    @property
+    def swarmProtosList(self):
+        if self.swarmQuicEnabled:
+            return ['tcp', 'quic']
+        else:
+            return ['tcp']

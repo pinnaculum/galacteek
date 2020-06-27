@@ -29,3 +29,12 @@ Now just run the application with:
 .. code-block:: shell
 
     galacteek
+
+Building the manual
+-------------------
+
+To generate the manual in HTML format:
+
+.. code-block:: shell
+
+    python setup.py build_docs

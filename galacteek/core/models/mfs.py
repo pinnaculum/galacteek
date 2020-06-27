@@ -211,6 +211,7 @@ class MFSItemModel(QStandardItemModel):
     # Specific roles
     CidRole = 0x0108
     TimeFrameRole = 0x0109
+    FileNameRole = 0x010a
 
     def __init__(self):
         QStandardItemModel.__init__(self)
@@ -386,6 +387,8 @@ class MFSItemModel(QStandardItemModel):
             # For the CidRole we return the CID associated with the item
             return item.cidString
         elif role == self.TimeFrameRole and isinstance(item, MFSTimeFrameItem):
+            return item.text()
+        elif role == self.FileNameRole and isinstance(item, MFSNameItem):
             return item.text()
         else:
             return super().data(index, role)

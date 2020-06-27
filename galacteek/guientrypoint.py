@@ -65,20 +65,17 @@ def galacteekGui(args):
         progName=progName,
         cmdArgs=args
     )
-    loop = gApp.loop
-    sManager = gApp.settingsMgr
 
-    section = CFG_SECTION_IPFSD
-    if args.apiport:
-        sManager.setSetting(section, CFG_KEY_APIPORT, args.apiport)
-    if args.swarmport:
-        sManager.setSetting(section, CFG_KEY_SWARMPORT, args.swarmport)
-    if args.gatewayport:
-        sManager.setSetting(section, CFG_KEY_HTTPGWPORT, args.gatewayport)
+    if not gApp.acquireLock():
+        gApp.onExit()
+        return
+
+    gApp.configure()
 
     # Monitor event loop if aiomonitor is available
     # Use the context manager so loop cleanup/close is automatic
 
+    loop = gApp.loop
     if args.monitor is True and haveAiomonitor:
         with aiomonitor.start_monitor(loop=loop):
             with loop:
@@ -93,12 +90,6 @@ def buildArgsParser():
     parser.add_argument('--version', dest='version',
                         action='store_true',
                         help='Show version number')
-    parser.add_argument('--apiport', default=None,
-                        help='IPFS API port number')
-    parser.add_argument('--swarmport', default=None,
-                        help='IPFS swarm port number')
-    parser.add_argument('--gatewayport', default=None,
-                        help='IPFS http gateway port number')
     parser.add_argument('--profile', default='main',
                         help='Application Profile')
     parser.add_argument('--binary-name', default=None,

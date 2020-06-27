@@ -65,6 +65,16 @@ Files imported in the filestore and linked in the MFS will
 trigger *timeouts* (when listing the MFS path) if the filestore
 feature is disabled on the daemon.
 
+Store timestamp metadata
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+This option controls how the files are linked inside the 
+MFS. When time metadata is enabled, filenames are prefixed
+with a timestamp and other metadata. Files are then grouped
+by day, and you can later filter files by date.
+
+*Note*: this option is enabled by default and persisted.
+
 Selecting the working folder
 ----------------------------
 
@@ -73,7 +83,7 @@ in your filesystem (see :term:`MFS`).
 
 Adding files in the *Encrypted files* folder will self-encrypt them with
 your profile's RSA key (only you will be able to open them). When you open
-an encrypted file it is first decrypted into an (unpinned, unannounced) IPFS
+an encrypted file it is first decrypted into an unpinned IPFS
 file object which will later on be garbage-collected by the daemon.
 
 Importing your files using the files selection dialogs
@@ -140,6 +150,13 @@ options:
 - *Delete*: purge from your IPFS node (**note**: if others have *pinned* this
   data on their node, it will still be available)
 - *Publish to IPNS key*: this will link this file to the given IPNS key
+
+Searching
+---------
+
+You can search your files by typing a name or regular expression
+pattern in the search box (all matching files will be selected in the
+file manager tree).
 
 Keyboard shortcuts
 ------------------
