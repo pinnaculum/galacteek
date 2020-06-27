@@ -86,6 +86,12 @@ class SettingsDialog(QDialog):
 
         self.ui.ipfsdSwarmPort.setValue(
             self.getS(section, CFG_KEY_SWARMPORT, int))
+        self.ui.ipfsdSwarmPortQuic.setValue(
+            self.getS(section, CFG_KEY_SWARMPORT_QUIC, int))
+
+        self.setChecked(self.ui.checkBoxQuic,
+                        self.sManager.isTrue(section, CFG_KEY_SWARM_QUIC))
+
         self.ui.ipfsdApiPort.setValue(
             self.getS(section, CFG_KEY_APIPORT, int))
         self.ui.ipfsdGwPort.setValue(
@@ -181,6 +187,10 @@ class SettingsDialog(QDialog):
             self.sManager.setFalse(section, CFG_KEY_ENABLED)
 
         self.setS(section, CFG_KEY_SWARMPORT, self.ui.ipfsdSwarmPort.text())
+        self.setS(section, CFG_KEY_SWARMPORT_QUIC,
+                  self.ui.ipfsdSwarmPortQuic.text())
+        self.sManager.setBoolFrom(section, CFG_KEY_SWARM_QUIC,
+                                  self.isChecked(self.ui.checkBoxQuic))
         self.setS(section, CFG_KEY_APIPORT, self.ui.ipfsdApiPort.text())
         self.setS(section, CFG_KEY_HTTPGWPORT, self.ui.ipfsdGwPort.text())
         self.setS(section, CFG_KEY_SWARMLOWWATER, self.ui.swarmMinConns.text())

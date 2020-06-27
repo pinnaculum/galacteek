@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>817</width>
+    <width>985</width>
     <height>349</height>
    </rect>
   </property>
@@ -54,7 +54,7 @@
          <item>
           <widget class="QToolButton" name="datesPickButton">
            <property name="toolTip">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Time frame selector&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Time frame&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="text">
             <string/>
@@ -284,16 +284,6 @@
           </spacer>
          </item>
          <item>
-          <widget class="QLabel" name="label_2">
-           <property name="text">
-            <string>Icon size</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="comboIconSize"/>
-         </item>
-         <item>
           <widget class="QLabel" name="label">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -316,10 +306,24 @@
           <widget class="QLineEdit" name="searchFiles">
            <property name="maximumSize">
             <size>
-             <width>200</width>
+             <width>180</width>
              <height>16777215</height>
             </size>
            </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="comboSearchCase">
+           <item>
+            <property name="text">
+             <string>Case-sensitive</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Case-insensitive</string>
+            </property>
+           </item>
           </widget>
          </item>
         </layout>

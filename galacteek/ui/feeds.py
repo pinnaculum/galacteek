@@ -62,8 +62,6 @@ class AtomFeedsView(QWidget):
 
         self.ui.treeFeeds.header().setSectionResizeMode(
             QHeaderView.ResizeToContents)
-        self.ui.treeFeeds.setSortingEnabled(True)
-        self.ui.treeFeeds.sortByColumn(1, Qt.DescendingOrder)
 
         self.ui.treeFeeds.clicked.connect(self.onItemClicked)
 
@@ -120,6 +118,9 @@ class AtomFeedsView(QWidget):
         if isinstance(parent, AtomFeedItem):
             parent.updateTitle()
             parent.setFont(self.fontFeeds)
+
+        self.ui.treeFeeds.setSortingEnabled(True)
+        self.ui.treeFeeds.sortByColumn(1, Qt.DescendingOrder)
 
     def onItemClicked(self, idx):
         item = self.model.itemFromIndex(idx)

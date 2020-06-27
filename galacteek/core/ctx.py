@@ -321,10 +321,22 @@ class Peers:
                 else:
                     log.debug('DID auth success for DID: {}'.format(ipid.did))
                     peerCtx._authenticated = True
+
+                    # Peering
+                    await self.peeringAdd(peerCtx)
                     break
         else:
             # We control this DID
             peerCtx._authenticated = True
+
+    async def peeringAdd(self, pCtx):
+        """
+        Register the peer in go-ipfs Peering.Peers
+        This way we make sure galacteek peers are always peered well
+        """
+
+        if self.app.ipfsd:
+            await self.app.ipfsd.ipfsConfigPeeringAdd(pCtx.peerId)
 
     @ipfsOp
     async def validateQr(self, ipfsop, qrCid, iMsg):

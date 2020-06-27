@@ -180,7 +180,7 @@ from the ipfs-logo_ project's repository is included, unchanged.
 .. _ipfs-css: https://github.com/ipfs-shipyard/ipfs-css
 .. _releases: https://github.com/pinnaculum/galacteek/releases
 .. _pyzbar: https://github.com/NaturalHistoryMuseum/pyzbar/
-.. _shortcuts: http://htmlpreview.github.io/?https://raw.githubusercontent.com/pinnaculum/galacteek/master/galacteek/docs/manual/en/html/shortcuts.html
+.. _shortcuts: https://github.com/pinnaculum/galacteek/blob/master/galacteek/docs/manual/en/shortcuts.rst
 .. _urlschemes: https://github.com/pinnaculum/galacteek/blob/master/galacteek/docs/manual/en/browsing.rst#supported-url-formats
 .. _releases: https://github.com/pinnaculum/galacteek/releases
 .. _BUILDING: https://github.com/pinnaculum/galacteek/blob/master/BUILDING.rst

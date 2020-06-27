@@ -132,6 +132,8 @@ class AsyncIPFSDaemon(object):
     def __init__(self, repopath, goIpfsPath='ipfs',
                  apiport=DEFAULT_APIPORT,
                  swarmport=DEFAULT_SWARMPORT,
+                 swarmportQuic=DEFAULT_SWARMPORT,
+                 swarmProtos=['tcp', 'quic'],
                  gatewayport=DEFAULT_GWPORT, initRepo=True,
                  swarmLowWater=10, swarmHighWater=20, nice=20,
                  pubsubEnable=False, noBootstrap=False, corsEnable=True,
@@ -149,6 +151,8 @@ class AsyncIPFSDaemon(object):
         self.apiport = apiport
         self.gatewayport = gatewayport
         self.swarmport = swarmport
+        self.swarmportQuic = swarmportQuic
+        self.swarmProtos = swarmProtos
         self.swarmLowWater = swarmLowWater
         self.swarmHighWater = swarmHighWater
         self.storageMax = storageMax
@@ -168,6 +172,16 @@ class AsyncIPFSDaemon(object):
         self.nice = nice
         self.debug = debug
 
+        self._procPid = None
+
+    @property
+    def pid(self):
+        return self._procPid
+
+    @property
+    def running(self):
+        return self.pid is not None
+
     async def start(self):
         # Set the IPFS_PATH environment variable
         os.environ['IPFS_PATH'] = self.repopath
@@ -186,80 +200,88 @@ class AsyncIPFSDaemon(object):
         if os.path.exists(apifile):
             os.unlink(apifile)
 
-        # Change the addresses/ports we listen on
-        await ipfsConfig(self.goIpfsPath, 'Addresses.API',
-                         '/ip4/127.0.0.1/tcp/{0}'.format(self.apiport))
-        await ipfsConfig(self.goIpfsPath, 'Addresses.Gateway',
-                         '/ip4/127.0.0.1/tcp/{0}'.format(self.gatewayport))
+        # API & gateway multiaddrs
+        await self.ipfsConfig(
+            'Addresses.API',
+            '/ip4/127.0.0.1/tcp/{0}'.format(self.apiport))
+        await self.ipfsConfig(
+            'Addresses.Gateway',
+            '/ip4/127.0.0.1/tcp/{0}'.format(self.gatewayport))
 
-        # Swarm multiaddrs (ipv4 and ipv6)
-        swarmAddrs = [
-            "/ip4/0.0.0.0/tcp/{swarmport}".format(swarmport=self.swarmport),
-            "/ip6/::/tcp/{swarmport}".format(swarmport=self.swarmport)
-        ]
+        # Swarm multiaddrs (ipv4 and ipv6), TCP and quic
+        swarmAddrs = []
 
-        await ipfsConfigJson(self.goIpfsPath, 'Addresses.Swarm',
-                             json.dumps(swarmAddrs))
+        if 'quic' in self.swarmProtos:
+            swarmAddrs += [
+                '/ip4/0.0.0.0/udp/{swarmport}/quic'.format(
+                    swarmport=self.swarmportQuic),
+                '/ip6/::/udp/{swarmport}/quic'.format(
+                    swarmport=self.swarmportQuic)
+            ]
+
+        if 'tcp' in self.swarmProtos or not swarmAddrs:
+            swarmAddrs += [
+                '/ip4/0.0.0.0/tcp/{swarmport}'.format(
+                    swarmport=self.swarmport),
+                '/ip6/::/tcp/{swarmport}'.format(
+                    swarmport=self.swarmport)
+            ]
+
+        await self.ipfsConfigJson('Addresses.Swarm',
+                                  json.dumps(swarmAddrs))
 
         # Swarm connection manager parameters
-        await ipfsConfigJson(self.goIpfsPath, 'Swarm.ConnMgr.LowWater',
-                             self.swarmLowWater)
-        await ipfsConfigJson(self.goIpfsPath, 'Swarm.ConnMgr.HighWater',
-                             self.swarmHighWater)
-        await ipfsConfig(self.goIpfsPath, 'Swarm.ConnMgr.GracePeriod',
-                         '60s')
+        await self.ipfsConfigJson('Swarm.ConnMgr.LowWater',
+                                  self.swarmLowWater)
+        await self.ipfsConfigJson('Swarm.ConnMgr.HighWater',
+                                  self.swarmHighWater)
+        await self.ipfsConfig('Swarm.ConnMgr.GracePeriod',
+                              '60s')
 
-        await ipfsConfig(self.goIpfsPath, 'Routing.Type', self.routingMode)
+        await self.ipfsConfig('Routing.Type', self.routingMode)
 
         if self.pubsubRouter in ['floodsub', 'gossipsub']:
-            await ipfsConfig(self.goIpfsPath, 'Pubsub.Router',
-                             self.pubsubRouter)
+            await self.ipfsConfig('Pubsub.Router',
+                                  self.pubsubRouter)
 
-        await ipfsConfigJson(self.goIpfsPath, 'Pubsub.DisableSigning',
-                             boolarg(not self.pubsubSigning))
+        await self.ipfsConfigJson('Pubsub.DisableSigning',
+                                  boolarg(not self.pubsubSigning))
 
-        await ipfsConfigJson(self.goIpfsPath,
-                             'Swarm.DisableBandwidthMetrics', 'false')
+        await self.ipfsConfigJson('Swarm.DisableBandwidthMetrics', 'false')
 
         # Maximum storage
-        await ipfsConfig(self.goIpfsPath, 'Datastore.StorageMax',
-                         '{0}GB'.format(self.storageMax))
+        await self.ipfsConfig('Datastore.StorageMax',
+                              '{0}GB'.format(self.storageMax))
 
         # P2P streams
-        await ipfsConfigJson(self.goIpfsPath,
-                             'Experimental.Libp2pStreamMounting',
-                             boolarg(self.p2pStreams)
-                             )
+        await self.ipfsConfigJson('Experimental.Libp2pStreamMounting',
+                                  boolarg(self.p2pStreams)
+                                  )
 
-        await ipfsConfigJson(self.goIpfsPath,
-                             'Experimental.FilestoreEnabled',
-                             boolarg(self.fileStore)
-                             )
+        await self.ipfsConfigJson('Experimental.FilestoreEnabled',
+                                  boolarg(self.fileStore)
+                                  )
 
         # CORS
         if self.corsEnable:
-            # Setup the CORS headers, only allowing the gateway's origin
-            await ipfsConfigJson(
-                self.goIpfsPath,
+            await self.ipfsConfigJson(
                 'API.HTTPHeaders.Access-Control-Allow-Credentials',
                 '["true"]'
             )
-            await ipfsConfigJson(
-                self.goIpfsPath,
+            await self.ipfsConfigJson(
                 'API.HTTPHeaders.Access-Control-Allow-Methods',
                 '["GET", "POST"]'
             )
-            await ipfsConfigJson(
-                self.goIpfsPath,
+            await self.ipfsConfigJson(
                 'API.HTTPHeaders.Access-Control-Allow-Origin',
                 '["*"]'
             )
 
         if self.noBootstrap:
-            await ipfsConfigJson(self.goIpfsPath, 'Bootstrap', '[]')
+            await self.ipfsConfigJson('Bootstrap', '[]')
 
-        await ipfsConfigJson(self.goIpfsPath, 'Gateway.Writable',
-                             self.gwWritable)
+        await self.ipfsConfigJson('Gateway.Writable',
+                                  self.gwWritable)
 
         args = [self.goIpfsPath, 'daemon']
 
@@ -284,9 +306,47 @@ class AsyncIPFSDaemon(object):
             stderr=asyncio.subprocess.PIPE)
         self.transport, self.proto = await f
 
-        proc_pid = self.transport.get_pid()
-        self.setProcLimits(proc_pid, nice=self.nice)
+        self._procPid = self.transport.get_pid()
+        self.setProcLimits(self.pid, nice=self.nice)
         return True
+
+    async def ipfsConfig(self, param, value):
+        return await ipfsConfig(self.goIpfsPath, param, value)
+
+    async def ipfsConfigJson(self, param, value):
+        return await ipfsConfigJson(self.goIpfsPath, param, value)
+
+    async def ipfsConfigGetJson(self, param):
+        return await ipfsConfigGetJson(self.goIpfsPath, param)
+
+    async def ipfsConfigPeeringGet(self):
+        return await self.ipfsConfigGetJson('Peering.Peers')
+
+    async def ipfsConfigPeeringAdd(self, peerId, addrs=[]):
+        """
+        Add a peer in the Peering.Peers config parameter
+        (new peering system in go-ipfs 0.6)
+        """
+
+        _peers = await self.ipfsConfigPeeringGet()
+
+        entry = {
+            'ID': peerId,
+            'Addrs': addrs
+        }
+
+        try:
+            pList = json.loads(_peers)
+
+            if not any(e['ID'] == peerId for e in pList):
+                pList.append(entry)
+        except Exception:
+            pList = [entry]
+
+        return await self.ipfsConfigJson(
+            'Peering.Peers',
+            json.dumps(pList)
+        )
 
     def setProcLimits(self, pid, nice=20):
         try:
@@ -308,7 +368,9 @@ class AsyncIPFSDaemon(object):
         try:
             self.transport.send_signal(signal.SIGINT)
             self.transport.send_signal(signal.SIGHUP)
+            self._procPid = None
             return True
         except Exception as e:
+            self._procPid = None
             self.terminateException = e
             return False

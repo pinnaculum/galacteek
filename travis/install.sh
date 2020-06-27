@@ -57,5 +57,5 @@ $PIP install -r requirements-dev.txt
 
 tox -e py37
 
-$PYTHONEX setup.py build install
+$PYTHONEX setup.py build build_docs install
 $PYTHONEX setup.py sdist bdist_wheel
