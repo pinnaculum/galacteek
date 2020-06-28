@@ -119,6 +119,12 @@ def iListingMFSPath(path):
         'Listing MFS path: {0}').format(path)
 
 
+def iSearchFoundFile(name):
+    return QCoreApplication.translate(
+        'FileManagerForm',
+        'Search matched file with name: {0}').format(name)
+
+
 def iListingMFSTimeout(path):
     return QCoreApplication.translate(
         'FileManagerForm',
@@ -1272,9 +1278,14 @@ class FileManager(QWidget):
             self.app.task(self.listFiles, item.path, parentItem=item,
                           autoexpand=True)
 
-    def expandIndexBackwards(self, idx):
+    def expandIndexBackwards(self, idx, scroll=False):
         while idx.isValid():
-            self.mfsTree.expand(idx)
+            if not self.mfsTree.isExpanded(idx):
+                self.mfsTree.expand(idx)
+
+            if scroll:
+                self.mfsTree.scrollTo(idx, QAbstractItemView.PositionAtCenter)
+
             idx = idx.parent()
 
     async def onSearchFiles(self):
@@ -1282,7 +1293,7 @@ class FileManager(QWidget):
 
         if searchQuery:
             try:
-                re.compile(searchQuery)
+                rec = re.compile(searchQuery)
             except re.error:
                 return messageBox('Invalid expression')
 
@@ -1294,29 +1305,35 @@ class FileManager(QWidget):
                                  timeout=60,
                                  subTask=False)
 
+            self.busy(True)
+
             # Run the search
-            await self.runSearch(searchQuery)
+            await self.runSearch(rec)
+
+            self.busy(False)
 
         self.ui.searchFiles.setFocus(Qt.OtherFocusReason)
 
-    async def runSearch(self, text, index=None):
+    async def runSearch(self, rec, index=None):
         idx = index if index else self.displayedItem.index()
         caseIdx = self.ui.comboSearchCase.currentIndex()
 
         reflags = re.IGNORECASE if caseIdx == 1 else 0
 
-        async for idx in modelhelpers.modelWalkAsync(
-            self.model, searchre=text,
+        async for idx, data in modelhelpers.modelWalkAsync(
+            self.model, searchre=rec,
             reflags=reflags,
             parent=idx,
-            role=self.model.FileNameRole
+            role=self.model.FileNameRole,
+            columns=[0]
         ):
-            await asyncio.sleep(0)
             self.expandIndexBackwards(idx)
             self.mfsSelModel.select(
                 idx,
                 QItemSelectionModel.Select | QItemSelectionModel.Rows
             )
+
+            self.statusSet(iSearchFoundFile(data))
 
     def onMkDirClicked(self):
         dirName = QInputDialog.getText(self, 'Directory name',
