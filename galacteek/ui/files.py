@@ -275,7 +275,7 @@ class TimeFrameSelectorWidget(QWidget):
             ).scaledToWidth(32)
         )
 
-        self.ui.dateTo.setDate(self.today())
+        self.ui.dateTo.setDate(self.today().addDays(14))
         self.ui.dateFrom.setDate(self.today().addDays(
             -(30 * 3)))
 
@@ -1296,6 +1296,8 @@ class FileManager(QWidget):
 
             # Run the search
             await self.runSearch(searchQuery)
+
+        self.ui.searchFiles.setFocus(Qt.OtherFocusReason)
 
     async def runSearch(self, text, index=None):
         idx = index if index else self.displayedItem.index()

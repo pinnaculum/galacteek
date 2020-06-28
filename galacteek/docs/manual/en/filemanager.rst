@@ -68,12 +68,15 @@ feature is disabled on the daemon.
 Store timestamp metadata
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
+This option is accessible from the timeframe selector widget
+(click on the clock to open it).
+
 This option controls how the files are linked inside the 
 MFS. When time metadata is enabled, filenames are prefixed
 with a timestamp and other metadata. Files are then grouped
 by day, and you can later filter files by date.
 
-*Note*: this option is enabled by default and persisted.
+*Note*: this option is disabled by default and persisted.
 
 Selecting the working folder
 ----------------------------
