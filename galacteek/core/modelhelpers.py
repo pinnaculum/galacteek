@@ -1,4 +1,3 @@
-from async_generator import async_generator, yield_, yield_from_
 import asyncio
 import re
 
@@ -79,7 +78,6 @@ def modelDelete(model, search):
 """ Asynchronous equivalents for when calling from coroutines """
 
 
-@async_generator
 async def modelWalkAsync(model, parent=QModelIndex(), search=None,
                          searchre=None,
                          reflags=re.IGNORECASE,
@@ -98,26 +96,29 @@ async def modelWalkAsync(model, parent=QModelIndex(), search=None,
             index = model.index(row, col, parent)
             if not index:
                 continue
+
             data = model.data(index, role if role else Qt.EditRole)
             if search:
                 if search == data:
                     if delete:
                         model.removeRow(row, parent)
                         model.submit()
-                    await yield_(index)
-            if searchre:
-                if re.search(searchre, str(data), reflags):
-                    await yield_(index)
-        await asyncio.sleep(0)
+                    yield index, data
+            if searchre and isinstance(data, str):
+                if searchre.search(data, reflags):
+                    yield index, data
+
         if model.hasChildren(index0):
             if maxdepth == 0 or (maxdepth > depth):
-                await yield_from_(modelWalkAsync(
-                    model, parent=index0,
-                    search=search, searchre=searchre,
-                    reflags=reflags,
-                    columns=columns, delete=delete,
-                    dump=dump, maxdepth=maxdepth, depth=depth,
-                    role=role))
+                async for _idx, _data in modelWalkAsync(
+                        model, parent=index0,
+                        search=search, searchre=searchre,
+                        reflags=reflags,
+                        columns=columns, delete=delete,
+                        dump=dump, maxdepth=maxdepth, depth=depth,
+                        role=role):
+                    yield _idx, _data
+
                 depth += 1
 
 
@@ -127,12 +128,13 @@ async def modelSearchAsync(model, parent=QModelIndex(), search=None,
                            columns=None, delete=False, maxdepth=0, depth=0,
                            role=None):
     items = []
-    async for v in modelWalkAsync(model, parent=parent, columns=columns,
-                                  search=search, searchre=searchre,
-                                  reflags=reflags,
-                                  delete=delete,
-                                  maxdepth=maxdepth, depth=depth, role=role):
-        items.append(v)
+    async for idx, data in modelWalkAsync(
+        model, parent=parent, columns=columns,
+            search=search, searchre=searchre,
+            reflags=reflags,
+            delete=delete,
+            maxdepth=maxdepth, depth=depth, role=role):
+        items.append(idx)
     return items
 
 
