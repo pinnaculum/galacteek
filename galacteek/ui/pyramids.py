@@ -1151,7 +1151,8 @@ class AutoSyncPyramidButton(MultihashPyramidToolButton):
             recursive=True,
             useFileStore=self.useFileStore,
             hidden=self.importHiddenFiles,
-            ignRulesPath=self.ignoreRulesPath
+            ignRulesPath=self.ignoreRulesPath,
+            wrap=self.useDirWrapper
         )
 
         self.resetStyleSheet()
@@ -1168,6 +1169,10 @@ class AutoSyncPyramidButton(MultihashPyramidToolButton):
     @property
     def delay(self):
         return int(self.pyramid.extra.get('syncdelay', 5000))
+
+    @property
+    def useDirWrapper(self):
+        return self.pyramid.extra.get('dirwrapper', False)
 
     @property
     def importHiddenFiles(self):
