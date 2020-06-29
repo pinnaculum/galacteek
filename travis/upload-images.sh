@@ -2,7 +2,7 @@
 
 set -x
 
-if [ ! -z $TRAVIS_BRANCH ] && [ "$TRAVIS_BRANCH" != "master" ] ; then
+if [ ! -z $TRAVIS_BRANCH ]; then
 	export UPLOADTOOL_SUFFIX=$TRAVIS_BRANCH
 fi
 
