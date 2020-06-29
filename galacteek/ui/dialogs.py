@@ -479,6 +479,8 @@ class AddMultihashPyramidDialog(QDialog):
             self.checkBoxFileStore.setCheckState(Qt.Unchecked)
             self.checkBoxUnpinPrev = QCheckBox('Unpin old content')
             self.checkBoxUnpinPrev.setCheckState(Qt.Unchecked)
+            self.checkBoxDirWrap = QCheckBox('Wrap with directory')
+            self.checkBoxDirWrap.setCheckState(Qt.Unchecked)
             self.checkBoxStartupSync = QCheckBox('Sync on startup')
             self.checkBoxStartupSync.setCheckState(Qt.Unchecked)
 
@@ -511,8 +513,8 @@ class AddMultihashPyramidDialog(QDialog):
             extraLayout.addWidget(labelOr)
             extraLayout.addWidget(self.syncFileButton)
             extraLayout.addWidget(self.checkBoxHiddenFiles)
+            extraLayout.addWidget(self.checkBoxDirWrap)
             extraLayout.addWidget(self.checkBoxFileStore)
-            extraLayout.addWidget(self.checkBoxUnpinPrev)
             extraLayout.addWidget(self.checkBoxStartupSync)
             extraLayout.addLayout(layout1)
             extraLayout.addLayout(layout2)
@@ -601,6 +603,7 @@ class AddMultihashPyramidDialog(QDialog):
             extra['importhidden'] = self.checkBoxHiddenFiles.isChecked()
             extra['ignorerulespath'] = self.ignRulesPath.text().strip()
             extra['usefilestore'] = self.checkBoxFileStore.isChecked()
+            extra['dirwrapper'] = self.checkBoxDirWrap.isChecked()
             extra['unpinprevious'] = self.checkBoxUnpinPrev.isChecked()
             extra['startupsync'] = self.checkBoxStartupSync.isChecked()
 
