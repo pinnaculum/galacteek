@@ -77,10 +77,6 @@ When enabling the *Filestore* option, the import will use
 the IPFS *filestore* storage if available on this IPFS
 daemon, to avoid file duplication.
 
-When using the *Unpin old content* option, previously
-imported content will be unpinned recursively before
-syncing.
-
 *Note*: As explained in Qt's documentation, the act of monitoring
 files and directories for modifications consumes system resources.
 This implies there is a limit to the number of files and directories
