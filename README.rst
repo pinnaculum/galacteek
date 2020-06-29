@@ -9,17 +9,22 @@
 .. image:: https://travis-ci.org/pinnaculum/galacteek.svg?branch=master
     :target: https://travis-ci.org/pinnaculum/galacteek
 
+.. image:: https://badges.gitter.im/galacteek/community.svg
+    :target: https://gitter.im/galacteek/galacteek?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge
+
 **galacteek** is a multi-platform Qt5-based browser/toolbox
 for the IPFS_ peer-to-peer network.
 
 Installation
 ============
 
-* **AppImage (Linux)**: `Galacteek-0.4.29-x86_64.AppImage <https://github.com/pinnaculum/galacteek/releases/download/v0.4.29/Galacteek-0.4.29-x86_64.AppImage>`_
-* **DMG (MacOS)**: `Galacteek-0.4.29.dmg <https://github.com/pinnaculum/galacteek/releases/download/v0.4.29/Galacteek-0.4.29.dmg>`_
+* **AppImage (Linux)**: `Galacteek-0.4.30-x86_64.AppImage <https://github.com/pinnaculum/galacteek/releases/download/v0.4.30/Galacteek-0.4.30-x86_64.AppImage>`_
+* **DMG (MacOS)**: `Galacteek-0.4.30.dmg <https://github.com/pinnaculum/galacteek/releases/download/v0.4.30/Galacteek-0.4.30.dmg>`_
 
 *On Linux*: Be sure to install all the **gstreamer** packages on your
-system to be able to use the mediaplayer.
+system to be able to use the mediaplayer. Issues with running the AppImage ?
+`Check the wiki <https://github.com/pinnaculum/galacteek/wiki/AppImage#troubleshooting>`_
+or `file an issue <https://github.com/pinnaculum/galacteek/issues/new?assignees=&labels=appimage&template=appimage-issue.md&title=Cannot+run+the+AppImage>`_
 
 *On MacOS*: After opening/mounting the DMG image, hold Control and click on the
 **galacteek** icon, and select **Open** and accept. You probably need to
