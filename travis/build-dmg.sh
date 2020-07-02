@@ -89,19 +89,10 @@ cat > galacteek.app/Contents/MacOS/galacteek <<\EAT
 #!/usr/bin/env bash
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export PATH=$PATH:$DIR/../Resources/bin
-$DIR/../Resources/bin/python $DIR/../Resources/bin/galacteek --from-dmg --no-ssl-verify
-EAT
-
-# create entry script for galacteek (debug)
-cat > galacteek.app/Contents/MacOS/galacteek-debug <<\EAT
-#!/usr/bin/env bash
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-export PATH=$PATH:$DIR/../Resources/bin
-$DIR/../Resources/bin/python $DIR/../Resources/bin/galacteek --from-dmg --no-ssl-verify -d
+$DIR/../Resources/bin/python $DIR/../Resources/bin/galacteek -d --from-dmg --no-ssl-verify
 EAT
 
 chmod a+x galacteek.app/Contents/MacOS/galacteek
-chmod a+x galacteek.app/Contents/MacOS/galacteek-debug
 
 # bloat deletion sequence
 pushd galacteek.app/Contents/Resources

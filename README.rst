@@ -22,14 +22,15 @@ Installation
 * **DMG (MacOS)**: `Galacteek-0.4.30.dmg <https://github.com/pinnaculum/galacteek/releases/download/v0.4.30/Galacteek-0.4.30.dmg>`_
 
 *On Linux*: Be sure to install all the **gstreamer** packages on your
-system to be able to use the mediaplayer. Issues with running the AppImage ?
+system to be able to use the mediaplayer. Problem with the AppImage ?
 `Check the wiki <https://github.com/pinnaculum/galacteek/wiki/AppImage#troubleshooting>`_
 or `file an issue <https://github.com/pinnaculum/galacteek/issues/new?assignees=&labels=appimage&template=appimage-issue.md&title=Cannot+run+the+AppImage>`_
 
 *On MacOS*: After opening/mounting the DMG image, hold Control and click on the
 **galacteek** icon, and select **Open** and accept. You probably need to
 allow the system to install applications *from anywhere* in the security
-settings.
+settings. `Create an issue <https://github.com/pinnaculum/galacteek/issues/new?assignees=&labels=dmg&template=dmg-issue.md&title=Cannot+run+the+DMG+image>`_ if you
+have problems running the DMG image.
 
 You'll need to have *git* installed to sync hashmarks repositories.
 See the releases_ page for all releases.
