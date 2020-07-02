@@ -194,6 +194,10 @@ class AsyncIPFSDaemon(object):
         if not os.path.exists(os.path.join(self.repopath, 'config')) or \
                 not os.path.isdir(os.path.join(self.repopath, 'datastore')):
             # Pretty sure this is an empty repository path
+
+            log.info('Initializing IPFS repository: {repo}'.format(
+                repo=self.repopath))
+
             await shell('ipfs init')
 
         apifile = os.path.join(self.repopath, 'api')
