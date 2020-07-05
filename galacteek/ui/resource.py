@@ -403,9 +403,12 @@ class IPFSResourceOpener(QObject):
 
         pService = await ipfsop.ipidManager.getServiceById(serviceId)
         if not pService:
+            log.info('Cannot find service {}'.format(serviceId))
             return
 
         obj = await pService.getObjectWithId(objectId)
         if obj:
             path = IPFSPath(obj['path'], autoCidConv=True)
             await self.open(path)
+        else:
+            log.info('Cannot find object {}'.format(objectId))

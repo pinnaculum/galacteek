@@ -439,8 +439,8 @@ class WebView(IPFSWebView):
         log.debug('createWindow called, wintype: {}'.format(wintype))
 
         # Disabled for now
-        if wintype == QWebEnginePage.WebBrowserTab and 0:
-            tab = self.app.mainWindow.addBrowserTab(current=False)
+        if wintype == QWebEnginePage.WebBrowserTab:
+            tab = self.app.mainWindow.addBrowserTab(current=True)
             return tab.webEngineView
 
     def onViewSource(self):

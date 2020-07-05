@@ -458,8 +458,11 @@ class PSPeersService(JSONPubsubService):
         )
 
         if not ipid:
-            logger.debug('Failed to load local DID')
+            logger.info('Failed to load local DID')
             return
+        else:
+            logger.debug('Local IPID ({did}) load: OK, dagCID is {cid}'.format(
+                did=profile.userInfo.personDid, cid=ipid.docCid))
 
         msg = await PeerIdentMessageV3.make(
             nodeId,

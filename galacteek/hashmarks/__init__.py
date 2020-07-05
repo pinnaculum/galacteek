@@ -290,16 +290,22 @@ class HashmarksSynchronizer:
     syncing = AsyncSignal(bool)
 
     async def syncTask(self):
-        while True:
-            await asyncio.sleep(60)
+        try:
+            while True:
+                await asyncio.sleep(60)
 
-            sources = await database.hashmarkSourcesNeedSync(
-                minutes=60 * 3)
-            count = len(sources)
+                sources = await database.hashmarkSourcesNeedSync(
+                    minutes=60 * 3)
+                count = len(sources)
 
-            if count > 0:
-                log.debug('Unsynced sources: {}, syncing now'.format(count))
-                await self.sync()
+                if count > 0:
+                    log.debug(
+                        'Unsynced sources: {}, syncing now'.format(count))
+                    await self.sync()
+        except asyncio.CancelledError:
+            log.debug('Sync task cancelled')
+        except Exception as err:
+            log.debug(f'Sync task error: {err}')
 
     async def sync(self):
         _count, _scount = 0, 0

@@ -296,6 +296,10 @@ class GalacteekApplication(QApplication):
         return self._cmdArgs
 
     @property
+    def shuttingDown(self):
+        return self._shuttingDown
+
+    @property
     def offline(self):
         return self.cmdArgs.offline
 
@@ -735,9 +739,12 @@ class GalacteekApplication(QApplication):
     def setupDb(self):
         ensure(self.setupOrmDb(self._mainDbLocation))
 
+    def jobsExceptionHandler(self, scheduler, context):
+        pass
+
     async def setupOrmDb(self, dbpath):
         self.scheduler = await aiojobs.create_scheduler(
-            close_timeout=1.5,
+            close_timeout=1.0,
             limit=150,
             pending_limit=1000
         )
@@ -1134,6 +1141,21 @@ class GalacteekApplication(QApplication):
     def onExit(self):
         ensure(self.exitApp())
 
+    async def shutdownScheduler(self):
+        # It ain't that bad. STFS with dignity
+
+        for stry in range(0, 12):
+            try:
+                async with async_timeout.timeout(2):
+                    await self.scheduler.close()
+            except asyncio.TimeoutError:
+                log.warning(
+                    'Timeout shutting down the scheduler (not fooled)')
+                continue
+            else:
+                log.debug(f'Scheduler went down (try: {stry})')
+                return
+
     async def exitApp(self):
         self._shuttingDown = True
 
@@ -1152,12 +1174,11 @@ class GalacteekApplication(QApplication):
         except:
             pass
 
-        await self.scheduler.close()
-
         await self.stopIpfsServices()
 
-        await cancelAllTasks(timeout=5)
         await self.loop.shutdown_asyncgens()
+        await self.shutdownScheduler()
+        await cancelAllTasks()
 
         await self.ethereum.stop()
 
@@ -1166,9 +1187,6 @@ class GalacteekApplication(QApplication):
 
         if self.ipfsd:
             self.ipfsd.stop()
-
-        if self.ipfsCtx.inOrbit:
-            await self.ipfsCtx.orbitConnector.stop()
 
         self.mainWindow.close()
 
