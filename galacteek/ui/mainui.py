@@ -153,8 +153,12 @@ class UserLogsWindow(QMainWindow):
         self.toolbar.addWidget(self.logsSearcher)
         self.toolbar.addWidget(self.searchBack)
         self.toolbar.addWidget(self.searchFor)
-        self.logsSearcher.returnPressed.connect(self.onSearchForward)
+        self.logsSearcher.returnPressed.connect(self.onSearchBack)
+        self.logsSearcher.textChanged.connect(self.onSearchTextChanged)
         self.setCentralWidget(self.logsBrowser)
+
+    def onSearchTextChanged(self):
+        pass
 
     def onSearchBack(self):
         flags = QTextDocument.FindCaseSensitively | QTextDocument.FindBackward

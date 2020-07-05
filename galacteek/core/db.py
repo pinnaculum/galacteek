@@ -432,8 +432,8 @@ class AtomFeedsDatabase(QObject):
     async def processTask(self):
         await self.preload()
 
-        while True:
-            try:
+        try:
+            while True:
                 feeds = await self.allFeeds()
 
                 for feed in feeds:
@@ -444,5 +444,7 @@ class AtomFeedsDatabase(QObject):
                             e=str(err)))
 
                 await asyncio.sleep(60)
-            except asyncio.CancelledError:
-                return
+        except asyncio.CancelledError:
+            return
+        except Exception:
+            return

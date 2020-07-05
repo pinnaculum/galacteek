@@ -1,8 +1,6 @@
 
-.. image:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/share/icons/galacteek.png
+.. image:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/share/icons/galacteek-128.png
     :align: center
-    :width: 64
-    :height: 64
 
 :info: A multi-platform browser for the distributed web
 

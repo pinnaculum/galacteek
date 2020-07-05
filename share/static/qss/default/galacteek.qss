@@ -266,9 +266,9 @@ QWidget#logsTextWindow {
 }
 
 QTextEdit#logsTextWidget {
-    background-color: #7f8491;
+    background-color: #E0DEDE;
     font: 12pt "Inter UI";
-    margin: 5px;
+    margin: 1px;
     padding: 0px;
 }
 

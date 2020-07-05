@@ -40,6 +40,15 @@ class AsyncSignal(UserList):
     async def emit(self, *args, **kwargs):
         from galacteek import log
 
+        app = QApplication.instance()
+
+        if app.shuttingDown:
+            # Prevent emitting signals during the app's shutdown
+            log.debug(
+                '{!r}: Application is shutting down, not emitting'.format(
+                    self))
+            return
+
         if len(args) != len(self._sig):
             log.debug(
                 '{!r}: does not match signature: {} !'.format(

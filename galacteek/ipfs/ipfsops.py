@@ -300,6 +300,9 @@ class IPFSOperator(object):
     def debug(self, msg):
         log.debug('IPFSOp({0}): {1}'.format(self.uid, msg))
 
+    def info(self, msg):
+        log.info('IPFSOp({0}): {1}'.format(self.uid, msg))
+
     def setRsaAgent(self, agent):
         self._rsaAgent = agent
 
@@ -684,13 +687,14 @@ class IPFSOperator(object):
 
             if not jsonSchemaValidate(cache, nsCacheSchema):
                 raise Exception('Invalid NS cache schema')
-        except Exception as e:
-            self.debug(str(e))
+        except Exception as err:
+            self.debug(f'Error loading NS cache: {err}')
         else:
+            self.info(f'NS cache: loaded from {self._nsCachePath}')
             self._nsCache = cache
 
     async def nsCacheSave(self):
-        if not self._nsCachePath:
+        if not self._nsCachePath or not isinstance(self.nsCache, dict):
             return
 
         async with self._lock:
@@ -763,13 +767,13 @@ class IPFSOperator(object):
 
             return resolved
 
-    async def nameResolveStream(self, path, count=3,
-                                timeout=20,
-                                useCache='never',
-                                cache='never',
-                                cacheOrigin='unknown',
-                                recursive=True,
-                                maxCacheLifetime=60 * 10):
+    async def nameResolveStreamLegacy(self, path, count=3,
+                                      timeout=20,
+                                      useCache='never',
+                                      cache='never',
+                                      cacheOrigin='unknown',
+                                      recursive=True,
+                                      maxCacheLifetime=60 * 10):
         usingCache = useCache == 'always' or \
             (useCache == 'offline' and self.noPeers and 0)
         cache = cache == 'always' or (cache == 'offline' and self.noPeers)
@@ -809,17 +813,84 @@ class IPFSOperator(object):
         except aioipfs.APIError as e:
             self.debug('streamed resolve error: {}'.format(e.message))
 
+    async def nameResolveStream(self, path, count=3,
+                                timeout=20,
+                                useCache='never',
+                                cache='never',
+                                cacheOrigin='unknown',
+                                recursive=True,
+                                maxCacheLifetime=60 * 10,
+                                debug=True):
+        """
+        DHT is used first for resolution.
+        NS cache is used as last option (used by local IPID).
+        """
+
+        usingCache = useCache == 'always' or \
+            (useCache == 'offline' and self.noPeers and 0)
+        rTimeout = '{t}s'.format(t=timeout) if isinstance(timeout, int) else \
+            timeout
+        _yieldedcn = 0
+
+        try:
+            async for nentry in self.client.name.resolve_stream(
+                    name=path,
+                    recursive=recursive,
+                    stream=True,
+                    dht_record_count=count,
+                    dht_timeout=rTimeout):
+                if debug:
+                    self.debug(
+                        f'nameResolveStream (timeout: {timeout}) '
+                        f'({path}): {nentry}')
+
+                yield nentry
+                _yieldedcn += 1
+        except asyncio.TimeoutError:
+            self.debug(
+                f'nameResolveStream (timeout: {timeout}) '
+                f'({path}): Timed out')
+        except aioipfs.APIError as e:
+            self.debug('nameResolveStream API error: {}'.format(e.message))
+        except Exception as gerr:
+            self.debug(f'nameResolveStream ({path}) unknown error: {gerr}')
+
+        if _yieldedcn == 0 and usingCache:
+            # The NS cache is used only for IPIDs when offline
+            rPath = self.nsCacheGet(
+                path, maxLifetime=maxCacheLifetime,
+                knownOrigin=True
+            )
+
+            if rPath and IPFSPath(rPath).valid:
+                self.debug(
+                    'nameResolveStream: from cache: {0} for {1}'.format(
+                        rPath, path))
+                yield {
+                    'Path': rPath
+                }
+
     async def nameResolveStreamFirst(self, path, count=1,
-                                     timeout=8,
+                                     timeout=10,
                                      cache='never',
                                      cacheOrigin='unknown',
-                                     useCache='never'):
+                                     useCache='never',
+                                     maxCacheLifetime=60 * 10,
+                                     debug=True):
+        """
+        A wrapper around the nameResolveStream async gen,
+        returning the last result of the yielded values
+
+        :rtype: dict
+        """
         matches = []
         async for entry in self.nameResolveStream(
                 path,
                 timeout=timeout,
                 cache=cache, cacheOrigin=cacheOrigin,
-                useCache=useCache):
+                maxCacheLifetime=maxCacheLifetime,
+                useCache=useCache,
+                debug=debug):
             found = entry.get('Path')
             if found:
                 matches.append(found)
@@ -1092,7 +1163,8 @@ class IPFSOperator(object):
                 if callbackvalid:
                     await callback(entry)
         except aioipfs.APIError as err:
-            self.debug('addPath: API error: {}'.format(err.message))
+            self.debug('addPath: {path}: API error: {e}'.format(
+                path=path, e=err.message))
             return None
         except asyncio.CancelledError:
             self.debug('addPath: cancelled')
@@ -1257,7 +1329,7 @@ class IPFSOperator(object):
         """
         Simple async TTL cache for results from nameResolveStreamFirst()
         """
-        return await self.nameResolveStreamFirst(path)
+        return await self.nameResolveStreamFirst(path, debug=False)
 
     def sResolveCacheClear(self, time=None):
         sResolveCache.expire(time)

@@ -18,6 +18,7 @@ from urllib.parse import urlencode
 from galacteek import AsyncSignal
 from galacteek import ensure
 from galacteek import log
+from galacteek.core import SingletonDecorator
 
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import stripIpfs
@@ -525,6 +526,7 @@ class IPIdentifier(DAGOperations):
     @ipfsOp
     async def resolve(self, ipfsop, resolveTimeout=30):
         useCache = 'always' if self.local else 'never'
+        maxLifetime = 86400 * 7 if self.local else 60 * 10
 
         self.message('DID resolve: {did} (using cache: {usecache})'.format(
             did=self.ipnsKey, usecache=useCache))
@@ -532,7 +534,8 @@ class IPIdentifier(DAGOperations):
         return await ipfsop.nameResolveStreamFirst(
             joinIpns(self.ipnsKey),
             timeout=resolveTimeout,
-            useCache=useCache
+            useCache=useCache,
+            maxCacheLifetime=maxLifetime
         )
 
     async def refresh(self):
@@ -712,11 +715,12 @@ class IPIdentifier(DAGOperations):
 
     async def searchServiceById(self, _id: str):
         for srvNode in await self.getServices():
-
             if srvNode['id'] == _id:
                 _inst = self._serviceInst(srvNode)
                 if _inst:
                     return _inst
+
+            await asyncio.sleep(0)
 
     async def removeServiceById(self, _id: str):
         """
@@ -753,6 +757,7 @@ class IPIdentifier(DAGOperations):
         return 'IP Identifier: {did}'.format(did=self.did)
 
 
+@SingletonDecorator
 class IPIDManager:
     def __init__(self, resolveTimeout=60 * 5):
         self._managedIdentifiers = {}
@@ -773,6 +778,8 @@ class IPIDManager:
                 async for srv in ipid.searchServices(term):
                     yield srv
 
+                await asyncio.sleep(0)
+
     async def getServiceById(self, _id: str):
         with await self._lock:
             for did, ipid in self._managedIdentifiers.items():
@@ -780,13 +787,17 @@ class IPIDManager:
                 if srv:
                     return srv
 
+                await asyncio.sleep(0)
+
     async def trackingTask(self):
         while True:
             await asyncio.sleep(60 * 5)
 
             with await self._lock:
-                for ipId in self._managedIdentifiers:
+                for did, ipId in self._managedIdentifiers.items():
                     await ipId.load()
+                    log.debug('tracker: {0} => {1}'.format(
+                        ipId, ipId.docCid))
 
     @ipfsOp
     async def load(self, ipfsop,

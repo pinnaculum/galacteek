@@ -418,6 +418,10 @@ class ProfileEditDialog(QDialog):
             self.profile.userInfo.personDid
         )
 
+        if not qrPng:
+            log.debug(f'{iphandle}: QR is empty ..')
+            return False
+
         providers = await ipfsop.whoProvides(qrPng['Hash'], timeout=5)
         log.debug('Providers: {!r}'.format(providers))
 
