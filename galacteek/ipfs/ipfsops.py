@@ -690,7 +690,7 @@ class IPFSOperator(object):
         except Exception as err:
             self.debug(f'Error loading NS cache: {err}')
         else:
-            self.info(f'NS cache: loaded from {self._nsCachePath}')
+            self.debug(f'NS cache: loaded from {self._nsCachePath}')
             self._nsCache = cache
 
     async def nsCacheSave(self):

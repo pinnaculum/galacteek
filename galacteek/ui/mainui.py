@@ -946,13 +946,15 @@ class MainWindow(QMainWindow):
         return self.centralWidget.searchBar
 
     def onNewTab(self, idx):
-        self.stack.setCurrentIndex(1)
+        if self.stack.currentIndex() != 1:
+            self.stack.setCurrentIndex(1)
 
     def onTabRemoved(self, idx):
         if self.tabWidget.count() == 0:
             self.stack.setCurrentIndex(0)
         else:
-            self.stack.setCurrentIndex(1)
+            if self.stack.currentIndex() != 1:
+                self.stack.setCurrentIndex(1)
 
     def cycleTabs(self):
         curIndex = self.tabWidget.currentIndex()
