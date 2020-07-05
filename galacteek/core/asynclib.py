@@ -42,7 +42,7 @@ class AsyncSignal(UserList):
 
         app = QApplication.instance()
 
-        if app.shuttingDown:
+        if app and hasattr(app, 'shuttingDown') and app.shuttingDown is True:
             # Prevent emitting signals during the app's shutdown
             log.debug(
                 '{!r}: Application is shutting down, not emitting'.format(
