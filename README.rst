@@ -25,8 +25,8 @@ Stable release
 Beta
 ----
 
-* **AppImage (Linux)**: `Galacteek-08c70d21-x86_64.AppImage <https://github.com/pinnaculum/galacteek/releases/download/pimp-my-dweb-5/Galacteek-08c70d21-x86_64.AppImage>`_
-* **DMG (MacOS)**: `Galacteek-08c70d21.dmg <https://github.com/pinnaculum/galacteek/releases/download/pimp-my-dweb-5/Galacteek-08c70d21.dmg>`_
+* **AppImage (Linux)**: `Galacteek-3d0fc48a-x86_64.AppImage <https://github.com/pinnaculum/galacteek/releases/download/pimp-my-dweb-6/Galacteek-3d0fc48a-x86_64.AppImage>`_
+* **DMG (MacOS)**: `Galacteek-3d0fc48a.dmg <https://github.com/pinnaculum/galacteek/releases/download/pimp-my-dweb-6/Galacteek-3d0fc48a.dmg>`_
 
 *On Linux*: Be sure to install all the **gstreamer** packages on your
 system to be able to use the mediaplayer. Problem with the AppImage ?
