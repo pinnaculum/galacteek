@@ -171,21 +171,24 @@ class PinStatusWidget(GalacteekTab):
         if not idx:
             return
 
-        itemPath = self.model.itemFromIndex(idx)
-        if itemPath and time.time() - itemPath.lastProgressUpdate < 5:
-            return
+        try:
+            itemPath = self.model.itemFromIndex(idx)
+            if itemPath and time.time() - itemPath.lastProgressUpdate < 5:
+                return
 
-        itemProgress = self.model.itemFromIndex(
-            self.model.index(idx.row(), self.COL_PROGRESS, idx.parent())
-        )
+            itemProgress = self.model.itemFromIndex(
+                self.model.index(idx.row(), self.COL_PROGRESS, idx.parent())
+            )
 
-        itemStatus = self.model.itemFromIndex(
-            self.model.index(idx.row(), self.COL_STATUS, idx.parent())
-        )
+            itemStatus = self.model.itemFromIndex(
+                self.model.index(idx.row(), self.COL_STATUS, idx.parent())
+            )
 
-        itemStatus.setText(status)
-        itemProgress.setText(progress)
-        itemPath.lastProgressUpdate = time.time()
+            itemStatus.setText(status)
+            itemProgress.setText(progress)
+            itemPath.lastProgressUpdate = time.time()
+        except:
+            pass
 
     def onPinFinished(self, path):
         items = self.findPinItems(path)

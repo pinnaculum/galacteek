@@ -245,6 +245,7 @@ class Peers:
         self.evStopWatcher = asyncio.Event()
         self._byPeerId = collections.OrderedDict()
         self._byHandle = collections.OrderedDict()
+        self._didGraphLoadAtt = {}
         self._pgScanCount = 0
 
         self.peerAuthenticated.connectTo(self.onPeerAuthenticated)
@@ -321,8 +322,11 @@ class Peers:
                         log.debug(f'DID {did}: already in model')
                         continue
 
-                    ensure(self.loadDidFromGraph(
-                        ipfsop, peerId, did, sHandle))
+                    if did not in self._didGraphLoadAtt:
+                        self._didGraphLoadAtt[did] = ensure(
+                            self.loadDidFromGraph(
+                                ipfsop, peerId, did, sHandle))
+
                     await ipfsop.sleep(0.1)
 
                 await ipfsop.sleep()
@@ -331,16 +335,24 @@ class Peers:
 
     async def loadDidFromGraph(self, ipfsop, peerId: str, did: str,
                                sHandle: str):
-        ipid = await self.app.ipidManager.load(
-            did,
-            track=True,
-            timeout=10,
-            localIdentifier=(peerId == ipfsop.ctx.node.id)
-        )
+        for attempt in range(0, 8):
+            ipid = await self.app.ipidManager.load(
+                did,
+                track=True,
+                timeout=10,
+                localIdentifier=(peerId == ipfsop.ctx.node.id)
+            )
+
+            if not ipid:
+                log.debug(f'Cannot load IPID: {did}, attempt {attempt}')
+                await ipfsop.sleep(60)
+                continue
+            else:
+                break
 
         if not ipid:
-            log.debug(f'Cannot load IPID: {did}')
-            return
+            log.debug(f'Cannot load IPID: {did}, bailing out')
+            return False
 
         piCtx = PeerIdentityCtx(
             self.ctx,
@@ -367,6 +379,8 @@ class Peers:
         await self.peerAdded.emit(piCtx)
 
         log.debug(f'Loaded IPID from graph: {did}')
+
+        return True
 
     @ipfsOp
     async def registerFromIdent(self, ipfsop, iMsg):
