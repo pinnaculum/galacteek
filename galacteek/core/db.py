@@ -80,6 +80,7 @@ class AtomFeedsDatabase(QObject):
         self.sqliteDb = database
         self.lock = asyncio.Lock()
 
+        self._processTasksById = {}
         self._handled_by_id = weakref.WeakValueDictionary()
 
     @property
@@ -94,6 +95,15 @@ class AtomFeedsDatabase(QObject):
             feed = await self.getFromId(feedId)
 
             if feed:
+                task = self._processTasksById.get(feed['feed_id'])
+
+                if task:
+                    try:
+                        await task.close()
+                        del self._processTasksById[feed['feed_id']]
+                    except Exception:
+                        pass
+
                 if feedId in self._handled_by_id:
                     del self._handled_by_id[feedId]
 
@@ -185,7 +195,9 @@ class AtomFeedsDatabase(QObject):
             VALUES (?, ?, ?)""",
             (sqlObj['id'], resolved, 0))
 
-        await self.processFeed(sqlObj)
+        async with self.lock:
+            await self.startFeedProcessTask(sqlObj)
+
         return True
 
     async def getFromId(self, feedId):
@@ -213,9 +225,18 @@ class AtomFeedsDatabase(QObject):
         query = 'SELECT * FROM atom_feeds'
         return await self.rows(query)
 
+    async def processFeedTask(self, feedSql):
+        while True:
+            try:
+                await self.processFeed(feedSql)
+            except Exception:
+                pass
+
+            await asyncio.sleep(60)
+
     @ipfsOp
     async def processFeed(self, ipfsop, feedSql):
-        with await self.lock:
+        while True:
             path = IPFSPath(feedSql['url'])
 
             log.debug('Atom Feed (URL: {url}): Resolving {objpath}'.format(
@@ -227,7 +248,8 @@ class AtomFeedsDatabase(QObject):
                 # TODO
                 log.debug('Atom Feed (URL {url}): resolve failed'.format(
                     url=feedSql['url']))
-                return
+                await ipfsop.sleep(60)
+                continue
             else:
                 log.debug('Atom Feed (URL: {url}): Resolved to {r}'.format(
                     url=feedSql['url'], r=resolved))
@@ -251,13 +273,18 @@ class AtomFeedsDatabase(QObject):
             if not atomFeed or needParse:
                 atomFeed = await self.atomParseObject(resolved)
                 if not atomFeed:
-                    return False
+                    log.debug(f'processFeed: failed to parse {resolved}')
+                    await ipfsop.sleep(60)
+                    continue
 
             await self.loadFeedEntries(feedSql, atomFeed)
 
             # Mark the object as processed
             await self.feedObjectHistoryUpdateStatus(historyObjId,
                                                      resolved, 1)
+
+            log.debug(f'processFeed {path}: success')
+            await ipfsop.sleep(180)
 
     async def atomParseObject(self, path):
         try:
@@ -276,7 +303,8 @@ class AtomFeedsDatabase(QObject):
         self._handled_by_id[atomFeed.id] = atomFeed
 
         for entry in atomFeed.entries:
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(0.1)
+
             if not isinstance(entry.id, str):
                 continue
 
@@ -429,6 +457,14 @@ class AtomFeedsDatabase(QObject):
             log.debug('Exception preloading feeds: {e}'.format(
                 e=str(err)))
 
+    async def startFeedProcessTask(self, feed):
+        # Start process task for feed if not already started
+
+        pTask = self._processTasksById.get(feed['feed_id'])
+        if not pTask:
+            self._processTasksById[feed['feed_id']] = \
+                await self.app.scheduler.spawn(self.processFeed(feed))
+
     async def processTask(self):
         await self.preload()
 
@@ -436,15 +472,13 @@ class AtomFeedsDatabase(QObject):
             while True:
                 feeds = await self.allFeeds()
 
-                for feed in feeds:
-                    try:
-                        await self.processFeed(feed)
-                    except Exception as err:
-                        log.debug('Exception processing feed: {e}'.format(
-                            e=str(err)))
+                async with self.lock:
+                    for feed in feeds:
+                        await self.startFeedProcessTask(feed)
 
-                await asyncio.sleep(60)
+                await asyncio.sleep(30)
         except asyncio.CancelledError:
+            log.debug('processTask: cancelled')
             return
         except Exception:
             return

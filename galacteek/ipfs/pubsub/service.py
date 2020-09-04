@@ -484,7 +484,6 @@ class PSPeersService(JSONPubsubService):
             await self.handleIdentMessageV3(sender, msg)
         elif msgType == PeerLogoutMessage.TYPE:
             logger.debug('Received logout message from {}'.format(sender))
-            await self.handleLogoutMessage(sender, msg)
         elif msgType == PeerIpHandleChosen.TYPE:
             logger.debug('Received iphandle message from {}'.format(sender))
             await self.handleIpHandleMessage(sender, msg)
@@ -504,7 +503,7 @@ class PSPeersService(JSONPubsubService):
     async def handleLogoutMessage(self, sender, msg):
         lMsg = PeerLogoutMessage(msg)
         if lMsg.valid():
-            await self.ipfsCtx.peers.unregister(sender)
+            await self.ipfsCtx.peers.onPeerLogout(sender)
 
     async def handleIdentMessageV3(self, sender, msg):
         iMsg = PeerIdentMessageV3(msg)
