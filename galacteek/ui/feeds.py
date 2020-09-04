@@ -10,6 +10,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QUrl
 from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QFont
+from PyQt5.QtCore import QSortFilterProxyModel
 
 from galacteek import ensure
 from galacteek import partialEnsure
@@ -27,6 +28,20 @@ from .helpers import runDialogAsync
 class EmptyPage(BasePage):
     def __init__(self, parent=None):
         super(EmptyPage, self).__init__('atomfeedsinit.html', parent=parent)
+
+
+class NumericSortProxyModel(QSortFilterProxyModel):
+    def __init__(self, parent=None):
+        super(NumericSortProxyModel, self).__init__(parent)
+
+    def lessThan(self, left, right):
+        leftData = self.sourceModel().data(left)
+        rightData = self.sourceModel().data(right)
+
+        try:
+            return int(leftData) < int(rightData)
+        except ValueError:
+            return leftData < rightData
 
 
 class AtomFeedsView(QWidget):
@@ -55,6 +70,7 @@ class AtomFeedsView(QWidget):
         self.ui.addFeedButton.clicked.connect(self.onAddFeed)
 
         self.ui.treeFeeds.setModel(self.model)
+        self.ui.treeFeeds.setSortingEnabled(False)
 
         self.fontFeeds = QFont('Times', 14, QFont.Bold)
         self.fontBold = QFont('Times', 12, QFont.Bold)
@@ -92,14 +108,27 @@ class AtomFeedsView(QWidget):
 
         if isinstance(item, AtomFeedItem):
             menu = QMenu(self)
+            menu.addAction('Mark all as read',
+                           partialEnsure(self.onMarkAllRead, item))
             menu.addAction('Remove feed',
                            partialEnsure(self.onRemoveFeed, item))
+            menu.addSeparator()
 
             menu.exec(self.ui.treeFeeds.mapToGlobal(point))
 
     async def onRemoveFeed(self, feedItem):
         await self.app.sqliteDb.feeds.unfollow(feedItem.feedId)
         self.model.updateRoot()
+
+    async def onMarkAllRead(self, feedItem):
+        for item in feedItem.childrenItems():
+            if isinstance(item, AtomFeedEntryItem):
+                self.model.markEntryAsRead(item)
+                item.setFont(self.fontRead)
+
+            await asyncio.sleep(0)
+
+        feedItem.updateTitle()
 
     def onAddFeed(self):
         def urlAccepted(dlg):
@@ -118,9 +147,6 @@ class AtomFeedsView(QWidget):
         if isinstance(parent, AtomFeedItem):
             parent.updateTitle()
             parent.setFont(self.fontFeeds)
-
-        self.ui.treeFeeds.setSortingEnabled(True)
-        self.ui.treeFeeds.sortByColumn(1, Qt.DescendingOrder)
 
     def onItemClicked(self, idx):
         item = self.model.itemFromIndex(idx)

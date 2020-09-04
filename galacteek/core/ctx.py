@@ -274,13 +274,9 @@ class Peers:
     def peersHandles(self):
         return [handle for handle in self.byHandle.keys()]
 
-    async def unregister(self, peerId):
-        async with self.lock:
-            if peerId in self.byPeerId:
-                del self.byPeerId[peerId]
-
-            await self.peerLogout.emit(peerId)
-            await self.changed.emit()
+    async def onPeerLogout(self, peerId):
+        # Not used anymore
+        pass
 
     @ipfsOp
     async def watchNetworkGraph(self, ipfsop):

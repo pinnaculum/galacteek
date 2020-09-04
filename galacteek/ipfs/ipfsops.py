@@ -881,7 +881,7 @@ class IPFSOperator(object):
                     'Path': rPath
                 }
 
-    async def nameResolveStreamFirst(self, path, count=1,
+    async def nameResolveStreamFirst(self, path, count=2,
                                      timeout=10,
                                      cache='never',
                                      cacheOrigin='unknown',
