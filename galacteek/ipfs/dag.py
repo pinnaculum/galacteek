@@ -441,6 +441,7 @@ class EvolvingDAG(QObject, DAGOperations):
                 self.debug('DAG could not be built')
                 return False
 
+        self.debug('Saved (wlock released)')
         return True
 
     @ipfsOp

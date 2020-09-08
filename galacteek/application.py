@@ -744,10 +744,14 @@ class GalacteekApplication(QApplication):
     def jobsExceptionHandler(self, scheduler, context):
         pass
 
+    def schedulerDumpStatus(self):
+        log.debug(f'Scheduler jobs: {self.scheduler.active_count} active,'
+                  f'{self.scheduler.pending_count} pending jobs')
+
     async def setupOrmDb(self, dbpath):
         self.scheduler = await aiojobs.create_scheduler(
             close_timeout=1.0,
-            limit=150,
+            limit=250,
             pending_limit=1000
         )
 

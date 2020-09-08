@@ -1018,5 +1018,6 @@ class ClipboardItemsStack(QStackedWidget):
         for idx in reversed(range(
                 max(0, self.count() - count) if count else 0, self.count())):
             clipItemButton = self.widget(idx)
-            if clipItemButton and clipItemButton.item:
+            if clipItemButton and clipItemButton.item and \
+                    clipItemButton.item.valid:
                 yield idx, clipItemButton.item

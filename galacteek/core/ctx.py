@@ -3,6 +3,7 @@ import re
 import collections
 import time
 import os.path
+from datetime import datetime
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import pyqtSignal
@@ -66,6 +67,8 @@ class PeerIdentityCtx:
 
         self._avatarPath = None
         self._avatarImage = self.defaultAvatarImage()
+
+        self._dtReg = datetime.now()
 
         self.sInactive = AsyncSignal(str)
         self.sStatusChanged = AsyncSignal()
@@ -245,7 +248,8 @@ class Peers:
         self.evStopWatcher = asyncio.Event()
         self._byPeerId = collections.OrderedDict()
         self._byHandle = collections.OrderedDict()
-        self._didGraphLoadAtt = {}
+        self._didGraphLTasks = {}
+        self._didAuthInp = {}
         self._pgScanCount = 0
 
         self.peerAuthenticated.connectTo(self.onPeerAuthenticated)
@@ -318,10 +322,12 @@ class Peers:
                         log.debug(f'DID {did}: already in model')
                         continue
 
-                    if did not in self._didGraphLoadAtt:
-                        self._didGraphLoadAtt[did] = ensure(
-                            self.loadDidFromGraph(
-                                ipfsop, peerId, did, sHandle))
+                    if did in self._didGraphLTasks:
+                        await ipfsop.sleep()
+                        continue
+
+                    self._didGraphLTasks[did] = await self.app.scheduler.spawn(
+                        self.loadDidFromGraph(ipfsop, peerId, did, sHandle))
 
                     await ipfsop.sleep(0.1)
 
@@ -382,10 +388,15 @@ class Peers:
     async def registerFromIdent(self, ipfsop, iMsg):
         profile = ipfsop.ctx.currentProfile
 
+        log.debug(f'registerFromIdent ({iMsg.peer}): '
+                  f'DID: {iMsg.personDid}, handle: {iMsg.iphandle}')
+
         try:
             inGraph = await profile.dagNetwork.byDid(iMsg.personDid)
         except Exception:
             # network dag not ready ..
+            log.debug(f'registerFromIdent {iMsg.personDid}: '
+                      'network DAG not loaded yet ?')
             return
 
         if not inGraph:
@@ -396,10 +407,21 @@ class Peers:
                 log.debug('Invalid DID: {}'.format(personDid))
                 return
 
+            inProgress = self._didAuthInp.get(personDid, False)
+
+            if inProgress is True:
+                log.debug(f'registerFromIdent {iMsg.personDid}: '
+                          f'authentication in progress')
+                return
+
+            self._didAuthInp[personDid] = True
+
             try:
                 mType, stat = await self.app.rscAnalyzer(iMsg.iphandleqrpngcid)
             except Exception:
                 log.debug('Invalid QR: {}'.format(iMsg.iphandleqrpngcid))
+                self._didAuthInp[personDid] = False
+                return
             else:
                 statInfo = StatInfo(stat)
 
@@ -407,28 +429,36 @@ class Peers:
                         kilobytes(512)) or not mType or not mType.isImage:
                     log.debug('Invalid stat for QR: {}'.format(
                         iMsg.iphandleqrpngcid))
+                    self._didAuthInp[personDid] = False
                     return
 
                 if not await self.validateQr(
                         iMsg.iphandleqrpngcid, iMsg) is True:
                     log.debug('Invalid QR: {}'.format(iMsg.iphandleqrpngcid))
                     peerValidated = False
+                    self._didAuthInp[personDid] = False
+                    return
                 else:
                     log.debug('Ident QR {qr} for {peer} seems valid'.format(
                         qr=iMsg.iphandleqrpngcid, peer=iMsg.peer))
                     peerValidated = True
 
-                ensure(ipfsop.ctx.pin(iMsg.iphandleqrpngcid))
+                await ipfsop.ctx.pin(iMsg.iphandleqrpngcid)
 
             # Load the IPID
-            ipid = await self.app.ipidManager.load(
-                personDid,
-                track=True,
-                localIdentifier=(iMsg.peer == ipfsop.ctx.node.id)
-            )
+
+            for attempt in range(0, 2):
+                ipid = await self.app.ipidManager.load(
+                    personDid,
+                    localIdentifier=(iMsg.peer == ipfsop.ctx.node.id)
+                )
+
+                if ipid:
+                    break
 
             if not ipid:
-                log.debug('Cannot load DID: {}'.format(personDid))
+                log.debug(f'Cannot load DID: {personDid}')
+                self._didAuthInp[personDid] = False
                 return
 
             async with self.lock:
@@ -444,7 +474,6 @@ class Peers:
                 ensure(self.didPerformAuth(piCtx))
 
                 self._byHandle[iMsg.iphandle] = piCtx
-                ensureLater(10, piCtx.watch)
         else:
             # This peer is already registered in the network graph
             # What we ought to do here is just to refresh the DID document
@@ -495,6 +524,8 @@ class Peers:
             piCtx._authenticated = True
             await self.peerAuthenticated.emit(piCtx)
 
+        self._didAuthInp[ipid.did] = False
+
     @ipfsOp
     async def onPeerAuthenticated(self, ipfsop, piCtx: PeerIdentityCtx):
         """
@@ -506,6 +537,8 @@ class Peers:
         profile = ipfsop.ctx.currentProfile
         did = piCtx.ipid.did
         handle = str(piCtx.spaceHandle)
+
+        ensureLater(3, piCtx.watch)
 
         async with profile.dagNetwork as g:
             pData = g.root['peers'].setdefault(piCtx.peerId, {})
