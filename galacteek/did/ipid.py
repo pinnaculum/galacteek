@@ -17,6 +17,7 @@ from urllib.parse import urlencode
 
 from galacteek import AsyncSignal
 from galacteek import ensure
+from galacteek import ensureLater
 from galacteek import log
 from galacteek.core import SingletonDecorator
 
@@ -530,7 +531,7 @@ class IPIdentifier(DAGOperations):
     async def resolve(self, ipfsop, resolveTimeout=30):
         useCache = 'always'
         cache = 'always'
-        maxLifetime = 86400 * 10 if self.local else 86400 * 20
+        maxLifetime = 86400 * 20 if self.local else 86400 * 30
 
         self.message('DID resolve: {did} (using cache: {usecache})'.format(
             did=self.ipnsKey, usecache=useCache))
@@ -592,7 +593,7 @@ class IPIdentifier(DAGOperations):
         return False
 
     @ipfsOp
-    async def publish(self, ipfsop, timeout=60 * 5):
+    async def publish(self, ipfsop, timeout=60 * 5, autoRepublish=False):
         """
         Publish the DID document to the IPNS key
 
@@ -604,6 +605,15 @@ class IPIdentifier(DAGOperations):
 
         if not self.docCid:
             return False
+
+        if autoRepublish is True:
+            # Auto republish for local IPIDs
+            ensureLater(
+                60 * 10,
+                self.publish,
+                autoRepublish=autoRepublish,
+                timeout=timeout
+            )
 
         try:
             if await ipfsop.publish(self.docCid,
@@ -831,7 +841,7 @@ class IPIDManager:
 
             if localIdentifier:
                 log.debug('Publishing (first load) local IPID: {}'.format(did))
-                ensure(ipid.publish())
+                ensure(ipid.publish(autoRepublish=True))
 
             return ipid
 
@@ -897,7 +907,7 @@ class IPIDManager:
         })
 
         # Publish the DID document to the key
-        ensure(identifier.publish())
+        ensure(identifier.publish(autoRepublish=True))
 
         if track:
             await self.track(identifier)

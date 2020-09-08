@@ -349,8 +349,10 @@ class ChatRoomWidget(GalacteekTab):
                 except Exception:
                     continue
 
-    async def onChatMessageReceived(self, key, message):
+    @ipfsOp
+    async def onChatMessageReceived(self, ipfsop, key, message):
         now = datetimeNow()
+        fromUs = (message.peerCtx.peerId == ipfsop.ctx.node.id)
 
         if message.chatMessageType == ChatRoomMessage.CHATMSG_TYPE_HEARTBEAT:
             await self.userHeartbeat(message)
@@ -362,8 +364,10 @@ class ChatRoomWidget(GalacteekTab):
         formatted = '<p style="margin-left: 0px">'
         formatted += '<span style="color: black">{date}</span> '.format(
             date=now.strftime('%H:%M'))
-        formatted += '<span style="color: #e67300">{sender}</span>: '.format(
-            sender=message.peerCtx.spaceHandle.short)
+        formatted += '<span style="color: {color}">{sender}</span>: '.format(
+            sender=message.peerCtx.spaceHandle.short,
+            color='blue' if fromUs else '#e67300'
+        )
 
         if message.chatMessageType == ChatRoomMessage.CHATMSG_TYPE_MESSAGE:
             if not self.isVisible():

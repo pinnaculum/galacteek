@@ -1106,7 +1106,8 @@ class IPFSOperator(object):
                 timeout)
         except Exception:
             return None
-        except aioipfs.APIError:
+        except aioipfs.APIError as err:
+            self.debug(f'objStat {path}: error {err.message}')
             return None
         else:
             return stat

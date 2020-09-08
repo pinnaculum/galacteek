@@ -35,7 +35,6 @@ from galacteek import log
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import *
 from galacteek.ipfs.ipfsops import *
-from galacteek.core import utcDatetimeIso
 from galacteek.core.modelhelpers import *
 from galacteek.core.models import BaseAbstractItem
 from galacteek.core.iphandle import SpaceHandle
@@ -515,28 +514,6 @@ class PeersTracker:
                 await peerItem.updateServices()
                 self.peerDataChangedEmit(peerItem)
                 await peerItem.ctx.fetchAvatar()
-
-    @ipfsOp
-    async def onPeerAuthenticated(self, ipfsop, piCtx):
-        profile = ipfsop.ctx.currentProfile
-        did = piCtx.ipid.did
-        handle = str(piCtx.spaceHandle)
-
-        async with profile.dagNetwork as g:
-            pData = g.root['peers'].setdefault(piCtx.peerId, {})
-
-            if handle not in pData:
-                pData[handle] = {
-                    'did': did,
-                    'didobj': {},
-                    'dateregistered': utcDatetimeIso()
-                }
-
-                # Link the DID document in the graph
-                if piCtx.ipid.docCid:
-                    pData[handle]['didobj'] = g.ipld(piCtx.ipid.docCid)
-
-                log.debug(f'Authenticated {handle} in the peers graph')
 
     async def onPeerAdded(self, piCtx):
         if not self.model.didRegistered(piCtx.ipid.did):

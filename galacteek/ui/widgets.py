@@ -68,6 +68,7 @@ from galacteek import database
 from galacteek.database.models.core import Hashmark
 
 from .helpers import getIcon
+from .helpers import getMimeIcon
 from .helpers import getIconFromIpfs
 from .helpers import getImageFromIpfs
 from .helpers import sizeFormat
@@ -1311,11 +1312,13 @@ class MarkdownTextEdit(QPlainTextEdit):
                 itMenu.setToolTipsVisible(True)
                 itMenu.setToolTip(clipItem.path)
 
-                if clipItem.mimeIcon:
-                    itMenu.setIcon(clipItem.mimeIcon)
+                icon = clipItem.mimeIcon if clipItem.mimeIcon else \
+                    getMimeIcon('unknown')
+
+                itMenu.setIcon(icon)
 
                 itMenu.addAction(
-                    clipItem.mimeIcon,
+                    icon,
                     iIPFSUrlTypeNative(),
                     partialEnsure(
                         self.onLinkClipboardItem,
@@ -1325,7 +1328,7 @@ class MarkdownTextEdit(QPlainTextEdit):
                 ).setToolTip(clipItem.path)
 
                 itMenu.addAction(
-                    clipItem.mimeIcon,
+                    icon,
                     iIPFSUrlTypeHttpGateway(),
                     partialEnsure(
                         self.onLinkClipboardItem,

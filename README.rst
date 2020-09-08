@@ -113,16 +113,15 @@ for more information).
 - Distributed chat with pubsub (chat channels syncronized with CRDT+DAG)
 - File manager with drag-and-drop support and timeframes (per-day view
   of files in the MFS)
+- Search content with the ipfs-search_ search engine as well as with cyber_
+- Built-in blog with Atom feeds
 - Webcam to IPFS capture (image and videos)
+- Basic built-in media player with IPFS-stored playlists
+- Image viewer and QR codes support
+- Use the IPFS filestore to avoid file duplication
+- ENS_ (Ethereum Name Service) resolving (access to ENS+IPFS websites)
 - Run WASM binaries with wasmer_ (use *Open* on a WASM object from the
   clipboard manager)
-- Search content with the ipfs-search_ search engine as well as with cyber_
-- Use the IPFS filestore to avoid file duplication
-- Atom feeds (subscribe to feeds on the dweb)
-- ENS_ (Ethereum Name Service) resolving (access to ENS+IPFS websites)
-- Basic built-in media player with IPFS-stored playlists
-- Image viewer
-- QR codes from images
 
 Command-line usage
 ==================
@@ -158,9 +157,6 @@ Contributions that can help:
 
 - Write DID services (a chat service using JSON-LD for example)
 - Translations (french, spanish)
-
-If you want to sponsor this project please use the
-`Github Sponsors page <https://github.com/sponsors/pinnaculum>`_
 
 Platforms supported
 ===================

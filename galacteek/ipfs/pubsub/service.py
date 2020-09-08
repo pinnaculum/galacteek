@@ -418,7 +418,7 @@ class PSPeersService(JSONPubsubService):
                          filterSelfMessages=False, **kw)
 
         self._curProfile = None
-        self._identEvery = 25
+        self._identEvery = 60
         self.ipfsCtx.profileChanged.connect(self.onProfileChanged)
 
     @property
@@ -515,12 +515,8 @@ class PSPeersService(JSONPubsubService):
             # You forging pubsub messages, son ?
             return
 
-        try:
-            await self.ipfsCtx.peers.registerFromIdent(iMsg)
-        except Exception as e:
-            logger.debug('Registering from indent failed for peer: {}'.format(
-                sender))
-            raise e
+        await self.scheduler.spawn(
+            self.ipfsCtx.peers.registerFromIdent(iMsg))
 
     @ipfsOp
     async def sendLogoutMessage(self, ipfsop):
