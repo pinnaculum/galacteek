@@ -282,7 +282,7 @@ class EvolvingDAG(QObject, DAGOperations):
     keyCidLatest = 'cidlatest'
 
     def __init__(self, dagMetaMfsPath, dagMetaHistoryMax=12, offline=False,
-                 unpinOnUpdate=True, autoPreviousNode=True,
+                 unpinOnUpdate=False, autoPreviousNode=True,
                  autoUpdateDates=False, loop=None):
         super().__init__()
 
@@ -432,7 +432,12 @@ class EvolvingDAG(QObject, DAGOperations):
                             0, len(history) - maxItems)]
 
                     history.insert(0, prevCid)
-                    await op.pinUpdate(prevCid, cid, unpin=self._unpinOnUpdate)
+
+                    if 0:
+                        # pinUpdate randomly blocks so
+                        # disable it for now
+                        await op.pinUpdate(
+                            prevCid, cid, unpin=self._unpinOnUpdate)
 
                 # Save the new CID and update the metadata
                 await self.saveNewCid(cid)
