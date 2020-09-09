@@ -341,7 +341,7 @@ class Peers:
             ipid = await self.app.ipidManager.load(
                 did,
                 track=True,
-                timeout=10,
+                timeout=30,
                 localIdentifier=(peerId == ipfsop.ctx.node.id)
             )
 
@@ -474,6 +474,7 @@ class Peers:
                 ensure(self.didPerformAuth(piCtx))
 
                 self._byHandle[iMsg.iphandle] = piCtx
+                ensureLater(5, piCtx.watch)
         else:
             # This peer is already registered in the network graph
             # What we ought to do here is just to refresh the DID document
@@ -537,8 +538,6 @@ class Peers:
         profile = ipfsop.ctx.currentProfile
         did = piCtx.ipid.did
         handle = str(piCtx.spaceHandle)
-
-        ensureLater(3, piCtx.watch)
 
         async with profile.dagNetwork as g:
             pData = g.root['peers'].setdefault(piCtx.peerId, {})
