@@ -499,8 +499,11 @@ class EvolvingDAG(QObject, DAGOperations):
                 self._dagRoot = pDag
                 await self.saveNewCid(newCid)
 
-                await ipfsop.pinUpdate(prevCid, newCid,
-                                       unpin=self._unpinOnUpdate)
+                await ipfsop.waitFor(
+                    ipfsop.pinUpdate(prevCid, newCid,
+                                     unpin=self._unpinOnUpdate),
+                    10
+                )
             else:
                 raise DAGRewindException('No DAG history')
 
