@@ -48,7 +48,7 @@ from galacteek.ipfs.mimetype import MIMEType
 from galacteek.appsettings import *
 
 from galacteek.core import modelhelpers
-from galacteek.core import utcDatetimeIso
+from galacteek.core import datetimeIsoH
 from galacteek.core.models.mfs import MFSItem
 from galacteek.core.models.mfs import MFSNameItem
 from galacteek.core.models.mfs import MFSTimeFrameItem
@@ -2164,7 +2164,7 @@ class GCRunnerTab(GalacteekTab):
 
     @ipfsOp
     async def runGc(self, ipfsop):
-        self.log.append("GC run, start date: {d}\n".format(d=utcDatetimeIso()))
+        self.log.append("GC run, start date: {d}\n".format(d=datetimeIsoH()))
         purgedCn = 0
 
         async for entry in ipfsop.client.repo.gc():
@@ -2179,5 +2179,5 @@ class GCRunnerTab(GalacteekTab):
             await ipfsop.sleep(0.08)
 
         self.log.append("\n")
-        self.log.append("GC done, end date: {d}\n".format(d=utcDatetimeIso()))
+        self.log.append("GC done, end date: {d}\n".format(d=datetimeIsoH()))
         self.log.append(f'Purged {purgedCn} CIDs')

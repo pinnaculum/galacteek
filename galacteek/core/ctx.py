@@ -3,6 +3,7 @@ import re
 import collections
 import time
 import os.path
+import functools
 from datetime import datetime
 
 from PyQt5.QtWidgets import QApplication
@@ -162,7 +163,7 @@ class PeerIdentityCtx:
             ))
 
             self.debug(f'Ping OK: {pingAvg}')
-            ensureLater(120, self.watch)
+            ensureLater(180, self.watch)
 
             await self.sStatusChanged.emit()
         else:
@@ -248,7 +249,7 @@ class Peers:
         self.evStopWatcher = asyncio.Event()
         self._byPeerId = collections.OrderedDict()
         self._byHandle = collections.OrderedDict()
-        self._didGraphLTasks = {}
+        self._didGraphLStatus = []
         self._didAuthInp = {}
         self._pgScanCount = 0
 
@@ -304,6 +305,15 @@ class Peers:
     async def scanNetworkGraph(self, ipfsop):
         profile = ipfsop.ctx.currentProfile
 
+        def didLoadCallback(did, future):
+            try:
+                res = future.result()
+                self._didGraphLStatus.remove(did)
+            except Exception as err:
+                log.debug(f'didLoadCallback for {did}: error {err}')
+            else:
+                log.debug(f'loadDidFromGraph for {did} returned: {res}')
+
         async with profile.dagNetwork.read() as ng:
             for peerId, peerHandles in ng.d['peers'].items():
                 for handle, hData in peerHandles.items():
@@ -322,16 +332,19 @@ class Peers:
                         log.debug(f'DID {did}: already in model')
                         continue
 
-                    if did in self._didGraphLTasks:
+                    if did in self._didGraphLStatus:
                         await ipfsop.sleep()
                         continue
 
-                    self._didGraphLTasks[did] = await self.app.scheduler.spawn(
+                    task = ensure(
                         self.loadDidFromGraph(ipfsop, peerId, did, sHandle))
+                    task.add_done_callback(functools.partial(
+                        didLoadCallback, did))
+                    self._didGraphLStatus.append(did)
 
                     await ipfsop.sleep(0.1)
 
-                await ipfsop.sleep()
+                await ipfsop.sleep(0.05)
 
         self._pgScanCount += 1
 
@@ -378,9 +391,10 @@ class Peers:
             if piCtx.peerId not in self._byPeerId:
                 self._byPeerId[piCtx.peerId] = piCtx
 
-        await self.peerAdded.emit(piCtx)
-
         log.debug(f'Loaded IPID from graph: {did}')
+
+        await self.peerAdded.emit(piCtx)
+        await ipfsop.sleep(1)
 
         return True
 
@@ -469,7 +483,8 @@ class Peers:
                 )
                 ipid.sChanged.connectTo(partialEnsure(
                     self.onPeerDidModified, piCtx))
-                piCtx.sInactive.connectTo(self.onUnresponsivePeer)
+                piCtx.sStatusChanged.connectTo(partialEnsure(
+                    self.peerModified.emit, piCtx))
 
                 ensure(self.didPerformAuth(piCtx))
 
