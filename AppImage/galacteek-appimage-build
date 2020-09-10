@@ -82,6 +82,8 @@ export PATH="$PATH:$APPDIR/usr/bin"
 conda install -y -c conda-forge libxkbcommon pip
 conda install -y --no-deps libxcb
 
+conda remove -y icu
+
 $APPIPIP install --upgrade pip
 
 # Install the wheel from local dists
