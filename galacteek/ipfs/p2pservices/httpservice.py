@@ -1,15 +1,8 @@
-import json
-import base64
 import traceback
 
-from galacteek.did import normedUtcDate
-from galacteek.did import didIdentRe
 from galacteek.ipfs.tunnel import P2PListener
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.p2pservices import P2PService
-from galacteek.core import jsonSchemaValidate
-from galacteek.crypto.rsa import RSAExecutor
-from galacteek.ld import asyncjsonld as jsonld
 from galacteek import log
 
 from aiohttp import web
@@ -78,4 +71,4 @@ class BaseP2PWebService(P2PService):
             loop=ipfsop.client.loop
         )
         addr = await self.listener.open()
-        return addr != None
+        return addr is not None

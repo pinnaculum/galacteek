@@ -98,12 +98,15 @@ class TabContext(object):
 
 
 class GalacteekTab(QWidget):
-    def __init__(self, gWindow, parent=None, sticky=False, ctx=None):
+    def __init__(self, gWindow, parent=None,
+                 vLayout=True, sticky=False, ctx=None):
         super(GalacteekTab, self).__init__(parent)
 
         self.app = QApplication.instance()
-        self.vLayout = QVBoxLayout(self)
-        self.setLayout(self.vLayout)
+
+        if vLayout is True:
+            self.vLayout = QVBoxLayout(self)
+            self.setLayout(self.vLayout)
 
         self.gWindow = gWindow
         self._workspace = None
@@ -1071,14 +1074,23 @@ class IconSelector(QComboBox):
         'qta:ei.picture',
         'qta:ei.podcast',
         'qta:ei.qrcode',
+        'qta:ei.upload',
+        'qta:ei.video',
+        'qta:ei.video-alt',
+        'qta:ei.video-chat',
         'qta:fa.code',
         'qta:fa.cube',
+        'qta:fa.file-audio-o',
+        'qta:fa.file-image-o',
+        'qta:fa.file-movie-o',
+        'qta:fa.file-pdf-o',
         'qta:fa.github',
         'qta:fa.linux',
         'qta:fa.paragraph',
         'qta:fa.resistance',
         'qta:fa.star-half-full',
         'qta:fa.wikipedia',
+        'qta:fa.youtube',
         'qta:fa5.file-pdf',
         'qta:fa5b.canadian-maple-leaf',
         'qta:fa5b.galactic-republic',

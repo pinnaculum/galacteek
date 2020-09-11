@@ -85,6 +85,7 @@ conda install -y --no-deps libxcb
 conda remove -y icu
 
 $APPIPIP install --upgrade pip
+$APPIPIP install wheel
 
 # Install the wheel from local dists
 

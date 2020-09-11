@@ -328,6 +328,10 @@ async def questionBoxAsync(title, text, parent=None):
     return box._question_result
 
 
+async def areYouSure():
+    return await questionBoxAsync('Please confirm', 'Are you sure?')
+
+
 def directorySelect(caption=''):
     return QFileDialog.getExistingDirectory(
         None, caption, getHomePath(), QFileDialog.ShowDirsOnly)

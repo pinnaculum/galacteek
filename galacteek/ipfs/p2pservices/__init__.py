@@ -3,8 +3,8 @@ from galacteek.ipfs import ipfsOp
 
 class P2PService:
     def __init__(self, name, description, protocolName, listenRange,
-                handler=None, enabled=True, didDefaultRegister=False,
-                setupCtx=None):
+                 handler=None, enabled=True, didDefaultRegister=False,
+                 setupCtx=None):
         self._name = name
         self._description = description
         self._protocolName = protocolName

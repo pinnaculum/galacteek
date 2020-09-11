@@ -6,10 +6,11 @@ Editing documents
 Markdown
 --------
 
-Standard Markdown is supported, with the following extensions:
+Common Markdown is supported, with the following extensions:
 
 - attrlist_: this adds a syntax to define attributes on the various
   HTML elements in markdown’s output.
+- mdxunimoji_: Converts defined emoticon symbols to Unicode emojis
 
 Linking IPFS files
 ------------------
@@ -27,3 +28,4 @@ a link for the latest item in the clipboard stack.
 
 
 .. _attrlist: https://python-markdown.github.io/extensions/attr_list/
+.. _mdxunimoji: https://github.com/kernc/mdx_unimoji

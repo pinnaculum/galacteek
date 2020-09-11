@@ -48,6 +48,7 @@ conda create -n galacteek python=3.7 --yes
 source activate galacteek
 
 # install dependencies
+pip install wheel
 pip install -r "$OLD_CWD"/requirements.txt
 pip install "$OLD_CWD"/dist/galacteek-${VERSION}-py3-none-any.whl
 
