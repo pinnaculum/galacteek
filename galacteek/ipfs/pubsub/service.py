@@ -1,21 +1,28 @@
 import orjson
-
 import asyncio
 import time
 import collections
 import traceback
+import secrets
+import async_timeout
+import base64
+from asyncio_throttle import Throttler
 
 from galacteek import log as logger
 from galacteek import AsyncSignal
 from galacteek import ensureLater
+from galacteek import ensure
 
 from galacteek.ipfs.pubsub import TOPIC_MAIN
 from galacteek.ipfs.pubsub import TOPIC_PEERS
 from galacteek.ipfs.pubsub import TOPIC_CHAT
 from galacteek.ipfs.pubsub import TOPIC_HASHMARKS
+from galacteek.ipfs.pubsub import TOPIC_DAGEXCH
 
+from galacteek.ipfs.pubsub.messages.core import PubsubMessage
 from galacteek.ipfs.pubsub.messages.core import MarksBroadcastMessage
 from galacteek.ipfs.pubsub.messages.core import PeerIdentMessageV3
+from galacteek.ipfs.pubsub.messages.core import PeerIdentMessageV4
 from galacteek.ipfs.pubsub.messages.core import PeerLogoutMessage
 from galacteek.ipfs.pubsub.messages.core import PeerIpHandleChosen
 
@@ -23,12 +30,19 @@ from galacteek.ipfs.pubsub.messages.chat import ChatRoomMessage
 from galacteek.ipfs.pubsub.messages.chat import ChatStatusMessage
 from galacteek.ipfs.pubsub.messages.chat import ChatChannelsListMessage
 
+from galacteek.ipfs.pubsub.messages.dagexch import DAGExchangeMessageV1
+
 from galacteek.ipfs.wrappers import ipfsOp
 
 from galacteek.core.asynclib import asyncify
+from galacteek.core.asynclib import loopTime
 from galacteek.core.ipfsmarks import IPFSMarks
 from galacteek.core.ps import keyChatChannels
 from galacteek.core.ps import keyPsJson
+from galacteek.core.ps import keyPsEncJson
+from galacteek.core.ps import keyTokensDagExchange
+from galacteek.core.ps import keyTokensIdent
+from galacteek.core.ps import keySnakeDagExchange
 from galacteek.core.ps import gHub
 
 import aioipfs
@@ -43,6 +57,10 @@ class PubsubService(object):
                  runPeriodic=False, filterSelfMessages=True,
                  maxMsgTsDiff=None, minMsgTsDiff=None,
                  maxMessageSize=32768,
+                 thrRateLimit=10,
+                 thrPeriod=3.0,
+                 thrRetry=1.0,
+                 hubPublish=True,
                  scheduler=None):
         self.client = client
         self.ipfsCtx = ipfsCtx
@@ -52,6 +70,7 @@ class PubsubService(object):
         self.lock = asyncio.Lock()
         self.scheduler = scheduler
 
+        self._hubPublish = hubPublish
         self._receivedCount = 0
         self._errorsCount = 0
         self._runPeriodic = runPeriodic
@@ -69,11 +88,21 @@ class PubsubService(object):
         self.tskProcess = None
         self.tskPeriodic = None
 
+        self.throttler = Throttler(
+            rate_limit=thrRateLimit,
+            period=thrPeriod,
+            retry_interval=thrRetry
+        )
+
         self.addMessageFilter(self.filterMessageSize)
         self.addMessageFilter(self.filterPeerActivity)
 
         if filterSelfMessages is True:
             self.addMessageFilter(self.filterSelf)
+
+    @property
+    def hubPublish(self):
+        return self._hubPublish
 
     @property
     def receivedCount(self):
@@ -140,20 +169,33 @@ class PubsubService(object):
         return False
 
     async def filterPeerActivity(self, msg):
+        ltime = self.client.loop.time()
+
         senderNodeId = msg['from'] if isinstance(msg['from'], str) else \
             msg['from'].decode()
+
+        # Don't filter our messages
+        if senderNodeId == self.ipfsCtx.node.id:
+            return False
+
         if senderNodeId not in self._peerActivity:
-            self._peerActivity[senderNodeId] = collections.deque([], 10)
+            self._peerActivity[senderNodeId] = collections.deque([], 6)
 
         records = self._peerActivity[senderNodeId]
-        records.append((time.time(), len(msg['data'])))
+        records.appendleft((ltime, len(msg['data'])))
 
-        if len(records) > 2 and isinstance(self._minMsgTsDiff, int):
+        if len(records) >= 2 and isinstance(self._minMsgTsDiff, int):
             latestIdx = len(records) - 1
             latest = records[latestIdx][0]
             previous = records[latestIdx - 1][0]
 
+            latest = records[0][0]
+            previous = records[1][0]
+
             if (latest - previous) < self._minMsgTsDiff:
+                records.popleft()
+                self.debug(f'Ignoring message from {senderNodeId}: '
+                           f'Min TS diff {self._minMsgTsDiff} not reached')
                 return True
 
         return False
@@ -216,15 +258,22 @@ class PubsubService(object):
                 str(e)))
             ensureLater(10, self.serve)
 
-    async def send(self, data, topic=None):
+    async def send(self, msg, topic=None):
         """
         Publish a message
 
-        :param str data: message payload
+        :param msg: message or message payload
         """
 
         if topic is None:
             topic = self.topic
+
+        if issubclass(msg.__class__, PubsubMessage):
+            data = str(msg)
+        elif isinstance(msg, str):
+            data = msg
+        else:
+            raise ValueError('Invalid message data')
 
         try:
             status = await self.client.pubsub.pub(topic, data)
@@ -242,6 +291,7 @@ class JSONPubsubService(PubsubService):
     """
 
     jsonMessageReceived = AsyncSignal(str, str, bytes)
+    hubKey = keyPsJson
 
     def msgDataToJson(self, msg):
         """
@@ -255,29 +305,44 @@ class JSONPubsubService(PubsubService):
 
     async def processMessages(self):
         try:
+            asyncConv = getattr(self, 'asyncMsgDataToJson')
+        except Exception:
+            useAsyncConv = False
+        else:
+            useAsyncConv = asyncio.iscoroutinefunction(asyncConv)
+
+        try:
             while True:
-                data = await self.inQueue.get()
+                async with self.throttler:
+                    data = await self.inQueue.get()
 
-                if data is None:
-                    continue
+                    if data is None:
+                        continue
 
-                msg = self.msgDataToJson(data)
-                if msg is None:
-                    self.debug('Invalid JSON message')
-                    continue
+                    if useAsyncConv is True:
+                        msg = await asyncConv(data)
+                    else:
+                        msg = self.msgDataToJson(data)
 
-                sender = data['from'] if isinstance(data['from'], str) else \
-                    data['from'].decode()
+                    if msg is None:
+                        self.debug('Invalid JSON message')
+                        continue
 
-                try:
-                    gHub.publish(keyPsJson, (sender, self.topic, msg))
-                    await self.processJsonMessage(sender, msg)
-                except Exception as exc:
-                    self.debug(
-                        'processJsonMessage error: {}'.format(str(exc)))
-                    traceback.print_exc()
-                    await self.errorsQueue.put((msg, exc))
-                    self._errorsCount += 1
+                    sender = data['from'] if isinstance(
+                        data['from'], str) else data['from'].decode()
+
+                    try:
+                        if self.hubPublish:
+                            gHub.publish(
+                                self.hubKey, (sender, self.topic, msg))
+
+                        await self.processJsonMessage(sender, msg)
+                    except Exception as exc:
+                        self.debug(
+                            'processJsonMessage error: {}'.format(str(exc)))
+                        traceback.print_exc()
+                        await self.errorsQueue.put((msg, exc))
+                        self._errorsCount += 1
         except asyncio.CancelledError:
             self.debug('JSON process cancelled')
         except Exception as err:
@@ -379,7 +444,8 @@ class PSHashmarksExchanger(JSONPubsubService):
             return
 
         if not self.ipfsCtx.peers.peerRegistered(sender):
-            self.debug('Broadcast from unregistered peer: {0}'.format(sender))
+            self.debug(
+                'Broadcast from unauthenticated peer: {0}'.format(sender))
             return
 
         marksJson = bMsg.marks
@@ -415,11 +481,13 @@ class PSPeersService(JSONPubsubService):
     def __init__(self, ipfsCtx, client, **kw):
         super().__init__(ipfsCtx, client, topic=TOPIC_PEERS,
                          runPeriodic=True,
+                         minMsgTsDiff=30,
                          filterSelfMessages=False, **kw)
 
         self._curProfile = None
         self._identEvery = 60
         self.ipfsCtx.profileChanged.connect(self.onProfileChanged)
+        self.__identToken = secrets.token_hex(64)
 
     @property
     def curProfile(self):
@@ -449,6 +517,8 @@ class PSPeersService(JSONPubsubService):
             logger.debug('Profile not initialized, ident message not sent')
             return
 
+        gHub.publish(keyTokensIdent, {'token': self.__identToken})
+
         nodeId = op.ctx.node.id
         uInfo = profile.userInfo
 
@@ -464,13 +534,21 @@ class PSPeersService(JSONPubsubService):
             logger.debug('Local IPID ({did}) load: OK, dagCID is {cid}'.format(
                 did=profile.userInfo.personDid, cid=ipid.docCid))
 
-        msg = await PeerIdentMessageV3.make(
+        pssSigCurDid = await op.rsaAgent.pssSignImport(
+            profile.userInfo.personDid.encode()
+        )
+
+        msg = await PeerIdentMessageV4.make(
             nodeId,
+            self.__identToken,
             profile.dagUser.dagCid,
             profile.keyRootId,
             uInfo,
             profile.userInfo.personDid,
-            ipid.docCid
+            ipid.docCid,
+            await op.rsaAgent.pubKeyCid(),
+            pssSigCurDid,
+            profile.dagNetwork.dagCid
         )
 
         logger.debug('Sending ident message')
@@ -482,6 +560,9 @@ class PSPeersService(JSONPubsubService):
         if msgType == PeerIdentMessageV3.TYPE:
             logger.debug('Received ident message (v3) from {}'.format(sender))
             await self.handleIdentMessageV3(sender, msg)
+        if msgType == PeerIdentMessageV4.TYPE:
+            logger.debug('Received ident message (v4) from {}'.format(sender))
+            await self.handleIdentMessageV4(sender, msg)
         elif msgType == PeerLogoutMessage.TYPE:
             logger.debug('Received logout message from {}'.format(sender))
         elif msgType == PeerIpHandleChosen.TYPE:
@@ -492,13 +573,10 @@ class PSPeersService(JSONPubsubService):
 
     @ipfsOp
     async def handleIpHandleMessage(self, ipfsop, sender, msg):
-        profile = ipfsop.ctx.currentProfile
-
         iMsg = PeerIpHandleChosen(msg)
         if iMsg.valid():
             self.info('Welcoming {} to the network!'.format(iMsg.iphandle))
             await ipfsop.addString(iMsg.iphandle)
-            await profile.ipHandles.register(iMsg.iphandle)
 
     async def handleLogoutMessage(self, sender, msg):
         lMsg = PeerLogoutMessage(msg)
@@ -515,8 +593,19 @@ class PSPeersService(JSONPubsubService):
             # You forging pubsub messages, son ?
             return
 
-        await self.scheduler.spawn(
-            self.ipfsCtx.peers.registerFromIdent(iMsg))
+        ensure(self.ipfsCtx.peers.registerFromIdent(sender, iMsg))
+
+    async def handleIdentMessageV4(self, sender, msg):
+        iMsg = PeerIdentMessageV4(msg)
+        if not iMsg.valid():
+            logger.debug('Received invalid ident message')
+            return
+
+        if sender != iMsg.peer:
+            # You forging pubsub messages, son ?
+            return
+
+        ensure(self.ipfsCtx.peers.registerFromIdent(sender, iMsg))
 
     @ipfsOp
     async def sendLogoutMessage(self, ipfsop):
@@ -546,7 +635,7 @@ class PSChatService(JSONPubsubService):
 
         peerCtx = self.ipfsCtx.peers.getByPeerId(sender)
         if not peerCtx:
-            self.debug('Message from unregistered peer: {}'.format(
+            self.debug('Message from unauthenticated peer: {}'.format(
                 sender))
             return
 
@@ -597,7 +686,7 @@ class PSChatChannelService(JSONLDPubsubService):
 
         peerCtx = self.ipfsCtx.peers.getByPeerId(sender)
         if not peerCtx:
-            self.debug('Message from unregistered peer: {}'.format(
+            self.debug('Message from unauthenticated peer: {}'.format(
                 sender))
             return
 
@@ -621,3 +710,252 @@ class PSChatChannelService(JSONLDPubsubService):
 
         sMsg.peerCtx = peerCtx
         gHub.publish(self.psKey, sMsg)
+
+
+class EncryptedJSONPubsubService(JSONPubsubService):
+    hubKey = keyPsEncJson
+
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw, hubPublish=False)
+
+    @ipfsOp
+    async def asyncMsgDataToJson(self, ipfsop, msg):
+        try:
+            dec = await ipfsop.rsaAgent.decrypt(
+                base64.b64decode(msg['data']))
+            return orjson.loads(dec.decode())
+        except Exception as err:
+            logger.debug(f'Could not decode encrypted message: {err}')
+            return None
+
+
+class PSDAGExchangeService(EncryptedJSONPubsubService):
+    def __init__(self, ipfsCtx, client, **kw):
+        super().__init__(ipfsCtx, client,
+                         topic=self.peeredTopic(ipfsCtx.node.id),
+                         runPeriodic=True,
+                         minMsgTsDiff=60,
+                         thrRateLimit=8,
+                         thrPeriod=20,
+                         thrRetry=5,
+                         filterSelfMessages=False, **kw)
+
+        self.__authenticatedDags = collections.deque([], 128)
+        self.__serviceToken = secrets.token_hex(64)
+
+    def peeredTopic(self, peerId):
+        return f'{TOPIC_DAGEXCH}.{peerId}'
+
+    async def processJsonMessage(self, sender, msg):
+        msgType = msg.get('msgtype', None)
+
+        peerCtx = self.ipfsCtx.peers.getByPeerId(sender)
+        if not peerCtx:
+            self.debug('Message from unauthenticated peer: {}'.format(
+                sender))
+            return
+
+        if msgType == DAGExchangeMessageV1.TYPE:
+            await self.handleExchangeMessage(sender, msg)
+
+    async def handleExchangeMessage(self, sender, msg):
+        eMsg = DAGExchangeMessageV1(msg)
+        if not eMsg.valid():
+            self.debug('Invalid DAGExchange message')
+            return
+
+        if eMsg.dagClass == 'seeds':
+            ensure(self.handleSeedsExchangeMessage(sender, eMsg))
+
+    @ipfsOp
+    async def _dagVerifyCidSignature(self, ipfsop, sender: str,
+                                     dagCid: str,
+                                     token: str,
+                                     elixir: str,
+                                     pubKeyPem):
+        from aiohttp.web_exceptions import HTTPOk
+
+        req = {
+            'elixir': elixir,
+            'sessiontoken': token
+        }
+
+        try:
+            with async_timeout.timeout(40):
+                async with ipfsop.p2pDialer(
+                        sender, 'dagexchange',
+                        addressAuto=True) as streamCtx:
+                    if streamCtx.failed:
+                        raise Exception(f'Cannot dial {sender}')
+
+                    async with streamCtx.session.post(
+                            streamCtx.httpUrl('/dagcidsign'),
+                            json=req) as resp:
+                        if resp.status != HTTPOk.status_code:
+                            raise Exception(
+                                f'DAG CID sign error {sender}: '
+                                f'{resp.status}')
+
+                        payload = await resp.json()
+                        assert dagCid in payload
+
+                        if await ipfsop.ctx.rsaExec.pssVerif64(
+                                dagCid.encode(),
+                                payload[dagCid]['pss64'].encode(),
+                                pubKeyPem):
+                            self.debug('DAG CID SIGN: {dagCid} OK!')
+                            return True
+                        else:
+                            self.debug('DAG CID SIGN: {dagCid} Wrong!')
+                            return False
+        except asyncio.TimeoutError:
+            self.debug(f'_dagVerifyCidSignature({dagCid}): timeout!')
+            return False
+        except Exception as err:
+            self.debug(f'_dagVerifyCidSignature({dagCid}): error {err}')
+            return False
+
+    @ipfsOp
+    async def handleSeedsExchangeMessage(self, ipfsop, sender, eMsg):
+        profile = ipfsop.ctx.currentProfile
+        local = (sender == ipfsop.ctx.node.id)
+
+        if eMsg.dagNet == 'maindagnet':
+            self.debug(f'Received seeds exchange message from {sender}')
+
+            dag = profile.dagSeedsAll
+
+            try:
+                pubKeyPem = await ipfsop.rsaPubKeyCheckImport(
+                    eMsg.signerPubKeyCid)
+
+                if not pubKeyPem:
+                    raise Exception(
+                        'Could not load pub key for peer {sender}')
+
+                if not local and eMsg.dagCid not in self.__authenticatedDags:
+                    if not await self._dagVerifyCidSignature(
+                        sender,
+                        eMsg.dagCid,
+                        eMsg.serviceToken,
+                        eMsg.snakeOil[0:64],
+                        pubKeyPem
+                    ):
+                        self.debug(f'DAG exchange: CID SIGWRONG {eMsg.dagCid}')
+                        raise Exception(f'CID SIGWRONG {eMsg.dagCid}')
+                    else:
+                        self.__authenticatedDags.append(eMsg.dagCid)
+                        self.debug(f'DAG exchange: CID SIGOK {eMsg.dagCid}')
+
+                await dag.link(
+                    sender, eMsg.dagUid, eMsg.dagCid,
+                    eMsg.signerPubKeyCid,
+                    local=local
+                )
+            except Exception as err:
+                self.debug(f'Exception on DAG exchange: {err}')
+
+            await ipfsop.sleep(3)
+
+            if not local and eMsg.megaDagCid not in self.__authenticatedDags:
+                if await self._dagVerifyCidSignature(
+                    sender,
+                    eMsg.megaDagCid,
+                    eMsg.serviceToken,
+                    eMsg.snakeOil[64:128],
+                    pubKeyPem
+                ):
+                    self.debug(
+                        f'DAG exchange: MCID SIGOK {eMsg.megaDagCid}')
+
+                    # Do the merge
+                    await dag.megaMerge(
+                        sender, eMsg.megaDagCid,
+                        eMsg.signerPubKeyCid,
+                        local=local
+                    )
+                else:
+                    self.debug(
+                        f'DAG exchange: MCID SIGWRONG {eMsg.megaDagCid}')
+
+    async def onSeedAdded(self, seedCid):
+        await self.sendExchangeMessage()
+
+    @ipfsOp
+    async def sendExchangeMessage(self, ipfsop):
+        self.debug('Sending seeds exchange message')
+
+        seedsDag = ipfsop.ctx.currentProfile.dagSeedsMain
+        seedsDagAll = ipfsop.ctx.currentProfile.dagSeedsAll
+
+        oil = secrets.token_hex(64)
+
+        gHub.publish(keyTokensDagExchange, {'token': self.__serviceToken})
+        await ipfsop.sleep(0.5)
+
+        gHub.publish(
+            keySnakeDagExchange, {
+                'snakeoil': oil,
+                'cids': [
+                    seedsDag.dagCid,
+                    seedsDagAll.dagCid
+                ],
+                'expires': loopTime() + 180
+            }
+        )
+
+        await ipfsop.sleep(0.5)
+
+        pubKeyCid = await ipfsop.rsaAgent.pubKeyCid()
+
+        eMsg = DAGExchangeMessageV1.make(
+            seedsDag.dagClass,
+            seedsDag.dagCid,
+            seedsDag.dagNet,
+            seedsDag.dagName,
+            seedsDag.uid,
+            pubKeyCid,
+            seedsDagAll.dagCid,
+            self.__serviceToken,
+            oil
+        )
+
+        # TODO: rewrite that loop so that we don't hold the lock
+        async with self.ipfsCtx.peers.lock:
+            for peerId, piCtx in self.ipfsCtx.peers.byPeerId.items():
+                topic = self.peeredTopic(peerId)
+
+                pubKey = await piCtx.defaultRsaPubKey()
+
+                if not pubKey:
+                    continue
+
+                enc = await ipfsop.rsaAgent.encrypt(
+                    str(eMsg).encode(),
+                    pubKey
+                )
+                if enc:
+                    await self.send(
+                        base64.b64encode(enc).decode(),
+                        topic=topic
+                    )
+
+                await ipfsop.sleep(0.1)
+
+        self.debug(f'DAGEXCH: Authorized DAGS: {self.__authenticatedDags}')
+
+    @ipfsOp
+    async def periodic(self, ipfsop):
+        while True:
+            if ipfsop.ctx.currentProfile:
+                seedsDag = ipfsop.ctx.currentProfile.dagSeedsMain
+
+                if seedsDag.dagUpdated.count() == 0:
+                    # Sig not connected yet
+                    seedsDag.dagUpdated.connectTo(self.onSeedAdded)
+
+                await self.sendExchangeMessage()
+                await asyncio.sleep(60 * 10)
+            else:
+                # Wait for the DAG
+                await asyncio.sleep(5)

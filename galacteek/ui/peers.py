@@ -319,7 +319,7 @@ class PeersModel(QAbstractItemModel):
             iIPHandle(),
             iIPIDLong()
         ])
-        self.lock = asyncio.Lock(loop=self.app.loop)
+        self.lock = asyncio.Lock()
 
     def mimeData(self, indexes):
         mimedata = QMimeData()
@@ -658,7 +658,7 @@ class PeersManager(GalacteekTab):
     def __init__(self, gWindow, peersTracker, **kw):
         super().__init__(gWindow, sticky=True)
 
-        self.lock = asyncio.Lock(loop=self.app.loop)
+        self.lock = asyncio.Lock()
         self.peersTracker = peersTracker
 
         self.peersWidget = QWidget()

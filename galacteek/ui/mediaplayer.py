@@ -563,7 +563,16 @@ class MediaPlayerTab(GalacteekTab):
         if self.player.isSeekable():
             self.player.setPosition(seconds * 1000)
 
+    def showEvent(self, event):
+        if self.playlist.mediaCount() == 0:
+            self.pListWidget.setVisible(True)
+
+        super().showEvent(event)
+
     def onTogglePlaylist(self):
+        self.togglePlaylist()
+
+    def togglePlaylist(self):
         self.pListWidget.setVisible(self.pListWidget.isHidden())
 
     def onError(self, error):

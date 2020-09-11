@@ -26,6 +26,9 @@ class AsyncSignal(UserList):
         return '<AsyncSignal({id}): signature: {!r}>'.format(
             list(self._sig), id='no id')
 
+    def count(self):
+        return len(self)
+
     def disconnect(self, cbk):
         try:
             for receiver in self:
@@ -94,7 +97,9 @@ def ensure(coro, **kw):
     app = QApplication.instance()
 
     callback = kw.pop('futcallback', ensureGenericCallback)
+    kw.update(loop=app.loop)
     future = asyncio.ensure_future(coro, **kw)
+
     if callback:
         future.add_done_callback(callback)
 

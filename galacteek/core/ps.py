@@ -7,8 +7,13 @@ publisher = aiopubsub.Publisher(gHub, prefix=aiopubsub.Key('g'))
 keyAll = aiopubsub.Key('*')
 
 keyPsJson = aiopubsub.Key('g', 'pubsub', 'json')
+keyPsEncJson = aiopubsub.Key('g', 'pubsub', 'enc', 'json')
 keyChatAll = aiopubsub.Key('g', 'pubsub', 'chat', '*')
 keyChatChannels = aiopubsub.Key('g', 'pubsub', 'chat', 'channels')
+
+keyTokensDagExchange = aiopubsub.Key('g', 'tokens', 'dagexchange')
+keySnakeDagExchange = aiopubsub.Key('g', 'dagexchange', 'snake')
+keyTokensIdent = aiopubsub.Key('g', 'tokens', 'ident')
 
 
 def makeKeyChatChannel(channel):

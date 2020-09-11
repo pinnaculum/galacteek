@@ -7,6 +7,7 @@ def markitdown(text):
     return markdown.markdown(
         text, extensions=[
             CodeBlockExtension(),
-            'attr_list'
+            'attr_list',
+            'mdx_unimoji'
         ]
     )

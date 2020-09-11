@@ -3,7 +3,6 @@ import re
 import collections
 import time
 import os.path
-import functools
 from datetime import datetime
 
 from PyQt5.QtWidgets import QApplication
@@ -15,6 +14,7 @@ from PyQt5.QtGui import QImage
 from PyQt5.QtGui import QPixmap
 
 from galacteek import log
+from galacteek import loopTime
 from galacteek import GALACTEEK_NAME
 from galacteek import ensure
 from galacteek import ensureLater
@@ -33,6 +33,9 @@ from galacteek.ipfs.pubsub.service import PSMainService
 from galacteek.ipfs.pubsub.service import PSChatService
 from galacteek.ipfs.pubsub.service import PSHashmarksExchanger
 from galacteek.ipfs.pubsub.service import PSPeersService
+from galacteek.ipfs.pubsub.service import PSDAGExchangeService
+
+from galacteek.ipfs.pubsub.messages.core import PeerIdentMessageV4
 
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs import tunnel
@@ -62,9 +65,11 @@ class PeerIdentityCtx:
         self.peerId = peerId
         self.iphandle = ipHandle
         self.pinghist = collections.deque([], 8)
+        self._didPongLast = None
         self._identLast = int(time.time())
         self._validated = validated
         self._authenticated = authenticated
+        self._identMsg = None
 
         self._avatarPath = None
         self._avatarImage = self.defaultAvatarImage()
@@ -80,7 +85,7 @@ class PeerIdentityCtx:
 
     @property
     def ident(self):
-        return self._ident
+        return self._identMsg
 
     @property
     def avatarImage(self):
@@ -89,6 +94,10 @@ class PeerIdentityCtx:
     @property
     def ipid(self):
         return self._ipid
+
+    @property
+    def didPong(self):
+        return self._didPongLast
 
     @property
     def spaceHandle(self):
@@ -112,7 +121,7 @@ class PeerIdentityCtx:
 
     @ident.setter
     def ident(self, v):
-        self._ident = v
+        self._identMsg = v
         self._identLast = int(time.time())
 
     def debug(self, msg):
@@ -125,7 +134,7 @@ class PeerIdentityCtx:
 
         try:
             prec = self.pinghist[-1]
-            return int(time.time()) - prec[1] < (60 * 5)
+            return int(loopTime()) - prec[1] < (60 * 5)
         except:
             return False
 
@@ -141,7 +150,12 @@ class PeerIdentityCtx:
         pass
 
     @ipfsOp
-    async def getRsaPubKey(self, ipfsop):
+    async def defaultRsaPubKey(self, ipfsop):
+        if self.ident and isinstance(self.ident, PeerIdentMessageV4):
+            return await ipfsop.catObject(self.ident.defaultRsaPubKeyCid)
+
+    @ipfsOp
+    async def getDidRsaPubKey(self, ipfsop):
         return await self.ipid.pubKeyPemGet()
 
     @ipfsOp
@@ -149,7 +163,54 @@ class PeerIdentityCtx:
         if self.ipid.local:
             self.pinghist.append((
                 0,
-                int(time.time())
+                int(loopTime())
+            ))
+            return
+
+        if self.ident is None:
+            ensureLater(30, self.watch)
+            return
+
+        if isinstance(self.ident, PeerIdentMessageV4):
+            idToken = self.ident.identToken
+
+            pongReply = await ipfsop.waitFor(ipfsop.didPing(
+                self.peerId, self.ipid.did,
+                idToken), 30
+            )
+
+            self.debug(f'didping({self.ipid.did}) returned {pongReply}')
+
+            if pongReply:
+                ms, pong = pongReply
+                if not pong:
+                    # Retry later
+                    ensureLater(60, self.watch)
+                    return
+
+                self._didPongLast = pong['didpong'][self.ipid.did]
+
+                self.pinghist.append((
+                    ms,
+                    int(loopTime())
+                ))
+
+                ensureLater(180, self.watch)
+                await self.sStatusChanged.emit()
+            else:
+                self.debug('Could not ping peer')
+                ensureLater(60, self.watch)
+
+                await self.sStatusChanged.emit()
+        else:
+            return await self.watchOldStyle()
+
+    @ipfsOp
+    async def watchOldStyle(self, ipfsop):
+        if self.ipid.local:
+            self.pinghist.append((
+                0,
+                int(loopTime())
             ))
             return
 
@@ -159,7 +220,7 @@ class PeerIdentityCtx:
         if pingAvg and pingAvg > 0:
             self.pinghist.append((
                 int(pingAvg),
-                int(time.time())
+                int(loopTime())
             ))
 
             self.debug(f'Ping OK: {pingAvg}')
@@ -245,7 +306,7 @@ class Peers:
     def __init__(self, ctx):
         self.app = QApplication.instance()
         self.ctx = ctx
-        self.lock = asyncio.Lock(loop=self.app.loop)
+        self.lock = asyncio.Lock()
         self.evStopWatcher = asyncio.Event()
         self._byPeerId = collections.OrderedDict()
         self._byHandle = collections.OrderedDict()
@@ -305,15 +366,6 @@ class Peers:
     async def scanNetworkGraph(self, ipfsop):
         profile = ipfsop.ctx.currentProfile
 
-        def didLoadCallback(did, future):
-            try:
-                res = future.result()
-                self._didGraphLStatus.remove(did)
-            except Exception as err:
-                log.debug(f'didLoadCallback for {did}: error {err}')
-            else:
-                log.debug(f'loadDidFromGraph for {did} returned: {res}')
-
         async with profile.dagNetwork.read() as ng:
             for peerId, peerHandles in ng.d['peers'].items():
                 for handle, hData in peerHandles.items():
@@ -336,10 +388,8 @@ class Peers:
                         await ipfsop.sleep()
                         continue
 
-                    task = ensure(
+                    ensure(
                         self.loadDidFromGraph(ipfsop, peerId, did, sHandle))
-                    task.add_done_callback(functools.partial(
-                        didLoadCallback, did))
                     self._didGraphLStatus.append(did)
 
                     await ipfsop.sleep(0.1)
@@ -367,6 +417,7 @@ class Peers:
 
         if not ipid:
             log.debug(f'Cannot load IPID: {did}, bailing out')
+            self._didGraphLStatus.remove(did)
             return False
 
         piCtx = PeerIdentityCtx(
@@ -396,10 +447,12 @@ class Peers:
         await self.peerAdded.emit(piCtx)
         await ipfsop.sleep(1)
 
+        self._didGraphLStatus.remove(did)
+
         return True
 
     @ipfsOp
-    async def registerFromIdent(self, ipfsop, iMsg):
+    async def registerFromIdent(self, ipfsop, sender, iMsg):
         profile = ipfsop.ctx.currentProfile
 
         log.debug(f'registerFromIdent ({iMsg.peer}): '
@@ -414,6 +467,32 @@ class Peers:
             return
 
         if not inGraph:
+            if isinstance(iMsg, PeerIdentMessageV4) and \
+                    sender != ipfsop.ctx.node.id:
+                pubKeyPem = await ipfsop.rsaPubKeyCheckImport(
+                    iMsg.defaultRsaPubKeyCid)
+
+                if not pubKeyPem:
+                    log.debug(
+                        f'Invalid RSA pub key .. {iMsg.defaultRsaPubKeyCid}')
+                    return
+
+                sigBlob = await ipfsop.catObject(iMsg.pssSigCurDid)
+                if sigBlob is None:
+                    log.debug(
+                        f'Cannot get pss SIG {iMsg.pssSigCurDid}')
+                    return
+
+                if not await ipfsop.ctx.rsaExec.pssVerif(
+                    iMsg.personDid.encode(),
+                    sigBlob,
+                    pubKeyPem
+                ):
+                    log.debug(f'Invalid PSS sig for peer {sender}')
+                    return
+                else:
+                    log.debug(f'Valid PSS sig for {sender} !')
+
             peerValidated = False
             personDid = iMsg.personDid
 
@@ -481,12 +560,14 @@ class Peers:
                     ipid,
                     validated=peerValidated
                 )
+
                 ipid.sChanged.connectTo(partialEnsure(
                     self.onPeerDidModified, piCtx))
                 piCtx.sStatusChanged.connectTo(partialEnsure(
                     self.peerModified.emit, piCtx))
+                piCtx.ident = iMsg
 
-                ensure(self.didPerformAuth(piCtx))
+                ensure(self.didPerformAuth(piCtx, iMsg))
 
                 self._byHandle[iMsg.iphandle] = piCtx
                 ensureLater(5, piCtx.watch)
@@ -501,6 +582,7 @@ class Peers:
                     self._byPeerId[piCtx.peerId] = piCtx
 
                     log.debug('Updating ident for peer {}'.format(iMsg.peer))
+
                     piCtx.ident = iMsg
 
                     log.debug('Refreshing DID: {}'.format(piCtx.ipid))
@@ -511,8 +593,12 @@ class Peers:
         await self.changed.emit()
 
     @ipfsOp
-    async def didPerformAuth(self, ipfsop, piCtx):
+    async def didPerformAuth(self, ipfsop, piCtx, identMsg):
         ipid = piCtx.ipid
+        idToken = None
+
+        if isinstance(identMsg, PeerIdentMessageV4):
+            idToken = identMsg.identToken
 
         if not ipid.local:
             # DID Auth
@@ -521,7 +607,7 @@ class Peers:
                     did=ipid.did, a=attempt))
 
                 if not await self.app.ipidManager.didAuthenticate(
-                        ipid, piCtx.peerId):
+                        ipid, piCtx.peerId, token=idToken):
                     log.debug('DID auth failed for DID: {}'.format(ipid.did))
                     await ipfsop.sleep(5)
                     continue
@@ -758,6 +844,7 @@ class P2PServices(QObject):
     @ipfsOp
     async def init(self, ipfsop):
         from galacteek.ipfs.p2pservices import didauth
+        from galacteek.ipfs.p2pservices import dagexchange
 
         if not await ipfsop.hasCommand('p2p') is True:
             log.debug('No P2P streams support')
@@ -766,10 +853,16 @@ class P2PServices(QObject):
         log.debug('P2P streams support available')
 
         try:
-            didAuthService = didauth.DIDAuthService()
-            await self.register(didAuthService)
+            self.didAuthService = didauth.DIDAuthService()
+            await self.register(self.didAuthService)
         except Exception:
             log.debug('Could not register DID Auth service')
+
+        try:
+            self.dagExchService = dagexchange.DAGExchangeService()
+            await self.register(self.dagExchService)
+        except Exception:
+            log.debug('Could not register DAG service')
 
     async def stop(self):
         for srv in self.services:
@@ -911,6 +1004,10 @@ class IPFSContext(QObject):
         psServiceChat = PSChatService(self, self.app.ipfsClient,
                                       scheduler=self.app.scheduler)
         self.pubsub.reg(psServiceChat)
+
+        self.pubsub.reg(
+            PSDAGExchangeService(self, self.app.ipfsClient,
+                                 scheduler=self.app.scheduler))
 
         if pubsubHashmarksExch and 0:
             psServiceMarks = PSHashmarksExchanger(
