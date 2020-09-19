@@ -25,7 +25,7 @@ Stable release
 Beta
 ----
 
-Check out the `latest beta images <https://github.com/pinnaculum/galacteek/releases/tag/pimp-my-dweb-9/>`_
+* Check out the `latest beta images <https://github.com/pinnaculum/galacteek/releases/tag/pimp-my-dweb-9/>`_
 
 *On Linux*: Be sure to install all the **gstreamer** packages on your
 system to be able to use the mediaplayer. Problem with the AppImage ?
