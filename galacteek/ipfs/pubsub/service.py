@@ -701,6 +701,7 @@ class PSChatChannelService(JSONLDPubsubService):
 
         cMsg.peerCtx = peerCtx
         gHub.publish(self.psKey, cMsg)
+        await asyncio.sleep(0.5)
 
     async def handleStatusMessage(self, sender, peerCtx, msg):
         sMsg = ChatStatusMessage(msg)
@@ -710,6 +711,7 @@ class PSChatChannelService(JSONLDPubsubService):
 
         sMsg.peerCtx = peerCtx
         gHub.publish(self.psKey, sMsg)
+        await asyncio.sleep(0.5)
 
 
 class EncryptedJSONPubsubService(JSONPubsubService):
