@@ -1,6 +1,5 @@
 import asyncio
 import functools
-import time
 import weakref
 
 from PyQt5.QtWidgets import QApplication
@@ -12,6 +11,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import QSortFilterProxyModel
 from PyQt5.QtCore import QRegExp
+from PyQt5.QtCore import QModelIndex
 
 from PyQt5.QtGui import QTextCursor
 from PyQt5.QtGui import QStandardItemModel
@@ -28,6 +28,7 @@ from galacteek.ipfs.pubsub.service import PSChatChannelService
 from galacteek.core.ps import makeKeyChatChannel
 from galacteek.core.ps import psSubscriber
 from galacteek.core import SingletonDecorator
+from galacteek.core.asynclib import loopTime
 from galacteek.dweb.markdown import markitdown
 
 from galacteek.core import datetimeNow
@@ -322,11 +323,31 @@ class ChatRoomWidget(GalacteekTab):
             if sHandleShort not in participants:
                 itemHandle = ParticipantItem(sHandleShort)
                 itemHandle.peerCtx = weakref.ref(message.peerCtx)
-                itemTs = QStandardItem(str(time.time()))
+                itemTs = QStandardItem(str(loopTime()))
 
                 self.participantsModel.invisibleRootItem().appendRow(
                     [itemTs, itemHandle]
                 )
+            else:
+                try:
+                    idxList = self.participantsModel.match(
+                        self.participantsModel.index(0, 1, QModelIndex()),
+                        Qt.DisplayRole,
+                        sHandleShort,
+                        -1,
+                        Qt.MatchFixedString | Qt.MatchWrap | Qt.MatchRecursive
+                    )
+
+                    idx = idxList.pop()
+                    sibling = self.participantsModel.sibling(
+                        idx.row(), 0,
+                        self.participantsModel.invisibleRootItem().index()
+                    )
+                    itemTs = self.participantsModel.itemFromIndex(sibling)
+                    if itemTs:
+                        itemTs.setText(str(loopTime()))
+                except Exception:
+                    pass
 
     async def userLeft(self, message):
         await self.removeUser(message.peerCtx.spaceHandle.short)
@@ -340,7 +361,7 @@ class ChatRoomWidget(GalacteekTab):
                     self.participantsModel.removeRow(p['row'])
 
     async def removeInactiveUsers(self):
-        now = time.time()
+        now = loopTime()
         data = await self.participantsData()
 
         async with self.lock:
