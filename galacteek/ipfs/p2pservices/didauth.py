@@ -39,7 +39,7 @@ authReqSchema = {
             "pattern": r"[a-f0-9]{64,128}"
         }
     },
-    "required": ["did", "nonce", "challenge"]
+    "required": ["did", "nonce", "challenge", "ident_token"]
 }
 
 
@@ -133,9 +133,10 @@ class DIDAuthSiteHandler:
 
                 # Token not mandatory but soon
                 token = js.get('ident_token')
-                if not token or token != self.service._token:
-                    self.message(f'Invalid DIDAuth token {token}')
-            except Exception:
+                if token != self.service._token:
+                    raise Exception(f'Invalid DIDAuth token {token}')
+            except Exception as err:
+                self.message(f'authPss error: {err}')
                 return await self.msgError()
 
             did = js.get('did')
