@@ -15,59 +15,59 @@ class DAGExchangeMessageV1(PubsubMessage):
             "exchange": {
                 "type": "object",
                 "properties": {
-                    "megadagcid": {
+                    "megaDagCid": {
                         "type": "string",
                         "pattern": ipfsCid32Re.pattern
                     },
-                    "dagcid": {
+                    "dagCid": {
                         "type": "string",
                         "pattern": ipfsCid32Re.pattern
                     },
-                    "dagclass": {
+                    "dagClass": {
                         "type": "string",
                         "pattern": r"\w{2,32}"
                     },
-                    "dagnet": {
+                    "dagNet": {
                         "type": "string",
                         "pattern": r"\w{2,32}"
                     },
-                    "dagname": {
+                    "dagName": {
                         "type": "string",
                         "pattern": r"\w{2,32}"
                     },
-                    "daguid": {
+                    "dagUid": {
                         "type": "string",
                         "pattern": r"[a-f0-9\-]{36,72}"
                     },
-                    "signerpubkeycid": {
+                    "signerPubKeyCid": {
                         "type": "string",
                         "pattern": ipfsCid32Re.pattern
                     },
                     "session": {
                         "type": "object",
                         "properties": {
-                            "servicetoken": {
+                            "serviceToken": {
                                 "type": "string",
                                 "pattern": r"[a-f0-9]{64,128}"
                             },
-                            "snakeoil": {
+                            "snakeOil": {
                                 "type": "string",
                                 "pattern": r"[a-f0-9]{128}"
                             }
                         },
                         "required": [
-                            "servicetoken",
-                            "snakeoil"
+                            "serviceToken",
+                            "snakeOil"
                         ]
                     }
                 },
                 "required": [
-                    "megadagcid",
-                    "dagcid",
-                    "dagclass",
-                    "dagnet",
-                    "daguid",
-                    "signerpubkeycid",
+                    "megaDagCid",
+                    "dagCid",
+                    "dagClass",
+                    "dagNet",
+                    "dagUid",
+                    "signerPubKeyCid",
                     "session"
                 ]
             }
@@ -88,52 +88,52 @@ class DAGExchangeMessageV1(PubsubMessage):
             'version': 1,
             'date': utcDatetimeIso(),
             'exchange': {
-                'dagcid': dagCid,
-                'megadagcid': mDagCid,
-                'dagclass': dagClass,
-                'dagnet': dagNet,
-                'dagname': dagName,
-                'daguid': dagUid,
-                'signerpubkeycid': signerPubKeyCid,
+                'dagCid': dagCid,
+                'megaDagCid': mDagCid,
+                'dagClass': dagClass,
+                'dagNet': dagNet,
+                'dagName': dagName,
+                'dagUid': dagUid,
+                'signerPubKeyCid': signerPubKeyCid,
                 'session': {
-                    'servicetoken': serviceToken,
-                    'snakeoil': snakeOil
+                    'serviceToken': serviceToken,
+                    'snakeOil': snakeOil
                 }
             }
         })
 
     @property
     def dagClass(self):
-        return self.jsonAttr('exchange.dagclass')
+        return self.jsonAttr('exchange.dagClass')
 
     @property
     def dagCid(self):
-        return self.jsonAttr('exchange.dagcid')
+        return self.jsonAttr('exchange.dagCid')
 
     @property
     def megaDagCid(self):
-        return self.jsonAttr('exchange.megadagcid')
+        return self.jsonAttr('exchange.megaDagCid')
 
     @property
     def dagUid(self):
-        return self.jsonAttr('exchange.daguid')
+        return self.jsonAttr('exchange.dagUid')
 
     @property
     def dagName(self):
-        return self.jsonAttr('exchange.dagname')
+        return self.jsonAttr('exchange.dagName')
 
     @property
     def dagNet(self):
-        return self.jsonAttr('exchange.dagnet')
+        return self.jsonAttr('exchange.dagNet')
 
     @property
     def signerPubKeyCid(self):
-        return self.jsonAttr('exchange.signerpubkeycid')
+        return self.jsonAttr('exchange.signerPubKeyCid')
 
     @property
     def serviceToken(self):
-        return self.jsonAttr('exchange.session.servicetoken')
+        return self.jsonAttr('exchange.session.serviceToken')
 
     @property
     def snakeOil(self):
-        return self.jsonAttr('exchange.session.snakeoil')
+        return self.jsonAttr('exchange.session.snakeOil')

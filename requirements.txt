@@ -15,6 +15,7 @@ base58>=1.0.2,<2.0
 cachetools>=3.1.1
 feedgen>=0.7.0
 feedparser>=5.2.0
+filelock>=3.0.1
 gitpython>=2.1.11
 jinja2>=2.10.1
 json-traverse>=0.4
@@ -49,4 +50,4 @@ quamash==0.6.1
 rule-engine>=2.1.0
 strict-rfc3339>=0.7
 tortoise-orm==0.16.13
-filelock>=3.0.1
+yarl==1.5.1

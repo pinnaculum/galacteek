@@ -41,6 +41,11 @@ Using this feature means you can add content to IPFS without
 duplicating the content in the IPFS datastore. **Note**: this
 is an experimental feature.
 
+If you use the **Keep IPFS daemon running** setting, the IPFS daemon
+will not be stopped when you exit galacteek and therefore others
+can still access the content stored on your node. This also saves
+time on startup.
+
 **Note**: switching from a local to custom daemon (or vice versa) will make you
 lose access to the content that you might have published using the previous
 settings, so use with care. Use separate *application profiles* with the

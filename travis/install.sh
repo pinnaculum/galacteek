@@ -60,3 +60,25 @@ tox -e py37
 
 $PYTHONEX setup.py build build_docs install
 $PYTHONEX setup.py sdist bdist_wheel
+
+COMMIT_SHORT=$(echo $TRAVIS_COMMIT|cut -c 1-8)
+export G_VERSION=$(grep '__version__' ../galacteek/__init__.py|sed -e "s/__version__\s=\s'\(.*\)'$/\1/")
+
+if [[ $TRAVIS_BRANCH =~ ^v([0-9].[0-9].[0-9]{1,2}) ]] ; then
+    echo "Using tag: $TRAVIS_BRANCH"
+    EVERSION=${BASH_REMATCH[1]}
+    export APPIMAGE_DEST="Galacteek-${EVERSION}-x86_64.AppImage"
+    export APPIMAGE_FULL_DEST="Galacteek-wasmer-${EVERSION}-x86_64.AppImage"
+    export DMG_DEST="Galacteek-${EVERSION}.dmg"
+else
+    if [ "$TRAVIS_BRANCH" != "master" ]; then
+        echo "Short commit ID: ${COMMIT_SHORT}"
+        export APPIMAGE_DEST="Galacteek-${COMMIT_SHORT}-x86_64.AppImage"
+        export APPIMAGE_FULL_DEST="Galacteek-wasmer-${COMMIT_SHORT}-x86_64.AppImage"
+        export DMG_DEST="Galacteek-${COMMIT_SHORT}.dmg"
+    else
+        export APPIMAGE_DEST="Galacteek-${G_VERSION}-x86_64.AppImage"
+        export APPIMAGE_FULL_DEST="Galacteek-wasmer-${G_VERSION}-x86_64.AppImage"
+        export DMG_DEST="Galacteek-${G_VERSION}.dmg"
+    fi
+fi
