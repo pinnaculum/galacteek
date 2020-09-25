@@ -168,7 +168,7 @@ class PeerIdentityCtx:
             return
 
         if self.ident is None:
-            ensureLater(30, self.watch)
+            ensureLater(15, self.watch)
             return
 
         if isinstance(self.ident, PeerIdentMessageV4):
@@ -185,7 +185,7 @@ class PeerIdentityCtx:
                 ms, pong = pongReply
                 if not pong:
                     # Retry later
-                    ensureLater(60, self.watch)
+                    ensureLater(30, self.watch)
                     return
 
                 self._didPongLast = pong['didpong'][self.ipid.did]
@@ -195,10 +195,10 @@ class PeerIdentityCtx:
                     int(loopTime())
                 ))
 
-                ensureLater(180, self.watch)
+                ensureLater(140, self.watch)
                 await self.sStatusChanged.emit()
             else:
-                self.debug('Could not ping peer')
+                self.debug('Could not ping DID {self.ipid.did}')
                 ensureLater(60, self.watch)
 
                 await self.sStatusChanged.emit()

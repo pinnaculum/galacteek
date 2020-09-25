@@ -1914,6 +1914,8 @@ class GalacteekOperator(IPFSOperator):
         }
 
         try:
+            log.debug(f'didPing({did}) for peer {peerId} with token: {token}')
+
             async with self.p2pDialer(
                     peerId, 'didauth-vc-pss',
                     addressAuto=True) as sCtx:

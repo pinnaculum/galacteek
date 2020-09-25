@@ -418,8 +418,8 @@ class EvolvingDAG(QObject, DAGOperations):
             meta = await op.rsaAgent.decryptMfsJson(self.dagMetaMfsPath)
         else:
             meta = await op.filesReadJsonObject(self.dagMetaMfsPath)
+            self.debug('Metadata is {}'.format(meta))
 
-        self.debug('Metadata is {}'.format(meta))
         if meta is not None:
             self._dagMeta = meta
             latest = self.dagMeta.get(self.keyCidLatest, None)
