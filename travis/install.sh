@@ -62,7 +62,7 @@ $PYTHONEX setup.py build build_docs install
 $PYTHONEX setup.py sdist bdist_wheel
 
 COMMIT_SHORT=$(echo $TRAVIS_COMMIT|cut -c 1-8)
-export G_VERSION=$(grep '__version__' ../galacteek/__init__.py|sed -e "s/__version__\s=\s'\(.*\)'$/\1/")
+export G_VERSION=$(grep '__version__' galacteek/__init__.py|sed -e "s/__version__\s=\s'\(.*\)'$/\1/")
 
 if [[ $TRAVIS_BRANCH =~ ^v([0-9].[0-9].[0-9]{1,2}) ]] ; then
     echo "Using tag: $TRAVIS_BRANCH"
