@@ -197,14 +197,14 @@ class PeerIdentMessageV4(PubsubMessage):
                 "type": "object",
                 "properties": {
                     "peerid": {"type": "string"},
-                    "ident_token": {
+                    "identToken": {
                         "type": "string",
                         "pattern": r"[a-f0-9]{128}"
                     },
                     "software": {
                         "type": "object",
                         "properties": {
-                            "galacteek_version": {
+                            "galacteekVersion": {
                                 "type": "string"
                             }
                         }
@@ -215,28 +215,34 @@ class PeerIdentMessageV4(PubsubMessage):
                             "crypto": {
                                 "type": "object",
                                 "properties": {
-                                    "rsa_defpubkeycid": {
+                                    "rsaDefPubKeyCid": {
                                         "type": "string",
                                         "pattern": ipfsCid32Re.pattern
                                     },
-                                    "pss_sig_curdid_cid": {
+                                    "pssCurDidSigCid": {
                                         "type": "string",
                                         "pattern": ipfsCid32Re.pattern
                                     }
                                 },
                                 "required": [
-                                    "rsa_defpubkeycid",
-                                    "pss_sig_curdid_cid"
+                                    "rsaDefPubKeyCid",
+                                    "pssCurDidSigCid"
                                 ]
                             },
                             "edags": {
                                 "type": "object",
                                 "properties": {
-                                    "network_edag_cid": {
-                                        "type": "string",
-                                        "pattern": ipfsCid32Re.pattern
+                                    "peersGraph": {
+                                        "type": "object",
+                                        "properties": {
+                                            "cid": {
+                                                "type": "string",
+                                                "pattern": ipfsCid32Re.pattern
+                                            }
+                                        }
                                     }
-                                }
+                                },
+                                "required": ["peersGraph"]
                             },
                             "identity": {
                                 "type": "object",
@@ -244,15 +250,15 @@ class PeerIdentMessageV4(PubsubMessage):
                                     "vplanet": {
                                         "type": "string"
                                     },
-                                    "iphandle": {
+                                    "ipHandle": {
                                         "type": "string",
                                         "pattern": ipHandleRe.pattern
                                     },
-                                    "persondid": {
+                                    "personDid": {
                                         "type": "string",
                                         "pattern": ipidIdentRe.pattern
                                     },
-                                    "iphandleqrpngcid": {
+                                    "ipHandleQrPngCid": {
                                         "type": "string",
                                         "pattern": ipfsCid32Re.pattern
                                     },
@@ -266,9 +272,9 @@ class PeerIdentMessageV4(PubsubMessage):
                                 },
                                 "required": [
                                     "vplanet",
-                                    "iphandle",
-                                    "iphandleqrpngcid",
-                                    "persondid"
+                                    "ipHandle",
+                                    "ipHandleQrPngCid",
+                                    "personDid"
                                 ]
                             }
                         },
@@ -279,7 +285,7 @@ class PeerIdentMessageV4(PubsubMessage):
                         ],
                     }
                 },
-                "required": ["peerid", "ident_token"]
+                "required": ["peerid", "identToken"]
             },
         },
         "required": ["msgtype", "msg"]
@@ -309,25 +315,27 @@ class PeerIdentMessageV4(PubsubMessage):
             'date': utcDatetimeIso(),
             'msg': {
                 'peerid': peerId,
-                'ident_token': identToken,
+                'identToken': identToken,
                 'software': {
-                    'galacteek_version': gversion
+                    'galacteekVersion': gversion
                 },
                 'user': {
                     'identity': {
                         'vplanet': userInfo.vplanet,
-                        'iphandle': userInfo.iphandle,
-                        'iphandleqrpngcid': qrPngNodeCid,
-                        'persondid': userInfo.personDid,
-                        'persondidcurrentcid': personDidCurCid,
+                        'ipHandle': userInfo.iphandle,
+                        'ipHandleQrPngCid': qrPngNodeCid,
+                        'personDid': userInfo.personDid,
+                        'personDidCurrentCid': personDidCurCid,
                         'orgs': []
                     },
                     'crypto': {
-                        'rsa_defpubkeycid': rsaDefPubKeyCid,
-                        'pss_sig_curdid_cid': pssSigCurDid
+                        'rsaDefPubKeyCid': rsaDefPubKeyCid,
+                        'pssCurDidSigCid': pssSigCurDid
                     },
                     'edags': {
-                        'network_edag_cid': edagNetworkCid
+                        'peersGraph': {
+                            'cid': edagNetworkCid
+                        }
                     },
                     'p2pservices': p2pServices
                 }
@@ -340,15 +348,15 @@ class PeerIdentMessageV4(PubsubMessage):
 
     @property
     def identToken(self):
-        return self.jsonAttr('msg.ident_token')
+        return self.jsonAttr('msg.identToken')
 
     @property
     def iphandle(self):
-        return self.jsonAttr('msg.user.identity.iphandle')
+        return self.jsonAttr('msg.user.identity.ipHandle')
 
     @property
     def iphandleqrpngcid(self):
-        return self.jsonAttr('msg.user.identity.iphandleqrpngcid')
+        return self.jsonAttr('msg.user.identity.ipHandleQrPngCid')
 
     @property
     def vplanet(self):
@@ -356,23 +364,23 @@ class PeerIdentMessageV4(PubsubMessage):
 
     @property
     def personDid(self):
-        return self.jsonAttr('msg.user.identity.persondid')
+        return self.jsonAttr('msg.user.identity.personDid')
 
     @property
     def personDidCurCid(self):
-        return self.jsonAttr('msg.user.identity.persondidcurrentcid')
+        return self.jsonAttr('msg.user.identity.personDidCurrentCid')
 
     @property
     def defaultRsaPubKeyCid(self):
-        return self.jsonAttr('msg.user.crypto.rsa_defpubkeycid')
+        return self.jsonAttr('msg.user.crypto.rsaDefPubKeyCid')
 
     @property
     def pssSigCurDid(self):
-        return self.jsonAttr('msg.user.crypto.pss_sig_curdid_cid')
+        return self.jsonAttr('msg.user.crypto.pssCurDidSigCid')
 
     @property
     def edagCidNetwork(self):
-        return self.jsonAttr('msg.user.edags.network_edag_cid')
+        return self.jsonAttr('msg.user.edags.peersGraph.cid')
 
     def dateMessage(self):
         return self.jsonAttr('date')

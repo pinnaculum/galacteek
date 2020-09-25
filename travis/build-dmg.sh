@@ -24,15 +24,6 @@ cleanup () {
 trap cleanup EXIT
 
 OLD_CWD="$(pwd)"
-VERSION=$(grep '__version__' galacteek/__init__.py|sed -e "s/__version__ = '\(.*\)'$/\1/")
-
-COMMIT_SHORT=$(echo $TRAVIS_COMMIT|cut -c 1-8)
-
-if [ "$TRAVIS_BRANCH" != "master" ]; then
-    DMG_DEST="Galacteek-${COMMIT_SHORT}.dmg"
-else
-    DMG_DEST="Galacteek-${VERSION}.dmg"
-fi
 
 pushd "$BUILD_DIR"/
 
@@ -50,7 +41,7 @@ source activate galacteek
 # install dependencies
 pip install wheel
 pip install -r "$OLD_CWD"/requirements.txt
-pip install "$OLD_CWD"/dist/galacteek-${VERSION}-py3-none-any.whl
+pip install "$OLD_CWD"/dist/galacteek-${G_VERSION}-py3-none-any.whl
 
 # leave conda env
 source deactivate
@@ -113,6 +104,6 @@ popd
 git clone https://github.com/andreyvit/create-dmg $HOME/create-dmg
 
 # generate .dmg
-$HOME/create-dmg/create-dmg --hdiutil-verbose --volname "galacteek-${VERSION}" \
+$HOME/create-dmg/create-dmg --hdiutil-verbose --volname "galacteek-${G_VERSION}" \
     --volicon "${OLD_CWD}"/share/icons/galacteek.icns \
     --hide-extension galacteek.app $DMG_DEST "$BUILD_DIR"/
