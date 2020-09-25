@@ -15,6 +15,24 @@ fi
 
 BUILD_DIR=$(mktemp -d "$TEMP_BASE/galacteek-MacOS-build-XXXXXX")
 
+COMMIT_SHORT=$(echo $TRAVIS_COMMIT|cut -c 1-8)
+G_VERSION=$(grep '__version__' galacteek/__init__.py|sed -e "s/__version__ = '\(.*\)'$/\1/")
+
+if [[ $TRAVIS_BRANCH =~ ^v([0-9].[0-9].[0-9]{1,2}) ]] ; then
+    echo "Using tag: $TRAVIS_BRANCH"
+    EVERSION=${BASH_REMATCH[1]}
+    DMG_DEST="Galacteek-${EVERSION}.dmg"
+else
+    if [ "$TRAVIS_BRANCH" != "master" ]; then
+        echo "Short commit ID: ${COMMIT_SHORT}"
+        DMG_DEST="Galacteek-${COMMIT_SHORT}.dmg"
+    else
+        DMG_DEST="Galacteek-${G_VERSION}.dmg"
+    fi
+fi
+
+echo "Building to DMG: $DMG_DEST"
+
 cleanup () {
     if [ -d "$BUILD_DIR" ]; then
         rm -rf "$BUILD_DIR"
@@ -28,9 +46,10 @@ OLD_CWD="$(pwd)"
 pushd "$BUILD_DIR"/
 
 # install Miniconda
-wget https://repo.continuum.io/miniconda/Miniconda3-4.6.14-MacOSX-x86_64.sh
-bash Miniconda3-4.6.14-MacOSX-x86_64.sh -b -p ~/miniconda -f
-rm Miniconda3-4.6.14-MacOSX-x86_64.sh
+MINICONDA_DIST="Miniconda3-py37_4.8.3-MacOSX-x86_64.sh"
+wget https://repo.anaconda.com/miniconda/${MINICONDA_DIST}
+bash ${MINICONDA_DIST} -b -p ~/miniconda -f
+rm ${MINICONDA_DIST}
 
 export PATH="$HOME/miniconda/bin:$PATH"
 
