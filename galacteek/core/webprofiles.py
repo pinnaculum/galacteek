@@ -45,11 +45,18 @@ class BaseProfile(QWebEngineProfile):
         self.webScripts = self.scripts()
         self.webSettings = self.settings()
         self.profileName = storageName
+        self.setSettings()
         self.installIpfsSchemeHandlers()
         self.installScripts()
 
         self.downloadRequested.connect(
             self.app.downloadsManager.onDownloadRequested)
+
+    def setSettings(self):
+        self.webSettings.setAttribute(
+            QWebEngineSettings.FullScreenSupportEnabled,
+            True
+        )
 
     def installHandler(self, scheme, handler):
         sch = scheme if isinstance(scheme, bytes) else scheme.encode()
@@ -84,9 +91,8 @@ class IPFSProfile(BaseProfile):
     def __init__(self, storageName=WP_NAME_IPFS, parent=None):
         super(IPFSProfile, self).__init__(storageName, parent)
 
-        self.setSettings()
-
     def setSettings(self):
+        super().setSettings()
         self.webSettings.setAttribute(QWebEngineSettings.PluginsEnabled,
                                       True)
         self.webSettings.setAttribute(QWebEngineSettings.LocalStorageEnabled,

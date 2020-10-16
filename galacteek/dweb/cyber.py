@@ -2,6 +2,7 @@ from galacteek import log
 from galacteek.ipfs import ipfsOpFn
 
 import aiohttp
+import async_timeout
 
 
 class CyberSearchResults:
@@ -25,7 +26,8 @@ class CyberSearchResults:
 
 
 @ipfsOpFn
-async def cyberSearch(ipfsop, query: str, page=0, perPage=10, sslverify=True):
+async def cyberSearch(ipfsop, query: str, page=0, perPage=10, sslverify=True,
+                      timeout=8):
     entry = await ipfsop.hashComputeString(query, cidversion=0)
 
     params = {
@@ -35,16 +37,17 @@ async def cyberSearch(ipfsop, query: str, page=0, perPage=10, sslverify=True):
     }
 
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get('https://{host}/api/search'.format(
-                    host='titan.cybernode.ai'),
-                    params=params,
-                    verify_ssl=sslverify) as resp:
-                resp = await resp.json()
-                result = resp['result']
-                total = int(result['total'])
-                cids = result['cids']
-                pageCount = int(total / perPage)
+        with async_timeout.timeout(timeout):
+            async with aiohttp.ClientSession() as session:
+                async with session.get('https://{host}/api/search'.format(
+                        host='titan.cybernode.ai'),
+                        params=params,
+                        verify_ssl=sslverify) as resp:
+                    resp = await resp.json()
+                    result = resp['result']
+                    total = int(result['total'])
+                    cids = result['cids']
+                    pageCount = int(total / perPage)
     except Exception as err:
         log.debug(str(err))
         return CyberSearchResults(

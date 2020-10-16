@@ -330,6 +330,11 @@ class CustomWebPage (QtWebEngineWidgets.QWebEnginePage):
 
     def __init__(self, webProfile, parent):
         super(CustomWebPage, self).__init__(webProfile, parent)
+        self.fullScreenRequested.connect(self.onFullScreenRequest)
+
+    def onFullScreenRequest(self, req):
+        # Accept fullscreen requests unconditionally
+        req.accept()
 
     def registerPageHandler(self):
         self.channel = QWebChannel()

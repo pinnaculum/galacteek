@@ -53,11 +53,13 @@ async def searchPage(query, page, filters={}, sslverify=True):
             return await resp.json()
 
 
-async def getPageResults(query, page, filters={}, sslverify=True):
+async def getPageResults(query, page, filters={}, sslverify=True,
+                         timeout=12):
     try:
-        results = await searchPage(query, page, filters=filters,
-                                   sslverify=sslverify)
-        return IPFSSearchResults(page, results)
+        with async_timeout.timeout(timeout):
+            results = await searchPage(query, page, filters=filters,
+                                       sslverify=sslverify)
+            return IPFSSearchResults(page, results)
     except Exception as err:
         log.debug(f'ipfs-search error ({query}, page {page}): {err}')
         return emptyResults

@@ -1194,7 +1194,6 @@ class IPFSWebView(QWebEngineView):
         self.webProfile = webProfile if webProfile else \
             self.app.webProfiles['ipfs']
         self.setPage(QWebEnginePage(self.webProfile, self))
-
         self.setMinimumSize(QSize(
             self.app.desktopGeometry.width() / 8,
             self.app.desktopGeometry.height() / 8

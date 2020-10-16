@@ -59,7 +59,10 @@ class AtomFeedsView(QWidget):
 
         self.webView = IPFSWebView(parent=self)
         self.emptyPage = EmptyPage(
-            'atomfeedsinit.html', parent=self, navBypassLinks=True)
+            'atomfeedsinit.html', parent=self, navBypassLinks=True,
+            url=QUrl('file:/atomreader'),
+            localCanAccessRemote=True
+        )
         self.webView.setPage(self.emptyPage)
 
         self.ui = ui_atomfeeds.Ui_AtomFeeds()
