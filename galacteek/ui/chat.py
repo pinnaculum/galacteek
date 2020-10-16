@@ -435,12 +435,10 @@ class ChatRoomPage(IPFSPage):
     def setPermissions(self):
         from PyQt5.QtWebEngineWidgets import QWebEngineSettings
 
+        super().setPermissions()
+
         self.settings().setAttribute(
             QWebEngineSettings.LocalContentCanAccessRemoteUrls,
-            True
-        )
-        self.settings().setAttribute(
-            QWebEngineSettings.FullScreenSupportEnabled,
             True
         )
 

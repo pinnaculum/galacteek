@@ -64,9 +64,13 @@ class BasePage(QWebEnginePage):
     def __init__(self, template, url=None,
                  navBypassLinks=False,
                  openObjConfirm=True,
+                 localCanAccessRemote=False,
+                 webProfile=None,
                  parent=None):
         self.app = QApplication.instance()
-        super(BasePage, self).__init__(self.app.webProfiles['ipfs'], parent)
+        super(BasePage, self).__init__(
+            webProfile if webProfile else self.app.webProfiles['ipfs'],
+            parent)
 
         self.template = template
         self._handlers = {}
@@ -78,6 +82,7 @@ class BasePage(QWebEnginePage):
         self.webScripts = self.profile().scripts()
         self.navBypass = navBypassLinks
         self.openObjConfirm = openObjConfirm
+        self.localCanAccessRemote = localCanAccessRemote
 
         self.settings().setAttribute(
             QWebEngineSettings.LocalStorageEnabled,
@@ -103,7 +108,16 @@ class BasePage(QWebEnginePage):
         pass
 
     def setPermissions(self):
-        pass
+        if self.localCanAccessRemote:
+            self.settings().setAttribute(
+                QWebEngineSettings.LocalContentCanAccessRemoteUrls,
+                True
+            )
+
+        self.settings().setAttribute(
+            QWebEngineSettings.FullScreenSupportEnabled,
+            True
+        )
 
     def register(self, name, obj):
         self.channel.registerObject(name, obj)
@@ -118,8 +132,9 @@ class BasePage(QWebEnginePage):
                 message))
 
     async def render(self):
-        self.setHtml(await renderTemplate(self.template, **self.pageCtx),
-                     baseUrl=self.url)
+        if self.template:
+            self.setHtml(await renderTemplate(self.template, **self.pageCtx),
+                         baseUrl=self.url)
 
     def acceptNavigationRequest(self, url, navType, isMainFrame):
         if self.navBypass and \
