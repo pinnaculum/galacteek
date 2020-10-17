@@ -31,11 +31,20 @@ class RSAExecutor(object):
     def __init__(self, loop=None, executor=None):
         self.loop = loop if loop else asyncio.get_event_loop()
         self.executor = executor if executor else \
-            concurrent.futures.ThreadPoolExecutor(max_workers=4)
-        self._keysCache = TTLCache(maxsize=128, ttl=120)
+            concurrent.futures.ThreadPoolExecutor(max_workers=6)
+        self._keysCache = TTLCache(maxsize=128, ttl=240)
 
     def randBytes(self, rlen=16):
         return get_random_bytes(rlen)
+
+    async def _getKey(self, key):
+        if isinstance(key, RSA.RsaKey):
+            return key
+        else:
+            try:
+                return await self.importKey(key)
+            except Exception:
+                log.debug('Could not import RSA key ....')
 
     async def _exec(self, fn, *args, **kw):
         return await self.loop.run_in_executor(
@@ -71,10 +80,10 @@ class RSAExecutor(object):
                 key = self._keysCache.get(dig)
 
                 if not key:
-                    key = RSA.import_key(recipientKeyData)
+                    key = await self._getKey(recipientKeyData)
                     self._keysCache[dig] = key
             else:
-                key = RSA.import_key(recipientKeyData)
+                key = await self._getKey(recipientKeyData)
         except Exception as err:
             log.debug(f'Cannot load RSA key: {err}')
             return
@@ -101,6 +110,9 @@ class RSAExecutor(object):
 
             cipherAes = AES.new(sessionKey, AES.MODE_CBC)
             ctb = cipherAes.encrypt(pad(data.getvalue(), AES.block_size))
+
+            log.debug('AES-256 (CBC): ciphertext size: {s}'.format(
+                s=len(ctb)))
 
             fd = BytesIO()
             [fd.write(x) for x in (encSessionKey,
@@ -129,9 +141,14 @@ class RSAExecutor(object):
             log.debug('RSA encryption error {}'.format(str(err)))
             return None
 
-    async def decryptData(self, data, privKey):
+    async def decryptData(self, data, privKeyData):
         if not isinstance(data, BytesIO):
             raise ValueError('Need BytesIO')
+
+        privKey = await self._getKey(privKeyData)
+
+        if not privKey:
+            raise ValueError('Invalid key')
 
         # AES-256 CBC is now the default.
         # Try AES-128 EAX last as some EDAGs's metadata could
@@ -141,6 +158,8 @@ class RSAExecutor(object):
             self._decryptPkcs1OAEP_AES256CBC, data, privKey)
 
         if dec:
+            log.debug('AES-256 (CBC): dec size: {s}'.format(
+                s=len(dec)))
             return dec
         else:
             log.debug('AES-256 CBC decryption failed, EAX fallback')
@@ -160,13 +179,11 @@ class RSAExecutor(object):
             raise ValueError('Invalid private key')
 
         try:
-            private = RSA.import_key(privKey)
-
             encSessionKey, iv, ciphertext = [
                 data.read(x) for x in (
-                    private.size_in_bytes(), 16, -1)]
+                    privKey.size_in_bytes(), 16, -1)]
 
-            cipherRsa = PKCS1_OAEP.new(private)
+            cipherRsa = PKCS1_OAEP.new(privKey)
             sessionKey = cipherRsa.decrypt(encSessionKey)
 
             cipherAes = AES.new(sessionKey, AES.MODE_CBC, iv)
@@ -183,13 +200,11 @@ class RSAExecutor(object):
             raise ValueError('Invalid private key')
 
         try:
-            private = RSA.import_key(privKey)
-
             encSessionKey, nonce, tag, ciphertext = [
                 data.read(x) for x in (
-                    private.size_in_bytes(), 16, 16, -1)]
+                    privKey.size_in_bytes(), 16, 16, -1)]
 
-            cipherRsa = PKCS1_OAEP.new(private)
+            cipherRsa = PKCS1_OAEP.new(privKey)
             sessionKey = cipherRsa.decrypt(encSessionKey)
 
             cipherAes = AES.new(sessionKey, AES.MODE_EAX, nonce)
@@ -204,15 +219,15 @@ class RSAExecutor(object):
             return None
 
     async def pssSign(self, message: bytes, privRsaKey):
-        return await self._exec(self._pssSign, message, privRsaKey)
+        privKey = await self._getKey(privRsaKey)
+        return await self._exec(self._pssSign, message, privKey)
 
     def _pssSign(self, message, privRsaKey):
         try:
-            key = RSA.import_key(privRsaKey)
             h = SHA256.new(message)
             log.debug('Generating PSS signature')
 
-            signature = pss.new(key).sign(h)
+            signature = pss.new(privRsaKey).sign(h)
 
             out = BytesIO()
             out.write(signature)
@@ -223,25 +238,27 @@ class RSAExecutor(object):
 
     async def pssVerif(self, message: bytes, signature: bytes,
                        rsaPubKey):
+        rsaKey = await self._getKey(rsaPubKey)
         return await self._exec(self._pssVerif, message, signature,
-                                rsaPubKey)
+                                rsaKey)
 
     async def pssVerif64(self, message: bytes, signature64: bytes,
                          rsaPubKey):
         try:
+            rsaKey = await self._getKey(rsaPubKey)
             decoded = base64.b64decode(signature64)
             return await self._exec(self._pssVerif, message, decoded,
-                                    rsaPubKey)
+                                    rsaKey)
         except Exception as err:
             log.debug(f'Exception on PSS64 verif: {err}')
 
     def _pssVerif(self, message: bytes, signature, rsaPubKey):
         try:
-            key = RSA.import_key(rsaPubKey)
             hashObj = SHA256.new(message)
-            verifier = pss.new(key)
+            verifier = pss.new(rsaPubKey)
             try:
                 verifier.verify(hashObj, signature)
+                log.debug('The PSS signature is authentic')
                 return True
             except (ValueError, TypeError):
                 log.debug('The PSS signature is not authentic')
