@@ -6,6 +6,9 @@ import re
 import uuid
 import getpass
 
+from cachetools import cached
+from cachetools import TTLCache
+
 import aiofiles
 
 from PyQt5.QtCore import QObject, pyqtSignal
@@ -400,6 +403,7 @@ class DIDRsaKeyStore:
             )
         )
 
+    @cached(TTLCache(8, 720))
     def _privateKeyForDid(self, did):
         from Cryptodome.PublicKey import RSA
 

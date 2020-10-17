@@ -2,12 +2,14 @@ import json
 import orjson
 import base64
 from io import BytesIO
+from cachetools import LRUCache
 
 from jwcrypto import jwk
 from jwcrypto import jws
 from jwcrypto import jwt
 from jwcrypto.common import json_encode
 
+from galacteek.core.asynccache import selfcachedcoromethod
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import cidValid
 from galacteek.core.asynclib import asyncReadFile
@@ -30,6 +32,7 @@ class IpfsRSAAgent:
         self.pubKeyPem = pubKeyPem
         self._pubKeyCidCached = None
         self.privKeyPath = privKeyPath
+        self._privKeyCache = LRUCache(4)
 
         self.pubJwk = jwk.JWK()
         self.pubJwk.import_from_pem(self.pubKeyPem)
@@ -55,8 +58,7 @@ class IpfsRSAAgent:
 
     async def privJwk(self):
         try:
-            privKey = await self.rsaExec.importKey(
-                await self.__rsaReadPrivateKey())
+            privKey = await self.__privateKey()
             pem = privKey.export_key(pkcs=8)
             key = jwk.JWK()
             key.import_from_pem(pem)
@@ -100,7 +102,7 @@ class IpfsRSAAgent:
 
     async def decrypt(self, data):
         return await self.rsaExec.decryptData(BytesIO(data),
-                                              await self.__rsaReadPrivateKey())
+                                              await self.__privateKey())
 
     @ipfsOp
     async def storeSelf(self, op, data, offline=False, wrap=False):
@@ -152,7 +154,7 @@ class IpfsRSAAgent:
 
     @ipfsOp
     async def decryptIpfsObject(self, op, data):
-        privKey = await self.__rsaReadPrivateKey()
+        privKey = await self.__privateKey()
         try:
             decrypted = await self.rsaExec.decryptData(BytesIO(data), privKey)
             if decrypted:
@@ -189,12 +191,12 @@ class IpfsRSAAgent:
     @ipfsOp
     async def pssSign(self, op, message):
         return await self.rsaExec.pssSign(
-            message, await self.__rsaReadPrivateKey())
+            message, await self.__privateKey())
 
     @ipfsOp
     async def pssSignImport(self, op, message, pin=False):
         signed = await self.rsaExec.pssSign(
-            message, await self.__rsaReadPrivateKey())
+            message, await self.__privateKey())
 
         if signed:
             try:
@@ -220,6 +222,11 @@ class IpfsRSAAgent:
 
     async def __rsaReadPrivateKey(self):
         return await asyncReadFile(self.privKeyPath)
+
+    @selfcachedcoromethod('_privKeyCache')
+    async def __privateKey(self):
+        return await self.rsaExec.importKey(
+            await asyncReadFile(self.privKeyPath))
 
 
 class IpfsCurve25519Agent:
