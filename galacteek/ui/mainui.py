@@ -140,6 +140,7 @@ class UserLogsWindow(QMainWindow):
         self.addToolBar(Qt.TopToolBarArea, self.toolbar)
 
         self.logsBrowser = QTextEdit(self)
+        self.logsBrowser.setFontPointSize(16)
         self.logsBrowser.setReadOnly(True)
         self.logsBrowser.setObjectName('logsTextWidget')
         self.logsBrowser.setSizePolicy(
@@ -342,6 +343,13 @@ class MainToolBar(QToolBar):
             Qt.LeftToolBarArea | Qt.TopToolBarArea
         )
         self.setContextMenuPolicy(Qt.NoContextMenu)
+
+        # 1st widget
+        self.pad = QWidget()
+        self.pad.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        self.addWidget(self.pad)
 
         # Empty widget
         self.emptySpace = QWidget()

@@ -2,6 +2,7 @@ import asyncio
 import io
 import functools
 import tempfile
+import platform
 
 from ctypes import cdll
 from ctypes.util import find_library
@@ -23,7 +24,10 @@ def zbar_load():
 
     path = find_library('zbar')
     if not path:
-        path = 'libzbar.so.0'
+        if platform.system() == 'Linux':
+            path = 'libzbar.so.0'
+        elif platform.system() == 'Darwin':
+            path = 'libzbar.0.dylib'
 
     log.debug('Loading zbar library from: {}'.format(path))
 
@@ -41,7 +45,10 @@ try:
     from pyzbar import zbar_library
     zbar_library.load = zbar_load
     from pyzbar.pyzbar import decode as zbar_decode
-except Exception:
+except Exception as err:
+    import traceback
+    print('zbar import error', str(err))
+    traceback.print_exc()
     haveZbar = False
 else:
     haveZbar = True
@@ -338,4 +345,5 @@ def IPFSQrDecoder():
         log.debug('Using qreader decoder')
         return QReaderIPFSQrDecoder()
     else:
+        log.debug('No QR decoder available')
         return None
