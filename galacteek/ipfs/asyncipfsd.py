@@ -108,7 +108,8 @@ class IPFSDProtocol(asyncio.SubprocessProtocol):
         self._output.extend(data)
 
     def process_exited(self):
-        self.exitFuture.set_result(True)
+        if not self.exitFuture.done():
+            self.exitFuture.set_result(True)
 
 
 DEFAULT_APIPORT = 5001
@@ -192,6 +193,8 @@ class AsyncIPFSDaemon(object):
 
         self._procPid = None
         self._process = None
+        self._msgCallback = []
+
         self.daemonClient = self.client()
 
         self._createRepoDir()
@@ -217,6 +220,15 @@ class AsyncIPFSDaemon(object):
     def running(self):
         return self.pid is not None
 
+    def addMessageCallback(self, cb):
+        self._msgCallback.append(cb)
+
+    def rmMessageCallback(self, cb):
+        try:
+            self._msgCallback.remove(cb)
+        except Exception:
+            pass
+
     def _createRepoDir(self):
         if not os.path.isdir(self.repopath):
             os.mkdir(self.repopath)
@@ -238,26 +250,37 @@ class AsyncIPFSDaemon(object):
             'default-networking'
         ]
 
+    def message(self, msg):
+        log.debug(msg)
+
+        for cb in self._msgCallback:
+            cb(msg)
+
     async def start(self):
         # Set the IPFS_PATH environment variable
         os.environ['IPFS_PATH'] = self.repopath
 
-        log.debug('Using go-ipfs binary: {}'.format(self.goIpfsPath))
+        self.message('Using go-ipfs binary: {}'.format(self.goIpfsPath))
 
         if not self.repoExists():
-            log.info('Initializing IPFS repository: {repo}'.format(
+            self.message('Initializing IPFS repository: {repo}'.format(
                 repo=self.repopath))
 
             if isinstance(self.dataStore, str):
-                log.info(f'Initializing with datastore {self.dataStore}')
+                self.message(
+                    f'Initializing repos with datastore: {self.dataStore}')
                 await shell(f'ipfs init -p {self.dataStore}')
             else:
+                self.message('Initializing with default datastore')
                 await shell('ipfs init')
+
+            self.message('Repository initialized')
 
         apifile = os.path.join(self.repopath, 'api')
         if os.path.exists(apifile):
             os.unlink(apifile)
 
+        self.message('Configuring multiaddrs ..')
         # API & gateway multiaddrs
         await self.ipfsConfig(
             'Addresses.API',
@@ -290,6 +313,8 @@ class AsyncIPFSDaemon(object):
         await self.ipfsConfigJson('Addresses.Swarm',
                                   json.dumps(swarmAddrs))
 
+        self.message('Configuring connection manager ..')
+
         # Swarm connection manager parameters
         await self.ipfsConfigJson('Swarm.ConnMgr.LowWater',
                                   self.swarmLowWater)
@@ -297,6 +322,8 @@ class AsyncIPFSDaemon(object):
                                   self.swarmHighWater)
         await self.ipfsConfig('Swarm.ConnMgr.GracePeriod',
                               '60s')
+
+        self.message('Configuring pubsub/p2p ..')
 
         await self.ipfsConfig('Routing.Type', self.routingMode)
 
@@ -361,6 +388,8 @@ class AsyncIPFSDaemon(object):
 
         pCreationFlags = 0
 
+        self.message('Starting subprocess ..')
+
         if self.detached:
             f = self.loop.subprocess_exec(
                 lambda: IPFSDProtocol(self.loop, self.exitFuture,
@@ -395,7 +424,7 @@ class AsyncIPFSDaemon(object):
                 await self.profileApply(profile)
 
     async def profileApply(self, profile):
-        log.info(f'Applying daemon profile {profile}')
+        self.message(f'Applying daemon profile {profile}')
         await ipfsConfigProfileApply(self.goIpfsPath, profile)
 
     async def watchProcess(self):
@@ -404,15 +433,15 @@ class AsyncIPFSDaemon(object):
 
             try:
                 status = self.process.status()
-                log.debug(f'go-ipfs (PID: {self.process.pid}): '
-                          f'status: {status}')
+                self.message(f'go-ipfs (PID: {self.process.pid}): '
+                             f'status: {status}')
             except psutil.NoSuchProcess as err:
-                log.debug(f'go-ipfs (PID: {self.process.pid}): '
-                          f'NoSuchProcess error: {err}')
+                self.message(f'go-ipfs (PID: {self.process.pid}): '
+                             f'NoSuchProcess error: {err}')
 
                 if self.autoRestart is True:
-                    log.debug(f'go-ipfs (PID: {self.process.pid}): '
-                              'Restarting!')
+                    self.message(f'go-ipfs (PID: {self.process.pid}): '
+                                 'Restarting!')
                     self._procPid = None
                     self.process = None
                     await self.start()
@@ -423,16 +452,16 @@ class AsyncIPFSDaemon(object):
                     # We could be in the process of restarting
                     continue
                 else:
-                    log.debug(f'go-ipfs (PID: {self.process.pid}): '
-                              f'Unknown error: {err}')
+                    self.message(f'go-ipfs (PID: {self.process.pid}): '
+                                 f'Unknown error: {err}')
                     continue
             else:
                 if status in [
                         psutil.STATUS_STOPPED,
                         psutil.STATUS_ZOMBIE,
                         psutil.STATUS_DEAD]:
-                    log.debug(f'go-ipfs (PID: {self.process.pid}): '
-                              f'seems to be stopped ?')
+                    self.message(f'go-ipfs (PID: {self.process.pid}): '
+                                 f'seems to be stopped ?')
                     if self.autoRestart is True:
                         self._procPid = None
                         self.process = None
@@ -465,7 +494,7 @@ class AsyncIPFSDaemon(object):
         except aioipfs.APIError:
             return False
         except Exception as e:
-            log.debug(f'Status write error: {e}, postponing')
+            self.message(f'Status write error: {e}, postponing')
             return False
 
     def client(self):
@@ -494,13 +523,13 @@ class AsyncIPFSDaemon(object):
             else:
                 return False, None
         except aioipfs.APIError as e:
-            log.debug(f'Error loading status: {e.message}')
+            self.message(f'Error loading status: {e.message}')
             return False, None
         except psutil.NoSuchProcess:
-            log.debug('Process is gone')
+            self.message('Process is gone')
             return False, None
         except Exception:
-            log.debug('Error loading status')
+            self.message('Error loading status')
             return False, None
 
     async def ipfsConfig(self, param, value):
@@ -542,15 +571,15 @@ class AsyncIPFSDaemon(object):
         )
 
     def setProcLimits(self, process, nice=20):
-        log.debug(f'Applying limits to process: {process.pid}')
+        self.message(f'Applying limits to process: {process.pid}')
 
         try:
             process.nice(nice)
         except Exception:
-            log.debug(f'Could not apply limits to process {process.pid}')
+            self.message(f'Could not apply limits to process {process.pid}')
 
     def stop(self):
-        log.debug('Stopping IPFS daemon')
+        self.message('Stopping IPFS daemon')
         try:
             self.transport.send_signal(signal.SIGINT)
             self.transport.send_signal(signal.SIGHUP)

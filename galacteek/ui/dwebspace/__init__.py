@@ -1,4 +1,5 @@
 import rule_engine
+import weakref
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QSizePolicy
@@ -10,6 +11,7 @@ from PyQt5.QtWidgets import QHBoxLayout
 from PyQt5.QtWidgets import QToolBar
 from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QSpacerItem
+from PyQt5.QtWidgets import QStackedWidget
 
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import Qt
@@ -32,6 +34,8 @@ from galacteek.ui.helpers import getIcon
 from galacteek.ui.helpers import getPlanetIcon
 from galacteek.ui.helpers import playSound
 from galacteek.ui.helpers import questionBoxAsync
+
+from galacteek.ui.dialogs import DefaultProgressDialog
 
 from galacteek.ui.feeds import AtomFeedsViewTab
 from galacteek.ui.feeds import AtomFeedsView
@@ -136,6 +140,7 @@ class ToolBarActionsContainer(QWidget):
         hLayout.addWidget(self.toolBar)
 
 
+WS_STATUS = 'status'
 WS_MAIN = 'main'
 WS_PEERS = 'peers'
 WS_FILES = 'files'
@@ -156,11 +161,20 @@ class BaseWorkspace(QWidget):
 
         self.acceptsDrops = acceptsDrops
 
+        self.stack = stack
         self.wsName = name
         self.wsDescription = description
         self.wsSection = section
         self.wsAttached = False
         self.defaultAction = None
+        self.wLayout = QVBoxLayout(self)
+        self.setLayout(self.wLayout)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        pass
 
     def setupWorkspace(self):
         pass
@@ -170,6 +184,78 @@ class BaseWorkspace(QWidget):
 
     async def handleObjectDrop(self, ipfsPath):
         pass
+
+    def wsToolTip(self):
+        return self.wsDescription
+
+    def empty(self):
+        return True
+
+    def workspaceIdx(self):
+        return self.stack.indexOf(self)
+
+    def previousWorkspace(self):
+        return self.stack.previousWorkspace(self)
+
+    def nextWorkspace(self):
+        return self.stack.nextWorkspace(self)
+
+    async def workspaceSwitched(self):
+        await self.triggerDefaultActionIfEmpty()
+
+    async def triggerDefaultActionIfEmpty(self):
+        if self.empty() and self.defaultAction:
+            self.defaultAction.trigger()
+
+    def wsAddCustomAction(self, actionName: str, icon, name,
+                          func, default=False):
+        pass
+
+    def wsAddAction(self, action: QAction, default=False):
+        pass
+
+    def wsAddWidget(self, widget):
+        pass
+
+    async def onTabCloseRequest(self, idx):
+        pass
+
+    def wsSwitch(self, soundNotify=False):
+        self.stack.setCurrentIndex(self.workspaceIdx())
+
+    def wsTagRulesMatchesHashmark(self, hashmark):
+        return False
+
+
+class DefaultStatusWidget(QWidget):
+    pass
+
+
+class WorkspaceStatus(BaseWorkspace):
+    def setupWorkspace(self):
+        self.pile = QStackedWidget(self)
+        self.wLayout.addWidget(self.pile)
+        self.dlgs = weakref.WeakValueDictionary()
+
+        self.pile.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.push(DefaultStatusWidget(), 'default')
+
+    def push(self, widget, name):
+        idx = self.pile.addWidget(widget)
+        self.pile.setCurrentIndex(idx)
+        self.dlgs[name] = widget
+        return idx, widget
+
+    def clear(self, name):
+        if name in self.dlgs:
+            w = self.dlgs[name]
+            idx = self.pile.indexOf(w)
+            if idx:
+                self.pile.removeWidget(w)
+
+    def pushProgress(self, name):
+        return self.push(DefaultProgressDialog(), name)
 
 
 class TabbedWorkspace(BaseWorkspace):
@@ -189,21 +275,12 @@ class TabbedWorkspace(BaseWorkspace):
         self.wsActions = {}
 
         self.app = QApplication.instance()
-        self.stack = stack
-        self.wLayout = QVBoxLayout(self)
-        self.setLayout(self.wLayout)
 
         self.toolBarCtrl = QToolBar()
         self.toolBarActions = QToolBar()
         self.toolBarActions.setObjectName('wsActionsToolBar')
 
         self.wsIcon = icon if icon else getIcon('galacteek.png')
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *a):
-        pass
 
     def wsToolTip(self):
         return self.wsDescription

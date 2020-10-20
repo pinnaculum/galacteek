@@ -549,10 +549,13 @@ class CentralStack(QStackedWidget):
         if not workspace.wsAttached:
             self.addWidget(workspace)
             workspace.wsAttached = True
-            self.toolBarWs.add(
-                self.wsSwitchButton(workspace),
-                dst=workspace.wsSection
-            )
+
+            if isinstance(workspace, TabbedWorkspace):
+                self.toolBarWs.add(
+                    self.wsSwitchButton(workspace),
+                    dst=workspace.wsSection
+                )
+
             workspace.setupWorkspace()
 
     def addWorkspace(self, workspace, section='default', dormant=False):
@@ -976,6 +979,7 @@ class MainWindow(QMainWindow):
 
         self.stack = CentralStack(self, self.toolbarWs)
 
+        self.wspaceStatus = WorkspaceStatus(self.stack, 'status')
         self.wspacePeers = WorkspacePeers(self.stack)
         self.wspaceFs = WorkspaceFiles(self.stack)
         self.wspaceSearch = WorkspaceSearch(self.stack)
@@ -1112,6 +1116,7 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).keyPressEvent(event)
 
     def setupWorkspaces(self):
+        self.stack.addWorkspace(self.wspaceStatus)
         self.stack.addWorkspace(self.wspaceFs)
         self.stack.addWorkspace(
             self.wspaceEarth, section='planets')
@@ -1255,14 +1260,14 @@ class MainWindow(QMainWindow):
         await self.hashmarkMgrButton.updateIcons()
         await self.qaToolbar.init()
 
-        with self.stack.workspaceCtx(WS_FILES, show=False) as ws:
-            await ws.seedsSetup()
-
         with self.stack.workspaceCtx(WS_PEERS, show=False) as ws:
             await ws.chatJoinDefault()
 
         with self.stack.workspaceCtx('@Earth', show=False) as ws:
             await ws.loadDapps()
+
+        with self.stack.workspaceCtx(WS_FILES, show=True) as ws:
+            await ws.seedsSetup()
 
         self.enableButtons()
 

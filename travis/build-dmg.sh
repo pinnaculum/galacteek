@@ -84,16 +84,19 @@ cp $HOME/bin/fs-repo-migrations galacteek.app/Contents/Resources/bin
 
 # Install libmagic (disabled for now, python-magic finds the library
 # but raises an exception, still something to change here)
-# brew install libmagic
-# cp -av /usr/local/Cellar/libmagic/*/lib/* galacteek.app/Contents/Resources/lib
+
+brew install libmagic
+cp -av /usr/local/Cellar/libmagic/*/lib/*.dylib galacteek.app/Contents/Resources/lib
 
 brew update
 
 brew unlink python@2
 
-# zbar install
+# zbar install. Copy depencies (libjpeg)
 brew install zbar
 cp -av /usr/local/Cellar/zbar/*/lib/*.dylib galacteek.app/Contents/Resources/lib
+cp -av /usr/local/Cellar/jpeg/*/lib/*.dylib galacteek.app/Contents/Resources/lib
+cp -av /usr/local/Cellar/libpng/*/lib/*.dylib galacteek.app/Contents/Resources/lib
 
 # create entry script for galacteek
 cat > galacteek.app/Contents/MacOS/galacteek <<\EAT

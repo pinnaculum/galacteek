@@ -18,6 +18,7 @@ from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtWidgets import QCheckBox
 from PyQt5.QtWidgets import QSpinBox
 from PyQt5.QtWidgets import QTreeWidgetItem
+from PyQt5.QtWidgets import QWidget
 
 from PyQt5.QtCore import QSize
 from PyQt5.QtCore import QFile
@@ -68,6 +69,8 @@ from .widgets import HorizontalLine
 from .widgets import IconSelector
 from .widgets import PlanetSelector
 from .widgets import LabelWithURLOpener
+from .widgets import AnimatedLabel
+from .clips import RotatingCubeClipSimple
 
 from .i18n import iTitle
 from .i18n import iDoNotPin
@@ -1344,10 +1347,32 @@ class CountDownDialog(QDialog):
             self.accept()
 
 
-class IPFSDaemonInitDialog(QDialog):
+class DefaultProgressDialog(QWidget):
     def __init__(self, parent=None):
+        super().__init__(parent)
+        self.vl = QVBoxLayout(self)
+        self.cube = AnimatedLabel(RotatingCubeClipSimple())
+        self.status = QLabel()
+        self.status.setObjectName('statusProgressLabel')
+        self.setLayout(self.vl)
+        self.vl.addWidget(self.cube, 0, Qt.AlignCenter)
+        self.vl.addWidget(self.status, 0, Qt.AlignCenter)
+
+    def spin(self):
+        self.cube.startClip()
+
+    def stop(self):
+        self.cube.stopClip()
+
+    def log(self, text):
+        self.status.setText(text)
+
+
+class IPFSDaemonInitDialog(QDialog):
+    def __init__(self, ipfsd, failedReason=None, parent=None):
         super().__init__(parent, Qt.WindowStaysOnTopHint)
 
+        self.ipfsd = ipfsd
         self.app = QApplication.instance()
         self.countdown = 7
 
@@ -1358,12 +1383,21 @@ class IPFSDaemonInitDialog(QDialog):
         self.ui = ui_ipfsdaemoninitdialog.Ui_IPFSDaemonInitDialog()
         self.ui.setupUi(self)
 
+        if failedReason:
+            self.ui.errorStatus.setText(failedReason)
+
         self.ui.okButton.clicked.connect(self.accept)
         self.ui.dataStore.currentIndexChanged.connect(self.onDataStoreChanged)
         self.ui.ipfsIconLabel.setPixmap(
             self.ui.ipfsIconLabel.pixmap().scaledToWidth(64))
 
         self.preloadCfg()
+
+    def progressDialog(self):
+        return DefaultProgressDialog()
+
+    def configure(self):
+        self.ui.stack.setCurrentIndex(0)
 
     def preloadCfg(self):
         sManager = self.app.settingsMgr
