@@ -4,6 +4,8 @@ import functools
 import re
 import binascii
 import struct
+import platform
+import os
 
 import aioipfs
 
@@ -11,6 +13,9 @@ from galacteek import log
 from galacteek.ipfs import ipfsOpFn
 from galacteek.ipfs.ipfsops import APIErrorDecoder
 from galacteek.core.asynclib import asyncReadFile
+
+
+iMagic = None
 
 
 try:
@@ -170,6 +175,24 @@ mimeTypeDagUnknown = MIMEType('ipfs/dag-unknown')
 mimeTypeWasm = MIMEType('application/wasm')
 
 
+def magicInstance():
+    global iMagic
+
+    if iMagic is None:
+        pl = platform.system()
+
+        if pl == 'Linux':
+            iMagic = magic.Magic(mime=True)
+        elif pl == 'Darwin':
+            dbPath = os.environ.get('GALACTEEK_MAGIC_DBPATH')
+
+            if dbPath:
+                log.info(f'Using magic DB from path: {dbPath}')
+                iMagic = magic.Magic(mime=True, magic_file=dbPath)
+
+    return iMagic
+
+
 def mimeTypeProcess(mTypeText, buff, info=None):
     if mTypeText == 'text/xml':
         # If it's an XML, check if it's an Atom feed from the buffer
@@ -205,10 +228,13 @@ async def detectMimeTypeFromBuffer(buff):
         # Use libmagic
         # Run it in an asyncio executor
         loop = asyncio.get_event_loop()
+
         try:
+            m = magicInstance()
             mime = await loop.run_in_executor(
-                None, functools.partial(magic.from_buffer, buff, mime=True))
-        except Exception:
+                None, functools.partial(m.from_buffer, buff))
+        except Exception as err:
+            log.debug(f'Error running magic: {err}')
             return None
         else:
             if isinstance(mime, str):
