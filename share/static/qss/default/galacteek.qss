@@ -248,6 +248,13 @@ QLabel#ipfsStatusLabel {
     font-weight: bold;
 }
 
+QLabel#statusProgressLabel {
+    font: 14pt "Inter UI";
+    font-weight: bold;
+}
+
+
+
 QLabel#lastLogLabel {
     font: 10pt "Montserrat";
     color: black;

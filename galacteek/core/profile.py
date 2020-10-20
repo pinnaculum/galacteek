@@ -721,13 +721,13 @@ class UserProfile(QObject):
     def setFilesModel(self, model):
         self.filesModel = model
 
-    @ipfsOp
     async def init(self, ipfsop):
         """
         Initialize the profile's filesystem
         """
 
         self.userLogInfo('Initializing filesystem')
+        yield 'Initializing filesystem'
 
         await ipfsop.filesMkdir(self.root)
 
@@ -737,6 +737,7 @@ class UserProfile(QObject):
         self.filesModel = createMFSModel()
         self.filesModel.setupItemsFromProfile(self)
 
+        yield 'Generating IPNS keys'
         key = await ipfsop.keyFind(self.keyRoot)
         if key is not None:
             self.keyRootId = key.get('Id', None)
@@ -747,6 +748,7 @@ class UserProfile(QObject):
 
         self.debug('IPNS key({0}): {1}'.format(self.keyRoot, self.keyRootId))
 
+        yield 'Initializing crypto'
         self.userLogInfo('Initializing crypto')
 
         if not await self.cryptoInit():
@@ -757,7 +759,8 @@ class UserProfile(QObject):
             self.userLogInfo('No DAG API! ..')
             raise ProfileError('No DAG API')
 
-        self.userLogInfo('Loading DAG ..')
+        yield 'Loading EDAGs ..'
+        self.userLogInfo('Loading EDAGs ..')
         self._dagUser = UserDAG(self.pathUserDagMeta, loop=self.ctx.loop)
 
         self._dagChatChannels = ChannelsDAG(

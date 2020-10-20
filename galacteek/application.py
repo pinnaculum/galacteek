@@ -102,6 +102,7 @@ from galacteek.ui import mainui
 from galacteek.ui import downloads
 from galacteek.ui import peers
 from galacteek.ui import history
+from galacteek.ui.dwebspace import *
 from galacteek.ui.resource import IPFSResourceOpener
 from galacteek.ui.style import GalacteekStyle
 
@@ -965,14 +966,12 @@ class GalacteekApplication(QApplication):
         setDefaultSettings(self)
         self.settingsMgr.sync()
 
-    async def ipfsDaemonConfigDialog(self):
-        dlg = IPFSDaemonInitDialog()
+    async def ipfsDaemonInitDialog(self, dlg):
         await runDialogAsync(dlg)
         return dlg.options()
 
-    async def startIpfsDaemon(self, goIpfsPath='ipfs', migrateRepo=False):
-        if self.ipfsd is not None:  # we only support one daemon for now
-            return
+    async def startIpfsDaemon(self, goIpfsPath='ipfs', migrateRepo=False,
+                              failedReason=None):
 
         pubsubEnabled = True  # mandatory now ..
         corsEnabled = self.settingsMgr.isTrue(CFG_SECTION_IPFSD,
@@ -987,13 +986,58 @@ class GalacteekApplication(QApplication):
         daemonProfiles = []
         dataStore = None
 
-        if not os.path.exists(self.ipfsDataLocation):
-            cfg = await self.ipfsDaemonConfigDialog()
+        if self.ipfsd is None:
+            # TODO: FFS rewrite the constructor
+            self._ipfsd = asyncipfsd.AsyncIPFSDaemon(
+                self.ipfsDataLocation, goIpfsPath=goIpfsPath,
+                statusPath=self._ipfsdStatusLocation,
+                apiport=sManager.getInt(
+                    section, CFG_KEY_APIPORT),
+                swarmport=sManager.getInt(
+                    section, CFG_KEY_SWARMPORT),
+                swarmportWs=sManager.getInt(section, CFG_KEY_SWARMPORT_WS),
+                swarmportQuic=sManager.getInt(section, CFG_KEY_SWARMPORT_QUIC),
+                swarmProtos=sManager.swarmProtosList,
+                gatewayport=sManager.getInt(section, CFG_KEY_HTTPGWPORT),
+                swarmLowWater=sManager.getInt(section, CFG_KEY_SWARMLOWWATER),
+                swarmHighWater=sManager.getInt(
+                    section, CFG_KEY_SWARMHIGHWATER),
+                storageMax=sManager.getInt(section, CFG_KEY_STORAGEMAX),
+                gwWritable=sManager.isTrue(section, CFG_KEY_HTTPGWWRITABLE),
+                routingMode=sManager.getSetting(
+                    section, CFG_KEY_ROUTINGMODE),
+                pubsubRouter=sManager.getSetting(
+                    section, CFG_KEY_PUBSUB_ROUTER),
+                namesysPubsub=sManager.isTrue(
+                    section, CFG_KEY_NAMESYS_PUBSUB),
+                pubsubSigning=sManager.isTrue(
+                    section, CFG_KEY_PUBSUB_USESIGNING),
+                fileStore=sManager.isTrue(section, CFG_KEY_FILESTORE),
+                nice=sManager.getInt(section, CFG_KEY_NICE),
+                detached=sManager.isTrue(section, CFG_KEY_IPFSD_DETACHED),
+                pubsubEnable=pubsubEnabled, corsEnable=corsEnabled,
+                migrateRepo=migrateRepo,
+                debug=self.cmdArgs.goipfsdebug,
+                offline=self.cmdArgs.offline,
+                profiles=daemonProfiles,
+                dataStore=dataStore,
+                loop=self.loop)
+
+        initDialog = IPFSDaemonInitDialog(
+            self.ipfsd, failedReason=failedReason)
+
+        if not self.ipfsd.repoExists() or failedReason:
+            cfg = await self.ipfsDaemonInitDialog(initDialog)
 
             try:
-                dataStore = cfg['dataStore']
-                daemonProfiles = cfg['profiles']
+                self.ipfsd.dataStore = cfg['dataStore']
+                self.ipfsd.profiles = cfg['profiles']
+                self.ipfsd.apiport = cfg['apiPort']
+                self.ipfsd.swarmport = cfg['swarmPort']
+                self.ipfsd.swarmportQuic = cfg['swarmPort']
+                self.ipfsd.gatewayport = cfg['gatewayPort']
 
+                # Write the settings
                 sManager.setCommaJoined(
                     section, CFG_KEY_IPFSD_PROFILES,
                     daemonProfiles
@@ -1006,42 +1050,25 @@ class GalacteekApplication(QApplication):
                     section, CFG_KEY_SWARMPORT,
                     cfg['swarmPort']
                 )
+                sManager.setSetting(
+                    section, CFG_KEY_SWARMPORT_QUIC,
+                    cfg['swarmPort']
+                )
+                sManager.setSetting(
+                    section, CFG_KEY_HTTPGWPORT,
+                    cfg['gatewayPort']
+                )
             except Exception:
                 dataStore = None
                 daemonProfiles = []
 
-        self._ipfsd = asyncipfsd.AsyncIPFSDaemon(
-            self.ipfsDataLocation, goIpfsPath=goIpfsPath,
-            statusPath=self._ipfsdStatusLocation,
-            apiport=sManager.getInt(section, CFG_KEY_APIPORT),
-            swarmport=sManager.getInt(section, CFG_KEY_SWARMPORT),
-            swarmportWs=sManager.getInt(section, CFG_KEY_SWARMPORT_WS),
-            swarmportQuic=sManager.getInt(section, CFG_KEY_SWARMPORT_QUIC),
-            swarmProtos=sManager.swarmProtosList,
-            gatewayport=sManager.getInt(section, CFG_KEY_HTTPGWPORT),
-            swarmLowWater=sManager.getInt(section, CFG_KEY_SWARMLOWWATER),
-            swarmHighWater=sManager.getInt(section, CFG_KEY_SWARMHIGHWATER),
-            storageMax=sManager.getInt(section, CFG_KEY_STORAGEMAX),
-            gwWritable=sManager.isTrue(section, CFG_KEY_HTTPGWWRITABLE),
-            routingMode=sManager.getSetting(section, CFG_KEY_ROUTINGMODE),
-            pubsubRouter=sManager.getSetting(section, CFG_KEY_PUBSUB_ROUTER),
-            namesysPubsub=sManager.isTrue(section, CFG_KEY_NAMESYS_PUBSUB),
-            pubsubSigning=sManager.isTrue(section, CFG_KEY_PUBSUB_USESIGNING),
-            fileStore=sManager.isTrue(section, CFG_KEY_FILESTORE),
-            nice=sManager.getInt(section, CFG_KEY_NICE),
-            detached=sManager.isTrue(section, CFG_KEY_IPFSD_DETACHED),
-            pubsubEnable=pubsubEnabled, corsEnable=corsEnabled,
-            migrateRepo=migrateRepo,
-            debug=self.cmdArgs.goipfsdebug,
-            offline=self.cmdArgs.offline,
-            profiles=daemonProfiles,
-            dataStore=dataStore,
-            loop=self.loop)
-
-        await self.scheduler.spawn(self.startIpfsdTask(self.ipfsd))
+        await self.scheduler.spawn(
+            self.startIpfsdTask(self.ipfsd, initDialog))
 
     @ipfsOp
     async def setupProfileAndRepo(self, ipfsop):
+        idx, ws = self.mainWindow.stack.workspaceByName(WS_STATUS)
+
         await ipfsop.ctx.createRootEntry()
 
         await self.ipfsCtx.setup(pubsubEnable=True)
@@ -1049,15 +1076,49 @@ class GalacteekApplication(QApplication):
         defaultExists = await ipfsop.ctx.defaultProfileExists()
 
         if not defaultExists:
-            dlg = UserProfileInitDialog()
-            await runDialogAsync(dlg)
+            for att in range(0, 8):
+                dlg = UserProfileInitDialog()
+                await runDialogAsync(dlg)
 
-            await ipfsop.ctx.profileNew(
-                UserProfile.DEFAULT_PROFILE_NAME,
-                initOptions=dlg.options()
-            )
+                idx, pDialog = ws.pushProgress('profile')
+                pDialog.spin()
+                pDialog.log('Creating profile and DID ..')
+
+                try:
+                    async for msg in ipfsop.ctx.profileNew(
+                        ipfsop,
+                        UserProfile.DEFAULT_PROFILE_NAME,
+                        initOptions=dlg.options()
+                    ):
+                        pDialog.log(msg)
+                except Exception as err:
+                    pDialog.log(f'Error: {err}')
+                    await ipfsop.sleep(5)
+                    continue
+                else:
+                    break
+
+            pDialog.stop()
         else:
-            await self.ipfsCtx.profileLoad(UserProfile.DEFAULT_PROFILE_NAME)
+            idx, pDialog = ws.pushProgress('profile')
+            pDialog.spin()
+            pDialog.log('Loading profile ..')
+
+            try:
+                async for msg in self.ipfsCtx.profileLoad(
+                        ipfsop,
+                        UserProfile.DEFAULT_PROFILE_NAME):
+                    pDialog.log(msg)
+            except Exception as err:
+                pDialog.log(f'Error: {err}')
+                return
+
+            pDialog.stop()
+
+        pDialog.log('Ready to roll')
+        await ipfsop.sleep(0.5)
+
+        ws.clear('profile')
 
         try:
             await self.ipfsCtx.start()
@@ -1068,7 +1129,14 @@ class GalacteekApplication(QApplication):
         else:
             await self.ipfsCtx.ipfsConnectionReady.emit()
 
-    async def startIpfsdTask(self, ipfsd):
+    async def startIpfsdTask(self, ipfsd, initDialog):
+        pDialog = initDialog.progressDialog()
+        ipfsd.addMessageCallback(pDialog.log)
+
+        idx, ws = self.mainWindow.stack.workspaceByName(WS_STATUS)
+        ws.push(pDialog, 'ipfsd-start')
+        pDialog.spin()
+
         if ipfsd.detached:
             running, client = await ipfsd.loadStatus()
             if running and client:
@@ -1080,6 +1148,7 @@ class GalacteekApplication(QApplication):
                 await self.scheduler.spawn(self.ipfsd.watchProcess())
                 return
 
+        pDialog.log('Starting daemon ...')
         started = await ipfsd.start()
 
         if started is False:
@@ -1092,8 +1161,8 @@ class GalacteekApplication(QApplication):
         # Use asyncio.wait_for to wait for the proto.eventStarted
         # event to be fired.
 
-        for attempt in range(1, 32):
-            logUser.info(iIpfsDaemonWaiting(attempt))
+        for attempt in range(1, 24):
+            pDialog.log(iIpfsDaemonWaiting(attempt))
 
             with async_timeout.timeout(1):
                 try:
@@ -1106,10 +1175,15 @@ class GalacteekApplication(QApplication):
                               'daemon to start (attempt: {0})'.format(attempt))
                     continue
                 else:
+                    pDialog.log('IPFS daemon is ready!')
+
                     # Event was set, good to go
                     logUser.info(iIpfsDaemonReady())
                     running = True
                     break
+
+        ipfsd.rmMessageCallback(pDialog.log)
+        ws.clear('ipfsd-start')
 
         if running is True:
             await self.updateIpfsClient()
@@ -1117,6 +1191,9 @@ class GalacteekApplication(QApplication):
             await self.scheduler.spawn(self.ipfsd.watchProcess())
         else:
             logUser.info(iIpfsDaemonInitProblem())
+
+            await self.startIpfsDaemon(
+                failedReason=iIpfsDaemonInitProblem())
 
     def initEthereum(self):
         try:

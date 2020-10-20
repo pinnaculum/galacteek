@@ -1079,7 +1079,6 @@ class IPFSContext(QObject):
         if not hasGalacteek:
             await ipfsop.client.files.mkdir(GFILES_ROOT_PATH, parents=True)
 
-    @ipfsOp
     async def profileLoad(self, ipfsop, pName):
         if await self.profileExists(pName):
             profile = UserProfile(self, pName, os.path.join(
@@ -1091,15 +1090,15 @@ class IPFSContext(QObject):
                 self.currentProfile = profile
 
             try:
-                await profile.init()
+                async for msg in profile.init(ipfsop):
+                    yield msg
             except Exception as e:
                 log.info('Could not initialize profile: {}'.format(
                     str(e)), exc_info=True)
-                return None
+                raise e
 
             self.profileEmitAvail()
             self.profileChange(profile)
-            return profile
 
     def profileGet(self, name):
         return self.profiles.get(name, None)
@@ -1108,7 +1107,8 @@ class IPFSContext(QObject):
         self.loop.call_soon(self.profilesAvailable.emit,
                             list(self.profiles.keys()))
 
-    async def profileNew(self, pName, initOptions=None, emitavail=False):
+    async def profileNew(self, ipfsop, pName,
+                         initOptions=None, emitavail=False):
         profile = UserProfile(self, pName, os.path.join(
             GFILES_ROOT_PATH, 'profile.{}'.format(pName)),
             initOptions=initOptions
@@ -1118,16 +1118,16 @@ class IPFSContext(QObject):
             self.currentProfile = profile
 
         try:
-            await profile.init()
+            async for msg in profile.init(ipfsop):
+                yield msg
         except Exception as e:
             log.info('Could not initialize profile: {}'.format(
                 str(e)), exc_info=True)
-            return None
+            raise e
 
         self.profiles[pName] = profile
         if emitavail is True:
             self.profileEmitAvail()
-        return profile
 
     def profileChange(self, pName):
         if pName in self.profiles:
