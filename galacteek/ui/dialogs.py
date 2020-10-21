@@ -1,13 +1,16 @@
 import aioipfs
 import os.path
 
+from PyQt5.QtWidgets import QSizePolicy
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QComboBox
 from PyQt5.QtWidgets import QInputDialog
 from PyQt5.QtWidgets import QDialogButtonBox
 from PyQt5.QtWidgets import QLabel
+from PyQt5.QtWidgets import QSpacerItem
 from PyQt5.QtWidgets import QLineEdit
+from PyQt5.QtWidgets import QProgressBar
 from PyQt5.QtWidgets import QHBoxLayout
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWidgets import QGridLayout
@@ -71,6 +74,7 @@ from .widgets import PlanetSelector
 from .widgets import LabelWithURLOpener
 from .widgets import AnimatedLabel
 from .clips import RotatingCubeClipSimple
+from .colors import *
 
 from .i18n import iTitle
 from .i18n import iDoNotPin
@@ -1352,11 +1356,19 @@ class DefaultProgressDialog(QWidget):
         super().__init__(parent)
         self.vl = QVBoxLayout(self)
         self.cube = AnimatedLabel(RotatingCubeClipSimple())
+        self.pBar = QProgressBar()
         self.status = QLabel()
         self.status.setObjectName('statusProgressLabel')
         self.setLayout(self.vl)
+        self.vl.addItem(
+            QSpacerItem(10, 50, QSizePolicy.Expanding, QSizePolicy.Expanding))
         self.vl.addWidget(self.cube, 0, Qt.AlignCenter)
         self.vl.addWidget(self.status, 0, Qt.AlignCenter)
+        self.vl.addWidget(self.pBar, 0, Qt.AlignCenter)
+        self.vl.addItem(
+            QSpacerItem(10, 50, QSizePolicy.Expanding, QSizePolicy.Expanding))
+
+        self.cube.clip.setScaledSize(QSize(128, 128))
 
     def spin(self):
         self.cube.startClip()
@@ -1366,6 +1378,20 @@ class DefaultProgressDialog(QWidget):
 
     def log(self, text):
         self.status.setText(text)
+
+    def progress(self, p: int):
+        self.pBar.setValue(p)
+
+    def paintEvent(self, event):
+        from PyQt5.QtGui import QPainter, QBrush, QPen
+
+        center = self.rect().center()
+        w, h = 420, 420  # it's a coincidence
+
+        painter = QPainter(self)
+        painter.setBrush(QBrush(brownColor1, Qt.SolidPattern))
+        painter.setPen(QPen(ipfsColor1, 2, Qt.SolidLine))
+        painter.drawEllipse(center.x() - w / 2, center.y() - h / 2, w, h)
 
 
 class IPFSDaemonInitDialog(QDialog):
@@ -1388,8 +1414,6 @@ class IPFSDaemonInitDialog(QDialog):
 
         self.ui.okButton.clicked.connect(self.accept)
         self.ui.dataStore.currentIndexChanged.connect(self.onDataStoreChanged)
-        self.ui.ipfsIconLabel.setPixmap(
-            self.ui.ipfsIconLabel.pixmap().scaledToWidth(64))
 
         self.preloadCfg()
 
@@ -1408,6 +1432,8 @@ class IPFSDaemonInitDialog(QDialog):
                 sManager.getInt(CFG_SECTION_IPFSD, CFG_KEY_SWARMPORT))
             self.ui.gatewayPort.setValue(
                 sManager.getInt(CFG_SECTION_IPFSD, CFG_KEY_HTTPGWPORT))
+            self.ui.keepDaemonRunning.setChecked(
+                sManager.isTrue(CFG_SECTION_IPFSD, CFG_KEY_IPFSD_DETACHED))
         except Exception:
             pass
 
@@ -1453,12 +1479,13 @@ class IPFSDaemonInitDialog(QDialog):
             'swarmPort': self.ui.swarmPort.value(),
             'gatewayPort': self.ui.gatewayPort.value(),
             'apiPort': self.ui.apiPort.value(),
+            'keepDaemonRunning': self.ui.keepDaemonRunning.isChecked(),
             'profiles': self.profiles()
         }
 
 
 class UserProfileInitDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, showCancel=False, parent=None):
         super().__init__(parent=parent)
 
         self.app = QApplication.instance()
@@ -1483,8 +1510,12 @@ class UserProfileInitDialog(QDialog):
             self.onPassphraseVerifEdit)
 
         self.ui.okButton.clicked.connect(self.accept)
+        self.ui.cancelButton.clicked.connect(self.reject)
         self.ui.generateRandom.clicked.connect(self.onGenerateRandomUser)
         self.validPass = False
+
+        if showCancel is False:
+            self.ui.cancelButton.hide()
 
     def onUsePassphrase(self, state):
         enable = (state == Qt.Checked)
@@ -1540,6 +1571,9 @@ class UserProfileInitDialog(QDialog):
 
         self.done(1)
 
+    def reject(self):
+        self.done(0)
+
     def ipidPassphrase(self):
         if self.ui.useIpidPassphrase.checkState() == Qt.Checked and \
                 self.validPass:
@@ -1550,8 +1584,7 @@ class UserProfileInitDialog(QDialog):
             'username': self.ui.username.text(),
             'vPlanet': self.planetSel.planet(),
             'ipidRsaKeySize': int(self.ui.ipidRsaKeySize.currentText()),
-            'ipidRsaPassphrase': self.ipidPassphrase(),
-            'profileRsaKeySize': int(self.ui.profileRsaKeySize.currentText()),
+            'ipidRsaPassphrase': self.ipidPassphrase()
         }
 
 

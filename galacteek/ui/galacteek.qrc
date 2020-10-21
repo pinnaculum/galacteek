@@ -10,11 +10,13 @@
     <file>../../share/icons/blocks-cluster.png</file>
     <file>../../share/icons/helmet.png</file>
     <file>../../share/icons/ipservice.png</file>
+    <file>../../share/icons/logs.png</file>
     <file>../../share/icons/planets/mercury.png</file>
     <file>../../share/icons/planets/jupiter.png</file>
     <file>../../share/icons/planets/earth.png</file>
     <file>../../share/icons/planets/mars.png</file>
     <file>../../share/icons/planets/neptune.png</file>
+    <file>../../share/icons/planets/magrathea.png</file>
     <file>../../share/icons/galacteek-incandescent.png</file>
     <file>../../share/clips/funky-cube-1.gif</file>
     <file>../../share/clips/rotating-cube-redflash-140-6fps.gif</file>
@@ -212,5 +214,7 @@
     <file>../../share/translations/galacteek_en.ts</file>
     <file>../../share/translations/galacteek_en.qm</file>
     <file>../../share/static/qss/default/galacteek.qss</file>
+    <file>../../share/static/qss/default/galacteek_linux.qss</file>
+    <file>../../share/static/qss/default/galacteek_darwin.qss</file>
   </qresource>
 </RCC>

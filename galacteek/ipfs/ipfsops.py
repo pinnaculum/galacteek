@@ -1984,7 +1984,7 @@ class GalacteekOperator(IPFSOperator):
 
                     diff = self.client.loop.time() - startt
                     if resp.status != HTTPOk.status_code:
-                        raise Exception('DID Ping error')
+                        raise Exception(f'DID Ping error for {did}')
 
                     payload = await resp.json()
                     assert isinstance(payload['didpong'], dict)

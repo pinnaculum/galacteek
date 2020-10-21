@@ -18,8 +18,13 @@ class TestIPFSD:
         def cbstarted(f):
             event_loop.create_task(tests(ipfsop))
 
-        started = await ipfsdaemon.start()
-        assert started
+        started = False
+
+        async for pct, msg in ipfsdaemon.start():
+            if pct == 100:
+                started = True
+
+        assert started is True
 
         await ipfsdaemon.proto.eventStarted.wait()
         await tests(ipfsop)

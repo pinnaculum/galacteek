@@ -18,6 +18,10 @@ from PyQt5.QtCore import QObject
 from PyQt5.QtCore import QDir
 from PyQt5.QtCore import QFile
 from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import QBuffer
+from PyQt5.QtCore import QByteArray
+from PyQt5.QtCore import QIODevice
+
 
 from PyQt5.QtWidgets import QStyle
 from PyQt5.QtWidgets import QMessageBox
@@ -618,3 +622,20 @@ def objectDiffSummaryShort(changes):
     markup += '</ul>'
 
     return markup
+
+
+def pixmapAsBase64Url(pixmap):
+    try:
+        data = QByteArray()
+        buffer = QBuffer(data)
+        buffer.open(QIODevice.WriteOnly)
+        pixmap.save(buffer, 'PNG')
+        buffer.close()
+
+        avatarUrl = 'data:image/png;base64, {}'.format(
+            bytes(buffer.data().toBase64()).decode()
+        )
+    except Exception:
+        return None
+    else:
+        return f'<img src="{avatarUrl}"></img>'

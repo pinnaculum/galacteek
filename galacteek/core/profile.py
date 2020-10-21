@@ -726,8 +726,7 @@ class UserProfile(QObject):
         Initialize the profile's filesystem
         """
 
-        self.userLogInfo('Initializing filesystem')
-        yield 'Initializing filesystem'
+        yield 10, 'Initializing filesystem'
 
         await ipfsop.filesMkdir(self.root)
 
@@ -737,7 +736,8 @@ class UserProfile(QObject):
         self.filesModel = createMFSModel()
         self.filesModel.setupItemsFromProfile(self)
 
-        yield 'Generating IPNS keys'
+        yield 20, 'Generating IPNS keys'
+
         key = await ipfsop.keyFind(self.keyRoot)
         if key is not None:
             self.keyRootId = key.get('Id', None)
@@ -748,8 +748,7 @@ class UserProfile(QObject):
 
         self.debug('IPNS key({0}): {1}'.format(self.keyRoot, self.keyRootId))
 
-        yield 'Initializing crypto'
-        self.userLogInfo('Initializing crypto')
+        yield 30, 'Initializing crypto'
 
         if not await self.cryptoInit():
             self.userLogInfo('Error while initializing crypto')
@@ -759,8 +758,7 @@ class UserProfile(QObject):
             self.userLogInfo('No DAG API! ..')
             raise ProfileError('No DAG API')
 
-        yield 'Loading EDAGs ..'
-        self.userLogInfo('Loading EDAGs ..')
+        yield 40, 'Initializing EDAGs ..'
         self._dagUser = UserDAG(self.pathUserDagMeta, loop=self.ctx.loop)
 
         self._dagChatChannels = ChannelsDAG(
@@ -781,6 +779,7 @@ class UserProfile(QObject):
             cipheredMeta=True
         )
 
+        yield 50, 'Loading EDAGs ..'
         ensure(self.dagUser.load())
         await self.dagUser.loaded
 
@@ -802,6 +801,7 @@ class UserProfile(QObject):
         self.dagUser.dagCidChanged.connect(self.onDagChange)
         ensure(self.publishDag(allowOffline=True, reschedule=True))
 
+        yield 60, 'Loading user blog ..'
         self.userWebsite = UserWebsite(
             self.dagUser,
             self,
@@ -815,11 +815,12 @@ class UserProfile(QObject):
         ensure(self.update())
 
         self._initialized = True
-        self.userLogInfo('Initialization complete')
 
+        yield 70, 'Importing manual ..'
         ensure(self.ctx.app.manuals.importManuals(self))
 
         self._initOptions = {}
+        yield 100, 'Profile ready'
 
     @ipfsOp
     async def cryptoInit(self, op):

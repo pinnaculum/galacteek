@@ -382,20 +382,30 @@ class GalacteekApplication(QApplication):
     def orbitDataLocation(self):
         return self._orbitDataLocation
 
-    def applyStyle(self, theme='default'):
-        qssPath = ":/share/static/qss/{theme}/galacteek.qss".format(
-            theme=theme)
-        qssFile = QFile(qssPath)
-
+    def readQSSFile(self, path):
         try:
-            qssFile.open(QFile.ReadOnly)
-            styleSheetBa = qssFile.readAll()
-            styleSheetStr = styleSheetBa.data().decode('utf-8')
-            self.setStyleSheet(styleSheetStr)
+            qFile = QFile(path)
+            qFile.open(QFile.ReadOnly)
+            styleSheetBa = qFile.readAll()
+            return styleSheetBa.data().decode('utf-8')
         except BaseException:
             # that would probably occur if the QSS is not
             # in the resources file..  set some default stylesheet here?
             pass
+
+    def applyStyle(self, theme='default'):
+        sysName = self.system.lower()
+        qssPath = f":/share/static/qss/{theme}/galacteek.qss"
+        qssPlatformPath = \
+            f":/share/static/qss/{theme}/galacteek_{sysName}.qss"
+
+        mainQss = self.readQSSFile(qssPath)
+        pQss = self.readQSSFile(qssPlatformPath)
+
+        if pQss:
+            self.setStyleSheet(mainQss + '\n' + pQss)
+        else:
+            self.setStyleSheet(mainQss)
 
         self.gStyle = GalacteekStyle()
         self.setStyle(self.gStyle)
@@ -1036,6 +1046,7 @@ class GalacteekApplication(QApplication):
                 self.ipfsd.swarmport = cfg['swarmPort']
                 self.ipfsd.swarmportQuic = cfg['swarmPort']
                 self.ipfsd.gatewayport = cfg['gatewayPort']
+                self.ipfsd.detached = cfg['keepDaemonRunning']
 
                 # Write the settings
                 sManager.setCommaJoined(
@@ -1058,6 +1069,10 @@ class GalacteekApplication(QApplication):
                     section, CFG_KEY_HTTPGWPORT,
                     cfg['gatewayPort']
                 )
+                sManager.setBoolFrom(
+                    section, CFG_KEY_IPFSD_DETACHED,
+                    cfg['keepDaemonRunning']
+                )
             except Exception:
                 dataStore = None
                 daemonProfiles = []
@@ -1076,21 +1091,27 @@ class GalacteekApplication(QApplication):
         defaultExists = await ipfsop.ctx.defaultProfileExists()
 
         if not defaultExists:
-            for att in range(0, 8):
+            while True:
                 dlg = UserProfileInitDialog()
                 await runDialogAsync(dlg)
+
+                if not dlg.result() == 1:
+                    await messageBoxAsync(
+                        'You need to create a profile')
+                    continue
 
                 idx, pDialog = ws.pushProgress('profile')
                 pDialog.spin()
                 pDialog.log('Creating profile and DID ..')
 
                 try:
-                    async for msg in ipfsop.ctx.profileNew(
+                    async for pct, msg in ipfsop.ctx.profileNew(
                         ipfsop,
                         UserProfile.DEFAULT_PROFILE_NAME,
                         initOptions=dlg.options()
                     ):
                         pDialog.log(msg)
+                        pDialog.progress(pct)
                 except Exception as err:
                     pDialog.log(f'Error: {err}')
                     await ipfsop.sleep(5)
@@ -1098,24 +1119,25 @@ class GalacteekApplication(QApplication):
                 else:
                     break
 
-            pDialog.stop()
+                pDialog.stop()
         else:
             idx, pDialog = ws.pushProgress('profile')
             pDialog.spin()
             pDialog.log('Loading profile ..')
 
             try:
-                async for msg in self.ipfsCtx.profileLoad(
+                async for pct, msg in self.ipfsCtx.profileLoad(
                         ipfsop,
                         UserProfile.DEFAULT_PROFILE_NAME):
                     pDialog.log(msg)
+                    pDialog.progress(pct)
             except Exception as err:
                 pDialog.log(f'Error: {err}')
                 return
 
             pDialog.stop()
+            pDialog.log('Ready to roll')
 
-        pDialog.log('Ready to roll')
         await ipfsop.sleep(0.5)
 
         ws.clear('profile')
@@ -1149,10 +1171,17 @@ class GalacteekApplication(QApplication):
                 return
 
         pDialog.log('Starting daemon ...')
-        started = await ipfsd.start()
 
-        if started is False:
-            return self.systemTrayMessage('IPFS', iIpfsDaemonProblem())
+        try:
+            async for pct, msg in ipfsd.start():
+                pDialog.log(msg)
+                pDialog.progress(pct)
+        except Exception as err:
+            pDialog.log(f'Error starting go-ipfs! {err}')
+            self.systemTrayMessage('IPFS', iIpfsDaemonProblem())
+
+            return await self.startIpfsDaemon(
+                failedReason=iIpfsDaemonInitProblem())
 
         running = False
 
@@ -1187,6 +1216,7 @@ class GalacteekApplication(QApplication):
 
         if running is True:
             await self.updateIpfsClient()
+            await self.ipfsd.writeStatus()
             await self.setupProfileAndRepo()
             await self.scheduler.spawn(self.ipfsd.watchProcess())
         else:

@@ -215,6 +215,9 @@ class PubChatTokensManager:
 
     async def reg(self, jwsCid, channel, secTopic, peerId, pubKeyCid,
                   **kw):
+        log.debug(f'PubChatTokensManager.reg({jwsCid}): channel {channel} '
+                  f'sectopic {secTopic} for peer {peerId}')
+
         token = await pubChatTokenNew(
             jwsCid, channel, secTopic, peerId, pubKeyCid=pubKeyCid, **kw)
 

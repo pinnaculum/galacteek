@@ -1098,7 +1098,7 @@ class IPFSContext(QObject):
                 raise e
 
             self.profileEmitAvail()
-            self.profileChange(profile)
+            self.profileChange(pName)
 
     def profileGet(self, name):
         return self.profiles.get(name, None)
@@ -1108,7 +1108,7 @@ class IPFSContext(QObject):
                             list(self.profiles.keys()))
 
     async def profileNew(self, ipfsop, pName,
-                         initOptions=None, emitavail=False):
+                         initOptions=None, emitavail=True):
         profile = UserProfile(self, pName, os.path.join(
             GFILES_ROOT_PATH, 'profile.{}'.format(pName)),
             initOptions=initOptions
@@ -1126,8 +1126,8 @@ class IPFSContext(QObject):
             raise e
 
         self.profiles[pName] = profile
-        if emitavail is True:
-            self.profileEmitAvail()
+        self.profileChange(pName)
+        self.profileEmitAvail()
 
     def profileChange(self, pName):
         if pName in self.profiles:

@@ -62,12 +62,14 @@ from galacteek import ensure
 from galacteek import partialEnsure
 from galacteek.core.asynclib import asyncify
 from galacteek.core import utcDatetime
+from galacteek.space import allPlanetsNames
 from galacteek.dweb.markdown import markitdown
 
 from galacteek import database
 from galacteek.database.models.core import Hashmark
 
 from .helpers import getIcon
+from .helpers import getPlanetIcon
 from .helpers import getMimeIcon
 from .helpers import getIconFromIpfs
 from .helpers import getImageFromIpfs
@@ -75,6 +77,7 @@ from .helpers import sizeFormat
 from .helpers import messageBox
 from .helpers import messageBoxAsync
 from .helpers import inputTextCustom
+from .helpers import pixmapAsBase64Url
 
 from .i18n import iCancel
 from .i18n import iUnknown
@@ -1595,28 +1598,56 @@ class AnimatedLabel(QLabel):
         super(AnimatedLabel, self).enterEvent(event)
 
 
-class PlanetSelector(QComboBox):
+class PlanetSelector(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.app = QApplication.instance()
-        planets = self.app.solarSystem.planetsNames
+        self.vl = QHBoxLayout()
+        self.setLayout(self.vl)
 
-        self.clear()
+        self.combo = QComboBox(self)
+        self.combo.currentTextChanged.connect(self.onPlanetChanged)
+        self.pLabel = QLabel(self)
+        self.vl.addWidget(self.combo)
+        self.vl.addWidget(self.pLabel)
+
+        self.app = QApplication.instance()
+        planets = allPlanetsNames()
+
+        self.combo.clear()
 
         for planet in planets:
-            icon = getIcon('planets/{}.png'.format(planet.lower()))
+            icon = getPlanetIcon('{}.png'.format(planet.lower()))
             if icon:
-                self.addItem(icon, planet)
+                self.combo.addItem(icon, planet)
             else:
-                self.addItem(planet)
+                self.combo.addItem(planet)
+
+    def onPlanetChanged(self, planet):
+        p = planet.lower()
+        pix = QPixmap.fromImage(
+            QImage(f':/share/icons/planets/{p}.png'))
+        if pix:
+            self.pLabel.setPixmap(pix.scaledToWidth(128))
+            self.pLabel.setToolTip(pixmapAsBase64Url(pix.scaledToWidth(256)))
 
     def setRandomPlanet(self):
         import random
 
         r = random.Random()
         idx = r.randint(0, self.count() - 1)
-        self.setCurrentIndex(idx)
+        self.combo.setCurrentIndex(idx)
 
     def planet(self):
-        return self.currentText()
+        return self.combo.currentText()
+
+
+class SpacingHWidget(QWidget):
+    def __init__(self, width=10, parent=None):
+        super().__init__(parent)
+
+        self.hl = QHBoxLayout()
+        self.setLayout(self.hl)
+
+        self.hl.addItem(
+            QSpacerItem(width, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))

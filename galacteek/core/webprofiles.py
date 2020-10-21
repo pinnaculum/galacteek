@@ -14,6 +14,7 @@ from galacteek.core.schemes import SCHEME_FS
 from galacteek.core.schemes import SCHEME_IPFS
 from galacteek.core.schemes import SCHEME_IPNS
 from galacteek.core.schemes import SCHEME_Q
+from galacteek.core.schemes import isIpfsUrl
 
 
 WP_NAME_MINIMAL = 'minimal'
@@ -32,19 +33,17 @@ class IPFSRequestInterceptor(QWebEngineUrlRequestInterceptor):
     def interceptRequest(self, info):
         url = info.requestUrl()
 
-        if url and url.isValid():
+        if url and url.isValid() and isIpfsUrl(url):
             log.debug('IPFS interceptor for URL: {}'.format(
                 url.toString()))
             path = url.path()
 
-            # Force some Content-type
+            # Force Content-type for JS modules
             if path and path.endswith('.js'):
                 info.setHttpHeader(
-                    'Content-Type'.encode(), 'text/javascript'.encode())
-
-            if path and path.endswith('.css'):
-                info.setHttpHeader(
-                    'Content-Type'.encode(), 'text/css'.encode())
+                    'Content-Type'.encode(),
+                    'text/javascript'.encode()
+                )
 
 
 class BaseProfile(QWebEngineProfile):
