@@ -24,6 +24,7 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtCore import QDateTime
 from PyQt5.QtCore import QSize
 from PyQt5.QtCore import QPoint
+from PyQt5.QtCore import QRect
 
 from PyQt5.Qt import QSizePolicy
 
@@ -82,6 +83,7 @@ from .widgets import HashmarkMgrButton
 from .widgets import HashmarksSearcher
 from .widgets import AnimatedLabel
 from .widgets import URLDragAndDropProcessor
+from .widgets import SpacingHWidget
 from .dialogs import *
 from ..appsettings import *
 from .i18n import *
@@ -190,8 +192,9 @@ class MainWindowLogHandler(Handler, StringFormatterHandlerMixin):
 
     modulesColorTable = {
         'galacteek.ui.resource': '#7f8491',
-        'galacteek.did.ipid': '#FA8A47',
-        'galacteek.core.profile': 'blue'
+        'galacteek.did.ipid': '#7f8491',
+        'galacteek.core.profile': 'blue',
+        'galacteek.ui.chat': 'blue'
     }
 
     def __init__(self, logsBrowser, application_name=None, address=None,
@@ -202,20 +205,31 @@ class MainWindowLogHandler(Handler, StringFormatterHandlerMixin):
         self.application_name = application_name
         self.window = window
         self.logsBrowser = logsBrowser
+        self.doc = self.logsBrowser.document()
 
     def emit(self, record):
-        fRecord = self.format(record)
-
         if record.level_name == 'INFO':
-            color = self.modulesColorTable.get(record.module, 'black')
-            self.window.statusMessage(
-                "<p style='color: {color}'>{msg}</p>\n".format(
-                    color=color, msg=fRecord))
+            color = self.modulesColorTable.get(record.module, None)
 
-        self.logsBrowser.append(fRecord)
+            if color:
+                self.window.statusMessage(
+                    f'''
+                    <div style="width: 450px">
+                      <p style="color: {color}">
+                        <b>{record.module}</b>
+                      </p>
+                      <p>{record.message}</p>
+                    </div>
+                    '''
+                )
+
+        self.logsBrowser.append(self.format(record))
 
         if not self.logsBrowser.isVisible():
             self.logsBrowser.moveCursor(QTextCursor.End)
+
+        if self.doc.lineCount() > 1024:
+            self.doc.clear()
 
 
 class IPFSDaemonStatusWidget(QWidget):
@@ -1018,7 +1032,7 @@ class MainWindow(QMainWindow):
         self.statusbar = self.statusBar()
         self.userLogsButton = QToolButton(self)
         self.userLogsButton.setToolTip('Logs')
-        self.userLogsButton.setIcon(getIcon('information.png'))
+        self.userLogsButton.setIcon(getIcon('logs.png'))
         self.userLogsButton.setCheckable(True)
         self.userLogsButton.toggled.connect(self.onShowUserLogs)
         self.logsPopupWindow.hidden.connect(
@@ -1043,6 +1057,7 @@ class MainWindow(QMainWindow):
         self.statusbar.addPermanentWidget(self.pinningStatusButton)
         self.statusbar.addPermanentWidget(self.pubsubStatusButton)
         self.statusbar.addPermanentWidget(self.userLogsButton)
+        self.statusbar.addPermanentWidget(SpacingHWidget(width=30))
 
         # Connection status timer
         self.timerStatus = QTimer(self)
@@ -1377,8 +1392,10 @@ class MainWindow(QMainWindow):
             btn.setEnabled(flag)
 
     def statusMessage(self, msg):
-        self.lastLogLabel.setText(msg)
-        self.lastLogLabel.setToolTip(msg)
+        self.userLogsButton.setToolTip(msg)
+        QToolTip.showText(
+            self.userLogsButton.mapToGlobal(QPoint(0, 0)), msg,
+            None, QRect(0, 0, 0, 0), 2400)
 
     def registerTab(self, tab, name, icon=None, current=True,
                     tooltip=None, workspace=None):

@@ -265,22 +265,23 @@ class AsyncIPFSDaemon(object):
         if not self.repoExists():
             self.message('Initializing IPFS repository: {repo}'.format(
                 repo=self.repopath))
+            yield 10, f'Initializing IPFS repository: {self.repopath}'
 
             if isinstance(self.dataStore, str):
-                self.message(
-                    f'Initializing repos with datastore: {self.dataStore}')
+                yield 20, f'Creating repos with datastore: {self.dataStore}'
                 await shell(f'ipfs init -p {self.dataStore}')
             else:
-                self.message('Initializing with default datastore')
+                yield 20, 'Creating repos with default datastore'
                 await shell('ipfs init')
 
-            self.message('Repository initialized')
+            yield 30, 'Repository initialized'
 
         apifile = os.path.join(self.repopath, 'api')
         if os.path.exists(apifile):
             os.unlink(apifile)
 
-        self.message('Configuring multiaddrs ..')
+        yield 40, 'Configuring multiaddrs ..'
+
         # API & gateway multiaddrs
         await self.ipfsConfig(
             'Addresses.API',
@@ -313,7 +314,7 @@ class AsyncIPFSDaemon(object):
         await self.ipfsConfigJson('Addresses.Swarm',
                                   json.dumps(swarmAddrs))
 
-        self.message('Configuring connection manager ..')
+        yield 50, 'Configuring connection manager ..'
 
         # Swarm connection manager parameters
         await self.ipfsConfigJson('Swarm.ConnMgr.LowWater',
@@ -323,7 +324,7 @@ class AsyncIPFSDaemon(object):
         await self.ipfsConfig('Swarm.ConnMgr.GracePeriod',
                               '60s')
 
-        self.message('Configuring pubsub/p2p ..')
+        yield 60, 'Configuring pubsub/p2p ..'
 
         await self.ipfsConfig('Routing.Type', self.routingMode)
 
@@ -388,7 +389,7 @@ class AsyncIPFSDaemon(object):
 
         pCreationFlags = 0
 
-        self.message('Starting subprocess ..')
+        yield 80, 'Starting subprocess ..'
 
         if self.detached:
             f = self.loop.subprocess_exec(
@@ -416,7 +417,8 @@ class AsyncIPFSDaemon(object):
         self._procPid = self.transport.get_pid()
         self.process = psutil.Process(self._procPid)
         self.setProcLimits(self.process, nice=self.nice)
-        return True
+
+        yield 100, 'go-ipfs started'
 
     async def profilesListApply(self, profiles):
         for profile in profiles:
@@ -528,8 +530,8 @@ class AsyncIPFSDaemon(object):
         except psutil.NoSuchProcess:
             self.message('Process is gone')
             return False, None
-        except Exception:
-            self.message('Error loading status')
+        except Exception as e:
+            self.message(f'Error loading status: {e}')
             return False, None
 
     async def ipfsConfig(self, param, value):

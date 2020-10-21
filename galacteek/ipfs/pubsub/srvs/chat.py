@@ -122,12 +122,14 @@ class PSChatService(JSONPubsubService):
                 )
 
                 if not payload:
+                    log.debug(f'Peer {sender}: invalid JWS payload')
                     await ipfsop.sleep()
                     continue
 
                 jwsT = verifyTokenPayload(payload)
 
                 if not jwsT:
+                    log.debug(f'Peer {sender}: invalid JWS payload')
                     await ipfsop.sleep()
                     continue
 
@@ -144,16 +146,27 @@ class PSChatService(JSONPubsubService):
                         pubKeyCid, encType=jwsT.encType,
                         did=jwsT.did)
                 else:
-                    # Check who's subscribed to the topic
-                    psPeers = await ipfsop.pubsubPeers(
-                        topic=psTopic, timeout=5)
+                    if 0:
+                        # Disabled for now ..
 
-                    # There should only be one peer subscribed
-                    if psPeers and len(psPeers) == 1:
-                        await self.tokManager.reg(
-                            jwsCid, chan, psTopic, sender,
-                            pubKeyCid, encType=jwsT.encType,
-                            did=jwsT.did)
+                        # Check who's subscribed to the topic
+                        psPeers = await ipfsop.pubsubPeers(
+                            topic=psTopic, timeout=5)
+
+                        # There should only be one peer subscribed
+                        if psPeers and len(psPeers) > 0:
+                            await self.tokManager.reg(
+                                jwsCid, chan, psTopic, sender,
+                                pubKeyCid, encType=jwsT.encType,
+                                did=jwsT.did)
+                        else:
+                            log.debug(f'Peer {sender}: valid JWS but '
+                                      'no one listening on sectopic')
+
+                    await self.tokManager.reg(
+                        jwsCid, chan, psTopic, sender,
+                        pubKeyCid, encType=jwsT.encType,
+                        did=jwsT.did)
 
             await ipfsop.sleep()
 

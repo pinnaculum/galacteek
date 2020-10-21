@@ -622,6 +622,9 @@ class Curve25519JSONPubsubService(JSONPubsubService):
             if sender not in self._authorizedPeers:
                 raise Exception(f'Unauthorized message from {sender} '
                                 'on curve25519 topic {self.topic}')
+            else:
+                self.debug(f'Received enc message (curve25519) from {sender} '
+                           f'on topic {self.topic}')
 
             # Load the peer context
             piCtx = ipfsop.ctx.peers.getByPeerId(sender)
@@ -659,6 +662,8 @@ class Curve25519JSONPubsubService(JSONPubsubService):
             pubKey = await ipfsop.ctx.curve25Exec.pubKeyFromCid(pubKeyCid)
 
             if not pubKey:
+                logger.debug(f'Could not get curve25519 public key for '
+                             f'peer {piCtx.peerId} (CID: {pubKeyCid})')
                 continue
 
             enc = await ipfsop.ctx.curve25Exec.encrypt(
@@ -674,5 +679,8 @@ class Curve25519JSONPubsubService(JSONPubsubService):
                     base64.b64encode(enc).decode(),
                     topic=topic
                 )
+            else:
+                logger.debug(f'curve25519 encryption failed for '
+                             f'peer {piCtx.peerId}')
 
             await ipfsop.sleep(0.05)

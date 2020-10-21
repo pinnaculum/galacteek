@@ -1137,7 +1137,7 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="96"/>
+        <location filename="../../galacteek/ui/mainui.py" line="97"/>
         <source>
 Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
@@ -1786,7 +1786,7 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="103"/>
+        <location filename="../../galacteek/ui/mainui.py" line="104"/>
         <source>
         &lt;p align=&apos;center&apos;&gt;
         &lt;img src=&apos;:/share/icons/galacteek.png&apos; /&gt;
@@ -2476,47 +2476,32 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/profileeditdialog.ui" line="75"/>
-        <source>Username</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/profileeditdialog.ui" line="140"/>
+        <location filename="../../galacteek/ui/profileeditdialog.ui" line="97"/>
         <source>Avatar</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/profileeditdialog.ui" line="284"/>
-        <source>Update</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/profileeditdialog.ui" line="55"/>
+        <location filename="../../galacteek/ui/profileeditdialog.ui" line="48"/>
         <source>DID (IPID)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/profileeditdialog.ui" line="115"/>
+        <location filename="../../galacteek/ui/profileeditdialog.ui" line="79"/>
         <source>Your IP handle</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/profileeditdialog.ui" line="32"/>
-        <source>Virtual Planet</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/profileeditdialog.ui" line="265"/>
+        <location filename="../../galacteek/ui/profileeditdialog.ui" line="222"/>
         <source>Close</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/profileeditdialog.ui" line="175"/>
+        <location filename="../../galacteek/ui/profileeditdialog.ui" line="132"/>
         <source>Change avatar</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/profileeditdialog.ui" line="132"/>
+        <location filename="../../galacteek/ui/profileeditdialog.ui" line="65"/>
         <source>Generate new identity</source>
         <translation type="unfinished"></translation>
     </message>

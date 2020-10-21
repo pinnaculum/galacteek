@@ -34,6 +34,7 @@ from galacteek.ui.helpers import getIcon
 from galacteek.ui.helpers import getPlanetIcon
 from galacteek.ui.helpers import playSound
 from galacteek.ui.helpers import questionBoxAsync
+from galacteek.ui.helpers import runDialogAsync
 
 from galacteek.ui.dialogs import DefaultProgressDialog
 
@@ -256,6 +257,11 @@ class WorkspaceStatus(BaseWorkspace):
 
     def pushProgress(self, name):
         return self.push(DefaultProgressDialog(), name)
+
+    async def pushRunDialog(self, dialog, name):
+        dialog.setEnabled(True)
+        idx, w = self.push(dialog, name)
+        await runDialogAsync(dialog)
 
 
 class TabbedWorkspace(BaseWorkspace):

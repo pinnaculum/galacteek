@@ -12,10 +12,6 @@
     src: url('qrc:/share/static/fonts/Inter-UI-Medium.woff2') format('woff2');
 }
 
-* {
-    font: 11pt "Montserrat";
-}
-
 QToolTip {
     border: 1px solid black;
     border-radius: 4px;

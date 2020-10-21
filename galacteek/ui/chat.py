@@ -107,6 +107,10 @@ class ChatChannels(QObject):
         dagChannels = ipfsop.ctx.currentProfile.dagChatChannels
         dagChannels.registerPrivate(channel)
 
+    def leaveAllChannels(self):
+        for chan, cw in self.channelWidgets.items():
+            cw.tabRemove()
+
     @ipfsOp
     async def leaveChannel(self, ipfsop, channel, psService):
         await psService.stop()
