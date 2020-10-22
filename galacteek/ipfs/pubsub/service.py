@@ -622,9 +622,6 @@ class Curve25519JSONPubsubService(JSONPubsubService):
             if sender not in self._authorizedPeers:
                 raise Exception(f'Unauthorized message from {sender} '
                                 'on curve25519 topic {self.topic}')
-            else:
-                self.debug(f'Received enc message (curve25519) from {sender} '
-                           f'on topic {self.topic}')
 
             # Load the peer context
             piCtx = ipfsop.ctx.peers.getByPeerId(sender)

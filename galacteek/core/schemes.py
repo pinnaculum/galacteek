@@ -137,25 +137,25 @@ def initializeSchemes():
     declareUrlScheme(
         SCHEME_DWEBGW,
         syntax=QWebEngineUrlScheme.Syntax.Path,
-        flags=defaultLocalSchemeFlags
+        flags=defaultSchemeFlags
     )
 
     declareUrlScheme(
         SCHEME_FS,
         syntax=QWebEngineUrlScheme.Syntax.Path,
-        flags=defaultLocalSchemeFlags
+        flags=defaultSchemeFlags
     )
 
     declareUrlScheme(
         SCHEME_IPFS,
         syntax=QWebEngineUrlScheme.Syntax.Host,
-        flags=defaultLocalSchemeFlags
+        flags=defaultSchemeFlags
     )
 
     declareUrlScheme(
         SCHEME_IPNS,
         syntax=QWebEngineUrlScheme.Syntax.Host,
-        flags=defaultLocalSchemeFlags
+        flags=defaultSchemeFlags
     )
 
     declareUrlScheme(

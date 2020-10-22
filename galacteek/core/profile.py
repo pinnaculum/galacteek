@@ -50,6 +50,8 @@ from galacteek.core.edags.seeds import SeedsEDag
 from galacteek.core.edags.seeds import MegaSeedsEDag
 
 from galacteek.core import utcDatetimeIso
+from galacteek.core import readQrcTextFile
+from galacteek.core.asynclib import asyncWriteFile
 
 from galacteek.crypto.qrcode import IPFSQrEncoder
 
@@ -62,6 +64,7 @@ from galacteek.ui.helpers import runDialogAsync
 from galacteek.ui.helpers import messageBoxAsync
 
 from galacteek.dweb import render
+from galacteek.dweb.markdown import markitdown
 
 
 class CipheredHashmarks(CipheredIPFSJson):
@@ -732,6 +735,25 @@ class UserProfile(QObject):
 
         for directory in self.tree:
             await ipfsop.filesMkdir(directory)
+
+        wPath = os.path.join(self.pathHome, 'welcome')
+        welcomeEnt = await ipfsop.filesList(wPath)
+
+        if not welcomeEnt:
+            try:
+                welcome = readQrcTextFile(':/share/static/misc/welcome.md')
+                tmpPath = self.ctx.app.tempDir.filePath('welcome.html')
+
+                await asyncWriteFile(
+                    tmpPath, markitdown(welcome), mode='w+t')
+
+                await ipfsop.filesLink(
+                    await ipfsop.addPath(tmpPath, wrap=True),
+                    self.pathHome,
+                    name='welcome'
+                )
+            except Exception:
+                pass
 
         self.filesModel = createMFSModel()
         self.filesModel.setupItemsFromProfile(self)

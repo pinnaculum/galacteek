@@ -1635,7 +1635,7 @@ class PlanetSelector(QWidget):
         import random
 
         r = random.Random()
-        idx = r.randint(0, self.count() - 1)
+        idx = r.randint(0, self.combo.count() - 1)
         self.combo.setCurrentIndex(idx)
 
     def planet(self):

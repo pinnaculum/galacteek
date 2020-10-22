@@ -419,10 +419,10 @@ class SeedingObjectTreeItem(SeedObjectTreeItem):
         await self.updateControls(objConfig)
 
     async def updateControls(self, objConfig=None):
-        if not objConfig:
-            objConfig = await seedGetObject(self.seed, self.objidx)
-
         try:
+            if not objConfig:
+                objConfig = await seedGetObject(self.seed, self.objidx)
+
             if objConfig.pin:
                 if objConfig.pinned:
                     self.setIcon(0, getIcon('pin-black.png'))
@@ -679,6 +679,8 @@ class TrackerSwitchButton(QToolButton):
         self.setCheckable(True)
         self.setChecked(checked)
         self.clicked.connect(self.onClick)
+        self.setObjectName('seedsToolButton')
+        self.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
     def onClick(self):
         self.stack.setCurrentIndex(self.idx)
@@ -709,8 +711,10 @@ class SeedsTrackerTab(GalacteekTab):
         self.sbSearch = TrackerSwitchButton(
             'Search', self.ui.stack, 0, self.sbAll,
             checked=True)
+        self.sbSearch.setIcon(getIcon('search-engine.png'))
         self.sbPinning = TrackerSwitchButton(
             'In progress', self.ui.stack, 1, self.sbAll)
+        self.sbPinning.setIcon(getIcon('pin.png'))
         self.sbAll += [self.sbSearch, self.sbPinning]
 
         self.resetButton = QPushButton('Reset seeds DB')
@@ -720,6 +724,8 @@ class SeedsTrackerTab(GalacteekTab):
         self.toolbar.addWidget(self.sbSearch)
         self.toolbar.addWidget(self.sbPinning)
 
+        self.ui.hLayoutStackControl.addItem(
+            QSpacerItem(10, 10, QSizePolicy.Expanding, QSizePolicy.Minimum))
         self.ui.hLayoutStackControl.addWidget(self.toolbar)
         self.ui.hLayoutStackControl.addItem(
             QSpacerItem(10, 10, QSizePolicy.Expanding, QSizePolicy.Minimum))
@@ -732,6 +738,7 @@ class SeedsTrackerTab(GalacteekTab):
         self.ui.searchDateTo.setDate(today.addDays(5))
         self.ui.searchDateFrom.setDate(today.addDays(-(30 * 12)))
 
+        self.ui.seedsSearch.setText('.*')
         self.ui.seedsSearch.returnPressed.connect(
             partialEnsure(self.onSearch))
         self.ui.searchButton.clicked.connect(

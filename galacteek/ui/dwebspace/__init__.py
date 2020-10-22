@@ -518,6 +518,9 @@ class WorkspaceFiles(TabbedWorkspace):
     async def seedsSetup(self):
         await self.seedsTab.loadSeeds()
 
+    async def importWelcome(self):
+        pass
+
     async def onRunGC(self):
         tab = self.wsFindTabWithId('gcrunner')
 

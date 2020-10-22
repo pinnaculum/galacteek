@@ -147,14 +147,15 @@ class PSChatService(JSONPubsubService):
                         did=jwsT.did)
                 else:
                     if 0:
-                        # Disabled for now ..
+                        # Disabled for now cause listing peers
+                        # on a topic is not always reliable ..
 
                         # Check who's subscribed to the topic
                         psPeers = await ipfsop.pubsubPeers(
                             topic=psTopic, timeout=5)
 
                         # There should only be one peer subscribed
-                        if psPeers and len(psPeers) > 0:
+                        if psPeers and len(psPeers) == 1:
                             await self.tokManager.reg(
                                 jwsCid, chan, psTopic, sender,
                                 pubKeyCid, encType=jwsT.encType,
