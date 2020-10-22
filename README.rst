@@ -19,8 +19,8 @@ Installation
 Stable release
 --------------
 
-* **AppImage (Linux)**: `Galacteek-0.4.36-x86_64.AppImage <https://github.com/pinnaculum/galacteek/releases/download/v0.4.36/Galacteek-0.4.36-x86_64.AppImage>`_
-* **DMG (MacOS)**: `Galacteek-0.4.36.dmg <https://github.com/pinnaculum/galacteek/releases/download/v0.4.36/Galacteek-0.4.36.dmg>`_
+* **AppImage (Linux)**: `Galacteek-0.4.37-x86_64.AppImage <https://github.com/pinnaculum/galacteek/releases/download/v0.4.37/Galacteek-0.4.37-x86_64.AppImage>`_
+* **DMG (MacOS)**: `Galacteek-0.4.37.dmg <https://github.com/pinnaculum/galacteek/releases/download/v0.4.37/Galacteek-0.4.37.dmg>`_
 
 Beta
 ----
