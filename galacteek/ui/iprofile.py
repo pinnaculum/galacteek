@@ -248,6 +248,9 @@ class ProfileEditDialog(QDialog):
 
     @ipfsOp
     async def createIdentity(self, ipfsop, options):
+        curProfile = ipfsop.ctx.currentProfile
+        curProfile._initOptions = options
+
         username = options['username']
         vPlanet = options['vPlanet']
 
@@ -277,6 +280,7 @@ class ProfileEditDialog(QDialog):
 
         self.infoMessage('Your IP handle and DID were updated')
         self.updateProfile()
+        curProfile._initOptions = {}
         return True
 
     def enableDialog(self, toggle=True):

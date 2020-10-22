@@ -1608,7 +1608,7 @@ class IPIDPasswordPromptDialog(QDialog):
             self.ui.keyIcon.pixmap().scaledToWidth(16))
 
     def onForgotPassword(self):
-        pass
+        self.done(0)
 
     def accept(self):
         self.done(1)

@@ -196,6 +196,7 @@ class AsyncIPFSDaemon(object):
         self._msgCallback = []
 
         self.daemonClient = self.client()
+        self.transport, self.proto = None, None
 
         self._createRepoDir()
 
@@ -583,11 +584,17 @@ class AsyncIPFSDaemon(object):
     def stop(self):
         self.message('Stopping IPFS daemon')
         try:
-            self.transport.send_signal(signal.SIGINT)
-            self.transport.send_signal(signal.SIGHUP)
+            if self.transport:
+                self.transport.send_signal(signal.SIGINT)
+                self.transport.send_signal(signal.SIGHUP)
+            elif self.process:
+                self.process.send_signal(signal.SIGINT)
+                self.process.send_signal(signal.SIGHUP)
+
             self._procPid = None
             return True
-        except Exception as e:
+        except Exception as err:
+            self.message(f'Error shutting down daemon: {err}')
             self._procPid = None
-            self.terminateException = e
+            self.terminateException = err
             return False

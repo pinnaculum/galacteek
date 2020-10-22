@@ -957,14 +957,21 @@ class UserProfile(QObject):
             pwd = self.initOptions.get('ipidRsaPassphrase', None)
             # Unlock
             if not await ipid.unlock(rsaPassphrase=pwd):
-                for att in range(0, 4):
+                for att in range(0, 8):
                     dlg = IPIDPasswordPromptDialog()
                     await runDialogAsync(dlg)
 
-                    if await ipid.unlock(rsaPassphrase=dlg.passwd()):
-                        break
+                    if dlg.result() == 1:
+                        if await ipid.unlock(rsaPassphrase=dlg.passwd()):
+                            break
+                        else:
+                            await messageBoxAsync('Invalid password')
                     else:
-                        await messageBoxAsync('Invalid password')
+                        await messageBoxAsync(
+                            'Your DID\'s private key has not been unlocked.'
+                            'Regenerate a DID if you cannot find your password'
+                            ' as you won\'t be able to decrypt/sign messages')
+                        break
 
         if ipid:
             if not await ipid.avatarService():

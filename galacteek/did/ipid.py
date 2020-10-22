@@ -287,6 +287,7 @@ class IPIdentifier(DAGOperations):
         self._localId = localId
         self._lastResolve = None
         self._latestModified = None
+        self._unlocked = False
         self.rsaAgent = None
 
         # JSON-LD expanded cache
@@ -300,6 +301,10 @@ class IPIdentifier(DAGOperations):
     @property
     def local(self):
         return self._localId is True
+
+    @property
+    def unlocked(self):
+        return self._unlocked
 
     @property
     def dagCid(self):
@@ -403,9 +408,11 @@ class IPIdentifier(DAGOperations):
             raise Exception('Agent')
 
         if await rsaAgent.privKeyUnlock(passphrase=rsaPassphrase):
-            return True
+            self._unlocked = True
         else:
-            return False
+            self._unlocked = False
+
+        return self.unlocked
 
     async def rsaAgentGet(self, ipfsop):
         curProfile = ipfsop.ctx.currentProfile

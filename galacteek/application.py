@@ -1090,67 +1090,68 @@ class GalacteekApplication(QApplication):
 
     @ipfsOp
     async def setupProfileAndRepo(self, ipfsop):
-        idx, ws = self.mainWindow.stack.workspaceByName(WS_STATUS)
+        from galacteek.ipfs import ConnectionError
+        try:
+            idx, ws = self.mainWindow.stack.workspaceByName(WS_STATUS)
 
-        await ipfsop.ctx.createRootEntry()
+            await ipfsop.ctx.createRootEntry()
 
-        await self.ipfsCtx.setup(pubsubEnable=True)
+            await self.ipfsCtx.setup(pubsubEnable=True)
 
-        defaultExists = await ipfsop.ctx.defaultProfileExists()
+            defaultExists = await ipfsop.ctx.defaultProfileExists()
 
-        if not defaultExists:
-            while True:
-                dlg = UserProfileInitDialog()
-                await runDialogAsync(dlg)
+            if not defaultExists:
+                while True:
+                    dlg = UserProfileInitDialog()
+                    await runDialogAsync(dlg)
 
-                if not dlg.result() == 1:
-                    await messageBoxAsync(
-                        'You need to create a profile')
-                    continue
+                    if not dlg.result() == 1:
+                        await messageBoxAsync(
+                            'You need to create a profile')
+                        continue
 
+                    idx, pDialog = ws.pushProgress('profile')
+                    pDialog.spin()
+                    pDialog.log('Creating profile and DID ..')
+
+                    try:
+                        async for pct, msg in ipfsop.ctx.profileNew(
+                            ipfsop,
+                            UserProfile.DEFAULT_PROFILE_NAME,
+                            initOptions=dlg.options()
+                        ):
+                            pDialog.log(msg)
+                            pDialog.progress(pct)
+                    except Exception as err:
+                        pDialog.log(f'Error: {err}')
+                        await ipfsop.sleep(5)
+                        continue
+                    else:
+                        break
+
+                    pDialog.stop()
+            else:
                 idx, pDialog = ws.pushProgress('profile')
                 pDialog.spin()
-                pDialog.log('Creating profile and DID ..')
+                pDialog.log('Loading profile ..')
 
                 try:
-                    async for pct, msg in ipfsop.ctx.profileNew(
-                        ipfsop,
-                        UserProfile.DEFAULT_PROFILE_NAME,
-                        initOptions=dlg.options()
-                    ):
+                    async for pct, msg in self.ipfsCtx.profileLoad(
+                            ipfsop,
+                            UserProfile.DEFAULT_PROFILE_NAME):
                         pDialog.log(msg)
                         pDialog.progress(pct)
                 except Exception as err:
                     pDialog.log(f'Error: {err}')
-                    await ipfsop.sleep(5)
-                    continue
-                else:
-                    break
+                    return
 
                 pDialog.stop()
-        else:
-            idx, pDialog = ws.pushProgress('profile')
-            pDialog.spin()
-            pDialog.log('Loading profile ..')
+                pDialog.log('Ready to roll')
 
-            try:
-                async for pct, msg in self.ipfsCtx.profileLoad(
-                        ipfsop,
-                        UserProfile.DEFAULT_PROFILE_NAME):
-                    pDialog.log(msg)
-                    pDialog.progress(pct)
-            except Exception as err:
-                pDialog.log(f'Error: {err}')
-                return
+            await ipfsop.sleep(0.5)
 
-            pDialog.stop()
-            pDialog.log('Ready to roll')
+            ws.clear('profile')
 
-        await ipfsop.sleep(0.5)
-
-        ws.clear('profile')
-
-        try:
             await self.ipfsCtx.start()
             await self.setupRepository()
         except ConnectionError:
@@ -1167,16 +1168,15 @@ class GalacteekApplication(QApplication):
         ws.push(pDialog, 'ipfsd-start')
         pDialog.spin()
 
-        if ipfsd.detached:
-            running, client = await ipfsd.loadStatus()
-            if running and client:
-                log.debug('Daemon was already running')
-                self.systemTrayMessage('IPFS', iIpfsDaemonResumed())
+        running, client = await ipfsd.loadStatus()
+        if running and client:
+            log.debug('Daemon was already running')
+            self.systemTrayMessage('IPFS', iIpfsDaemonResumed())
 
-                await self.updateIpfsClient(client)
-                await self.setupProfileAndRepo()
-                await self.scheduler.spawn(self.ipfsd.watchProcess())
-                return
+            await self.updateIpfsClient(client)
+            await self.setupProfileAndRepo()
+            await self.scheduler.spawn(self.ipfsd.watchProcess())
+            return
 
         pDialog.log('Starting daemon ...')
 
@@ -1184,7 +1184,6 @@ class GalacteekApplication(QApplication):
             async for pct, msg in ipfsd.start():
                 pDialog.log(msg)
                 pDialog.progress(pct)
-                ipfsd.message(msg)
         except Exception as err:
             pDialog.log(f'Error starting go-ipfs! {err}')
             self.systemTrayMessage('IPFS', iIpfsDaemonProblem())
