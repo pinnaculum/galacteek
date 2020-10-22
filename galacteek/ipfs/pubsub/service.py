@@ -107,6 +107,7 @@ class PubsubService(object):
         self._maxMsgTsDiff = maxMsgTsDiff
         self._minMsgTsDiff = minMsgTsDiff
         self._maxMessageSize = maxMessageSize
+        self._shuttingDown = False
 
         # Async sigs
         self.rawMessageReceived = AsyncSignal(str, str, bytes)
@@ -166,6 +167,7 @@ class PubsubService(object):
             self.topic, encType=self.encodingType)
 
     async def stop(self):
+        self._shuttingDown = True
         await self.shutdown()
 
         for tsk in [self.tskServe, self.tskProcess, self.tskPeriodic]:
@@ -265,6 +267,8 @@ class PubsubService(object):
                     continue
 
                 self.ipfsCtx.pubsub.psMessageRx.emit()
+                if self._shuttingDown:
+                    return
 
                 await self.inQueue.put(message)
 
@@ -349,12 +353,15 @@ class JSONPubsubService(PubsubService):
             useAsyncConv = asyncio.iscoroutinefunction(asyncConv)
 
         try:
-            while True:
+            while not self._shuttingDown:
                 async with self.throttler:
                     data = await self.inQueue.get()
 
                     if data is None:
                         continue
+
+                    if self._shuttingDown:
+                        return
 
                     if useAsyncConv is True:
                         msg = await asyncConv(data)
