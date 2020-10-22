@@ -513,7 +513,6 @@ class FileManager(QWidget):
         self.iconSizeGroup.triggered.connect(self.onIconSize)
         self.actionSmallIcon = QAction('Small', self.iconSizeGroup)
         self.actionSmallIcon.setCheckable(True)
-        self.actionSmallIcon.setChecked(True)
         self.actionMediumIcon = QAction('Medium', self.iconSizeGroup)
         self.actionMediumIcon.setCheckable(True)
         self.actionLargeIcon = QAction('Large', self.iconSizeGroup)
@@ -522,6 +521,11 @@ class FileManager(QWidget):
         self.iconSizeGroup.addAction(self.actionMediumIcon)
         self.iconSizeGroup.addAction(self.actionLargeIcon)
         fsIconSizeMenu.addActions(self.iconSizeGroup.actions())
+
+        if self.app.linuxSystem:
+            self.actionSmallIcon.setChecked(True)
+        elif self.app.macosSystem:
+            self.actionLargeIcon.setChecked(True)
 
         fsChunkerMenu = self.buildChunkerMenu()
         fsHashFuncMenu = self.buildHashFuncMenu()

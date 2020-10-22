@@ -1282,6 +1282,7 @@ class MainWindow(QMainWindow):
             await ws.loadDapps()
 
         with self.stack.workspaceCtx(WS_FILES, show=True) as ws:
+            await ws.importWelcome()
             await ws.seedsSetup()
 
         self.enableButtons()

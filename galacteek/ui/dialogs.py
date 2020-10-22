@@ -1152,7 +1152,7 @@ class NewSeedDialog(QDialog):
 
         mfsNameEnc = mimeData.data('ipfs/mfs-entry-name')
         if not mfsNameEnc:
-            event.reject()
+            event.ignore()
             return
 
         event.accept()
@@ -1527,7 +1527,7 @@ class UserProfileInitDialog(QDialog):
         self.ui.ipidRsaPassphraseVerifCheck.setVisible(enable)
 
     def onPassphraseEdit(self, text):
-        if len(text) in range(8, 64):
+        if len(text) in range(6, 64):
             self.ui.ipidRsaPassphraseCheck.setStyleSheet(
                 'background-color: green')
         else:

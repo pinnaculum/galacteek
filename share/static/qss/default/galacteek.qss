@@ -530,3 +530,8 @@ QScrollBar::handle:vertical {
 }
 
 */
+
+
+QToolButton#seedsToolButton::checked {
+    background-color: #CFCC94;
+}

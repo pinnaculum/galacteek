@@ -1415,7 +1415,7 @@ p, li { white-space: pre-wrap; }
         <translation type="obsolete">Naviguer sur le chemin IPFS: {0}</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="97"/>
+        <location filename="../../galacteek/ui/mainui.py" line="98"/>
         <source>
 Path: {0}, nodes processed: {1}</source>
         <translation>
@@ -2121,7 +2121,7 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="104"/>
+        <location filename="../../galacteek/ui/mainui.py" line="105"/>
         <source>
         &lt;p align=&apos;center&apos;&gt;
         &lt;img src=&apos;:/share/icons/galacteek.png&apos; /&gt;

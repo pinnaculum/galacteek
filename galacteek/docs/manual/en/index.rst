@@ -16,6 +16,7 @@ galacteek's manual (english)
     Shortcuts <shortcuts>
     Hashmarks <hashmarks>
     File manager <filemanager>
+    File sharing <filesharing>
     Explorer <unixfs>
     Browsing <browsing>
     Markdown <markdown> 

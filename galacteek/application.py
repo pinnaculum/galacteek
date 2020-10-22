@@ -282,6 +282,14 @@ class GalacteekApplication(QApplication):
         return self._system
 
     @property
+    def linuxSystem(self):
+        return self.system == 'Linux'
+
+    @property
+    def macosSystem(self):
+        return self.system == 'Darwin'
+
+    @property
     def debugEnabled(self):
         return self._debugEnabled
 
@@ -1176,6 +1184,7 @@ class GalacteekApplication(QApplication):
             async for pct, msg in ipfsd.start():
                 pDialog.log(msg)
                 pDialog.progress(pct)
+                ipfsd.message(msg)
         except Exception as err:
             pDialog.log(f'Error starting go-ipfs! {err}')
             self.systemTrayMessage('IPFS', iIpfsDaemonProblem())

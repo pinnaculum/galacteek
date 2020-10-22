@@ -14,6 +14,17 @@ from contextlib import closing
 
 
 from PyQt5.QtWidgets import QApplication
+from PyQt5.QtCore import QFile
+
+
+def readQrcTextFile(path):
+    try:
+        qFile = QFile(path)
+        qFile.open(QFile.ReadOnly)
+        ba = qFile.readAll()
+        return ba.data().decode()
+    except BaseException:
+        pass
 
 
 def sha256Digest(value: str):
