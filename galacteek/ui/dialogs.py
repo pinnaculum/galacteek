@@ -1601,11 +1601,7 @@ class IPIDPasswordPromptDialog(QDialog):
         self.ui.password.setFocus(Qt.OtherFocusReason)
         self.ui.password.returnPressed.connect(self.accept)
 
-        # self.ui.okButton.clicked.connect(self.accept)
         self.ui.forgotPwdButton.clicked.connect(self.onForgotPassword)
-
-        self.ui.keyIcon.setPixmap(
-            self.ui.keyIcon.pixmap().scaledToWidth(16))
 
     def onForgotPassword(self):
         self.done(0)
