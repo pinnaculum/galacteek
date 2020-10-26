@@ -257,6 +257,12 @@ class AsyncIPFSDaemon(object):
         for cb in self._msgCallback:
             cb(msg)
 
+    async def restart(self):
+        self.message('Restarting daemon')
+
+        async for pct, msg in self.start():
+            self.message(msg)
+
     async def start(self):
         # Set the IPFS_PATH environment variable
         os.environ['IPFS_PATH'] = self.repopath
@@ -447,7 +453,7 @@ class AsyncIPFSDaemon(object):
                                  'Restarting!')
                     self._procPid = None
                     self.process = None
-                    await self.start()
+                    await self.restart()
                     await asyncio.sleep(10)
             except Exception as err:
                 if not self.process:
@@ -468,7 +474,7 @@ class AsyncIPFSDaemon(object):
                     if self.autoRestart is True:
                         self._procPid = None
                         self.process = None
-                        await self.start()
+                        await self.restart()
                         await asyncio.sleep(10)
 
             await self.writeStatus()
