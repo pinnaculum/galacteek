@@ -1079,6 +1079,9 @@ class UserProfile(QObject):
                     self.userInfo.curIdentity['personDid']
                 )
 
+            if passphrase:
+                await ipid.unlock(rsaPassphrase=passphrase)
+
             return ipid
 
     @ipfsOp

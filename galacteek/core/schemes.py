@@ -66,6 +66,8 @@ defaultSchemeFlags = QWebEngineUrlScheme.SecureScheme | \
     QWebEngineUrlScheme.ViewSourceAllowed
 
 defaultLocalSchemeFlags = defaultSchemeFlags | QWebEngineUrlScheme.LocalScheme
+serviceWorkersFlags = \
+    defaultSchemeFlags | QWebEngineUrlScheme.ServiceWorkersAllowed
 
 
 # Registered URL schemes
@@ -132,35 +134,37 @@ def initializeSchemes():
     declareUrlScheme(
         SCHEME_DWEB,
         syntax=QWebEngineUrlScheme.Syntax.Path,
+        flags=serviceWorkersFlags
     )
 
     declareUrlScheme(
         SCHEME_DWEBGW,
         syntax=QWebEngineUrlScheme.Syntax.Path,
-        flags=defaultSchemeFlags
+        flags=serviceWorkersFlags
     )
 
     declareUrlScheme(
         SCHEME_FS,
         syntax=QWebEngineUrlScheme.Syntax.Path,
-        flags=defaultSchemeFlags
+        flags=serviceWorkersFlags
     )
 
     declareUrlScheme(
         SCHEME_IPFS,
         syntax=QWebEngineUrlScheme.Syntax.Host,
-        flags=defaultSchemeFlags
+        flags=serviceWorkersFlags
     )
 
     declareUrlScheme(
         SCHEME_IPNS,
         syntax=QWebEngineUrlScheme.Syntax.Host,
-        flags=defaultSchemeFlags
+        flags=serviceWorkersFlags
     )
 
     declareUrlScheme(
         SCHEME_ENS,
-        syntax=QWebEngineUrlScheme.Syntax.Host
+        syntax=QWebEngineUrlScheme.Syntax.Host,
+        flags=serviceWorkersFlags
     )
 
     declareUrlScheme(

@@ -1502,6 +1502,7 @@ class UserProfileInitDialog(QDialog):
 
         self.ui.useIpidPassphrase.stateChanged.connect(self.onUsePassphrase)
         self.ui.useIpidPassphrase.setCheckState(Qt.Checked)
+        self.ui.useIpidPassphrase.setCheckState(Qt.Unchecked)
 
         self.ui.ipidRsaPassphrase.setEchoMode(QLineEdit.Password)
         self.ui.ipidRsaPassphraseVerif.setEchoMode(QLineEdit.Password)
