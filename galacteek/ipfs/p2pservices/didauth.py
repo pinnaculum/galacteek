@@ -137,11 +137,11 @@ class DIDAuthSiteHandler:
                     raise Exception(f'Invalid DIDAuth token {token}')
             except Exception as err:
                 self.message(f'authPss error: {err}')
-                return await self.msgError()
+                return await self.msgError(error='Invalid token or schema')
 
             did = js.get('did')
             if not didIdentRe.match(did):
-                return await self.msgError()
+                return await self.msgError(error=f'Invalid DID: {did}')
 
             self.message(
                 f'Received DID auth challenge request for DID: {did}')
@@ -153,9 +153,15 @@ class DIDAuthSiteHandler:
                 # one we currently use
                 return await self.msgError(error='Invalid DID')
 
-            privKey = curProfile._didKeyStore._privateKeyForDid(did)
-            if not privKey:
+            rsaAgent = await currentIpid.rsaAgentGet(ipfsop)
+            if not rsaAgent:
                 return await self.msgError()
+
+            privKey = await rsaAgent._privateKey()
+
+            if not privKey:
+                return await self.msgError(
+                    error=f'Invalid key for DID: {did}')
 
             try:
                 signed = await self.rsaExecutor.pssSign(

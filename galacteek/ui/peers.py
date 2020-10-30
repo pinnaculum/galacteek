@@ -331,7 +331,7 @@ class PeersModel(QAbstractItemModel):
         for idx in indexes:
             idxPeer = self.index(idx.row(), 1, idx.parent())
             if idxPeer.isValid():
-                peer = self.data(idxPeer)
+                peer = self.data(idxPeer, Qt.DisplayRole)
                 mimedata.setUrls([QUrl('galacteekpeer:{}'.format(peer))])
                 break
 
@@ -388,7 +388,7 @@ class PeersModel(QAbstractItemModel):
 
     def headerData(self, section, orientation, role):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
-            return self.rootItem.data(section)
+            return self.rootItem.data(section, role)
 
         return None
 

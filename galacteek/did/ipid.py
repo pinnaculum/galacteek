@@ -1039,7 +1039,9 @@ class IPIDManager:
                         json=req) as resp:
 
                     if resp.status != HTTPOk.status_code:
-                        raise Exception('DID Auth error')
+                        payload = await resp.json()
+                        log.debug('Error payload: {payload}')
+                        raise Exception(f'DID Auth error: code {resp.status}')
 
                     payload = await resp.json()
 

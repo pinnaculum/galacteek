@@ -9,7 +9,6 @@ from jwcrypto import jws
 from jwcrypto import jwt
 from jwcrypto.common import json_encode
 
-from galacteek.core.asynccache import selfcachedcoromethod
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import cidValid
 from galacteek.core.asynclib import asyncReadFile
@@ -56,7 +55,7 @@ class IpfsRSAAgent:
 
     async def privJwk(self):
         try:
-            privKey = await self.__privateKey()
+            privKey = await self._privateKey()
             pem = privKey.export_key(pkcs=8)
             key = jwk.JWK()
             key.import_from_pem(pem)
@@ -100,7 +99,7 @@ class IpfsRSAAgent:
 
     async def decrypt(self, data):
         return await self.rsaExec.decryptData(BytesIO(data),
-                                              await self.__privateKey())
+                                              await self._privateKey())
 
     @ipfsOp
     async def storeSelf(self, op, data, offline=False, wrap=False):
@@ -152,7 +151,7 @@ class IpfsRSAAgent:
 
     @ipfsOp
     async def decryptIpfsObject(self, op, data):
-        privKey = await self.__privateKey()
+        privKey = await self._privateKey()
         try:
             decrypted = await self.rsaExec.decryptData(BytesIO(data), privKey)
             if decrypted:
@@ -189,12 +188,12 @@ class IpfsRSAAgent:
     @ipfsOp
     async def pssSign(self, op, message):
         return await self.rsaExec.pssSign(
-            message, await self.__privateKey())
+            message, await self._privateKey())
 
     @ipfsOp
     async def pssSignImport(self, op, message, pin=False):
         signed = await self.rsaExec.pssSign(
-            message, await self.__privateKey())
+            message, await self._privateKey())
 
         if signed:
             try:
@@ -233,8 +232,11 @@ class IpfsRSAAgent:
             self.debug(f'Key cache size: {len(self._privKeyCache)}')
             return key
 
-    @selfcachedcoromethod('_privKeyCache')
-    async def __privateKey(self, key=0):
+    async def _privateKey(self, key=0):
+        pKey = self._privKeyCache.get(key)
+        if pKey:
+            return pKey
+
         return await self.rsaExec.importKey(
             await asyncReadFile(self.privKeyPath)
         )
