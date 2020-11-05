@@ -1889,6 +1889,16 @@ class IPFSOperator(object):
     def ourNode(self, peerId):
         return self.ctx.node.id == peerId
 
+    def p2pEndpoint(self, serviceName):
+        return f'/p2p/{self.ctx.node.id}/x/{serviceName}'
+
+    def p2pEndpointExplode(self, addr):
+        ma = re.search(r'/p2p/([\w]{46,59})/x/([\w]{1,128})', addr)
+        if ma:
+            return ma.group(1), ma.group(2)
+        else:
+            return None, None
+
     async def hasDagCommand(self):
         return await self.hasCommand('dag')
 
@@ -2016,3 +2026,29 @@ class GalacteekOperator(IPFSOperator):
         except Exception as err:
             log.debug(f'didPing error: {err}')
             return -1, None
+
+    async def videoRendezVous(self, didService):
+        remotePeerId, serviceName = self.p2pEndpointExplode(
+            didService.endpoint)
+        print('got', remotePeerId, serviceName)
+
+        req = {
+            'peer': self.ctx.node.id
+        }
+
+        try:
+            async with self.p2pDialer(
+                    remotePeerId, serviceName,
+                    addressAuto=True) as sCtx:
+                if sCtx.failed:
+                    raise Exception(f'Cannot reach {remotePeerId}')
+
+                async with sCtx.session.post(
+                        sCtx.httpUrl('/rendezVous'),
+                        json=req) as resp:
+
+                    payload = await resp.json()
+                    return payload['topic']
+        except Exception as err:
+            self.debug(str(err))
+            return None

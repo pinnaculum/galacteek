@@ -1005,6 +1005,11 @@ class UserProfile(QObject):
                     path = IPFSPath(entry['Hash'])
                     await ipid.avatarSet(path.objPath)
 
+            try:
+                await ipid.addServiceRendezVous()
+            except Exception:
+                pass
+
             return True
 
         return False
@@ -1126,6 +1131,7 @@ class UserProfile(QObject):
         }, publish=False)
 
         await ipid.addServiceCollection('default')
+        await ipid.addServiceRendezVous()
 
         entry = await self.ctx.app.importQtResource('/share/icons/helmet.png')
 
