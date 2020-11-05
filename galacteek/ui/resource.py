@@ -451,7 +451,11 @@ class IPFSResourceOpener(QObject):
             await self.app.mainWindow.atomButton.atomFeedSubscribe(
                 str(endpoint)
             )
+        elif pService.type == IPService.SRV_TYPE_PSRENDEZVOUS:
+            topic = await ipfsop.videoRendezVous(pService)
 
+            if topic:
+                pass
         elif isinstance(endpoint, str):
             path = IPFSPath(endpoint, autoCidConv=True)
             await self.open(path)

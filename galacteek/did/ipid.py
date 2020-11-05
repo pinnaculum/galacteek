@@ -98,6 +98,7 @@ class IPService(metaclass=IPServiceRegistry):
     SRV_TYPE_VC = 'VerifiableCredentialService'
     SRV_TYPE_GENERICPYRAMID = 'GalacteekPyramidService'
     SRV_TYPE_CHAT = 'GalacteekChatService'
+    SRV_TYPE_PSRENDEZVOUS = 'PSRendezVousService'
 
     SRV_TYPE_LIVEPEER_STREAMING = 'P2PLivePeerStreamingService'
 
@@ -271,6 +272,11 @@ class CollectionService(IPService):
 class LivePeerStreamingService(IPService):
     forTypes = [IPService.SRV_TYPE_LIVEPEER_STREAMING]
     endpointName = 'LivePeerEndpoint'
+
+
+class PSRendezVousService(IPService):
+    forTypes = [IPService.SRV_TYPE_PSRENDEZVOUS]
+    endpointName = 'PSRendezVousEndpoint'
 
 
 class IPIdentifier(DAGOperations):
@@ -556,6 +562,18 @@ class IPIdentifier(DAGOperations):
             'created': utcDatetimeIso(),
             'objects': []
         }, publish=True)
+
+    @ipfsOp
+    async def addServiceRendezVous(self, ipfsop):
+        serviceName = 'ps-rendezvous'
+        return await self.addServiceRaw({
+            'id': self.didUrl(
+                path=f'/{serviceName}'
+            ),
+            'type': IPService.SRV_TYPE_PSRENDEZVOUS,
+            'description': 'PubSub rendezvous',
+            'serviceEndpoint': ipfsop.p2pEndpoint(serviceName)
+        })
 
     @ipfsOp
     async def updateDocument(self, ipfsop, document, publish=False):
