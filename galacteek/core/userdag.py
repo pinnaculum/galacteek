@@ -10,7 +10,7 @@ from galacteek import logUser
 from galacteek import ensure
 from galacteek import AsyncSignal
 from galacteek.ipfs import ipfsOp
-from galacteek.ipfs import posixIpfsPath
+from galacteek.ipfs.paths import posixIpfsPath
 from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs.cidhelpers import ipnsKeyCidV1
 from galacteek.ipfs.cidhelpers import IPFSPath

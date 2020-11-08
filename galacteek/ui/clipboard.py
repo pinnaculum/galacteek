@@ -36,7 +36,7 @@ from galacteek.ipfs.cidhelpers import isIpnsPath
 from galacteek.ipfs.cidhelpers import isIpfsPath
 from galacteek.ipfs.cidhelpers import shortPathRepr
 from galacteek.ipfs import ipfsOp
-from galacteek.ipfs import posixIpfsPath
+from galacteek.ipfs.paths import posixIpfsPath
 from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs import megabytes
 from galacteek.ipfs.mimetype import mimeTypeDagUnknown

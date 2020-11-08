@@ -2,7 +2,7 @@ import uuid
 
 from galacteek.ipfs.dag import EvolvingDAG
 from galacteek.ipfs import ipfsOp
-from galacteek.ipfs import posixIpfsPath
+from galacteek.ipfs.paths import posixIpfsPath
 from galacteek.ipfs import kilobytes
 from galacteek.ipfs.cidhelpers import stripIpfs
 from galacteek.core.asynccache import cachedcoromethod

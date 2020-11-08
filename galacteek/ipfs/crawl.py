@@ -1,7 +1,7 @@
 
 from html.parser import HTMLParser
 
-from galacteek.ipfs import posixIpfsPath
+from galacteek.ipfs.paths import posixIpfsPath
 
 import aioipfs
 

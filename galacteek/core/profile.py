@@ -55,7 +55,7 @@ from galacteek.core.asynclib import asyncWriteFile
 
 from galacteek.crypto.qrcode import IPFSQrEncoder
 
-from galacteek.ipfs import posixIpfsPath
+from galacteek.ipfs.paths import posixIpfsPath
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import joinIpns
 from galacteek.ipfs.cidhelpers import joinIpfs

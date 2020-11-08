@@ -5,7 +5,7 @@ import aioipfs
 from PyQt5.QtCore import QUrl
 
 from galacteek import log
-from galacteek.ipfs import posixIpfsPath
+from galacteek.ipfs.paths import posixIpfsPath
 from galacteek.ipfs.cid import CIDv1
 from galacteek.ipfs.cid import make_cid
 from galacteek.ipfs.cid import BaseCID

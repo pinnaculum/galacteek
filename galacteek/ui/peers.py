@@ -34,7 +34,7 @@ from galacteek import log
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import *
 from galacteek.ipfs.ipfsops import *
-from galacteek.ipfs import posixIpfsPath
+from galacteek.ipfs.paths import posixIpfsPath
 from galacteek.core.modelhelpers import *
 from galacteek.core.models import BaseAbstractItem
 from galacteek.core.iphandle import SpaceHandle

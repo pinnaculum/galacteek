@@ -33,7 +33,7 @@ from galacteek.core.jsono import *
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import qurlPercentDecode
 from galacteek.ipfs.ipfsops import *
-from galacteek.ipfs import posixIpfsPath
+from galacteek.ipfs.paths import posixIpfsPath
 
 from . import ui_mediaplaylist
 

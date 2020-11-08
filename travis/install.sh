@@ -63,6 +63,7 @@ $PYTHONEX -m venv venvg
 
 if [ "$TRAVIS_OS_NAME" = "windows" ]; then
 	./venvg/Scripts/activate.bat
+    $PIP install pywin32
 else
 	source venvg/bin/activate
 fi
@@ -72,7 +73,9 @@ $PIP install wheel
 $PIP install -r requirements.txt
 $PIP install -r requirements-dev.txt
 
-tox -e py37
+if [ "$TRAVIS_OS_NAME" != "windows" ]; then
+    tox -e py37
+fi
 
 $PYTHONEX setup.py build build_docs install
 $PYTHONEX setup.py sdist bdist_wheel
