@@ -924,6 +924,21 @@ class UserProfile(QObject):
         from random_username.generate import generate_username
         return generate_username()[0]
 
+    @ipfsOp
+    async def createIpIdentifierInitial(self, ipfsop):
+        # Create initial IPID
+
+        username = self.initOptions.get('username', self.randomUsername())
+        vPlanet = self.initOptions.get('vPlanet', 'Earth')
+
+        return await self.createIpIdentifier(
+            iphandle=ipHandleGen(
+                username,
+                vPlanet,
+                peerId=ipfsop.ctx.node.id
+            )
+        )
+
     async def setupProfileEDag(self, op):
         exists = await op.filesList(self.pathProfileEDag)
 
@@ -941,20 +956,7 @@ class UserProfile(QObject):
 
         if not self.userInfo.curIdentity:
             # Create initial IPID
-
-            username = self.initOptions.get('username')
-            if not username:
-                username = self.randomUsername()
-
-            vPlanet = self.initOptions.get('vPlanet', 'Earth')
-
-            ipid = await self.createIpIdentifier(
-                iphandle=ipHandleGen(
-                    username,
-                    vPlanet,
-                    peerId=op.ctx.node.id
-                )
-            )
+            ipid = await self.createIpIdentifierInitial()
 
         if self.userInfo.curIdentity:
             # Load our IPID with low resolve timeout
@@ -968,13 +970,22 @@ class UserProfile(QObject):
                 # Could not load the current IPID ..
                 # Create a new one
 
-                ipid = await self.createIpIdentifier(
-                    iphandle=ipHandleGen(
-                        self.randomUsername(),
-                        'Earth',
-                        peerId=op.ctx.node.id
-                    )
+                ipid = await self.createIpIdentifierInitial()
+
+        if ipid:
+            if not await ipid.avatarService():
+                entry = await self.ctx.app.importQtResource(
+                    '/share/icons/helmet.png'
                 )
+
+                if entry:
+                    path = IPFSPath(entry['Hash'])
+                    await ipid.avatarSet(path.objPath)
+
+            try:
+                await ipid.addServiceRendezVous()
+            except Exception:
+                pass
 
             pwd = self.initOptions.get('ipidRsaPassphrase', None)
             # Unlock
@@ -995,21 +1006,9 @@ class UserProfile(QObject):
                             ' as you won\'t be able to decrypt/sign messages')
                         break
 
-        if ipid:
-            if not await ipid.avatarService():
-                entry = await self.ctx.app.importQtResource(
-                    '/share/icons/helmet.png'
-                )
-
-                if entry:
-                    path = IPFSPath(entry['Hash'])
-                    await ipid.avatarSet(path.objPath)
-
-            try:
-                await ipid.addServiceRendezVous()
-            except Exception:
-                pass
-
+            return True
+        else:
+            ipid = await self.createIpIdentifierInitial()
             return True
 
         return False

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>IPFS Video chat</title>
+    <script src="ipfs.min.js"></script>
+    <script src="ipfs-webrtc.js"></script>
+  </head>
+  <body>
+
+    <div>
+      <label for="chat">Chat:</label>
+      <textarea id="chat" style="width: 100%" rows="15" placeholder="(waiting for chat to start)" readonly></textarea>
+      <div style="display: flex">
+        <label for="message">Send Message: </label>
+        <input id="message" type="text" style="flex: 1" disabled>
+      </div>
+    </div>
+    <div id="media">
+        <audio id="remote_audio" autoplay="true"></audio>
+
+        <video id="remote_video" autoplay="true" playsinline="true"></video>
+        <video id="local_video" autoplay="true" playsinline="true"></video>
+
+    </div>
+    
+    <script>
+      console.log('Using topic ' + ipfsDirBase())
+
+      // Create IPFS and do everything else once ready
+      newIPFS(ipfs => {
+        const localPc = newRtcConnection()
+
+        rtcSetupVideo(localPc)
+
+        window.onbeforeunload = function () {
+            localPc.close()
+            stopAudioAndVideo(window.localStream)
+        }
+
+        setupChatChannel(localPc.createDataChannel('chat'))
+
+        localPc.oniceconnectionstatechange = e => {
+          debug('RTC connection state change ' + localPc.iceConnectionState)
+        }
+
+        localPc.ontrack = (evt) => {
+          console.log('TRACK EVENT ' + evt.track.kind)
+
+          if (evt.track.kind == 'video') {
+              document.getElementById('remote_video').srcObject = evt.streams[0];
+          }
+           else {
+              document.getElementById('remote_audio').srcObject = evt.streams[0];
+          }
+        };
+
+        localPc.onnegotiationneeded = e =>
+          localPc.createOffer().then(d => localPc.setLocalDescription(d)).catch(console.error)
+
+        //localPc.createOffer().then(d => {
+        //   localPc.setLocalDescription(d)
+        //}).catch(console.error)
+
+        localPc.onicecandidate = e => {
+          console.log('onicecandidate ' + e.candidate)
+
+          if (e.candidate == null) {
+            let gotAnswer = false
+            console.log('Starting offer ..')
+
+            ipfsSubscribe(
+              ipfs,
+              data => {
+                if (gotAnswer) return
+                const obj = JSON.parse(data)
+                debug('Received data', obj)
+
+                if (obj.type == 'answer') {
+                  gotAnswer = true
+                  descr = new RTCSessionDescription(obj)
+                  localPc.setRemoteDescription(descr)
+                  debug('All set!')
+                } else if (obj.type == 'candidate_a') {
+                  debug('Received ICE candidate')
+                  const iceCandidate = new RTCIceCandidate(obj.candidate)
+                  localPc.addIceCandidate(iceCandidate).catch(e =>  {
+                        debug("Failure during addIceCandidate(): " + e.name)
+                  })
+                }
+
+              },
+              () => {
+                const sendOffer = () => {
+                  if (gotAnswer) return
+
+                  offer = JSON.stringify(localPc.localDescription)
+                  debug('Sending offer ' + offer)
+
+                  try {
+                      ipfsPublish(ipfs, offer, () => {
+                        // Try again in a couple of seconds
+                        setTimeout(() => sendOffer(), 2000)
+                      })
+                  } catch(err) {
+                      debug('Error sending offer ' + err)
+                      //setTimeout(() => sendOffer(), 2000)
+                  }
+                }
+                sendOffer()
+              })
+          } else {
+              msg = JSON.stringify({
+                'type': 'candidate_o',
+                'candidate': e.candidate
+              })
+
+              ipfsPublish(ipfs, msg, () => { })
+          }
+        }
+      })
+    </script>
+  </body>
+</html>

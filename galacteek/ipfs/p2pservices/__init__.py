@@ -1,10 +1,12 @@
 from galacteek.ipfs import ipfsOp
+from galacteek.core import runningApp
 
 
 class P2PService:
     def __init__(self, name, description, protocolName, listenRange,
                  handler=None, enabled=True, didDefaultRegister=False,
                  setupCtx=None):
+        self.app = runningApp()
         self._name = name
         self._description = description
         self._protocolName = protocolName

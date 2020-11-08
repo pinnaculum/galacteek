@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>PermissionRequestDialog</class>
+ <widget class="QDialog" name="PermissionRequestDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>562</width>
+    <height>241</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Permission request</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout_2">
+   <item row="0" column="0">
+    <layout class="QGridLayout" name="gridLayout">
+     <item row="0" column="0" alignment="Qt::AlignHCenter">
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>The webpage at the following URL:</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="3" column="0" alignment="Qt::AlignHCenter">
+    <widget class="QLabel" name="featureLabel">
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QPushButton" name="blockButton">
+       <property name="text">
+        <string>Block</string>
+       </property>
+       <property name="icon">
+        <iconset resource="galacteek.qrc">
+         <normaloff>:/share/icons/cancel.png</normaloff>:/share/icons/cancel.png</iconset>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="allowButton">
+       <property name="text">
+        <string>Allow</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="alwaysAllowButton">
+       <property name="text">
+        <string>Always allow from this origin</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="urlLabel">
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0" alignment="Qt::AlignHCenter">
+    <widget class="QLabel" name="label_2">
+     <property name="text">
+      <string>has requested permission to use the following feature:</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="galacteek.qrc"/>
+ </resources>
+ <connections/>
+</ui>

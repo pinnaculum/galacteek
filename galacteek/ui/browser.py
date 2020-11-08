@@ -351,6 +351,9 @@ class DefaultBrowserWebPage (QtWebEngineWidgets.QWebEnginePage):
         super(DefaultBrowserWebPage, self).__init__(webProfile, parent)
         self.app = QCoreApplication.instance()
         self.fullScreenRequested.connect(self.onFullScreenRequest)
+        self.featurePermissionRequested.connect(
+            partialEnsure(self.onPermissionRequest))
+        self.channel = None
         self.setBackgroundColor(desertStrikeColor)
 
     def certificateError(self, error):
@@ -358,6 +361,72 @@ class DefaultBrowserWebPage (QtWebEngineWidgets.QWebEnginePage):
             error.url().toString(),
             f'Certificate error: {error.errorDescription()}.'
             '<b>Continue</b> ?')
+
+    async def onPermissionRequest(self, originUrl, feature):
+        url = originUrl.toString().rstrip('/')
+
+        def allow():
+            self.setFeaturePermission(originUrl, feature,
+                                      QWebEnginePage.PermissionGrantedByUser)
+
+        def deny():
+            self.setFeaturePermission(originUrl, feature,
+                                      QWebEnginePage.PermissionDeniedByUser)
+
+        log.debug(f'Permission request ({url}): {feature}')
+
+        fMapping = {
+            QWebEnginePage.Geolocation: ("Geolocation", 1),
+            QWebEnginePage.MouseLock: ("Mouse lock", 2),
+            QWebEnginePage.DesktopVideoCapture:
+            ("Desktop video capture", 3),
+            QWebEnginePage.DesktopAudioVideoCapture:
+                ("Desktop audio and video capture", 4),
+            QWebEnginePage.MediaAudioVideoCapture:
+                ("Audio and video capture", 5),
+            QWebEnginePage.MediaAudioCapture:
+                ("Audio capture", 6),
+            QWebEnginePage.MediaVideoCapture:
+                ("Video capture", 7)
+        }
+
+        fmap = fMapping.get(feature, None)
+
+        if not fmap:
+            log.debug(f'Unknown feature requested: {feature}')
+            deny()
+            return
+
+        featureS, fCode = fmap
+
+        rule = await database.browserFeaturePermissionFilter(
+            url, fCode)
+
+        if rule:
+            if rule.permission == database.BrowserFeaturePermission.PERM_ALLOW:
+                allow()
+                return
+            if rule.permission == database.BrowserFeaturePermission.PERM_DENY:
+                deny()
+                return
+
+        dlg = BrowserFeatureRequestDialog(url, featureS)
+        await runDialogAsync(dlg)
+
+        result = dlg.result()
+        if result in [1, 2]:
+            allow()
+
+            if result == 2:
+                # Add a rule to always allow this feature
+                await database.browserFeaturePermissionAdd(
+                    url, fCode,
+                    database.BrowserFeaturePermission.PERM_ALLOW
+                )
+        elif result == 0:
+            deny()
+        else:
+            log.debug(f'Unknown result from dialog: {result}')
 
     def onFullScreenRequest(self, req):
         # Accept fullscreen requests unconditionally
@@ -368,6 +437,13 @@ class DefaultBrowserWebPage (QtWebEngineWidgets.QWebEnginePage):
         self.setWebChannel(self.channel)
         self.pageHandler = CurrentPageHandler(self)
         self.channel.registerObject('gpage', self.pageHandler)
+
+    def registerChannelHandler(self, name, handler):
+        if not self.channel:
+            self.channel = QWebChannel()
+            self.setWebChannel(self.channel)
+
+        self.channel.registerObject(name, handler)
 
     def javaScriptConsoleMessage(self, level, message, lineNumber, sourceId):
         self.jsConsoleMessage.emit(level, message, lineNumber, sourceId)

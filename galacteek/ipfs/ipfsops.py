@@ -1893,7 +1893,7 @@ class IPFSOperator(object):
         return f'/p2p/{self.ctx.node.id}/x/{serviceName}'
 
     def p2pEndpointExplode(self, addr):
-        ma = re.search(r'/p2p/([\w]{46,59})/x/([\w]{1,128})', addr)
+        ma = re.search(r'/p2p/([\w]{46,59})/x/([\w\-\_]{1,128})', addr)
         if ma:
             return ma.group(1), ma.group(2)
         else:

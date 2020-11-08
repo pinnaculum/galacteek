@@ -7,6 +7,7 @@ import os
 import pkg_resources
 import pathlib
 import platform
+import tempfile
 
 from datetime import datetime
 from datetime import timezone
@@ -47,7 +48,6 @@ def pkgResourcesListDir(pkg: str, rscName: str):
         if rscName != '':
             root = root.joinpath(rscName)
 
-        print(f'pkgResourcesListDir: {pkg} ({rscName}): root is {root}')
         return os.listdir(str(root))
     else:
         return pkg_resources.resource_listdir(pkg, rscName)
@@ -72,6 +72,22 @@ def readQrcTextFile(path):
         qFile.open(QFile.ReadOnly)
         ba = qFile.readAll()
         return ba.data().decode()
+    except BaseException:
+        pass
+
+
+def qrcWriteToTemp(path, delete=False):
+    try:
+        tmpf = tempfile.NamedTemporaryFile(delete=delete)
+        qFile = QFile(path)
+        qFile.open(QFile.ReadOnly)
+        ba = qFile.readAll()
+        data = ba.data()
+
+        with open(tmpf.name, 'w+b') as fd:
+            fd.write(data)
+
+        return tmpf.name
     except BaseException:
         pass
 

@@ -264,6 +264,7 @@ setup(
         'galacteek.database',
         'galacteek.database.models',
         'galacteek.did',
+        'galacteek.extapps',
         'galacteek.ipfs',
         'galacteek.ipfs.pubsub',
         'galacteek.ipfs.pubsub.srvs',
