@@ -213,15 +213,27 @@ with open('README.rst', 'r') as fh:
     long_description = fh.read()
 
 deps_links = []
-install_reqs = []
-with open('requirements.txt') as f:
-    lines = f.read().splitlines()
-    for line in lines:
-        if line.startswith('-e'):
-            link = line.split().pop()
-            deps_links.append(link)
-        else:
-            install_reqs.append(line)
+
+
+def reqs_parse(path):
+    reqs = []
+    deps = []
+
+    with open(path) as f:
+        lines = f.read().splitlines()
+        for line in lines:
+            if line.startswith('-e'):
+                link = line.split().pop()
+                deps.append(link)
+            else:
+                reqs.append(line)
+
+    return reqs
+
+
+install_reqs = reqs_parse('requirements.txt')
+install_reqs_extra_markdown = reqs_parse('requirements-extra-markdown.txt')
+
 
 setup(
     name='galacteek',
@@ -271,6 +283,12 @@ setup(
         'galacteek.ui.orbital'
     ],
     install_requires=install_reqs,
+    extras_require={
+        'markdown': install_reqs_extra_markdown,
+        'docs': [
+            'sphinx>=1.7.0'
+        ]
+    },
     dependency_links=deps_links,
     package_data={
         'galacteek': [
@@ -292,11 +310,6 @@ setup(
     entry_points={
         'gui_scripts': [
             'galacteek = galacteek.guientrypoint:start'
-        ]
-    },
-    extras_require={
-        'docs': [
-            'sphinx>=1.7.0'
         ]
     },
     classifiers=[

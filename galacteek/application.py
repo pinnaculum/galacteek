@@ -290,6 +290,10 @@ class GalacteekApplication(QApplication):
         return self.system == 'Darwin'
 
     @property
+    def windowsSystem(self):
+        return self.system == 'Windows'
+
+    @property
     def debugEnabled(self):
         return self._debugEnabled
 
@@ -863,10 +867,11 @@ class GalacteekApplication(QApplication):
 
         self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=16)
 
-        loop.add_signal_handler(
-            signal.SIGINT,
-            functools.partial(self.signalHandler, 'SIGINT'),
-        )
+        if not self.windowsSystem:
+            loop.add_signal_handler(
+                signal.SIGINT,
+                functools.partial(self.signalHandler, 'SIGINT'),
+            )
 
         self.loop = loop
         return loop

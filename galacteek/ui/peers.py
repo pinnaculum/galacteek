@@ -1,4 +1,3 @@
-import os.path
 import asyncio
 
 from PyQt5.QtWidgets import QAction
@@ -35,6 +34,7 @@ from galacteek import log
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import *
 from galacteek.ipfs.ipfsops import *
+from galacteek.ipfs import posixIpfsPath
 from galacteek.core.modelhelpers import *
 from galacteek.core.models import BaseAbstractItem
 from galacteek.core.iphandle import SpaceHandle
@@ -248,8 +248,8 @@ class PeerServiceObjectTreeItem(PeerBaseItem):
             exploded = didExplode(self.sObject['id'])
 
             if exploded and exploded['path']:
-                return os.path.join(handle.short,
-                                    exploded['path'].lstrip('/'))
+                return posixIpfsPath.join(handle.short,
+                                          exploded['path'].lstrip('/'))
         if column == 1:
             return self.sObject['id']
 
@@ -295,8 +295,8 @@ class PeerServiceTreeItem(PeerBaseItem):
             exploded = didExplode(self.service.id)
 
             if exploded['path']:
-                return os.path.join(handle.short,
-                                    exploded['path'].lstrip('/'))
+                return posixIpfsPath.join(handle.short,
+                                          exploded['path'].lstrip('/'))
         if column == 1:
             return str(self.service.id)
 
@@ -788,7 +788,7 @@ class PeersManager(GalacteekTab):
     async def followPeerFeed(self, op, piCtx):
         identMsg = piCtx.ident
 
-        path = os.path.join(joinIpns(identMsg.dagIpns), DWEB_ATOM_FEEDFN)
+        path = posixIpfsPath.join(joinIpns(identMsg.dagIpns), DWEB_ATOM_FEEDFN)
         ipfsPath = IPFSPath(path)
 
         try:

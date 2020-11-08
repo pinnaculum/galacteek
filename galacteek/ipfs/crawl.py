@@ -1,6 +1,7 @@
-import os.path
 
 from html.parser import HTMLParser
+
+from galacteek.ipfs import posixIpfsPath
 
 import aioipfs
 
@@ -46,7 +47,7 @@ def runTitleParser(data):
 
 
 async def getTitleDirectory(client, path):
-    indexPath = os.path.join(path, 'index.html')
+    indexPath = posixIpfsPath.join(path, 'index.html')
 
     try:
         data = await client.cat(indexPath)

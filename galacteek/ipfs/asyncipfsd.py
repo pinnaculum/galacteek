@@ -37,7 +37,7 @@ async def ipfsConfigProfileApply(binPath, profile):
 
 
 async def ipfsConfigJson(binPath, param, value):
-    return await shell("'{0}' config --json {1} {2}".format(
+    return await shell("'{0}' config --json '{1}' '{2}'".format(
         binPath, param, json.dumps(value)))
 
 

@@ -49,8 +49,7 @@ class QuickAccessToolBar(QToolBar, URLDragAndDropProcessor):
         self.lock = asyncio.Lock(loop=self.app.loop)
         self.setObjectName('toolbarQa')
         self.setToolTip(iQuickAccess())
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
-        self.setMinimumWidth(400)
+        self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         self.setAcceptDrops(True)
         self.analyzer = self.app.rscAnalyzer
 

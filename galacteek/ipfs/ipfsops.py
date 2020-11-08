@@ -4,7 +4,6 @@ import os.path
 import os
 import json
 import orjson
-import tempfile
 import uuid
 import aiofiles
 import shutil
@@ -23,6 +22,7 @@ from PyQt5.QtCore import QFile
 
 import async_timeout
 
+from galacteek.ipfs import posixIpfsPath
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import joinIpns
 from galacteek.ipfs.cidhelpers import stripIpfs
@@ -39,6 +39,7 @@ from galacteek.core.asynclib import async_enterable
 from galacteek.core.asynclib import asyncReadFile
 from galacteek.core.jtraverse import traverseParser
 from galacteek.core import jsonSchemaValidate
+from galacteek.core.tmpf import TmpFile
 from galacteek.ld.ldloader import aioipfs_document_loader
 from galacteek.ld import asyncjsonld as jsonld
 
@@ -409,7 +410,7 @@ class IPFSOperator(object):
 
     async def filesDelete(self, path, name, recursive=False):
         try:
-            await self.client.files.rm(os.path.join(path, name),
+            await self.client.files.rm(posixIpfsPath.join(path, name),
                                        recursive=recursive)
         except aioipfs.APIError:
             self.debug('Exception on removing {0} in {1}'.format(
@@ -540,13 +541,13 @@ class IPFSOperator(object):
 
     async def vMkdir(self, path):
         if self.filesChroot:
-            return await self.filesMkdir(os.path.join(self.filesChroot,
-                                                      path))
+            return await self.filesMkdir(posixIpfsPath.join(self.filesChroot,
+                                                            path))
 
     async def vFilesList(self, path):
         if self.filesChroot:
-            return await self.filesList(os.path.join(self.filesChroot,
-                                                     path))
+            return await self.filesList(posixIpfsPath.join(self.filesChroot,
+                                                           path))
         else:
             raise OperatorError('No chroot provided')
 
@@ -573,7 +574,7 @@ class IPFSOperator(object):
         try:
             await self.client.files.cp(
                 joinIpfs(entry['Hash']),
-                os.path.join(dest, name if name else entry['Name'])
+                posixIpfsPath.join(dest, name if name else entry['Name'])
             )
         except aioipfs.APIError:
             self.debug('Exception on copying entry {0} to {1}'.format(
@@ -1309,6 +1310,7 @@ class IPFSOperator(object):
                                                **exopts):
                 await self.sleep()
                 added = entry
+                self.debug(f'ADDPATH({path}): have entry {entry}')
                 if callbackvalid:
                     await callback(entry)
         except aioipfs.APIError as err:
@@ -1322,6 +1324,7 @@ class IPFSOperator(object):
             self.debug('addPath: unknown exception {}'.format(str(e)))
             return None
         else:
+            self.debug(f'ADDPATH({path}): root is {added}')
             return added
 
     async def addFileEncrypted(self, path):
@@ -1569,28 +1572,26 @@ class IPFSOperator(object):
         """
         Create a new DAG object from data and returns the root CID of the DAG
         """
-        dagFile = tempfile.NamedTemporaryFile()
-        if not dagFile:
-            return None
-        try:
-            dagFile.write(orjson.dumps(data))
-        except Exception as e:
-            self.debug('Cannot convert DAG object: {}'.format(str(e)))
-            return None
-
-        dagFile.seek(0, 0)
-        try:
-            output = await self.client.dag.put(
-                dagFile.name, pin=pin, offline=offline)
-
-            if isinstance(output, dict) and 'Cid' in output:
-                return output['Cid'].get('/', None)
-            else:
-                self.debug('dagPut: no CID in output')
+        with TmpFile() as dagFile:
+            try:
+                dagFile.write(orjson.dumps(data))
+            except Exception as e:
+                self.debug('Cannot convert DAG object: {}'.format(str(e)))
                 return None
-        except aioipfs.APIError as err:
-            self.debug(err.message)
-            return None
+
+            dagFile.seek(0, 0)
+            try:
+                output = await self.client.dag.put(
+                    dagFile.name, pin=pin, offline=offline)
+
+                if isinstance(output, dict) and 'Cid' in output:
+                    return output['Cid'].get('/', None)
+                else:
+                    self.debug('dagPut: no CID in output')
+                    return None
+            except aioipfs.APIError as err:
+                self.debug(err.message)
+                return None
 
     async def dagPutOffline(self, data, pin=False):
         """

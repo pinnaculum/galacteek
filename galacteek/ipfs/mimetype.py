@@ -183,7 +183,7 @@ def magicInstance():
 
         if pl == 'Linux':
             iMagic = magic.Magic(mime=True)
-        elif pl == 'Darwin':
+        elif pl in ['Darwin', 'Windows']:
             dbPath = os.environ.get('GALACTEEK_MAGIC_DBPATH')
 
             if dbPath:
