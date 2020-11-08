@@ -493,3 +493,20 @@ async def pubChatTokensByChannel(channel):
 
 async def pubChatTokensInactive(ltMax):
     return await PubChatSessionToken.filter(ltLast__lt=ltMax).all()
+
+
+# Browser related
+
+
+async def browserFeaturePermissionFilter(url, featureCode):
+    return await BrowserFeaturePermission.filter(
+        Q(url=url) & Q(featureCode=featureCode)).first()
+
+
+async def browserFeaturePermissionAdd(url, featureCode, permission):
+    p = BrowserFeaturePermission(
+        url=url, featureCode=featureCode,
+        permission=permission
+    )
+    await p.save()
+    return p

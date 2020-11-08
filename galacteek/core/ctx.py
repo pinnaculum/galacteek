@@ -897,6 +897,7 @@ class P2PServices(QObject):
     async def init(self, ipfsop):
         from galacteek.ipfs.p2pservices import didauth
         from galacteek.ipfs.p2pservices import dagexchange
+        from galacteek.ipfs.p2pservices import rendezvous
 
         if not await ipfsop.hasCommand('p2p') is True:
             log.debug('No P2P streams support')
@@ -915,6 +916,8 @@ class P2PServices(QObject):
             await self.register(self.dagExchService)
         except Exception:
             log.debug('Could not register DAG service')
+
+        await self.register(rendezvous.PSRendezVousService())
 
     async def stop(self):
         for srv in self.services:

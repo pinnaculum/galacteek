@@ -70,6 +70,10 @@ from . import ui_ipfsdaemoninitdialog
 from . import ui_profileinitdialog
 from . import ui_ipidrsapasswordprompt
 from . import ui_torrenttransferdialog
+from . import ui_browserfeaturereqdialog
+from . import ui_captchachallengedialog
+from . import ui_videochatackwaitdialog
+from . import ui_videochatackwait
 
 from .helpers import *
 from .widgets import ImageWidget
@@ -1895,3 +1899,66 @@ class TorrentTransferDialog(QDialog):
 
     def reject(self):
         self.done(0)
+
+
+class BrowserFeatureRequestDialog(QDialog):
+    def __init__(self, url, feature, parent=None):
+        super().__init__(parent=parent)
+
+        self.ui = ui_browserfeaturereqdialog.Ui_PermissionRequestDialog()
+        self.ui.setupUi(self)
+
+        self.ui.urlLabel.setText(f'<b>{url}</b>')
+        self.ui.featureLabel.setText(f'<b>{feature}</b>')
+
+        self.ui.blockButton.clicked.connect(lambda: self.done(0))
+        self.ui.allowButton.clicked.connect(lambda: self.done(1))
+        self.ui.alwaysAllowButton.clicked.connect(lambda: self.done(2))
+
+
+class IPFSCaptchaChallengeDialog(QDialog):
+    def __init__(self, captchaRaw, parent=None):
+        super().__init__(parent=parent)
+
+        self.inputText = None
+        self.ui = ui_captchachallengedialog.Ui_CaptchaChallengeDialog()
+        self.ui.setupUi(self)
+
+        self.ui.tryButton.clicked.connect(partialEnsure(self.onInput))
+
+        ensure(self.loadCaptcha(captchaRaw))
+
+    async def loadCaptcha(self, captcha):
+        try:
+            img = QImage()
+            img.loadFromData(captcha)
+            img = img.scaledToWidth(300)
+
+            pix = QPixmap.fromImage(img)
+            self.ui.captchaLabel.setPixmap(pix)
+        except BaseException:
+            return None
+
+    async def onInput(self, *args):
+        self.inputText = self.ui.input.text()
+        self.done(1)
+
+
+class VideoChatAckWaitDialog(QDialog):
+    def __init__(self, captchaRaw, parent=None):
+        super().__init__(parent=parent)
+
+        self.inputText = None
+        self.ui = ui_videochatackwaitdialog.Ui_VideoCallAckWaitDialog()
+        self.ui.setupUi(self)
+
+    def ready(self):
+        self.done(1)
+
+
+class VideoChatAckWait(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+
+        self.ui = ui_videochatackwait.Ui_VideoChatAckWait()
+        self.ui.setupUi(self)

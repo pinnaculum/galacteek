@@ -452,10 +452,11 @@ class IPFSResourceOpener(QObject):
                 str(endpoint)
             )
         elif pService.type == IPService.SRV_TYPE_PSRENDEZVOUS:
-            topic = await ipfsop.videoRendezVous(pService)
+            from galacteek.ui.videocall import VideoCallInitiator
 
-            if topic:
-                pass
+            vc = VideoCallInitiator(pService)
+            await vc.start()
+
         elif isinstance(endpoint, str):
             path = IPFSPath(endpoint, autoCidConv=True)
             await self.open(path)
