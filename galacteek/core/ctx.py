@@ -23,7 +23,7 @@ from galacteek import AsyncSignal
 
 from galacteek.ipfs import pinning
 from galacteek.ipfs import kilobytes
-from galacteek.ipfs import posixIpfsPath
+from galacteek.ipfs.paths import posixIpfsPath
 from galacteek.ipfs.cidhelpers import joinIpns
 from galacteek.ipfs.cidhelpers import stripIpfs
 from galacteek.ipfs.cidhelpers import IPFSPath

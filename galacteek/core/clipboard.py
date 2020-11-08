@@ -9,7 +9,7 @@ from PyQt5.QtCore import QDateTime
 from galacteek import ensure
 from galacteek import log
 from galacteek.ipfs import ipfsOp
-from galacteek.ipfs import posixIpfsPath
+from galacteek.ipfs.paths import posixIpfsPath
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.mimetype import detectMimeType
 from galacteek.ipfs.mimetype import MIMEType

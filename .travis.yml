@@ -2,11 +2,6 @@ sudo: required
 dist: xenial
 language: generic
 
-os:
-  - linux
-  - osx
-  - windows
-
 matrix:
   include:
     - name: "Python 3.7.2"
@@ -15,6 +10,8 @@ matrix:
       before_install:
         - choco install python --version 3.7.2
         - choco install unzip
+        - choco install 7zip.portable
+        - 7z
         - python --version
         - python -m pip install --upgrade pip
         - pip3 install --upgrade pytest

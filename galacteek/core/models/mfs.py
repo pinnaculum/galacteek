@@ -15,7 +15,7 @@ from PyQt5.QtCore import QDir
 from PyQt5.QtCore import QFile
 from PyQt5.QtCore import QModelIndex
 
-from galacteek.ipfs import posixIpfsPath
+from galacteek.ipfs.paths import posixIpfsPath
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.ipfsops import *

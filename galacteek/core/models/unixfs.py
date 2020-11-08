@@ -7,7 +7,7 @@ from PyQt5.QtCore import QMimeData
 from PyQt5.QtCore import QUrl
 from PyQt5.QtCore import QVariant
 
-from galacteek.ipfs import posixIpfsPath
+from galacteek.ipfs.paths import posixIpfsPath
 from galacteek.ipfs.cidhelpers import getCID
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import joinIpfs

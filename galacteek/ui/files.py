@@ -46,7 +46,7 @@ from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.mimetype import MIMEType
 from galacteek.ipfs import ipfsPathJoin
-from galacteek.ipfs import posixIpfsPath
+from galacteek.ipfs.paths import posixIpfsPath
 from galacteek.appsettings import *
 
 from galacteek.core import modelhelpers
