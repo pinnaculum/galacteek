@@ -716,7 +716,7 @@ p, li { white-space: pre-wrap; }
         <translation type="obsolete">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Ajouter un répertoire&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="175"/>
+        <location filename="../../galacteek/ui/files.py" line="177"/>
         <source>Add directory</source>
         <translation>AJouter un répertoire</translation>
     </message>
@@ -736,7 +736,7 @@ p, li { white-space: pre-wrap; }
         <translation>Recherche</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="81"/>
+        <location filename="../../galacteek/ui/files.py" line="83"/>
         <source>Error importing file {}</source>
         <translation>Erreur en important le fichier {}</translation>
     </message>
@@ -756,17 +756,17 @@ p, li { white-space: pre-wrap; }
         <translation type="obsolete">Le fichier {0} a été ajouté</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="111"/>
+        <location filename="../../galacteek/ui/files.py" line="113"/>
         <source>Loading file {0}</source>
         <translation>Chargement du fichier {0}</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="116"/>
+        <location filename="../../galacteek/ui/files.py" line="118"/>
         <source>Loading {0}</source>
         <translation>Chargement: {0}</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="139"/>
+        <location filename="../../galacteek/ui/files.py" line="141"/>
         <source>Open with</source>
         <translation>Ouvrir avec</translation>
     </message>
@@ -786,22 +786,22 @@ p, li { white-space: pre-wrap; }
         <translation type="obsolete">Déréferencer le fichier</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="153"/>
+        <location filename="../../galacteek/ui/files.py" line="155"/>
         <source>Hashmark</source>
         <translation>Hash-marquer</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="157"/>
+        <location filename="../../galacteek/ui/files.py" line="159"/>
         <source>Browse</source>
         <translation>Naviguer</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="161"/>
+        <location filename="../../galacteek/ui/files.py" line="163"/>
         <source>Select directory</source>
         <translation>Sélectionnez un répertoire</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="165"/>
+        <location filename="../../galacteek/ui/files.py" line="167"/>
         <source>Select one or more files to import</source>
         <translation>Selectionnez un ou plusieurs fichiers a importer</translation>
     </message>
@@ -836,7 +836,7 @@ p, li { white-space: pre-wrap; }
         <translation>Documents</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="91"/>
+        <location filename="../../galacteek/ui/files.py" line="93"/>
         <source>Added {0}</source>
         <translation type="unfinished"></translation>
     </message>
@@ -856,22 +856,22 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="185"/>
+        <location filename="../../galacteek/ui/files.py" line="187"/>
         <source>Offline mode</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="197"/>
+        <location filename="../../galacteek/ui/files.py" line="199"/>
         <source>Announce (DHT provide)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="203"/>
+        <location filename="../../galacteek/ui/files.py" line="205"/>
         <source>Announce (DHT provide, recursive)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="245"/>
+        <location filename="../../galacteek/ui/files.py" line="247"/>
         <source>Offline mode: in this mode your files will not be immediately announced on the DHT</source>
         <translation type="unfinished"></translation>
     </message>
@@ -891,7 +891,7 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="106"/>
+        <location filename="../../galacteek/ui/files.py" line="108"/>
         <source>Imported {0} file(s)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -906,12 +906,12 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="121"/>
+        <location filename="../../galacteek/ui/files.py" line="123"/>
         <source>Listing MFS path: {0}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="133"/>
+        <location filename="../../galacteek/ui/files.py" line="135"/>
         <source>Timeout while listing MFS path: {0}</source>
         <translation type="unfinished"></translation>
     </message>
@@ -921,32 +921,32 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="209"/>
+        <location filename="../../galacteek/ui/files.py" line="211"/>
         <source>Use raw blocks for leaf nodes</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="227"/>
+        <location filename="../../galacteek/ui/files.py" line="229"/>
         <source>DAG generation format</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="233"/>
+        <location filename="../../galacteek/ui/files.py" line="235"/>
         <source>Balanced</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="239"/>
+        <location filename="../../galacteek/ui/files.py" line="241"/>
         <source>Trickle</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="189"/>
+        <location filename="../../galacteek/ui/files.py" line="191"/>
         <source>Chunker</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="193"/>
+        <location filename="../../galacteek/ui/files.py" line="195"/>
         <source>Hash function</source>
         <translation type="unfinished"></translation>
     </message>
@@ -956,12 +956,12 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="96"/>
+        <location filename="../../galacteek/ui/files.py" line="98"/>
         <source>Import hidden files ?</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="101"/>
+        <location filename="../../galacteek/ui/files.py" line="103"/>
         <source>Use .gitignore rules ?</source>
         <translation type="unfinished"></translation>
     </message>
@@ -976,22 +976,22 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="86"/>
+        <location filename="../../galacteek/ui/files.py" line="88"/>
         <source>Cancelled import</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="215"/>
+        <location filename="../../galacteek/ui/files.py" line="217"/>
         <source>Use filestore if available</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="143"/>
+        <location filename="../../galacteek/ui/files.py" line="145"/>
         <source>Delete file/directory</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="148"/>
+        <location filename="../../galacteek/ui/files.py" line="150"/>
         <source>Unlink file/directory</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1006,12 +1006,12 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="252"/>
+        <location filename="../../galacteek/ui/files.py" line="254"/>
         <source>Search your files (regular expression)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="221"/>
+        <location filename="../../galacteek/ui/files.py" line="223"/>
         <source>Use time metadata (MFS linking)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1021,22 +1021,22 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="127"/>
+        <location filename="../../galacteek/ui/files.py" line="129"/>
         <source>Search matched file with name: {0}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="170"/>
+        <location filename="../../galacteek/ui/files.py" line="172"/>
         <source>Add files</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="180"/>
+        <location filename="../../galacteek/ui/files.py" line="182"/>
         <source>Refresh</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/files.py" line="259"/>
+        <location filename="../../galacteek/ui/files.py" line="261"/>
         <source>An entry with this CID already exists here</source>
         <translation type="unfinished"></translation>
     </message>

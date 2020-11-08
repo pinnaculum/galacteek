@@ -359,16 +359,15 @@ class MainToolBar(QToolBar):
         self.setContextMenuPolicy(Qt.NoContextMenu)
 
         # 1st widget
-        self.pad = QWidget()
-        self.pad.setSizePolicy(
-            QSizePolicy.Expanding, QSizePolicy.Expanding)
-
-        self.addWidget(self.pad)
+        # self.pad = QWidget()
+        # self.pad.setSizePolicy(
+        #     QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # self.addWidget(self.pad)
 
         # Empty widget
         self.emptySpace = QWidget()
         self.emptySpace.setSizePolicy(
-            QSizePolicy.Minimum, QSizePolicy.Expanding)
+            QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.lastPos = None
 
     @property
@@ -696,7 +695,6 @@ class MainWindow(QMainWindow):
             Qt.WindowMaximizeButtonHint
         )
 
-        self.showMaximized()
         self._app = app
         self._allTabs = []
         self._lastFeedMark = None
@@ -949,12 +947,6 @@ class MainWindow(QMainWindow):
 
         self.ipfsSearchPageFactory = ipfssearch.SearchResultsPageFactory(self)
 
-        self.ipfsSearchButton = ipfssearch.IPFSSearchButton(self)
-        self.ipfsSearchButton.setShortcut(QKeySequence('Ctrl+Alt+s'))
-        self.ipfsSearchButton.setIcon(self.ipfsSearchButton.iconNormal)
-        self.ipfsSearchButton.setToolTip(iSearchIpfsContent())
-        self.ipfsSearchButton.clicked.connect(self.addIpfsSearchView)
-
         self.toolbarMain.addWidget(self.browseButton)
         self.toolbarMain.addWidget(self.hashmarkMgrButton)
         self.toolbarMain.addWidget(self.hashmarksSearcher)
@@ -1103,6 +1095,7 @@ class MainWindow(QMainWindow):
         self.pinIconNormal = getIcon('pin-black.png')
 
         self.setCentralWidget(self.stack)
+        self.showMaximized()
 
     @property
     def tabWidget(self):

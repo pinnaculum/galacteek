@@ -1,4 +1,3 @@
-import os
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QAbstractListModel
@@ -8,6 +7,7 @@ from PyQt5.QtCore import QMimeData
 from PyQt5.QtCore import QUrl
 from PyQt5.QtCore import QVariant
 
+from galacteek.ipfs import posixIpfsPath
 from galacteek.ipfs.cidhelpers import getCID
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import joinIpfs
@@ -79,8 +79,10 @@ class UnixFSEntryInfo:
         """
 
         if self._parentCid:
-            return joinIpfs(os.path.join(cidConvertBase32(self._parentCid),
-                                         self.filename))
+            return joinIpfs(
+                posixIpfsPath.join(
+                    cidConvertBase32(self._parentCid),
+                    self.filename))
         else:
             return joinIpfs(cidConvertBase32(self.entry['Hash']))
 

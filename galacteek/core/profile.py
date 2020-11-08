@@ -55,6 +55,7 @@ from galacteek.core.asynclib import asyncWriteFile
 
 from galacteek.crypto.qrcode import IPFSQrEncoder
 
+from galacteek.ipfs import posixIpfsPath
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import joinIpns
 from galacteek.ipfs.cidhelpers import joinIpfs
@@ -156,7 +157,7 @@ class UserProfileEDAG(EvolvingDAG):
     @ipfsOp
     async def identityResolve(self, ipfsop, path):
         if self.curIdentity:
-            return await self.resolve(os.path.join(
+            return await self.resolve(posixIpfsPath.join(
                 'identities',
                 self.root['currentIdentityUid'],
                 path)
@@ -164,7 +165,7 @@ class UserProfileEDAG(EvolvingDAG):
 
     @ipfsOp
     async def identityDagGet(self, ipfsop, path, identityUid=None):
-        return await self.get(os.path.join(
+        return await self.get(posixIpfsPath.join(
             'identities',
             identityUid if identityUid else self.root['currentIdentityUid'],
             path)
@@ -172,7 +173,7 @@ class UserProfileEDAG(EvolvingDAG):
 
     @ipfsOp
     async def identityGetRaw(self, ipfsop, path, identityUid=None):
-        return await self.cat(os.path.join(
+        return await self.cat(posixIpfsPath.join(
             'identities',
             identityUid if identityUid else self.root['currentIdentityUid'],
             path)
@@ -351,7 +352,7 @@ class SharedHashmarksManager(QObject):
             if marksHash in self._loaded:
                 continue
 
-            fPath = os.path.join(self.profile.pathHMarksLibrary, uid)
+            fPath = posixIpfsPath.join(self.profile.pathHMarksLibrary, uid)
 
             try:
                 marksCiphered = await self.loadFromPath(fPath)
@@ -367,7 +368,7 @@ class SharedHashmarksManager(QObject):
                 await asyncio.sleep(1)
 
     async def store(self, ipfsop, sender, marksJson):
-        mfsPath = os.path.join(self.profile.pathHMarksLibrary, sender)
+        mfsPath = posixIpfsPath.join(self.profile.pathHMarksLibrary, sender)
 
         exists = await ipfsop.filesLookup(self.profile.pathHMarksLibrary,
                                           sender)
@@ -591,107 +592,107 @@ class UserProfile(QObject):
 
     @property
     def pathFiles(self):
-        return os.path.join(self.root, 'files')
+        return posixIpfsPath.join(self.root, 'files')
 
     @property
     def pathHome(self):
-        return os.path.join(self.pathFiles, 'home')
+        return posixIpfsPath.join(self.pathFiles, 'home')
 
     @property
     def pathDocuments(self):
-        return os.path.join(self.pathFiles, 'documents')
+        return posixIpfsPath.join(self.pathFiles, 'documents')
 
     @property
     def pathTmp(self):
-        return os.path.join(self.pathFiles, 'tmp')
+        return posixIpfsPath.join(self.pathFiles, 'tmp')
 
     @property
     def pathEncryptedFiles(self):
-        return os.path.join(self.pathFiles, 'sencrypted')
+        return posixIpfsPath.join(self.pathFiles, 'sencrypted')
 
     @property
     def pathQrCodes(self):
-        return os.path.join(self.pathMedia, 'qrcodes')
+        return posixIpfsPath.join(self.pathMedia, 'qrcodes')
 
     @property
     def pathQrCodesEncrypted(self):
-        return os.path.join(self.pathQrCodes, 'encrypted')
+        return posixIpfsPath.join(self.pathQrCodes, 'encrypted')
 
     @property
     def pathMedia(self):
-        return os.path.join(self.pathFiles, 'multimedia')
+        return posixIpfsPath.join(self.pathFiles, 'multimedia')
 
     @property
     def pathImages(self):
-        return os.path.join(self.pathMedia, 'images')
+        return posixIpfsPath.join(self.pathMedia, 'images')
 
     @property
     def pathPictures(self):
-        return os.path.join(self.pathMedia, 'pictures')
+        return posixIpfsPath.join(self.pathMedia, 'pictures')
 
     @property
     def pathWebPages(self):
-        return os.path.join(self.pathFiles, 'webpages')
+        return posixIpfsPath.join(self.pathFiles, 'webpages')
 
     @property
     def pathDWebApps(self):
-        return os.path.join(self.pathFiles, 'dwebapps')
+        return posixIpfsPath.join(self.pathFiles, 'dwebapps')
 
     @property
     def pathVideos(self):
-        return os.path.join(self.pathMedia, 'videos')
+        return posixIpfsPath.join(self.pathMedia, 'videos')
 
     @property
     def pathMusic(self):
-        return os.path.join(self.pathMedia, 'music')
+        return posixIpfsPath.join(self.pathMedia, 'music')
 
     @property
     def pathCode(self):
-        return os.path.join(self.pathFiles, 'code')
+        return posixIpfsPath.join(self.pathFiles, 'code')
 
     @property
     def pathWebsites(self):
-        return os.path.join(self.pathFiles, 'websites')
+        return posixIpfsPath.join(self.pathFiles, 'websites')
 
     @property
     def pathEtc(self):
-        return os.path.join(self.root, 'etc')
+        return posixIpfsPath.join(self.root, 'etc')
 
     @property
     def pathData(self):
-        return os.path.join(self.root, 'data')
+        return posixIpfsPath.join(self.root, 'data')
 
     @property
     def pathEDags(self):
-        return os.path.join(self.pathData, 'edags')
+        return posixIpfsPath.join(self.pathData, 'edags')
 
     @property
     def pathEDagsSeeds(self):
-        return os.path.join(self.pathEDags, 'seeds')
+        return posixIpfsPath.join(self.pathEDags, 'seeds')
 
     @property
     def pathEDagsPyramids(self):
-        return os.path.join(self.pathEDags, 'pyramids')
+        return posixIpfsPath.join(self.pathEDags, 'pyramids')
 
     @property
     def pathHMarksLibrary(self):
-        return os.path.join(self.pathData, 'hmarks_library')
+        return posixIpfsPath.join(self.pathData, 'hmarks_library')
 
     @property
     def pathOrbital(self):
-        return os.path.join(self.pathData, 'orbital')
+        return posixIpfsPath.join(self.pathData, 'orbital')
 
     @property
     def pathOrbitalConfig(self):
-        return os.path.join(self.pathOrbital, 'config')
+        return posixIpfsPath.join(self.pathOrbital, 'config')
 
     @property
     def pathPlaylists(self):
-        return os.path.join(self.pathData, 'playlists')
+        return posixIpfsPath.join(self.pathData, 'playlists')
 
     @property
     def pathUserInfo(self):
-        return os.path.join(self.pathData, 'userinfo.json.enc')
+        return posixIpfsPath.join(self.pathData, 'userinfo.json.enc')
 
     @property
     def pathProfileEDag(self):
@@ -703,23 +704,24 @@ class UserProfile(QObject):
 
     @property
     def pathUserDagMeta(self):
-        return os.path.join(self.pathData, 'dag.main')
+        return posixIpfsPath.join(self.pathData, 'dag.main')
 
     @property
     def pathChatChannelsDagMeta(self):
-        return os.path.join(self.pathEDags, 'chatchannels.edag')
+        return posixIpfsPath.join(self.pathEDags, 'chatchannels.edag')
 
     @property
     def pathEDagNetwork(self):
-        return os.path.join(self.pathEDags, 'network.edag')
+        return posixIpfsPath.join(self.pathEDags, 'network.edag')
 
     @property
     def pathEdagSeedsMain(self):
-        return os.path.join(self.pathEDagsSeeds, 'ipseeds_main.enc.edag')
+        return posixIpfsPath.join(self.pathEDagsSeeds, 'ipseeds_main.enc.edag')
 
     @property
     def pathEdagSeedsAll(self):
-        return os.path.join(self.pathEDagsSeeds, 'ipseeds_main_mega.enc.edag')
+        return posixIpfsPath.join(
+            self.pathEDagsSeeds, 'ipseeds_main_mega.enc.edag')
 
     def setFilesModel(self, model):
         self.filesModel = model
@@ -736,7 +738,7 @@ class UserProfile(QObject):
         for directory in self.tree:
             await ipfsop.filesMkdir(directory)
 
-        wPath = os.path.join(self.pathHome, 'welcome')
+        wPath = posixIpfsPath.join(self.pathHome, 'welcome')
         welcomeEnt = await ipfsop.filesList(wPath)
 
         if not welcomeEnt:
@@ -1304,13 +1306,13 @@ class UserProfile(QObject):
         return mfsMenu
 
     def edagMetadataPath(self, name):
-        return os.path.join(
+        return posixIpfsPath.join(
             self.pathEDags, '{0}.edag.json'.format(name))
 
     def edagEncMetadataPath(self, name):
-        return os.path.join(
+        return posixIpfsPath.join(
             self.pathEDags, '{0}.edag.enc.json'.format(name))
 
     def edagPyramidMetadataPath(self, name):
-        return os.path.join(
+        return posixIpfsPath.join(
             self.pathEDagsPyramids, '{0}.edag.json'.format(name))

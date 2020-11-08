@@ -3,7 +3,6 @@ import aiorwlock
 import re
 import collections
 import time
-import os.path
 from datetime import datetime
 
 from PyQt5.QtWidgets import QApplication
@@ -24,6 +23,7 @@ from galacteek import AsyncSignal
 
 from galacteek.ipfs import pinning
 from galacteek.ipfs import kilobytes
+from galacteek.ipfs import posixIpfsPath
 from galacteek.ipfs.cidhelpers import joinIpns
 from galacteek.ipfs.cidhelpers import stripIpfs
 from galacteek.ipfs.cidhelpers import IPFSPath
@@ -1081,7 +1081,7 @@ class IPFSContext(QObject):
 
     async def profileLoad(self, ipfsop, pName):
         if await self.profileExists(pName):
-            profile = UserProfile(self, pName, os.path.join(
+            profile = UserProfile(self, pName, posixIpfsPath.join(
                 GFILES_ROOT_PATH, 'profile.{}'.format(pName))
             )
 
@@ -1109,7 +1109,7 @@ class IPFSContext(QObject):
 
     async def profileNew(self, ipfsop, pName,
                          initOptions=None, emitavail=True):
-        profile = UserProfile(self, pName, os.path.join(
+        profile = UserProfile(self, pName, posixIpfsPath.join(
             GFILES_ROOT_PATH, 'profile.{}'.format(pName)),
             initOptions=initOptions
         )

@@ -1,5 +1,4 @@
 import asyncio
-import os.path
 import aiorwlock
 from cachetools import TTLCache
 
@@ -10,6 +9,7 @@ from PyQt5.QtCore import (pyqtSignal, QObject)
 from galacteek import log
 from galacteek import ensure
 from galacteek import AsyncSignal
+from galacteek.ipfs import posixIpfsPath
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import IPFSPath
@@ -68,10 +68,10 @@ class DAGOperations:
 
     @ipfsOp
     async def get(self, op, path):
-        self.debug('DAG get: {}'.format(os.path.join(self.dagCid, path)))
+        self.debug('DAG get: {}'.format(posixIpfsPath.join(self.dagCid, path)))
         try:
             dagNode = await op.dagGet(
-                os.path.join(self.dagCid, path))
+                posixIpfsPath.join(self.dagCid, path))
         except aioipfs.APIError as err:
             log.debug('DAG get: {0}. An error occured: {1}'.format(
                 path, err.message))
@@ -91,7 +91,7 @@ class DAGOperations:
     async def cat(self, op, path):
         try:
             return await op.client.cat(
-                os.path.join(self.dagCid, path))
+                posixIpfsPath.join(self.dagCid, path))
         except aioipfs.APIError as err:
             self.debug(f'Cat error ({path}): {err.message}')
             return None
@@ -125,7 +125,7 @@ class DAGOperations:
     @ipfsOp
     async def resolve(self, op, path=''):
         return await op.resolve(
-            os.path.join(self.dagCid, path), recursive=True)
+            posixIpfsPath.join(self.dagCid, path), recursive=True)
 
     @async_generator
     async def walk(self, op, path='', maxObjSize=0, depth=1):
@@ -158,14 +158,14 @@ class DAGOperations:
                     continue
                 else:
                     await yield_from_(
-                        self.walk(op, path=os.path.join(path, objKey),
+                        self.walk(op, path=posixIpfsPath.join(path, objKey),
                                   maxObjSize=maxObjSize, depth=depth)
                     )
 
         elif isinstance(data, list):
             for idx, obj in enumerate(data):
                 await yield_from_(
-                    self.walk(op, path=os.path.join(path, str(idx)),
+                    self.walk(op, path=posixIpfsPath.join(path, str(idx)),
                               maxObjSize=maxObjSize)
                 )
         elif isinstance(data, str):
@@ -252,7 +252,7 @@ class DAGPortal(QObject, DAGOperations):
         return self._dagRoot
 
     def path(self, subpath):
-        return os.path.join(joinIpfs(self.dagCid), subpath)
+        return posixIpfsPath.join(joinIpfs(self.dagCid), subpath)
 
     def child(self, subpath):
         if self.dagPath.valid:

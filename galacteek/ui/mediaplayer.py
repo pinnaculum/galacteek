@@ -1,4 +1,4 @@
-import os.path
+import posixpath
 import functools
 
 from PyQt5.QtWidgets import QWidget
@@ -33,6 +33,7 @@ from galacteek.core.jsono import *
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import qurlPercentDecode
 from galacteek.ipfs.ipfsops import *
+from galacteek.ipfs import posixIpfsPath
 
 from . import ui_mediaplaylist
 
@@ -448,7 +449,7 @@ class MediaPlayerTab(GalacteekTab):
 
     @ipfsOp
     async def savePlaylist(self, ipfsop, obj, name):
-        objPath = os.path.join(self.profile.pathPlaylists, name)
+        objPath = posixIpfsPath.join(self.profile.pathPlaylists, name)
         exists = await ipfsop.filesStat(objPath)
 
         if exists:
@@ -737,7 +738,7 @@ class ListModel(QAbstractItemModel):
                     return iUnknown()
                 location = media.canonicalUrl()
                 path = location.path()
-                basename = os.path.basename(path)
+                basename = posixpath.basename(path)
                 if basename:
                     return basename
                 else:

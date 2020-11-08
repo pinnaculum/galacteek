@@ -15,6 +15,7 @@ from PyQt5.QtCore import QDir
 from PyQt5.QtCore import QFile
 from PyQt5.QtCore import QModelIndex
 
+from galacteek.ipfs import posixIpfsPath
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.ipfsops import *
@@ -269,7 +270,8 @@ class MFSNameItem(MFSItem):
     def fullPath(self):
         parentHash = self.parentHash
         if parentHash:
-            fp = joinIpfs(os.path.join(parentHash, self.entry['Name']))
+            fp = joinIpfs(
+                posixIpfsPath.join(parentHash, self.entry['Name']))
         else:
             fp = joinIpfs(self.entry['Hash'])
 

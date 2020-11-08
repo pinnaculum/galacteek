@@ -1,6 +1,6 @@
 import base64
 import asyncio
-import os.path
+import posixpath
 import json
 import re
 import time
@@ -547,7 +547,7 @@ class IPIdentifier(DAGOperations):
     async def addServiceCollection(self, ipfsop, name):
         return await self.addServiceContexted({
             'id': self.didUrl(
-                path=os.path.join('/collections', name)
+                path=posixpath.join('/collections', name)
             ),
             'type': IPService.SRV_TYPE_COLLECTION,
         }, context='ObjectsCollectionEndpoint',
@@ -697,7 +697,7 @@ class IPIdentifier(DAGOperations):
     @ipfsOp
     async def dagGet(self, ipfsop, path):
         if self.docCid:
-            dPath = os.path.join(self.docCid, path)
+            dPath = posixpath.join(self.docCid, path)
             self.message('DID docget: {}'.format(dPath))
 
             try:

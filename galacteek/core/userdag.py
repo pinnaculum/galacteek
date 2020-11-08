@@ -1,4 +1,3 @@
-import os.path
 import uuid
 import pkg_resources
 from datetime import datetime
@@ -11,6 +10,7 @@ from galacteek import logUser
 from galacteek import ensure
 from galacteek import AsyncSignal
 from galacteek.ipfs import ipfsOp
+from galacteek.ipfs import posixIpfsPath
 from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs.cidhelpers import ipnsKeyCidV1
 from galacteek.ipfs.cidhelpers import IPFSPath
@@ -196,7 +196,7 @@ class UserWebsite:
         await ipfsop.sleep(1)
 
         result = await self.dagUser.resolve(
-            os.path.join(BLOG_NODEKEY, postName, 'view'))
+            posixIpfsPath.join(BLOG_NODEKEY, postName, 'view'))
         resolved = IPFSPath(result, autoCidConv=True)
 
         if isinstance(tags, list) and resolved.isIpfsRoot and resolved.valid:
@@ -464,7 +464,7 @@ class UserWebsite:
     def feedAddPinRequests(self, requests, feed):
         for id, reqobj in enumerate(requests):
             req = reqobj['pinrequest']
-            rpath = self.sitePath.child(os.path.join(
+            rpath = self.sitePath.child(posixIpfsPath.join(
                 PINREQS_NODEKEY, str(id), 'view'))
 
             fEntry = feed.add_entry()
@@ -476,7 +476,7 @@ class UserWebsite:
 
     def feedAddPosts(self, blogPosts, feed, ftype='ipfs'):
         for post in blogPosts:
-            ppath = self.sitePath.child(os.path.join(
+            ppath = self.sitePath.child(posixIpfsPath.join(
                 'blog', post['postname'], 'view'))
 
             fEntry = feed.add_entry()

@@ -1,8 +1,8 @@
-import os.path
 import uuid
 
 from galacteek.ipfs.dag import EvolvingDAG
 from galacteek.ipfs import ipfsOp
+from galacteek.ipfs import posixIpfsPath
 from galacteek.ipfs import kilobytes
 from galacteek.ipfs.cidhelpers import stripIpfs
 from galacteek.core.asynccache import cachedcoromethod
@@ -136,7 +136,7 @@ class AggregateDAG(EvolvingDAG):
     async def peerNode(self, peerId):
         if peerId in self.nodes:
             return await self.get(
-                os.path.join('nodes', peerId)
+                posixIpfsPath.join('nodes', peerId)
             )
 
     @cachedcoromethod(TTLCache(16, 60))

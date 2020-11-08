@@ -1,5 +1,4 @@
 import functools
-import os.path
 import aioipfs
 import time
 import shutil
@@ -37,6 +36,7 @@ from galacteek.ipfs.cidhelpers import isIpnsPath
 from galacteek.ipfs.cidhelpers import isIpfsPath
 from galacteek.ipfs.cidhelpers import shortPathRepr
 from galacteek.ipfs import ipfsOp
+from galacteek.ipfs import posixIpfsPath
 from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs import megabytes
 from galacteek.ipfs.mimetype import mimeTypeDagUnknown
@@ -757,13 +757,13 @@ class ClipboardItemButton(PopupToolButton):
         else:
             basename = inputTextLong(
                 'Name', 'Link with filename',
-                text=os.path.basename(self.item.ipfsPath.subPath))
+                text=posixIpfsPath.basename(self.item.ipfsPath.subPath))
 
         ensure(self.copyToMfs(action.data(), basename))
 
     @ipfsOp
     async def copyToMfs(self, ipfsop, mfsItem, basename):
-        dest = os.path.join(mfsItem.path, basename)
+        dest = posixIpfsPath.join(mfsItem.path, basename)
 
         try:
             await ipfsop.client.files.cp(
@@ -895,7 +895,7 @@ class ClipboardItemButton(PopupToolButton):
 
         mark = await database.hashmarksByObjTagLatest('#dapp-ipldexplorer')
         if mark:
-            link = os.path.join(
+            link = posixIpfsPath.join(
                 mark.path, '#', 'explore', stripIpfs(self.item.path))
             self.app.mainWindow.addBrowserTab().browseFsPath(link)
         else:

@@ -1,11 +1,11 @@
 import re
-import os.path
 import os
 import aioipfs
 
 from PyQt5.QtCore import QUrl
 
 from galacteek import log
+from galacteek.ipfs import posixIpfsPath
 from galacteek.ipfs.cid import CIDv1
 from galacteek.ipfs.cid import make_cid
 from galacteek.ipfs.cid import BaseCID
@@ -17,7 +17,7 @@ import multihash
 def normp(path):
     sep = '/'
     final = path.endswith(sep)
-    normed = os.path.normpath(path)
+    normed = posixIpfsPath.normpath(path)
 
     if final:
         return normed + sep
@@ -59,12 +59,12 @@ def normpPreserve(path, preserveTrailing=True):
 
 def joinIpfs(path):
     if isinstance(path, str):
-        return os.path.join('/ipfs/', path)
+        return posixIpfsPath.join('/ipfs/', path)
 
 
 def joinIpns(path):
     if isinstance(path, str):
-        return os.path.join('/ipns/', path)
+        return posixIpfsPath.join('/ipns/', path)
 
 
 def stripIpfs(path):
@@ -98,7 +98,7 @@ def shortCidRepr(cid):
 
 def shortPathRepr(path):
     if isIpfsPath(path) or isIpnsPath(path):
-        basename = os.path.basename(path)
+        basename = posixIpfsPath.basename(path)
         if cidValid(basename):
             cid = getCID(basename)
             return shortCidRepr(cid)
@@ -420,7 +420,7 @@ class IPFSPath:
     @property
     def basename(self):
         if self.valid:
-            return os.path.basename(self.objPath.rstrip('/'))
+            return posixIpfsPath.basename(self.objPath.rstrip('/'))
 
     @property
     def objPath(self):
@@ -618,7 +618,7 @@ class IPFSPath:
         return False
 
     def pathjoin(self, path1, path2):
-        return os.path.join(path1, path2.lstrip('/'))
+        return posixIpfsPath.join(path1, path2.lstrip('/'))
 
     def parseCid(self, cidStr):
         if not cidValid(cidStr):
@@ -655,10 +655,13 @@ class IPFSPath:
         if normalize:
             cPath = normp(path)
             return IPFSPath(normp(
-                os.path.join(self.objPath, cPath.lstrip('/'))))
+                posixIpfsPath.join(self.objPath, cPath.lstrip('/'))))
         else:
             cPath = normpPreserve(path)
-            return IPFSPath(os.path.join(self.objPath, cPath.lstrip('/')))
+            return IPFSPath(
+                posixIpfsPath.join(
+                    self.objPath,
+                    cPath.lstrip('/')))
 
     def parent(self):
         return self.child('../', normalize=True)

@@ -4,7 +4,7 @@ import sys
 import collections
 import copy
 import re
-import os.path
+import posixpath
 import asyncio
 import uuid
 from datetime import datetime
@@ -869,7 +869,7 @@ class IPFSMarks(QObject):
         print(self.serialize(sys.stdout))
 
     def pyramidPathFormat(self, category, name):
-        return os.path.join(category, name)
+        return posixpath.join(category, name)
 
     def pyramidGetLatestHashmark(self, pyramidPath, type='mark'):
         pyramid = self.pyramidGet(pyramidPath)
@@ -938,8 +938,8 @@ class IPFSMarks(QObject):
             raise Exception('Pyramid already exists')
 
     def pyramidAccess(self, pyramidPath):
-        category = os.path.dirname(pyramidPath)
-        name = os.path.basename(pyramidPath)
+        category = posixpath.dirname(pyramidPath)
+        name = posixpath.basename(pyramidPath)
         sec = self.enterCategory(category, create=False)
         if sec:
             if pyramidsKey not in sec:

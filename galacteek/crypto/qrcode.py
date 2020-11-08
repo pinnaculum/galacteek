@@ -1,7 +1,6 @@
 import asyncio
 import io
 import functools
-import tempfile
 import platform
 
 from ctypes import cdll
@@ -12,6 +11,7 @@ from PIL.Image import new as NewImage
 from PIL import Image
 
 from galacteek import log
+from galacteek.core.tmpf import TmpFile
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs import ipfsOp
 from galacteek.did import didRe
@@ -28,13 +28,15 @@ def zbar_load():
             path = 'libzbar.so.0'
         elif platform.system() == 'Darwin':
             path = 'libzbar.0.dylib'
+        elif platform.system() == 'Windows':
+            path = 'libzbar64-0.dll'
 
     log.debug('Loading zbar library from: {}'.format(path))
 
     try:
         libzbar = cdll.LoadLibrary(path)
-    except Exception:
-        log.debug('Could not load zbar lib from: {}'.format(path))
+    except Exception as err:
+        log.debug(f'Could not load zbar lib from: {path}: {err}')
         return None, []
     else:
         log.debug('Loaded zbar lib from: {}'.format(path))
@@ -43,11 +45,13 @@ def zbar_load():
 
 try:
     from pyzbar import zbar_library
-    zbar_library.load = zbar_load
+
+    if platform.system() != 'Windows':
+        zbar_library.load = zbar_load
+
     from pyzbar.pyzbar import decode as zbar_decode
-except Exception as err:
+except Exception:
     import traceback
-    print('zbar import error', str(err))
     traceback.print_exc()
     haveZbar = False
 else:
@@ -213,16 +217,20 @@ class IPFSQrEncoder:
     async def encodeAndStore(self, ipfsop, loop=None, executor=None,
                              filename=None, format='raw', **kw):
         try:
+            entry = None
             img = await self.encodeAll(loop=loop, executor=executor, **kw)
+
             if not img:
                 raise Exception('Could not encode QR')
 
             if format == 'raw':
                 return await ipfsop.addBytes(img.tobytes())
             elif format == 'png':
-                tfile = tempfile.NamedTemporaryFile(suffix='.png')
-                img.save(tfile.name)
-                return await ipfsop.addPath(tfile.name)
+                with TmpFile(suffix='.png') as tfile:
+                    img.save(tfile.name)
+                    entry = await ipfsop.addPath(tfile.name)
+
+                return entry
         except Exception as e:
             log.debug('Error encoding/storing QR code: {}'.format(str(e)))
 

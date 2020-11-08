@@ -45,6 +45,8 @@ from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.mimetype import MIMEType
+from galacteek.ipfs import ipfsPathJoin
+from galacteek.ipfs import posixIpfsPath
 from galacteek.appsettings import *
 
 from galacteek.core import modelhelpers
@@ -1177,7 +1179,7 @@ class FileManager(QWidget):
             parentHash = nameItem.parentHash
             name = nameItem.entry['Name']
             if parentHash:
-                fp = joinIpfs(os.path.join(parentHash, name))
+                fp = joinIpfs(ipfsPathJoin(parentHash, name))
                 self.gWindow.mediaPlayerPlay(fp, mediaName=name)
             else:
                 self.gWindow.mediaPlayerPlay(joinIpfs(itemHash),
@@ -1444,7 +1446,7 @@ class FileManager(QWidget):
             if parentHash:
                 # We have the parent hash, so use it to build a file path
                 # preserving the real file name
-                finalPath = joinIpfs(os.path.join(parentHash, fileName))
+                finalPath = joinIpfs(ipfsPathJoin(parentHash, fileName))
 
             ensure(resourceOpener.open(
                 finalPath,
@@ -1640,8 +1642,8 @@ class FileManager(QWidget):
 
     @ipfsOp
     async def _renameFile(self, ipfsop, item, name):
-        baseDir = os.path.dirname(item.path)
-        newPath = os.path.join(baseDir, name)
+        baseDir = posixIpfsPath.dirname(item.path)
+        newPath = posixIpfsPath.join(baseDir, name)
 
         if await ipfsop.filesLookup(baseDir, name):
             return await messageBoxAsync(
@@ -1689,7 +1691,7 @@ class FileManager(QWidget):
 
     @ipfsOp
     async def makeDir(self, ipfsop, parent, path):
-        await ipfsop.filesMkdir(os.path.join(parent, path))
+        await ipfsop.filesMkdir(posixIpfsPath.join(parent, path))
         self.updateTree()
 
     @ipfsOp
@@ -1901,7 +1903,7 @@ class FileManager(QWidget):
                             nItemName.setIcon(mIcon)
 
                     # Set its path in the MFS
-                    nItemName.path = os.path.join(
+                    nItemName.path = posixIpfsPath.join(
                         parentItem.path, entry['Name'])
 
                     # Store the entry in the item
@@ -1950,7 +1952,7 @@ class FileManager(QWidget):
 
     @ipfsOp
     async def deleteFromCID(self, ipfsop, item, cid):
-        _dir = os.path.dirname(item.path)
+        _dir = posixIpfsPath.dirname(item.path)
 
         entry = await ipfsop.filesLookupHash(_dir, cid)
 
@@ -1985,7 +1987,7 @@ class FileManager(QWidget):
 
     @ipfsOp
     async def unlinkFileFromHash(self, op, item, cid):
-        _dir = os.path.dirname(item.path)
+        _dir = posixIpfsPath.dirname(item.path)
 
         listing = await op.filesList(_dir)
         for entry in listing:
