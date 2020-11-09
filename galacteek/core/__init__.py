@@ -2,6 +2,7 @@ import uuid
 import socket
 import re
 import hashlib
+import sys
 
 from datetime import datetime
 from datetime import timezone
@@ -15,6 +16,14 @@ from contextlib import closing
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QFile
+
+
+def inPyInstaller():
+    return getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
+
+
+def pyInstallerBundleFolder():
+    return getattr(sys, '_MEIPASS')
 
 
 def readQrcTextFile(path):

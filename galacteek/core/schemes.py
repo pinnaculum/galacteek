@@ -38,8 +38,6 @@ from galacteek.dweb.render import renderTemplate
 from galacteek.dweb.enswhois import ensContentHash
 from galacteek.core.asynccache import cachedcoromethod
 
-from galacteek.ipdapps import dappsRegisterSchemes
-
 
 # Core schemes
 SCHEME_DWEB = 'dweb'
@@ -172,7 +170,6 @@ def initializeSchemes():
         syntax=QWebEngineUrlScheme.Syntax.Host
     )
 
-    dappsRegisterSchemes()
     registerMiscSchemes()
 
 
