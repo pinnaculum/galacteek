@@ -41,6 +41,10 @@ else:
     def trace(msg, *a):
         pass
 
+
+print("CUSTOM pyimod03")
+
+
 class FrozenPackageImporter(object):
     """
     Wrapper class for FrozenImporter that imports one specific fullname from
@@ -315,10 +319,12 @@ class FrozenImporter(object):
         if fullname in self.toc:
             sourcename = f"src.{fullname}"
             if sourcename in self.toc:
+                print(f'get_source({fullname}): FOUND')
                 return self._pyz_archive.extract(sourcename)[1].decode("utf-8")
             return None
         else:
             # ImportError should be raised if module not found.
+            print(f'get_source({fullname}): NOT FOUND')
             raise ImportError('No module named ' + fullname)
 
     def get_data(self, path):
