@@ -14,21 +14,23 @@ from galacteek.guientrypoint import *
 start()
 EOF
 
-export PYTHONPATH=$PYTHONPATH:$TRAVIS_BUILD_DIR
+#export PYTHONPATH=$PYTHONPATH:$TRAVIS_BUILD_DIR
 
-./venvg/Scripts/activate.bat
+PYINS_VENV=$TRAVIS_BUILD_DIR/venv-pyinstaller-build
+python3 -m venv $PYINS_VENV
 
-ls $TRAVIS_BUILD_DIR
+./$PYINS_VENV/Scripts/activate.bat
+G_VERSION=$(grep '__version__' galacteek/__init__.py|sed -e "s/__version__ = '\(.*\)'$/\1/")
 
-pyinstaller --paths "C:\Python37\Lib\site-packages\PyQt5\Qt\bin" \
-    --paths "C:\Python37\Lib\site-packages\PyQt5\Qt" \
-	--paths "C:\Python37\Lib\site-packages" \
-	--paths "C:\Python37\Lib" \
-	--paths "C:\Python37" \
-	--paths $TRAVIS_BUILD_DIR \
-    --add-binary "./packaging/windows/libmagic/libmagic-1.dll;." \
-    --add-binary "./packaging/windows/libmagic/libgnurx-0.dll;." \
-    --add-binary "./packaging/windows/zbar/libzbar64-0.dll;." \
-	--hidden-import PyQt5 \
-	--hidden-import galacteek \
-	galacteek.py
+pip install "pyinstaller==0.4.0"
+
+# Patch pyimod03_importers.py (to include source code with inspect)
+cp packaging/windows/pyimod03_importers.py \
+    $PYINS_VENV/Lib/site-packages/PyInstaller/loader
+
+pip install wheel
+pip install "$TRAVIS_BUILD_DIR"/dist/galacteek-${G_VERSION}-py3-none-any.whl
+
+echo "Running pyinstaller"
+
+pyinstaller packaging/windows/galacteek.spec
