@@ -11,7 +11,6 @@ matrix:
         - choco install python --version 3.7.2
         - choco install unzip
         - choco install 7zip.portable
-        - 7z
         - python --version
         - python -m pip install --upgrade pip
         - pip3 install --upgrade pytest

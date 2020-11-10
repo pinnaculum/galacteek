@@ -1,4 +1,6 @@
 import markdown
+import platform
+
 from markdown.extensions import Extension
 from markdown.inlinepatterns import Pattern
 import xml.etree.ElementTree as etree
@@ -141,11 +143,17 @@ class IPFSLinksExtension(Extension):
 
 
 def markitdown(text):
-    return markdown.markdown(
-        text, extensions=[
-            CodeBlockExtension(),
-            IPFSLinksExtension(),
-            'attr_list',
+    extensions = [
+        CodeBlockExtension(),
+        IPFSLinksExtension(),
+        'attr_list'
+    ]
+
+    if platform.system() != 'Windows':
+        extensions += [
             'mdx_unimoji'
         ]
+
+    return markdown.markdown(
+        text, extensions=extensions
     )
