@@ -27,8 +27,12 @@ def collect_source_files(modules):
     for module in modules:
         print('Collecting source for', module)
         source = inspect.getsourcefile(module)
-        dest = f"src.{module.__name__}"  # use "src." prefix
-        datas.append((source, dest))
+        if source:
+            dest = f"src.{module.__name__}"  # use "src." prefix
+            datas.append((source, dest))
+            print('Success: added', source, dest)
+        else:
+            print('Could not get source for', module)
     return datas
 
 
@@ -37,13 +41,17 @@ source_files_toc = TOC((name, path, 'DATA') for path, name in source_files)
 
 
 a = Analysis(
-    ['galacteek.py'],
+    ['galacteek_win.py'],
     pathex=[
         "C:/Python37/Lib/site-packages/PyQt5/Qt/bin",
         "C:/Python37/Lib/site-packages/PyQt5/Qt",
         "C:/Python37/Lib/site-packages",
         "C:/Python37/Lib",
-        "C:/Python37"
+        "C:/Python37",
+        "D:/a/galacteek/galacteek",
+        "C:/hostedtoolcache/windows/python/3.7.9/x64/",
+        "C:/hostedtoolcache/windows/python/3.7.9/x64/lib/site-packages/PyQt5/Qt/bin",
+        "C:/hostedtoolcache/windows/python/3.7.9/x64/lib/site-packages/PyQt5/Qt"
     ],
     binaries=[
         ('./packaging/windows/libmagic/libmagic-1.dll',

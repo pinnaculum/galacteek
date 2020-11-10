@@ -1,0 +1,201 @@
+name: galacteek
+
+on:
+  push:
+    branches: [ master, winbuild, winbuild-ci ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  GO_IPFS_VERSION: 0.7.0
+  FS_MIGRATE_VERSION: 1.6.4
+
+jobs:
+  build:
+    needs: create_release
+    strategy:
+      # fail-fast: false
+      matrix:
+        # os: [ubuntu-latest, macos-latest]
+        os: [windows-latest]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.7
+
+    - name: Install packages
+      if: startsWith(matrix.os, 'ubuntu')
+      run: |
+        sudo apt-get install -y dzen2 xvfb herbstluftwm
+        sudo apt-get install -y libxcb-xkb1 libxkbcommon-x11-0
+        sudo apt-get install -y libzbar0
+
+    - name: Install unzip (Windows)
+      if: startsWith(matrix.os, 'windows')
+      uses: crazy-max/ghaction-chocolatey@v1
+      with:
+        args: install unzip
+
+    - name: Install wget (Windows)
+      if: startsWith(matrix.os, 'windows')
+      uses: crazy-max/ghaction-chocolatey@v1
+      with:
+        args: install wget
+
+    - name: Configure environment (1)
+      run: |
+        #echo "G_VERSION=$(grep '__version__' galacteek/__init__.py|sed -e \"s/__version__\s=\s'\(.*\)'$/\1/\")" >> $GITHUB_ENV
+        #
+        # Temporary
+        echo "G_VERSION=0.4.39" >> $GITHUB_ENV
+        echo "COMMIT_SHORT=$(echo $GITHUB_SHA|cut -c 1-8)" >> $GITHUB_ENV
+        echo "GIT_BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
+        echo "GLK_ASSETS=$GITHUB_WORKSPACE/assets" >> $GITHUB_ENV
+
+        mkdir "$GITHUB_WORKSPACE/assets"
+      shell: bash
+
+    - name: Configure environment (2)
+      run: |
+        #echo "G_WHEEL_PATH=$GITHUB_WORKSPACE/dist/galacteek-$G_VERSION-py3-none-any.whl" >> $GITHUB_ENV
+        echo "G_WHEEL_PATH=dist/galacteek-$G_VERSION-py3-none-any.whl" >> $GITHUB_ENV
+      shell: bash
+
+    - name: OS-specific vars (linux)
+      if: startsWith(matrix.os, 'ubuntu')
+      run: |
+        echo "IPFS_DIST_OS=linux" >> $GITHUB_ENV
+        echo "BUNDLE_FILENAME=Galacteek.AppImage" >> $GITHUB_ENV
+        echo "BUNDLE_PATH=${GLK_ASSETS}/Galacteek.AppImage" >> $GITHUB_ENV
+
+    - name: OS-specific vars (macOS)
+      if: startsWith(matrix.os, 'macOS')
+      run: |
+        echo "IPFS_DIST_OS=darwin" >> $GITHUB_ENV
+        echo "BUNDLE_FILENAME=Galacteek-${G_VERSION}.dmg" >> $GITHUB_ENV
+        echo "BUNDLE_PATH=${GLK_ASSETS}/Galacteek-${G_VERSION}.dmg" >> $GITHUB_ENV
+
+    - name: OS-specific vars (win)
+      if: startsWith(matrix.os, 'windows')
+      run: |
+        echo "IPFS_DIST_OS=windows" >> $GITHUB_ENV
+        echo "BUNDLE_FILENAME=Galacteek-${G_VERSION}.exe" >> $GITHUB_ENV
+        echo "BUNDLE_PATH=${GLK_ASSETS}/Galacteek-${G_VERSION}.exe" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 pytest
+        pip install -r requirements-dev.txt
+        pip install -r requirements.txt
+
+    - name: Fetch IPFS dists
+      if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'mac')
+      run: |
+        wget https://dist.ipfs.io/go-ipfs/v${GO_IPFS_VERSION}/go-ipfs_v${GO_IPFS_VERSION}_${IPFS_DIST_OS}-amd64.tar.gz
+
+        wget https://dist.ipfs.io/fs-repo-migrations/v${FS_MIGRATE_VERSION}/fs-repo-migrations_v${FS_MIGRATE_VERSION}_${IPFS_DIST_OS}-amd64.tar.gz
+
+        tar -C $GITHUB_WORKSPACE -xzvf go-ipfs_v${GO_IPFS_VERSION}_${IPFS_DIST_OS}-amd64.tar.gz
+        echo "${GITHUB_WORKSPACE}/go-ipfs" >> $GITHUB_PATH
+
+        tar -C $GITHUB_WORKSPACE -xzvf fs-repo-migrations_v${FS_MIGRATE_VERSION}_${IPFS_DIST_OS}-amd64.tar.gz
+        echo "${GITHUB_WORKSPACE}/fs-repo-migrations" >> $GITHUB_PATH
+
+    - name: Fetch IPFS dists (windows)
+      if: startsWith(matrix.os, 'windows')
+      run: |
+        #wget https://dist.ipfs.io/go-ipfs/v${GO_IPFS_VERSION}/go-ipfs_v${GO_IPFS_VERSION}_${IPFS_DIST_OS}-amd64.zip
+        #wget https://dist.ipfs.io/fs-repo-migrations/v${FS_MIGRATE_VERSION}/fs-repo-migrations_v${FS_MIGRATE_VERSION}_${IPFS_DIST_OS}-amd64.zip
+        #unzip go-ipfs_v${GO_IPFS_VERSION}_windows-amd64.zip
+        #unzip fs-repo-migrations_v${FS_MIGRATE_VERSION}_windows-amd64.zip
+        echo "pass"
+      shell: bash
+
+    - name: Create virtual environment
+      if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'mac')
+      run: |
+        python -m venv "${GITHUB_WORKSPACE}/venvg"
+        source ${GITHUB_WORKSPACE}/venvg/bin/activate
+
+    - name: Create virtual environment (win)
+      if: startsWith(matrix.os, 'windows')
+      run: |
+        python -m venv venvg
+        ./venvg/Scripts/activate.bat
+
+    - name: Virtual environment install
+      run: |
+        pip install --upgrade pip
+        pip install wheel
+        pip install -r requirements-dev.txt
+        pip install -r requirements.txt
+
+        # Build UI and docs, install and build sdist and bwheel
+        python setup.py build build_docs install
+        python setup.py sdist bdist_wheel
+
+    - name: Build AppImage
+      if: startsWith(matrix.os, 'ubuntu')
+      run: |
+        cd AppImage
+        ./appimage-build
+        cd ..
+
+    - name: Build DMG
+      if: startsWith(matrix.os, 'macOS')
+      run: |
+        ./ci/build-dmg.sh
+
+    - name: Build EXE
+      if: startsWith(matrix.os, 'windows')
+      run: |
+        ./ci/build-pyinstaller.sh ${{ env.G_WHEEL_PATH }}
+      shell: bash
+
+    - name: Release assets
+      id: release_assets
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.CI_TOKEN }}
+      with:
+        upload_url: ${{ needs.create_release.outputs.upload_url }}
+        # asset_name: ${{ steps.bundle.outputs.file_name }}
+        # asset_path: ${{ steps.bundle.outputs.file_path }}
+        asset_name: ${{ env.BUNDLE_FILENAME }}
+        asset_path: ${{ env.BUNDLE_PATH }}
+        asset_content_type: application/octet-stream
+
+  create_release:
+    name: Create release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+
+    env:
+      GITHUB_TOKEN: ${{ secrets.CI_TOKEN }}
+      TAGNAME: continuous-newci
+
+    steps:
+      - name: Remove previous release
+        run: |
+          curl -H "Accept: application/vnd.github.v3+json" -H "Authorization: token ${{ github.token }}" -XDELETE https://api.github.com/repos/pinnaculum/galacteek/git/refs/tags/${{ env.TAGNAME }}
+          curl -H "Accept: application/vnd.github.v3+json" -H "Authorization: token ${{ github.token }}" -XDELETE https://api.github.com/repos/pinnaculum/galacteek/releases/${{ env.TAGNAME }}
+
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+
+        with:
+          # tag_name: continuous-${{ env.GIT_BRANCH }}
+          prerelease: true
+          tag_name: ${{ env.TAGNAME }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          body: |
+            Release from ga (recreate)
