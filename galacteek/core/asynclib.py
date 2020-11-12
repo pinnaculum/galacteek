@@ -1,5 +1,5 @@
 from collections import UserList
-from quamash import QThreadExecutor
+from asyncqt import QThreadExecutor
 import asyncio
 import traceback
 import functools

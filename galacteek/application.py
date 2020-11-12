@@ -20,7 +20,7 @@ from filelock import FileLock
 
 from distutils.version import StrictVersion
 
-from quamash import QEventLoop
+from asyncqt import QEventLoop
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QDesktopWidget
@@ -814,10 +814,9 @@ class GalacteekApplication(QApplication):
             enableMigrate = hasFsMigrate is True and \
                 self.cmdArgs.migrate is True
 
-            ipfsPath = self.which('ipfs')
+            self.which('ipfs')
 
             await self.startIpfsDaemon(
-                goIpfsPath=ipfsPath,
                 migrateRepo=enableMigrate
             )
         else:
@@ -852,12 +851,12 @@ class GalacteekApplication(QApplication):
 
     def setupAsyncLoop(self):
         """
-        Install the quamash event loop and enable debugging
+        Install the asyncqt event loop and enable debugging
         """
 
         loop = QEventLoop(self)
         asyncio.set_event_loop(loop)
-        logging.getLogger('quamash').setLevel(logging.INFO)
+        # logging.getLogger('asyncqt').setLevel(logging.INFO)
 
         if self.debugEnabled:
             logging.getLogger('asyncio').setLevel(logging.DEBUG)
@@ -977,7 +976,8 @@ class GalacteekApplication(QApplication):
             self.configDirLocation,
             self.settingsFileLocation))
 
-        os.environ['PATH'] += os.pathsep + self.ipfsBinLocation
+        os.environ['PATH'] += self.ipfsBinLocation + os.pathsep + \
+            os.environ['PATH']
 
     def which(self, prog='ipfs'):
         path = self.ipfsBinLocation + os.pathsep + os.environ['PATH']

@@ -73,7 +73,7 @@ export PATH="$PATH:$APPDIR/usr/bin"
 
 # Install necessary conda packages
 conda install -y -c conda-forge libxkbcommon pip
-conda install -y --no-deps libxcb
+conda install -y --no-deps libxcb libjpeg-turbo
 
 conda remove -y icu
 
@@ -92,8 +92,8 @@ cp ../galacteek.desktop $APPDIR
 cp ../galacteek.appdata.xml $APPDIR/usr/share/metainfo
 cp ../share/icons/galacteek.png $APPDIR
 cp ../share/icons/galacteek.png $APPDIR/usr/share/icons/hicolor/512x512/apps
+
 find /usr/lib -iname 'libzbar.so*' -exec cp -av {} $APPDIR/usr/lib \;
-find /usr/lib -iname 'libjpeg.so*' -exec cp -av {} $APPDIR/usr/lib \;
 
 # Copy go-ipfs and fs-repo-migrations
 cp $GITHUB_WORKSPACE/go-ipfs/ipfs $APPDIR/usr/bin
