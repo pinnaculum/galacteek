@@ -49,9 +49,10 @@ jobs:
     - name: Configure environment (1)
       run: |
         #echo "G_VERSION=$(grep '__version__' galacteek/__init__.py|sed -e \"s/__version__\s=\s'\(.*\)'$/\1/\")" >> $GITHUB_ENV
+        echo "G_VERSION=$(PYTHONPATH=. python -c 'import galacteek; print(galacteek.__version__)')" >> $GITHUB_ENV
         #
         # Temporary
-        echo "G_VERSION=0.4.39" >> $GITHUB_ENV
+        # echo "G_VERSION=0.4.39" >> $GITHUB_ENV
         echo "COMMIT_SHORT=$(echo $GITHUB_SHA|cut -c 1-8)" >> $GITHUB_ENV
         echo "GIT_BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
         echo "GLK_ASSETS=$GITHUB_WORKSPACE/assets" >> $GITHUB_ENV
@@ -182,6 +183,14 @@ jobs:
       TAGNAME: continuous-newci
 
     steps:
+    - name: Release config
+      id: release_config
+      run: |
+        echo "G_VERSION=$(PYTHONPATH=. python -c 'import galacteek; print(galacteek.__version__)')" >> $GITHUB_ENV
+        echo "COMMIT_SHORT=$(echo $GITHUB_SHA|cut -c 1-8)" >> $GITHUB_ENV
+        echo "TAGNAME=continuous-${GITHUB_REF##*/}" >> $GITHUB_ENV
+      shell: bash
+
       - name: Remove previous release
         run: |
           curl -H "Accept: application/vnd.github.v3+json" -H "Authorization: token ${{ github.token }}" -XDELETE https://api.github.com/repos/pinnaculum/galacteek/git/refs/tags/${{ env.TAGNAME }}
@@ -194,8 +203,8 @@ jobs:
         with:
           # tag_name: continuous-${{ env.GIT_BRANCH }}
           prerelease: true
-          tag_name: ${{ env.TAGNAME }}
-          release_name: Release ${{ github.ref }}
+          tag_name: ${{ env.TAGNAME}}
+          release_name: Galacteek ${{ env.G_VERSION }}
           draft: false
           body: |
             Release from ga (recreate)
