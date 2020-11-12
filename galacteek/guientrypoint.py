@@ -7,7 +7,7 @@ import sys
 from PyQt5.QtCore import QProcess
 from PyQt5.QtWebEngine import QtWebEngine
 
-from galacteek import __version__
+from galacteek.__version__ import __version__
 from galacteek.core import glogger
 from galacteek.core.schemes import initializeSchemes
 

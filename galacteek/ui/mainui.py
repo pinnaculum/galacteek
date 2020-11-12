@@ -101,7 +101,7 @@ def iPinningItemStatus(pinPath, pinProgress):
 
 
 def iAbout():
-    from galacteek import __version__
+    from galacteek.__version__ import __version__
     return QCoreApplication.translate('GalacteekWindow', '''
         <p align='center'>
         <img src=':/share/icons/galacteek.png' />
