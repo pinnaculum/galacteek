@@ -61,21 +61,10 @@ a = Analysis(
         ('./packaging/windows/zbar/libzbar-64.dll',
          '.'),
         ('./go-ipfs/ipfs.exe',
-         '.'),
-        ('./fs-repo-migrations/fs-repo-migrations.exe',
          '.')
     ],
     datas=[],
-    hiddenimports=[
-        'PyQt5',
-        'galacteek',
-        'tortoise',
-        'tortoise.fields',
-        'tortoise.backends',
-        'tortoise.backends.sqlite',
-        'tortoise.backends.base',
-        'aioipfs'
-    ],
+    hiddenimports=[],
     hookspath=['packaging/windows/hooks'],
     runtime_hooks=[],
     excludes=[],

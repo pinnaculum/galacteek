@@ -8,6 +8,7 @@ import aioipfs
 import aiofiles
 import orjson
 import psutil
+import platform
 
 from galacteek import log
 from galacteek.core import utcDatetimeIso
@@ -37,8 +38,12 @@ async def ipfsConfigProfileApply(binPath, profile):
 
 
 async def ipfsConfigJson(binPath, param, value):
-    return await shell("'{0}' config --json '{1}' '{2}'".format(
-        binPath, param, json.dumps(value)))
+    if platform.system() == 'Windows':
+        return await shell("'{0}' config --json '{1}' '{2}'".format(
+            binPath, param, json.dumps(value)))
+    else:
+        return await shell("'{0}' config --json {1} {2}".format(
+            binPath, param, json.dumps(value)))
 
 
 async def ipfsConfigGetJson(binPath, param):
