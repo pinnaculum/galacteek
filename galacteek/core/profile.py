@@ -937,7 +937,10 @@ class UserProfile(QObject):
         if not self.userInfo.curIdentity:
             # Create initial IPID
 
-            username = self.initOptions.get('username', self.randomUsername())
+            username = self.initOptions.get('username')
+            if not username:
+                username = self.randomUsername()
+
             vPlanet = self.initOptions.get('vPlanet', 'Earth')
 
             ipid = await self.createIpIdentifier(
