@@ -8,7 +8,6 @@ import aioipfs
 import aiofiles
 import orjson
 import psutil
-import platform
 
 from galacteek import log
 from galacteek.core import utcDatetimeIso
@@ -24,30 +23,46 @@ async def shell(arg):
                                               stdout=asyncio.subprocess.PIPE)
 
     stdout, stderr = await p.communicate()
-    return stdout.decode()
+    try:
+        if stderr:
+            return False, stderr.decode()
+
+        return True, None
+    except Exception as err:
+        log.debug(f'Exception running {arg}: {err}')
+        return False, None
 
 
 async def ipfsConfig(binPath, param, value):
-    return await shell("'{0}' config '{1}' '{2}'".format(
+    ok, err = await shell("{0} config '{1}' '{2}'".format(
         binPath, param, value))
+    if err:
+        log.warning(f'ipfsConfig({param}) with value {value}, error: {err}')
+        return False
+    else:
+        log.debug(f'ipfsConfig({param}) with value {value}, OK')
+        return True
 
 
 async def ipfsConfigProfileApply(binPath, profile):
-    return await shell("'{0}' config profile apply {1}".format(
+    return await shell("{0} config profile apply {1}".format(
         binPath, profile))
 
 
 async def ipfsConfigJson(binPath, param, value):
-    if platform.system() == 'Windows':
-        return await shell("'{0}' config --json '{1}' '{2}'".format(
-            binPath, param, json.dumps(value)))
+    ok, err = await shell("{0} config --json {1} {2}".format(
+        binPath, param, json.dumps(value)))
+    if err:
+        log.warning(
+            f'ipfsConfigJson({param}) with value {value}, error: {err}')
+        return False
     else:
-        return await shell("'{0}' config --json {1} {2}".format(
-            binPath, param, json.dumps(value)))
+        log.debug(f'ipfsConfigJson({param}) with value {value}, OK')
+        return True
 
 
 async def ipfsConfigGetJson(binPath, param):
-    return await shell("'{0}' config --json '{1}'".format(binPath, param))
+    return await shell("{0} config --json '{1}'".format(binPath, param))
 
 
 class IPFSDProtocol(asyncio.SubprocessProtocol):

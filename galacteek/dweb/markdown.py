@@ -145,12 +145,16 @@ class IPFSLinksExtension(Extension):
 def markitdown(text):
     extensions = [
         CodeBlockExtension(),
-        IPFSLinksExtension(),
-        'attr_list'
+        IPFSLinksExtension()
     ]
 
-    if platform.system() != 'Windows':
+    if platform.system() == 'Windows':
         extensions += [
+            'markdown.extensions.attr_list'
+        ]
+    else:
+        extensions += [
+            'attr_list',
             'mdx_unimoji'
         ]
 

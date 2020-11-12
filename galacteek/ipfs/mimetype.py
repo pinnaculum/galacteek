@@ -13,6 +13,8 @@ from galacteek import log
 from galacteek.ipfs import ipfsOpFn
 from galacteek.ipfs.ipfsops import APIErrorDecoder
 from galacteek.core.asynclib import asyncReadFile
+from galacteek.core import inPyInstaller
+from galacteek.core import pyInstallerBundleFolder
 
 
 iMagic = None
@@ -184,7 +186,10 @@ def magicInstance():
         if pl == 'Linux':
             iMagic = magic.Magic(mime=True)
         elif pl in ['Darwin', 'Windows']:
-            dbPath = os.environ.get('GALACTEEK_MAGIC_DBPATH')
+            if inPyInstaller():
+                dbPath = str(pyInstallerBundleFolder().joinpath('magic.mgc'))
+            else:
+                dbPath = os.environ.get('GALACTEEK_MAGIC_DBPATH')
 
             if dbPath:
                 log.info(f'Using magic DB from path: {dbPath}')

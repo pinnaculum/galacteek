@@ -1,5 +1,4 @@
 import uuid
-import pkg_resources
 from datetime import datetime
 from datetime import timezone
 
@@ -18,6 +17,7 @@ from galacteek.ipfs.cidhelpers import joinIpns
 from galacteek.ipfs.cidhelpers import stripIpfs
 from galacteek.core.analyzer import ResourceAnalyzer
 from galacteek.core import isoformat
+from galacteek.core import pkgResourcesRscFilename
 from galacteek.dweb import render
 from galacteek.dweb.markdown import markitdown
 from galacteek.dweb.atom import DWEB_ATOM_FEEDFN
@@ -296,8 +296,8 @@ class UserWebsite:
     async def init(self, ipfsop):
         # Import the assets
 
-        assetsPath = pkg_resources.resource_filename('galacteek.templates',
-                                                     'usersite/assets')
+        assetsPath = pkgResourcesRscFilename('galacteek.templates',
+                                             'usersite/assets')
         self.assetsEntry = await ipfsop.addPath(assetsPath, recursive=True)
 
         if self.profile.ctx.hasRsc('ipfs-cube-64'):

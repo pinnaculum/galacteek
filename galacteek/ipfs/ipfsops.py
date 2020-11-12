@@ -1026,8 +1026,8 @@ class IPFSOperator(object):
             try:
                 async for pinStatus in self.client.pin.add(
                         ppath, recursive=rec):
-                    self.debug('Pin status: {0} {1}'.format(
-                        ppath, pinStatus))
+                    # self.debug('Pin status: {0} {1}'.format(
+                    #     ppath, pinStatus))
                     pins = pinStatus.get('Pins', None)
                     if pins is None:
                         continue
@@ -1044,8 +1044,9 @@ class IPFSOperator(object):
         try:
             async for pinStatus in self.client.pin.add(
                     path, recursive=recursive):
-                self.debug('Pin status: {0} {1}'.format(
-                    path, pinStatus))
+                # self.debug('Pin status: {0} {1}'.format(
+                #     path, pinStatus))
+
                 pins = pinStatus.get('Pins', None)
                 progress = pinStatus.get('Progress', None)
 
@@ -1310,7 +1311,6 @@ class IPFSOperator(object):
                                                **exopts):
                 await self.sleep()
                 added = entry
-                self.debug(f'ADDPATH({path}): have entry {entry}')
                 if callbackvalid:
                     await callback(entry)
         except aioipfs.APIError as err:
@@ -1324,7 +1324,7 @@ class IPFSOperator(object):
             self.debug('addPath: unknown exception {}'.format(str(e)))
             return None
         else:
-            self.debug(f'ADDPATH({path}): root is {added}')
+            self.debug(f'addPath({path}): root is {added}')
             return added
 
     async def addFileEncrypted(self, path):
