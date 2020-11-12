@@ -183,13 +183,13 @@ jobs:
       TAGNAME: continuous-newci
 
     steps:
-    - name: Release config
-      id: release_config
-      run: |
-        echo "G_VERSION=$(PYTHONPATH=. python -c 'import galacteek; print(galacteek.__version__)')" >> $GITHUB_ENV
-        echo "COMMIT_SHORT=$(echo $GITHUB_SHA|cut -c 1-8)" >> $GITHUB_ENV
-        echo "TAGNAME=continuous-${GITHUB_REF##*/}" >> $GITHUB_ENV
-      shell: bash
+      - name: Release config
+        id: release_config
+        run: |
+          echo "G_VERSION=$(PYTHONPATH=. python -c 'import galacteek; print(galacteek.__version__)')" >> $GITHUB_ENV
+          echo "COMMIT_SHORT=$(echo $GITHUB_SHA|cut -c 1-8)" >> $GITHUB_ENV
+          echo "TAGNAME=continuous-${GITHUB_REF##*/}" >> $GITHUB_ENV
+        shell: bash
 
       - name: Remove previous release
         run: |
