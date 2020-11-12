@@ -193,7 +193,7 @@ jobs:
       - name: Release config
         id: release_config
         run: |
-          echo "G_VERSION=$(PYTHONPATH=. python -c 'from galacteek.__version__ import  __version__;  print(__version__)')" >> $GITHUB_ENV
+          echo "G_VERSION=$(grep '__version__' galacteek/__version__.py|sed -e \"s/__version__\s=\s'\(.*\)'$/\1/\")" >> $GITHUB_ENV
           echo "COMMIT_SHORT=$(echo $GITHUB_SHA|cut -c 1-8)" >> $GITHUB_ENV
           echo "TAGNAME=continuous-${GITHUB_REF##*/}" >> $GITHUB_ENV
         shell: bash
