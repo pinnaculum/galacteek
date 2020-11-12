@@ -19,6 +19,8 @@ hiddenimports = [
     'markdown.extensions.attr_list'
 ]
 
-datas += [('galacteek/templates', 'templates')]
+datas += [('galacteek/templates', '_pkg/galacteek/templates')]
+datas += [('galacteek/hashmarks', '_pkg/galacteek/hashmarks')]
+datas += [('galacteek/docs/manual', '_pkg/galacteek/docs/manual')]
 
 print(datas)

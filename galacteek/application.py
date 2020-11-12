@@ -4,7 +4,6 @@ import os.path
 import uuid
 import logging
 import asyncio
-import pkg_resources
 import jinja2
 import jinja2.exceptions
 import warnings
@@ -54,6 +53,8 @@ from galacteek.core.profile import UserProfile
 from galacteek.core.multihashmetadb import IPFSObjectMetadataDatabase
 from galacteek.core.clipboard import ClipboardTracker
 from galacteek.core.db import SqliteDatabase
+from galacteek.core import pkgResourcesListDir
+from galacteek.core import pkgResourcesRscFilename
 
 from galacteek import database
 from galacteek.database import models
@@ -1430,8 +1431,7 @@ class ManualsManager(QObject):
         documentsList = await ipfsop.filesList(profile.pathDocuments)
 
         try:
-            listing = pkg_resources.resource_listdir(
-                'galacteek.docs.manual', '')
+            listing = pkgResourcesListDir('galacteek.docs.manual', '')
             for dir in listing:
                 await ipfsop.sleep()
 
@@ -1469,8 +1469,8 @@ class ManualsManager(QObject):
 
     async def importManualLang(self, lang):
         try:
-            docPath = pkg_resources.resource_filename('galacteek.docs.manual',
-                                                      '{0}/html'.format(lang))
+            docPath = pkgResourcesRscFilename('galacteek.docs.manual',
+                                              '{0}/html'.format(lang))
             entry = await self.importDocPath(docPath, lang)
         except Exception as e:
             log.debug('Failed importing manual ({0}) {1}'.format(
