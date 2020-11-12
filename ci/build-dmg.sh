@@ -15,8 +15,6 @@ fi
 
 BUILD_DIR=$(mktemp -d "$TEMP_BASE/galacteek-MacOS-build-XXXXXX")
 
-G_VERSION=$(grep '__version__' galacteek/__init__.py|sed -e "s/__version__ = '\(.*\)'$/\1/")
-
 if [[ $GIT_BRANCH =~ ^v([0-9].[0-9].[0-9]{1,2}) ]] ; then
     echo "Using tag: $GIT_BRANCH"
     EVERSION=${BASH_REMATCH[1]}
