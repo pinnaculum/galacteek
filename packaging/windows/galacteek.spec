@@ -59,6 +59,10 @@ a = Analysis(
         ('./packaging/windows/libmagic/libgnurx-0.dll',
          '.'),
         ('./packaging/windows/zbar/libzbar-64.dll',
+         '.'),
+        ('./go-ipfs/ipfs.exe',
+         '.'),
+        ('./fs-repo-migrations/fs-repo-migrations.exe',
          '.')
     ],
     datas=[],
