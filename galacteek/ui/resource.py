@@ -412,8 +412,10 @@ class IPFSResourceOpener(QObject):
         # Use xdg-open or open depending on the platform
         if self.app.system == 'Linux':
             await self.openWithExternal(rscPath, 'xdg-open "%f"')
-        elif self.app.system == 'Darwin':
+        elif self.app.macosSystem:
             await self.openWithExternal(rscPath, 'open "%f"')
+        elif self.app.windowsSystem:
+            await self.openWithExternal(rscPath, 'start "%f"')
 
     @ipfsOp
     async def browseIpService(self, ipfsop, serviceId, serviceCtx=None):
