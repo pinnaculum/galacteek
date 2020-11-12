@@ -1,7 +1,6 @@
 import asyncio
 import tempfile
 import shutil
-import pkg_resources
 from datetime import datetime
 from yaml import load
 
@@ -12,6 +11,8 @@ from galacteek.database.models import *
 from galacteek.core import utcDatetimeIso
 from galacteek.core import jsonSchemaValidate
 from galacteek.core import SingletonDecorator
+from galacteek.core import pkgResourcesListDir
+from galacteek.core import pkgResourcesRscFilename
 from galacteek.core.iptags import ipTagRe
 from galacteek.core.ipfsmarks import IPFSMarks
 
@@ -180,13 +181,13 @@ class ModuleCatalogLoader(HashmarksCatalogLoader):
     async def load(self, source):
         try:
             count = 0
-            listing = pkg_resources.resource_listdir(source.url, '')
+            listing = pkgResourcesListDir(source.url, '')
 
             for fn in listing:
                 if not fn.endswith('.yaml'):
                     continue
 
-                path = pkg_resources.resource_filename(source.url, fn)
+                path = pkgResourcesRscFilename(source.url, fn)
                 count += await self.importYamlHashmarks(path, source)
 
             return count

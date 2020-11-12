@@ -3,6 +3,10 @@ import socket
 import re
 import hashlib
 import sys
+import os
+import pkg_resources
+import pathlib
+import platform
 
 from datetime import datetime
 from datetime import timezone
@@ -19,11 +23,47 @@ from PyQt5.QtCore import QFile
 
 
 def inPyInstaller():
-    return getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
+    if platform.system() == 'Windows':
+        return getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
+
+    return False
 
 
 def pyInstallerBundleFolder():
-    return getattr(sys, '_MEIPASS')
+    return pathlib.Path(getattr(sys, '_MEIPASS'))
+
+
+def pyInstallerPkgFolder():
+    return pyInstallerBundleFolder().joinpath('_pkg')
+
+
+def pkgResourcesListDir(pkg: str, rscName: str):
+    # Simple wrapper around pkg_resources.resource_listdir
+
+    if inPyInstaller():
+        root = pyInstallerPkgFolder().joinpath(
+            pkg.replace('.', os.sep)
+        )
+        if rscName != '':
+            root = root.joinpath(rscName)
+
+        print(f'pkgResourcesListDir: {pkg} ({rscName}): root is {root}')
+        return os.listdir(str(root))
+    else:
+        return pkg_resources.resource_listdir(pkg, rscName)
+
+
+def pkgResourcesRscFilename(pkg, rscName):
+    # Simple wrapper around pkg_resources.resource_filename
+
+    if inPyInstaller():
+        root = pyInstallerPkgFolder().joinpath(
+            pkg.replace('.', os.sep)
+        )
+
+        return str(root.joinpath(rscName))
+    else:
+        return pkg_resources.resource_filename(pkg, rscName)
 
 
 def readQrcTextFile(path):

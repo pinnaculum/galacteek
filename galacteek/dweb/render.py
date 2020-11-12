@@ -9,7 +9,7 @@ from tempfile import TemporaryDirectory
 from galacteek import log
 from galacteek.core import isoformat
 from galacteek.core import inPyInstaller
-from galacteek.core import pyInstallerBundleFolder
+from galacteek.core import pyInstallerPkgFolder
 
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import cidValid
@@ -54,8 +54,8 @@ def defaultJinjaEnv():
     # We use Jinja's async rendering
 
     if inPyInstaller():
-        tFolder = os.path.join(pyInstallerBundleFolder(), 'templates')
-        log.debug(f'jinja2: using filesystem loader with root '
+        tFolder = pyInstallerPkgFolder().joinpath('galacteek/templates')
+        log.debug(f'jinja2 env: using filesystem loader with root '
                   f'{tFolder}')
         loader = jinja2.FileSystemLoader(tFolder)
     else:
