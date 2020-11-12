@@ -181,7 +181,6 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.CI_TOKEN }}
       TAGNAME: continuous-newci
-      PYTHONPATH: ${GITHUB_WORKSPACE}
 
     steps:
       - uses: actions/checkout@v2
@@ -195,6 +194,7 @@ jobs:
         run: |
           echo G_VERSION=$(grep '__version__' galacteek/__version__.py|sed -e "s/__version__\s=\s'\(.*\)'$/\1/") >> $GITHUB_ENV
           echo "COMMIT_SHORT=$(echo $GITHUB_SHA|cut -c 1-8)" >> $GITHUB_ENV
+          echo "GIT_BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
           echo "TAGNAME=continuous-${GITHUB_REF##*/}" >> $GITHUB_ENV
         shell: bash
 
@@ -208,10 +208,9 @@ jobs:
         uses: actions/create-release@v1
 
         with:
-          # tag_name: continuous-${{ env.GIT_BRANCH }}
           prerelease: true
           tag_name: ${{ env.TAGNAME}}
           release_name: Galacteek ${{ env.G_VERSION }}
           draft: false
           body: |
-            Release from ga (recreate)
+            Galacteek ${{ env.G_VERSION }} release
