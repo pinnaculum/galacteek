@@ -48,11 +48,8 @@ jobs:
 
     - name: Configure environment (1)
       run: |
-        #echo "G_VERSION=$(grep '__version__' galacteek/__init__.py|sed -e \"s/__version__\s=\s'\(.*\)'$/\1/\")" >> $GITHUB_ENV
-        echo "G_VERSION=$(PYTHONPATH=. python -c 'from galacteek.__version__ import  __version__;  print(__version__)')" >> $GITHUB_ENV
-        #
-        # Temporary
-        # echo "G_VERSION=0.4.39" >> $GITHUB_ENV
+        echo G_VERSION=$(grep '__version__' galacteek/__version__.py|sed -e "s/__version__\s=\s'\(.*\)'$/\1/") >> $GITHUB_ENV
+
         echo "COMMIT_SHORT=$(echo $GITHUB_SHA|cut -c 1-8)" >> $GITHUB_ENV
         echo "GIT_BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
         echo "GLK_ASSETS=$GITHUB_WORKSPACE/assets" >> $GITHUB_ENV
@@ -66,12 +63,23 @@ jobs:
         echo "G_WHEEL_PATH=dist/galacteek-$G_VERSION-py3-none-any.whl" >> $GITHUB_ENV
       shell: bash
 
+    - name: Configure bundle (a)
+      run: |
+        echo "BUNDLE_ROOT=Galacteek-${COMMIT_SHORT}" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Configure bundle(b)
+      if: startsWith( github.ref, 'refs/tags/releases/v')
+      run: |
+        echo "BUNDLE_ROOT=Galacteek-${G_VERSION}" >> $GITHUB_ENV
+      shell: bash
+
     - name: OS-specific vars (linux)
       if: startsWith(matrix.os, 'ubuntu')
       run: |
         echo "IPFS_DIST_OS=linux" >> $GITHUB_ENV
-        echo "BUNDLE_FILENAME=Galacteek.AppImage" >> $GITHUB_ENV
-        echo "BUNDLE_PATH=${GLK_ASSETS}/Galacteek.AppImage" >> $GITHUB_ENV
+        echo "BUNDLE_FILENAME=Galacteek-${G_VERSION}.AppImage" >> $GITHUB_ENV
+        echo "BUNDLE_PATH=${GLK_ASSETS}/Galacteek-${G_VERSION}.AppImage" >> $GITHUB_ENV
 
     - name: OS-specific vars (macOS)
       if: startsWith(matrix.os, 'macOS')
@@ -84,8 +92,10 @@ jobs:
       if: startsWith(matrix.os, 'windows')
       run: |
         echo "IPFS_DIST_OS=windows" >> $GITHUB_ENV
-        echo "BUNDLE_FILENAME=Galacteek-${G_VERSION}.exe" >> $GITHUB_ENV
-        echo "BUNDLE_PATH=${GLK_ASSETS}/Galacteek-${G_VERSION}.exe" >> $GITHUB_ENV
+        #echo "BUNDLE_FILENAME=Galacteek-${G_VERSION}.exe" >> $GITHUB_ENV
+        #echo "BUNDLE_PATH=${GLK_ASSETS}/Galacteek-${G_VERSION}.exe" >> $GITHUB_ENV
+        echo "BUNDLE_FILENAME=${BUNDLE_ROOT}.exe" >> $GITHUB_ENV
+        echo "BUNDLE_PATH=${GLK_ASSETS}/${BUNDLE_ROOT}.exe" >> $GITHUB_ENV
       shell: bash
 
     - name: Fetch IPFS dists
@@ -197,6 +207,12 @@ jobs:
           echo "GIT_BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
           echo "TAGNAME=continuous-${GITHUB_REF##*/}" >> $GITHUB_ENV
         shell: bash
+
+      - name: Release config (b)
+        id: release_config_b
+        if: startsWith( github.ref, 'refs/tags/v')
+        run: |
+          echo "TAGNAME=${GITHUB_REF##*/v}" >> $GITHUB_ENV
 
       - name: Remove previous release
         run: |
