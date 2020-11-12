@@ -100,5 +100,6 @@ exe = EXE(pyz,
           upx=True,
           upx_exclude=[],
           runtime_tmpdir=None,
+          icon='share/icons/galacteek.ico',
           console=True
           )

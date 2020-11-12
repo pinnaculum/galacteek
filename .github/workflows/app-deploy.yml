@@ -87,13 +87,6 @@ jobs:
         echo "BUNDLE_PATH=${GLK_ASSETS}/Galacteek-${G_VERSION}.exe" >> $GITHUB_ENV
       shell: bash
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install flake8 pytest
-        pip install -r requirements-dev.txt
-        pip install -r requirements.txt
-
     - name: Fetch IPFS dists
       if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'mac')
       run: |
@@ -110,12 +103,19 @@ jobs:
     - name: Fetch IPFS dists (windows)
       if: startsWith(matrix.os, 'windows')
       run: |
-        #wget https://dist.ipfs.io/go-ipfs/v${GO_IPFS_VERSION}/go-ipfs_v${GO_IPFS_VERSION}_${IPFS_DIST_OS}-amd64.zip
-        #wget https://dist.ipfs.io/fs-repo-migrations/v${FS_MIGRATE_VERSION}/fs-repo-migrations_v${FS_MIGRATE_VERSION}_${IPFS_DIST_OS}-amd64.zip
-        #unzip go-ipfs_v${GO_IPFS_VERSION}_windows-amd64.zip
-        #unzip fs-repo-migrations_v${FS_MIGRATE_VERSION}_windows-amd64.zip
-        echo "pass"
+        wget https://dist.ipfs.io/go-ipfs/v${GO_IPFS_VERSION}/go-ipfs_v${GO_IPFS_VERSION}_${IPFS_DIST_OS}-amd64.zip
+        wget https://dist.ipfs.io/fs-repo-migrations/v${FS_MIGRATE_VERSION}/fs-repo-migrations_v${FS_MIGRATE_VERSION}_${IPFS_DIST_OS}-amd64.zip
+        unzip go-ipfs_v${GO_IPFS_VERSION}_windows-amd64.zip
+        unzip fs-repo-migrations_v${FS_MIGRATE_VERSION}_windows-amd64.zip
+
       shell: bash
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 pytest
+        #pip install -r requirements-dev.txt
+        #pip install -r requirements.txt
 
     - name: Create virtual environment
       if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'mac')
