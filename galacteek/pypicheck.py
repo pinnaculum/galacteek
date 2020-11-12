@@ -3,7 +3,7 @@ import aiohttp
 
 from distutils.version import StrictVersion
 
-from galacteek import __version__
+from galacteek.__version__ import __version__
 
 
 async def getLatestVersion(pkgname='galacteek'):

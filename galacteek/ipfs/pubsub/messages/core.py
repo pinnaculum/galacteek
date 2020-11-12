@@ -314,7 +314,7 @@ class PeerIdentMessageV4(PubsubMessage):
                    pssSigCurDid: str,
                    edagNetworkCid: str,
                    p2pServices=None):
-        from galacteek import __version__ as gversion
+        from galacteek.__version__ import __version__ as gversion
 
         p2pServices = p2pServices if p2pServices else []
         qrPngNodeCid = stripIpfs(
