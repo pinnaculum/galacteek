@@ -26,37 +26,37 @@
 <context>
     <name>AddHashmarkDialog</name>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="155"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="161"/>
         <source>Category</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="172"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="178"/>
         <source>or create new category, e.g news/world</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="229"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="235"/>
         <source>Share (public)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="122"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="128"/>
         <source>Comment</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="102"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="108"/>
         <source>Description</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="76"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="82"/>
         <source>Title</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="205"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="211"/>
         <source>Pinning</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2218,57 +2218,57 @@ Path: {0}, nodes processed: {1}</source>
 <context>
     <name>MediaPlayer</name>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="51"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="52"/>
         <source>Media player error (code: {0})</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="57"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="58"/>
         <source>Fullscreen</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="61"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="62"/>
         <source>Copy playlist&apos;s IPFS path to the clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="67"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="68"/>
         <source>Load playlist from the clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="73"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="74"/>
         <source>Cannot load playlist</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="78"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="79"/>
         <source>A playlist with this name already exists</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="90"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="91"/>
         <source>Playlist name</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="96"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="97"/>
         <source>Already queued in the current playlist</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="45"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="46"/>
         <source>No media player support available on your system</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="101"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="102"/>
         <source>No media in playlist</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="84"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="85"/>
         <source>Remove media from playlist</source>
         <translation type="unfinished"></translation>
     </message>

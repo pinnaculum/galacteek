@@ -15,7 +15,7 @@ import shutil
 
 @async_generator
 async def distIpfsExtract(dstdir='.', software='go-ipfs', executable='ipfs',
-                          site='dist.ipfs.io', version='0.5.0', loop=None,
+                          site='dist.ipfs.io', version='0.7.0', loop=None,
                           sslverify=True):
 
     """ Fetch a distribution archive from dist.ipfs.io and extracts the
@@ -42,6 +42,9 @@ async def distIpfsExtract(dstdir='.', software='go-ipfs', executable='ipfs',
         exeExt = '.exe'
     elif pSystem == 'FreeBSD':
         osType = 'freebsd'
+        arExt = '.tar.gz'
+    elif pSystem == 'OpenBSD':
+        osType = 'openbsd'
         arExt = '.tar.gz'
     elif pSystem == 'Darwin':
         osType = 'darwin'

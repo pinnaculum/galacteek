@@ -8,6 +8,8 @@ import galacteek.database.models.pubsub
 import galacteek.database.models.seeds
 import galacteek.database.models.pubchattokens
 import os
+import multiaddr
+from multiaddr.codecs import *
 
 
 goIpfsVersion = os.getenv('GO_IPFS_VERSION')
@@ -56,7 +58,7 @@ a = Analysis(['galacteek_win.py'],
     "C:/hostedtoolcache/windows/python/3.7.9/x64/",
     "C:/hostedtoolcache/windows/python/3.7.9/x64/lib/site-packages/PyQt5/Qt/bin",
     "C:/hostedtoolcache/windows/python/3.7.9/x64/lib/site-packages/PyQt5/Qt"
-],
+    ],
     binaries=[
     ('./packaging/windows/libmagic/libmagic-1.dll',
      '.'),
@@ -64,14 +66,29 @@ a = Analysis(['galacteek_win.py'],
      '.'),
     ('./packaging/windows/zbar/libzbar-64.dll',
      '.'),
-    (f'./go-ipfs/ipfs-{goIpfsVersion}.exe',
+    ('./go-ipfs/ipfs.exe',
      '.')
-],
+    ],
     datas=[],
-    hiddenimports=[],
+    hiddenimports=[
+        'multiaddr',
+        'multiaddr.codecs.*'
+    ],
     hookspath=['packaging/windows/hooks'],
     runtime_hooks=[],
-    excludes=[],
+    excludes=[
+        'tkinter',
+        'tcl',
+        'tk',
+        'sphinxcontrib',
+        'tornado',
+        'lib2to3',
+        'PyInstaller',
+        'pip',
+        'setuptools',
+        'pytest',
+        'Cryptodome.SelfTest'
+    ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
@@ -85,7 +102,7 @@ exe = EXE(pyz,
           [],
           exclude_binaries=True,
           name='galacteek',
-          debug=False,
+          debug=True,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,

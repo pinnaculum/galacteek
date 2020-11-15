@@ -391,8 +391,11 @@ class IPFSResourceOpener(QObject):
             # Bummer
             return
 
-        filePathEsc = filePath.replace('"', r'\"')
-        args = progArgs.replace('%f', filePathEsc)
+        if not self.app.windowsSystem:
+            filePathEsc = filePath.replace('"', r'\"')
+            args = progArgs.replace('%f', filePathEsc)
+        else:
+            args = progArgs.replace('%f', filePath)
 
         log.info('Object opener: executing: {}'.format(args))
 
@@ -410,12 +413,12 @@ class IPFSResourceOpener(QObject):
 
     async def openWithSystemDefault(self, rscPath):
         # Use xdg-open or open depending on the platform
-        if self.app.system == 'Linux':
+        if self.app.unixSystem:
             await self.openWithExternal(rscPath, 'xdg-open "%f"')
         elif self.app.macosSystem:
             await self.openWithExternal(rscPath, 'open "%f"')
         elif self.app.windowsSystem:
-            await self.openWithExternal(rscPath, 'start "%f"')
+            await self.openWithExternal(rscPath, 'start /WAIT %f')
 
     @ipfsOp
     async def browseIpService(self, ipfsop, serviceId, serviceCtx=None):

@@ -135,7 +135,7 @@ def ipfsVersion():
 async def fetchGoIpfsWrapper(app, timeout=60 * 10):
     try:
         await asyncio.wait_for(fetchIpfsSoft(
-            app, 'go-ipfs', 'ipfs', '0.5.0'), timeout)
+            app, 'go-ipfs', 'ipfs', '0.7.0'), timeout)
     except asyncio.TimeoutError:
         app.mainWindow.statusMessage(iGoIpfsFetchTimeout())
         return None
@@ -287,6 +287,15 @@ class GalacteekApplication(QApplication):
     @property
     def system(self):
         return self._system
+
+    @property
+    def bsdSystem(self):
+        if self.system:
+            return self.system.endswith('BSD')
+
+    @property
+    def unixSystem(self):
+        return self.bsdSystem or self.linuxSystem
 
     @property
     def linuxSystem(self):
@@ -470,6 +479,8 @@ class GalacteekApplication(QApplication):
         self.tempDir = QTemporaryDir()
         self.tempDirWeb = self.tempDirCreate(
             self.tempDir.path(), 'webdownloads')
+
+        self._goIpfsBinPath = self.suitableGoIpfsBinary()
 
     def tempDirCreate(self, basedir, name=None):
         tmpdir = QDir(basedir)
@@ -806,12 +817,13 @@ class GalacteekApplication(QApplication):
                                        iGoIpfsFetchError())
 
     def suitableGoIpfsBinary(self):
-        for version in ipfsVersionsGenerator():
-            goIpfsBin = f'ipfs-{version}'
+        if not self.windowsSystem:
+            for version in ipfsVersionsGenerator():
+                goIpfsBin = f'ipfs-{version}'
 
-            if self.which(goIpfsBin):
-                log.debug(f'Found suitable go-ipfs binary: {goIpfsBin}')
-                return goIpfsBin
+                if self.which(goIpfsBin):
+                    log.debug(f'Found suitable go-ipfs binary: {goIpfsBin}')
+                    return goIpfsBin
 
         if self.which('ipfs'):
             return 'ipfs'
@@ -821,11 +833,10 @@ class GalacteekApplication(QApplication):
     async def setupIpfsConnection(self):
         sManager = self.settingsMgr
 
-        await self.fetchGoIpfs()
+        if not self.goIpfsBinPath:
+            await self.fetchGoIpfs()
 
         if sManager.isTrue(CFG_SECTION_IPFSD, CFG_KEY_ENABLED):
-            self._goIpfsBinPath = self.suitableGoIpfsBinary()
-
             if not self.goIpfsBinPath:
                 await messageBoxAsync('go-ipfs could not be found')
                 return await self.exitApp()
@@ -1425,6 +1436,9 @@ class GalacteekApplication(QApplication):
 
         self.tempDir.remove()
         self.quit()
+
+        if self.windowsSystem:
+            sys.exit(0)
 
 
 class ManualsManager(QObject):

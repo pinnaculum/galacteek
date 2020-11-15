@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1065</width>
-    <height>418</height>
+    <width>800</width>
+    <height>438</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -55,8 +55,14 @@
       <widget class="QLabel" name="resourceLabel">
        <property name="minimumSize">
         <size>
-         <width>800</width>
+         <width>0</width>
          <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>400</width>
+         <height>16777215</height>
         </size>
        </property>
        <property name="font">
@@ -87,7 +93,7 @@
        </property>
        <property name="maximumSize">
         <size>
-         <width>500</width>
+         <width>300</width>
          <height>16777215</height>
         </size>
        </property>
@@ -107,7 +113,7 @@
       <widget class="QTextEdit" name="description">
        <property name="maximumSize">
         <size>
-         <width>600</width>
+         <width>300</width>
          <height>50</height>
         </size>
        </property>
@@ -127,7 +133,7 @@
       <widget class="QLineEdit" name="comment">
        <property name="maximumSize">
         <size>
-         <width>600</width>
+         <width>300</width>
          <height>16777215</height>
         </size>
        </property>
@@ -160,7 +166,7 @@
       <widget class="QComboBox" name="category">
        <property name="maximumSize">
         <size>
-         <width>600</width>
+         <width>300</width>
          <height>16777215</height>
         </size>
        </property>
@@ -177,7 +183,7 @@
       <widget class="QLineEdit" name="newCategory">
        <property name="maximumSize">
         <size>
-         <width>600</width>
+         <width>300</width>
          <height>16777215</height>
         </size>
        </property>
@@ -232,7 +238,7 @@
      </item>
     </layout>
    </item>
-   <item>
+   <item alignment="Qt::AlignHCenter">
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>

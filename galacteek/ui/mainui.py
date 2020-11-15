@@ -765,6 +765,9 @@ class MainWindow(QMainWindow):
                                      shortcut=QKeySequence('Alt+Shift+r'),
                                      triggered=self.app.restart)
 
+        if self.app.windowsSystem:
+            self.restartAction.setEnabled(False)
+
         self.mPlayerOpenAction = QAction(getIcon('multimedia.png'),
                                          iMediaPlayer(),
                                          triggered=self.onOpenMediaPlayer)

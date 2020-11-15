@@ -103,6 +103,7 @@ class P2PListener(object):
             )
 
             if addrSrv is None:
+                log.debug('P2PListener: failed to create server')
                 return None
 
             listenAddress = '/ip4/{addr}/tcp/{port}'.format(
@@ -118,6 +119,12 @@ class P2PListener(object):
 
                 await self.client.p2p.listener_close(protocol)
 
+                await ipfsop.sleep()
+
+                log.debug(
+                    f'P2PListener ({protocol}): using listening address : '
+                    f'{listenAddress}')
+
                 addr = await self.client.p2p.listener_open(
                     protocol, listenAddress)
             except aioipfs.APIError as err:
@@ -128,18 +135,27 @@ class P2PListener(object):
                 return None
             else:
                 # Verify the multiaddr
-                if post0418:  # go-ipfs>=0.4.18 doesn't return listen address
+                # go-ipfs>=0.4.18 doesn't return listen address
+
+                if post0418 or addr is None:
                     lAddr = listenAddress
                 else:
                     lAddr = addr.get('Address', None)
                     if lAddr is None:  # wtf
+                        log.debug(f'P2PListener ({protocol}): empty address !')
                         return None
 
                 ipAddr, port = multiAddrTcp4(lAddr)
+                log.debug(f'P2PListener ({protocol}): {lAddr} => '
+                          f'addr: {ipAddr} port: {port}')
 
-                if ipAddr == addrSrv[0] and port == addrSrv[1]:
+                # if ipAddr == addrSrv[0] and port == addrSrv[1]:
+                if ipAddr and port:
+                    log.debug(f'P2PListener ({protocol}): {lAddr} is valid')
                     self.listenMultiAddr = lAddr
                     return self.listenMultiAddr
+                else:
+                    log.debug(f'P2PListener ({protocol}): {lAddr} is invalid')
 
     async def createServer(self, host='127.0.0.1', portRange=[]):
         for port in portRange:

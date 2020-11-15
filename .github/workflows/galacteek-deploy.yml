@@ -82,15 +82,15 @@ jobs:
       if: startsWith(matrix.os, 'ubuntu')
       run: |
         echo "IPFS_DIST_OS=linux" >> $GITHUB_ENV
-        echo "BUNDLE_FILENAME=${BUNDLE_ROOT}.AppImage" >> $GITHUB_ENV
-        echo "BUNDLE_PATH=${GLK_ASSETS}/${BUNDLE_ROOT}.AppImage" >> $GITHUB_ENV
+        echo "BUNDLE_FILENAME=${BUNDLE_ROOT}-x86_64.AppImage" >> $GITHUB_ENV
+        echo "BUNDLE_PATH=${GLK_ASSETS}/${BUNDLE_ROOT}-x86_64.AppImage" >> $GITHUB_ENV
 
     - name: OS-specific vars (macOS)
       if: startsWith(matrix.os, 'macOS')
       run: |
         echo "IPFS_DIST_OS=darwin" >> $GITHUB_ENV
-        echo "BUNDLE_FILENAME=${BUNDLE_ROOT}.dmg" >> $GITHUB_ENV
-        echo "BUNDLE_PATH=${GLK_ASSETS}/${BUNDLE_ROOT}.dmg" >> $GITHUB_ENV
+        echo "BUNDLE_FILENAME=${BUNDLE_ROOT}-x86_64.dmg" >> $GITHUB_ENV
+        echo "BUNDLE_PATH=${GLK_ASSETS}/${BUNDLE_ROOT}-x86_64.dmg" >> $GITHUB_ENV
 
     - name: OS-specific vars (win)
       if: startsWith(matrix.os, 'windows')
@@ -98,11 +98,11 @@ jobs:
         # We create 2 versions (one-file and zipped folder)
         echo "IPFS_DIST_OS=windows" >> $GITHUB_ENV
 
-        echo "BUNDLE_FILENAME=${BUNDLE_ROOT}-windows.exe" >> $GITHUB_ENV
-        echo "BUNDLE_PATH=${GLK_ASSETS}/${BUNDLE_ROOT}-windows.exe" >> $GITHUB_ENV
+        echo "BUNDLE_FILENAME=${BUNDLE_ROOT}-windows-x86_64.exe" >> $GITHUB_ENV
+        echo "BUNDLE_PATH=${GLK_ASSETS}/${BUNDLE_ROOT}-windows-x86_64.exe" >> $GITHUB_ENV
 
-        echo "BUNDLE_EXTRA_FILENAME=${BUNDLE_ROOT}-windows.zip" >> $GITHUB_ENV
-        echo "BUNDLE_EXTRA_PATH=${GLK_ASSETS}/${BUNDLE_ROOT}-windows.zip" >> $GITHUB_ENV
+        echo "BUNDLE_EXTRA_FILENAME=${BUNDLE_ROOT}-windows-x86_64.zip" >> $GITHUB_ENV
+        echo "BUNDLE_EXTRA_PATH=${GLK_ASSETS}/${BUNDLE_ROOT}-windows-x86_64.zip" >> $GITHUB_ENV
       shell: bash
 
     - name: Fetch IPFS dists
@@ -128,8 +128,6 @@ jobs:
 
         unzip go-ipfs_v${GO_IPFS_VERSION}_${IPFS_DIST_OS}-amd64.zip
         unzip fs-repo-migrations_v${FS_MIGRATE_VERSION}_${IPFS_DIST_OS}-amd64.zip
-
-        mv go-ipfs/ipfs.exe go-ipfs/ipfs-${GO_IPFS_VERSION}.exe
 
       shell: bash
 
@@ -201,6 +199,7 @@ jobs:
     - name: Build EXE (folder zip)
       if: startsWith(matrix.os, 'windows')
       run: |
+        rm -rf dist
         ./ci/build-pyinstaller-zip.sh ${{ env.G_WHEEL_PATH }}
       shell: bash
 
@@ -267,6 +266,14 @@ jobs:
           curl -H "Accept: application/vnd.github.v3+json" -H "Authorization: token ${{ github.token }}" -XDELETE https://api.github.com/repos/pinnaculum/galacteek/releases/${{ env.TAGNAME }}
           curl -H "Accept: application/vnd.github.v3+json" -H "Authorization: token ${{ github.token }}" -XDELETE https://api.github.com/repos/pinnaculum/galacteek/releases/tag/${{ env.TAGNAME }}
 
+      - name: Get Changelog Entry
+        id: changelog
+        uses: mindsers/changelog-reader-action@v2
+        with:
+          validation_depth: 10
+          version: ${{ env.G_VERSION }}
+          path: ./CHANGELOG.md
+
       - name: Create release
         id: create_release
         uses: actions/create-release@v1
@@ -277,4 +284,25 @@ jobs:
           release_name: Galacteek ${{ env.G_VERSION }}
           draft: false
           body: |
-            Galacteek ${{ env.G_VERSION }} release
+            # Galacteek ${{ env.G_VERSION }} released!
+
+            ## Release log
+
+            ${{ steps.changelog.outputs.changes }}
+
+            # Using the AppImage
+
+            After downloading the AppImage, make it executable and then run it:
+
+            > chmod +x Galacteek-${{ env.G_VERSION }}-x86_64.AppImage
+            ./Galacteek-${{ env.G_VERSION }}-x86_64.AppImage
+
+            The AppImage does **not** bundle libstdc++. If you use a Linux system with an old libstdc++ and cannot run the AppImage, please open an issue.
+
+            Be sure to install all the **gstreamer** packages to be able to use the mediaplayer.
+
+            Trouble with running the AppImage ? [Check the wiki](https://github.com/pinnaculum/galacteek/wiki/AppImage#troubleshooting) or [file an issue](https://github.com/pinnaculum/galacteek/issues/new?assignees=&labels=appimage&template=appimage-issue.md&title=Cannot+run+the+AppImage)
+
+            # Using the DMG image
+
+            After opening/mounting the DMG image, hold Control and click on the **galacteek** icon, select **Open** and then accept. You probably need to allow the system to install applications *from anywhere* in the security settings.

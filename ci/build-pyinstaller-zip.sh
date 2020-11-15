@@ -8,9 +8,10 @@ import sys
 import faulthandler
 print("Starting galacteek ..")
 
+sys.argv.append('-d')
 faulthandler.enable(sys.stdout)
 
-from galacteek.guientrypoint import *
+from galacteek.guientrypoint import start
 start()
 EOF
 
@@ -47,4 +48,12 @@ find PyQt5/Qt/qml/QtQuick -exec rm {} \;
 
 popd
 
-7za a -tzip $BUNDLE_EXTRA_PATH dist/galacteek-${G_VERSION}
+pushd dist
+cat <<EOF > start-galacteek.cmd
+@echo off
+cd galacteek-${G_VERSION}
+start "" galacteek.exe
+EOF
+
+7za a -tzip $BUNDLE_EXTRA_PATH .
+popd

@@ -1,12 +1,15 @@
 from multiaddr import Multiaddr
 
+from galacteek import log
+
 
 def multiAddrTcp4(maddr):
     ipaddr, port = None, 0
 
     try:
         multi = Multiaddr(maddr)
-    except BaseException:
+    except BaseException as err:
+        log.debug(f'Invalid multiaddr {maddr}, error: {err}')
         return ipaddr, port
 
     for proto in multi.protocols():

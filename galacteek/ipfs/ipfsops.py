@@ -1909,11 +1909,15 @@ class IPFSOperator(object):
             log.debug('Stream dial error: {}'.format(err.message))
             return TunnelDialerContext(self, peer, proto, None)
         else:
-            log.debug('Stream dial {0} {1}: OK'.format(peer, proto))
+            log.debug(f'Stream dial {peer} {proto}: OK')
 
         if resp:
             maddr = resp.get('Address', None)
+            log.debug(f'Stream dial {peer} {proto}: Multiaddr is {maddr}')
+
             if not maddr:
+                log.debug(
+                    f'Stream dial {peer} {proto}: no multiaddr returned!')
                 return TunnelDialerContext(self, peer, proto, None)
 
             ipaddr, port = multiAddrTcp4(maddr)

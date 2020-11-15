@@ -4,8 +4,8 @@
 
 :info: A multi-platform browser for the distributed web
 
-.. image:: https://travis-ci.org/pinnaculum/galacteek.svg?branch=master
-    :target: https://travis-ci.org/pinnaculum/galacteek
+.. image:: https://github.com/pinnaculum/galacteek/workflows/galacteek-deploy/badge.svg
+    :target: https://github.com/pinnaculum/galacteek/actions
 
 .. image:: https://badges.gitter.im/galacteek/community.svg
     :target: https://gitter.im/galacteek/galacteek?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge
@@ -168,8 +168,9 @@ Platforms supported
 ===================
 
 - Linux (main target)
+- Any BSD operating system (with manual build)
 - MacOS
-- FreeBSD (or any BSD OS, with manual build)
+- Windows
 
 Because of the nature of the software's stack (asyncio/Quamash),
 support for any other platform is unlikely.

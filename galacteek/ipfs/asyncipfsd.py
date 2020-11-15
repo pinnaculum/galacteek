@@ -8,6 +8,8 @@ import aioipfs
 import aiofiles
 import orjson
 import psutil
+import platform
+import subprocess
 
 from galacteek import log
 from galacteek.core import utcDatetimeIso
@@ -418,6 +420,12 @@ class AsyncIPFSDaemon(object):
 
         yield 80, 'Starting subprocess ..'
 
+        startupInfo = None
+        if platform.system() == 'Windows':
+            startupInfo = subprocess.STARTUPINFO()
+            startupInfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            startupInfo.wShowWindow = subprocess.SW_HIDE
+
         if self.detached:
             f = self.loop.subprocess_exec(
                 lambda: IPFSDProtocol(self.loop, self.exitFuture,
@@ -428,6 +436,7 @@ class AsyncIPFSDaemon(object):
                 stderr=asyncio.subprocess.PIPE,
                 start_new_session=True,
                 close_fds=False,
+                startupinfo=startupInfo,
                 creationflags=pCreationFlags)
         else:
             f = self.loop.subprocess_exec(
@@ -437,6 +446,7 @@ class AsyncIPFSDaemon(object):
                 *args,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
+                startupinfo=startupInfo,
                 creationflags=pCreationFlags)
 
         self.transport, self.proto = await f
@@ -610,10 +620,12 @@ class AsyncIPFSDaemon(object):
     def stop(self):
         self.message('Stopping IPFS daemon')
         try:
-            if self.transport:
-                self.transport.send_signal(signal.SIGINT)
-                self.transport.send_signal(signal.SIGHUP)
-            elif self.process:
+            if not self.process:
+                raise Exception('Process not found')
+
+            if platform.system() == 'Windows':
+                self.process.kill()
+            else:
                 self.process.send_signal(signal.SIGINT)
                 self.process.send_signal(signal.SIGHUP)
 

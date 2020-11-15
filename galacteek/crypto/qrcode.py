@@ -23,13 +23,15 @@ def zbar_load():
     # the libzbar from the AppImage
 
     path = find_library('zbar')
+    pl = platform.system()
+
     if not path:
-        if platform.system() == 'Linux':
+        if pl == 'Linux' or pl.endswith('BSD'):
             path = 'libzbar.so.0'
-        elif platform.system() == 'Darwin':
+        elif pl == 'Darwin':
             path = 'libzbar.0.dylib'
-        elif platform.system() == 'Windows':
-            path = 'libzbar64-0.dll'
+        elif pl == 'Windows':
+            path = 'libzbar-64.dll'
 
     log.debug('Loading zbar library from: {}'.format(path))
 
