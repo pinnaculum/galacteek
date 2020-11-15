@@ -852,7 +852,7 @@ class ClipboardItemButton(PopupToolButton):
     def onOpen(self):
         if self.item:
             if self.item.mimeType.isWasm and shutil.which('wasmer') and \
-                    self.app.system == 'Linux':
+                    self.app.unixSystem:
                 # Run with wasmer
                 log.debug('Opening WASM binary from object: {}'.format(
                     self.item.ipfsPath))

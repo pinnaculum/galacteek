@@ -41,17 +41,17 @@
         <translation type="obsolete">Utiliser ce titre pour le hashmark</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="155"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="161"/>
         <source>Category</source>
         <translation>Catégorie</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="172"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="178"/>
         <source>or create new category, e.g news/world</source>
         <translation>ou créer une nouvelle catégorie (par ex: news/world)</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="229"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="235"/>
         <source>Share (public)</source>
         <translation>Partager (public)</translation>
     </message>
@@ -61,7 +61,7 @@
         <translation type="obsolete">Liste de tags</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="122"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="128"/>
         <source>Comment</source>
         <translation>Commentaire</translation>
     </message>
@@ -71,17 +71,17 @@
         <translation type="obsolete">Dialogue d&apos;ajout de hashmark</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="102"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="108"/>
         <source>Description</source>
         <translation>Description</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="76"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="82"/>
         <source>Title</source>
         <translation>TItre</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="205"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="211"/>
         <source>Pinning</source>
         <translation>Pinning</translation>
     </message>
@@ -2621,57 +2621,57 @@ Chemin: {0}, nodes traitées: {1}</translation>
 <context>
     <name>MediaPlayer</name>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="51"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="52"/>
         <source>Media player error (code: {0})</source>
         <translation>Erreur du media player (code: {0})</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="57"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="58"/>
         <source>Fullscreen</source>
         <translation>Plein écran</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="61"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="62"/>
         <source>Copy playlist&apos;s IPFS path to the clipboard</source>
         <translation>Copier le chemin IPFS de la playlist vers le presse-papier</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="67"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="68"/>
         <source>Load playlist from the clipboard</source>
         <translation>Charger la playlist depuis le presse-papier</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="73"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="74"/>
         <source>Cannot load playlist</source>
         <translation>Impossible de charger la playlist</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="78"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="79"/>
         <source>A playlist with this name already exists</source>
         <translation>Une playlist avec ce nom existe déja</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="90"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="91"/>
         <source>Playlist name</source>
         <translation>Nom de la playlist</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="96"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="97"/>
         <source>Already queued in the current playlist</source>
         <translation>Déja enregistré dans la playlist</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="45"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="46"/>
         <source>No media player support available on your system</source>
         <translation>Pas de support multimedia trouvé</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="101"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="102"/>
         <source>No media in playlist</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="84"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="85"/>
         <source>Remove media from playlist</source>
         <translation type="unfinished"></translation>
     </message>

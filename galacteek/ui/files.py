@@ -524,7 +524,7 @@ class FileManager(QWidget):
         self.iconSizeGroup.addAction(self.actionLargeIcon)
         fsIconSizeMenu.addActions(self.iconSizeGroup.actions())
 
-        if self.app.linuxSystem:
+        if self.app.unixSystem:
             self.actionSmallIcon.setChecked(True)
         elif self.app.macosSystem:
             self.actionLargeIcon.setChecked(True)
@@ -808,7 +808,7 @@ class FileManager(QWidget):
         if rootIndex.isValid():
             self.localTree.setRootIndex(rootIndex)
 
-        if self.app.system in ['Linux', 'FreeBSD', 'Darwin']:
+        if self.app.unixSystem or self.app.macosSystem:
             """
             Expand the user's home folder and its parents
             """
@@ -876,7 +876,7 @@ class FileManager(QWidget):
                                         iEncryptedFiles())
         self.ui.pathSelector.activated.connect(self.onPathSelector)
 
-        if self.app.system == 'Linux':
+        if self.app.unixSystem:
             self.ui.pathSelector.setIconSize(QSize(24, 24))
 
     def setupModel(self):

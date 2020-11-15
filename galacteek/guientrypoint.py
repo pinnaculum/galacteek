@@ -3,12 +3,14 @@
 import argparse
 import faulthandler
 import sys
+import platform
 
 from PyQt5.QtCore import QProcess
 from PyQt5.QtWebEngine import QtWebEngine
 
 from galacteek.__version__ import __version__
 from galacteek.core import glogger
+from galacteek.core import inPyInstaller
 from galacteek.core.schemes import initializeSchemes
 
 from galacteek.ui.helpers import *  # noqa
@@ -179,8 +181,21 @@ def buildArgsParser():
     return parser
 
 
+def hideConsoleWindow():
+    import ctypes
+
+    whnd = ctypes.windll.kernel32.GetConsoleWindow()
+
+    if whnd != 0:
+        ctypes.windll.user32.ShowWindow(whnd, 0)
+
+
 def start():
     global appStarter
+
+    if platform.system() == 'Windows' and inPyInstaller():
+        # Hide the console window when running with pyinstaller
+        hideConsoleWindow()
 
     parser = buildArgsParser()
     args = parser.parse_args()

@@ -1110,7 +1110,7 @@ class IconSelector(QComboBox):
         self.offline = offline
         self.iconCid = None
 
-        if self.app.system == 'Linux':
+        if self.app.unixSystem:
             self.setIconSize(QSize(64, 64))
 
         if allowEmpty is True:

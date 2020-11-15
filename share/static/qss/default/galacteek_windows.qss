@@ -1,0 +1,3 @@
+QPushButton {
+    font: 14pt "Inter UI";
+}

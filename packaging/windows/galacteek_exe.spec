@@ -8,6 +8,8 @@ import galacteek.database.models.core
 import tortoise.models
 import inspect
 import os
+import multiaddr
+from multiaddr.codecs import *
 
 
 goIpfsVersion = os.getenv('GO_IPFS_VERSION')
@@ -62,14 +64,26 @@ a = Analysis(
          '.'),
         ('./packaging/windows/zbar/libzbar-64.dll',
          '.'),
-        (f'./go-ipfs/ipfs-{goIpfsVersion}.exe',
+        ('./go-ipfs/ipfs.exe',
          '.')
     ],
     datas=[],
     hiddenimports=[],
     hookspath=['packaging/windows/hooks'],
     runtime_hooks=[],
-    excludes=[],
+    excludes=[
+        'tkinter',
+        'tcl',
+        'tk',
+        'sphinxcontrib',
+        'tornado',
+        'lib2to3',
+        'PyInstaller',
+        'pip',
+        'setuptools',
+        'pytest',
+        'Cryptodome.SelfTest'
+    ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
@@ -89,7 +103,7 @@ exe = EXE(pyz,
           a.datas,
           [],
           name='galacteek',
-          debug=False,
+          debug=True,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
