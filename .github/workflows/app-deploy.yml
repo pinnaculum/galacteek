@@ -53,9 +53,7 @@ jobs:
 
     - name: Configure environment (1)
       run: |
-        # echo G_VERSION=$(grep '__version__' galacteek/__version__.py|sed -e "s/__version__\\s=\\s'\(.*\)'.*$/\\1/") >> $GITHUB_ENV
-        # echo G_VERSION=$(grep -oP "__version__\s=\s'\K.*?(?=')" galacteek/__version__.py) >> $GITHUB_ENV
-        echo G_VERSION=$(cat galacteek/version) >> $GITHUB_ENV
+        echo "G_VERSION=$(cat galacteek/version)" >> $GITHUB_ENV
 
         echo "COMMIT_SHORT=$(echo $GITHUB_SHA|cut -c 1-8)" >> $GITHUB_ENV
         echo "GIT_BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
@@ -66,7 +64,6 @@ jobs:
 
     - name: Configure environment (2)
       run: |
-        #echo "G_WHEEL_PATH=$GITHUB_WORKSPACE/dist/galacteek-$G_VERSION-py3-none-any.whl" >> $GITHUB_ENV
         echo "G_WHEEL_PATH=dist/galacteek-$G_VERSION-py3-none-any.whl" >> $GITHUB_ENV
       shell: bash
 
@@ -118,6 +115,8 @@ jobs:
         tar -C $GITHUB_WORKSPACE -xzvf go-ipfs_v${GO_IPFS_VERSION}_${IPFS_DIST_OS}-amd64.tar.gz
         echo "${GITHUB_WORKSPACE}/go-ipfs" >> $GITHUB_PATH
 
+        mv go-ipfs/ipfs go-ipfs/ipfs-${GO_IPFS_VERSION}
+
         tar -C $GITHUB_WORKSPACE -xzvf fs-repo-migrations_v${FS_MIGRATE_VERSION}_${IPFS_DIST_OS}-amd64.tar.gz
         echo "${GITHUB_WORKSPACE}/fs-repo-migrations" >> $GITHUB_PATH
 
@@ -126,8 +125,11 @@ jobs:
       run: |
         wget https://dist.ipfs.io/go-ipfs/v${GO_IPFS_VERSION}/go-ipfs_v${GO_IPFS_VERSION}_${IPFS_DIST_OS}-amd64.zip
         wget https://dist.ipfs.io/fs-repo-migrations/v${FS_MIGRATE_VERSION}/fs-repo-migrations_v${FS_MIGRATE_VERSION}_${IPFS_DIST_OS}-amd64.zip
-        unzip go-ipfs_v${GO_IPFS_VERSION}_windows-amd64.zip
-        unzip fs-repo-migrations_v${FS_MIGRATE_VERSION}_windows-amd64.zip
+
+        unzip go-ipfs_v${GO_IPFS_VERSION}_${IPFS_DIST_OS}-amd64.zip
+        unzip fs-repo-migrations_v${FS_MIGRATE_VERSION}_${IPFS_DIST_OS}-amd64.zip
+
+        mv go-ipfs/ipfs.exe go-ipfs/ipfs-${GO_IPFS_VERSION}.exe
 
       shell: bash
 
@@ -208,8 +210,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.CI_TOKEN }}
       with:
         upload_url: ${{ needs.create_release.outputs.upload_url }}
-        # asset_name: ${{ steps.bundle.outputs.file_name }}
-        # asset_path: ${{ steps.bundle.outputs.file_path }}
         asset_name: ${{ env.BUNDLE_FILENAME }}
         asset_path: ${{ env.BUNDLE_PATH }}
         asset_content_type: application/octet-stream
@@ -245,7 +245,7 @@ jobs:
       - name: Release config
         id: release_config
         run: |
-          echo G_VERSION=$(grep '__version__' galacteek/__version__.py|sed -e "s/__version__\s=\s'\(.*\)'$/\1/") >> $GITHUB_ENV
+          echo "G_VERSION=$(cat galacteek/version)" >> $GITHUB_ENV
           echo "COMMIT_SHORT=$(echo $GITHUB_SHA|cut -c 1-8)" >> $GITHUB_ENV
           echo "GIT_BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
           echo "TAGNAME=continuous-${GITHUB_REF##*/}" >> $GITHUB_ENV
@@ -253,9 +253,13 @@ jobs:
 
       - name: Release config (b)
         id: release_config_b
-        if: startsWith( github.ref, 'refs/tags/v')
+        if:
+          contains('
+            refs/heads/master
+            refs/tags/v
+          ', github.ref)
         run: |
-          echo "TAGNAME=${GITHUB_REF##*/v}" >> $GITHUB_ENV
+          echo "TAGNAME=${G_VERSION}" >> $GITHUB_ENV
 
       - name: Remove previous release
         run: |

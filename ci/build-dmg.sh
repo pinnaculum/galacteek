@@ -77,8 +77,12 @@ cp "$OLD_CWD"/share/icons/galacteek.icns galacteek.app/Contents/Resources/share/
 
 # copy go-ipfs
 mkdir -p galacteek.app/Contents/Resources/bin
-cp $GITHUB_WORKSPACE/go-ipfs/ipfs galacteek.app/Contents/Resources/bin
+cp $GITHUB_WORKSPACE/go-ipfs/ipfs-${GO_IPFS_VERSION} galacteek.app/Contents/Resources/bin
 cp $GITHUB_WORKSPACE/fs-repo-migrations/fs-repo-migrations galacteek.app/Contents/Resources/bin
+
+pushd galacteek.app/Contents/Resources/bin
+ln -s ipfs-${GO_IPFS_VERSION} ipfs
+popd
 
 # Install libmagic and the magic db files
 brew install libmagic

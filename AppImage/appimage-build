@@ -6,9 +6,6 @@
 #
 
 MINICONDA_DIST="Miniconda3-py37_4.8.3-Linux-x86_64.sh"
-GO_IPFS_VERSION=0.7.0
-GOIPFS_TGZ="go-ipfs_v${GO_IPFS_VERSION}_linux-amd64.tar.gz"
-GOIPFS_DISTURL="https://dist.ipfs.io/go-ipfs/v${GO_IPFS_VERSION}/${GOIPFS_TGZ}"
 
 if [[ $GIT_BRANCH =~ ^v([0-9].[0-9].[0-9]{1,2}) ]] ; then
     echo "Using tag: $GIT_BRANCH"
@@ -96,8 +93,12 @@ cp ../share/icons/galacteek.png $APPDIR/usr/share/icons/hicolor/512x512/apps
 find /usr/lib -iname 'libzbar.so*' -exec cp -av {} $APPDIR/usr/lib \;
 
 # Copy go-ipfs and fs-repo-migrations
-cp $GITHUB_WORKSPACE/go-ipfs/ipfs $APPDIR/usr/bin
+cp $GITHUB_WORKSPACE/go-ipfs/ipfs-${GO_IPFS_VERSION} $APPDIR/usr/bin/ipfs
 cp $GITHUB_WORKSPACE/fs-repo-migrations/fs-repo-migrations $APPDIR/usr/bin
+
+pushd "$APPDIR"/usr/bin
+ln -s ipfs-${GO_IPFS_VERSION} ipfs
+popd
 
 # Remove unnecessary stuff
 pushd "$APPDIR"/usr
