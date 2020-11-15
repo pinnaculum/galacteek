@@ -87,6 +87,7 @@ from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.feeds import FeedFollower
 from galacteek.ipfs import distipfsfetch
+from galacteek.ipfs import ipfsVersionsGenerator
 
 from galacteek.did.ipid import IPIDManager
 
@@ -245,6 +246,7 @@ class GalacteekApplication(QApplication):
         self._icons = {}
         self._ipfsIconsCache = {}
         self._ipfsIconsCacheMax = 32
+        self._goIpfsBinPath = None
 
         self.enableOrbital = enableOrbital
         self.orbitConnector = None
@@ -277,6 +279,10 @@ class GalacteekApplication(QApplication):
     @property
     def offline(self):
         return self.cmdArgs.offline
+
+    @property
+    def goIpfsBinPath(self):
+        return self._goIpfsBinPath
 
     @property
     def system(self):
@@ -799,12 +805,31 @@ class GalacteekApplication(QApplication):
                 self.systemTrayMessage('Galacteek',
                                        iGoIpfsFetchError())
 
+    def suitableGoIpfsBinary(self):
+        for version in ipfsVersionsGenerator():
+            goIpfsBin = f'ipfs-{version}'
+
+            if self.which(goIpfsBin):
+                log.debug(f'Found suitable go-ipfs binary: {goIpfsBin}')
+                return goIpfsBin
+
+        if self.which('ipfs'):
+            return 'ipfs'
+        else:
+            log.debug('No suitable go-ipfs binary found')
+
     async def setupIpfsConnection(self):
         sManager = self.settingsMgr
 
         await self.fetchGoIpfs()
 
         if sManager.isTrue(CFG_SECTION_IPFSD, CFG_KEY_ENABLED):
+            self._goIpfsBinPath = self.suitableGoIpfsBinary()
+
+            if not self.goIpfsBinPath:
+                await messageBoxAsync('go-ipfs could not be found')
+                return await self.exitApp()
+
             fsMigratePath = shutil.which('fs-repo-migrations')
             hasFsMigrate = fsMigratePath is not None
 
@@ -813,8 +838,6 @@ class GalacteekApplication(QApplication):
 
             enableMigrate = hasFsMigrate is True and \
                 self.cmdArgs.migrate is True
-
-            self.which('ipfs')
 
             await self.startIpfsDaemon(
                 migrateRepo=enableMigrate
@@ -982,7 +1005,6 @@ class GalacteekApplication(QApplication):
     def which(self, prog='ipfs'):
         path = self.ipfsBinLocation + os.pathsep + os.environ['PATH']
         result = shutil.which(prog, path=path)
-        self.debug('Program {0} found at {1}'.format(prog, result))
         return result
 
     def initSettings(self):
@@ -994,7 +1016,7 @@ class GalacteekApplication(QApplication):
         await runDialogAsync(dlg)
         return dlg.options()
 
-    async def startIpfsDaemon(self, goIpfsPath='ipfs', migrateRepo=False,
+    async def startIpfsDaemon(self, migrateRepo=False,
                               failedReason=None):
 
         pubsubEnabled = True  # mandatory now ..
@@ -1013,7 +1035,7 @@ class GalacteekApplication(QApplication):
         if self.ipfsd is None:
             # TODO: FFS rewrite the constructor
             self._ipfsd = asyncipfsd.AsyncIPFSDaemon(
-                self.ipfsDataLocation, goIpfsPath=goIpfsPath,
+                self.ipfsDataLocation, goIpfsPath=self.goIpfsBinPath,
                 statusPath=self._ipfsdStatusLocation,
                 apiport=sManager.getInt(
                     section, CFG_KEY_APIPORT),

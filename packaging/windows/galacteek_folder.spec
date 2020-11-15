@@ -7,6 +7,10 @@ import galacteek.database.models.atomfeeds
 import galacteek.database.models.pubsub
 import galacteek.database.models.seeds
 import galacteek.database.models.pubchattokens
+import os
+
+
+goIpfsVersion = os.getenv('GO_IPFS_VERSION')
 block_cipher = None
 
 
@@ -60,7 +64,7 @@ a = Analysis(['galacteek_win.py'],
      '.'),
     ('./packaging/windows/zbar/libzbar-64.dll',
      '.'),
-    ('./go-ipfs/ipfs.exe',
+    (f'./go-ipfs/ipfs-{goIpfsVersion}.exe',
      '.')
 ],
     datas=[],
