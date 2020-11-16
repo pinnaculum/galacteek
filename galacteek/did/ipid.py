@@ -1040,7 +1040,7 @@ class IPIDManager:
 
                     if resp.status != HTTPOk.status_code:
                         payload = await resp.json()
-                        log.debug('Error payload: {payload}')
+                        log.debug(f'Error payload: {payload}')
                         raise Exception(f'DID Auth error: code {resp.status}')
 
                     payload = await resp.json()
