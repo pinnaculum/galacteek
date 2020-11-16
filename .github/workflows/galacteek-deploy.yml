@@ -16,7 +16,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-18.04, macos-latest, windows-latest]
+        #os: [ubuntu-18.04, macos-latest, windows-latest]
+        os: [windows-latest]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -50,6 +51,12 @@ jobs:
       uses: crazy-max/ghaction-chocolatey@v1
       with:
         args: install 7zip.portable
+
+    - name: Install NSIS (Windows)
+      if: startsWith(matrix.os, 'windows')
+      uses: crazy-max/ghaction-chocolatey@v1
+      with:
+        args: install nsis
 
     - name: Configure environment (1)
       run: |
@@ -101,8 +108,10 @@ jobs:
         echo "BUNDLE_FILENAME=${BUNDLE_ROOT}-windows-x86_64.exe" >> $GITHUB_ENV
         echo "BUNDLE_PATH=${GLK_ASSETS}/${BUNDLE_ROOT}-windows-x86_64.exe" >> $GITHUB_ENV
 
-        echo "BUNDLE_EXTRA_FILENAME=${BUNDLE_ROOT}-windows-x86_64.zip" >> $GITHUB_ENV
-        echo "BUNDLE_EXTRA_PATH=${GLK_ASSETS}/${BUNDLE_ROOT}-windows-x86_64.zip" >> $GITHUB_ENV
+        # echo "BUNDLE_EXTRA_FILENAME=${BUNDLE_ROOT}-windows-x86_64.zip" >> $GITHUB_ENV
+        # echo "BUNDLE_EXTRA_PATH=${GLK_ASSETS}/${BUNDLE_ROOT}-windows-x86_64.zip" >> $GITHUB_ENV
+        echo "BUNDLE_EXTRA_FILENAME=${BUNDLE_ROOT}-windows-x86_64-installer.exe" >> $GITHUB_ENV
+        echo "BUNDLE_EXTRA_PATH=${GLK_ASSETS}/${BUNDLE_ROOT}-windows-x86_64-installer.exe" >> $GITHUB_ENV
       shell: bash
 
     - name: Fetch IPFS dists
@@ -190,17 +199,25 @@ jobs:
       run: |
         ./ci/build-dmg.sh
 
-    - name: Build EXE (one-file)
+    - name: Build EXE (windows, one-file)
       if: startsWith(matrix.os, 'windows')
       run: |
         ./ci/build-pyinstaller-exe.sh ${{ env.G_WHEEL_PATH }}
       shell: bash
 
-    - name: Build EXE (folder zip)
+    - name: Build EXE (windows, folder zip)
+      if: startsWith(matrix.os, 'windows')
+      run: |
+        # rm -rf dist
+        # ./ci/build-pyinstaller-zip.sh ${{ env.G_WHEEL_PATH }}
+        echo "Disabled"
+      shell: bash
+
+    - name: Build installer (windows, NSIS)
       if: startsWith(matrix.os, 'windows')
       run: |
         rm -rf dist
-        ./ci/build-pyinstaller-zip.sh ${{ env.G_WHEEL_PATH }}
+        ./ci/build-pyinstaller-nsi.sh ${{ env.G_WHEEL_PATH }}
       shell: bash
 
     - name: Release main asset
