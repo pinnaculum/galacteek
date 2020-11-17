@@ -108,12 +108,15 @@ class ZbarIPFSQrDecoder(ImageReader):
             for obj in objects:
                 if not isinstance(obj.data, bytes):
                     continue
+
                 try:
                     decoded = obj.data.decode()
-                except BaseException:
+                except BaseException as err:
+                    log.debug(f'pyzbar decode: error decoding item: {err}')
                     continue
 
                 if len(decoded) not in range(1, 1024):
+                    log.debug('pyzbar decode: decoded value not in range')
                     continue
 
                 path = IPFSPath(decoded, autoCidConv=True)
@@ -126,7 +129,8 @@ class ZbarIPFSQrDecoder(ImageReader):
 
             if len(urls) > 0:  # don't return empty list
                 return urls
-        except Exception:
+        except Exception as err:
+            log.debug(f'pyzbar decode error: {err}')
             return None
 
 

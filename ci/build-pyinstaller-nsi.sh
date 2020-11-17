@@ -8,7 +8,6 @@ import sys
 import faulthandler
 print("Starting galacteek ..")
 
-sys.argv.append('-d')
 faulthandler.enable(sys.stdout)
 
 from galacteek.guientrypoint import start

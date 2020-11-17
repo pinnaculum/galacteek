@@ -589,16 +589,23 @@ class Peers:
                 return
 
             async with self.lock.writer_lock:
-                piCtx = PeerIdentityCtx(
-                    self.ctx, iMsg.peer, iMsg.iphandle,
-                    ipid,
-                    validated=peerValidated
-                )
+                piCtx = self.getByHandle(iMsg.iphandle)
 
-                ipid.sChanged.connectTo(partialEnsure(
-                    self.onPeerDidModified, piCtx))
-                piCtx.sStatusChanged.connectTo(partialEnsure(
-                    self.peerModified.emit, piCtx))
+                if not piCtx:
+                    log.debug(f'Creating new PeerIdentityCtx for '
+                              f'{iMsg.iphandle} ({personDid})')
+
+                    piCtx = PeerIdentityCtx(
+                        self.ctx, iMsg.peer, iMsg.iphandle,
+                        ipid,
+                        validated=peerValidated
+                    )
+
+                    ipid.sChanged.connectTo(partialEnsure(
+                        self.onPeerDidModified, piCtx))
+                    piCtx.sStatusChanged.connectTo(partialEnsure(
+                        self.peerModified.emit, piCtx))
+
                 piCtx.ident = iMsg
 
                 ensure(self.didPerformAuth(piCtx, iMsg))
@@ -632,15 +639,14 @@ class Peers:
 
         if not ipid.local:
             # DID Auth
-            for attempt in range(0, 3):
+            for attempt in range(0, 1):
                 log.debug('DID auth: {did} (attempt: {a})'.format(
                     did=ipid.did, a=attempt))
 
                 if not await self.app.ipidManager.didAuthenticate(
                         ipid, piCtx.peerId, token=idToken):
                     log.debug('DID auth failed for DID: {}'.format(ipid.did))
-                    await ipfsop.sleep(5)
-                    continue
+                    break
                 else:
                     log.debug('DID auth success for DID: {}'.format(ipid.did))
                     piCtx._authenticated = True
@@ -712,9 +718,11 @@ class Peers:
 
             if not codes:
                 # QR decoder not available, or invalid QR
+                log.debug(f'validateQr({qrCid}): no codes found')
                 return False
 
             if len(codes) not in range(2, 4):
+                log.debug(f'validateQr({qrCid}): invalid code range')
                 return False
 
             for code in codes:
@@ -731,6 +739,10 @@ class Peers:
                         computed = await ipfsop.hashComputeString(
                             iMsg.iphandle)
 
+                        if not computed:
+                            log.debug(f'validateQr({qrCid}): compute failed')
+                            continue
+
                         if computed['Hash'] == stripIpfs(code.objPath):
                             validCodes += 1
                 elif isinstance(code, str) and ipidFormatValid(code) and \
@@ -741,8 +753,10 @@ class Peers:
             return False
         else:
             # Just use 3 min codes here when we want the DID to be required
+            log.debug(f'validateQr({qrCid}): found {validCodes} codes')
             return validCodes >= 2
 
+        log.debug(f'validateQr({qrCid}): invalid (out)')
         return False
 
     @ipfsOp

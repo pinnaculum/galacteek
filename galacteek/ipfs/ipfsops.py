@@ -172,7 +172,7 @@ class TunnelDialerContext(object):
 
         streams = await manager.streamsForListenAddr(self.maddr)
         if streams:
-            self.operator.debug(streams)
+            # self.operator.debug(streams)
             for stream in streams:
                 self.operator.debug('Tunnel dialer: closing {!r}'.format(
                     stream))
@@ -1913,7 +1913,6 @@ class IPFSOperator(object):
 
         if resp:
             maddr = resp.get('Address', None)
-            log.debug(f'Stream dial {peer} {proto}: Multiaddr is {maddr}')
 
             if not maddr:
                 log.debug(
@@ -1980,7 +1979,8 @@ class GalacteekOperator(IPFSOperator):
                     peerId, 'didauth-vc-pss',
                     addressAuto=True) as sCtx:
                 if sCtx.failed:
-                    raise Exception(f'Cannot ping {peerId}')
+                    log.debug(f'didPing({did}): failed to connect')
+                    return -1, None
 
                 startt = self.client.loop.time()
                 async with sCtx.session.post(
