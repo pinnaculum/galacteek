@@ -100,14 +100,16 @@ class ResourceAnalyzer(QObject):
             data = await ipfsop.catObject(path)
 
             if data is None:
+                log.debug('decodeQrCodes({path}): could not fetch QR')
                 return
 
             if not self.qrDecoder:
                 # No QR decoding support
+                log.debug('decodeQrCodes: no QR decoder available')
                 return
 
             # Decode the QR codes in the image if there's any
             return await self.app.loop.run_in_executor(
                 self.app.executor, self.qrDecoder.decode, data)
-        except aioipfs.APIError:
-            pass
+        except aioipfs.APIError as err:
+            log.debug(f'decodeQrCodes({path}): IPFS error: {err.message}')

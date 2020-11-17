@@ -16,8 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        #os: [ubuntu-18.04, macos-latest, windows-latest]
-        os: [windows-latest]
+        os: [ubuntu-18.04, macos-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -146,6 +145,11 @@ jobs:
         wget https://github.com/nscaife/file-windows/releases/download/20170108/file-windows-20170108.zip
         unzip file-windows-20170108.zip "magic.mgc"
       shell: bash
+
+    - name: Fetch VC redist (windows)
+      if: startsWith(matrix.os, 'windows')
+      run: |
+        wget https://aka.ms/vs/16/release/vc_redist.x64.exe
 
     - name: Install dependencies
       run: |
