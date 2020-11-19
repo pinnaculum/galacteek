@@ -4,7 +4,7 @@
 
 :info: A multi-platform browser for the distributed web
 
-.. image:: https://github.com/pinnaculum/galacteek/workflows/galacteek-deploy/badge.svg
+.. image:: https://github.com/pinnaculum/galacteek/workflows/galacteek/badge.svg
     :target: https://github.com/pinnaculum/galacteek/actions
 
 .. image:: https://badges.gitter.im/galacteek/community.svg
