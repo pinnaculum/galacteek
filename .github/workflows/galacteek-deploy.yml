@@ -189,7 +189,7 @@ jobs:
       run: |
         pip install --upgrade pip
         pip install wheel
-        pip install -r requirements-dev.txt
+        pip install "sphinx==1.8.5"
         pip install -r requirements.txt
         python setup.py build build_docs install
         python setup.py sdist bdist_wheel
