@@ -79,7 +79,11 @@ jobs:
       shell: bash
 
     - name: Configure bundle(b)
-      if: startsWith( github.ref, 'refs/tags/releases/v')
+      if:
+        contains('
+          refs/heads/master
+          refs/tags/v
+        ', github.ref)
       run: |
         echo "BUNDLE_ROOT=Galacteek-${G_VERSION}" >> $GITHUB_ENV
       shell: bash
@@ -101,16 +105,14 @@ jobs:
     - name: OS-specific vars (win)
       if: startsWith(matrix.os, 'windows')
       run: |
-        # We create 2 versions (one-file and zipped folder)
+        # We create 2 versions (one-file and installer)
         echo "IPFS_DIST_OS=windows" >> $GITHUB_ENV
 
-        echo "BUNDLE_FILENAME=${BUNDLE_ROOT}-windows-x86_64.exe" >> $GITHUB_ENV
-        echo "BUNDLE_PATH=${GLK_ASSETS}/${BUNDLE_ROOT}-windows-x86_64.exe" >> $GITHUB_ENV
+        echo "BUNDLE_FILENAME=${BUNDLE_ROOT}-x86_64.exe" >> $GITHUB_ENV
+        echo "BUNDLE_PATH=${GLK_ASSETS}/${BUNDLE_ROOT}-x86_64.exe" >> $GITHUB_ENV
 
-        # echo "BUNDLE_EXTRA_FILENAME=${BUNDLE_ROOT}-windows-x86_64.zip" >> $GITHUB_ENV
-        # echo "BUNDLE_EXTRA_PATH=${GLK_ASSETS}/${BUNDLE_ROOT}-windows-x86_64.zip" >> $GITHUB_ENV
-        echo "BUNDLE_EXTRA_FILENAME=${BUNDLE_ROOT}-windows-x86_64-installer.exe" >> $GITHUB_ENV
-        echo "BUNDLE_EXTRA_PATH=${GLK_ASSETS}/${BUNDLE_ROOT}-windows-x86_64-installer.exe" >> $GITHUB_ENV
+        echo "BUNDLE_EXTRA_FILENAME=${BUNDLE_ROOT}-installer-x86_64.exe" >> $GITHUB_ENV
+        echo "BUNDLE_EXTRA_PATH=${GLK_ASSETS}/${BUNDLE_ROOT}-installer-x86_64.exe" >> $GITHUB_ENV
       shell: bash
 
     - name: Fetch IPFS dists
@@ -187,6 +189,7 @@ jobs:
       run: |
         pip install --upgrade pip
         pip install wheel
+        pip install -r requirements-dev.txt
         pip install -r requirements.txt
         python setup.py build build_docs install
         python setup.py sdist bdist_wheel
