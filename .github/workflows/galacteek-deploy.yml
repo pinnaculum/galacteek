@@ -2,7 +2,7 @@ name: galacteek
 
 on:
   push:
-    branches: [ master, winbuild, winbuild-ci ]
+    branches: [ '*' ]
   pull_request:
     branches: [ master ]
 
