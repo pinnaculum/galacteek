@@ -19,8 +19,9 @@ Installation
 Stable release
 --------------
 
-* **AppImage (Linux)**: `Galacteek-0.4.38-x86_64.AppImage <https://github.com/pinnaculum/galacteek/releases/download/v0.4.38/Galacteek-0.4.38-x86_64.AppImage>`_
-* **DMG (MacOS)**: `Galacteek-0.4.38.dmg <https://github.com/pinnaculum/galacteek/releases/download/v0.4.38/Galacteek-0.4.38.dmg>`_
+* **AppImage (Linux)**: `Galacteek-0.4.39-x86_64.AppImage <https://github.com/pinnaculum/galacteek/releases/download/v0.4.39/Galacteek-0.4.39-x86_64.AppImage>`_
+* **DMG (MacOS)**: `Galacteek-0.4.39-x86_64.dmg <https://github.com/pinnaculum/galacteek/releases/download/v0.4.39/Galacteek-0.4.39-x86_64.dmg>`_
+* **Windows**: `Galacteek-0.4.39-installer-x86_64.exe <https://github.com/pinnaculum/galacteek/releases/download/v0.4.39/Galacteek-0.4.39-installer-x86_64.exe>`_
 
 Beta
 ----
@@ -37,6 +38,8 @@ or `file an issue <https://github.com/pinnaculum/galacteek/issues/new?assignees=
 allow the system to install applications *from anywhere* in the security
 settings. `Create an issue <https://github.com/pinnaculum/galacteek/issues/new?assignees=&labels=dmg&template=dmg-issue.md&title=Cannot+run+the+DMG+image>`_ if you
 have problems running the DMG image.
+
+*On Windows*: GIT is not packaged in the installer. `Install it  here <https://github.com/git-for-windows/git/releases/download/v2.29.2.windows.2/Git-2.29.2.2-64-bit.exe>`_
 
 You'll need to have *git* installed to sync hashmarks repositories.
 See the releases_ page for all releases.
