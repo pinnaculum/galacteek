@@ -94,7 +94,7 @@ cp ../share/icons/galacteek.png $APPDIR/usr/share/icons/hicolor/512x512/apps
 find /usr/lib -iname 'libzbar.so*' -exec cp -av {} $APPDIR/usr/lib \;
 
 # Copy go-ipfs and fs-repo-migrations
-cp $GITHUB_WORKSPACE/go-ipfs/ipfs-${GO_IPFS_VERSION} $APPDIR/usr/bin/ipfs
+cp $GITHUB_WORKSPACE/go-ipfs/ipfs-${GO_IPFS_VERSION} $APPDIR/usr/bin
 cp $GITHUB_WORKSPACE/fs-repo-migrations/fs-repo-migrations $APPDIR/usr/bin
 
 pushd "$APPDIR"/usr/bin
