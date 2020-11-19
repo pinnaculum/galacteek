@@ -66,6 +66,7 @@ excludedimports = [
 datas += [('galacteek/templates', '_pkg/galacteek/templates')]
 datas += [('galacteek/hashmarks', '_pkg/galacteek/hashmarks')]
 datas += [('galacteek/docs/manual', '_pkg/galacteek/docs/manual')]
+datas += [('galacteek/ld/contexts', '_pkg/galacteek/ld/contexts')]
 datas += [('packaging/windows/random_username', 'random_username')]
 datas += [('magic.mgc', '.')]
 

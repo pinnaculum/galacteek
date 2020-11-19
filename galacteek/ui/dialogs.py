@@ -104,6 +104,8 @@ class AddHashmarkDialog(QDialog):
             parent=None):
         super().__init__(parent)
 
+        self.app = QApplication.instance()
+
         self.ipfsResource = resource
         self.iconCid = None
         self.schemePreferred = schemePreferred
@@ -150,6 +152,9 @@ class AddHashmarkDialog(QDialog):
 
         if isinstance(description, str):
             self.ui.description.insertPlainText(description)
+
+        self.ui.groupBox.setProperty('niceBox', True)
+        self.app.repolishWidget(self.ui.groupBox)
 
     async def initDialog(self):
         await self.fillCategories()
@@ -1395,25 +1400,35 @@ class DefaultProgressDialog(QWidget):
 
 
 class IPFSDaemonInitDialog(QDialog):
-    def __init__(self, ipfsd, failedReason=None, parent=None):
+    def __init__(self, failedReason=None, parent=None):
         super().__init__(parent, Qt.WindowStaysOnTopHint)
 
-        self.ipfsd = ipfsd
         self.app = QApplication.instance()
         self.countdown = 7
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.onTimerOut)
-        self.timer.start(1000)
+        # self.timer.start(1000)
 
         self.ui = ui_ipfsdaemoninitdialog.Ui_IPFSDaemonInitDialog()
         self.ui.setupUi(self)
 
         if failedReason:
             self.ui.errorStatus.setText(failedReason)
+            self.ui.errorStatus.show()
+        else:
+            self.ui.errorStatus.hide()
 
         self.ui.okButton.clicked.connect(self.accept)
         self.ui.dataStore.currentIndexChanged.connect(self.onDataStoreChanged)
+        self.ui.daemonType.currentIndexChanged.connect(
+            self.onDaemonTypeChanged)
+
+        self.ui.groupBoxCustomDaemon.setProperty('niceBox', True)
+        self.ui.groupBoxLocalDaemon.setProperty('niceBox', True)
+
+        self.app.repolishWidget(self.ui.groupBoxCustomDaemon)
+        self.app.repolishWidget(self.ui.groupBoxLocalDaemon)
 
         self.preloadCfg()
 
@@ -1425,6 +1440,14 @@ class IPFSDaemonInitDialog(QDialog):
 
     def preloadCfg(self):
         sManager = self.app.settingsMgr
+
+        if sManager.isTrue(
+            CFG_SECTION_IPFSD, CFG_KEY_ENABLED
+        ):
+            self.ui.daemonType.setCurrentIndex(0)
+        else:
+            self.ui.daemonType.setCurrentIndex(1)
+
         try:
             self.ui.apiPort.setValue(
                 sManager.getInt(CFG_SECTION_IPFSD, CFG_KEY_APIPORT))
@@ -1434,6 +1457,13 @@ class IPFSDaemonInitDialog(QDialog):
                 sManager.getInt(CFG_SECTION_IPFSD, CFG_KEY_HTTPGWPORT))
             self.ui.keepDaemonRunning.setChecked(
                 sManager.isTrue(CFG_SECTION_IPFSD, CFG_KEY_IPFSD_DETACHED))
+
+            self.ui.customDaemonHost.setText(
+                sManager.getSetting(CFG_SECTION_IPFSCONN1, CFG_KEY_HOST))
+            self.ui.customDaemonApiPort.setValue(
+                sManager.getInt(CFG_SECTION_IPFSCONN1, CFG_KEY_APIPORT))
+            self.ui.customDaemonGwPort.setValue(
+                sManager.getInt(CFG_SECTION_IPFSCONN1, CFG_KEY_HTTPGWPORT))
         except Exception:
             pass
 
@@ -1444,17 +1474,26 @@ class IPFSDaemonInitDialog(QDialog):
     def leaveEvent(self, ev):
         self.timer.stop()
         self.countdown = 5
-        self.timer.start(1000)
+        # self.timer.start(1000)
 
     def dataStore(self):
         return self.ui.dataStore.currentText()
 
+    def daemonType(self):
+        if self.ui.daemonType.currentIndex() == 0:
+            return 'local'
+        else:
+            return 'custom'
+
     def onDataStoreChanged(self, idx):
         pass
 
+    def onDaemonTypeChanged(self, idx):
+        self.ui.stack.setCurrentIndex(idx)
+
     def updateStatus(self):
         self.ui.status.setText(
-            f'Using <b>{self.dataStore()}</b> in '
+            f'Using current settings in '
             f'{self.countdown} seconds ...')
 
     def onTimerOut(self):
@@ -1465,6 +1504,62 @@ class IPFSDaemonInitDialog(QDialog):
             self.accept()
 
     def accept(self):
+        sManager = self.app.settingsMgr
+        cfg = self.options()
+
+        if cfg['daemonType'] == 'custom':
+            # Disable local daemon
+            sManager.setFalse(
+                CFG_SECTION_IPFSD, CFG_KEY_ENABLED
+            )
+
+            # Store custom daemon settings
+            sManager.setSetting(
+                CFG_SECTION_IPFSCONN1, CFG_KEY_HOST,
+                cfg['host']
+            )
+            sManager.setSetting(
+                CFG_SECTION_IPFSCONN1, CFG_KEY_APIPORT,
+                cfg['apiPort']
+            )
+            sManager.setSetting(
+                CFG_SECTION_IPFSCONN1, CFG_KEY_HTTPGWPORT,
+                cfg['gatewayPort']
+            )
+        elif cfg['daemonType'] == 'local':
+            # Store local daemon settings
+            section = CFG_SECTION_IPFSD
+
+            sManager.setTrue(
+                section, CFG_KEY_ENABLED
+            )
+            # sManager.setCommaJoined(
+            #     section, CFG_KEY_IPFSD_PROFILES,
+            #     cfg['profiles']
+            # )
+            sManager.setSetting(
+                section, CFG_KEY_APIPORT,
+                cfg['apiPort']
+            )
+            sManager.setSetting(
+                section, CFG_KEY_SWARMPORT,
+                cfg['swarmPort']
+            )
+            sManager.setSetting(
+                section, CFG_KEY_SWARMPORT_QUIC,
+                cfg['swarmPort']
+            )
+            sManager.setSetting(
+                section, CFG_KEY_HTTPGWPORT,
+                cfg['gatewayPort']
+            )
+            sManager.setBoolFrom(
+                section, CFG_KEY_IPFSD_DETACHED,
+                cfg['keepDaemonRunning']
+            )
+
+        sManager.sync()
+
         self.done(1)
 
     def profiles(self):
@@ -1474,14 +1569,27 @@ class IPFSDaemonInitDialog(QDialog):
         return pr
 
     def options(self):
-        return {
-            'dataStore': self.ui.dataStore.currentText(),
-            'swarmPort': self.ui.swarmPort.value(),
-            'gatewayPort': self.ui.gatewayPort.value(),
-            'apiPort': self.ui.apiPort.value(),
-            'keepDaemonRunning': self.ui.keepDaemonRunning.isChecked(),
-            'profiles': self.profiles()
+        opts = {
+            'daemonType': self.daemonType()
         }
+
+        if opts['daemonType'] == 'local':
+            opts.update({
+                'dataStore': self.ui.dataStore.currentText(),
+                'swarmPort': self.ui.swarmPort.value(),
+                'gatewayPort': self.ui.gatewayPort.value(),
+                'apiPort': self.ui.apiPort.value(),
+                'keepDaemonRunning': self.ui.keepDaemonRunning.isChecked(),
+                'profiles': self.profiles()
+            })
+        elif opts['daemonType'] == 'custom':
+            opts.update({
+                'host': self.ui.customDaemonHost.text(),
+                'gatewayPort': self.ui.customDaemonGwPort.value(),
+                'apiPort': self.ui.customDaemonApiPort.value(),
+            })
+
+        return opts
 
 
 class UserProfileInitDialog(QDialog):
@@ -1514,9 +1622,13 @@ class UserProfileInitDialog(QDialog):
         self.ui.cancelButton.clicked.connect(self.reject)
         self.ui.generateRandom.clicked.connect(self.onGenerateRandomUser)
         self.validPass = False
+        self.validRsaPassphrase = False
 
         if showCancel is False:
             self.ui.cancelButton.hide()
+
+        self.ui.groupBox.setProperty('niceBox', True)
+        self.app.repolishWidget(self.ui.groupBox)
 
     def onUsePassphrase(self, state):
         enable = (state == Qt.Checked)
@@ -1531,14 +1643,16 @@ class UserProfileInitDialog(QDialog):
         if len(text) in range(6, 64):
             self.ui.ipidRsaPassphraseCheck.setStyleSheet(
                 'background-color: green')
+            self.validRsaPassphrase = True
         else:
             self.ui.ipidRsaPassphraseCheck.setStyleSheet(
                 'background-color: red')
+            self.validRsaPassphrase = False
 
     def onPassphraseVerifEdit(self, text):
         passphrase = self.ui.ipidRsaPassphrase.text()
 
-        if text == passphrase:
+        if text == passphrase and self.validRsaPassphrase:
             self.ui.ipidRsaPassphraseVerifCheck.setStyleSheet(
                 'background-color: green')
             self.validPass = True
@@ -1602,7 +1716,10 @@ class IPIDPasswordPromptDialog(QDialog):
         self.ui.password.setFocus(Qt.OtherFocusReason)
         self.ui.password.returnPressed.connect(self.accept)
 
+        self.ui.okButton.clicked.connect(self.accept)
         self.ui.forgotPwdButton.clicked.connect(self.onForgotPassword)
+        self.ui.groupBox.setProperty('niceBox', True)
+        self.app.repolishWidget(self.ui.groupBox)
 
     def onForgotPassword(self):
         self.done(0)

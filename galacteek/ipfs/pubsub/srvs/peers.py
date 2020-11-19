@@ -28,7 +28,7 @@ class PSPeersService(JSONPubsubService):
                          filterSelfMessages=False, **kw)
 
         self._curProfile = None
-        self._identEvery = 30
+        self._identEvery = 50
         self.ipfsCtx.profileChanged.connect(self.onProfileChanged)
         self.__identToken = secrets.token_hex(64)
 

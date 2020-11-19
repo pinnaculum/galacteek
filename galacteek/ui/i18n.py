@@ -882,6 +882,22 @@ def iQrCodes():
 # IPFS daemon messages
 
 
+def iIpfsDaemon():
+    return QCoreApplication.translate('Galacteek', 'IPFS daemon')
+
+
+def iIpfsDaemonProcessControl():
+    return QCoreApplication.translate('Galacteek', 'IPFS daemon process')
+
+
+def iIpfsDaemonCPUPriority():
+    return QCoreApplication.translate('Galacteek', 'CPU priority (nice)')
+
+
+def iIpfsDaemonIOPriority():
+    return QCoreApplication.translate('Galacteek', 'IO priority')
+
+
 def iIpfsDaemonStarted():
     return QCoreApplication.translate('Galacteek', 'IPFS daemon started')
 

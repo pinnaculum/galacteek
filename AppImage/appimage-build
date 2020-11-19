@@ -81,6 +81,7 @@ $APPIPIP install wheel
 
 echo "Installing wheel: $WHEEL"
 $APPIPIP install $WHEEL
+$APPIPIP install $WHEEL'[markdown-extensions]'
 
 cp ../{LICENSE,LICENSE.go-ipfs,LICENSE.Qt.GPLv3} \
 	$APPDIR/usr/share/licenses/galacteek

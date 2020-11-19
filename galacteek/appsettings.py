@@ -116,7 +116,7 @@ def setDefaultSettings(gApp):
     sManager.setDefaultSetting(section, CFG_KEY_IPFSD_PROFILES, '')
     sManager.setDefaultSetting(section, CFG_KEY_PUBSUB_ROUTER,
                                ROUTER_TYPE_GOSSIP)
-    sManager.setDefaultSetting(section, CFG_KEY_NICE, 20)
+    sManager.setDefaultSetting(section, CFG_KEY_NICE, 19)
     sManager.setDefaultTrue(section, CFG_KEY_CORS)
     sManager.setDefaultTrue(section, CFG_KEY_ENABLED)
     sManager.setDefaultFalse(section, CFG_KEY_IPFSD_DETACHED)

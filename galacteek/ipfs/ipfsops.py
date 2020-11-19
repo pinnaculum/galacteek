@@ -7,7 +7,6 @@ import orjson
 import uuid
 import aiofiles
 import shutil
-import pkg_resources
 import asyncio
 import aiohttp
 import re
@@ -39,6 +38,7 @@ from galacteek.core.asynclib import async_enterable
 from galacteek.core.asynclib import asyncReadFile
 from galacteek.core.jtraverse import traverseParser
 from galacteek.core import jsonSchemaValidate
+from galacteek.core import pkgResourcesRscFilename
 from galacteek.core.tmpf import TmpFile
 from galacteek.ld.ldloader import aioipfs_document_loader
 from galacteek.ld import asyncjsonld as jsonld
@@ -1449,7 +1449,7 @@ class IPFSOperator(object):
         return await process(dagData)
 
     def ldContextsRootPath(self):
-        return pkg_resources.resource_filename('galacteek.ld', 'contexts')
+        return pkgResourcesRscFilename('galacteek.ld', 'contexts')
 
     async def ldContext(self, cName: str, source=None,
                         key=None):
@@ -1939,8 +1939,7 @@ class IPFSOpRegistry:
 
     @staticmethod
     def reg(key, inst):
-        if key not in IPFSOpRegistry._registry:
-            IPFSOpRegistry._registry[key] = inst
+        IPFSOpRegistry._registry[key] = inst
 
     @staticmethod
     def get(key):

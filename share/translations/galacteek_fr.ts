@@ -41,17 +41,17 @@
         <translation type="obsolete">Utiliser ce titre pour le hashmark</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="161"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="167"/>
         <source>Category</source>
         <translation>Catégorie</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="178"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="184"/>
         <source>or create new category, e.g news/world</source>
         <translation>ou créer une nouvelle catégorie (par ex: news/world)</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="235"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="241"/>
         <source>Share (public)</source>
         <translation>Partager (public)</translation>
     </message>
@@ -61,7 +61,7 @@
         <translation type="obsolete">Liste de tags</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="128"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="134"/>
         <source>Comment</source>
         <translation>Commentaire</translation>
     </message>
@@ -73,15 +73,15 @@
     <message>
         <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="108"/>
         <source>Description</source>
-        <translation>Description</translation>
+        <translation type="obsolete">Description</translation>
     </message>
     <message>
         <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="82"/>
         <source>Title</source>
-        <translation>TItre</translation>
+        <translation type="obsolete">TItre</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="211"/>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="217"/>
         <source>Pinning</source>
         <translation>Pinning</translation>
     </message>
@@ -98,6 +98,21 @@
     <message>
         <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="26"/>
         <source>Add new hashmark</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="39"/>
+        <source>New hashmark</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="88"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Title&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/addhashmarkdialog.ui" line="114"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Description&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1052,27 +1067,27 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>Galacteek</name>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="886"/>
+        <location filename="../../galacteek/ui/i18n.py" line="902"/>
         <source>IPFS daemon started</source>
         <translation>Démon IPFS: démarré</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="897"/>
+        <location filename="../../galacteek/ui/i18n.py" line="913"/>
         <source>IPFS daemon&apos;s gateway started</source>
         <translation>Démon IPFS: passerelle HTTP démarrée</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="902"/>
+        <location filename="../../galacteek/ui/i18n.py" line="918"/>
         <source>IPFS daemon is ready</source>
         <translation>Démon IPFS: prêt</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="906"/>
+        <location filename="../../galacteek/ui/i18n.py" line="922"/>
         <source>Problem starting IPFS daemon</source>
         <translation>Démon IPFS: problème de démarrage</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="911"/>
+        <location filename="../../galacteek/ui/i18n.py" line="927"/>
         <source>Problem initializing the IPFS daemon (check the ports configuration)</source>
         <translation>Démon IPFS: problème lors de l&apos;initialisation (vérifiez les ports)</translation>
     </message>
@@ -1202,7 +1217,7 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="890"/>
+        <location filename="../../galacteek/ui/i18n.py" line="906"/>
         <source>IPFS daemon was already running (no start)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1212,13 +1227,33 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="923"/>
+        <location filename="../../galacteek/ui/i18n.py" line="939"/>
         <source>Do you want to keep the IPFS daemon running ?</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../galacteek/ui/i18n.py" line="584"/>
         <source>File sharing</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/i18n.py" line="886"/>
+        <source>IPFS daemon</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/i18n.py" line="890"/>
+        <source>IPFS daemon process</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/i18n.py" line="894"/>
+        <source>CPU priority (nice)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/i18n.py" line="898"/>
+        <source>IO priority</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

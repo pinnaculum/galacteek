@@ -535,3 +535,20 @@ QScrollBar::handle:vertical {
 QToolButton#seedsToolButton::checked {
     background-color: #CFCC94;
 }
+
+QGroupBox[niceBox="true"] {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #E0E0E0, stop: 1 #FFFFFF);
+    border: 2px solid gray;
+    border-radius: 5px;
+    margin-top: 1ex;
+    padding: 20px;
+}
+
+QGroupBox::title[niceBox="true"] {
+    font: 14pt "Inter UI";
+    subcontrol-origin: margin;
+    subcontrol-position: top center;
+    padding: 0 5px;
+    color: #4b9fa2;
+}

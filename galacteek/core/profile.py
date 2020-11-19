@@ -959,6 +959,18 @@ class UserProfile(QObject):
                 localIdentifier=True
             )
 
+            if not ipid:
+                # Could not load the current IPID ..
+                # Create a new one
+
+                ipid = await self.createIpIdentifier(
+                    iphandle=ipHandleGen(
+                        self.randomUsername(),
+                        'Earth',
+                        peerId=op.ctx.node.id
+                    )
+                )
+
             pwd = self.initOptions.get('ipidRsaPassphrase', None)
             # Unlock
             if not await ipid.unlock(rsaPassphrase=pwd):

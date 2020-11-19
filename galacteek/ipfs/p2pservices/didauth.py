@@ -175,7 +175,9 @@ class DIDAuthSiteHandler:
                         base64.b64encode(signed).decode(),
                         js['nonce']
                     )
-            except Exception:
+            except Exception as err:
+                self.message(
+                    f'Error while making VC response for {did}: {err}')
                 return await self.msgError(error='PSS error')
 
     @ipfsOp
