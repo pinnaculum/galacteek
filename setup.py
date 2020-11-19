@@ -284,7 +284,7 @@ setup(
     ],
     install_requires=install_reqs,
     extras_require={
-        'markdown': install_reqs_extra_markdown,
+        'markdown-extensions': install_reqs_extra_markdown,
         'docs': [
             'sphinx>=1.7.0'
         ]

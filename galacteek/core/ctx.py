@@ -922,10 +922,6 @@ class P2PServices(QObject):
 
 
 class IPFSContext(QObject):
-    # signals
-    ipfsConnectionReady = AsyncSignal()
-    ipfsRepositoryReady = AsyncSignal()
-
     _ipfsRepositoryReady = pyqtSignal()  # for pytest
 
     # profiles
@@ -961,6 +957,11 @@ class IPFSContext(QObject):
         self._currentProfile = None
         self.ipfsClient = None
         self._softIdent = None
+
+        # Async signals
+        self.ipfsConnectionReady = AsyncSignal()
+        self.ipfsRepositoryReady = AsyncSignal()
+        self.ipfsDaemonStarted = AsyncSignal()
 
         self.peers = Peers(self)
         self.node = Node(self)

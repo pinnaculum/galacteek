@@ -166,7 +166,7 @@ class AsyncIPFSDaemon(object):
                  swarmportQuic=DEFAULT_SWARMPORT,
                  swarmProtos=['tcp', 'quic'],
                  gatewayport=DEFAULT_GWPORT, initRepo=True,
-                 swarmLowWater=10, swarmHighWater=20, nice=20,
+                 swarmLowWater=10, swarmHighWater=20, nice=19,
                  pubsubEnable=False, noBootstrap=False, corsEnable=True,
                  pubsubRouter='floodsub', namesysPubsub=False,
                  pubsubSigning=False, offline=False,
@@ -453,7 +453,7 @@ class AsyncIPFSDaemon(object):
 
         self._procPid = self.transport.get_pid()
         self.process = psutil.Process(self._procPid)
-        self.setProcLimits(self.process, nice=self.nice)
+        self.setProcNiceness(nice=self.nice, proc=self.process)
 
         yield 100, 'go-ipfs started'
 
@@ -609,13 +609,46 @@ class AsyncIPFSDaemon(object):
             json.dumps(pList)
         )
 
-    def setProcLimits(self, process, nice=20):
-        self.message(f'Applying limits to process: {process.pid}')
+    def getProcNiceness(self, proc=None):
+        process = proc if proc else self.process
 
         try:
-            process.nice(nice)
+            nice = process.nice()
+            self.message(f'Process {process.pid}: current nice is {nice}')
+            return nice
         except Exception:
-            self.message(f'Could not apply limits to process {process.pid}')
+            return None
+
+    def setProcNiceness(self, nice=19, proc=None):
+        process = proc if proc else self.process
+
+        try:
+            if not isinstance(process, psutil.Process):
+                raise ValueError('Invalid process')
+
+            self.message(f'Applying limits to process: {process.pid}')
+
+            if platform.system() == 'Windows':
+                if nice in range(10, 21):
+                    self.message('Process Priority class: below normal')
+                    process.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
+                elif nice in range(0, 10):
+                    self.message('Process Priority class: normal')
+                    process.nice(psutil.NORMAL_PRIORITY_CLASS)
+                elif nice in range(-10, 0):
+                    self.message('Process Priority class: above normal')
+                    process.nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS)
+                elif nice in range(-20, -10):
+                    self.message('Process Priority class: high')
+                    process.nice(psutil.HIGH_PRIORITY_CLASS)
+            else:
+                process.nice(nice)
+        except Exception as err:
+            self.message(
+                f'Could not apply limits to process {process.pid}: {err}')
+            return False
+        else:
+            return True
 
     def stop(self):
         self.message('Stopping IPFS daemon')

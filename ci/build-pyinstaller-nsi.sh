@@ -45,10 +45,10 @@ find PyQt5/Qt/qml/QtQuick -exec rm {} \;
 
 popd
 
-cp packaging/windows/galacteek.nsi .
+cp packaging/windows/galacteek-installer.nsi .
 
 echo "Running makensis"
-makensis -V2 galacteek.nsi
+makensis -V2 galacteek-installer.nsi
 
 echo "Success, moving installer"
 

@@ -55,10 +55,12 @@ export PATH="$GITHUB_WORKSPACE/miniconda/bin:$PATH"
 conda create -n galacteek python=3.7 --yes
 source activate galacteek
 
+WHEEL="$OLD_CWD"/dist/galacteek-${G_VERSION}-py3-none-any.whl
 # install dependencies
 pip install wheel
 pip install -r "$OLD_CWD"/requirements.txt
-pip install "$OLD_CWD"/dist/galacteek-${G_VERSION}-py3-none-any.whl
+pip install $WHEEL
+pip install $WHEEL'[markdown-extensions]'
 
 # leave conda env
 source deactivate

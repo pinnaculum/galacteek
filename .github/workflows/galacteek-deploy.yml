@@ -14,7 +14,7 @@ jobs:
   build:
     needs: create_release
     strategy:
-      fail-fast: false
+      # fail-fast: false
       matrix:
         os: [ubuntu-18.04, macos-latest, windows-latest]
 
@@ -279,7 +279,7 @@ jobs:
             refs/tags/v
           ', github.ref)
         run: |
-          echo "TAGNAME=${G_VERSION}" >> $GITHUB_ENV
+          echo "TAGNAME=v${G_VERSION}" >> $GITHUB_ENV
 
       - name: Remove previous release
         run: |

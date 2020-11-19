@@ -242,6 +242,7 @@ class GalacteekApplication(QApplication):
         self._system = platform.system()
         self._urlSchemes = {}
         self._shuttingDown = False
+        self._freshInstall = False
 
         self._icons = {}
         self._ipfsIconsCache = {}
@@ -719,6 +720,8 @@ class GalacteekApplication(QApplication):
     async def updateIpfsClient(self, client=None):
         if not client:
             connParams = self.getIpfsConnectionParams()
+            log.debug(f'updateIpfsClient: host {connParams.host}, '
+                      f'API port: {connParams.apiPort}')
             client = aioipfs.AsyncIPFS(host=connParams.host,
                                        port=connParams.apiPort, loop=self.loop)
 
@@ -728,16 +731,6 @@ class GalacteekApplication(QApplication):
         self.ipfsOpMain.ipidManager = self.ipidManager
 
         IPFSOpRegistry.regDefault(self.ipfsOpMain)
-
-    async def setupRepo(self):
-        from galacteek.ipfs import ConnectionError
-        try:
-            await self.setupRepository()
-        except ConnectionError:
-            await messageBoxAsync(
-                'IPFS connection error (is your daemon running ?)')
-        else:
-            await self.ipfsCtx.ipfsConnectionReady.emit()
 
     async def stopIpfsServices(self):
         try:
@@ -830,11 +823,16 @@ class GalacteekApplication(QApplication):
         else:
             log.debug('No suitable go-ipfs binary found')
 
-    async def setupIpfsConnection(self):
+    async def setupIpfsConnection(self, reconfigure=False):
         sManager = self.settingsMgr
 
         if not self.goIpfsBinPath:
             await self.fetchGoIpfs()
+
+        cfg = None
+        if self._freshInstall is True or reconfigure:
+            initDialog = IPFSDaemonInitDialog()
+            cfg = await self.ipfsDaemonInitDialog(initDialog)
 
         if sManager.isTrue(CFG_SECTION_IPFSD, CFG_KEY_ENABLED):
             if not self.goIpfsBinPath:
@@ -851,7 +849,8 @@ class GalacteekApplication(QApplication):
                 self.cmdArgs.migrate is True
 
             await self.startIpfsDaemon(
-                migrateRepo=enableMigrate
+                migrateRepo=enableMigrate,
+                config=cfg
             )
         else:
             await self.updateIpfsClient()
@@ -882,6 +881,10 @@ class GalacteekApplication(QApplication):
         self.appImageImported.connect(
             lambda cid: ensure(messageBoxAsync(
                 'AppImage was imported in IPFS!')))
+
+    def repolishWidget(self, widget):
+        self.style().unpolish(widget)
+        self.style().polish(widget)
 
     def setupAsyncLoop(self):
         """
@@ -1019,6 +1022,9 @@ class GalacteekApplication(QApplication):
         return result
 
     def initSettings(self):
+        if not os.path.isfile(self.settingsFileLocation):
+            self._freshInstall = True
+
         self.settingsMgr = SettingsManager(path=self.settingsFileLocation)
         setDefaultSettings(self)
         self.settingsMgr.sync()
@@ -1028,6 +1034,7 @@ class GalacteekApplication(QApplication):
         return dlg.options()
 
     async def startIpfsDaemon(self, migrateRepo=False,
+                              config=None,
                               failedReason=None):
 
         pubsubEnabled = True  # mandatory now ..
@@ -1080,11 +1087,19 @@ class GalacteekApplication(QApplication):
                 dataStore=dataStore,
                 loop=self.loop)
 
-        initDialog = IPFSDaemonInitDialog(
-            self.ipfsd, failedReason=failedReason)
+        initDialog = IPFSDaemonInitDialog(failedReason=failedReason,
+                                          parent=self.mainWindow)
 
-        if not self.ipfsd.repoExists() or failedReason:
+        if self._shuttingDown:
+            return
+
+        if (not self.ipfsd.repoExists() or failedReason) and config is None:
             cfg = await self.ipfsDaemonInitDialog(initDialog)
+
+            if cfg['daemonType'] == 'custom':
+                await self.updateIpfsClient()
+
+                return await self.setupProfileAndRepo()
 
             try:
                 self.ipfsd.dataStore = cfg['dataStore']
@@ -1094,32 +1109,6 @@ class GalacteekApplication(QApplication):
                 self.ipfsd.swarmportQuic = cfg['swarmPort']
                 self.ipfsd.gatewayport = cfg['gatewayPort']
                 self.ipfsd.detached = cfg['keepDaemonRunning']
-
-                # Write the settings
-                sManager.setCommaJoined(
-                    section, CFG_KEY_IPFSD_PROFILES,
-                    daemonProfiles
-                )
-                sManager.setSetting(
-                    section, CFG_KEY_APIPORT,
-                    cfg['apiPort']
-                )
-                sManager.setSetting(
-                    section, CFG_KEY_SWARMPORT,
-                    cfg['swarmPort']
-                )
-                sManager.setSetting(
-                    section, CFG_KEY_SWARMPORT_QUIC,
-                    cfg['swarmPort']
-                )
-                sManager.setSetting(
-                    section, CFG_KEY_HTTPGWPORT,
-                    cfg['gatewayPort']
-                )
-                sManager.setBoolFrom(
-                    section, CFG_KEY_IPFSD_DETACHED,
-                    cfg['keepDaemonRunning']
-                )
             except Exception:
                 dataStore = None
                 daemonProfiles = []
@@ -1193,9 +1182,10 @@ class GalacteekApplication(QApplication):
 
             await self.ipfsCtx.start()
             await self.setupRepository()
-        except ConnectionError:
+        except ConnectionError as err:
             await messageBoxAsync(
-                'IPFS connection error (is your daemon running ?)')
+                f'IPFS connection error: {err}')
+            await self.setupIpfsConnection(reconfigure=True)
         else:
             await self.ipfsCtx.ipfsConnectionReady.emit()
 
@@ -1215,6 +1205,7 @@ class GalacteekApplication(QApplication):
             await self.updateIpfsClient(client)
             await self.setupProfileAndRepo()
             await self.scheduler.spawn(self.ipfsd.watchProcess())
+            await self.ipfsCtx.ipfsDaemonStarted.emit()
             return
 
         pDialog.log('Starting daemon ...')
@@ -1266,6 +1257,7 @@ class GalacteekApplication(QApplication):
             await self.ipfsd.writeStatus()
             await self.setupProfileAndRepo()
             await self.scheduler.spawn(self.ipfsd.watchProcess())
+            await self.ipfsCtx.ipfsDaemonStarted.emit()
         else:
             logUser.info(iIpfsDaemonInitProblem())
 
@@ -1380,8 +1372,9 @@ class GalacteekApplication(QApplication):
     async def shutdownScheduler(self):
         # It ain't that bad. STFS with dignity
 
-        for stry in range(0, 12):
+        for stry in range(0, 8):
             try:
+                log.warning(f'Scheduler shutdown attempt: {stry}')
                 async with async_timeout.timeout(2):
                     await self.scheduler.close()
             except asyncio.TimeoutError:
@@ -1398,15 +1391,10 @@ class GalacteekApplication(QApplication):
         self.lock.release()
 
         self.mainWindow.stopTimers()
+        self.closeAllWindows()
 
         try:
             self.systemTray.hide()
-        except:
-            pass
-
-        try:
-            await self.sqliteDb.close()
-            await database.closeOrm()
         except:
             pass
 
@@ -1429,7 +1417,11 @@ class GalacteekApplication(QApplication):
                 self.debug('Stopping IPFS daemon (not detached)')
                 self.ipfsd.stop()
 
-        self.mainWindow.close()
+        try:
+            await self.sqliteDb.close()
+            await database.closeOrm()
+        except Exception as err:
+            self.debug(f'Error while closing databases: {err}')
 
         if self.debug:
             self.showTasks()
