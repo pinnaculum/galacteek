@@ -160,7 +160,7 @@ function ipfsPublish(ipfs, data, cb) {
 }
 
 function setupChatChannel(channel) {
-    const areaElem = document.getElementById('chat')
+    const areaElem = document.getElementById('chattext')
     const messageElem = document.getElementById('message')
 
     channel.onclose = () => areaElem.value += "**system** chat closed\n"

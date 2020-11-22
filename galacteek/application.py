@@ -594,7 +594,7 @@ class GalacteekApplication(QApplication):
             await self.importQtResource(
                 '/share/static/docs/markdown-reference.html')
 
-        vPath = pkg_resources.resource_filename(
+        vPath = pkgResourcesRscFilename(
             'galacteek.extapps', 'video-rendezvous')
         # CHANGE
         self.ipfsCtx.resources['videocall'] = await op.addPath(vPath)

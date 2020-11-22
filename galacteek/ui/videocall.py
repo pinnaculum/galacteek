@@ -59,6 +59,7 @@ class VideoCallInitiator:
             except Exception:
                 continue
 
+            print(msg)
             if msg['msgtype'] == MSGTYPE_CAPTCHA_CHALLENGE:
                 await ipfsop.sleep()
 
@@ -68,7 +69,7 @@ class VideoCallInitiator:
                 captchaRaw = await ipfsop.catObject(captchaCid)
 
                 if not captchaRaw:
-                    raise Exception('ERR')
+                    raise Exception(f'ERR: {captchaCid}')
 
                 for att in range(8):
                     dlg = IPFSCaptchaChallengeDialog(captchaRaw)
