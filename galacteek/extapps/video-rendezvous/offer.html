@@ -4,26 +4,34 @@
     <title>IPFS Video chat</title>
     <script src="ipfs.min.js"></script>
     <script src="ipfs-webrtc.js"></script>
+    <link rel='stylesheet' type='text/css' href='style.css'/>
   </head>
   <body>
+    <div id="media">
+        <audio id="remote_audio" autoplay="true"></audio>
+    </div>
+    <div id="wrapper">
+        <div style="width: 80%; float: left">
+            <video id="remote_video" autoplay="true" playsinline="true"></video>
+        </div>
 
-    <div>
+        <div style="width: 100px; float: left">
+            <video id="local_video" autoplay="true" playsinline="true"></video>
+        </div>
+    </div>
+
+    <div id="chat">
       <label for="chat">Chat:</label>
-      <textarea id="chat" style="width: 100%" rows="15" placeholder="(waiting for chat to start)" readonly></textarea>
+      <textarea id="chattext" style="width: 100%" rows="15" placeholder="(waiting for chat to start)" readonly></textarea>
       <div style="display: flex">
         <label for="message">Send Message: </label>
         <input id="message" type="text" style="flex: 1" disabled>
       </div>
     </div>
-    <div id="media">
-        <audio id="remote_audio" autoplay="true"></audio>
-
-        <video id="remote_video" autoplay="true" playsinline="true"></video>
-        <video id="local_video" autoplay="true" playsinline="true"></video>
-
-    </div>
     
     <script>
+      document.getElementById('chat').style.display = 'none'
+
       console.log('Using topic ' + ipfsDirBase())
 
       // Create IPFS and do everything else once ready
