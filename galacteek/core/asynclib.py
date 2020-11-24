@@ -101,7 +101,10 @@ def ensure(coro, **kw):
     app = QApplication.instance()
 
     callback = kw.pop('futcallback', ensureGenericCallback)
-    kw.update(loop=app.loop)
+
+    if app and hasattr(app, 'loop'):
+        kw.update(loop=app.loop)
+
     future = asyncio.ensure_future(coro, **kw)
 
     if callback:

@@ -95,6 +95,8 @@ class IPService(metaclass=IPServiceRegistry):
     SRV_TYPE_ATOMFEED = 'DwebAtomFeedService'
     SRV_TYPE_AVATAR = 'DwebAvatarService'
 
+    SRV_TYPE_PASSPORT = 'DwebPassportService'
+
     SRV_TYPE_VC = 'VerifiableCredentialService'
     SRV_TYPE_GENERICPYRAMID = 'GalacteekPyramidService'
     SRV_TYPE_CHAT = 'GalacteekChatService'
@@ -518,6 +520,8 @@ class IPIdentifier(DAGOperations):
         await self.updateDocument(self.doc, publish=publish)
         await self.sServicesChanged.emit()
 
+        return self._serviceInst(service)
+
     @ipfsOp
     async def addServiceContexted(self, ipfsop, service: dict,
                                   endpoint=None,
@@ -880,11 +884,11 @@ class IPIDManager:
         self._ldCache = LRUCache(256)
 
     async def track(self, ipid: IPIdentifier):
-        with await self._lock:
+        async with self._lock:
             self._managedIdentifiers[ipid.did] = ipid
 
     async def searchServices(self, term: str):
-        with await self._lock:
+        async with self._lock:
             for did, ipid in self._managedIdentifiers.items():
                 async for srv in ipid.searchServices(term):
                     yield srv
@@ -892,7 +896,7 @@ class IPIDManager:
                 await asyncio.sleep(0)
 
     async def getServiceById(self, _id: str):
-        with await self._lock:
+        async with self._lock:
             for did, ipid in self._managedIdentifiers.items():
                 srv = await ipid.searchServiceById(_id)
                 if srv:
@@ -904,7 +908,7 @@ class IPIDManager:
         while True:
             await asyncio.sleep(60 * 5)
 
-            with await self._lock:
+            async with self._lock:
                 for did, ipId in self._managedIdentifiers.items():
                     await ipId.load()
                     log.debug('tracker: {0} => {1}'.format(
@@ -921,7 +925,7 @@ class IPIDManager:
         if not did or not ipidFormatValid(did):
             return None
 
-        with await self._lock:
+        async with self._lock:
             if did in self._managedIdentifiers:
                 return self._managedIdentifiers[did]
 
