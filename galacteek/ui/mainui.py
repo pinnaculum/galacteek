@@ -42,6 +42,7 @@ from galacteek import database
 from galacteek.core.glogger import loggerMain
 from galacteek.core.glogger import loggerUser
 from galacteek.core.glogger import easyFormatString
+from galacteek.core.glogger import LogRecordStyler
 from galacteek.core.asynclib import asyncify
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.ipfsops import *
@@ -205,30 +206,49 @@ class MainWindowLogHandler(Handler, StringFormatterHandlerMixin):
         self.application_name = application_name
         self.window = window
         self.logsBrowser = logsBrowser
+        self.logsBrowser.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.doc = self.logsBrowser.document()
+        self.logStyler = LogRecordStyler()
 
     def emit(self, record):
+        cursor = self.logsBrowser.textCursor()
+        vScrollBar = self.logsBrowser.verticalScrollBar()
+        color, _font = self.logStyler.getStyle(record)
+
         if record.level_name == 'INFO':
-            color = self.modulesColorTable.get(record.module, None)
+            self.window.statusMessage(
+                f'''
+                <div style="width: 450px">
+                  <p style="color: {color}">
+                    <b>{record.module}</b>
+                  </p>
+                  <p>{record.message}</p>
+                </div>
+                '''
+            )
 
-            if color:
-                self.window.statusMessage(
-                    f'''
-                    <div style="width: 450px">
-                      <p style="color: {color}">
-                        <b>{record.module}</b>
-                      </p>
-                      <p>{record.message}</p>
-                    </div>
-                    '''
-                )
+        oldScrollbarValue = vScrollBar.value()
+        isDown = oldScrollbarValue == vScrollBar.maximum()
 
-        self.logsBrowser.append(self.format(record))
+        self.logsBrowser.moveCursor(QTextCursor.End)
+        self.logsBrowser.insertHtml(
+            f'''
+            <p style="color: {color}; font: 14pt 'Inter UI';">
+                [{record.time:%H:%M:%S.%f%z}]
+                <b>@{record.module}@</b>: {record.message}
+            </p>
+            <br />
+            '''
+        )
 
-        if not self.logsBrowser.isVisible():
+        if cursor.hasSelection() or not isDown:
+            self.logsBrowser.setTextCursor(cursor)
+            vScrollBar.setValue(oldScrollbarValue)
+        else:
             self.logsBrowser.moveCursor(QTextCursor.End)
+            vScrollBar.setValue(vScrollBar.maximum())
 
-        if self.doc.lineCount() > 1024:
+        if self.doc.lineCount() > 2048:
             self.doc.clear()
 
 
@@ -629,6 +649,10 @@ class CentralStack(QStackedWidget):
                 return workspace
 
         return None
+
+    async def shutdown(self):
+        for idx, w in self.workspaces():
+            await w.workspaceShutDown()
 
 
 class BrowseButton(PopupToolButton):

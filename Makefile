@@ -1,31 +1,26 @@
-dists: requirements sdist wheels
+dists: sdist wheels
 
-requirements:
-	pipenv run pipenv_to_requirements
-	mv requirements.txt requirements.txt.autogen
-	mv requirements-dev.txt requirements-dev.txt.autogen
-	cat requirements.txt.autogen|grep -v '#'|sed -e '/^$$/d' > requirements.txt
-	cat requirements-dev.txt.autogen|grep -v '#'|sed -e '/^$$/d' > requirements-dev.txt
-	rm -f requirements.txt.autogen requirements-dev.txt.autogen
+sdist:
+	@python setup.py sdist
 
-sdist: requirements
-	pipenv run python setup.py sdist
+bdist:
+	@python setup.py bdist
 
-bdist: requirements
-	pipenv run python setup.py bdist
-
-wheels: requirements
-	pipenv run python setup.py bdist_wheel
+wheels:
+	@python setup.py bdist_wheel
 
 FORCE:
 build: FORCE
-	python setup.py build
+	@python setup.py build
 
 install: build
-	python setup.py install
+	@python setup.py install
 
 flake:
 	@flake8 galacteek
+
+tox:
+	@tox -e py37
 
 upload: dists
 	twine upload --repository-url https://upload.pypi.org/legacy/ dist/*

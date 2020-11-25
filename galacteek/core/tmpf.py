@@ -3,6 +3,9 @@ import os
 import tempfile
 
 
+TmpDir = tempfile.TemporaryDirectory
+
+
 class TmpFile:
     def __init__(self, mode='wb', suffix=None, delete=True):
         self._mode = mode

@@ -872,6 +872,10 @@ class FileManager(QWidget):
                                         iTemporaryFiles())
         self.ui.pathSelector.insertSeparator(c())
         self.ui.pathSelector.insertItem(c(),
+                                        self.model.itemDownloads.icon(),
+                                        iDownloads())
+        self.ui.pathSelector.insertSeparator(c())
+        self.ui.pathSelector.insertItem(c(),
                                         self.model.itemEncrypted.icon(),
                                         iEncryptedFiles())
         self.ui.pathSelector.activated.connect(self.onPathSelector)
@@ -1127,6 +1131,8 @@ class FileManager(QWidget):
             self.changeDisplayItem(self.model.itemQrCodes)
         elif text == iTemporaryFiles():
             self.changeDisplayItem(self.model.itemTemporary)
+        elif text == iDownloads():
+            self.changeDisplayItem(self.model.itemDownloads)
         elif text == iEncryptedFiles():
             self.changeDisplayItem(self.model.itemEncrypted)
 

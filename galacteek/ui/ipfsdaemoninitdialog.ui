@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>625</width>
-    <height>626</height>
+    <height>629</height>
    </rect>
   </property>
   <property name="maximumSize">
@@ -98,6 +98,85 @@ font-weight: bold;</string>
            <layout class="QGridLayout" name="gridLayout_3">
             <item row="0" column="0">
              <layout class="QGridLayout" name="gridLayout_2">
+              <item row="8" column="0">
+               <widget class="QCheckBox" name="keepDaemonRunning">
+                <property name="text">
+                 <string>Keep the IPFS daemon running</string>
+                </property>
+               </widget>
+              </item>
+              <item row="7" column="0">
+               <widget class="QCheckBox" name="profileLowPower">
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Reduces &lt;span style=&quot; font-weight:600;&quot;&gt;daemon overhead&lt;/span&gt; on the system. May affect node functionality - performance of content discovery and data fetching may be degraded.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+                <property name="text">
+                 <string>Enable lowpower profile</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_4">
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The port the IPFS daemon's swarm (TCP and QUIC) will use. Only change this option (port &lt;span style=&quot; font-weight:600;&quot;&gt;4001&lt;/span&gt; by default) if you have a service already using this port.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+                <property name="text">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Swarm port&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QSpinBox" name="apiPort">
+                <property name="maximumSize">
+                 <size>
+                  <width>200</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+                <property name="minimum">
+                 <number>1024</number>
+                </property>
+                <property name="maximum">
+                 <number>65534</number>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="label_5">
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The port the IPFS daemon's HTTP gateway service will use. Only change this option (port &lt;span style=&quot; font-weight:600;&quot;&gt;8080&lt;/span&gt; by default) if you have a service already using this port.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+                <property name="text">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;HTTP gateway port&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="1">
+               <spacer name="verticalSpacer_3">
+                <property name="orientation">
+                 <enum>Qt::Vertical</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Minimum</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>20</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item row="5" column="0">
+               <widget class="QLabel" name="label_2">
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The datastore type to initialize the repository with. &lt;span style=&quot; font-weight:600;&quot;&gt;flatfs&lt;/span&gt; is the most battle-tested and reliable datastore. &lt;span style=&quot; font-weight:600;&quot;&gt;badgerds &lt;/span&gt;is the fastest datastore. Use &lt;span style=&quot; font-weight:600;&quot;&gt;badgerds&lt;/span&gt; if performance, especially when adding many gigabytes of files, is critical&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+                <property name="text">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;IPFS datastore&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+               </widget>
+              </item>
               <item row="2" column="1">
                <widget class="QSpinBox" name="gatewayPort">
                 <property name="maximumSize">
@@ -114,24 +193,7 @@ font-weight: bold;</string>
                 </property>
                </widget>
               </item>
-              <item row="0" column="0">
-               <widget class="QLabel" name="label_3">
-                <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The port the IPFS daemon's API service will use. Only change this option (port 5001 by default) if you have a service already using this port.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                </property>
-                <property name="text">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;API port&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                </property>
-               </widget>
-              </item>
-              <item row="7" column="0">
-               <widget class="QCheckBox" name="keepDaemonRunning">
-                <property name="text">
-                 <string>Keep the IPFS daemon running</string>
-                </property>
-               </widget>
-              </item>
-              <item row="4" column="1">
+              <item row="5" column="1">
                <widget class="QComboBox" name="dataStore">
                 <property name="toolTip">
                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The datastore type to initialize the repository with. &lt;span style=&quot; font-weight:600;&quot;&gt;flatfs&lt;/span&gt; is the most battle-tested and reliable datastore. &lt;span style=&quot; font-weight:600;&quot;&gt;badgerds &lt;/span&gt;is the fastest datastore. Use &lt;span style=&quot; font-weight:600;&quot;&gt;badgerds&lt;/span&gt; if performance, especially when adding many gigabytes of files, is critical&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -148,23 +210,29 @@ font-weight: bold;</string>
                 </item>
                </widget>
               </item>
-              <item row="1" column="0">
-               <widget class="QLabel" name="label_4">
-                <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The port the IPFS daemon's swarm (TCP and QUIC) will use. Only change this option (port &lt;span style=&quot; font-weight:600;&quot;&gt;4001&lt;/span&gt; by default) if you have a service already using this port.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <item row="6" column="1">
+               <spacer name="verticalSpacer">
+                <property name="orientation">
+                 <enum>Qt::Vertical</enum>
                 </property>
-                <property name="text">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Swarm port&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Minimum</enum>
                 </property>
-               </widget>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>20</width>
+                  <height>40</height>
+                 </size>
+                </property>
+               </spacer>
               </item>
-              <item row="6" column="0">
-               <widget class="QCheckBox" name="profileLowPower">
+              <item row="0" column="0">
+               <widget class="QLabel" name="label_3">
                 <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Reduces &lt;span style=&quot; font-weight:600;&quot;&gt;daemon overhead&lt;/span&gt; on the system. May affect node functionality - performance of content discovery and data fetching may be degraded.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The port the IPFS daemon's API service will use. Only change this option (port 5001 by default) if you have a service already using this port.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="text">
-                 <string>Enable lowpower profile</string>
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;API port&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                </widget>
               </item>
@@ -184,73 +252,29 @@ font-weight: bold;</string>
                 </property>
                </widget>
               </item>
-              <item row="4" column="0">
-               <widget class="QLabel" name="label_2">
+              <item row="3" column="0">
+               <widget class="QLabel" name="label_11">
                 <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The datastore type to initialize the repository with. &lt;span style=&quot; font-weight:600;&quot;&gt;flatfs&lt;/span&gt; is the most battle-tested and reliable datastore. &lt;span style=&quot; font-weight:600;&quot;&gt;badgerds &lt;/span&gt;is the fastest datastore. Use &lt;span style=&quot; font-weight:600;&quot;&gt;badgerds&lt;/span&gt; if performance, especially when adding many gigabytes of files, is critical&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the content routing mode:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'-apple-system','BlinkMacSystemFont','Segoe UI','Helvetica','Arial','sans-serif','Apple Color Emoji','Segoe UI Emoji'; font-size:16px; color:#24292e;&quot;&gt;- In server mode (&lt;/span&gt;&lt;span style=&quot; font-family:'-apple-system','BlinkMacSystemFont','Segoe UI','Helvetica','Arial','sans-serif','Apple Color Emoji','Segoe UI Emoji'; font-size:16px; font-weight:600; color:#24292e;&quot;&gt;dht&lt;/span&gt;&lt;span style=&quot; font-family:'-apple-system','BlinkMacSystemFont','Segoe UI','Helvetica','Arial','sans-serif','Apple Color Emoji','Segoe UI Emoji'; font-size:16px; color:#24292e;&quot;&gt; setting), your node will query other peers for DHT records, and will respond to requests from other peers (both requests to store records and requests to retrieve records).&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'-apple-system','BlinkMacSystemFont','Segoe UI','Helvetica','Arial','sans-serif','Apple Color Emoji','Segoe UI Emoji'; font-size:16px; color:#24292e;&quot;&gt;- In client mode (&lt;/span&gt;&lt;span style=&quot; font-family:'-apple-system','BlinkMacSystemFont','Segoe UI','Helvetica','Arial','sans-serif','Apple Color Emoji','Segoe UI Emoji'; font-size:16px; font-weight:600; color:#24292e;&quot;&gt;dhtclient&lt;/span&gt;&lt;span style=&quot; font-family:'-apple-system','BlinkMacSystemFont','Segoe UI','Helvetica','Arial','sans-serif','Apple Color Emoji','Segoe UI Emoji'; font-size:16px; color:#24292e;&quot;&gt; setting), your node will query the DHT as a client but will not respond to requests from other peers. This mode is less resource intensive than server mode.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-family:'-apple-system','BlinkMacSystemFont','Segoe UI','Helvetica','Arial','sans-serif','Apple Color Emoji','Segoe UI Emoji'; font-size:16px; color:#24292e;&quot;&gt;When the routing mode is set to &lt;/span&gt;&lt;span style=&quot; font-family:'-apple-system','BlinkMacSystemFont','Segoe UI','Helvetica','Arial','sans-serif','Apple Color Emoji','Segoe UI Emoji'; font-size:16px; font-weight:600; color:#24292e;&quot;&gt;dht&lt;/span&gt;&lt;span style=&quot; font-family:'-apple-system','BlinkMacSystemFont','Segoe UI','Helvetica','Arial','sans-serif','Apple Color Emoji','Segoe UI Emoji'; font-size:16px; color:#24292e;&quot;&gt;, your node will start as a DHT client, and switch to a DHT server when and if it determines that it's reachable from the public internet (e.g., it's not behind a firewall).&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="text">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;IPFS datastore&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="0">
-               <widget class="QLabel" name="label_5">
-                <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The port the IPFS daemon's HTTP gateway service will use. Only change this option (port &lt;span style=&quot; font-weight:600;&quot;&gt;8080&lt;/span&gt; by default) if you have a service already using this port.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                </property>
-                <property name="text">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;HTTP gateway port&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Content routing mode&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                </widget>
               </item>
               <item row="3" column="1">
-               <spacer name="verticalSpacer_3">
-                <property name="orientation">
-                 <enum>Qt::Vertical</enum>
-                </property>
-                <property name="sizeType">
-                 <enum>QSizePolicy::Minimum</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>20</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item row="0" column="1">
-               <widget class="QSpinBox" name="apiPort">
-                <property name="maximumSize">
-                 <size>
-                  <width>200</width>
-                  <height>16777215</height>
-                 </size>
-                </property>
-                <property name="minimum">
-                 <number>1024</number>
-                </property>
-                <property name="maximum">
-                 <number>65534</number>
-                </property>
+               <widget class="QComboBox" name="contentRoutingMode">
+                <item>
+                 <property name="text">
+                  <string>dht</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>dhtclient</string>
+                 </property>
+                </item>
                </widget>
-              </item>
-              <item row="5" column="1">
-               <spacer name="verticalSpacer">
-                <property name="orientation">
-                 <enum>Qt::Vertical</enum>
-                </property>
-                <property name="sizeType">
-                 <enum>QSizePolicy::Minimum</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>20</width>
-                  <height>40</height>
-                 </size>
-                </property>
-               </spacer>
               </item>
              </layout>
             </item>
@@ -423,6 +447,13 @@ font-weight: bold;</string>
      </item>
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <item>
+        <widget class="QPushButton" name="quitButton">
+         <property name="text">
+          <string>Quit</string>
+         </property>
+        </widget>
+       </item>
        <item>
         <widget class="QLabel" name="status">
          <property name="text">

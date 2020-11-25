@@ -3,7 +3,32 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+The changelog for versions prior to v0.4.39 is not available, due to
+the changes in the CHANGELOG formatting.
+
 ## [Unreleased]
+
+## [0.4.40] - 2020-11-29
+### Added
+- Lightweight BT client integration (asyncio-based)
+  - Add torrents from .torrent files, magnet links
+  - Automatically transform magnet links stored in the clipboard 
+    to .torrent files stored in IPFS
+  - Torrent to IPFS transfer: from the BT client you can easily
+    transfer completed downloads to IPFS and have them linked in
+    your *downloads* MFS directory.
+
+- New python dependencies
+  - [colour](https://github.com/vaab/colour) >= 0.1.5
+  - [magnet2torrent](https://github.com/JohnDoee/magnet2torrent) >= 1.1.1
+
+### Changed
+- Log to time-rotated log files by default (use --log-stderr if you
+  want logs to be sent to stderr instead)
+- Per-module color styling of log records
+- IPFS daemon init dialog
+  - Add a combo box to select the IPFS content routing mode
+  - Add a *Quit* button
 
 ## [0.4.39] - 2020-11-15
 ### Added

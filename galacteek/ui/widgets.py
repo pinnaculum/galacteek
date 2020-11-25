@@ -115,7 +115,8 @@ class GalacteekTab(QWidget):
         self._workspace = None
         self._ctx = ctx if ctx else TabContext()
         self.sticky = sticky
-        self.setAttribute(Qt.WA_DeleteOnClose)
+        # self.setAttribute(Qt.WA_DeleteOnClose)
+        self.destroyed.connect(lambda: self.onDestroyed())
 
     @property
     def workspace(self):
@@ -159,6 +160,9 @@ class GalacteekTab(QWidget):
 
     def addToLayout(self, widget):
         self.vLayout.addWidget(widget)
+
+    def onDestroyed(self):
+        log.debug(f'Tab {self}: destroyed')
 
     async def onClose(self):
         return True

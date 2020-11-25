@@ -6,7 +6,6 @@ import json
 import orjson
 import uuid
 import aiofiles
-import shutil
 import asyncio
 import aiohttp
 import re
@@ -40,6 +39,7 @@ from galacteek.core.jtraverse import traverseParser
 from galacteek.core import jsonSchemaValidate
 from galacteek.core import pkgResourcesRscFilename
 from galacteek.core.tmpf import TmpFile
+from galacteek.core.asynclib import asyncRmTree
 from galacteek.ld.ldloader import aioipfs_document_loader
 from galacteek.ld import asyncjsonld as jsonld
 
@@ -121,7 +121,7 @@ class GetContext(object):
     async def __aexit__(self, *args):
         self.operator.debug(
             f'Get {self.path}: cleaning up {self.dstdir}')
-        await self.operator.asyncRmTree(self.dstdir)
+        await asyncRmTree(self.dstdir)
 
 
 class TunnelDialerContext(object):
@@ -353,14 +353,6 @@ class IPFSOperator(object):
     async def __aexit__(self, *args):
         return
 
-    async def asyncRmTree(self, path):
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            None,
-            shutil.rmtree,
-            path
-        )
-
     async def sleep(self, t=0):
         await asyncio.sleep(t)
 
@@ -567,23 +559,37 @@ class IPFSOperator(object):
 
         return True
 
-    async def filesLink(self, entry, dest, flush=True, name=None):
+    async def filesLink(self, entry, dest, flush=True, name=None,
+                        autoFallback=False):
         """ Given an entry (as returned by /files/ls), make a link
             in ``dest`` """
 
-        try:
-            await self.client.files.cp(
-                joinIpfs(entry['Hash']),
-                posixIpfsPath.join(dest, name if name else entry['Name'])
-            )
-        except aioipfs.APIError:
-            self.debug('Exception on copying entry {0} to {1}'.format(
-                entry, dest))
-            return False
+        for x in range(0, 64):
+            try:
+                bName = posixIpfsPath.join(
+                    dest, name if name else entry['Name'])
+                if autoFallback and x > 0:
+                    bName += f'.{x}'
 
-        if flush:
-            await self.client.files.flush(dest)
-        return True
+                self.debug(f'Linking {entry} to {bName}')
+                await self.client.files.cp(
+                    joinIpfs(entry['Hash']),
+                    bName
+                )
+            except aioipfs.APIError:
+                self.debug('Exception on copying entry {0} to {1}'.format(
+                    entry, dest))
+
+                if autoFallback:
+                    continue
+
+                else:
+                    return False
+            else:
+                if flush:
+                    await self.client.files.flush(dest)
+
+                return True
 
     async def filesLinkFp(self, entry, dest):
         try:
@@ -1219,6 +1225,8 @@ class IPFSOperator(object):
                       hashfunc='sha2-256',
                       pin=True, useFileStore=False,
                       ignRulesPath=None,
+                      returnRoot=True,
+                      rEntryFilePath=None,
                       hidden=False, only_hash=False, chunker=None):
         """
         Add files from ``path`` in the repo, and returns the top-level
@@ -1233,6 +1241,7 @@ class IPFSOperator(object):
         :rtype: dict
         """
         added = None
+        returnEntry = None
         exopts = {}
         callbackvalid = asyncio.iscoroutinefunction(callback)
         origPath = Path(path)
@@ -1311,6 +1320,11 @@ class IPFSOperator(object):
                                                **exopts):
                 await self.sleep()
                 added = entry
+
+                if returnEntry is None and rEntryFilePath == entry.get('Name'):
+                    # Caller wants the entry of a specific file
+                    returnEntry = entry
+
                 if callbackvalid:
                     await callback(entry)
         except aioipfs.APIError as err:
@@ -1324,8 +1338,12 @@ class IPFSOperator(object):
             self.debug('addPath: unknown exception {}'.format(str(e)))
             return None
         else:
-            self.debug(f'addPath({path}): root is {added}')
-            return added
+            if not returnEntry:
+                returnEntry = added
+
+            # self.debug(f'addPath({path}): root is {added} '
+            #            f'(returning {returnEntry}')
+            return returnEntry
 
     async def addFileEncrypted(self, path):
         basename = os.path.basename(path)

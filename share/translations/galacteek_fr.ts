@@ -821,32 +821,32 @@ p, li { white-space: pre-wrap; }
         <translation>Selectionnez un ou plusieurs fichiers a importer</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="835"/>
+        <location filename="../../galacteek/ui/i18n.py" line="839"/>
         <source>Music</source>
         <translation>Musique</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="839"/>
+        <location filename="../../galacteek/ui/i18n.py" line="843"/>
         <source>Pictures</source>
         <translation>Photos</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="855"/>
+        <location filename="../../galacteek/ui/i18n.py" line="859"/>
         <source>Videos</source>
         <translation>Vidéos</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="859"/>
+        <location filename="../../galacteek/ui/i18n.py" line="863"/>
         <source>Home</source>
         <translation>Home</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="863"/>
+        <location filename="../../galacteek/ui/i18n.py" line="867"/>
         <source>Code</source>
         <translation>Code</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="867"/>
+        <location filename="../../galacteek/ui/i18n.py" line="871"/>
         <source>Documents</source>
         <translation>Documents</translation>
     </message>
@@ -856,7 +856,7 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="879"/>
+        <location filename="../../galacteek/ui/i18n.py" line="883"/>
         <source>QR codes</source>
         <translation type="unfinished"></translation>
     </message>
@@ -866,7 +866,7 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="871"/>
+        <location filename="../../galacteek/ui/i18n.py" line="875"/>
         <source>Web Pages</source>
         <translation type="unfinished"></translation>
     </message>
@@ -896,12 +896,12 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="843"/>
+        <location filename="../../galacteek/ui/i18n.py" line="847"/>
         <source>Images</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="847"/>
+        <location filename="../../galacteek/ui/i18n.py" line="851"/>
         <source>Temporary</source>
         <translation type="unfinished"></translation>
     </message>
@@ -911,12 +911,12 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="875"/>
+        <location filename="../../galacteek/ui/i18n.py" line="879"/>
         <source>Dapps</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="851"/>
+        <location filename="../../galacteek/ui/i18n.py" line="855"/>
         <source>Encrypted files</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1067,27 +1067,27 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>Galacteek</name>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="902"/>
+        <location filename="../../galacteek/ui/i18n.py" line="906"/>
         <source>IPFS daemon started</source>
         <translation>Démon IPFS: démarré</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="913"/>
+        <location filename="../../galacteek/ui/i18n.py" line="917"/>
         <source>IPFS daemon&apos;s gateway started</source>
         <translation>Démon IPFS: passerelle HTTP démarrée</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="918"/>
+        <location filename="../../galacteek/ui/i18n.py" line="922"/>
         <source>IPFS daemon is ready</source>
         <translation>Démon IPFS: prêt</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="922"/>
+        <location filename="../../galacteek/ui/i18n.py" line="926"/>
         <source>Problem starting IPFS daemon</source>
         <translation>Démon IPFS: problème de démarrage</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="927"/>
+        <location filename="../../galacteek/ui/i18n.py" line="931"/>
         <source>Problem initializing the IPFS daemon (check the ports configuration)</source>
         <translation>Démon IPFS: problème lors de l&apos;initialisation (vérifiez les ports)</translation>
     </message>
@@ -1102,27 +1102,27 @@ p, li { white-space: pre-wrap; }
         <translation>Téléchargement du fichier {0} en cours ..</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="552"/>
+        <location filename="../../galacteek/ui/i18n.py" line="556"/>
         <source>English</source>
         <translation>Anglais</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="556"/>
+        <location filename="../../galacteek/ui/i18n.py" line="560"/>
         <source>French</source>
         <translation>Français</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="560"/>
+        <location filename="../../galacteek/ui/i18n.py" line="564"/>
         <source>yes</source>
         <translation>oui</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="564"/>
+        <location filename="../../galacteek/ui/i18n.py" line="568"/>
         <source>no</source>
         <translation>non</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="568"/>
+        <location filename="../../galacteek/ui/i18n.py" line="572"/>
         <source>Delete</source>
         <translation>Supprimer</translation>
     </message>
@@ -1132,17 +1132,17 @@ p, li { white-space: pre-wrap; }
         <translation type="obsolete">Saisie invalide</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="609"/>
+        <location filename="../../galacteek/ui/i18n.py" line="613"/>
         <source>Key</source>
         <translation>Clé</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="613"/>
+        <location filename="../../galacteek/ui/i18n.py" line="617"/>
         <source>Value</source>
         <translation>Valeur</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="617"/>
+        <location filename="../../galacteek/ui/i18n.py" line="621"/>
         <source>Merkle link</source>
         <translation>Lien Merkle</translation>
     </message>
@@ -1152,42 +1152,42 @@ p, li { white-space: pre-wrap; }
         <translation type="obsolete">Avertissement: impossible de trouver l&apos;outil de migration de depots IPFS</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="790"/>
+        <location filename="../../galacteek/ui/i18n.py" line="794"/>
         <source>Error: Could not find go-ipfs on your system</source>
         <translation>Erreur: impossible de trouver go-ipfs sur votre système</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="802"/>
+        <location filename="../../galacteek/ui/i18n.py" line="806"/>
         <source>go-ipfs was not found on your system: download binary from IPFS distributions website (https://dist.ipfs.io) ?</source>
         <translation>go-ipfs n&apos;a pas été trouvé sur votre système: télécharger depuis le site de distributions IPFS (https://dist.ipfs.io) ?</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="809"/>
+        <location filename="../../galacteek/ui/i18n.py" line="813"/>
         <source>Timeout while fetching go-ipfs distribution</source>
         <translation>Délai expiré lors du téléchargement de go-ipfs</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="815"/>
+        <location filename="../../galacteek/ui/i18n.py" line="819"/>
         <source>go-ipfs was installed successfully</source>
         <translation>go-ipfs a été installé avec succès</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="821"/>
+        <location filename="../../galacteek/ui/i18n.py" line="825"/>
         <source>Error while fetching go-ipfs distribution</source>
         <translation>Erreur lors du téléchargement de go-ipfs</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="827"/>
+        <location filename="../../galacteek/ui/i18n.py" line="831"/>
         <source>New release available: upgrade with pip install -U galacteek</source>
         <translation>Nouvelle version disponible: mise a jour avec &quot;pip install -U galacteek&quot;</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="796"/>
+        <location filename="../../galacteek/ui/i18n.py" line="800"/>
         <source>Error: go-ipfs version found on your system is too old</source>
         <translation>Erreur: votre version de go-ipfs est trop ancienne</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="784"/>
+        <location filename="../../galacteek/ui/i18n.py" line="788"/>
         <source>Warning: could not find IPFS repository migration tool</source>
         <translation>Avertissement: impossible de trouver l&apos;outil de migration de repos IPFS</translation>
     </message>
@@ -1197,63 +1197,83 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="572"/>
+        <location filename="../../galacteek/ui/i18n.py" line="576"/>
         <source>Remove</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="603"/>
+        <location filename="../../galacteek/ui/i18n.py" line="607"/>
         <source>Cannot resolve object: &lt;b&gt;{}&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="588"/>
+        <location filename="../../galacteek/ui/i18n.py" line="592"/>
         <source>Are you sure you want to remove this file/directory ?</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="576"/>
+        <location filename="../../galacteek/ui/i18n.py" line="580"/>
         <source>Seed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="906"/>
+        <location filename="../../galacteek/ui/i18n.py" line="910"/>
         <source>IPFS daemon was already running (no start)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="580"/>
+        <location filename="../../galacteek/ui/i18n.py" line="584"/>
         <source>Share files</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="939"/>
+        <location filename="../../galacteek/ui/i18n.py" line="943"/>
         <source>Do you want to keep the IPFS daemon running ?</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="584"/>
+        <location filename="../../galacteek/ui/i18n.py" line="588"/>
         <source>File sharing</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="886"/>
+        <location filename="../../galacteek/ui/i18n.py" line="890"/>
         <source>IPFS daemon</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="890"/>
+        <location filename="../../galacteek/ui/i18n.py" line="894"/>
         <source>IPFS daemon process</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="894"/>
+        <location filename="../../galacteek/ui/i18n.py" line="898"/>
         <source>CPU priority (nice)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="898"/>
+        <location filename="../../galacteek/ui/i18n.py" line="902"/>
         <source>IO priority</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/i18n.py" line="952"/>
+        <source>BitTorrent</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/i18n.py" line="959"/>
+        <source>BitTorrent client</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/i18n.py" line="966"/>
+        <source>Add from torrent file</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/i18n.py" line="973"/>
+        <source>Add from magnet link</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1335,7 +1355,7 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished">Aide</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="766"/>
+        <location filename="../../galacteek/ui/i18n.py" line="770"/>
         <source>Quit</source>
         <translation type="unfinished">Quitter</translation>
     </message>
@@ -1450,7 +1470,7 @@ p, li { white-space: pre-wrap; }
         <translation type="obsolete">Naviguer sur le chemin IPFS: {0}</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="98"/>
+        <location filename="../../galacteek/ui/mainui.py" line="99"/>
         <source>
 Path: {0}, nodes processed: {1}</source>
         <translation>
@@ -1530,7 +1550,7 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation>Télécharger</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="533"/>
+        <location filename="../../galacteek/ui/i18n.py" line="537"/>
         <source>Media Player</source>
         <translation>Media Player</translation>
     </message>
@@ -1540,17 +1560,17 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation>Statut des pins</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="621"/>
+        <location filename="../../galacteek/ui/i18n.py" line="625"/>
         <source>IPFS informations</source>
         <translation>Informations IPFS</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="637"/>
+        <location filename="../../galacteek/ui/i18n.py" line="641"/>
         <source>No title</source>
         <translation>Pas de titre</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="654"/>
+        <location filename="../../galacteek/ui/i18n.py" line="658"/>
         <source>Finished</source>
         <translation>Terminé</translation>
     </message>
@@ -1623,27 +1643,27 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="unfinished">Naviguer</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="753"/>
+        <location filename="../../galacteek/ui/i18n.py" line="757"/>
         <source>Global automatic pinning</source>
         <translation>Auto-pinning</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="658"/>
+        <location filename="../../galacteek/ui/i18n.py" line="662"/>
         <source>Pinned</source>
         <translation>Cloué</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="680"/>
+        <location filename="../../galacteek/ui/i18n.py" line="684"/>
         <source>Pin</source>
         <translation>Clouer</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="529"/>
+        <location filename="../../galacteek/ui/i18n.py" line="533"/>
         <source>Cancel</source>
         <translation>Annuler</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="662"/>
+        <location filename="../../galacteek/ui/i18n.py" line="666"/>
         <source>Pinning</source>
         <translation></translation>
     </message>
@@ -1653,17 +1673,17 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="obsolete">Clouer: {0}</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="728"/>
+        <location filename="../../galacteek/ui/i18n.py" line="732"/>
         <source>Pin (single)</source>
         <translation>Clouer (simple)</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="732"/>
+        <location filename="../../galacteek/ui/i18n.py" line="736"/>
         <source>Pin (recursive)</source>
         <translation>Clouer (récursif)</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="749"/>
+        <location filename="../../galacteek/ui/i18n.py" line="753"/>
         <source>Do not pin</source>
         <translation>Ne pas clouer</translation>
     </message>
@@ -1688,17 +1708,17 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation>Hashmarks locaux: {0} hashmarks disponibles</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="649"/>
+        <location filename="../../galacteek/ui/i18n.py" line="653"/>
         <source>Please specify a title</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="758"/>
+        <location filename="../../galacteek/ui/i18n.py" line="762"/>
         <source>Zoom in</source>
         <translation>Zoomer</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="762"/>
+        <location filename="../../galacteek/ui/i18n.py" line="766"/>
         <source>Zoom out</source>
         <translation>Dézoomer</translation>
     </message>
@@ -1708,12 +1728,12 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation>Manager de hashmarks</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="625"/>
+        <location filename="../../galacteek/ui/i18n.py" line="629"/>
         <source>IPFS QR codes</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="542"/>
+        <location filename="../../galacteek/ui/i18n.py" line="546"/>
         <source>Chat</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1733,7 +1753,7 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="629"/>
+        <location filename="../../galacteek/ui/i18n.py" line="633"/>
         <source>QR encoding</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1748,32 +1768,32 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="774"/>
+        <location filename="../../galacteek/ui/i18n.py" line="778"/>
         <source>Clear history</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="778"/>
+        <location filename="../../galacteek/ui/i18n.py" line="782"/>
         <source>Atom feeds</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="770"/>
+        <location filename="../../galacteek/ui/i18n.py" line="774"/>
         <source>Restart</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="745"/>
+        <location filename="../../galacteek/ui/i18n.py" line="749"/>
         <source>Batch pin</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="736"/>
+        <location filename="../../galacteek/ui/i18n.py" line="740"/>
         <source>Pin parent (recursive)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="741"/>
+        <location filename="../../galacteek/ui/i18n.py" line="745"/>
         <source>Pin page&apos;s links</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1788,7 +1808,7 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="633"/>
+        <location filename="../../galacteek/ui/i18n.py" line="637"/>
         <source>Title</source>
         <translation type="unfinished">TItre</translation>
     </message>
@@ -1808,12 +1828,12 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="595"/>
+        <location filename="../../galacteek/ui/i18n.py" line="599"/>
         <source>Invalid input</source>
         <translation type="unfinished">Saisie invalide</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="599"/>
+        <location filename="../../galacteek/ui/i18n.py" line="603"/>
         <source>Invalid CID</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1853,7 +1873,7 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="645"/>
+        <location filename="../../galacteek/ui/i18n.py" line="649"/>
         <source>No description</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1958,12 +1978,12 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="641"/>
+        <location filename="../../galacteek/ui/i18n.py" line="645"/>
         <source>No category</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="524"/>
+        <location filename="../../galacteek/ui/i18n.py" line="528"/>
         <source>Download or open IPFS object</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2021,7 +2041,7 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="537"/>
+        <location filename="../../galacteek/ui/i18n.py" line="541"/>
         <source>Queue in media player</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2036,7 +2056,7 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="unfinished">Explorer le répertoire</translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="724"/>
+        <location filename="../../galacteek/ui/i18n.py" line="728"/>
         <source>Unpin</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2046,7 +2066,7 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="546"/>
+        <location filename="../../galacteek/ui/i18n.py" line="550"/>
         <source>{0}: new message from {1}</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2071,12 +2091,12 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="520"/>
+        <location filename="../../galacteek/ui/i18n.py" line="524"/>
         <source>Download directory</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="720"/>
+        <location filename="../../galacteek/ui/i18n.py" line="724"/>
         <source>Pin directory</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2101,32 +2121,32 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="673"/>
+        <location filename="../../galacteek/ui/i18n.py" line="677"/>
         <source>Pinning stalled</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="684"/>
+        <location filename="../../galacteek/ui/i18n.py" line="688"/>
         <source>Pin and download</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="716"/>
+        <location filename="../../galacteek/ui/i18n.py" line="720"/>
         <source>Download only</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="688"/>
+        <location filename="../../galacteek/ui/i18n.py" line="692"/>
         <source>Provided by {} peer(s)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="709"/>
+        <location filename="../../galacteek/ui/i18n.py" line="713"/>
         <source>Searching providers ..</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="666"/>
+        <location filename="../../galacteek/ui/i18n.py" line="670"/>
         <source>Pin: {0} nodes retrieved ({1}s since last update)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2146,17 +2166,17 @@ Chemin: {0}, nodes traitées: {1}</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="695"/>
+        <location filename="../../galacteek/ui/i18n.py" line="699"/>
         <source>Provided by at least {} peer(s)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/i18n.py" line="702"/>
+        <location filename="../../galacteek/ui/i18n.py" line="706"/>
         <source>No one seems to have this file ..</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="105"/>
+        <location filename="../../galacteek/ui/mainui.py" line="106"/>
         <source>
         &lt;p align=&apos;center&apos;&gt;
         &lt;img src=&apos;:/share/icons/galacteek.png&apos; /&gt;
@@ -2185,6 +2205,11 @@ Chemin: {0}, nodes traitées: {1}</translation>
         &lt;/a&gt;
         &lt;/p&gt;
         &lt;p&gt;galacteek version {0}&lt;/p&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/i18n.py" line="520"/>
+        <source>Downloads</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

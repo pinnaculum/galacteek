@@ -1,6 +1,7 @@
 from collections import UserList
 from asyncqt import QThreadExecutor
 import asyncio
+import shutil
 import traceback
 import functools
 from asyncio_extras.file import open_async
@@ -290,3 +291,12 @@ async def cancelAllTasks(*, timeout=None, raise_timeout_error=False):
     # Tasks scheduled by clean-ups or
     # by tasks ignoring cancellation
     _warn_pending()
+
+
+async def asyncRmTree(path):
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        None,
+        shutil.rmtree,
+        path
+    )
