@@ -52,4 +52,4 @@ makensis -V2 galacteek-installer.nsi
 
 echo "Success, moving installer"
 
-mv Galacteek-Installer.exe $BUNDLE_EXTRA_PATH
+mv Galacteek-Installer.exe $BUNDLE_PATH

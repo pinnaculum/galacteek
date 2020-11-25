@@ -47,9 +47,6 @@ class ApplicationStarter:
 def galacteekGui(args):
     progName = args.binaryname if args.binaryname else sys.argv[0]
 
-    level = 'DEBUG' if args.debug else 'INFO'
-    glogger.basicConfig(level=level, colorized=args.logcolorized)
-
     if args.debug:
         faulthandler.enable()
 
@@ -67,6 +64,13 @@ def galacteekGui(args):
         progName=progName,
         cmdArgs=args
     )
+
+    level = 'DEBUG' if args.debug else 'INFO'
+    if args.logstderr:
+        glogger.basicConfig(level=level, colorized=args.logcolorized)
+    else:
+        glogger.basicConfig(outputFile=gApp.mainLogFileLocation,
+                            level=level, colorized=args.logcolorized)
 
     if not gApp.acquireLock():
         gApp.onExit()
@@ -108,6 +112,11 @@ def buildArgsParser():
         action='store_true',
         dest='logcolorized',
         help='Colorized log output')
+    parser.add_argument(
+        '--log-stderr',
+        action='store_true',
+        dest='logstderr',
+        help='Log to stderr')
     parser.add_argument(
         '--seed',
         action='store_true',

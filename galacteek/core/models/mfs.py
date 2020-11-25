@@ -350,6 +350,9 @@ class MFSItemModel(QStandardItemModel):
         self.itemTemporary = MFSRootItem(iTemporaryFiles(),
                                          path=profile.pathTmp,
                                          icon=getIcon('folder-temp.png'))
+        self.itemDownloads = MFSRootItem(iTemporaryFiles(),
+                                         path=profile.pathDownloads,
+                                         icon=getIcon('download.png'))
         self.itemEncrypted = MFSRootItem(iEncryptedFiles(),
                                          path=profile.pathEncryptedFiles,
                                          icon=getIcon('key-diago.png'))
@@ -364,6 +367,7 @@ class MFSItemModel(QStandardItemModel):
             self.itemCode,
             self.itemMusic,
             self.itemDocuments,
+            self.itemDownloads,
             self.itemWebPages,
             self.itemDWebApps
         ]

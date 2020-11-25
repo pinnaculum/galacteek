@@ -411,6 +411,11 @@ async def runDialogAsync(dlgarg, *args, **kw):
             dlgW.accepted.connect(functools.partial(accepted, dlgW))
 
     dlgW.show()
+
+    if hasattr(dlgW, 'preExecDialog') and asyncio.iscoroutinefunction(
+            dlgW.preExecDialog):
+        await dlgW.preExecDialog()
+
     await threadExec(dlgW.exec_)
     return dlgW
 

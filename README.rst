@@ -121,6 +121,7 @@ for more information).
 - File manager with drag-and-drop support and timeframes (per-day view
   of files in the MFS)
 - File sharing
+- BitTorrent to IPFS bridge
 - Search content with the ipfs-search_ search engine as well as with cyber_
 - Built-in blog with Atom feeds
 - Webcam to IPFS capture (image and videos)
@@ -139,6 +140,9 @@ you the ability to have separate application profiles (*main* is the default
 profile). Use *--help* for all options.
 
 You can run the IPFS daemon in *offline* mode, using **--offline**
+
+Time-rotated log files can be found in the
+*$HOME/.local/share/galacteek/main/logs* directory
 
 Enable colorized log output with **--log-color**
 
@@ -198,6 +202,9 @@ License
 
 The logos and animations are licensed under the Creative
 Commons CC-BY-SA license.
+
+The BT client code (*galacteek.torrent* module) is licensed
+under the MIT license, Copyright (c) 2016 Alexander Borzunov
 
 Some elements from the ipfs-css_ repository (CSS files and fonts) are included.
 

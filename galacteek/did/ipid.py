@@ -681,7 +681,7 @@ class IPIdentifier(DAGOperations):
                                     cache='always',
                                     cacheOrigin='ipidmanager',
                                     timeout=timeout):
-                self.message('Published !', level='info')
+                self.message('Published !')
                 self.message(
                     'Published IPID {did} with docCid: {docCid}'.format(
                         did=self.did, docCid=self.docCid))

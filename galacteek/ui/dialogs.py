@@ -1,5 +1,7 @@
 import aioipfs
 import os.path
+import os
+from pathlib import Path
 
 from PyQt5.QtWidgets import QSizePolicy
 from PyQt5.QtWidgets import QApplication
@@ -65,6 +67,7 @@ from . import ui_newseeddialog
 from . import ui_ipfsdaemoninitdialog
 from . import ui_profileinitdialog
 from . import ui_ipidrsapasswordprompt
+from . import ui_torrenttransferdialog
 
 from .helpers import *
 from .widgets import ImageWidget
@@ -1400,6 +1403,10 @@ class DefaultProgressDialog(QWidget):
 
 
 class IPFSDaemonInitDialog(QDialog):
+    EXIT_NOK = 1
+    EXIT_OK = 1
+    EXIT_QUIT = 99
+
     def __init__(self, failedReason=None, parent=None):
         super().__init__(parent, Qt.WindowStaysOnTopHint)
 
@@ -1420,6 +1427,7 @@ class IPFSDaemonInitDialog(QDialog):
             self.ui.errorStatus.hide()
 
         self.ui.okButton.clicked.connect(self.accept)
+        self.ui.quitButton.clicked.connect(self.quitApp)
         self.ui.dataStore.currentIndexChanged.connect(self.onDataStoreChanged)
         self.ui.daemonType.currentIndexChanged.connect(
             self.onDaemonTypeChanged)
@@ -1553,6 +1561,10 @@ class IPFSDaemonInitDialog(QDialog):
                 section, CFG_KEY_HTTPGWPORT,
                 cfg['gatewayPort']
             )
+            sManager.setSetting(
+                section, CFG_KEY_ROUTINGMODE,
+                cfg['routingMode']
+            )
             sManager.setBoolFrom(
                 section, CFG_KEY_IPFSD_DETACHED,
                 cfg['keepDaemonRunning']
@@ -1561,6 +1573,9 @@ class IPFSDaemonInitDialog(QDialog):
         sManager.sync()
 
         self.done(1)
+
+    def quitApp(self):
+        self.done(self.EXIT_QUIT)
 
     def profiles(self):
         pr = []
@@ -1579,6 +1594,7 @@ class IPFSDaemonInitDialog(QDialog):
                 'swarmPort': self.ui.swarmPort.value(),
                 'gatewayPort': self.ui.gatewayPort.value(),
                 'apiPort': self.ui.apiPort.value(),
+                'routingMode': self.ui.contentRoutingMode.currentText(),
                 'keepDaemonRunning': self.ui.keepDaemonRunning.isChecked(),
                 'profiles': self.profiles()
             })
@@ -1732,3 +1748,98 @@ class IPIDPasswordPromptDialog(QDialog):
 
     def passwd(self):
         return self.ui.password.text()
+
+
+class TorrentTransferDialog(QDialog):
+    """
+    Torrent to IPFS transfer dialog
+    """
+
+    def __init__(self, name, downloadDir, infoHash, parent=None):
+        super().__init__(parent=parent)
+
+        self.app = QApplication.instance()
+        self.downloadDir = downloadDir
+        self.name = name
+        self.infoHash = infoHash
+        self.importTask = None
+
+        self.ui = ui_torrenttransferdialog.Ui_TorrentTransferDialog()
+        self.ui.setupUi(self)
+        self.ui.torrentName.setText(f'<b>{name}</b>')
+
+        self.ui.cancelButton.clicked.connect(
+            partialEnsure(self.cancelImport))
+        self.ui.finishButton.setEnabled(False)
+        self.ui.finishButton.clicked.connect(self.accept)
+        self.setMinimumWidth(
+            self.app.desktopGeometry.width() / 2
+        )
+
+    async def cancelImport(self, *args):
+        if self.importTask:
+            self.importTask.cancel()
+            self.importTask = None
+
+    async def preExecDialog(self):
+        self.importTask = ensure(self.ipfsImport())
+
+    @ipfsOp
+    async def ipfsImport(self, ipfsop):
+        fModel = ipfsop.ctx.currentProfile.filesModel
+
+        try:
+            for root, dirs, files in os.walk(self.downloadDir, topdown=False):
+                for name in files:
+                    p = Path(root).joinpath(name)
+                    if p.exists() and p.name.endswith('.bt.discard'):
+                        log.debug(f'Purging discarded BT file: {p}')
+                        p.unlink()
+        except Exception:
+            pass
+
+        async def cbEntryAdded(entry):
+            name, cid = entry['Name'], entry['Hash']
+            self.ui.textBrowser.append(
+                f'Imported <b>{name}</b> (CID: {cid})')
+
+        try:
+            self.ui.textBrowser.append(
+                f'Importing torrent from {self.downloadDir}')
+
+            entry = await ipfsop.addPath(
+                self.downloadDir,
+                callback=cbEntryAdded
+            )
+
+            if not entry:
+                raise Exception('Could not import downloaded torrent')
+
+            self.ui.textBrowser.append(f"Top-level CID: {entry['Hash']}")
+        except asyncio.CancelledError:
+            messageBox('Cancelled import')
+        except Exception as err:
+            log.debug(f'IPFS import error: {err}')
+            messageBox('Failed to import files')
+        else:
+            if await ipfsop.filesLink(
+                entry, fModel.itemDownloads.path,
+                name=self.name,
+                autoFallback=True
+            ):
+                self.ui.finishButton.setEnabled(True)
+            else:
+                self.ui.textBrowser.append('MFS linking failed')
+                self.done(0)
+
+    def options(self):
+        return {
+            'removeTorrent':
+                self.ui.removeTorrentFiles.checkState() == Qt.Checked
+        }
+
+    def accept(self):
+        self.done(1)
+
+    def reject(self):
+        self.done(0)

@@ -301,6 +301,13 @@ class IPFSResourceOpener(QObject):
             else:
                 return await self.app.mainWindow.exploreIpfsPath(ipfsPath)
 
+        if mimeType.isBitTorrent:
+            wStack = self.app.mainWindow.stack
+
+            with wStack.workspaceCtx(WS_FILES, show=True) as ws:
+                btClient = await ws.getTorrentClient()
+                return await btClient.addTorrentFromIpfs(ipfsPath)
+
         if openingFrom in ['filemanager', 'qa', 'didlocal']:
             await self.needUserConfirm.emit(ipfsPath, mimeType, True)
         else:

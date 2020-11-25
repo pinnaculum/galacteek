@@ -162,6 +162,10 @@ class MIMEType(object):
     def isAtomFeed(self):
         return self.type == 'application/atom+xml'
 
+    @property
+    def isBitTorrent(self):
+        return self.type == 'application/x-bittorrent'
+
     def __str__(self):
         return self.type
 
