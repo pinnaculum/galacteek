@@ -1,5 +1,6 @@
 import time
 import collections
+from urllib.parse import urlparse
 
 from PyQt5.QtGui import QClipboard
 from PyQt5.QtCore import QObject
@@ -13,6 +14,7 @@ from galacteek.ipfs.paths import posixIpfsPath
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.mimetype import detectMimeType
 from galacteek.ipfs.mimetype import MIMEType
+from galacteek.torrent.magnet import IPFSMagnetConvertor
 
 
 class ClipboardItem(QObject):
@@ -229,6 +231,25 @@ class ClipboardTracker(QObject):
             self.clipboardPathProcessed.emit(path)
         else:
             self.clipboardPathInvalid.emit(path)
+
+            # Magnet => torrent conversion
+            url = urlparse(text)
+
+            if url.scheme == 'magnet':
+                ensure(self.clipboardProcessMagnetLink(text))
+
+    @ipfsOp
+    async def clipboardProcessMagnetLink(self, ipfsop, magnetLink: str):
+        magnetConvertor = IPFSMagnetConvertor()
+
+        if magnetConvertor.available:
+            torrentHash, tFileName = await magnetConvertor.toIpfs(magnetLink)
+            if not torrentHash:
+                return
+
+            magnetPath = IPFSPath(torrentHash).child(tFileName)
+            if magnetPath.valid:
+                self.clipboardPathProcessed.emit(magnetPath)
 
     def getHistory(self):
         return list(self.items)

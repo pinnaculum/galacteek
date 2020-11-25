@@ -233,6 +233,7 @@ def reqs_parse(path):
 
 install_reqs = reqs_parse('requirements.txt')
 install_reqs_extra_markdown = reqs_parse('requirements-extra-markdown.txt')
+# install_reqs_extra_torrent = reqs_parse('requirements-extra-torrent.txt')
 
 
 setup(
@@ -278,6 +279,11 @@ setup(
         'galacteek.dweb.ethereum',
         'galacteek.smartcontracts',
         'galacteek.space',
+        'galacteek.torrent',
+        'galacteek.torrent.algorithms',
+        'galacteek.torrent.control',
+        'galacteek.torrent.network',
+        'galacteek.torrent.network.tracker_clients',
         'galacteek.ui',
         'galacteek.ui.dwebspace',
         'galacteek.ui.orbital'

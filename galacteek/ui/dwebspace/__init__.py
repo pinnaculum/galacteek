@@ -38,6 +38,8 @@ from galacteek.ui.helpers import runDialogAsync
 
 from galacteek.ui.dialogs import DefaultProgressDialog
 
+from galacteek.ui.torrentgui import TorrentClientTab
+
 from galacteek.ui.feeds import AtomFeedsViewTab
 from galacteek.ui.feeds import AtomFeedsView
 from galacteek.ui.i18n import *
@@ -178,6 +180,9 @@ class BaseWorkspace(QWidget):
         pass
 
     def setupWorkspace(self):
+        pass
+
+    async def workspaceShutDown(self):
         pass
 
     async def loadDapps(self):
@@ -337,6 +342,9 @@ class TabbedWorkspace(BaseWorkspace):
         self.setCornerRight(self.toolBarCtrl)
         self.setCornerLeft(self.toolBarActions)
 
+    async def workspaceShutDown(self):
+        pass
+
     def setCornerLeft(self, pButton):
         self.tabWidget.setCornerWidget(pButton, Qt.TopLeftCorner)
 
@@ -419,7 +427,7 @@ class TabbedWorkspace(BaseWorkspace):
 
         if await tab.onClose() is True:
             self.tabWidget.removeTab(idx)
-            del tab
+            tab.deleteLater()
 
     def wsSwitch(self, soundNotify=False):
         self.stack.setCurrentIndex(self.workspaceIdx())
@@ -487,6 +495,8 @@ class WorkspaceFiles(TabbedWorkspace):
         super().__init__(stack, WS_FILES, icon=getIcon('folder-open.png'),
                          description='Files')
 
+        self.btClient = None
+
     def setupWorkspace(self):
         super().setupWorkspace()
 
@@ -509,11 +519,48 @@ class WorkspaceFiles(TabbedWorkspace):
         self.wsAddAction(fileManager.addDirectoryAction)
         self.wsAddAction(fileManager.newSeedAction)
 
+        self.actionTorrentClient = self.wsAddCustomAction(
+            iBitTorrentClient(), getIcon('torrent.png'),
+            iBitTorrentClient(),
+            partialEnsure(self.onStartTorrentClient)
+        )
+
         self.actionGc = self.wsAddCustomAction(
             'gc', getIcon('clear-all.png'),
             iGarbageCollectRun(),
             partialEnsure(self.onRunGC)
         )
+
+    async def workspaceShutDown(self):
+        try:
+            btClient = self.btClient()
+            assert btClient is not None
+        except Exception:
+            pass
+        else:
+            await btClient.stop()
+
+    async def getTorrentClient(self, show=True):
+        try:
+            btClient = self.btClient()
+            assert btClient is not None
+        except Exception:
+            btClient = TorrentClientTab(self.app.mainWindow)
+            await btClient.start()
+            self.btClient = weakref.ref(btClient)
+
+        ex = self.wsFindTabWithId('btclient')
+        if not ex:
+            self.wsRegisterTab(
+                btClient, iBitTorrentClient(), getIcon('torrent.png'))
+
+        if show:
+            self.tabWidget.setCurrentWidget(btClient)
+
+        return btClient
+
+    async def onStartTorrentClient(self, *a):
+        await self.getTorrentClient(show=True)
 
     async def seedsSetup(self):
         await self.seedsTab.loadSeeds()

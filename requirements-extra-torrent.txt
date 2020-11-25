@@ -1,0 +1,1 @@
+magnet2torrent>=1.1.1

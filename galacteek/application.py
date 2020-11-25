@@ -957,6 +957,9 @@ class GalacteekApplication(QApplication):
 
         self._dataLocation = os.path.join(
             qtDataLocation, self._appProfile)
+        self._logsLocation = os.path.join(self.dataLocation, 'logs')
+        self.mainLogFileLocation = os.path.join(
+            self._logsLocation, 'galacteek.log')
 
         self._ipfsBinLocation = os.path.join(qtDataLocation, 'ipfs-bin')
         self._ipfsDataLocation = os.path.join(self.dataLocation, 'ipfs')
@@ -985,6 +988,8 @@ class GalacteekApplication(QApplication):
                                               'pinstatus.json')
         self._nsCacheLocation = os.path.join(self.dataLocation,
                                              'nscache.json')
+        self._torrentStateLocation = os.path.join(self.dataLocation,
+                                                  'torrent_state.pickle')
 
         qtConfigLocation = QStandardPaths.writableLocation(
             QStandardPaths.ConfigLocation)
@@ -994,6 +999,7 @@ class GalacteekApplication(QApplication):
             self.configDirLocation, '{}.conf'.format(GALACTEEK_NAME))
 
         for dir in [self._mHashDbLocation,
+                    self._logsLocation,
                     self.ipfsBinLocation,
                     self.marksDataLocation,
                     self.cryptoDataLocation,
@@ -1391,7 +1397,7 @@ class GalacteekApplication(QApplication):
         self.lock.release()
 
         self.mainWindow.stopTimers()
-        self.closeAllWindows()
+        await self.mainWindow.stack.shutdown()
 
         try:
             self.systemTray.hide()
@@ -1425,6 +1431,8 @@ class GalacteekApplication(QApplication):
 
         if self.debug:
             self.showTasks()
+
+        self.closeAllWindows()
 
         self.tempDir.remove()
         self.quit()

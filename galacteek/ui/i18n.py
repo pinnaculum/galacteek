@@ -516,6 +516,10 @@ def iDownload():
     return QCoreApplication.translate('GalacteekWindow', 'Download')
 
 
+def iDownloads():
+    return QCoreApplication.translate('GalacteekWindow', 'Downloads')
+
+
 def iDownloadDirectory():
     return QCoreApplication.translate('GalacteekWindow', 'Download directory')
 
@@ -939,4 +943,34 @@ def iIpfsDaemonKeepRunningAsk():
     return QCoreApplication.translate(
         'Galacteek',
         'Do you want to keep the IPFS daemon running ?'
+    )
+
+
+# BT
+
+def iBitTorrent():
+    return QCoreApplication.translate(
+        'Galacteek',
+        'BitTorrent'
+    )
+
+
+def iBitTorrentClient():
+    return QCoreApplication.translate(
+        'Galacteek',
+        'BitTorrent client'
+    )
+
+
+def iBtAddFromTorrentFile():
+    return QCoreApplication.translate(
+        'Galacteek',
+        'Add from torrent file'
+    )
+
+
+def iBtAddFromMagnetLink():
+    return QCoreApplication.translate(
+        'Galacteek',
+        'Add from magnet link'
     )

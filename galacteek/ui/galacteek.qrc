@@ -70,10 +70,13 @@
     <file>../../share/qr-codes/qr.ipfs.io.png</file>
     <file>../../share/icons/search-engine-zoom.png</file>
     <file>../../share/icons/mimetypes/application-x-directory.png</file>
+    <file>../../share/icons/mimetypes/application-x-bittorrent.png</file>
     <file>../../share/icons/mimetypes/text-css.png</file>
     <file>../../share/icons/mimetypes/text-csv.png</file>
     <file>../../share/icons/mimetypes/text-html.png</file>
     <file>../../share/icons/terminal.png</file>
+    <file>../../share/icons/torrent.png</file>
+    <file>../../share/icons/magnet.png</file>
     <file>../../share/icons/mimetypes/audio-x-generic.png</file>
     <file>../../share/icons/mimetypes/unknown.png</file>
     <file>../../share/icons/mimetypes/video-x-generic.png</file>

@@ -3,8 +3,6 @@ from PyQt5.QtWebEngineWidgets import QWebEngineProfile
 from PyQt5.QtWebEngineWidgets import QWebEngineSettings
 from PyQt5.QtWebEngineCore import QWebEngineUrlRequestInterceptor
 
-from galacteek import log
-
 from galacteek.dweb.webscripts import ethereumClientScripts
 
 from galacteek.core.schemes import SCHEME_DWEB
@@ -34,8 +32,6 @@ class IPFSRequestInterceptor(QWebEngineUrlRequestInterceptor):
         url = info.requestUrl()
 
         if url and url.isValid() and isIpfsUrl(url):
-            log.debug('IPFS interceptor for URL: {}'.format(
-                url.toString()))
             path = url.path()
 
             # Force Content-type for JS modules

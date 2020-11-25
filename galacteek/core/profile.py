@@ -585,6 +585,7 @@ class UserProfile(QObject):
             self.pathWebPages,
             self.pathDWebApps,
             self.pathTmp,
+            self.pathDownloads,
             self.pathEncryptedFiles,
             self.pathEDagsPyramids,
             self.pathEDagsSeeds
@@ -609,6 +610,10 @@ class UserProfile(QObject):
     @property
     def pathEncryptedFiles(self):
         return posixIpfsPath.join(self.pathFiles, 'sencrypted')
+
+    @property
+    def pathDownloads(self):
+        return posixIpfsPath.join(self.pathFiles, 'downloads')
 
     @property
     def pathQrCodes(self):
