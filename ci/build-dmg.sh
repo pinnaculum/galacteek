@@ -3,6 +3,8 @@
 # Credits: from the great https://github.com/Pext/Pext
 #
 
+export HOMEBREW_NO_AUTO_UPDATE=1
+
 set -x
 set -e
 
@@ -87,17 +89,19 @@ ln -s ipfs-${GO_IPFS_VERSION} ipfs
 popd
 
 # Install libmagic and the magic db files
-brew install libmagic
+brew install libmagic --ignore-dependencies
 cp -av /usr/local/Cellar/libmagic/*/lib/*.dylib galacteek.app/Contents/Resources/lib
 cp -av /usr/local/Cellar/libmagic/*/share/misc galacteek.app/Contents/Resources/share/
 
-brew update
-
 # zbar install. Copy depencies (libjpeg)
-brew install zbar
-cp -av /usr/local/Cellar/zbar/*/lib/*.dylib galacteek.app/Contents/Resources/lib
-cp -av /usr/local/Cellar/jpeg/*/lib/*.dylib galacteek.app/Contents/Resources/lib
-cp -av /usr/local/Cellar/libpng/*/lib/*.dylib galacteek.app/Contents/Resources/lib
+# brew install openjpeg
+# brew install zbar --ignore-dependencies
+# cp -av /usr/local/Cellar/zbar/*/lib/*.dylib galacteek.app/Contents/Resources/lib
+# cp -av /usr/local/Cellar/jpeg/*/lib/*.dylib galacteek.app/Contents/Resources/lib
+# cp -av /usr/local/Cellar/libpng/*/lib/*.dylib galacteek.app/Contents/Resources/lib
+
+cp -av ${GITHUB_WORKSPACE}/packaging/macos/zbar/*.dylib galacteek.app/Contents/Resources/lib
+cp -av ${GITHUB_WORKSPACE}/packaging/macos/jpeg/*.dylib galacteek.app/Contents/Resources/lib
 
 # create entry script for galacteek
 cat > galacteek.app/Contents/MacOS/galacteek <<\EAT

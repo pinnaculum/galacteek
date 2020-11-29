@@ -12,7 +12,7 @@ env:
 
 jobs:
   build:
-    if: github.event_name == 'push' && contains(toJson(github.event.commits), '[skip ci]') == false
+    if: contains(toJson(github.event.commits), '[skip ci]') == false
     needs: create_release
     strategy:
       # fail-fast: false
@@ -102,6 +102,10 @@ jobs:
         echo "IPFS_DIST_OS=darwin" >> $GITHUB_ENV
         echo "BUNDLE_FILENAME=${BUNDLE_ROOT}-x86_64.dmg" >> $GITHUB_ENV
         echo "BUNDLE_PATH=${GLK_ASSETS}/${BUNDLE_ROOT}-x86_64.dmg" >> $GITHUB_ENV
+
+        echo "HOMEBREW_NO_AUTO_UPDATE=1" >> $GITHUB_ENV
+        echo "HOMEBREW_AUTO_UPDATING=0" >> $GITHUB_ENV
+        echo "HOMEBREW_UPDATE_PREINSTALL=0" >> $GITHUB_ENV
 
     - name: OS-specific vars (win)
       if: startsWith(matrix.os, 'windows')
@@ -232,7 +236,7 @@ jobs:
         asset_content_type: application/octet-stream
 
   create_release:
-    if: github.event_name == 'push' && contains(toJson(github.event.commits), '[skip ci]') == false
+    if: contains(toJson(github.event.commits), '[skip ci]') == false
     name: Create release
     runs-on: ubuntu-latest
     outputs:
