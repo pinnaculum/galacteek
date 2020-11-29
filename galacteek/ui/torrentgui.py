@@ -724,7 +724,10 @@ class TorrentClientTab(GalacteekTab):
                 text=clipText if isMagnetLink(clipText) else ''
             )
 
-            ensure(self.add_from_magnet(magnetLink))
+            if isMagnetLink(magnetLink):
+                ensure(self.add_from_magnet(magnetLink))
+            else:
+                messageBox('Invalid magnet link')
 
     async def add_from_magnet(self, magnetLink):
         filename, tData = await self.magnetConverter.toTorrentData(magnetLink)
