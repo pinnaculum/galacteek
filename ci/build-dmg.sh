@@ -3,8 +3,6 @@
 # Credits: from the great https://github.com/Pext/Pext
 #
 
-export HOMEBREW_NO_AUTO_UPDATE=1
-
 set -x
 set -e
 
@@ -28,8 +26,6 @@ else
         export DMG_FILENAME="Galacteek-${G_VERSION}.dmg"
     fi
 fi
-
-# export BUNDLE_PATH="${GLK_ASSETS}/${DMG_FILENAME}"
 
 echo "Building to DMG, path: $BUNDLE_PATH"
 
@@ -58,6 +54,7 @@ conda create -n galacteek python=3.7 --yes
 source activate galacteek
 
 WHEEL="$OLD_CWD"/dist/galacteek-${G_VERSION}-py3-none-any.whl
+
 # install dependencies
 pip install wheel
 pip install -r "$OLD_CWD"/requirements.txt
@@ -92,13 +89,6 @@ popd
 brew install libmagic --ignore-dependencies
 cp -av /usr/local/Cellar/libmagic/*/lib/*.dylib galacteek.app/Contents/Resources/lib
 cp -av /usr/local/Cellar/libmagic/*/share/misc galacteek.app/Contents/Resources/share/
-
-# zbar install. Copy depencies (libjpeg)
-# brew install openjpeg
-# brew install zbar --ignore-dependencies
-# cp -av /usr/local/Cellar/zbar/*/lib/*.dylib galacteek.app/Contents/Resources/lib
-# cp -av /usr/local/Cellar/jpeg/*/lib/*.dylib galacteek.app/Contents/Resources/lib
-# cp -av /usr/local/Cellar/libpng/*/lib/*.dylib galacteek.app/Contents/Resources/lib
 
 cp -av ${GITHUB_WORKSPACE}/packaging/macos/zbar/*.dylib galacteek.app/Contents/Resources/lib
 cp -av ${GITHUB_WORKSPACE}/packaging/macos/jpeg/*.dylib galacteek.app/Contents/Resources/lib
