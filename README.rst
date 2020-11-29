@@ -191,7 +191,7 @@ Requirements
 - PyQtWebengine >= 5.13.2
 - gstreamer (on Linux) for media player support
 - git
-- quamash_
+- asyncqt_
 - aiohttp_
 - aioipfs_
 
@@ -221,6 +221,7 @@ from the ipfs-logo_ project's repository is included, unchanged.
 .. _aiohttp: https://pypi.python.org/pypi/aiohttp
 .. _aioipfs: https://gitlab.com/cipres/aioipfs
 .. _aiomonitor: https://github.com/aio-libs/aiomonitor
+.. _asyncqt: https://github.com/gmarull/asyncqt
 .. _quamash: https://github.com/harvimt/quamash
 .. _go-ipfs: https://github.com/ipfs/go-ipfs
 .. _dist.ipfs.io: https://dist.ipfs.io
