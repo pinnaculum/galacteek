@@ -210,6 +210,11 @@ Some elements from the ipfs-css_ repository (CSS files and fonts) are included.
 
 Some icons from the "Oxygen" icons set are included.
 
+This software incudes icons made by the following FlatIcon authors:
+
+- `FreePik <https://www.flaticon.com/authors/freepik>`_
+- `Pixel perfect <https://www.flaticon.com/authors/pixel-perfect>`_
+
 Some of the beautiful artwork (under the Creative Commons CC-BY-SA license)
 from the ipfs-logo_ project's repository is included, unchanged.
 
