@@ -2,6 +2,8 @@
 CHANGELOG
 =========
 
+Old CHANGELOG, see CHANGELOG.md
+
 0.4.9
 =====
 
