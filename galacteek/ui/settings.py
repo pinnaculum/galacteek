@@ -130,8 +130,6 @@ class SettingsDialog(QDialog):
             self.getS(section, CFG_KEY_HOMEURL, str))
         self.ui.downloadsLocation.setText(
             self.getS(section, CFG_KEY_DLPATH, str))
-        self.setChecked(self.ui.goToHomePageOnOpen,
-                        self.sManager.isTrue(section, CFG_KEY_GOTOHOME))
 
         # Default web profile combo box
         currentDefault = self.sManager.getSetting(
@@ -221,8 +219,6 @@ class SettingsDialog(QDialog):
 
         section = CFG_SECTION_BROWSER
         self.setS(section, CFG_KEY_HOMEURL, self.ui.home.text())
-        self.sManager.setBoolFrom(section, CFG_KEY_GOTOHOME,
-                                  self.isChecked(self.ui.goToHomePageOnOpen))
         self.setS(section, CFG_KEY_DEFAULTWEBPROFILE,
                   self.ui.comboDefaultWebProfile.currentText())
 

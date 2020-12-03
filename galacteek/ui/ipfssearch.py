@@ -1,5 +1,6 @@
 import asyncio
 import async_timeout
+import weakref
 
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWebEngineWidgets import QWebEngineView
@@ -31,9 +32,11 @@ from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.search import multiSearch
 from galacteek.ipfs.stat import StatInfo
 from galacteek.dweb.render import renderTemplate
+from galacteek.core import uid4
 from galacteek import ensure
 from galacteek import log
 
+from .colors import *
 from .helpers import *
 from .hashmarks import *
 from .widgets import *
@@ -120,9 +123,11 @@ class BaseSearchPage(QWebEnginePage):
             super(BaseSearchPage, self).__init__(parent)
 
         self.pageRendered.connect(self.onPageRendered)
+        self.eventRendered = asyncio.Event()
 
     def onPageRendered(self, html):
         self.setHtml(html)
+        self.eventRendered.set()
 
 
 class SearchInProgressPage(BaseSearchPage):
@@ -132,7 +137,7 @@ class SearchInProgressPage(BaseSearchPage):
         ensure(self.render())
 
     async def render(self):
-        html = await renderTemplate(self.template)
+        html = await renderTemplate(self.template, _cache=True)
         if html:
             self.pageRendered.emit(html)
 
@@ -141,14 +146,23 @@ class SearchResultsPageFactory(QObject):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.app = QApplication.instance()
-        self.resultsTemplate = self.app.getJinjaTemplate('ipfssearch.html')
+        # self.resultsTemplate = self.app.getJinjaTemplate('ipfssearch.html')
+        self.resultsTemplate = 'ipfssearch.html'
         self.webProfile = self.app.webProfiles['ipfs']
+        self.minVaultSize = 1
+        self.pagesVault = weakref.WeakValueDictionary()
 
-    def getPage(self):
+    def unvault(self, searchMode='nocontrols'):
+        if len(self.pagesVault) <= self.minVaultSize:
+            uid = uid4()
+            self.pagesVault[uid] = self.getPage(searchMode=searchMode)
+
+    def getPage(self, searchMode='classic'):
         return SearchResultsPage(
             self.webProfile,
             self.resultsTemplate,
             self.app.getIpfsConnectionParams(),
+            searchMode=searchMode,
             parent=self
         )
 
@@ -159,6 +173,7 @@ class SearchResultsPage(BaseSearchPage):
             profile,
             tmplMain,
             ipfsConnParams,
+            searchMode='classic',
             webchannel=None,
             parent=None):
         super(SearchResultsPage, self).__init__(parent, profile=profile)
@@ -167,9 +182,11 @@ class SearchResultsPage(BaseSearchPage):
         self.handler = IPFSSearchHandler(self)
         self.channel.registerObject('ipfssearch', self.handler)
         self.setWebChannel(self.channel)
+        self.setBackgroundColor(desertStrike1)
 
         self.app = QApplication.instance()
 
+        self.searchMode = searchMode
         self.template = tmplMain
         self.ipfsConnParams = ipfsConnParams
         ensure(self.render())
@@ -184,8 +201,12 @@ class SearchResultsPage(BaseSearchPage):
 
     async def render(self):
         html = await renderTemplate(self.template,
-                                    ipfsConnParams=self.ipfsConnParams)
-        self.setHtml(html)
+                                    _cache=True,
+                                    _cacheKeyAttrs=['searchMode'],
+                                    ipfsConnParams=self.ipfsConnParams,
+                                    searchMode=self.searchMode)
+        if html:
+            self.pageRendered.emit(html)
 
 
 class IPFSSearchHandler(QObject):
@@ -201,6 +222,8 @@ class IPFSSearchHandler(QObject):
     searchError = pyqtSignal()
     searchStarted = pyqtSignal(str)
     searchComplete = pyqtSignal()
+    searchRunning = pyqtSignal(str)
+    searchQueryTextChanged = pyqtSignal(str)
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -336,7 +359,7 @@ class IPFSSearchHandler(QObject):
             self.app.mainWindow.explore(hashV)
 
     @pyqtSlot(str, str)
-    def search(self, searchQuery, cType):
+    def search(self, searchQuery: str, cType: str):
         self.cleanup()
         self.searchQuery = searchQuery
         self.searchStarted.emit(self.searchQuery)
@@ -439,12 +462,15 @@ class IPFSSearchHandler(QObject):
         statusEmitted = False
         gotResults = False
 
+        proxy = self.app.networkProxy()
+
         try:
             with async_timeout.timeout(timeout):
                 async for pageCount, result in multiSearch(
                         searchQuery,
                         page=pageStart,
                         filters=self.filters,
+                        proxyUrl=proxy.url() if proxy else None,
                         sslverify=self.app.sslverify):
                     await asyncio.sleep(0)
                     gotResults = True
@@ -459,6 +485,7 @@ class IPFSSearchHandler(QObject):
                     engine = result['engine']
 
                     self._cResults.append(result)
+                    self.searchRunning.emit(searchQuery)
 
                     if engine == 'ipfs-search':
                         self.sendHit(hit)
@@ -494,7 +521,10 @@ class IPFSSearchView(QWidget):
 
     def __init__(self, searchQuery='', parent=None):
         super(IPFSSearchView, self).__init__(parent)
-        self.setLayout(QVBoxLayout())
+        self.vl = QVBoxLayout()
+        self.vl.setSpacing(0)
+        self.setLayout(self.vl)
+        self.vl.setContentsMargins(0, 0, 0, 0)
 
         self.tab = parent
 

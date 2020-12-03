@@ -33,6 +33,12 @@ jobs:
         sudo apt-get install -y dzen2 xvfb herbstluftwm
         sudo apt-get install -y libxcb-xkb1 libxkbcommon-x11-0
         sudo apt-get install -y libzbar0
+        sudo apt-get install -y tor
+
+    - name: Install packages (macos)
+      if: startsWith(matrix.os, 'mac')
+      run: |
+        brew install tor
 
     - name: Install unzip (Windows)
       if: startsWith(matrix.os, 'windows')
@@ -58,9 +64,15 @@ jobs:
       with:
         args: install nsis
 
+    - name: Install Tor (Windows)
+      if: startsWith(matrix.os, 'windows')
+      uses: crazy-max/ghaction-chocolatey@v1
+      with:
+        args: install tor
+
     - name: Configure environment (1)
       run: |
-        echo "G_VERSION=$(cat galacteek/version)" >> $GITHUB_ENV
+        echo "G_VERSION=$(cat galacteek/VERSION)" >> $GITHUB_ENV
 
         echo "COMMIT_SHORT=$(echo $GITHUB_SHA|cut -c 1-8)" >> $GITHUB_ENV
         echo "GIT_BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
@@ -256,7 +268,7 @@ jobs:
       - name: Release config
         id: release_config
         run: |
-          echo "G_VERSION=$(cat galacteek/version)" >> $GITHUB_ENV
+          echo "G_VERSION=$(cat galacteek/VERSION)" >> $GITHUB_ENV
           echo "COMMIT_SHORT=$(echo $GITHUB_SHA|cut -c 1-8)" >> $GITHUB_ENV
           echo "GIT_BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
           echo "TAGNAME=continuous-${GITHUB_REF##*/}" >> $GITHUB_ENV

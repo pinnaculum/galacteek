@@ -15,6 +15,7 @@ from galacteek.core.schemes import SCHEME_Q
 from galacteek.core.schemes import isIpfsUrl
 
 
+WP_NAME_ANON = 'anonymous'
 WP_NAME_MINIMAL = 'minimal'
 WP_NAME_IPFS = 'ipfs'
 WP_NAME_WEB3 = 'web3'
@@ -93,6 +94,23 @@ class BaseProfile(QWebEngineProfile):
 class MinimalProfile(BaseProfile):
     def __init__(self, storageName=WP_NAME_MINIMAL, parent=None):
         super(MinimalProfile, self).__init__(storageName, parent)
+
+
+class AnonymousProfile(BaseProfile):
+    """
+    Anonymous web profile. No JS, no cache, no cookies.
+    """
+    def __init__(self, storageName=WP_NAME_ANON, parent=None):
+        super(AnonymousProfile, self).__init__(storageName, parent)
+
+    def setSettings(self):
+        super().setSettings()
+        self.webSettings.setAttribute(QWebEngineSettings.JavascriptEnabled,
+                                      False)
+        self.webSettings.setAttribute(QWebEngineSettings.XSSAuditingEnabled,
+                                      True)
+        self.setPersistentCookiesPolicy(QWebEngineProfile.NoPersistentCookies)
+        self.setHttpCacheType(QWebEngineProfile.NoCache)
 
 
 class IPFSProfile(BaseProfile):

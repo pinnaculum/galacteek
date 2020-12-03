@@ -81,6 +81,9 @@ mkdir -p galacteek.app/Contents/Resources/bin
 cp $GITHUB_WORKSPACE/go-ipfs/ipfs-${GO_IPFS_VERSION} galacteek.app/Contents/Resources/bin
 cp $GITHUB_WORKSPACE/fs-repo-migrations/fs-repo-migrations galacteek.app/Contents/Resources/bin
 
+# copy tor
+cp /usr/local/bin/tor galacteek.app/Contents/Resources/bin
+
 pushd galacteek.app/Contents/Resources/bin
 ln -s ipfs-${GO_IPFS_VERSION} ipfs
 popd

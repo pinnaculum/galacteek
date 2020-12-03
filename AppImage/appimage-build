@@ -97,6 +97,9 @@ find /usr/lib -iname 'libzbar.so*' -exec cp -av {} $APPDIR/usr/lib \;
 cp $GITHUB_WORKSPACE/go-ipfs/ipfs-${GO_IPFS_VERSION} $APPDIR/usr/bin
 cp $GITHUB_WORKSPACE/fs-repo-migrations/fs-repo-migrations $APPDIR/usr/bin
 
+# Copy tor
+cp /usr/bin/tor $APPDIR/usr/bin
+
 pushd "$APPDIR"/usr/bin
 ln -s ipfs-${GO_IPFS_VERSION} ipfs
 popd

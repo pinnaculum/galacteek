@@ -34,6 +34,7 @@ from galacteek.ipfs.mimetype import mimeTypeDagUnknown
 from galacteek.ipfs.cidhelpers import IPFSPath
 
 from galacteek.core.schemes import isEnsUrl
+from galacteek.core.schemes import isUrlSupported
 
 from .dwebspace import *
 from .dag import DAGViewer
@@ -70,6 +71,9 @@ class IPFSResourceOpener(QObject):
     def openEnsUrl(self, url, pin=False):
         self.app.mainWindow.addBrowserTab(
             minProfile='web3', pinBrowsed=pin).enterUrl(url)
+
+    def openUrl(self, url):
+        self.app.mainWindow.addBrowserTab().enterUrl(url)
 
     @ipfsOp
     async def openHashmark(self, ipfsop, hashmark):
@@ -120,6 +124,8 @@ class IPFSResourceOpener(QObject):
 
             if isEnsUrl(url):
                 return self.openEnsUrl(url, pin=pin)
+            if isUrlSupported(url):
+                return self.openUrl(url)
 
             ipfsPath = IPFSPath(pathRef, autoCidConv=True)
         else:

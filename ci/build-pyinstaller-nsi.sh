@@ -3,17 +3,6 @@
 set -x
 set -e
 
-cat <<EOF > galacteek_win.py
-import sys
-import faulthandler
-print("Starting galacteek ..")
-
-faulthandler.enable(sys.stdout)
-
-from galacteek.guientrypoint import start
-start()
-EOF
-
 export PYTHONPATH=$GITHUB_WORKSPACE
 
 unset VIRTUAL_ENV
@@ -25,9 +14,14 @@ pip install pywin32
 cp packaging/windows/pyimod03_importers.py \
     c:\\hostedtoolcache\\windows\\python\\3.7.9\\x64\\lib\\site-packages\\PyInstaller\\loader
 
+# Copy tor and the dlls
+cp /c/ProgramData/chocolatey/lib/tor/tools/Tor/*  packaging/windows/tor
+
+cp packaging/windows/galacteek_win.py .
+cp packaging/windows/galacteek_folder.spec .
+
 echo "Running pyinstaller"
 
-cp packaging/windows/galacteek_folder.spec .
 pyinstaller galacteek_folder.spec
 
 echo "Success, packaging folder"

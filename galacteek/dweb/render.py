@@ -5,6 +5,8 @@ import os.path
 from datetime import datetime
 from dateutil import parser as dateparser
 from tempfile import TemporaryDirectory
+from cachetools import TTLCache
+from cachetools import keys
 
 from galacteek import log
 from galacteek.core import isoformat
@@ -83,14 +85,42 @@ def renderWrapper(tmpl, **kw):
         return data
 
 
-async def renderTemplate(tmplname, loop=None, env=None, **kw):
-    env = env if env else defaultJinjaEnv()
-    tmpl = env.get_template(tmplname)
-    if not tmpl:
-        raise Exception('template not found')
+templatesCache = TTLCache(64, 60)
 
-    data = await tmpl.render_async(**kw)
-    return data
+
+async def renderTemplate(tmplname, loop=None, env=None,
+                         _cache=False,
+                         _cacheKeyAttrs=None,
+                         **kw):
+    global templatesCache
+
+    key = None
+    if _cache:
+        if isinstance(_cacheKeyAttrs, list):
+            # use certain kw attributes to form the
+            # entry's key in the cache
+            attrs = {}
+            for attr in _cacheKeyAttrs:
+                attrs[attr] = kw.get(attr)
+            key = keys.hashkey(tmplname, **attrs)
+        else:
+            # use all kw attributes
+            key = keys.hashkey(tmplname, **kw)
+
+    try:
+        if key is None:
+            raise KeyError('Not using cache')
+
+        return templatesCache[key]
+    except KeyError:
+        env = env if env else defaultJinjaEnv()
+        tmpl = env.get_template(tmplname)
+        if not tmpl:
+            raise Exception('template not found')
+
+        data = await tmpl.render_async(**kw)
+        templatesCache[key] = data
+        return data
 
 
 @ipfsOpFn

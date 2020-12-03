@@ -50,6 +50,8 @@ from galacteek import database
 from galacteek.core.ipfsmarks import *
 from galacteek.core.ipfsmarks import categoryValid
 from galacteek.core.iptags import ipTagsFormat
+from galacteek.core.schemes import isEnsUrl
+from galacteek.core.schemes import isHttpUrl
 from galacteek.ipfs import cidhelpers
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import ipfsOp
@@ -159,8 +161,60 @@ class AddHashmarkDialog(QDialog):
         self.ui.groupBox.setProperty('niceBox', True)
         self.app.repolishWidget(self.ui.groupBox)
 
-    async def initDialog(self):
+    @ipfsOp
+    async def initDialog(self, ipfsop):
         await self.fillCategories()
+
+        path = IPFSPath(self.ipfsResource)
+        if not path.valid:
+            # TODO: rename self.ipfsResource
+            # Handle HTTP/ENS URLs
+
+            url = QUrl(self.ipfsResource)
+            if isHttpUrl(url) or isEnsUrl(url):
+                self.ui.pinCombo.setEnabled(False)
+
+            if isHttpUrl(url):
+                ensure(self.fetchFavIcon(url))
+
+    @ipfsOp
+    async def fetchFavIcon(self, ipfsop, qurl):
+        qurl.setPath('/favicon.ico')
+        print('fetching', qurl.toString())
+
+        try:
+            async with self.app.webClientSession() as session:
+                _data = bytearray()
+
+                async with session.get(qurl.toString()) as resp:
+                    while True:
+                        b = await resp.content.read(1024)
+                        print('read', len(b))
+                        if not b:
+                            break
+
+                        _data.extend(b)
+                        if len(_data) > 1024 * 1024:
+                            raise Exception('bb')
+
+                icon = getIconFromImageData(_data)
+                if not icon:
+                    raise Exception('Invalid .ico')
+
+                entry = await ipfsop.addBytes(_data)
+                if entry:
+                    self.iconSelector.injectCustomIcon(
+                        icon, entry['Hash'],
+                        qurl.toString())
+
+                if 0:
+                    entry = await ipfsop.addBytes(_data)
+                    icoPath = IPFSPath(entry['Hash'])
+                    print(icoPath)
+                    if not icoPath.valid:
+                        raise Exception('Invalid icon')
+        except Exception as err:
+            log.debug(f'Could not load favicon: {err}')
 
     async def fillCategories(self):
         self.ui.category.addItem(iNoCategory())

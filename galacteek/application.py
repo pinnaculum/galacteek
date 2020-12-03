@@ -15,6 +15,7 @@ import time
 import aiojobs
 import shutil
 import signal
+import psutil
 from pathlib import Path
 from filelock import FileLock
 
@@ -38,6 +39,8 @@ from PyQt5.QtCore import QTemporaryDir
 from PyQt5.QtCore import QDir
 from PyQt5.QtCore import QMimeDatabase
 
+from PyQt5.QtNetwork import QNetworkProxy
+
 from PyQt5.QtGui import QCursor
 
 from galacteek import log
@@ -55,6 +58,8 @@ from galacteek.core.clipboard import ClipboardTracker
 from galacteek.core.db import SqliteDatabase
 from galacteek.core import pkgResourcesListDir
 from galacteek.core import pkgResourcesRscFilename
+from galacteek.core.tor import TorLauncher
+from galacteek.core.webproxy import NullProxy
 
 from galacteek import database
 from galacteek.database import models
@@ -96,6 +101,7 @@ from galacteek.ipdapps.loader import DappsRegistry
 from galacteek.core.webprofiles import IPFSProfile
 from galacteek.core.webprofiles import Web3Profile
 from galacteek.core.webprofiles import MinimalProfile
+from galacteek.core.webprofiles import AnonymousProfile
 
 from galacteek.dweb.webscripts import ipfsClientScripts
 from galacteek.dweb.render import defaultJinjaEnv
@@ -187,6 +193,14 @@ class IPFSConnectionParams(object):
             scheme='http',
             path='')
 
+    def asDict(self):
+        return {
+            'host': self.host,
+            'apiPort': self.apiPort,
+            'gatewayPort': self.gatewayPort,
+            'gatewayUrl': self.gatewayUrl
+        }
+
     @property
     def host(self):
         return self._host
@@ -243,6 +257,7 @@ class GalacteekApplication(QApplication):
         self._urlSchemes = {}
         self._shuttingDown = False
         self._freshInstall = False
+        self._process = psutil.Process(os.getpid())
 
         self._icons = {}
         self._ipfsIconsCache = {}
@@ -251,6 +266,7 @@ class GalacteekApplication(QApplication):
 
         self.enableOrbital = enableOrbital
         self.orbitConnector = None
+        self.netProxy = None
 
         self.translator = None
         self.mainWindow = None
@@ -443,6 +459,17 @@ class GalacteekApplication(QApplication):
         if self.debugEnabled:
             log.debug(msg)
 
+    def networkProxy(self):
+        # return QNetworkProxy.applicationProxy()
+        return self.netProxy
+
+    def networkProxySet(self, proxy):
+        QNetworkProxy.setApplicationProxy(proxy)
+        self.netProxy = proxy
+
+    def networkProxySetNull(self):
+        self.networkProxySet(NullProxy())
+
     def initSystemTray(self):
         self.systemTray = QSystemTrayIcon(self)
         self.systemTray.setIcon(getIcon('galacteek-incandescent.png'))
@@ -464,6 +491,9 @@ class GalacteekApplication(QApplication):
         self.systemTray.setContextMenu(systemTrayMenu)
 
     def initMisc(self):
+        # Start with no proxy
+        self.networkProxySet(NullProxy())
+
         self.multihashDb = IPFSObjectMetadataDatabase(self._mHashDbLocation,
                                                       loop=self.loop)
 
@@ -481,6 +511,7 @@ class GalacteekApplication(QApplication):
         self.tempDirWeb = self.tempDirCreate(
             self.tempDir.path(), 'webdownloads')
 
+        self.tor = TorLauncher(self._torConfigLocation)
         self._goIpfsBinPath = self.suitableGoIpfsBinary()
 
     def tempDirCreate(self, basedir, name=None):
@@ -794,6 +825,8 @@ class GalacteekApplication(QApplication):
         self.createMainWindow()
         self.clipboardInit()
 
+        await self.tor.start()
+
         await self.setupIpfsConnection()
 
     async def fetchGoIpfs(self):
@@ -888,6 +921,10 @@ class GalacteekApplication(QApplication):
         self.style().unpolish(widget)
         self.style().polish(widget)
 
+    def webClientSession(self):
+        from galacteek.core.asynclib import clientSessionWithProxy
+        return clientSessionWithProxy(self.netProxy.url())
+
     def setupAsyncLoop(self):
         """
         Install the asyncqt event loop and enable debugging
@@ -970,6 +1007,7 @@ class GalacteekApplication(QApplication):
         self._orbitDataLocation = os.path.join(self.dataLocation, 'orbitdb')
         self._mHashDbLocation = os.path.join(self.dataLocation, 'mhashmetadb')
         self._sqliteDbLocation = os.path.join(self.dataLocation, 'db.sqlite')
+        self._torConfigLocation = os.path.join(self.dataLocation, 'torrc')
         self._pLockLocation = os.path.join(self.dataLocation, 'profile.lock')
         self._mainDbLocation = os.path.join(
             self.dataLocation, 'db_main.sqlite3')
@@ -1315,8 +1353,15 @@ class GalacteekApplication(QApplication):
         self.webProfiles = {
             'minimal': MinimalProfile(parent=self),
             'ipfs': IPFSProfile(parent=self),
-            'web3': Web3Profile(parent=self)
+            'web3': Web3Profile(parent=self),
+            'anonymous': AnonymousProfile(parent=self)
         }
+
+    def allWebProfilesSetAttribute(self, attribute, val):
+        for pName, profile in self.webProfiles.items():
+            log.debug(f'Web profile {pName}: setting attr '
+                      f'{attribute}:{val}')
+            profile.webSettings.setAttribute(attribute, val)
 
     def availableWebProfilesNames(self):
         return [p.profileName for n, p in self.webProfiles.items()]
@@ -1405,6 +1450,9 @@ class GalacteekApplication(QApplication):
 
         self.lock.release()
 
+        if self.tor:
+            self.tor.stop()
+
         self.mainWindow.stopTimers()
         await self.mainWindow.stack.shutdown()
 
@@ -1447,7 +1495,8 @@ class GalacteekApplication(QApplication):
         self.quit()
 
         if self.windowsSystem:
-            sys.exit(0)
+            # temporary, need to fix #33
+            self._process.kill()
 
 
 class ManualsManager(QObject):

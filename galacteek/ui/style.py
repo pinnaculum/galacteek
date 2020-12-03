@@ -10,6 +10,8 @@ class GalacteekStyle(QProxyStyle):
     def pixelMetric(self, metric, option, widget):
         if metric == QStyle.PM_ToolBarIconSize:
             return 24
+        elif metric == QStyle.PM_TextCursorWidth:
+            return 10
         elif metric == QStyle.PM_TabBarIconSize:
             return 16
         elif metric == QStyle.PM_ToolBarItemSpacing:

@@ -25,6 +25,7 @@ from PyQt5.QtWidgets import QToolTip
 
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
+from PyQt5.QtWebEngineWidgets import QWebEngineSettings
 
 from PyQt5.QtCore import QRect
 from PyQt5.QtCore import QEvent
@@ -60,10 +61,12 @@ from galacteek.ipfs.mimetype import detectMimeType
 from galacteek import log
 from galacteek import ensure
 from galacteek import partialEnsure
+from galacteek import AsyncSignal
 from galacteek.core.asynclib import asyncify
 from galacteek.core import utcDatetime
 from galacteek.space import allPlanetsNames
 from galacteek.dweb.markdown import markitdown
+from galacteek.core.webproxy import TorNetworkProxy
 
 from galacteek import database
 from galacteek.database.models.core import Hashmark
@@ -101,15 +104,22 @@ class TabContext(object):
 
 
 class GalacteekTab(QWidget):
+    tabVisibilityChanged = pyqtSignal(bool)
+
     def __init__(self, gWindow, parent=None,
                  vLayout=True, sticky=False, ctx=None):
         super(GalacteekTab, self).__init__(parent)
 
         self.app = QApplication.instance()
+        self.setObjectName('galacteekTab')
 
         if vLayout is True:
             self.vLayout = QVBoxLayout(self)
+            self.vLayout.setSpacing(0)
+            self.vLayout.setContentsMargins(4, 4, 4, 4)
             self.setLayout(self.vLayout)
+
+        self.setContentsMargins(0, 0, 0, 0)
 
         self.gWindow = gWindow
         self._workspace = None
@@ -117,6 +127,8 @@ class GalacteekTab(QWidget):
         self.sticky = sticky
         # self.setAttribute(Qt.WA_DeleteOnClose)
         self.destroyed.connect(lambda: self.onDestroyed())
+
+        self.sVisibilityChanged = AsyncSignal(bool)
 
     @property
     def workspace(self):
@@ -133,6 +145,16 @@ class GalacteekTab(QWidget):
     @property
     def profile(self):
         return self.app.ipfsCtx.currentProfile
+
+    def showEvent(self, event):
+        self.tabVisibilityChanged.emit(True)
+        # ensure(self.sVisibilityChanged.emit(True))
+        super().showEvent(event)
+
+    def hideEvent(self, event):
+        self.tabVisibilityChanged.emit(False)
+        # ensure(self.sVisibilityChanged.emit(False))
+        super().hideEvent(event)
 
     def workspaceAttach(self, ws):
         self._workspace = ws
@@ -1192,6 +1214,16 @@ class IconSelector(QComboBox):
                 self.setToolTip(self.iconCid)
                 return True
 
+    def injectCustomIcon(self, icon, cid, iconUrl):
+        """
+        Inject a preloaded icon (QIcon)
+        """
+        self.addItem(icon, '', QVariant(iconUrl))
+        self.setCurrentIndex(self.count() - 1)
+        self.iconCid = cid
+        self.iconSelected.emit(self.iconCid)
+        self.setToolTip(cid)
+
 
 class IPFSWebView(QWebEngineView):
     def __init__(self, webProfile=None, parent=None):
@@ -1425,6 +1457,7 @@ class MarkdownInputWidget(QWidget):
         self.updateTimer.timeout.connect(self.onTimerOut)
 
         mainLayout = QVBoxLayout()
+        mainLayout.setSpacing(0)
         mainLayout.setContentsMargins(30, 30, 30, 30)
         editLayout = QHBoxLayout()
         editLayout.addWidget(self.textEditUser)
@@ -1655,3 +1688,69 @@ class SpacingHWidget(QWidget):
 
         self.hl.addItem(
             QSpacerItem(width, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
+
+
+class TorControllerButton(QToolButton):
+    def __init__(self, torInstance, *args, **kw):
+        super().__init__(*args, **kw)
+
+        self.app = QApplication.instance()
+        self.tor = torInstance
+
+        self.tor.torProto.sTorBootstrapStatus.connectTo(
+            self.onTorBootstrapStatus)
+
+        self.setObjectName('torControlButton')
+        self.setCheckable(True)
+        self.setChecked(False)
+        self.setEnabled(False)
+
+        self.toggled.connect(self.onToggled)
+
+    def useTorProxy(self, use=True):
+        if use is True:
+            proxy = TorNetworkProxy(self.tor.torCfg)
+            self.app.networkProxySet(proxy)
+
+            self.setToolTip(self.tt(
+                f'TOR is used as proxy '
+                f'(socks port: {proxy.port()})'))
+
+            self.app.systemTrayMessage(
+                'Tor',
+                'Tor is now used as proxy (click on the onion to disable it)'
+            )
+        else:
+            self.app.networkProxySetNull()
+            self.app.systemTrayMessage(
+                'Tor',
+                'Tor is now desactivated'
+            )
+
+        self.app.allWebProfilesSetAttribute(
+            QWebEngineSettings.XSSAuditingEnabled,
+            use
+        )
+
+    def onToggled(self, checked):
+        self.useTorProxy(checked)
+
+    def tt(self, message):
+        return f'''
+            <img src=':/share/icons/tor.png' width='32' height='32'></img>
+
+            <p>Tor status: <b>{message}</b></p>
+
+            <p>
+                <b>Click</b> on this icon to enable/disable Tor proxying
+            </p>
+        '''
+
+    async def onTorBootstrapStatus(self, pct, status):
+        self.setToolTip(self.tt(f'TOR bootstrap: {pct}% complete'))
+
+        if pct == 100:
+            self.useTorProxy()
+
+            self.setChecked(True)
+            self.setEnabled(True)
