@@ -6,6 +6,9 @@ import traceback
 import functools
 from asyncio_extras.file import open_async
 import aiofiles
+import aiohttp
+from aiohttp_socks import ProxyConnector
+
 
 from PyQt5.QtWidgets import QApplication
 
@@ -300,3 +303,11 @@ async def asyncRmTree(path):
         shutil.rmtree,
         path
     )
+
+
+def clientSessionWithProxy(proxyUrl):
+    if proxyUrl and proxyUrl.startswith('socks5://'):
+        return aiohttp.ClientSession(
+            connector=ProxyConnector.from_url(proxyUrl))
+    else:
+        return aiohttp.ClientSession()

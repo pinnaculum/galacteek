@@ -1,7 +1,7 @@
 from galacteek import log
 from galacteek.ipfs import ipfsOpFn
+from galacteek.core.asynclib import clientSessionWithProxy
 
-import aiohttp
 import async_timeout
 
 
@@ -27,6 +27,7 @@ class CyberSearchResults:
 
 @ipfsOpFn
 async def cyberSearch(ipfsop, query: str, page=0, perPage=10, sslverify=True,
+                      proxyUrl=None,
                       timeout=8):
     entry = await ipfsop.hashComputeString(query, cidversion=0)
 
@@ -38,7 +39,7 @@ async def cyberSearch(ipfsop, query: str, page=0, perPage=10, sslverify=True,
 
     try:
         with async_timeout.timeout(timeout):
-            async with aiohttp.ClientSession() as session:
+            async with clientSessionWithProxy(proxyUrl) as session:
                 async with session.get('https://{host}/api/search'.format(
                         host='titan.cybernode.ai'),
                         params=params,

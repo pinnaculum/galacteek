@@ -4,7 +4,7 @@
 
     <style>
       body {
-        background-color: #E0DEDE;
+        background-color: #e0dbc8;
       }
 
       label {
@@ -284,7 +284,10 @@
         window.galacteek = channel.objects.galacteek;
         window.ipfssearch = channel.objects.ipfssearch;
 
-        document.getElementById('searchquery').focus()
+        query = document.getElementById('searchquery')
+        if (query) {
+            query.focus()
+        }
 
         window.ipfssearch.filtersChanged.connect(function() {
           document.getElementById('results').innerHTML = ''
@@ -331,13 +334,27 @@
           statusWaiting()
         })
 
+        window.ipfssearch.searchRunning.connect(function(query) {
+          document.getElementById('searchquery').value = query
+          statusSearching()
+        })
+
+        window.ipfssearch.searchStarted.connect(function(query) {
+          document.getElementById('searchquery').value = query
+          statusSearching()
+        })
+
         window.ipfssearch.resetForm.connect(function() {
           document.getElementById('searchquery').value = ''
           document.getElementById('contenttype').value = 'all'
           document.getElementById('controls').style.display = 'none'
           document.getElementById('controls_b').style.display = 'none'
-          document.getElementById('searchquery').focus()
           document.getElementById('statusmessage').innerHTML = ""
+
+          query = document.getElementById('searchquery')
+          if (query) {
+              query.focus()
+          }
         })
 
         window.ipfssearch.vPageStatus.connect(function(vPageCur, vPageLast) {
@@ -391,19 +408,19 @@
         query = document.getElementById('searchquery').value
         type = document.getElementById('contenttype').value
 
-        statusSearching()
+        // statusSearching()
         window.ipfssearch.search(query, type)
       }
 
       window.previousPage = function () {
-        statusSearching()
+        // statusSearching()
         document.getElementById('controls_b').style.display = 'none'
         document.getElementById('controls').style.display = 'none'
         window.ipfssearch.previousPage()
       }
 
       window.nextPage = function () {
-        statusSearching()
+        // statusSearching()
         document.getElementById('controls_b').style.display = 'none'
         document.getElementById('controls').style.display = 'none'
         window.ipfssearch.nextPage()
@@ -411,10 +428,14 @@
     </script>
   </head>
   <body>
-    <div width="100%" class="container">
+
+{% if searchMode == 'classic' %}
+
+    <div width="100%" class="container" id="searchcontrols">
       <div style="float: left; width='40%'">
         <form onsubmit="event.preventDefault(); window.runSearch();">
-          <input type="text" class="waitinput" name="query" id="searchquery" width="300"/>
+          <input type="text" class="waitinput" name="query" id="searchquery"
+            width="400"/>
           <select name="contenttype" id="contenttype">
             <option value="all">All</option>
             <option value="images">Images</option>
@@ -426,6 +447,13 @@
         </form>
       </div>
     </div>
+
+{% elif searchMode == 'nocontrols' %}
+<form onsubmit="event.preventDefault()">
+<input type="text" class="waitinput" name="query"
+    id="searchquery" width="400" disabled/>
+</form>
+{% endif %}
 
     <br style="clear: left;"/>
 

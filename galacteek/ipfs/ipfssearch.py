@@ -1,8 +1,10 @@
 
 from galacteek import log
+from galacteek.core.asynclib import clientSessionWithProxy
 
 import aiohttp
 import async_timeout
+
 
 ipfsSearchApiHost = 'api.ipfs-search.com'
 
@@ -35,7 +37,8 @@ class IPFSSearchResults:
 emptyResults = IPFSSearchResults(0, {})
 
 
-async def searchPage(query, page, filters={}, sslverify=True):
+async def searchPage(query, page, filters={}, sslverify=True,
+                     proxyUrl=None):
     params = {
         'q': query,
         'page': page
@@ -45,7 +48,7 @@ async def searchPage(query, page, filters={}, sslverify=True):
         params['q'] += ' {fkey}:{fvalue}'.format(
             fkey=fkey, fvalue=fvalue)
 
-    async with aiohttp.ClientSession() as session:
+    async with clientSessionWithProxy(proxyUrl) as session:
         async with session.get('https://{host}/v1/search'.format(
                 host=ipfsSearchApiHost),
                 params=params,
@@ -54,10 +57,12 @@ async def searchPage(query, page, filters={}, sslverify=True):
 
 
 async def getPageResults(query, page, filters={}, sslverify=True,
+                         proxyUrl=None,
                          timeout=12):
     try:
         with async_timeout.timeout(timeout):
             results = await searchPage(query, page, filters=filters,
+                                       proxyUrl=proxyUrl,
                                        sslverify=sslverify)
             return IPFSSearchResults(page, results)
     except Exception as err:

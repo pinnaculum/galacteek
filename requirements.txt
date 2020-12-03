@@ -1,6 +1,7 @@
 aiodns>=2.0.0
 aiofiles>=0.4.0
 aiohttp>=3.4.4,<3.7.0
+aiohttp-socks>=0.5.5
 aioipfs>=0.5.2
 aiojobs>=0.2.2
 aiopubsub>=2.1.5
@@ -55,4 +56,5 @@ random-username>=1.0.2
 rule-engine>=2.1.0
 strict-rfc3339>=0.7
 tortoise-orm==0.16.13
+validators>=0.18.1
 yarl==1.5.1

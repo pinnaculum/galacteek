@@ -19,6 +19,8 @@ from PyQt5.QtCore import QObject
 from PyQt5.QtCore import QEvent
 from PyQt5.QtCore import QSize
 
+from PyQt5.QtGui import QKeySequence
+
 from galacteek.ui.peers import PeersManager
 from galacteek import partialEnsure
 from galacteek import ensure
@@ -96,6 +98,7 @@ class MainTabWidget(QTabWidget):
         self.setUsesScrollButtons(True)
         self.setObjectName('wsTabWidget')
         self.setAcceptDrops(True)
+        self.setContentsMargins(0, 0, 0, 0)
 
         tabKeyFilter = TabWidgetKeyFilter(self)
         tabKeyFilter.nextPressed.connect(self.cycleTabs)
@@ -634,8 +637,9 @@ class WorkspaceSearch(TabbedWorkspace):
     def setupWorkspace(self):
         super().setupWorkspace()
 
-        self.wsAddCustomAction('search', self.wsIcon, iIpfsSearch(),
-                               self.onAddSearchTab, default=True)
+        action = self.wsAddCustomAction('search', self.wsIcon, iIpfsSearch(),
+                                        self.onAddSearchTab, default=True)
+        action.setShortcut(QKeySequence('Ctrl+s'))
 
     def onAddSearchTab(self):
         tab = ipfssearch.IPFSSearchTab(self.app.mainWindow)

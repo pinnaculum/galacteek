@@ -39,7 +39,7 @@ from galacteek.dweb.enswhois import ensContentHash
 from galacteek.core.asynccache import cachedcoromethod
 
 
-# Core schemes
+# Core schemes (the URL schemes your children will soon teach you how to use)
 SCHEME_DWEB = 'dweb'
 SCHEME_DWEBGW = 'dwebgw'
 SCHEME_FS = 'fs'
@@ -51,12 +51,20 @@ SCHEME_ENS = 'ens'
 SCHEME_ENSR = 'ensr'
 SCHEME_E = 'e'
 
+# Obsolete schemes :)
+SCHEME_HTTP = 'http'
+SCHEME_HTTPS = 'https'
+SCHEME_FTP = 'ftp'
+
 # Misc schemes
 SCHEME_Z = 'z'
 SCHEME_Q = 'q'
-SCHEME_GALACTEEK = 'glk'
+SCHEME_GALACTEEK = 'g'
+SCHEME_DISTRIBUTED = 'd'
 SCHEME_PALACE = 'palace'
 SCHEME_MANUAL = 'manual'
+
+SCHEME_CHROMIUM = 'chromium'
 
 
 # Default flags used by declareUrlScheme()
@@ -82,6 +90,15 @@ def isSchemeRegistered(scheme):
     for section, schemes in urlSchemes.items():
         if scheme in schemes:
             return True
+
+
+def isUrlSupported(url):
+    return isSchemeRegistered(url.scheme()) or url.scheme() in [
+        SCHEME_HTTP,
+        SCHEME_HTTPS,
+        SCHEME_FTP,
+        SCHEME_CHROMIUM
+    ]
 
 
 def declareUrlScheme(name,
@@ -115,6 +132,11 @@ def registerMiscSchemes():
                      syntax=QWebEngineUrlScheme.Syntax.Path,
                      flags=QWebEngineUrlScheme.LocalScheme,
                      schemeSection='misc'
+                     )
+    declareUrlScheme(SCHEME_GALACTEEK,
+                     syntax=QWebEngineUrlScheme.Syntax.Path,
+                     flags=QWebEngineUrlScheme.LocalScheme,
+                     schemeSection='core'
                      )
     declareUrlScheme(SCHEME_Q,
                      syntax=QWebEngineUrlScheme.Syntax.Host,
@@ -189,6 +211,11 @@ def isEnsUrl(url):
         return url.scheme() in [SCHEME_ENS, SCHEME_ENSR]
 
 
+def isHttpUrl(url):
+    if url.isValid():
+        return url.scheme() in [SCHEME_HTTP, SCHEME_HTTPS]
+
+
 class BaseURLSchemeHandler(QWebEngineUrlSchemeHandler):
     webProfileNeeded = None
 
@@ -224,6 +251,15 @@ class BaseURLSchemeHandler(QWebEngineUrlSchemeHandler):
         }
 
         return uid
+
+    async def handleRequest(self, request, uid):
+        return self.urlInvalid(request)
+
+    def requestStarted(self, request):
+        uid = str(uuid.uuid4())
+        self.requests[uid] = request
+        request.destroyed.connect(lambda: self.onRequestDestroyed(uid))
+        ensure(self.handleRequest(self.requests[uid]))
 
 
 class IPFSObjectProxyScheme:

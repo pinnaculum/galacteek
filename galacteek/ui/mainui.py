@@ -85,6 +85,7 @@ from .widgets import HashmarksSearcher
 from .widgets import AnimatedLabel
 from .widgets import URLDragAndDropProcessor
 from .widgets import SpacingHWidget
+from .widgets import TorControllerButton
 from .dialogs import *
 from ..appsettings import *
 from .i18n import *
@@ -526,6 +527,7 @@ class CentralStack(QStackedWidget):
         self.currentChanged.connect(
             partialEnsure(self.onWorkspaceChanged))
         self.toolBarWs = wsToolBar
+        self.setContentsMargins(0, 0, 0, 0)
 
         self.__wsDormant = []
 
@@ -1020,6 +1022,7 @@ class MainWindow(QMainWindow):
         self.wspaceEdit = WorkspaceEdition(self.stack)
         self.wspaceMisc = WorkspaceMisc(self.stack)
 
+        # Planet workspaces
         self.wspaceEarth = PlanetWorkspace(self.stack, 'Earth')
         self.wspaceMars = PlanetWorkspace(self.stack, 'Mars')
         self.wspaceJupiter = PlanetWorkspace(self.stack, 'Jupiter')
@@ -1048,6 +1051,10 @@ class MainWindow(QMainWindow):
         self.ipfsStatusCube.hovered.connect(self.onIpfsInfosHovered)
         self.ipfsStatusCube.startClip()
 
+        self.torControlButton = TorControllerButton(self.app.tor)
+        self.torControlButton.setIcon(getIcon('tor.png'))
+        self.torControlButton.setToolTip('Tor not connected yet')
+
         self.statusbar = self.statusBar()
         self.userLogsButton = QToolButton(self)
         self.userLogsButton.setToolTip('Logs')
@@ -1069,6 +1076,7 @@ class MainWindow(QMainWindow):
         self.statusbar.insertWidget(0, self.lastLogLabel, 1)
 
         self.statusbar.addPermanentWidget(self.ipfsStatusCube)
+        self.statusbar.addPermanentWidget(self.torControlButton)
 
         self.ethereumStatusBtn = EthereumStatusButton(parent=self)
         self.statusbar.addPermanentWidget(self.ethereumStatusBtn)
@@ -1152,9 +1160,10 @@ class MainWindow(QMainWindow):
 
     def setupWorkspaces(self):
         self.stack.addWorkspace(self.wspaceStatus)
-        self.stack.addWorkspace(self.wspaceFs)
+        # self.stack.addWorkspace(self.wspaceFs)
         self.stack.addWorkspace(
             self.wspaceEarth, section='planets')
+        self.stack.addWorkspace(self.wspaceFs)
         self.stack.addWorkspace(
             self.wspaceMars, section='planets', dormant=True)
         self.stack.addWorkspace(
@@ -1298,12 +1307,12 @@ class MainWindow(QMainWindow):
         with self.stack.workspaceCtx(WS_PEERS, show=False) as ws:
             await ws.chatJoinDefault()
 
-        with self.stack.workspaceCtx('@Earth', show=False) as ws:
-            await ws.loadDapps()
-
-        with self.stack.workspaceCtx(WS_FILES, show=True) as ws:
+        with self.stack.workspaceCtx(WS_FILES, show=False) as ws:
             await ws.importWelcome()
             await ws.seedsSetup()
+
+        with self.stack.workspaceCtx('@Earth', show=True) as ws:
+            await ws.loadDapps()
 
         self.enableButtons()
 
@@ -1439,7 +1448,7 @@ class MainWindow(QMainWindow):
             wspace.wsSwitch()
 
     def findTabFileManager(self):
-        with self.stack.workspaceCtx(WS_FILES) as ws:
+        with self.stack.workspaceCtx(WS_FILES, show=False) as ws:
             return ws.wsFindTabWithId('filemanager')
 
     def findTabIndex(self, w):
@@ -1614,11 +1623,7 @@ class MainWindow(QMainWindow):
         self.registerTab(tab, label, icon=icon, current=current,
                          workspace=workspace)
 
-        if self.app.settingsMgr.isTrue(CFG_SECTION_BROWSER, CFG_KEY_GOTOHOME):
-            tab.loadHomePage()
-        else:
-            tab.focusUrlZone()
-
+        tab.focusUrlZone()
         return tab
 
     def addEventLogTab(self, current=False):

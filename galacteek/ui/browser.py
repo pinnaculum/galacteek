@@ -2,7 +2,9 @@ import functools
 import os.path
 import re
 import aioipfs
+import validators
 from yarl import URL
+from urllib.parse import quote
 
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QAction
@@ -18,10 +20,13 @@ from PyQt5.QtWidgets import QTextEdit
 from PyQt5.QtPrintSupport import *
 
 from PyQt5.QtCore import QUrl
+from PyQt5.QtCore import QUrlQuery
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QPoint
+from PyQt5.QtCore import QSize
 
 from PyQt5 import QtWebEngineWidgets
 
@@ -52,11 +57,13 @@ from galacteek.ipfs.cidhelpers import cidValid
 from galacteek.core.asynclib import asyncify
 
 from galacteek.core.schemes import isSchemeRegistered
-from galacteek.core.schemes import isEnsUrl
 from galacteek.core.schemes import SCHEME_ENS
 from galacteek.core.schemes import SCHEME_IPFS
 from galacteek.core.schemes import SCHEME_IPNS
 from galacteek.core.schemes import SCHEME_DWEB
+from galacteek.core.schemes import SCHEME_HTTP
+from galacteek.core.schemes import SCHEME_HTTPS
+from galacteek.core.schemes import SCHEME_FTP
 from galacteek.core.schemes import SCHEME_Z
 from galacteek.core.schemes import DAGProxySchemeHandler
 from galacteek.core.schemes import MultiDAGProxySchemeHandler
@@ -65,6 +72,7 @@ from galacteek.core.schemes import IPFSObjectProxyScheme
 from galacteek.core.webprofiles import WP_NAME_IPFS
 from galacteek.core.webprofiles import WP_NAME_MINIMAL
 from galacteek.core.webprofiles import WP_NAME_WEB3
+from galacteek.core.webprofiles import WP_NAME_ANON
 from galacteek.core.webprofiles import webProfilesPrio
 
 from galacteek.dweb.webscripts import scriptFromString
@@ -80,6 +88,7 @@ from .helpers import *
 from .dialogs import *
 from .hashmarks import *
 from .i18n import *
+from .colors import *
 from .clipboard import iCopyPathToClipboard
 from .clipboard import iCopyPubGwUrlToClipboard
 from .clipboard import iClipboardEmpty
@@ -325,12 +334,20 @@ class CurrentPageHandler(BaseHandler):
         return self.rootCid
 
 
-class CustomWebPage (QtWebEngineWidgets.QWebEnginePage):
+class DefaultBrowserWebPage (QtWebEngineWidgets.QWebEnginePage):
     jsConsoleMessage = pyqtSignal(int, str, int, str)
 
     def __init__(self, webProfile, parent):
-        super(CustomWebPage, self).__init__(webProfile, parent)
+        super(DefaultBrowserWebPage, self).__init__(webProfile, parent)
+        self.app = QCoreApplication.instance()
         self.fullScreenRequested.connect(self.onFullScreenRequest)
+        self.setBackgroundColor(desertStrike1)
+
+    def certificateError(self, error):
+        return not questionBox(
+            error.url.toString(),
+            f'Certificate error: {error.errorDescription()}.'
+            'Continue ?')
 
     def onFullScreenRequest(self, req):
         # Accept fullscreen requests unconditionally
@@ -423,6 +440,8 @@ class WebView(IPFSWebView):
         self.linkInfoTimer.timeout.connect(self.onLinkInfoTimeout)
 
         self.webPage = None
+        self.altSearchPage = None
+
         self.changeWebProfile(webProfile)
 
         actionVSource = self.pageAction(QWebEnginePage.ViewSource)
@@ -439,6 +458,8 @@ class WebView(IPFSWebView):
             QWebEngineSettings.LocalContentCanAccessFileUrls, True)
         self.webSettings.setAttribute(
             QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
+        self.webSettings.setAttribute(
+            QWebEngineSettings.FocusOnNavigationEnabled, True)
 
     def createWindow(self, wintype):
         log.debug('createWindow called, wintype: {}'.format(wintype))
@@ -695,7 +716,7 @@ class WebView(IPFSWebView):
             menu = QMenu(self)
             scheme = url.scheme()
 
-            if scheme in ['http', 'https'] and \
+            if scheme in [SCHEME_HTTP, SCHEME_HTTPS] and \
                     self.app.settingsMgr.allowHttpBrowsing:
                 menu.addAction(
                     iOpenHttpInTab(),
@@ -746,18 +767,34 @@ class WebView(IPFSWebView):
         url = menudata.linkUrl()
         self.page().download(url, None)
 
-    def installPage(self):
+    def installDefaultPage(self):
         if self.webPage:
             del self.webPage
 
-        self.webPage = CustomWebPage(self.webProfile, self)
+        self.webPage = DefaultBrowserWebPage(self.webProfile, self)
         self.webPage.jsConsoleMessage.connect(self.onJsMessage)
         self.webPage.linkHovered.connect(self.onLinkHovered)
         self.setPage(self.webPage)
 
+    async def setSearchPage(self):
+        if not self.altSearchPage:
+            self.altSearchPage = \
+                self.app.mainWindow.ipfsSearchPageFactory.getPage(
+                    searchMode='nocontrols')
+            await self.altSearchPage.eventRendered.wait()
+
+        self.setPage(self.altSearchPage)
+        return self.altSearchPage
+
+    def setBrowserPage(self):
+        if not self.webPage:
+            self.installDefaultPage()
+        else:
+            self.setPage(self.webPage)
+
     def changeWebProfile(self, profile):
         self.webProfile = profile
-        self.installPage()
+        self.installDefaultPage()
 
 
 class BrowserKeyFilter(QObject):
@@ -828,7 +865,7 @@ class URLInputWidget(QLineEdit):
         self.editTimer.timeout.connect(self.onTimeoutUrlEdit)
         self.editTimer.setSingleShot(True)
 
-        self.returnPressed.connect(self.onReturnPressed)
+        self.returnPressed.connect(partialEnsure(self.onReturnPressed))
         self.historyMatches.historyItemSelected.connect(
             self.onHistoryItemSelected)
         self.historyMatches.collapsed.connect(
@@ -837,8 +874,21 @@ class URLInputWidget(QLineEdit):
 
     @property
     def editTimeoutMs(self):
+        return 400
         timeout = self.app.settingsMgr.urlHistoryEditTimeout
-        return timeout if isinstance(timeout, int) else 1000
+        return timeout if isinstance(timeout, int) else 200
+
+    def keyPressEvent(self, ev):
+        if ev.key() == Qt.Key_Up:
+            self.historyMatches.activateWindow()
+            self.historyMatches.setFocus(Qt.OtherFocusReason)
+        elif ev.key() == Qt.Key_Down:
+            self.historyMatches.activateWindow()
+            self.historyMatches.setFocus(Qt.OtherFocusReason)
+        elif ev.key() == Qt.Key_Escape:
+            self.hideMatches()
+        else:
+            super().keyPressEvent(ev)
 
     def unfocus(self):
         self.urlEditing = False
@@ -850,10 +900,10 @@ class URLInputWidget(QLineEdit):
     def hideMatches(self):
         self.historyMatches.hide()
 
-    def onReturnPressed(self):
+    async def onReturnPressed(self):
         self.urlEditing = False
         self.unfocus()
-        self.browser.handleEditedUrl(self.text())
+        await self.browser.handleEditedUrl(self.text())
 
     def onHistoryCollapse(self):
         self.setFocus(Qt.PopupFocusReason)
@@ -884,6 +934,9 @@ class URLInputWidget(QLineEdit):
         if not self.urlEditing:
             return
 
+        self.startEditTimer()
+
+    def startEditTimer(self):
         if not self.editTimer.isActive():
             self.editTimer.start(self.editTimeoutMs)
         else:
@@ -892,6 +945,18 @@ class URLInputWidget(QLineEdit):
 
     def onTimeoutUrlEdit(self):
         ensure(self.historyLookup())
+
+    def historyMatchesPopup(self):
+        lEditPos = self.mapToGlobal(QPoint(0, 0))
+        lEditPos.setY(lEditPos.y() + self.height())
+        self.historyMatches.move(lEditPos)
+        self.historyMatches.resize(QSize(
+            self.app.desktopGeometry.width() - self.pos().x() - 64,
+            self.height() * 8
+        ))
+        self.historyMatches.show()
+        # Refocus
+        # self.setFocus(Qt.PopupFocusReason)
 
     async def historyLookup(self):
         if self.urlInput:
@@ -905,10 +970,13 @@ class URLInputWidget(QLineEdit):
 
             if len(markMatches) > 0 or len(hMatches) > 0:
                 await self.historyMatches.showMatches(markMatches, hMatches)
-                self.historyMatches.show()
-                self.historyMatches.setFocus(Qt.OtherFocusReason)
+                self.historyMatchesPopup()
+            else:
+                self.hideMatches()
 
             self.editTimer.stop()
+        else:
+            self.hideMatches()
 
     def onHistoryItemSelected(self, urlStr):
         self.historyMatches.hide()
@@ -1106,7 +1174,6 @@ class BrowserTab(GalacteekTab):
         self.historySearches.setMinimumHeight(160)
         self.historySearches.hide()
         self.urlZone = URLInputWidget(self.history, self.historySearches, self)
-        self.ui.layoutHistory.addWidget(self.historySearches)
         self.ui.layoutUrl.addWidget(self.urlZone)
 
         # Search
@@ -1190,6 +1257,8 @@ class BrowserTab(GalacteekTab):
         self.webProfilesGroup.setExclusive(True)
         self.webProfilesGroup.triggered.connect(self.onWebProfileSelected)
 
+        self.webProAnonAction = QAction(WP_NAME_ANON, self)
+        self.webProAnonAction.setCheckable(True)
         self.webProMinAction = QAction(WP_NAME_MINIMAL, self)
         self.webProMinAction.setCheckable(True)
         self.webProIpfsAction = QAction(WP_NAME_IPFS, self)
@@ -1197,6 +1266,7 @@ class BrowserTab(GalacteekTab):
         self.webProWeb3Action = QAction(WP_NAME_WEB3, self)
         self.webProWeb3Action.setCheckable(True)
 
+        self.webProfilesGroup.addAction(self.webProAnonAction)
         self.webProfilesGroup.addAction(self.webProMinAction)
         self.webProfilesGroup.addAction(self.webProIpfsAction)
         self.webProfilesGroup.addAction(self.webProWeb3Action)
@@ -1324,6 +1394,10 @@ class BrowserTab(GalacteekTab):
         self._currentUrl = None
         self.currentPageTitle = None
 
+        # Bind tab signals
+        # self.sVisibilityChanged.connectTo(self.onTabVisibility)
+        self.tabVisibilityChanged.connect(self.onTabVisibility)
+
     @property
     def history(self):
         return self.gWindow.app.urlHistory
@@ -1368,6 +1442,14 @@ class BrowserTab(GalacteekTab):
     @property
     def currentIpfsObject(self):
         return self._currentIpfsObject
+
+    def onTabVisibility(self, visible):
+        if not visible:
+            self.urlZone.hideMatches()
+
+    def focusOutEvent(self, event):
+        self.urlZone.hideMatches()
+        super().focusOutEvent(event)
 
     def fromGateway(self, authority):
         return authority.endswith(self.gatewayAuthority) or \
@@ -1515,6 +1597,8 @@ class BrowserTab(GalacteekTab):
     def checkWebProfileByName(self, wpName):
         if wpName == WP_NAME_MINIMAL:
             self.webProMinAction.setChecked(True)
+        if wpName == WP_NAME_ANON:
+            self.webProAnonAction.setChecked(True)
         elif wpName == WP_NAME_IPFS:
             self.webProIpfsAction.setChecked(True)
         elif wpName == WP_NAME_WEB3:
@@ -1538,6 +1622,10 @@ class BrowserTab(GalacteekTab):
         elif action is self.webProIpfsAction:
             self.webEngineView.changeWebProfile(
                 self.getWebProfileByName(WP_NAME_IPFS)
+            )
+        elif action is self.webProAnonAction:
+            self.webEngineView.changeWebProfile(
+                self.getWebProfileByName(WP_NAME_ANON)
             )
         elif action is self.webProWeb3Action:
             self.webEngineView.changeWebProfile(
@@ -1693,17 +1781,19 @@ class BrowserTab(GalacteekTab):
         page.save(path, QWebEngineDownloadItem.CompleteHtmlSaveFormat)
 
     def onHashmarkPage(self):
-        if self.currentUrl and isEnsUrl(self.currentUrl):
-            ensure(addHashmarkAsync(
-                self.currentUrl.toString(),
-                title=self.currentPageTitle
-            ))
-        elif self.currentIpfsObject and self.currentIpfsObject.valid:
+        # if self.currentUrl and isEnsUrl(self.currentUrl):
+
+        if self.currentIpfsObject and self.currentIpfsObject.valid:
             scheme = self.currentUrl.scheme()
             ensure(addHashmarkAsync(
                 self.currentIpfsObject.fullPath,
                 title=self.currentPageTitle,
                 schemePreferred=scheme
+            ))
+        elif self.currentUrl:
+            ensure(addHashmarkAsync(
+                self.currentUrl.toString(),
+                title=self.currentPageTitle
             ))
         else:
             messageBox(iNotAnIpfsResource())
@@ -1892,6 +1982,11 @@ class BrowserTab(GalacteekTab):
         currentPage = self.webEngineView.page()
         currentPage.history().forward()
 
+    def urlZoneInsert(self, text):
+        self.urlZone.clear()
+        self.urlZone.insert(text)
+        self.urlZone.setCursorPosition(0)
+
     @asyncify
     async def onUrlChanged(self, url):
         if not url.isValid() or url.scheme() in ['data', SCHEME_Z]:
@@ -1901,6 +1996,7 @@ class BrowserTab(GalacteekTab):
             url.scheme().encode())
 
         urlAuthority = url.authority()
+        self.ui.hashmarkThisPage.setEnabled(True)
 
         if url.scheme() in [SCHEME_IPFS, SCHEME_IPNS, SCHEME_DWEB]:
             self.urlZone.setStyleSheet('''
@@ -1908,12 +2004,14 @@ class BrowserTab(GalacteekTab):
                     background-color: #C3D7DF;
                 }''')
 
-            self.urlZone.clear()
-            self.urlZone.insert(url.toString())
+            # self.urlZone.clear()
+            # self.urlZone.insert(url.toString())
+            self.urlZoneInsert(url.toString())
+
             self._currentIpfsObject = IPFSPath(url.toString())
             self._currentUrl = url
             self.ipfsObjectVisited.emit(self.currentIpfsObject)
-            self.ui.hashmarkThisPage.setEnabled(True)
+            # self.ui.hashmarkThisPage.setEnabled(True)
             self.ui.pinToolButton.setEnabled(True)
 
             self.followIpnsAction.setEnabled(
@@ -1936,10 +2034,8 @@ class BrowserTab(GalacteekTab):
                 if url.hasQuery():
                     nurl.setQuery(url.query())
 
-                self.urlZone.clear()
-                self.urlZone.insert(nurl.toString())
+                self.urlZoneInsert(nurl.toString())
 
-                self.ui.hashmarkThisPage.setEnabled(True)
                 self.ui.pinToolButton.setEnabled(True)
 
                 self.ipfsObjectVisited.emit(self.currentIpfsObject)
@@ -1960,15 +2056,14 @@ class BrowserTab(GalacteekTab):
                 if proxiedPath and proxiedPath.valid:
                     self._currentIpfsObject = proxiedPath
                     self.ipfsObjectVisited.emit(self.currentIpfsObject)
-                    self.ui.hashmarkThisPage.setEnabled(True)
+                    # self.ui.hashmarkThisPage.setEnabled(True)
                     self.curObjectCtrl.show()
             else:
                 # Non-IPFS browsing
                 self._currentIpfsObject = None
                 self.curObjectCtrl.hide()
 
-            self.urlZone.clear()
-            self.urlZone.insert(url.toString())
+            self.urlZoneInsert(url.toString())
             self._currentUrl = url
             self.followIpnsAction.setEnabled(False)
 
@@ -1978,6 +2073,8 @@ class BrowserTab(GalacteekTab):
             history = currentPage.history()
             self.ui.backButton.setEnabled(history.canGoBack())
             self.ui.forwardButton.setEnabled(history.canGoForward())
+
+        self.webEngineView.setFocus(Qt.OtherFocusReason)
 
     def onTitleChanged(self, pageTitle):
         if pageTitle.startswith(self.gatewayAuthority):
@@ -1993,20 +2090,26 @@ class BrowserTab(GalacteekTab):
         self.gWindow.tabWidget.setTabText(idx, pageTitle)
         self.gWindow.tabWidget.setTabToolTip(idx, self.currentPageTitle)
 
-        if self.currentPageTitle != iNoTitle() and self.currentUrl and \
-                self.currentUrl.isValid():
-            if isSchemeRegistered(self.currentUrl.scheme()):
-                self.history.record(self.currentUrl.toString(),
-                                    self.currentPageTitle)
+    def currentUrlHistoryRecord(self):
+        if not self.currentPageTitle:
+            return
+
+        if self.currentPageTitle == iNoTitle() or \
+                self.currentPageTitle.startswith('about:'):
+            return
+
+        if self.currentUrl and self.currentUrl.isValid():
+            self.history.record(self.currentUrl.toString(),
+                                self.currentPageTitle)
 
     def onLoadFinished(self, ok):
         self.ui.stopButton.setEnabled(False)
+        self.currentUrlHistoryRecord()
 
         if 0:
             text, curUrl = self.urlZone.text(), self.currentUrl.toString()
             if text != curUrl:
-                self.urlZone.clear()
-                self.urlZone.insert(curUrl)
+                self.urlZoneInsert(curUrl)
 
     def onIconChanged(self, icon):
         self.gWindow.tabWidget.setTabIcon(self.tabPageIdx, icon)
@@ -2095,14 +2198,40 @@ class BrowserTab(GalacteekTab):
                         wpName in self.app.webProfiles:
                     self.changeWebProfileByName(wpName)
 
-        self.urlZone.clear()
-        self.urlZone.insert(url.toString())
+        self.urlZoneInsert(url.toString())
         self.webEngineView.load(url)
+        self.webEngineView.setFocus(Qt.OtherFocusReason)
 
-    def handleEditedUrl(self, inputStr):
+    async def runIpfsSearch(self, queryStr):
+        page = await self.webEngineView.setSearchPage()
+        page.handler.cancelSearchTasks()
+        page.handler.formReset()
+        page.handler.search(queryStr, 'all')
+
+    async def handleEditedUrl(self, inputStr):
         self.urlZone.hideMatches()
         self.urlZone.cancelTimer()
         self.urlZone.unfocus()
+        self.webEngineView.setBrowserPage()
+
+        engineMatch = re.search(r'^(d|s|c|i|ip)\s(.*)$', inputStr)
+        if engineMatch:
+            sUrl = None
+            engine = engineMatch.group(1)
+            search = engineMatch.group(2)
+
+            if engine == 'd':
+                sUrl = QUrl('https://duckduckgo.com')
+                uq = QUrlQuery()
+                uq.addQueryItem('q', quote(search))
+                sUrl.setQuery(uq)
+
+            if engine in ['i', 'ip', 's']:
+                return await self.runIpfsSearch(search)
+
+            if sUrl:
+                log.debug(f'Searching with {sUrl.toString()}')
+                return self.enterUrl(sUrl)
 
         #
         # Handle seamless upgrade of CIDv0, suggested by @lidel
@@ -2135,7 +2264,8 @@ class BrowserTab(GalacteekTab):
                         return messageBox(iInvalidCID(rootcid))
 
         url = QUrl(inputStr)
-        if not url.isValid() or not url.scheme():
+        # if not url.isValid() or not url.scheme():
+        if not url.isValid() and 0:
             # Invalid URL or no scheme given
             # If the address bar contains a valid CID or IPFS path, load it
             iPath = IPFSPath(inputStr, autoCidConv=True)
@@ -2149,12 +2279,27 @@ class BrowserTab(GalacteekTab):
 
         if isSchemeRegistered(scheme):
             self.enterUrl(url)
-        elif scheme in ['http', 'https'] and \
+        elif scheme in [SCHEME_HTTP, SCHEME_HTTPS, SCHEME_FTP] and \
                 self.app.settingsMgr.allowHttpBrowsing is True:
             # Browse http urls if allowed
             self.enterUrl(url)
         else:
-            messageBox('Unknown URL type')
+            iPath = IPFSPath(inputStr, autoCidConv=True)
+
+            if iPath.valid:
+                return self.browseFsPath(iPath)
+
+            if not validators.domain(inputStr):
+                # Search
+                await self.runIpfsSearch(inputStr)
+                return
+
+            tld = '.'.join(inputStr.split('.')[-1:])
+
+            if tld == 'eth':
+                self.enterUrl(QUrl(f'{SCHEME_ENS}://{inputStr}'))
+            else:
+                self.enterUrl(QUrl(f'http://{inputStr}'))
 
     def onEnsResolved(self, domain, path):
         logUser.info('ENS: {0} maps to {1}'.format(domain, path))

@@ -8,6 +8,30 @@ the changes in the CHANGELOG formatting.
 
 ## [Unreleased]
 
+## [0.4.41] - 2020-12-02
+### Added
+- Tor support
+  - Automatic use of Tor when bootstrapping succeeds
+  - Tor proxying for all ipfs-search and cyber requests
+
+- Add a new *anonymous* web profile
+- Automatically fetch favicons when hashmarking an http(s) website
+- Handle SSL certificate errors
+
+### Changed
+- Bookmarking of any type of URLs
+- Browser UI
+  - Use a block-style cursor for the address bar
+  - Typing an .eth domain name automatically loads it through *ens://*
+  - Run IPFS searches or searches with popular engines (duckduckgo, ..)
+    from the address bar
+  - Nicer history lookup interface
+
+- The @Earth workspace is now the default workspace in the stack
+
+### Fixed
+- Bookmarking of clearnet URLs
+
 ## [0.4.40] - 2020-11-29
 ### Added
 - Lightweight BT client integration (asyncio-based)

@@ -202,7 +202,7 @@ def hideConsoleWindow():
 def start():
     global appStarter
 
-    if platform.system() == 'Windows' and inPyInstaller():
+    if platform.system() == 'Windows' and inPyInstaller() and 0:
         # Hide the console window when running with pyinstaller
         hideConsoleWindow()
 

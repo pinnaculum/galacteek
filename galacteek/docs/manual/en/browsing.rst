@@ -7,12 +7,23 @@ URL bar
 
 In the address bar you can type (or paste) a full URL, an
 IPFS :term:`CID` or a full :term:`IPFS path` (they will be
-loaded with the appropriate scheme).
+loaded with the appropriate scheme). If you type
+an ENS domain name or a regular domain name it will be
+loaded automatically with the right scheme.
 
 You can also type words that you want to search for in the hashmarks
-database and the visited URLs history (search results will
-pop up after a short amount of time). Hitting the *Escape* key
+database and the visited URLs history. Search results will
+pop up after a short amount of time. Hitting the *Escape* key
 will hide the results.
+
+You can also use specific syntax to search with certain
+search engines:
+
+- Use the **d** command to search with the
+  [DuckDuckGo](https://duckduckgo.com/) web search engine.
+  Example: **d distributed web**
+- Use the **i** or **ip** command to run a search on the IPFS
+  network. Example: **i distributed web**
 
 CID status icon
 ^^^^^^^^^^^^^^^
@@ -167,6 +178,16 @@ submenu.
 You can change the default web profile that will be used when opening
 a browser tab by changing the *Default web profile* setting in the *UI*
 section of the application settings.
+
+Anomymus profile
+^^^^^^^^^^^^^^^^
+
+Anonymous profile:
+
+- Javascript is disabled
+- Caching is disabled
+- No persistent cookies
+- XSS auditing
 
 Minimal profile
 ^^^^^^^^^^^^^^^

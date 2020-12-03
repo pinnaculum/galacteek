@@ -2,10 +2,10 @@ import os
 import os.path
 import re
 import sys
-import codecs
 import subprocess
 import glob
 import shutil
+import codecs
 import json
 
 from setuptools import setup
@@ -20,6 +20,7 @@ else:
     print('You need python3.6 or newer')
     print('Your python version is {0}'.format(PY_VER))
     raise RuntimeError('Invalid python version')
+
 
 with codecs.open(os.path.join(os.path.abspath(os.path.dirname(
         __file__)), 'galacteek', '__version__.py'), 'r', 'latin1') as fp:
