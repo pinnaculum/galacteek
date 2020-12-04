@@ -19,14 +19,9 @@ Installation
 Stable release
 --------------
 
-* **AppImage (Linux)**: `Galacteek-0.4.40-x86_64.AppImage <https://github.com/pinnaculum/galacteek/releases/download/v0.4.40/Galacteek-0.4.40-x86_64.AppImage>`_
-* **DMG (MacOS)**: `Galacteek-0.4.40-x86_64.dmg <https://github.com/pinnaculum/galacteek/releases/download/v0.4.40/Galacteek-0.4.40-x86_64.dmg>`_
-* **Windows**: `Galacteek-0.4.40-installer-x86_64.exe <https://github.com/pinnaculum/galacteek/releases/download/v0.4.40/Galacteek-0.4.40-installer-x86_64.exe>`_
-
-Beta
-----
-
-* Check out the `latest beta images <https://github.com/pinnaculum/galacteek/releases/tag/pimp-my-dweb-9/>`_
+* **AppImage (Linux)**: `Galacteek-0.4.41-x86_64.AppImage <https://github.com/pinnaculum/galacteek/releases/download/v0.4.41/Galacteek-0.4.41-x86_64.AppImage>`_
+* **DMG (MacOS)**: `Galacteek-0.4.41-x86_64.dmg <https://github.com/pinnaculum/galacteek/releases/download/v0.4.41/Galacteek-0.4.41-x86_64.dmg>`_
+* **Windows**: `Galacteek-0.4.41-installer-x86_64.exe <https://github.com/pinnaculum/galacteek/releases/download/v0.4.41/Galacteek-0.4.41-installer-x86_64.exe>`_
 
 *On Linux*: Be sure to install all the **gstreamer** packages on your
 system to be able to use the mediaplayer. Problem with the AppImage ?
