@@ -1707,6 +1707,12 @@ class TorControllerButton(QToolButton):
 
         self.toggled.connect(self.onToggled)
 
+    def sysTrayMessage(self, msg):
+        self.app.systemTrayMessage(
+            'Tor',
+            msg
+        )
+
     def useTorProxy(self, use=True):
         if use is True:
             proxy = TorNetworkProxy(self.tor.torCfg)
@@ -1716,8 +1722,7 @@ class TorControllerButton(QToolButton):
                 f'TOR is used as proxy '
                 f'(socks port: {proxy.port()})'))
 
-            self.app.systemTrayMessage(
-                'Tor',
+            self.sysTrayMessage(
                 'Tor is now used as proxy (click on the onion to disable it)'
             )
         else:
@@ -1730,6 +1735,10 @@ class TorControllerButton(QToolButton):
         self.app.allWebProfilesSetAttribute(
             QWebEngineSettings.XSSAuditingEnabled,
             use
+        )
+        self.app.allWebProfilesSetAttribute(
+            QWebEngineSettings.DnsPrefetchEnabled,
+            not use
         )
 
     def onToggled(self, checked):
@@ -1750,7 +1759,7 @@ class TorControllerButton(QToolButton):
         self.setToolTip(self.tt(f'TOR bootstrap: {pct}% complete'))
 
         if pct == 100:
-            self.useTorProxy()
-
-            self.setChecked(True)
             self.setEnabled(True)
+            self.sysTrayMessage(
+                'Tor is ready, click on the onion to enable it'
+            )

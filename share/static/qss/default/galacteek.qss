@@ -570,8 +570,6 @@ QGroupBox::title[niceBox="true"] {
 
 /* Other QToolButtons
 
-QToolButton::pressed {
-    background-color: #eec146;
+QToolButton#torControlButton::pressed {
+    background-color: #4b9fa2;
 }
-
-*/

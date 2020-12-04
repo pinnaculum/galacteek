@@ -630,9 +630,9 @@ class CentralStack(QStackedWidget):
         for widx, ws in self.workspaces():
             ws.wsAddCustomAction(*args, **kw)
 
-    def wsAddGlobalAction(self, action: QAction):
+    def wsAddGlobalAction(self, action: QAction, default=False):
         for widx, ws in self.workspaces():
-            ws.wsAddAction(action)
+            ws.wsAddAction(action, default=default)
 
     def wsActivityNotify(self, workspace):
         widx, curWorkspace = self.currentWorkspace()
@@ -1181,7 +1181,7 @@ class MainWindow(QMainWindow):
         self.stack.addWorkspace(self.wspaceMultimedia)
         self.stack.addWorkspace(self.wspaceMisc)
 
-        self.stack.wsAddGlobalAction(self.browseAction)
+        self.stack.wsAddGlobalAction(self.browseAction, default=True)
         self.stack.activateWorkspaces(False)
 
     def onSeedAppImage(self):

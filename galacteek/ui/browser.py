@@ -341,7 +341,7 @@ class DefaultBrowserWebPage (QtWebEngineWidgets.QWebEnginePage):
         super(DefaultBrowserWebPage, self).__init__(webProfile, parent)
         self.app = QCoreApplication.instance()
         self.fullScreenRequested.connect(self.onFullScreenRequest)
-        self.setBackgroundColor(desertStrike1)
+        self.setBackgroundColor(desertStrikeColor)
 
     def certificateError(self, error):
         return not questionBox(

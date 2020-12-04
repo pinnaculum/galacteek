@@ -478,6 +478,9 @@ class PlanetWorkspace(TabbedWorkspace):
     def wsToolTip(self):
         return f'Planet workspace: {self.planet}'
 
+    def onHelpBrowsing(self):
+        self.app.manuals.browseManualPage('browsing.html')
+
     async def loadDapps(self):
         if self.app.cmdArgs.enablequest and 0:
             await self.loadQuestService()
@@ -485,6 +488,12 @@ class PlanetWorkspace(TabbedWorkspace):
     async def loadQuestService(self):
         from galacteek.dweb.quest import loadQuestService
         self.qView, self.qPage = await loadQuestService()
+
+    def setupWorkspace(self):
+        super().setupWorkspace()
+        self.wsAddCustomAction(
+            'help-browsing', getIcon('help.png'),
+            iHelp(), self.onHelpBrowsing)
 
 
 class WorkspaceCore(TabbedWorkspace):

@@ -19,10 +19,9 @@ will hide the results.
 You can also use specific syntax to search with certain
 search engines:
 
-- Use the **d** command to search with the
-  [DuckDuckGo](https://duckduckgo.com/) web search engine.
+- Use the **d** prefix to search with the DuckDuckGo_ web search engine.
   Example: **d distributed web**
-- Use the **i** or **ip** command to run a search on the IPFS
+- Use the **i** or **ip** prefix to run a search on the IPFS
   network. Example: **i distributed web**
 
 CID status icon
@@ -170,7 +169,7 @@ and the result is cached.
 Web profiles
 ------------
 
-There are 3 distinct web profiles that can be used when accessing a
+There are 4 distinct web profiles that can be used when accessing a
 webpage. The current profile can be changed from a browser tab by
 opening the IPFS menu and selecting a profile from the *Web profile*
 submenu.
@@ -208,3 +207,4 @@ a *Web3* instance (from the *web3.js* JS library) available as
 *window.web3* in the main Javascript world
 
 .. _ENS: https://ens.domains/
+.. _DuckDuckGo: https://duckduckgo.com
