@@ -8,26 +8,34 @@ the changes in the CHANGELOG formatting.
 
 ## [Unreleased]
 
-## [0.4.41] - 2020-12-02
+## [0.4.41] - 2020-12-04
 ### Added
 - Tor support
-  - Automatic use of Tor when bootstrapping succeeds
-  - Tor proxying for all ipfs-search and cyber requests
+  - Tor proxying on all platforms (enabled manually from the
+    status bar for now, very soon there'll be finer control
+    of the relays via [stem](https://stem.torproject.org/))
+  - Proxying of ipfs-search and cyber requests via Tor
 
 - Add a new *anonymous* web profile
 - Automatically fetch favicons when hashmarking an http(s) website
 - Handle SSL certificate errors
 
+- New python dependencies
+  - [aiohttp-socks](https://pypi.org/project/aiohttp-socks/) >=0.5.5
+  - validators >= 0.18.1
+
 ### Changed
-- Bookmarking of any type of URLs
-- Browser UI
+- Browser tab UI
   - Use a block-style cursor for the address bar
   - Typing an .eth domain name automatically loads it through *ens://*
   - Run IPFS searches or searches with popular engines (duckduckgo, ..)
     from the address bar
-  - Nicer history lookup interface
+  - Change the history lookup interface
 
-- The @Earth workspace is now the default workspace in the stack
+- The @Earth workspace is now the first/default workspace in the WS stack
+- Workspace APIs
+  - Changed wsRegisterTab(): accept a *position* argument to insert tabs
+    at the end of the tabs list or after the current tab
 
 ### Fixed
 - Bookmarking of clearnet URLs

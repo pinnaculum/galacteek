@@ -50,6 +50,9 @@ class LogRecordStyler:
             'basecolor': 'darkred',
             'red': -0.1
         },
+        'galacteek.core.tor': {
+            'basecolor': 'darkred'
+        },
 
         # crypto modules
         'galacteek.crypto': {

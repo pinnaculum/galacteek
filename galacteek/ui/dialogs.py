@@ -180,7 +180,6 @@ class AddHashmarkDialog(QDialog):
     @ipfsOp
     async def fetchFavIcon(self, ipfsop, qurl):
         qurl.setPath('/favicon.ico')
-        print('fetching', qurl.toString())
 
         try:
             async with self.app.webClientSession() as session:
@@ -189,13 +188,12 @@ class AddHashmarkDialog(QDialog):
                 async with session.get(qurl.toString()) as resp:
                     while True:
                         b = await resp.content.read(1024)
-                        print('read', len(b))
                         if not b:
                             break
 
                         _data.extend(b)
-                        if len(_data) > 1024 * 1024:
-                            raise Exception('bb')
+                        if len(_data) > 512 * 1024:
+                            raise Exception('Too large, get lost')
 
                 icon = getIconFromImageData(_data)
                 if not icon:
@@ -206,13 +204,6 @@ class AddHashmarkDialog(QDialog):
                     self.iconSelector.injectCustomIcon(
                         icon, entry['Hash'],
                         qurl.toString())
-
-                if 0:
-                    entry = await ipfsop.addBytes(_data)
-                    icoPath = IPFSPath(entry['Hash'])
-                    print(icoPath)
-                    if not icoPath.valid:
-                        raise Exception('Invalid icon')
         except Exception as err:
             log.debug(f'Could not load favicon: {err}')
 
@@ -1416,6 +1407,7 @@ class CountDownDialog(QDialog):
 class DefaultProgressDialog(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setObjectName('statusProgressDialog')
         self.vl = QVBoxLayout(self)
         self.cube = AnimatedLabel(RotatingCubeClipSimple())
         self.pBar = QProgressBar()
@@ -1431,6 +1423,8 @@ class DefaultProgressDialog(QWidget):
             QSpacerItem(10, 50, QSizePolicy.Expanding, QSizePolicy.Expanding))
 
         self.cube.clip.setScaledSize(QSize(128, 128))
+        self.setContentsMargins(0, 0, 0, 0)
+        self.vl.setContentsMargins(0, 0, 0, 0)
 
     def spin(self):
         self.cube.startClip()
@@ -1451,6 +1445,10 @@ class DefaultProgressDialog(QWidget):
         w, h = 420, 420  # it's a coincidence
 
         painter = QPainter(self)
+        b = QBrush(desertStrikeColor, Qt.SolidPattern)
+        painter.setBrush(b)
+        painter.fillRect(self.rect(), b)
+
         painter.setBrush(QBrush(brownColor1, Qt.SolidPattern))
         painter.setPen(QPen(ipfsColor1, 2, Qt.SolidLine))
         painter.drawEllipse(center.x() - w / 2, center.y() - h / 2, w, h)

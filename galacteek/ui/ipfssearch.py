@@ -182,7 +182,7 @@ class SearchResultsPage(BaseSearchPage):
         self.handler = IPFSSearchHandler(self)
         self.channel.registerObject('ipfssearch', self.handler)
         self.setWebChannel(self.channel)
-        self.setBackgroundColor(desertStrike1)
+        self.setBackgroundColor(desertStrikeColor)
 
         self.app = QApplication.instance()
 

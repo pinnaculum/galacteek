@@ -122,6 +122,7 @@ for more information).
   of files in the MFS)
 - File sharing
 - BitTorrent to IPFS bridge
+- Tor support
 - Search content with the ipfs-search_ search engine as well as with cyber_
 - Built-in blog with Atom feeds
 - Webcam to IPFS capture (image and videos)

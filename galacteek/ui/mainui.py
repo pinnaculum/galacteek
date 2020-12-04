@@ -630,9 +630,9 @@ class CentralStack(QStackedWidget):
         for widx, ws in self.workspaces():
             ws.wsAddCustomAction(*args, **kw)
 
-    def wsAddGlobalAction(self, action: QAction):
+    def wsAddGlobalAction(self, action: QAction, default=False):
         for widx, ws in self.workspaces():
-            ws.wsAddAction(action)
+            ws.wsAddAction(action, default=default)
 
     def wsActivityNotify(self, workspace):
         widx, curWorkspace = self.currentWorkspace()
@@ -1181,7 +1181,7 @@ class MainWindow(QMainWindow):
         self.stack.addWorkspace(self.wspaceMultimedia)
         self.stack.addWorkspace(self.wspaceMisc)
 
-        self.stack.wsAddGlobalAction(self.browseAction)
+        self.stack.wsAddGlobalAction(self.browseAction, default=True)
         self.stack.activateWorkspaces(False)
 
     def onSeedAppImage(self):
@@ -1428,7 +1428,8 @@ class MainWindow(QMainWindow):
             None, QRect(0, 0, 0, 0), 2400)
 
     def registerTab(self, tab, name, icon=None, current=True,
-                    tooltip=None, workspace=None):
+                    tooltip=None, workspace=None,
+                    position='append'):
         if workspace is None:
             sidx, wspace = self.stack.currentWorkspace()
         elif isinstance(workspace, str):
@@ -1442,7 +1443,8 @@ class MainWindow(QMainWindow):
             sidx, wspace = self.stack.currentWorkspace()
 
         wspace.wsRegisterTab(tab, name, icon=icon, current=current,
-                             tooltip=tooltip)
+                             tooltip=tooltip,
+                             position=position)
 
         if self.stack.currentWorkspace() is not wspace:
             wspace.wsSwitch()
@@ -1587,7 +1589,7 @@ class MainWindow(QMainWindow):
         self.getMediaPlayer()
 
     def onOpenBrowserTabClicked(self, pinBrowsed=False):
-        self.addBrowserTab(pinBrowsed=pinBrowsed)
+        self.addBrowserTab(pinBrowsed=pinBrowsed, urlFocus=True)
 
     def onWriteNewDocumentClicked(self):
         w = textedit.AddDocumentWidget(self, parent=self.tabWidget)
@@ -1615,15 +1617,20 @@ class MainWindow(QMainWindow):
 
     def addBrowserTab(self, label='No page loaded', pinBrowsed=False,
                       minProfile=None, current=True,
-                      workspace=None):
+                      workspace=None,
+                      urlFocus=False,
+                      position='append'):
         icon = getIconIpfsIce()
         tab = browser.BrowserTab(self,
                                  minProfile=minProfile,
                                  pinBrowsed=pinBrowsed)
         self.registerTab(tab, label, icon=icon, current=current,
-                         workspace=workspace)
+                         workspace=workspace,
+                         position=position)
 
-        tab.focusUrlZone()
+        if urlFocus:
+            tab.focusUrlZone()
+
         return tab
 
     def addEventLogTab(self, current=False):

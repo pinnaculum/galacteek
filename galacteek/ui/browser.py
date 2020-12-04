@@ -27,6 +27,10 @@ from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtCore import QTimer
 from PyQt5.QtCore import QPoint
 from PyQt5.QtCore import QSize
+from PyQt5.QtCore import QEvent
+
+from PyQt5.QtGui import QPalette
+from PyQt5.QtGui import QColor
 
 from PyQt5 import QtWebEngineWidgets
 
@@ -68,6 +72,7 @@ from galacteek.core.schemes import SCHEME_Z
 from galacteek.core.schemes import DAGProxySchemeHandler
 from galacteek.core.schemes import MultiDAGProxySchemeHandler
 from galacteek.core.schemes import IPFSObjectProxyScheme
+from galacteek.core.schemes import isUrlSupported
 
 from galacteek.core.webprofiles import WP_NAME_IPFS
 from galacteek.core.webprofiles import WP_NAME_MINIMAL
@@ -246,6 +251,11 @@ def iInvalidUrl(text):
                                       'Invalid URL: {0}').format(text)
 
 
+def iUnsupportedUrl():
+    return QCoreApplication.translate('BrowserTabForm',
+                                      'Unsupported URL type')
+
+
 def iInvalidObjectPath(text):
     return QCoreApplication.translate(
         'BrowserTabForm',
@@ -341,13 +351,13 @@ class DefaultBrowserWebPage (QtWebEngineWidgets.QWebEnginePage):
         super(DefaultBrowserWebPage, self).__init__(webProfile, parent)
         self.app = QCoreApplication.instance()
         self.fullScreenRequested.connect(self.onFullScreenRequest)
-        self.setBackgroundColor(desertStrike1)
+        self.setBackgroundColor(desertStrikeColor)
 
     def certificateError(self, error):
-        return not questionBox(
-            error.url.toString(),
+        return questionBox(
+            error.url().toString(),
             f'Certificate error: {error.errorDescription()}.'
-            'Continue ?')
+            '<b>Continue</b> ?')
 
     def onFullScreenRequest(self, req):
         # Accept fullscreen requests unconditionally
@@ -438,6 +448,7 @@ class WebView(IPFSWebView):
         self.browserTab = browserTab
         self.linkInfoTimer = QTimer()
         self.linkInfoTimer.timeout.connect(self.onLinkInfoTimeout)
+        # self.setMouseTracking(True)
 
         self.webPage = None
         self.altSearchPage = None
@@ -466,7 +477,10 @@ class WebView(IPFSWebView):
 
         # Disabled for now
         if wintype == QWebEnginePage.WebBrowserTab:
-            tab = self.app.mainWindow.addBrowserTab(current=True)
+            tab = self.app.mainWindow.addBrowserTab(
+                current=True,
+                position='nextcurrent'
+            )
             return tab.webEngineView
 
     def onViewSource(self):
@@ -756,11 +770,11 @@ class WebView(IPFSWebView):
                 iUnknown()))
 
     def openInTab(self, path):
-        tab = self.browserTab.gWindow.addBrowserTab()
+        tab = self.browserTab.gWindow.addBrowserTab(position='nextcurrent')
         tab.browseFsPath(path)
 
     def openUrlInTab(self, url):
-        tab = self.browserTab.gWindow.addBrowserTab()
+        tab = self.browserTab.gWindow.addBrowserTab(position='nextcurrent')
         tab.enterUrl(url)
 
     def downloadLink(self, menudata):
@@ -875,8 +889,16 @@ class URLInputWidget(QLineEdit):
     @property
     def editTimeoutMs(self):
         return 400
-        timeout = self.app.settingsMgr.urlHistoryEditTimeout
-        return timeout if isinstance(timeout, int) else 200
+
+    @property
+    def matchesVisible(self):
+        return self.historyMatches.isVisible()
+
+    def setupPalette(self):
+        palette = self.palette()
+        palette.setColor(QPalette.HighlightedText, ipfsColor1)
+        palette.setColor(QPalette.Highlight, QColor('transparent'))
+        self.setPalette(palette)
 
     def keyPressEvent(self, ev):
         if ev.key() == Qt.Key_Up:
@@ -928,10 +950,13 @@ class URLInputWidget(QLineEdit):
 
         super(URLInputWidget, self).focusOutEvent(event)
 
+    def onUrlTextChanged(self, text):
+        pass
+
     def onUrlUserEdit(self, text):
         self.urlInput = text
 
-        if not self.urlEditing:
+        if not self.hasFocus():
             return
 
         self.startEditTimer()
@@ -1729,13 +1754,11 @@ class BrowserTab(GalacteekTab):
     def onFocusUrl(self):
         self.focusUrlZone(True, reason=Qt.ShortcutFocusReason)
 
-    def focusUrlZone(self, select=False, reason=Qt.OtherFocusReason):
+    def focusUrlZone(self, select=False, reason=Qt.ActiveWindowFocusReason):
         self.urlZone.setFocus(reason)
 
         if select:
             self.urlZone.setSelection(0, len(self.urlZone.text()))
-
-        self.urlZone.urlEditing = True
 
     def onReloadPage(self):
         self.reloadPage()
@@ -1781,8 +1804,6 @@ class BrowserTab(GalacteekTab):
         page.save(path, QWebEngineDownloadItem.CompleteHtmlSaveFormat)
 
     def onHashmarkPage(self):
-        # if self.currentUrl and isEnsUrl(self.currentUrl):
-
         if self.currentIpfsObject and self.currentIpfsObject.valid:
             scheme = self.currentUrl.scheme()
             ensure(addHashmarkAsync(
@@ -1790,13 +1811,13 @@ class BrowserTab(GalacteekTab):
                 title=self.currentPageTitle,
                 schemePreferred=scheme
             ))
-        elif self.currentUrl:
+        elif self.currentUrl and isUrlSupported(self.currentUrl):
             ensure(addHashmarkAsync(
                 self.currentUrl.toString(),
                 title=self.currentPageTitle
             ))
         else:
-            messageBox(iNotAnIpfsResource())
+            messageBox(iUnsupportedUrl())
 
     def onPinResult(self, f):
         try:
@@ -2004,14 +2025,11 @@ class BrowserTab(GalacteekTab):
                     background-color: #C3D7DF;
                 }''')
 
-            # self.urlZone.clear()
-            # self.urlZone.insert(url.toString())
             self.urlZoneInsert(url.toString())
 
             self._currentIpfsObject = IPFSPath(url.toString())
             self._currentUrl = url
             self.ipfsObjectVisited.emit(self.currentIpfsObject)
-            # self.ui.hashmarkThisPage.setEnabled(True)
             self.ui.pinToolButton.setEnabled(True)
 
             self.followIpnsAction.setEnabled(
