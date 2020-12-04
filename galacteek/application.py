@@ -511,7 +511,8 @@ class GalacteekApplication(QApplication):
         self.tempDirWeb = self.tempDirCreate(
             self.tempDir.path(), 'webdownloads')
 
-        self.tor = TorLauncher(self._torConfigLocation)
+        self.tor = TorLauncher(self._torConfigLocation,
+                               self._torDataDirLocation)
         self._goIpfsBinPath = self.suitableGoIpfsBinary()
 
     def tempDirCreate(self, basedir, name=None):
@@ -1008,6 +1009,7 @@ class GalacteekApplication(QApplication):
         self._mHashDbLocation = os.path.join(self.dataLocation, 'mhashmetadb')
         self._sqliteDbLocation = os.path.join(self.dataLocation, 'db.sqlite')
         self._torConfigLocation = os.path.join(self.dataLocation, 'torrc')
+        self._torDataDirLocation = os.path.join(self.dataLocation, 'tor-data')
         self._pLockLocation = os.path.join(self.dataLocation, 'profile.lock')
         self._mainDbLocation = os.path.join(
             self.dataLocation, 'db_main.sqlite3')
@@ -1041,6 +1043,7 @@ class GalacteekApplication(QApplication):
         for dir in [self._mHashDbLocation,
                     self._logsLocation,
                     self.ipfsBinLocation,
+                    self._torDataDirLocation,
                     self.marksDataLocation,
                     self.cryptoDataLocation,
                     self.eccDataLocation,

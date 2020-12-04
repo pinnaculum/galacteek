@@ -1,4 +1,3 @@
-import asyncio
 import pytest
 
 from galacteek.ipfs.search import multiSearch

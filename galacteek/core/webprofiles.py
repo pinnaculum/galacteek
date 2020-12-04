@@ -70,6 +70,7 @@ class BaseProfile(QWebEngineProfile):
                                       True)
         self.webSettings.setAttribute(QWebEngineSettings.LocalStorageEnabled,
                                       True)
+        self.setHttpCacheType(QWebEngineProfile.NoCache)
 
     def installHandler(self, scheme, handler):
         sch = scheme if isinstance(scheme, bytes) else scheme.encode()
