@@ -1889,8 +1889,14 @@ class IPFSOperator(object):
     def ourNode(self, peerId):
         return self.ctx.node.id == peerId
 
-    def p2pEndpoint(self, serviceName):
-        return f'/p2p/{self.ctx.node.id}/x/{serviceName}'
+    def p2pEndpoint(self, serviceName: str, protocolVersion='1.0.0'):
+        from galacteek.ipfs.p2pservices import p2pEndpointMake
+
+        return p2pEndpointMake(
+            self.ctx.node.id,
+            serviceName,
+            protocolVersion
+        )
 
     def p2pEndpointExplode(self, addr):
         ma = re.search(r'/p2p/([\w]{46,59})/x/([\w\-\_]{1,128})', addr)
@@ -1898,6 +1904,11 @@ class IPFSOperator(object):
             return ma.group(1), ma.group(2)
         else:
             return None, None
+
+    def p2pEndpointAddrExplode(self, addr: str):
+        from galacteek.ipfs.p2pservices import p2pEndpointAddrExplode
+
+        return p2pEndpointAddrExplode(addr)
 
     async def hasDagCommand(self):
         return await self.hasCommand('dag')

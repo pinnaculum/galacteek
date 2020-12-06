@@ -6,6 +6,7 @@ import re
 import time
 import random
 import string
+import weakref
 
 import aiohttp
 from aiohttp.web_exceptions import HTTPOk
@@ -33,6 +34,7 @@ from galacteek.did import didExplode
 from galacteek.did import normedUtcDate
 from galacteek.ld.ldloader import aioipfs_document_loader
 from galacteek.ld import asyncjsonld as jsonld
+from galacteek.ld.jsonldexpand import ExpandedJSONLDQuerier
 from galacteek.core import utcDatetimeIso
 from galacteek.core import nonce
 from galacteek.core import unusedTcpPort
@@ -101,6 +103,7 @@ class IPService(metaclass=IPServiceRegistry):
     SRV_TYPE_GENERICPYRAMID = 'GalacteekPyramidService'
     SRV_TYPE_CHAT = 'GalacteekChatService'
     SRV_TYPE_PSRENDEZVOUS = 'PSRendezVousService'
+    SRV_TYPE_VIDEOCALL = 'DwebVideoCallService'
 
     SRV_TYPE_LIVEPEER_STREAMING = 'P2PLivePeerStreamingService'
 
@@ -163,6 +166,10 @@ class IPService(metaclass=IPServiceRegistry):
         except Exception:
             return None
 
+    async def expandEndpointLdWizard(self):
+        return ExpandedJSONLDQuerier(
+            await self.expandEndpoint())
+
     @ipfsOp
     async def endpointCat(self, ipfsop):
         ipfsPath = IPFSPath(self.endpoint)
@@ -170,6 +177,9 @@ class IPService(metaclass=IPServiceRegistry):
             return await ipfsop.catObject(ipfsPath.objPath)
 
     async def onChanged(self):
+        pass
+
+    async def serviceStart(self):
         pass
 
     def __repr__(self):
@@ -290,6 +300,7 @@ class IPIdentifier(DAGOperations):
 
     def __init__(self, did, localId=False, ldCache=None):
         self._did = did
+        self._p2pServices = weakref.WeakValueDictionary()
         self._document = {}
         self._docCid = None
         self._localId = localId
@@ -304,6 +315,7 @@ class IPIdentifier(DAGOperations):
         # Async sigs
         self.sChanged = AsyncSignal(str)
         self.sServicesChanged = AsyncSignal()
+        self.sServiceAvailable = AsyncSignal(IPIdentifier, IPService)
         self.sChanged.connectTo(self.onDidChanged)
 
     @property
@@ -337,6 +349,10 @@ class IPIdentifier(DAGOperations):
     @property
     def did(self):
         return self._did
+
+    @property
+    def p2pServices(self):
+        return self._p2pServices
 
     @property
     def id(self):
@@ -382,7 +398,11 @@ class IPIdentifier(DAGOperations):
             url += ';' + ';'.join(p)
 
         if isinstance(path, str):
-            url += path
+            # url += path
+            if not path.startswith('/'):
+                url += f'/{path}'
+            else:
+                url += path
 
         if isinstance(query, dict):
             url += '?' + urlencode(query)
@@ -505,6 +525,11 @@ class IPIdentifier(DAGOperations):
     async def flush(self):
         await self.updateDocument(self.doc, publish=True)
 
+    async def servicePropagate(self, service: IPService):
+        log.debug(f'Propagating IP service: {service}')
+
+        await self.sServiceAvailable.emit(self, service)
+
     async def addServiceRaw(self, service: dict, publish=True):
         sid = service.get('id')
         assert isinstance(sid, str)
@@ -551,7 +576,12 @@ class IPIdentifier(DAGOperations):
             await self.updateDocument(self.doc, publish=publish)
             await self.sServicesChanged.emit()
 
-            return self._serviceInst(service)
+            sInst = self._serviceInst(service)
+            await self.servicePropagate(sInst)
+
+            return sInst
+        else:
+            raise Exception('Could not initiate service context')
 
     @ipfsOp
     async def addServiceCollection(self, ipfsop, name):
@@ -578,6 +608,23 @@ class IPIdentifier(DAGOperations):
             'description': 'PubSub rendezvous',
             'serviceEndpoint': ipfsop.p2pEndpoint(serviceName)
         })
+
+    @ipfsOp
+    async def addServiceVideoCall(self, ipfsop, roomName):
+        # servicePath = posixpath.join('/videocall', roomName)
+        servicePath = posixpath.join('videocall', roomName)
+
+        return await self.addServiceContexted({
+            'id': self.didUrl(
+                path=servicePath
+            ),
+            'type': IPService.SRV_TYPE_VIDEOCALL,
+        }, context='DwebVideoCallServiceEndpoint',
+            endpoint={
+            'roomName': roomName,
+            'created': utcDatetimeIso(),
+            'p2pEndpoint': ipfsop.p2pEndpoint(servicePath)
+        }, publish=True)
 
     @ipfsOp
     async def updateDocument(self, ipfsop, document, publish=False):
@@ -883,8 +930,17 @@ class IPIDManager:
         # JSON-LD cache
         self._ldCache = LRUCache(256)
 
+    async def onLocalIpidServiceAvailable(self, ipid, ipService):
+        print(ipid, ipService, 'YES')
+        await ipService.serviceStart()
+
     async def track(self, ipid: IPIdentifier):
         async with self._lock:
+
+            if ipid.local:
+                ipid.sServiceAvailable.connectTo(
+                    self.onLocalIpidServiceAvailable)
+
             self._managedIdentifiers[ipid.did] = ipid
 
     async def searchServices(self, term: str):
@@ -1012,9 +1068,9 @@ class IPIDManager:
             await self.track(identifier)
 
         # Register default IP services
-        for service in ipfsop.ctx.p2p.services:
-            if service.didDefaultRegister:
-                await service.didServiceInstall(identifier)
+        # for service in ipfsop.ctx.p2p.services:
+        #     if service.didDefaultRegister:
+        #         await service.didServiceInstall(identifier)
 
         return identifier
 

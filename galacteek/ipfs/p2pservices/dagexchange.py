@@ -132,10 +132,9 @@ class DAGExchangeService(P2PService):
     def __init__(self):
         super().__init__(
             'dagexchange',
-            'DAG Exchange service',
-            'dagexchange',
-            ('127.0.0.1', range(49452, 49462)),
-            None
+            description='DAG Exchange service',
+            protocolName='dagexchange',
+            listenRange=('127.0.0.1', range(49452, 49462))
         )
 
         self.__edags = weakref.WeakValueDictionary()
