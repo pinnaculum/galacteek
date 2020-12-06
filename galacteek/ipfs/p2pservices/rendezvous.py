@@ -1,5 +1,3 @@
-import collections
-import weakref
 import secrets
 import orjson
 
@@ -11,7 +9,6 @@ from galacteek.ipfs.p2pservices import P2PService
 from galacteek.ipfs.cidhelpers import IPFSPath
 
 from galacteek.core import jsonSchemaValidate
-from galacteek.core.asynclib import loopTime
 from galacteek.core.ps import psSubscriber
 from galacteek.core import sha256Digest
 from galacteek.core import uid4
@@ -83,12 +80,12 @@ class PSRendezVousSiteHandler:
                     return await self.msgError()
 
                 peerId = js.get('peer')
-                token = js.get('sessiontoken')
+                # token = js.get('sessiontoken')
                 peerCtx = ipfsop.ctx.peers.getByPeerId(peerId)
 
                 if not peerCtx:
                     raise Exception('Invalid peer')
-            except Exception as err:
+            except Exception:
                 return await self.msgError(status=401)
 
             chans = self.service.psChannels.setdefault(peerId, [])
@@ -194,7 +191,7 @@ class PSRendezVousSiteHandler:
             })
 
 
-class PSRendezVousService(P2PService):
+class __PSRendezVousService(P2PService):
     def __init__(self):
         super().__init__(
             'ps-rendezvous',
@@ -252,3 +249,40 @@ class PSRendezVousListener(P2PListener):
                 return (host, port)
             except Exception:
                 continue
+
+
+class PSRendezVousService(P2PService):
+    def __init__(self, protocolName=None):
+        super().__init__(
+            'videocall',
+            description='RendezVous service',
+            listenerClass=PSRendezVousListener,
+            protocolName=protocolName
+        )
+
+        self.psChannels = {}
+        self.rvSessions = {}
+
+    @ipfsOp
+    async def createListenerOLD(self, ipfsop):
+        self._listener = PSRendezVousListener(
+            self,
+            ipfsop.client,
+            self.protocolName,
+            self.listenRange,
+            None,
+            loop=ipfsop.ctx.loop
+        )
+        addr = await self.listener.open()
+        log.debug(
+            f'RendezVous service: created listener at address {addr}')
+        return addr is not None
+
+    @ipfsOp
+    async def videoChatStartReceiver(self, ipfsop, psTopic):
+        rootPath = IPFSPath(ipfsop.ctx.resources['videocall']['Hash'])
+        offerPath = rootPath.child('answer.html')
+        offerPath.fragment = psTopic
+
+        tab = self.app.mainWindow.addBrowserTab()
+        tab.browseFsPath(offerPath)

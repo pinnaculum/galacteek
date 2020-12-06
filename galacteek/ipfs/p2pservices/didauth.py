@@ -228,10 +228,9 @@ class DIDAuthService(P2PService):
     def __init__(self):
         super().__init__(
             'didauth-vc-pss',
-            'DID Auth service',
-            'didauth-vc-pss',
-            ('127.0.0.1', range(49442, 49452)),
-            None
+            description='DID Auth service',
+            protocolName='didauth-vc-pss',
+            listenRange=('127.0.0.1', range(49442, 49452)),
         )
 
         self._token = None

@@ -982,10 +982,11 @@ class UserProfile(QObject):
                     path = IPFSPath(entry['Hash'])
                     await ipid.avatarSet(path.objPath)
 
-            try:
-                await ipid.addServiceRendezVous()
-            except Exception:
-                pass
+            if 0:
+                try:
+                    await ipid.addServiceRendezVous()
+                except Exception:
+                    pass
 
             pwd = self.initOptions.get('ipidRsaPassphrase', None)
             # Unlock

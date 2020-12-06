@@ -6,7 +6,10 @@ from galacteek.ipfs.wrappers import *  # noqa
 from galacteek.ipfs.multi import multiAddrTcp4
 
 
-def protocolFormat(proto, ns='x'):
+def protocolFormat(proto: str, ns='x'):
+    if proto.startswith('/x/'):
+        return proto
+
     return '/{ns}/{proto}'.format(ns=ns, proto=proto)
 
 
