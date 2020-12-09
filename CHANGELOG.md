@@ -8,6 +8,22 @@ the changes in the CHANGELOG formatting.
 
 ## [Unreleased]
 
+## [0.4.42] - 2020-12-12
+### Added
+- *galacteek.ipfs.ipfsops.IPFSOperator*: add coroutines to dial P2P
+  services from a full service address, e.g /p2p/Qm..../x/myservice
+- Introduce APIs to dynamically start P2P services associated with
+  a DID service
+- Introduce protocol versioning by default for P2P services
+  /p2p/Qm..../x/pizza/1.0.0
+- Async log handlers (logbook)
+
+### Changed
+- *galacteek.ipfs.asyncipfsd.AsyncIPFSDaemon*: the daemon's configuration
+  is now done in an atomic call (by externally calling *ipfs config replace*).
+  This makes the boot process faster.
+- Change default fonts for web engine widgets
+
 ## [0.4.41] - 2020-12-04
 ### Added
 - Tor support

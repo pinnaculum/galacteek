@@ -32,8 +32,6 @@ from PyQt5.QtCore import QEvent
 from PyQt5.QtGui import QPalette
 from PyQt5.QtGui import QColor
 
-from PyQt5 import QtWebEngineWidgets
-
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWebEngineWidgets import QWebEngineDownloadItem
 from PyQt5.QtWebEngineWidgets import QWebEngineSettings
@@ -344,7 +342,7 @@ class CurrentPageHandler(BaseHandler):
         return self.rootCid
 
 
-class DefaultBrowserWebPage (QtWebEngineWidgets.QWebEnginePage):
+class DefaultBrowserWebPage (QWebEnginePage):
     jsConsoleMessage = pyqtSignal(int, str, int, str)
 
     def __init__(self, webProfile, parent):
@@ -353,14 +351,22 @@ class DefaultBrowserWebPage (QtWebEngineWidgets.QWebEnginePage):
         self.fullScreenRequested.connect(self.onFullScreenRequest)
         self.featurePermissionRequested.connect(
             partialEnsure(self.onPermissionRequest))
+        self.featurePermissionRequestCanceled.connect(
+            partialEnsure(self.onPermissionRequestCanceled))
         self.channel = None
         self.setBackgroundColor(desertStrikeColor)
+
+    def onRenderProcessPid(self, pid):
+        log.debug(f'{self.url().toString()}: renderer process has PID: {pid}')
 
     def certificateError(self, error):
         return questionBox(
             error.url().toString(),
             f'Certificate error: {error.errorDescription()}.'
             '<b>Continue</b> ?')
+
+    async def onPermissionRequestCanceled(self, originUrl, feature):
+        pass
 
     async def onPermissionRequest(self, originUrl, feature):
         url = originUrl.toString().rstrip('/')
@@ -522,8 +528,8 @@ class WebView(IPFSWebView):
 
         self.app = QCoreApplication.instance()
         self.browserTab = browserTab
-        self.linkInfoTimer = QTimer()
-        self.linkInfoTimer.timeout.connect(self.onLinkInfoTimeout)
+        # self.linkInfoTimer = QTimer()
+        # self.linkInfoTimer.timeout.connect(self.onLinkInfoTimeout)
         # self.setMouseTracking(True)
 
         self.webPage = None
@@ -551,7 +557,6 @@ class WebView(IPFSWebView):
     def createWindow(self, wintype):
         log.debug('createWindow called, wintype: {}'.format(wintype))
 
-        # Disabled for now
         if wintype == QWebEnginePage.WebBrowserTab:
             tab = self.app.mainWindow.addBrowserTab(
                 current=True,
@@ -606,14 +611,9 @@ class WebView(IPFSWebView):
             ipfsPath = IPFSPath(urlString)
 
         if ipfsPath.valid:
-            self.browserTab.ui.linkInfosLabel.setText(ipfsPath.fullPath)
+            self.browserTab.displayHoveredUrl(ipfsPath.asQtUrl)
         else:
-            self.browserTab.ui.linkInfosLabel.setText(url.toString())
-
-        if self.linkInfoTimer.isActive():
-            self.linkInfoTimer.stop()
-
-        self.linkInfoTimer.start(2200)
+            self.browserTab.displayHoveredUrl(url)
 
     def contextMenuCreateDefault(self):
         """
@@ -1319,7 +1319,8 @@ class BrowserTab(GalacteekTab):
 
         self.webEngineView.urlChanged.connect(self.onUrlChanged)
         self.webEngineView.loadFinished.connect(self.onLoadFinished)
-        self.webEngineView.iconChanged.connect(self.onIconChanged)
+        self.webEngineView.iconChanged.connect(
+            partialEnsure(self.onIconChanged))
         self.webEngineView.loadProgress.connect(self.onLoadProgress)
         self.webEngineView.titleChanged.connect(self.onTitleChanged)
 
@@ -1332,8 +1333,6 @@ class BrowserTab(GalacteekTab):
         self.ui.backButton.setEnabled(False)
         self.ui.forwardButton.setEnabled(False)
         self.ui.stopButton.setEnabled(False)
-
-        self.ui.linkInfosLabel.setObjectName('linkInfos')
 
         # Page ops button
         self.createPageOpsButton()
@@ -1547,6 +1546,16 @@ class BrowserTab(GalacteekTab):
     def onTabVisibility(self, visible):
         if not visible:
             self.urlZone.hideMatches()
+
+    def displayHoveredUrl(self, url: QUrl):
+        self.app.mainWindow.contextMessage(
+            f"<p>[<span color='blue'>{url.scheme()}</span>] "
+            f"<span color='green'>{url.toString()}</span></p>"
+        )
+
+    async def onTabDoubleClicked(self):
+        log.debug('Browser Tab double clicked')
+        return True
 
     def focusOutEvent(self, event):
         self.urlZone.hideMatches()
@@ -2205,7 +2214,7 @@ class BrowserTab(GalacteekTab):
             if text != curUrl:
                 self.urlZoneInsert(curUrl)
 
-    def onIconChanged(self, icon):
+    async def onIconChanged(self, icon):
         self.gWindow.tabWidget.setTabIcon(self.tabPageIdx, icon)
 
     def onLoadProgress(self, progress):

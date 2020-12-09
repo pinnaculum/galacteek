@@ -451,7 +451,7 @@ class IPFSResourceOpener(QObject):
             await self.app.mainWindow.atomButton.atomFeedSubscribe(
                 str(endpoint)
             )
-        elif pService.type == IPService.SRV_TYPE_PSRENDEZVOUS:
+        elif pService.type == IPService.SRV_TYPE_VIDEOCALL:
             from galacteek.ui.videocall import VideoCallInitiator
 
             vc = VideoCallInitiator(pService)

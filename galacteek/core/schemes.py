@@ -1,5 +1,4 @@
 import re
-import uuid
 import aioipfs
 import functools
 import asyncio
@@ -7,6 +6,7 @@ import aiodns
 import async_timeout
 import collections
 import time
+import traceback
 from yarl import URL
 from datetime import datetime
 from cachetools import TTLCache
@@ -37,6 +37,7 @@ from galacteek.ipfs.ipfsops import APIErrorDecoder
 from galacteek.dweb.render import renderTemplate
 from galacteek.dweb.enswhois import ensContentHash
 from galacteek.core.asynccache import cachedcoromethod
+from galacteek.core import runningApp
 
 
 # Core schemes (the URL schemes your children will soon teach you how to use)
@@ -224,18 +225,32 @@ class BaseURLSchemeHandler(QWebEngineUrlSchemeHandler):
 
         self.requests = {}
         self.noMutexes = noMutexes
+        self.app = runningApp()
+
+    def reqFailedCall(self, request, code):
+        try:
+            return request.fail(code)
+        except RuntimeError:
+            # wrapped C/C++ object deleted ?
+            pass
+        except Exception:
+            pass
 
     def reqFailed(self, request):
-        return request.fail(QWebEngineUrlRequestJob.RequestFailed)
+        return self.reqFailedCall(
+            request, QWebEngineUrlRequestJob.RequestFailed)
 
     def urlInvalid(self, request):
-        return request.fail(QWebEngineUrlRequestJob.UrlInvalid)
+        return self.reqFailedCall(
+            request, QWebEngineUrlRequestJob.UrlInvalid)
 
     def urlNotFound(self, request):
-        return request.fail(QWebEngineUrlRequestJob.UrlNotFound)
+        return self.reqFailedCall(
+            request, QWebEngineUrlRequestJob.UrlNotFound)
 
     def aborted(self, request):
-        return request.fail(QWebEngineUrlRequestJob.RequestAborted)
+        return self.reqFailedCall(
+            request, QWebEngineUrlRequestJob.RequestAborted)
 
     def allocReqId(self, req):
         # TS is good enough
@@ -255,11 +270,18 @@ class BaseURLSchemeHandler(QWebEngineUrlSchemeHandler):
     async def handleRequest(self, request, uid):
         return self.urlInvalid(request)
 
+    async def delegateToThread(self, awaitable):
+        raise Exception('Not implemented')
+
+    def onRequestDestroyed(self, uid):
+        if uid in self.requests:
+            del self.requests[uid]
+
     def requestStarted(self, request):
-        uid = str(uuid.uuid4())
-        self.requests[uid] = request
-        request.destroyed.connect(lambda: self.onRequestDestroyed(uid))
-        ensure(self.handleRequest(self.requests[uid]))
+        uid = self.allocReqId(request)
+        request.destroyed.connect(
+            functools.partial(self.onRequestDestroyed, uid))
+        ensure(self.handleRequest(request, uid))
 
 
 class IPFSObjectProxyScheme:
@@ -291,10 +313,6 @@ class ENSWhoisSchemeHandler(BaseURLSchemeHandler):
         self.app = app
         self.requests = {}
 
-    def onRequestDestroyed(self, uid):
-        if uid in self.requests:
-            del self.requests[uid]
-
     async def handleRequest(self, request):
         rUrl = request.requestUrl()
         if not rUrl.isValid():
@@ -320,12 +338,6 @@ class ENSWhoisSchemeHandler(BaseURLSchemeHandler):
             logUser.info('ENS: {domain} resolve failed'.format(
                 domain=domain))
             request.fail(QWebEngineUrlRequestJob.UrlInvalid)
-
-    def requestStarted(self, request):
-        uid = str(uuid.uuid4())
-        self.requests[uid] = request
-        request.destroyed.connect(lambda: self.onRequestDestroyed(uid))
-        ensure(self.handleRequest(self.requests[uid]))
 
 
 class EthDNSResolver:
@@ -396,10 +408,6 @@ class EthDNSSchemeHandler(BaseURLSchemeHandler):
     def debug(self, msg):
         log.debug('EthDNS: {}'.format(msg))
 
-    def onRequestDestroyed(self, uid):
-        if uid in self.requests:
-            del self.requests[uid]
-
     async def handleRequest(self, request):
         rUrl = request.requestUrl()
         if not rUrl.isValid():
@@ -427,11 +435,6 @@ class EthDNSSchemeHandler(BaseURLSchemeHandler):
                 domain=domain))
             return self.urlNotFound(request)
 
-    def requestStarted(self, request):
-        uid = self.allocReqId(request)
-        request.destroyed.connect(lambda: self.onRequestDestroyed(uid))
-        ensure(self.handleRequest(request))
-
 
 class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
     """
@@ -451,6 +454,7 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
     """
 
     # contentReady signal (handled by onContent())
+    # Unused now
     contentReady = pyqtSignal(
         str, QWebEngineUrlRequestJob, IPFSPath, str, bytes)
 
@@ -467,16 +471,11 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
         self.app = app
         self.validCids = collections.deque([], validCidQSize)
         self.requestTimeout = reqTimeout
-        self.contentReady.connect(self.onContent)
 
     def debug(self, msg):
         log.debug('Native scheme handler: {}'.format(msg))
 
-    def onRequestDestroyed(self, uid):
-        if uid in self.requests:
-            del self.requests[uid]
-
-    def onContent(self, uid, request, ipfsPath, ctype, data):
+    def serveContent(self, uid, request, ipfsPath, ctype, data):
         if uid not in self.requests:
             # Destroyed ?
             return
@@ -590,7 +589,7 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
         except aioipfs.APIError:
             return await self.renderDagListing(request, client, ipfsPath, **kw)
 
-    async def renderData(self, request, ipfsPath, data, uid):
+    async def renderDataEmit(self, request, ipfsPath, data, uid):
         cType = await detectMimeTypeFromBuffer(data[0:512])
 
         if cType:
@@ -600,6 +599,18 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
             self.debug('Impossible to detect MIME type for URL: {0}'.format(
                 request.requestUrl().toString()))
             self.contentReady.emit(
+                uid, request, 'application/octet-stream', data)
+
+    async def renderData(self, request, ipfsPath, data, uid):
+        cType = await detectMimeTypeFromBuffer(data[0:512])
+
+        if cType:
+            self.serveContent(
+                uid, request, ipfsPath, cType.type, data)
+        else:
+            self.debug('Impossible to detect MIME type for URL: {0}'.format(
+                request.requestUrl().toString()))
+            self.serveContent(
                 uid, request, 'application/octet-stream', data)
 
     @ipfsOp
@@ -642,8 +653,12 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
                 return await self.fetchFromPath(ipfsop, request, ipfsPath, uid)
         except asyncio.TimeoutError:
             return self.reqFailed(request)
-        except Exception:
+        except Exception as err:
             # Any other error
+
+            traceback.print_exc()
+            self.debug(f'Unknown error while serving request: {err}')
+
             return self.reqFailed(request)
 
     async def fetchFromPath(self, ipfsop, request, ipfsPath, uid, **kw):
@@ -682,18 +697,6 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
         else:
             if data:
                 return await self.renderData(request, ipfsPath, data, uid)
-
-    def requestStarted(self, request):
-        if not request.requestUrl().isValid():
-            self.debug('Invalid URL: {}'.format(
-                request.requestUrl().toString()))
-            return self.urlInvalid(request)
-
-        uid = self.allocReqId(request)
-
-        request.destroyed.connect(
-            functools.partial(self.onRequestDestroyed, uid))
-        ensure(self.handleRequest(request, uid))
 
 
 class ObjectProxySchemeHandler(NativeIPFSSchemeHandler, IPFSObjectProxyScheme):

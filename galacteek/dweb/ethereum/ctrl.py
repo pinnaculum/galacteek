@@ -80,7 +80,7 @@ class EthereumController:
                 web3 = Web3(WebsocketProvider(self.params.rpcUrl))
                 return web3
 
-            web3.eth.defaultAccount = web3.eth.accounts[0]
+            # web3.eth.defaultAccount = web3.eth.accounts[0]
             self._ns = ENS.fromWeb3(web3)
             return web3
         except Exception as err:
@@ -156,7 +156,9 @@ class EthereumController:
     def eventLatestBlock(self, event):
         if isinstance(event, bytes):
             blockHex = w3.toHex(event)
-            ensure(self.ethNewBlock.emit(blockHex))
+
+            # Use emitSafe() (thread-safe, we are called from watchTask())
+            self.ethNewBlock.emitSafe(blockHex)
 
     async def loadAutoDeploy(self):
         # Load contracts with autoload=True

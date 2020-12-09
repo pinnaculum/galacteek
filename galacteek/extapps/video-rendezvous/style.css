@@ -1,0 +1,23 @@
+#wrapper {
+    width: 100%;
+    overflow: hidden; /* add this to contain floated children */
+}
+
+video {
+      border-radius: 2px;
+      padding: 0;
+      background: black;
+}
+
+video#remote_video {
+      max-width: calc(100% - 10px);
+      width: 100%;
+      /* margin: 0 50px; */
+      box-sizing: border-box;
+}
+
+video#local_video {
+      margin: 0 50px;
+      box-sizing: border-box;
+      /* position: absolute;  */
+}

@@ -31,6 +31,7 @@ from galacteek.ipfs.dag import EvolvingDAG
 from galacteek.did import didIdentRe
 from galacteek.did.ipid import IPIdentifier
 from galacteek.did.ipid import IPService
+from galacteek.did.ipid.services.videocall import VideoCallService  # noqa
 
 from galacteek.core.iphandle import ipHandleGen
 from galacteek.core.iphandle import SpaceHandle

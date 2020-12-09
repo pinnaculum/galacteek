@@ -335,6 +335,8 @@ class TabbedWorkspace(BaseWorkspace):
             partialEnsure(self.wsTabChanged))
         self.tabWidget.tabCloseRequested.connect(
             partialEnsure(self.onTabCloseRequest))
+        self.tabWidget.tabBarDoubleClicked.connect(
+            partialEnsure(self.onTabDoubleClicked))
 
         if self.app.system != 'Darwin':
             self.tabWidget.setDocumentMode(True)
@@ -422,6 +424,11 @@ class TabbedWorkspace(BaseWorkspace):
 
     def wsAddWidget(self, widget):
         self.toolBarActions.addWidget(widget)
+
+    async def onTabDoubleClicked(self, idx):
+        tab = self.tabWidget.widget(idx)
+        if tab:
+            await tab.onTabDoubleClicked()
 
     async def onTabCloseRequest(self, idx):
         tab = self.tabWidget.widget(idx)

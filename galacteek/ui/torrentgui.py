@@ -574,8 +574,9 @@ class TorrentClientTab(GalacteekTab):
         await self._control_thread.start()
 
     async def stop(self):
-        await self._control_thread.stop()
-        self._control_thread = None
+        if self._control_thread:
+            await self._control_thread.stop()
+            self._control_thread = None
 
     async def onClose(self):
         await self.stop()

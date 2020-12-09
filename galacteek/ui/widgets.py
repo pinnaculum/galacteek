@@ -22,10 +22,10 @@ from PyQt5.QtWidgets import QHBoxLayout
 from PyQt5.QtWidgets import QSizePolicy
 from PyQt5.QtWidgets import QTextBrowser
 from PyQt5.QtWidgets import QToolTip
+from PyQt5.QtWidgets import QToolBar
 
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
-from PyQt5.QtWebEngineWidgets import QWebEngineSettings
 
 from PyQt5.QtCore import QRect
 from PyQt5.QtCore import QEvent
@@ -66,7 +66,6 @@ from galacteek.core.asynclib import asyncify
 from galacteek.core import utcDatetime
 from galacteek.space import allPlanetsNames
 from galacteek.dweb.markdown import markitdown
-from galacteek.core.webproxy import TorNetworkProxy
 
 from galacteek import database
 from galacteek.database.models.core import Hashmark
@@ -190,6 +189,9 @@ class GalacteekTab(QWidget):
         return True
 
     async def onTabChanged(self):
+        return True
+
+    async def onTabDoubleClicked(self):
         return True
 
     def tabActiveNotify(self):
@@ -1690,76 +1692,44 @@ class SpacingHWidget(QWidget):
             QSpacerItem(width, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
 
-class TorControllerButton(QToolButton):
-    def __init__(self, torInstance, *args, **kw):
-        super().__init__(*args, **kw)
+class SmartToolBar(QToolBar):
+    moved = pyqtSignal(int)
+    hideTimeout = 5000
 
+    def __init__(self, parent):
+        super().__init__(parent)
         self.app = QApplication.instance()
-        self.tor = torInstance
+        self.setFloatable(False)
+        self.setContextMenuPolicy(Qt.NoContextMenu)
+        self.timerStatus = QTimer(self)
+        self.timerStatus.timeout.connect(self.onShowTimerStatus)
+        self.app.loop.call_soon_threadsafe(self.wakeUp)
+        self.timerStatus.start(self.hideTimeout)
+        self.setMouseTracking(True)
 
-        self.tor.torProto.sTorBootstrapStatus.connectTo(
-            self.onTorBootstrapStatus)
+    def enterEvent(self, event):
+        self.timerStatus.stop()
+        super().enterEvent(event)
 
-        self.setObjectName('torControlButton')
-        self.setCheckable(True)
-        self.setChecked(False)
-        self.setEnabled(False)
+    def unwanted(self):
+        self.timerStatus.stop()
+        self.timerStatus.start(self.hideTimeout)
 
-        self.toggled.connect(self.onToggled)
+    def onShowTimerStatus(self):
+        self.toggleView()
 
-    def sysTrayMessage(self, msg):
-        self.app.systemTrayMessage(
-            'Tor',
-            msg
-        )
+    def wakeUp(self):
+        self.show()
+        self.timerStatus.stop()
 
-    def useTorProxy(self, use=True):
-        if use is True:
-            proxy = TorNetworkProxy(self.tor.torCfg)
-            self.app.networkProxySet(proxy)
+    def toggleView(self):
+        action = self.toggleViewAction()
+        action.trigger()
 
-            self.setToolTip(self.tt(
-                f'TOR is used as proxy '
-                f'(socks port: {proxy.port()})'))
+    @property
+    def vertical(self):
+        return self.orientation() == Qt.Vertical
 
-            self.sysTrayMessage(
-                'Tor is now used as proxy (click on the onion to disable it)'
-            )
-        else:
-            self.app.networkProxySetNull()
-            self.app.systemTrayMessage(
-                'Tor',
-                'Tor is now desactivated'
-            )
-
-        self.app.allWebProfilesSetAttribute(
-            QWebEngineSettings.XSSAuditingEnabled,
-            use
-        )
-        self.app.allWebProfilesSetAttribute(
-            QWebEngineSettings.DnsPrefetchEnabled,
-            not use
-        )
-
-    def onToggled(self, checked):
-        self.useTorProxy(checked)
-
-    def tt(self, message):
-        return f'''
-            <img src=':/share/icons/tor.png' width='32' height='32'></img>
-
-            <p>Tor status: <b>{message}</b></p>
-
-            <p>
-                <b>Click</b> on this icon to enable/disable Tor proxying
-            </p>
-        '''
-
-    async def onTorBootstrapStatus(self, pct, status):
-        self.setToolTip(self.tt(f'TOR bootstrap: {pct}% complete'))
-
-        if pct == 100:
-            self.setEnabled(True)
-            self.sysTrayMessage(
-                'Tor is ready, click on the onion to enable it'
-            )
+    @property
+    def horizontal(self):
+        return self.orientation() == Qt.Horizontal

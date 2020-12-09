@@ -1926,19 +1926,10 @@ class IPFSOperator(object):
             self._ldDocLoader
         )
 
-    @async_enterable
-    async def p2pDialer(self, peer, protocol, address=None, addressAuto=True):
-        from galacteek.core import unusedTcpPort
-        from galacteek.ipfs.tunnel import protocolFormat
-
-        if addressAuto is True and not address:
-            address = '/ip4/127.0.0.1/tcp/{}'.format(unusedTcpPort())
-
-        if await self.client.agent_version_post0418():
-            proto = protocolFormat(protocol)
-        else:
-            proto = protocol
-
+    async def _p2pDialerStart(self, peer, proto, address):
+        """
+        Start the P2P dial and return a TunnelDialerContext
+        """
         log.debug('Stream dial {0} {1}'.format(peer, proto))
         try:
             peerAddr = joinIpfs(peer) if not peer.startswith('/ipfs/') else \
@@ -1966,6 +1957,36 @@ class IPFSOperator(object):
             return TunnelDialerContext(self, peer, proto, maddr)
         else:
             return TunnelDialerContext(self, peer, proto, address)
+
+    @async_enterable
+    async def p2pDialer(self, peer, protocol, address=None, addressAuto=True):
+        from galacteek.core import unusedTcpPort
+        from galacteek.ipfs.tunnel import protocolFormat
+
+        if addressAuto is True and not address:
+            address = '/ip4/127.0.0.1/tcp/{}'.format(unusedTcpPort())
+
+        if await self.client.agent_version_post0418():
+            proto = protocolFormat(protocol)
+        else:
+            proto = protocol
+
+        return await self._p2pDialerStart(peer, proto, address)
+
+    @async_enterable
+    async def p2pDialerFromAddr(self, p2pEndpointAddr,
+                                address=None, addressAuto=True):
+        from galacteek.ipfs.p2pservices import p2pEndpointAddrExplode
+
+        exploded = p2pEndpointAddrExplode(p2pEndpointAddr)
+
+        if exploded:
+            peerId, protoFull, pVersion = exploded
+
+            return await self._p2pDialerStart(
+                peerId, protoFull, address)
+        else:
+            raise ValueError(f'Invalid P2P service address: {p2pEndpointAddr}')
 
     @async_enterable
     async def getContexted(self, path, dstdir, **kwargs):

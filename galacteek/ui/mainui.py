@@ -1,7 +1,6 @@
 import functools
 
 from logbook import Handler
-from logbook import StringFormatterHandlerMixin
 
 from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtWidgets import QWidget
@@ -25,6 +24,7 @@ from PyQt5.QtCore import QDateTime
 from PyQt5.QtCore import QSize
 from PyQt5.QtCore import QPoint
 from PyQt5.QtCore import QRect
+from PyQt5.QtCore import QEvent
 
 from PyQt5.Qt import QSizePolicy
 
@@ -41,8 +41,8 @@ from galacteek import log
 from galacteek import database
 from galacteek.core.glogger import loggerMain
 from galacteek.core.glogger import loggerUser
-from galacteek.core.glogger import easyFormatString
 from galacteek.core.glogger import LogRecordStyler
+from galacteek.core.glogger import AsyncLogHandler
 from galacteek.core.asynclib import asyncify
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.ipfsops import *
@@ -85,7 +85,7 @@ from .widgets import HashmarksSearcher
 from .widgets import AnimatedLabel
 from .widgets import URLDragAndDropProcessor
 from .widgets import SpacingHWidget
-from .widgets import TorControllerButton
+from .torcontrol import TorControllerButton
 from .dialogs import *
 from ..appsettings import *
 from .i18n import *
@@ -114,11 +114,6 @@ def iAbout():
         for the distributed web
         </p>
         <br/>
-        <p>Contact:
-            <a href="mailto: galacteek@protonmail.com">
-                galacteek@protonmail.com
-            </a>
-        </p>
 
         <p>GitHub:
         <a href="https://github.com/pinnaculum/galacteek">
@@ -185,7 +180,7 @@ class UserLogsWindow(QMainWindow):
         super().hideEvent(event)
 
 
-class MainWindowLogHandler(Handler, StringFormatterHandlerMixin):
+class MainWindowLogHandler(AsyncLogHandler):
     """
     Custom logbook handler that logs to the status bar
 
@@ -203,7 +198,7 @@ class MainWindowLogHandler(Handler, StringFormatterHandlerMixin):
                  facility='user', level=0, format_string=None,
                  filter=None, bubble=True, window=None):
         Handler.__init__(self, level, filter, bubble)
-        StringFormatterHandlerMixin.__init__(self, easyFormatString)
+        AsyncLogHandler.__init__(self, level, filter, bubble)
         self.application_name = application_name
         self.window = window
         self.logsBrowser = logsBrowser
@@ -211,46 +206,53 @@ class MainWindowLogHandler(Handler, StringFormatterHandlerMixin):
         self.doc = self.logsBrowser.document()
         self.logStyler = LogRecordStyler()
 
-    def emit(self, record):
-        cursor = self.logsBrowser.textCursor()
-        vScrollBar = self.logsBrowser.verticalScrollBar()
-        color, _font = self.logStyler.getStyle(record)
+    async def processRecord(self, record):
+        try:
+            cursor = self.logsBrowser.textCursor()
+            vScrollBar = self.logsBrowser.verticalScrollBar()
+            color, _font = self.logStyler.getStyle(record)
 
-        if record.level_name == 'INFO':
-            self.window.statusMessage(
+            if record.level_name == 'INFO':
+                self.window.statusMessage(
+                    f'''
+                    <div style="width: 450px">
+                      <p style="color: {color}">
+                        <b>{record.module}</b>
+                      </p>
+                      <p>{record.message}</p>
+                    </div>
+                    '''
+                )
+                await asyncio.sleep(0)
+
+            oldScrollbarValue = vScrollBar.value()
+            isDown = oldScrollbarValue == vScrollBar.maximum()
+
+            self.logsBrowser.moveCursor(QTextCursor.End)
+            self.logsBrowser.insertHtml(
                 f'''
-                <div style="width: 450px">
-                  <p style="color: {color}">
-                    <b>{record.module}</b>
-                  </p>
-                  <p>{record.message}</p>
-                </div>
+                <p style="color: {color}; font: 14pt 'Inter UI';">
+                    [{record.time:%H:%M:%S.%f%z}]
+                    <b>@{record.module}@</b>: {record.message}
+                </p>
+                <br />
                 '''
             )
 
-        oldScrollbarValue = vScrollBar.value()
-        isDown = oldScrollbarValue == vScrollBar.maximum()
+            await asyncio.sleep(0)
 
-        self.logsBrowser.moveCursor(QTextCursor.End)
-        self.logsBrowser.insertHtml(
-            f'''
-            <p style="color: {color}; font: 14pt 'Inter UI';">
-                [{record.time:%H:%M:%S.%f%z}]
-                <b>@{record.module}@</b>: {record.message}
-            </p>
-            <br />
-            '''
-        )
+            if cursor.hasSelection() or not isDown:
+                self.logsBrowser.setTextCursor(cursor)
+                vScrollBar.setValue(oldScrollbarValue)
+            else:
+                self.logsBrowser.moveCursor(QTextCursor.End)
+                vScrollBar.setValue(vScrollBar.maximum())
 
-        if cursor.hasSelection() or not isDown:
-            self.logsBrowser.setTextCursor(cursor)
-            vScrollBar.setValue(oldScrollbarValue)
-        else:
-            self.logsBrowser.moveCursor(QTextCursor.End)
-            vScrollBar.setValue(vScrollBar.maximum())
-
-        if self.doc.lineCount() > 2048:
-            self.doc.clear()
+            if self.doc.lineCount() > 2048:
+                self.doc.clear()
+        except Exception:
+            import traceback
+            traceback.print_exc()
 
 
 class IPFSDaemonStatusWidget(QWidget):
@@ -528,6 +530,7 @@ class CentralStack(QStackedWidget):
             partialEnsure(self.onWorkspaceChanged))
         self.toolBarWs = wsToolBar
         self.setContentsMargins(0, 0, 0, 0)
+        self.setMouseTracking(True)
 
         self.__wsDormant = []
 
@@ -711,6 +714,8 @@ class BrowseButton(PopupToolButton):
 class MainWindow(QMainWindow):
     def __init__(self, app):
         super(MainWindow, self).__init__()
+
+        self.setObjectName('gMainWindow')
 
         self.setWindowFlags(
             Qt.Window |
@@ -1073,6 +1078,10 @@ class MainWindow(QMainWindow):
         self.lastLogLabel = QLabel(self.statusbar)
         self.lastLogLabel.setAlignment(Qt.AlignLeft)
         self.lastLogLabel.setObjectName('lastLogLabel')
+        self.lastLogLabel.setTextFormat(Qt.RichText)
+
+        self.lastLogTimer = QTimer()
+        self.lastLogTimer.timeout.connect(self.onLastLogTimeout)
         self.statusbar.insertWidget(0, self.lastLogLabel, 1)
 
         self.statusbar.addPermanentWidget(self.ipfsStatusCube)
@@ -1132,6 +1141,8 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.stack)
         self.showMaximized()
 
+        self.app.installEventFilter(self)
+
     @property
     def tabWidget(self):
         cur = self.stack.currentWidget()
@@ -1145,6 +1156,30 @@ class MainWindow(QMainWindow):
     @property
     def allTabs(self):
         return self._allTabs
+
+    def contextMessage(self, msgText: str):
+        self.lastLogLabel.setText(msgText)
+        self.lastLogTimer.start(4000)
+
+    def onLastLogTimeout(self):
+        self.lastLogLabel.setText('')
+        self.lastLogTimer.stop()
+
+    def eventFilter(self, obj, event):
+        return False
+
+    def eventFilterMouseMove(self, obj, event):
+        # This wakes up auto-hiding toolbars (.widgets.SmartToolBar)
+        # to be used when we use auto-hiding on one of the main toolbars
+        if event.type() == QEvent.MouseMove:
+            if obj.objectName().startswith('gMainWindow'):
+                if event.pos().y() < 10:
+                    self.toolbarMain.wakeUp()
+                else:
+                    if self.toolbarMain.isVisible():
+                        self.toolbarMain.unwanted()
+
+        return False
 
     def keyPressEvent(self, event):
         modifiers = event.modifiers()

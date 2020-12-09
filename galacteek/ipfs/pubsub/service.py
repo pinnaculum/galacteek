@@ -396,6 +396,8 @@ class JSONPubsubService(PubsubService):
                         traceback.print_exc()
                         await self.errorsQueue.put((msg, exc))
                         self._errorsCount += 1
+
+                    self.inQueue.task_done()
         except asyncio.CancelledError:
             self.debug('JSON process cancelled')
         except Exception as err:

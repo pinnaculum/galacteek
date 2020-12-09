@@ -1,5 +1,11 @@
-=======
-AUTHORS
-=======
+======================
+AUTHORS / CONTRIBUTORS
+======================
 
-- cipres (David Ferlier) <galacteek@protonmail.com>
+If you make a contribution please create a section, and
+add your nickname or name and GitHub profile URL.
+
+Core
+----
+
+- `cipres <https://github.com/pinnaculum>`_
