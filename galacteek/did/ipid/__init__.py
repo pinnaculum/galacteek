@@ -716,6 +716,12 @@ class IPIdentifier(DAGOperations):
             self._latestModified = doc.get('modified')
             self.docCid = dagCid
             await self.sChanged.emit(dagCid)
+
+            if self.local:
+                # Local IPID: propagate did services
+                async for service in self.discoverServices():
+                    await self.sServiceAvailable.emit(self, service)
+
             return True
 
         return False
@@ -909,6 +915,13 @@ class IPIdentifier(DAGOperations):
             if srv['id'] == _id:
                 return IPServiceEditor(self, srv, sync=sync)
 
+    async def _stopP2PServices(self):
+        for srvName, srv in self._p2pServices.items():
+            await srv.stop()
+
+    async def _stop(self):
+        await self._stopP2PServices()
+
     def __eq__(self, other):
         return self.did == other.did
 
@@ -930,17 +943,18 @@ class IPIDManager:
         # JSON-LD cache
         self._ldCache = LRUCache(256)
 
+    async def stopManager(self):
+        async with self._lock:
+            for didIdentifier, ipid in self._managedIdentifiers.items():
+                if ipid.local:
+                    log.debug(f'Stopping DID: {didIdentifier}')
+                    await ipid._stop()
+
     async def onLocalIpidServiceAvailable(self, ipid, ipService):
-        print(ipid, ipService, 'YES')
         await ipService.serviceStart()
 
     async def track(self, ipid: IPIdentifier):
         async with self._lock:
-
-            if ipid.local:
-                ipid.sServiceAvailable.connectTo(
-                    self.onLocalIpidServiceAvailable)
-
             self._managedIdentifiers[ipid.did] = ipid
 
     async def searchServices(self, term: str):
@@ -989,6 +1003,10 @@ class IPIDManager:
 
         ipid = IPIdentifier(
             did, localId=localIdentifier, ldCache=self._ldCache)
+
+        if ipid.local:
+            ipid.sServiceAvailable.connectTo(
+                self.onLocalIpidServiceAvailable)
 
         if await ipid.load(resolveTimeout=rTimeout, initialCid=initialCid):
             if track:

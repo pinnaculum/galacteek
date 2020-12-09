@@ -49,6 +49,20 @@ def addIpServiceCollection(ipid: IPIdentifier):
     )
 
 
+def addIpServiceVideoCall(ipid: IPIdentifier):
+    def addService(dlg):
+        name = dlg.enteredText()
+        if name:
+            ensure(ipid.addServiceVideoCall(name))
+
+    runDialog(
+        GenericTextInputDialog, 'Room name',
+        inputRegExp=r'[A-Za-z0-9\-_]+',
+        maxLength=24, title='Video call service',
+        accepted=addService
+    )
+
+
 async def buildIpServicesMenu(ipid: IPIdentifier,
                               sMenu,
                               parent=None):
@@ -63,6 +77,18 @@ async def buildIpServicesMenu(ipid: IPIdentifier,
 
         action.triggered.connect(functools.partial(
             addIpServiceCollection, ipid
+        ))
+
+        sMenu.addAction(action)
+        sMenu.addSeparator()
+
+        action = QAction(
+            getIcon('blocks-cluster.png'),
+            'Add video call service',
+            sMenu)
+
+        action.triggered.connect(functools.partial(
+            addIpServiceVideoCall, ipid
         ))
 
         sMenu.addAction(action)

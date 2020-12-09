@@ -1,5 +1,6 @@
 from collections import UserList
 from asyncqt import QThreadExecutor
+import threading
 import asyncio
 import shutil
 import traceback
@@ -25,6 +26,7 @@ class AsyncSignal(UserList):
         super().__init__()
         self._id = kw.pop('_id', 'no id')
         self._sig = signature
+        self._loop = asyncio.get_event_loop()  # loop attached to this signal
 
     def __str__(self):
         return '<AsyncSignal({id}): signature: {!r}>'.format(
@@ -43,6 +45,12 @@ class AsyncSignal(UserList):
 
     def connectTo(self, callback):
         self.append(callback)
+
+    def emitSafe(self, *args, **kwargs):
+        asyncio.run_coroutine_threadsafe(
+            self.emit(*args, **kwargs),
+            self._loop
+        )
 
     async def emit(self, *args, **kwargs):
         from galacteek import log
@@ -314,3 +322,19 @@ def clientSessionWithProxy(proxyUrl):
             connector=ProxyConnector.from_url(proxyUrl))
     else:
         return aiohttp.ClientSession()
+
+
+class ThreadLoop:
+    def __init__(self):
+        self.loop = asyncio.new_event_loop()
+
+    def start(self):
+        threading.Thread(target=self.loop.run_forever).start()
+
+    async def submit(self, awaitable):
+        f = asyncio.run_coroutine_threadsafe(awaitable, self.loop)
+        f2 = asyncio.wrap_future(f, loop=self.loop)
+        return await f2
+
+    def stop(self):
+        self.loop.call_soon_threadsafe(self.loop.stop)

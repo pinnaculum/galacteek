@@ -776,6 +776,8 @@ class GalacteekApplication(QApplication):
             log.debug('Error shutting down context: {err}'.format(
                 err=str(err)))
 
+        await self.ipidManager.stopManager()
+
         if self.feedFollowerTask is not None:
             await self.feedFollowerTask.close()
 
@@ -1112,7 +1114,8 @@ class GalacteekApplication(QApplication):
         if self.ipfsd is None:
             # TODO: FFS rewrite the constructor
             self._ipfsd = asyncipfsd.AsyncIPFSDaemon(
-                self.ipfsDataLocation, goIpfsPath=self.goIpfsBinPath,
+                Path(self.ipfsDataLocation),
+                goIpfsPath=self.goIpfsBinPath,
                 statusPath=self._ipfsdStatusLocation,
                 apiport=sManager.getInt(
                     section, CFG_KEY_APIPORT),
@@ -1449,6 +1452,8 @@ class GalacteekApplication(QApplication):
                 log.warning(
                     'Timeout shutting down the scheduler (not fooled)')
                 continue
+            except Exception as gerr:
+                log.debug(f'Error shutting down the scheduler: {gerr}')
             else:
                 log.debug(f'Scheduler went down (try: {stry})')
                 return

@@ -21,10 +21,15 @@ class VideoCallService(IPService):
 
     @ipfsOp
     async def serviceStart(self, ipfsop):
+        """
+        Start the P2P service for this videocall DID service
+        """
+
+        # Look up
         exService = self.ipid.p2pServices.get(self.srvPath)
         if exService:
-            log.debug(f'P2P-service already exists: {self.srvPath}')
-            return
+            log.debug(f'P2P-service already running: {self.srvPath}')
+            return False
 
         try:
             eaddr = await self.p2pEndpointAddr()
@@ -38,8 +43,13 @@ class VideoCallService(IPService):
             log.debug(f'P2P-service {self.srvPath}: starting')
 
             await p2pService.start()
+
+            self.ipid.p2pServices[self.srvPath] = p2pService
+
+            return True
         except Exception as err:
             log.debug(err)
+            return False
 
     def __str__(self):
         return 'Video call service'

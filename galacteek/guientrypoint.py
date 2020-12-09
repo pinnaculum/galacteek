@@ -67,10 +67,12 @@ def galacteekGui(args):
 
     level = 'DEBUG' if args.debug else 'INFO'
     if args.logstderr:
-        glogger.basicConfig(level=level, colorized=args.logcolorized)
+        glogger.basicConfig(level=level, colorized=args.logcolorized,
+                            loop=gApp.loop)
     else:
         glogger.basicConfig(outputFile=gApp.mainLogFileLocation,
-                            level=level, colorized=args.logcolorized)
+                            level=level, colorized=args.logcolorized,
+                            loop=gApp.loop)
 
     if not gApp.acquireLock():
         gApp.onExit()

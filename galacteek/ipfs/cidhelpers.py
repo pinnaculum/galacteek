@@ -478,6 +478,10 @@ class IPFSPath:
     def dwebQtUrl(self):
         return QUrl(self.dwebUrl)
 
+    @property
+    def asQtUrl(self):
+        return QUrl(self.ipfsUrl)
+
     def __analyze(self):
         """
         Analyze the path and returns a boolean (valid or not)

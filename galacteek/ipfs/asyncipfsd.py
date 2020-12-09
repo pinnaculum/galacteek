@@ -10,9 +10,12 @@ import orjson
 import psutil
 import platform
 import subprocess
+from pathlib import Path
 
 from galacteek import log
 from galacteek.core import utcDatetimeIso
+from galacteek.core.tmpf import TmpFile
+from galacteek.core.jsono import DotJSON
 
 
 def boolarg(arg):
@@ -27,16 +30,19 @@ async def shell(arg):
     stdout, stderr = await p.communicate()
     try:
         if stderr:
-            return False, stderr.decode()
+            return False, None, stderr.decode()
 
-        return True, None
+        try:
+            return True, stdout.decode(), None
+        except Exception:
+            return True, None, None
     except Exception as err:
         log.debug(f'Exception running {arg}: {err}')
-        return False, None
+        return False, None, None
 
 
 async def ipfsConfig(binPath, param, value):
-    ok, err = await shell("{0} config '{1}' '{2}'".format(
+    ok, out, err = await shell("{0} config '{1}' '{2}'".format(
         binPath, param, value))
     if err:
         log.warning(f'ipfsConfig({param}) with value {value}, error: {err}')
@@ -46,13 +52,39 @@ async def ipfsConfig(binPath, param, value):
         return True
 
 
+async def ipfsConfigShow(binPath):
+    ok, out, err = await shell(f"{binPath} config show")
+    if err:
+        return False, None
+    else:
+        try:
+            # cfg = json.loads(out.encode())
+            cfg = json.loads(out)
+        except Exception as err:
+            log.debug(f'ipfsConfigShow error: {err}')
+            return False, None
+        else:
+            log.debug('ipfsConfigShow: OK')
+            return True, cfg
+
+
+async def ipfsConfigReplace(binPath, newCfgPath):
+    log.debug(f'ipfsConfigReplace: {newCfgPath}')
+
+    ok, out, err = await shell(f"{binPath} config replace {newCfgPath}")
+    if err:
+        return False
+    else:
+        return True
+
+
 async def ipfsConfigProfileApply(binPath, profile):
     return await shell("{0} config profile apply {1}".format(
         binPath, profile))
 
 
 async def ipfsConfigJson(binPath, param, value):
-    ok, err = await shell("{0} config --json {1} {2}".format(
+    ok, out, err = await shell("{0} config --json {1} {2}".format(
         binPath, param, json.dumps(value)))
     if err:
         log.warning(
@@ -134,6 +166,10 @@ class IPFSDProtocol(asyncio.SubprocessProtocol):
             self.exitFuture.set_result(True)
 
 
+class GoIPFSConfigurator(DotJSON):
+    pass
+
+
 DEFAULT_APIPORT = 5001
 DEFAULT_SWARMPORT = 4001
 DEFAULT_WS_SWARMPORT = 4011
@@ -158,7 +194,8 @@ class AsyncIPFSDaemon(object):
     :param bool gwWritable: make the HTTP gateway writable
     """
 
-    def __init__(self, repopath, goIpfsPath='ipfs',
+    def __init__(self, repopath: Path,
+                 goIpfsPath='ipfs',
                  statusPath=None,
                  apiport=DEFAULT_APIPORT,
                  swarmport=DEFAULT_SWARMPORT,
@@ -180,7 +217,10 @@ class AsyncIPFSDaemon(object):
         self.loop = loop if loop else asyncio.get_event_loop()
         self.exitFuture = asyncio.Future(loop=self.loop)
         self.startedFuture = asyncio.Future(loop=self.loop)
-        self.repopath = repopath
+        self.repoPath = repopath
+        self.repoApiFilePath = self.repoPath.joinpath('api')
+        self.repoConfigPath = self.repoPath.joinpath('config')
+        self.repoKeyStorePath = self.repoPath.joinpath('keystore')
         self.statusPath = statusPath
         self.detached = detached
         self.autoRestart = autoRestart
@@ -253,12 +293,13 @@ class AsyncIPFSDaemon(object):
             pass
 
     def _createRepoDir(self):
-        if not os.path.isdir(self.repopath):
-            os.mkdir(self.repopath)
+        if not self.repoPath.is_dir():
+            self.repoPath.mkdir(parents=True, exist_ok=True)
 
     def repoExists(self):
-        if not os.path.exists(os.path.join(self.repopath, 'config')) or \
-                not os.path.isdir(os.path.join(self.repopath, 'keystore')):
+        if not self.repoConfigPath.is_file() or \
+                not self.repoKeyStorePath.is_dir():
+            log.debug(f'Repository located at {self.repoPath} does not exist')
             return False
 
         return True
@@ -287,14 +328,14 @@ class AsyncIPFSDaemon(object):
 
     async def start(self):
         # Set the IPFS_PATH environment variable
-        os.environ['IPFS_PATH'] = self.repopath
+        os.environ['IPFS_PATH'] = str(self.repoPath)
 
         self.message('Using go-ipfs binary: {}'.format(self.goIpfsPath))
 
         if not self.repoExists():
             self.message('Initializing IPFS repository: {repo}'.format(
-                repo=self.repopath))
-            yield 10, f'Initializing IPFS repository: {self.repopath}'
+                repo=self.repoPath))
+            yield 10, f'Initializing IPFS repository: {self.repoPath}'
 
             if isinstance(self.dataStore, str):
                 yield 20, f'Creating repos with datastore: {self.dataStore}'
@@ -305,101 +346,98 @@ class AsyncIPFSDaemon(object):
 
             yield 30, 'Repository initialized'
 
-        apifile = os.path.join(self.repopath, 'api')
-        if os.path.exists(apifile):
-            os.unlink(apifile)
+        if self.repoApiFilePath.exists():
+            self.repoApiFilePath.unlink()
 
-        yield 40, 'Configuring multiaddrs ..'
+        yield 35, 'Reading current configuration ..'
 
-        # API & gateway multiaddrs
-        await self.ipfsConfig(
-            'Addresses.API',
-            '/ip4/127.0.0.1/tcp/{0}'.format(self.apiport))
-        await self.ipfsConfig(
-            'Addresses.Gateway',
-            '/ip4/127.0.0.1/tcp/{0}'.format(self.gatewayport))
+        ok, startConfig = await ipfsConfigShow(self.goIpfsPath)
+        if not ok:
+            raise Exception("Could not read go-ipfs's configuration")
 
-        # Swarm multiaddrs (ipv4 and ipv6), TCP and quic
-        swarmAddrs = []
+        goIpfsC = GoIPFSConfigurator(startConfig)
 
-        if 'quic' in self.swarmProtos:
-            swarmAddrs += [
-                '/ip4/0.0.0.0/udp/{swarmport}/quic'.format(
-                    swarmport=self.swarmportQuic),
-                '/ip6/::/udp/{swarmport}/quic'.format(
-                    swarmport=self.swarmportQuic)
-            ]
+        with TmpFile(mode='w+t', delete=False) as newCfgFile:
+            goIpfsC.Addresses.API = \
+                f'/ip4/127.0.0.1/tcp/{self.apiport}'
+            goIpfsC.Addresses.Gateway = \
+                f'/ip4/127.0.0.1/tcp/{self.gatewayport}'
 
-        if 'tcp' in self.swarmProtos or not swarmAddrs:
-            swarmAddrs += [
-                '/ip4/0.0.0.0/tcp/{swarmport}'.format(
-                    swarmport=self.swarmport),
-                '/ip4/0.0.0.0/tcp/{swarmportWs}/ws'.format(
-                    swarmportWs=self.swarmportWs),
-                '/ip6/::/tcp/{swarmport}'.format(
-                    swarmport=self.swarmport)
-            ]
+            yield 40, 'Configuring multiaddrs ..'
 
-        await self.ipfsConfigJson('Addresses.Swarm',
-                                  json.dumps(swarmAddrs))
+            # Swarm multiaddrs (ipv4 and ipv6), TCP and quic
+            swarmAddrs = []
 
-        yield 50, 'Configuring connection manager ..'
+            if 'quic' in self.swarmProtos:
+                swarmAddrs += [
+                    '/ip4/0.0.0.0/udp/{swarmport}/quic'.format(
+                        swarmport=self.swarmportQuic),
+                    '/ip6/::/udp/{swarmport}/quic'.format(
+                        swarmport=self.swarmportQuic)
+                ]
 
-        # Swarm connection manager parameters
-        await self.ipfsConfigJson('Swarm.ConnMgr.LowWater',
-                                  self.swarmLowWater)
-        await self.ipfsConfigJson('Swarm.ConnMgr.HighWater',
-                                  self.swarmHighWater)
-        await self.ipfsConfig('Swarm.ConnMgr.GracePeriod',
-                              '60s')
+            if 'tcp' in self.swarmProtos or not swarmAddrs:
+                swarmAddrs += [
+                    '/ip4/0.0.0.0/tcp/{swarmport}'.format(
+                        swarmport=self.swarmport),
+                    '/ip4/0.0.0.0/tcp/{swarmportWs}/ws'.format(
+                        swarmportWs=self.swarmportWs),
+                    '/ip6/::/tcp/{swarmport}'.format(
+                        swarmport=self.swarmport)
+                ]
 
-        yield 60, 'Configuring pubsub/p2p ..'
+            goIpfsC.Addresses.Swarm = swarmAddrs
 
-        await self.ipfsConfig('Routing.Type', self.routingMode)
+            yield 50, 'Configuring connection manager ..'
 
-        if self.pubsubRouter in ['floodsub', 'gossipsub']:
-            await self.ipfsConfig('Pubsub.Router',
-                                  self.pubsubRouter)
+            # Swarm connection manager parameters
+            goIpfsC.Swarm.ConnMgr.LowWater = self.swarmLowWater
+            goIpfsC.Swarm.ConnMgr.HighWater = self.swarmHighWater
+            goIpfsC.Swarm.ConnMgr.GracePeriod = '60s'
 
-        await self.ipfsConfigJson('Pubsub.DisableSigning',
-                                  boolarg(not self.pubsubSigning))
+            yield 60, 'Configuring pubsub/p2p ..'
 
-        await self.ipfsConfigJson('Swarm.DisableBandwidthMetrics', 'false')
+            goIpfsC.Routing.Type = self.routingMode
 
-        # Maximum storage
-        await self.ipfsConfig('Datastore.StorageMax',
-                              '{0}GB'.format(self.storageMax))
+            if self.pubsubRouter in ['floodsub', 'gossipsub']:
+                goIpfsC.Pubsub.Router = self.pubsubRouter
 
-        # P2P streams
-        await self.ipfsConfigJson('Experimental.Libp2pStreamMounting',
-                                  boolarg(self.p2pStreams)
-                                  )
+            # goIpfsC.Pubsub.DisableSigning = not self.pubsubSigning
+            goIpfsC.Swarm.DisableBandwidthMetrics = False
 
-        await self.ipfsConfigJson('Experimental.FilestoreEnabled',
-                                  boolarg(self.fileStore)
-                                  )
+            # Maximum storage
+            goIpfsC.Datastore.StorageMax = f'{self.storageMax}GB'
 
-        # CORS
-        if self.corsEnable:
-            await self.ipfsConfigJson(
-                'API.HTTPHeaders.Access-Control-Allow-Credentials',
-                '["true"]'
-            )
-            await self.ipfsConfigJson(
-                'API.HTTPHeaders.Access-Control-Allow-Methods',
-                '["GET", "POST"]'
-            )
-            await self.ipfsConfigJson(
-                'API.HTTPHeaders.Access-Control-Allow-Origin',
-                '["*"]'
-            )
+            # P2P streams
+            goIpfsC.Experimental.Libp2pStreamMounting = self.p2pStreams
 
-        if self.noBootstrap:
-            await self.ipfsConfigJson('Bootstrap', '[]')
+            goIpfsC.Experimental.FilestoreEnabled = self.fileStore
 
-        await self.ipfsConfigJson('Gateway.Writable',
-                                  self.gwWritable)
+            # CORS
+            if self.corsEnable:
+                httpHeaders = goIpfsC.API.HTTPHeaders
+                httpHeaders.Access__Control__Allow__Credentials = \
+                    ['true']
+                httpHeaders.Access__Control__Allow__Methods = \
+                    ["GET", "POST"]
+                httpHeaders.Access__Control__Allow__Origin = \
+                    ["*"]
 
+            if self.noBootstrap:
+                goIpfsC.Bootstrap = []
+
+            goIpfsC.Gateway.Writable = self.gwWritable
+
+            goIpfsC.write(newCfgFile)
+            newCfgFile.flush()
+
+            await asyncio.sleep(0)
+
+            result = await ipfsConfigReplace(self.goIpfsPath, newCfgFile.name)
+            if not result:
+                raise Exception('Could not replace config')
+
+        await asyncio.sleep(0)
         await self.profilesListApply(self.profiles)
 
         args = [self.goIpfsPath, 'daemon']

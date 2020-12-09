@@ -70,6 +70,23 @@ class BaseProfile(QWebEngineProfile):
                                       True)
         self.webSettings.setAttribute(QWebEngineSettings.LocalStorageEnabled,
                                       True)
+
+        self.webSettings.setFontFamily(
+            QWebEngineSettings.StandardFont,
+            'Inter UI'
+        )
+        self.webSettings.setFontSize(
+            QWebEngineSettings.MinimumFontSize,
+            14
+        )
+        self.webSettings.setFontSize(
+            QWebEngineSettings.DefaultFontSize,
+            14
+        )
+        self.webSettings.setUnknownUrlSchemePolicy(
+            QWebEngineSettings.DisallowUnknownUrlSchemes
+        )
+
         self.setHttpCacheType(QWebEngineProfile.NoCache)
 
     def installHandler(self, scheme, handler):
