@@ -7,11 +7,11 @@ from PyQt5.QtWidgets import QToolButton
 
 
 class TorControllerButton(QToolButton):
-    def __init__(self, torInstance, *args, **kw):
+    def __init__(self, torService, *args, **kw):
         super().__init__(*args, **kw)
 
         self.app = runningApp()
-        self.tor = torInstance
+        self.tor = torService.proc
 
         self.tor.torProto.sTorBootstrapStatus.connectTo(
             self.onTorBootstrapStatus)

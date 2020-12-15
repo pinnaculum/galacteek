@@ -172,7 +172,6 @@ class P2PService:
 
     @ipfsOp
     async def createListener(self, ipfsop):
-        print('create listener, listener class is', self._listenerClass)
         if self._listenerClass:
             self._listener = self._listenerClass(
                 self,

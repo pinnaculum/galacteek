@@ -17,7 +17,7 @@ from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.core.modelhelpers import *
 
-from . import ui_keys, ui_addkeydialog
+from .forms import ui_keys, ui_addkeydialog
 
 from .widgets import GalacteekTab
 from .helpers import *

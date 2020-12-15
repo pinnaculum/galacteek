@@ -2,6 +2,7 @@ import os.path
 import pkg_resources
 import importlib
 import json
+import attr
 
 from galacteek import log
 
@@ -31,14 +32,15 @@ def solCompileFile(file_path):
         log.debug(str(err))
 
 
+@attr.s(auto_attribs=True)
 class LocalContract:
-    def __init__(self, name, rootDir, cPath, modImp, ctype='solidity'):
-        self.name = name
-        self.rootDir = rootDir
-        self.sourcePath = cPath
-        self._deployedAddress = None
-        self._type = ctype
-        self.module = modImp
+    name: str = None
+    rootDir: str = None
+    sourcePath: str = None
+    module: str = None
+    ctype: str = 'vyper'
+
+    _deployedAddress: str = None
 
     def interface(self):
         fp = os.path.join(self.dir, 'interface.json')
@@ -47,11 +49,11 @@ class LocalContract:
                 return json.load(fd)
 
     def compile(self):
-        if self.type == 'solidity':
+        if self.ctype == 'solidity':
             compiled = solCompileFile(self.sourcePath)
             _id, interface = compiled.popitem()
             return interface
-        elif self.type == 'vyper':
+        elif self.ctype == 'vyper':
             compiled = vyperCompileFile(self.sourcePath)
             return compiled
 
@@ -72,7 +74,7 @@ class LocalContract:
 
     @property
     def type(self):
-        return self._type
+        return self.ctype
 
     @property
     def dir(self):
@@ -118,9 +120,21 @@ def getContractByName(name):
         return None
 
     if os.path.isfile(mainSol):
-        return LocalContract(name, path, mainSol, module, ctype='solidity')
+        return LocalContract(
+            name=name,
+            rootDir=path,
+            sourcePath=mainSol,
+            module=module,
+            ctype='solidity'
+        )
     elif os.path.isfile(vyperPath):
-        return LocalContract(name, path, vyperPath, module, ctype='vyper')
+        return LocalContract(
+            name=name,
+            rootDir=path,
+            sourcePath=vyperPath,
+            module=module,
+            ctype='vyper'
+        )
 
 
 def getContractDeployments(name, network='mainnet', autoload=False):

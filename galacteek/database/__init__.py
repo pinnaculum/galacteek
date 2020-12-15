@@ -510,3 +510,33 @@ async def browserFeaturePermissionAdd(url, featureCode, permission):
     )
     await p.save()
     return p
+
+
+# BM
+
+async def bmMailBoxRegister(bmAddr, label, mDirRelativePath, default=False):
+    mb = BitMessageMailBox(
+        bmAddress=bmAddr,
+        label=label,
+        mDirRelativePath=mDirRelativePath,
+        default=default
+    )
+
+    await mb.save()
+    return mb
+
+
+async def bmMailBoxList():
+    return await BitMessageMailBox.all()
+
+
+async def bmMailBoxCount():
+    return await BitMessageMailBox.all().count()
+
+
+async def bmMailBoxGetDefault():
+    return await BitMessageMailBox.filter(default=True).first()
+
+
+async def bmMailBoxGet(bmAddress):
+    return await BitMessageMailBox.filter(bmAddress=bmAddress).first()

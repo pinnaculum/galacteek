@@ -9,14 +9,22 @@ the changes in the CHANGELOG formatting.
 ## [Unreleased]
 
 ## [0.4.42] - 2020-12-12
+
+This is build 42.
+
 ### Added
-- *galacteek.ipfs.ipfsops.IPFSOperator*: add coroutines to dial P2P
-  services from a full service address, e.g /p2p/Qm..../x/myservice
+- BitMessage support
+
 - Introduce APIs to dynamically start P2P services associated with
   a DID service
 - Introduce protocol versioning by default for P2P services
   /p2p/Qm..../x/pizza/1.0.0
-- Async log handlers (logbook)
+- Async logging handlers (logbook)
+- *galacteek.ipfs.ipfsops.IPFSOperator*: add coroutines to dial P2P
+  services from a full service address, e.g /p2p/Qm..../x/myservice
+- Basic hierarchical config system based on omegaconf
+- Python dependencies
+  - [mode](https://github.com/ask/mode) >=4.4.0
 
 ### Changed
 - *galacteek.ipfs.asyncipfsd.AsyncIPFSDaemon*: the daemon's configuration

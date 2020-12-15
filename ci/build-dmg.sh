@@ -84,8 +84,13 @@ cp $GITHUB_WORKSPACE/fs-repo-migrations/fs-repo-migrations galacteek.app/Content
 # copy tor
 cp /usr/local/bin/tor galacteek.app/Contents/Resources/bin
 
+# Copy notbit
+cp $GITHUB_WORKSPACE/notbit/src/notbit galacteek.app/Contents/Resources/bin
+
 pushd galacteek.app/Contents/Resources/bin
 ln -s ipfs-${GO_IPFS_VERSION} ipfs
+ln -s notbit notbit-keygen
+ln -s notbit notbit-sendmail
 popd
 
 # Install libmagic and the magic db files

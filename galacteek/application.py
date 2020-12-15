@@ -49,8 +49,12 @@ from galacteek import ensure
 from galacteek import AsyncSignal
 from galacteek import pypicheck, GALACTEEK_NAME
 
+from galacteek.config import cSetSavePath
+
 from galacteek.core.asynclib import asyncify
 from galacteek.core.asynclib import cancelAllTasks
+from galacteek.core.aservice import GService
+from galacteek.core.aservice import cached_property
 from galacteek.core.ctx import IPFSContext
 from galacteek.core.profile import UserProfile
 from galacteek.core.multihashmetadb import IPFSObjectMetadataDatabase
@@ -58,7 +62,9 @@ from galacteek.core.clipboard import ClipboardTracker
 from galacteek.core.db import SqliteDatabase
 from galacteek.core import pkgResourcesListDir
 from galacteek.core import pkgResourcesRscFilename
-from galacteek.core.tor import TorLauncher
+from galacteek.services.tor.service import TorService
+from galacteek.services.tor.service import TorServiceRuntimeConfig
+
 from galacteek.core.webproxy import NullProxy
 
 from galacteek import database
@@ -80,8 +86,8 @@ from galacteek.core.schemes import NativeIPFSSchemeHandler
 from galacteek.core.schemes import ObjectProxySchemeHandler
 from galacteek.core.schemes import MultiObjectHostSchemeHandler
 
-from galacteek.dweb.ethereum import EthereumConnectionParams
-from galacteek.dweb.ethereum import MockEthereumController
+from galacteek.blockchain.ethereum import MockEthereumController
+from galacteek.blockchain.ethereum import ethConnConfigParams
 
 from galacteek.space.solarsystem import SolarSystem
 
@@ -121,6 +127,8 @@ from galacteek.ui.dialogs import UserProfileInitDialog
 
 from galacteek.appsettings import *
 from galacteek.core.ipfsmarks import IPFSMarks
+
+from galacteek.services.bitmessage.service import BitMessageClientService
 
 from yarl import URL
 
@@ -218,6 +226,42 @@ class IPFSConnectionParams(object):
         return self._gatewayUrl
 
 
+class AppService(GService):
+    # Bitmessage service
+    bmService: BitMessageClientService = None
+
+    # Tor service
+    torService: TorService = None
+
+    @cached_property
+    def bmService(self) -> BitMessageClientService:
+        return BitMessageClientService(
+            self.app._bitMessageDataLocation
+        )
+
+    @cached_property
+    def torService(self) -> TorService:
+        return TorService(
+            TorServiceRuntimeConfig(
+                cfgLocation=self.app._torConfigLocation,
+                dataLocation=self.app._torDataDirLocation
+            )
+        )
+
+    async def on_start(self) -> None:
+        log.debug('Starting main application service')
+
+        # Dependencies
+
+        log.debug('Adding runtime dependencies')
+
+        await self.add_runtime_dependency(self.bmService)
+        await self.add_runtime_dependency(self.torService)
+
+    async def on_stop(self) -> None:
+        log.debug('Stopping main application service')
+
+
 class GalacteekApplication(QApplication):
     """
     Galacteek application class
@@ -284,6 +328,10 @@ class GalacteekApplication(QApplication):
 
         self.ipfsCtx = IPFSContext(self)
         self.peersTracker = peers.PeersTracker(self.ipfsCtx)
+
+    @cached_property
+    def coreS(self) -> AppService:
+        return AppService()
 
     @property
     def cmdArgs(self):
@@ -511,8 +559,6 @@ class GalacteekApplication(QApplication):
         self.tempDirWeb = self.tempDirCreate(
             self.tempDir.path(), 'webdownloads')
 
-        self.tor = TorLauncher(self._torConfigLocation,
-                               self._torDataDirLocation)
         self._goIpfsBinPath = self.suitableGoIpfsBinary()
 
     def tempDirCreate(self, basedir, name=None):
@@ -581,6 +627,10 @@ class GalacteekApplication(QApplication):
     def systemTrayMessage(self, title, message, timeout=2000,
                           messageIcon=QSystemTrayIcon.Information):
         self.systemTray.showMessage(title, message, messageIcon, timeout)
+
+    async def startCoreServices(self):
+        # By starting the top service, all subservices will be started
+        await self.coreS.start()
 
     @ipfsOp
     async def setupRepository(self, op):
@@ -749,10 +799,7 @@ class GalacteekApplication(QApplication):
             )
 
     def getEthParams(self):
-        mgr = self.settingsMgr
-        provType = mgr.getSetting(CFG_SECTION_ETHEREUM, CFG_KEY_PROVIDERTYPE)
-        rpcUrl = mgr.getSetting(CFG_SECTION_ETHEREUM, CFG_KEY_RPCURL)
-        return EthereumConnectionParams(rpcUrl, provType=provType)
+        return ethConnConfigParams()
 
     async def updateIpfsClient(self, client=None):
         if not client:
@@ -833,7 +880,7 @@ class GalacteekApplication(QApplication):
         self.createMainWindow()
         self.clipboardInit()
 
-        await self.tor.start()
+        await self.startCoreServices()
 
         await self.setupIpfsConnection()
 
@@ -1039,6 +1086,8 @@ class GalacteekApplication(QApplication):
                                              'nscache.json')
         self._torrentStateLocation = os.path.join(self.dataLocation,
                                                   'torrent_state.pickle')
+        self._bitMessageDataLocation = Path(self.dataLocation).joinpath(
+            'bitmessage')
 
         qtConfigLocation = QStandardPaths.writableLocation(
             QStandardPaths.ConfigLocation)
@@ -1078,12 +1127,18 @@ class GalacteekApplication(QApplication):
         return result
 
     def initSettings(self):
+        from galacteek.config.table import initFromTable
         if not os.path.isfile(self.settingsFileLocation):
             self._freshInstall = True
 
         self.settingsMgr = SettingsManager(path=self.settingsFileLocation)
         setDefaultSettings(self)
         self.settingsMgr.sync()
+
+        cSetSavePath(Path(self.configDirLocation))
+
+        # Init new config system
+        initFromTable()
 
     async def ipfsDaemonInitDialog(self, dlg):
         await runDialogAsync(dlg)
@@ -1330,7 +1385,7 @@ class GalacteekApplication(QApplication):
 
     def initEthereum(self):
         try:
-            from galacteek.dweb.ethereum.ctrl import EthereumController
+            from galacteek.blockchain.ethereum.ctrl import EthereumController
 
             self.ethereum = EthereumController(self.getEthParams(),
                                                loop=self.loop, parent=self,
@@ -1463,8 +1518,8 @@ class GalacteekApplication(QApplication):
 
         self.lock.release()
 
-        if self.tor:
-            self.tor.stop()
+        # Shutdown the core service
+        await self.coreS.stop()
 
         self.mainWindow.stopTimers()
         await self.mainWindow.stack.shutdown()

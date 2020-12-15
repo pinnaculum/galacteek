@@ -40,7 +40,7 @@ from .helpers import getIcon
 from .helpers import runDialogAsync
 from .clips import RotatingCubeClipSimple
 from .widgets import PopupToolButton
-from . import ui_profileeditdialog
+from .forms import ui_profileeditdialog
 from .i18n import iUnknown
 from .i18n import iIPServices
 

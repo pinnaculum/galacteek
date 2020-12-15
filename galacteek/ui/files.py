@@ -59,8 +59,8 @@ from galacteek.core.models.mfs import MFSRootItem
 from galacteek.did.ipid import IPService
 
 from .dids import buildPublishingMenu
-from . import ui_files
-from . import ui_timeframeselector
+from .forms import ui_files
+from .forms import ui_timeframeselector
 from . import dag
 from .i18n import *  # noqa
 from .helpers import *  # noqa

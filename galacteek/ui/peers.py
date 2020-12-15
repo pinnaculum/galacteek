@@ -43,7 +43,7 @@ from galacteek.did import didExplode
 from galacteek.did.ipid import IPService
 
 from .dids import buildIpServicesMenu
-from . import ui_peersmgr
+from .forms import ui_peersmgr
 from .widgets import *
 from .helpers import *
 from .dialogs import *

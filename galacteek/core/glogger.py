@@ -21,6 +21,7 @@ from logbook.compat import redirect_logging
 from logbook.base import _datetime_factory
 
 from galacteek.core import SingletonDecorator
+from galacteek.core import runningApp
 
 try:
     from aiofile import AIOFile
@@ -71,7 +72,7 @@ class LogRecordStyler:
             'basecolor': 'darkred',
             'red': -0.1
         },
-        'galacteek.core.tor': {
+        'galacteek.services.tor.process': {
             'basecolor': 'darkred'
         },
 
@@ -241,16 +242,16 @@ class ColorizedHandler(ColorizedStderrHandler):
 
 class AsyncLogHandler(Handler, StringFormatterHandlerMixin):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        Handler.__init__(self)
+        Handler.__init__(self, *args, **kwargs)
         StringFormatterHandlerMixin.__init__(self, None)
 
+        self.app = runningApp()
         self.loop = asyncio.get_event_loop()
         self.ptask = self.loop.create_task(self._process())
         self.__queue = asyncio.Queue()
 
     def emit(self, record):
-        if record.module:
+        if record.module and not self.app.shuttingDown:
             self.__queue.put_nowait(record)
 
     async def _process(self):
@@ -341,11 +342,13 @@ def basicConfig(outputFile=None, level='INFO',
                 redirectLogging=False, colorized=False,
                 loop=None):
     if outputFile:
-        if platform.system() == 'Linux':
+        if platform.system() == 'Linux' and 0:
             handler = AsyncDatedFileHandler(outputFile,
                                             date_format='%Y-%m-%d')
         else:
             handler = TimedRotatingFileHandler(outputFile,
+                                               level=level,
+                                               bubble=True,
                                                date_format='%Y-%m-%d')
     else:
         if not colorized:

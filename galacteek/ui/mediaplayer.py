@@ -35,7 +35,7 @@ from galacteek.ipfs.cidhelpers import qurlPercentDecode
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.paths import posixIpfsPath
 
-from . import ui_mediaplaylist
+from .forms import ui_mediaplaylist
 
 from .clipboard import iClipboardEmpty
 from .widgets import *

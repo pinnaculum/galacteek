@@ -73,6 +73,8 @@ class PeerIdentityCtx:
         self._identLast = int(time.time())
         self._validated = validated
         self._authenticated = authenticated
+        self._authFailedAttemptsCn = 0
+        self._authFailedLtLast = None
         self._identMsg = None
 
         self._avatarPath = None
@@ -128,6 +130,19 @@ class PeerIdentityCtx:
     def peerUnresponsive(self):
         return (int(time.time()) - self.identLast) > (60 * 5)
 
+    @property
+    def authFailedAttemptsCn(self):
+        return self._authFailedAttemptsCn
+
+    @property
+    def authFailedLtLast(self):
+        return self._authFailedLtLast
+
+    @property
+    def authFailedRecently(self):
+        if self.authFailedLtLast:
+            return (loopTime() - self.authFailedLtLast) < 10
+
     @ident.setter
     def ident(self, v):
         self._identMsg = v
@@ -136,6 +151,10 @@ class PeerIdentityCtx:
     def debug(self, msg):
         log.debug('Peer {p}@{ipid}: {msg}'.format(
             p=self.peerId, ipid=self.ipid.did, msg=msg))
+
+    def failedAuthAttempt(self):
+        self._authFailedAttemptsCn += 1
+        self._authFailedLtLast = loopTime()
 
     def alive(self):
         if self.ipid.local:
@@ -605,13 +624,14 @@ class Peers:
                         self.onPeerDidModified, piCtx))
                     piCtx.sStatusChanged.connectTo(partialEnsure(
                         self.peerModified.emit, piCtx))
+                    ensureLater(5, piCtx.watch)
 
                 piCtx.ident = iMsg
 
-                ensure(self.didPerformAuth(piCtx, iMsg))
+                if not piCtx.authFailedRecently:
+                    ensure(self.didPerformAuth(piCtx, iMsg))
 
                 self._byHandle[iMsg.iphandle] = piCtx
-                ensureLater(5, piCtx.watch)
         else:
             # This peer is already registered in the network graph
             # What we ought to do here is just to refresh the DID document
@@ -631,6 +651,7 @@ class Peers:
 
     @ipfsOp
     async def didPerformAuth(self, ipfsop, piCtx, identMsg):
+        success = False
         ipid = piCtx.ipid
         idToken = None
 
@@ -648,6 +669,7 @@ class Peers:
                     log.debug('DID auth failed for DID: {}'.format(ipid.did))
                     break
                 else:
+                    success = True
                     log.debug('DID auth success for DID: {}'.format(ipid.did))
                     piCtx._authenticated = True
 
@@ -661,6 +683,9 @@ class Peers:
             # We control this DID
             piCtx._authenticated = True
             await self.peerAuthenticated.emit(piCtx)
+
+        if not success:
+            piCtx.failedAuthAttempt()
 
         self._didAuthInp[ipid.did] = False
 

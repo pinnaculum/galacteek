@@ -58,22 +58,22 @@ from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.appsettings import *
 
-from . import ui_addhashmarkdialog
-from . import ui_addfeeddialog
-from . import ui_ipfscidinputdialog, ui_ipfsmultiplecidinputdialog
-from . import ui_donatedialog
-from . import ui_qschemecreatemapping
-from . import ui_iptagsmanager
-from . import ui_mfsoptionsdialog
-from . import ui_newseeddialog
-from . import ui_ipfsdaemoninitdialog
-from . import ui_profileinitdialog
-from . import ui_ipidrsapasswordprompt
-from . import ui_torrenttransferdialog
-from . import ui_browserfeaturereqdialog
-from . import ui_captchachallengedialog
-from . import ui_videochatackwaitdialog
-from . import ui_videochatackwait
+from .forms import ui_addhashmarkdialog
+from .forms import ui_addfeeddialog
+from .forms import ui_ipfscidinputdialog, ui_ipfsmultiplecidinputdialog
+from .forms import ui_donatedialog
+from .forms import ui_qschemecreatemapping
+from .forms import ui_iptagsmanager
+from .forms import ui_mfsoptionsdialog
+from .forms import ui_newseeddialog
+from .forms import ui_ipfsdaemoninitdialog
+from .forms import ui_profileinitdialog
+from .forms import ui_ipidrsapasswordprompt
+from .forms import ui_torrenttransferdialog
+from .forms import ui_browserfeaturereqdialog
+from .forms import ui_captchachallengedialog
+from .forms import ui_videochatackwaitdialog
+from .forms import ui_videochatackwait
 
 from .helpers import *
 from .widgets import ImageWidget
@@ -99,6 +99,25 @@ from .i18n import iOpen
 
 def boldLabelStyle():
     return 'QLabel { font-weight: bold; }'
+
+
+class BaseDialog(QDialog):
+    uiClass: object = None
+
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+
+        self.app = QApplication.instance()
+
+        if self.uiClass:
+            self.ui = self.uiClass()
+            self.ui.setupUi(self)
+
+    def accept(self):
+        self.done(1)
+
+    def reject(self):
+        self.done(0)
 
 
 class AddHashmarkDialog(QDialog):

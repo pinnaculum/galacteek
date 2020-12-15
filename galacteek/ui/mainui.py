@@ -42,7 +42,6 @@ from galacteek import database
 from galacteek.core.glogger import loggerMain
 from galacteek.core.glogger import loggerUser
 from galacteek.core.glogger import LogRecordStyler
-from galacteek.core.glogger import AsyncLogHandler
 from galacteek.core.asynclib import asyncify
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.ipfsops import *
@@ -50,7 +49,7 @@ from galacteek.ipfs.cidhelpers import IPFSPath
 
 from galacteek.core.modelhelpers import *
 
-from . import ui_ipfsinfos
+from .forms import ui_ipfsinfos
 
 from . import userwebsite
 from . import browser
@@ -180,7 +179,7 @@ class UserLogsWindow(QMainWindow):
         super().hideEvent(event)
 
 
-class MainWindowLogHandler(AsyncLogHandler):
+class MainWindowLogHandler(Handler):
     """
     Custom logbook handler that logs to the status bar
 
@@ -198,7 +197,7 @@ class MainWindowLogHandler(AsyncLogHandler):
                  facility='user', level=0, format_string=None,
                  filter=None, bubble=True, window=None):
         Handler.__init__(self, level, filter, bubble)
-        AsyncLogHandler.__init__(self, level, filter, bubble)
+        self.app = QApplication.instance()
         self.application_name = application_name
         self.window = window
         self.logsBrowser = logsBrowser
@@ -206,7 +205,11 @@ class MainWindowLogHandler(AsyncLogHandler):
         self.doc = self.logsBrowser.document()
         self.logStyler = LogRecordStyler()
 
-    async def processRecord(self, record):
+    def emit(self, record):
+        # The emit could be called from another thread so play it safe ..
+        self.app.loop.call_soon_threadsafe(self._handleRecord, record)
+
+    def _handleRecord(self, record):
         try:
             cursor = self.logsBrowser.textCursor()
             vScrollBar = self.logsBrowser.verticalScrollBar()
@@ -223,7 +226,6 @@ class MainWindowLogHandler(AsyncLogHandler):
                     </div>
                     '''
                 )
-                await asyncio.sleep(0)
 
             oldScrollbarValue = vScrollBar.value()
             isDown = oldScrollbarValue == vScrollBar.maximum()
@@ -238,8 +240,6 @@ class MainWindowLogHandler(AsyncLogHandler):
                 <br />
                 '''
             )
-
-            await asyncio.sleep(0)
 
             if cursor.hasSelection() or not isDown:
                 self.logsBrowser.setTextCursor(cursor)
@@ -588,7 +588,8 @@ class CentralStack(QStackedWidget):
             self.addWidget(workspace)
             workspace.wsAttached = True
 
-            if isinstance(workspace, TabbedWorkspace):
+            if isinstance(workspace, TabbedWorkspace) or isinstance(
+                    workspace, SingleWidgetWorkspace):
                 self.toolBarWs.add(
                     self.wsSwitchButton(workspace),
                     dst=workspace.wsSection
@@ -1022,6 +1023,7 @@ class MainWindow(QMainWindow):
         self.wspaceStatus = WorkspaceStatus(self.stack, 'status')
         self.wspacePeers = WorkspacePeers(self.stack)
         self.wspaceFs = WorkspaceFiles(self.stack)
+        self.wspaceMessenger = WorkspaceMessenger(self.stack)
         self.wspaceSearch = WorkspaceSearch(self.stack)
         self.wspaceMultimedia = WorkspaceMultimedia(self.stack)
         self.wspaceEdit = WorkspaceEdition(self.stack)
@@ -1056,7 +1058,8 @@ class MainWindow(QMainWindow):
         self.ipfsStatusCube.hovered.connect(self.onIpfsInfosHovered)
         self.ipfsStatusCube.startClip()
 
-        self.torControlButton = TorControllerButton(self.app.tor)
+        self.torControlButton = TorControllerButton(
+            self.app.coreS.torService)
         self.torControlButton.setIcon(getIcon('tor.png'))
         self.torControlButton.setToolTip('Tor not connected yet')
 
@@ -1199,6 +1202,7 @@ class MainWindow(QMainWindow):
         self.stack.addWorkspace(
             self.wspaceEarth, section='planets')
         self.stack.addWorkspace(self.wspaceFs)
+        self.stack.addWorkspace(self.wspaceMessenger)
         self.stack.addWorkspace(
             self.wspaceMars, section='planets', dormant=True)
         self.stack.addWorkspace(

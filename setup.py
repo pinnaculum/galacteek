@@ -10,6 +10,7 @@ import json
 
 from setuptools import setup
 from setuptools import Command
+from setuptools import find_packages
 from distutils.command.build import build
 
 PY_VER = sys.version_info
@@ -80,7 +81,7 @@ class build_contracts(Command):
         from galacteek.smartcontracts import listContracts
         from galacteek.smartcontracts import solCompileFile
         from galacteek.smartcontracts import vyperCompileFile
-        from galacteek.dweb.ethereum.contract import contractDeploy
+        from galacteek.blockchain.ethereum.contract import contractDeploy
 
         usrcontracts = [c for c in self.contracts.split(',')] if \
             self.contracts else ['*']
@@ -92,9 +93,6 @@ class build_contracts(Command):
 
         for contract in listContracts():
             print('>', contract, contract.dir)
-
-            if usrcontracts != ['*'] and contract not in usrcontracts:
-                continue
 
             ifacePath = os.path.join(contract.dir, 'interface.json')
 
@@ -135,10 +133,10 @@ class build_ui(Command):
         # Forms where we don't want to have automatic slots
         # connection with connectSlotsByName()
         self.uiforms_noSlotConnect = [
-            'galacteek/ui/browsertab.ui',
-            'galacteek/ui/dagview.ui',
-            'galacteek/ui/files.ui',
-            'galacteek/ui/qschemecreatemapping.ui'
+            'galacteek/ui/forms/browsertab.ui',
+            'galacteek/ui/forms/dagview.ui',
+            'galacteek/ui/forms/files.ui',
+            'galacteek/ui/forms/qschemecreatemapping.ui'
         ]
 
     def finalize_options(self):
@@ -166,18 +164,19 @@ class build_ui(Command):
     def run(self):
         uifiles = []
         uidir = 'galacteek/ui'
+        formsdir = 'galacteek/ui/forms'
 
         if self.uiforms:
-            uifiles = [os.path.join(uidir, '{0}.ui'.format(form)) for form
+            uifiles = [os.path.join(formsdir, '{0}.ui'.format(form)) for form
                        in self.uiforms.split(',')]
         else:
-            uifiles = glob.iglob('{}/*.ui'.format(uidir))
+            uifiles = glob.iglob('{}/*.ui'.format(formsdir))
 
         for uifile in uifiles:
             print('* Building UI form:', uifile)
             base = os.path.basename(uifile).replace('.ui', '')
             out = 'ui_{}.py'.format(base)
-            fp_out = os.path.join(uidir, out)
+            fp_out = os.path.join(formsdir, out)
 
             run(['pyuic5', '--from-imports',
                  uifile,
@@ -203,7 +202,7 @@ class build_ui(Command):
                 print('lrelease was not found, cannot build translation files')
 
         run(['pyrcc5', os.path.join(uidir, 'galacteek.qrc'), '-o',
-             os.path.join(uidir, 'galacteek_rc.py')])
+             os.path.join(formsdir, 'galacteek_rc.py')])
 
 
 class _build(build):
@@ -234,15 +233,15 @@ def reqs_parse(path):
 
 install_reqs = reqs_parse('requirements.txt')
 install_reqs_extra_markdown = reqs_parse('requirements-extra-markdown.txt')
-# install_reqs_extra_torrent = reqs_parse('requirements-extra-torrent.txt')
 
+found_packages = find_packages(exclude=['tests', 'tests.*'])
 
 setup(
     name='galacteek',
     version=version,
     license='GPL3',
-    author='David Ferlier',
-    author_email='galacteek@protonmail.com',
+    author='cipres',
+    author_email='BM-87dtCqLxqnpwzUyjzL8etxGK8MQQrhnxnt1@bitmessage',
     url='https://github.com/pinnaculum/galacteek',
     description='Browser for the distributed web',
     long_description=long_description,
@@ -253,43 +252,7 @@ setup(
         'build_docs': build_docs,
         'build_contracts': build_contracts
     },
-    packages=[
-        'galacteek',
-        'galacteek.docs',
-        'galacteek.docs.manual',
-        'galacteek.core',
-        'galacteek.core.edags',
-        'galacteek.core.models',
-        'galacteek.crypto',
-        'galacteek.database',
-        'galacteek.database.models',
-        'galacteek.did',
-        'galacteek.extapps',
-        'galacteek.ipfs',
-        'galacteek.ipfs.pubsub',
-        'galacteek.ipfs.pubsub.srvs',
-        'galacteek.ipfs.pubsub.messages',
-        'galacteek.ipfs.pb',
-        'galacteek.ipfs.p2pservices',
-        'galacteek.ipdapps',
-        'galacteek.ld',
-        'galacteek.ld.contexts',
-        'galacteek.hashmarks',
-        'galacteek.hashmarks.default',
-        'galacteek.templates',
-        'galacteek.dweb',
-        'galacteek.dweb.ethereum',
-        'galacteek.smartcontracts',
-        'galacteek.space',
-        'galacteek.torrent',
-        'galacteek.torrent.algorithms',
-        'galacteek.torrent.control',
-        'galacteek.torrent.network',
-        'galacteek.torrent.network.tracker_clients',
-        'galacteek.ui',
-        'galacteek.ui.dwebspace',
-        'galacteek.ui.orbital'
-    ],
+    packages=found_packages,
     install_requires=install_reqs,
     extras_require={
         'markdown-extensions': install_reqs_extra_markdown,
@@ -299,6 +262,8 @@ setup(
     },
     dependency_links=deps_links,
     package_data={
+        # Include all YAML files
+        '': ['*.yaml'],
         'galacteek': [
             'docs/manual/en/html/*.html',
             'docs/manual/en/html/_images/*',

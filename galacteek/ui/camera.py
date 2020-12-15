@@ -32,7 +32,7 @@ from galacteek.ui.helpers import questionBoxAsync
 from galacteek.ui.helpers import inputTextCustom
 from galacteek.ipfs import ipfsOp
 
-from . import ui_camera
+from .forms import ui_camera
 
 
 def iWebcamIpfsCapture():

@@ -1,4 +1,4 @@
-from galacteek.dweb.ethereum.contract import ContractOperator
+from galacteek.blockchain.ethereum.contract import ContractOperator
 
 from galacteek import log
 
