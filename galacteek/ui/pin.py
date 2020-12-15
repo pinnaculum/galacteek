@@ -30,7 +30,7 @@ from galacteek.core.modelhelpers import modelSearch
 
 from .widgets import GalacteekTab
 
-from .ui_batchpinlist import Ui_BatchPinList
+from .forms.ui_batchpinlist import Ui_BatchPinList
 from .helpers import messageBox
 
 from .i18n import iPath

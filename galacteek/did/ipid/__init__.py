@@ -8,7 +8,6 @@ import random
 import string
 import weakref
 
-import aiohttp
 from aiohttp.web_exceptions import HTTPOk
 
 from yarl import URL
@@ -1103,12 +1102,13 @@ class IPIDManager:
 
         async with ipfsop.p2pDialer(
                 peerId, 'didauth-vc-pss',
-                address='/ip4/127.0.0.1/tcp/{}'.format(lPort)) as streamCtx:
-            if streamCtx.maddr is None:
+                addressAuto=True) as streamCtx:
+            if streamCtx.failed:
                 return False
             else:
-                log.debug('DID Authenticate ({0}): connected to srv'.format(
-                    ipid.did))
+                log.debug(
+                    f'DID Authenticate ({ipid.did}): connected to service')
+                await ipfsop.sleep(0.5)
 
                 return await self.didAuthPerform(
                     ipfsop, streamCtx, ipid, token=token)
@@ -1127,13 +1127,9 @@ class IPIDManager:
             req['ident_token'] = token
 
         try:
-            async with aiohttp.ClientSession() as session:
+            async with streamCtx.session as session:
                 async with session.post(
-                        'http://{host}:{port}/auth'.format(
-                            host=streamCtx.maddrHost,
-                            port=streamCtx.maddrPort),
-                        json=req) as resp:
-
+                        streamCtx.httpUrl('/auth')) as resp:
                     if resp.status != HTTPOk.status_code:
                         payload = await resp.json()
                         log.debug(f'Error payload: {payload}')
@@ -1152,7 +1148,7 @@ class IPIDManager:
                         ipid, req, expanded
                     )
         except Exception as err:
-            log.debug('didAuthPerform: {}'.format(str(err)))
+            log.debug(f'didAuthPerform error: {err}')
             return False
 
     @ipfsOp

@@ -41,6 +41,7 @@ from galacteek.ui.helpers import runDialogAsync
 from galacteek.ui.dialogs import DefaultProgressDialog
 
 from galacteek.ui.torrentgui import TorrentClientTab
+from galacteek.ui.messenger import MessengerWidget
 
 from galacteek.ui.feeds import AtomFeedsViewTab
 from galacteek.ui.feeds import AtomFeedsView
@@ -154,6 +155,7 @@ WS_MULTIMEDIA = 'multimedia'
 WS_EDIT = 'edit'
 WS_SEARCH = 'search'
 WS_MISC = 'misc'
+WS_DMESSENGER = 'dmessenger'
 
 
 class BaseWorkspace(QWidget):
@@ -172,6 +174,7 @@ class BaseWorkspace(QWidget):
         self.wsDescription = description
         self.wsSection = section
         self.wsAttached = False
+        self.wsIcon = icon if icon else getIcon('galacteek.png')
         self.defaultAction = None
         self.wLayout = QVBoxLayout(self)
         self.setLayout(self.wLayout)
@@ -236,6 +239,11 @@ class BaseWorkspace(QWidget):
         return False
 
 
+class SingleWidgetWorkspace(BaseWorkspace):
+    def setupWorkspace(self):
+        pass
+
+
 class DefaultStatusWidget(QWidget):
     pass
 
@@ -293,8 +301,6 @@ class TabbedWorkspace(BaseWorkspace):
         self.toolBarCtrl = QToolBar()
         self.toolBarActions = QToolBar()
         self.toolBarActions.setObjectName('wsActionsToolBar')
-
-        self.wsIcon = icon if icon else getIcon('galacteek.png')
 
     def wsToolTip(self):
         return self.wsDescription
@@ -786,3 +792,17 @@ class WorkspaceMisc(TabbedWorkspace):
         self.wsRegisterTab(
             self.pinStatusTab, iPinningStatus(),
             icon=getIcon('pin-zoom.png'))
+
+
+class WorkspaceMessenger(SingleWidgetWorkspace):
+    def __init__(self, stack):
+        super().__init__(stack, WS_DMESSENGER,
+                         icon=getIcon('dmessenger/dmessenger.png'),
+                         description='Decentralized messenger')
+
+    def setupWorkspace(self):
+        super().setupWorkspace()
+
+        self.msger = MessengerWidget()
+        self.wLayout.addWidget(self.msger)
+        ensure(self.msger.setup())

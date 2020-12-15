@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MessengerForm</class>
+ <widget class="QWidget" name="MessengerForm">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>531</width>
+    <height>415</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_2">
+   <item>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QStackedWidget" name="stackedWidget">
+       <widget class="QWidget" name="page">
+        <layout class="QHBoxLayout" name="horizontalLayout_3">
+         <item>
+          <layout class="QGridLayout" name="gridLayout">
+           <item row="1" column="0">
+            <widget class="QStackedWidget" name="mailBoxStack">
+             <widget class="QWidget" name="page_5"/>
+             <widget class="QWidget" name="page_6"/>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <layout class="QVBoxLayout" name="verticalLayout_4">
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_4">
+               <item>
+                <widget class="QPushButton" name="copyBmKeyButton">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Copy your Bitmessage address to the clipboard&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string/>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../galacteek.qrc">
+                   <normaloff>:/share/icons/clipboard.png</normaloff>:/share/icons/clipboard.png</iconset>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QComboBox" name="curMailboxCombo"/>
+               </item>
+               <item>
+                <widget class="QPushButton" name="createMailboxButton">
+                 <property name="text">
+                  <string>Create mailbox</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="composeButton">
+                 <property name="text">
+                  <string>Compose</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../galacteek.qrc">
+                   <normaloff>:/share/icons/dmessenger/dmessenger.png</normaloff>:/share/icons/dmessenger/dmessenger.png</iconset>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QStackedWidget" name="mailStack">
+           <widget class="QWidget" name="page_9"/>
+           <widget class="QWidget" name="page_10"/>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="page_2"/>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="../galacteek.qrc"/>
+ </resources>
+ <connections/>
+</ui>

@@ -50,6 +50,9 @@
 from galacteek.core.asynclib import *  # noqa
 from galacteek.core import glogger
 
+from galacteek.config import cGet
+from galacteek.config import cParentGet
+
 GALACTEEK_NAME = 'galacteek'
 
 log = glogger.loggerMain

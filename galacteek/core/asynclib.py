@@ -307,7 +307,7 @@ async def cancelAllTasks(*, timeout=None, raise_timeout_error=False):
     _warn_pending()
 
 
-async def asyncRmTree(path):
+async def asyncRmTree(path: str):
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(
         None,
@@ -316,7 +316,7 @@ async def asyncRmTree(path):
     )
 
 
-def clientSessionWithProxy(proxyUrl):
+def clientSessionWithProxy(proxyUrl: str):
     if proxyUrl and proxyUrl.startswith('socks5://'):
         return aiohttp.ClientSession(
             connector=ProxyConnector.from_url(proxyUrl))

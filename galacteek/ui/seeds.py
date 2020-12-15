@@ -39,7 +39,7 @@ from galacteek.database.models.seeds import *
 
 
 from .clips import RotatingCubeRedFlash140d
-from . import ui_seeds
+from .forms import ui_seeds
 from .widgets import *
 from .helpers import *
 from .i18n import *

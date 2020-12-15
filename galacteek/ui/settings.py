@@ -5,7 +5,7 @@ from PyQt5.QtCore import QUrl
 
 from galacteek import ensure
 
-from . import ui_settings
+from .forms import ui_settings
 from ..appsettings import *
 from .helpers import *
 from .i18n import *

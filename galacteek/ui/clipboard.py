@@ -92,6 +92,12 @@ def iCopyCIDToClipboard():
         "Copy CID to clipboard")
 
 
+def iCopiedToClipboard():
+    return QCoreApplication.translate(
+        'FileManagerForm',
+        'Copied to clipboard')
+
+
 def iCopyPathToClipboard():
     return QCoreApplication.translate(
         'FileManagerForm',

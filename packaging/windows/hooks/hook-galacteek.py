@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 from PyInstaller.utils.hooks import *
 from PyInstaller.compat import modname_tkinter
 
@@ -63,11 +66,21 @@ excludedimports = [
     modname_tkinter
 ]
 
-datas += [('galacteek/templates', '_pkg/galacteek/templates')]
-datas += [('galacteek/hashmarks', '_pkg/galacteek/hashmarks')]
-datas += [('galacteek/docs/manual', '_pkg/galacteek/docs/manual')]
-datas += [('galacteek/ld/contexts', '_pkg/galacteek/ld/contexts')]
+pkgrDest = '_pkg'
+
+datas += [('galacteek/templates', f'{pkgrDest}/galacteek/templates')]
+datas += [('galacteek/hashmarks', f'{pkgrDest}/galacteek/hashmarks')]
+datas += [('galacteek/docs/manual', f'{pkgrDest}/galacteek/docs/manual')]
+datas += [('galacteek/ld/contexts', f'{pkgrDest}/galacteek/ld/contexts')]
 datas += [('packaging/windows/random_username', 'random_username')]
 datas += [('magic.mgc', '.')]
+
+for root, dirs, files in os.walk('galacteek'):
+    for file in files:
+        if file.endswith('.yaml'):
+            p = Path(root).joinpath(file)
+            dst = Path(pkgrDest).joinpath(p)
+            datas += [(str(p), str(dst))]
+            print('Copying YAML file', p)
 
 print(datas)

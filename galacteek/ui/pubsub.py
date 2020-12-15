@@ -72,7 +72,7 @@ class PubsubSnifferWidget(GalacteekTab):
             elif topic == TOPIC_CHAT:
                 item.setBackground(QBrush(QColor(Qt.cyan)))
 
-        viewButton = QToolButton()
+        viewButton = QToolButton(self)
         viewButton.setIcon(getIcon('search-engine.png'))
         viewButton.clicked.connect(functools.partial(
             self.viewJsonMessage, jsonMsg))

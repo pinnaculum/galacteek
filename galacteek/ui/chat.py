@@ -71,10 +71,10 @@ from .widgets import IconSelector
 from .i18n import iChat
 from .i18n import iChatMessageNotification
 
-from . import ui_chatchannelslist
-from . import ui_chatchannelnew
-from . import ui_privchatchannelnew
-from . import ui_chatroom
+from .forms import ui_chatchannelslist
+from .forms import ui_chatchannelnew
+from .forms import ui_privchatchannelnew
+from .forms import ui_chatroom
 
 
 @SingletonDecorator

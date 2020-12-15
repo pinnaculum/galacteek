@@ -17,6 +17,7 @@ base58>=1.0.2,<2.0
 bencodepy>=0.9.5
 bitarray>=1.6.1
 cachetools>=3.1.1
+claptcha>=0.3.3
 colour>=0.1.5
 feedgen>=0.7.0
 feedparser>=5.2.0
@@ -30,7 +31,9 @@ logbook>=1.5.3
 magnet2torrent>=1.1.1
 markdown>=3.0
 mkdocs>=1.1.2
+mode>=4.4.0
 multiaddr>=0.0.8
+omegaconf>=2.0.5
 orjson>=3,<3.4
 pillow>=6.0.0
 protobuf==3.6.1
@@ -54,6 +57,7 @@ qrcode==6.1
 qtawesome>=0.7.2
 random-username>=1.0.2
 rule-engine>=2.1.0
+stem>=1.8.0
 strict-rfc3339>=0.7
 tortoise-orm==0.16.13
 validators>=0.18.1

@@ -156,7 +156,8 @@ class TunnelDialerContext(object):
     async def __aenter__(self):
         self.operator.debug('Tunnel dialer: {0} {1} {2}: enter'.format(
             self.protocol, self.maddrHost, self.maddrPort))
-        self.session = aiohttp.ClientSession()
+        self.session = aiohttp.ClientSession(
+            connector=aiohttp.TCPConnector(ssl=False))
         return self
 
     async def __aexit__(self, *args):

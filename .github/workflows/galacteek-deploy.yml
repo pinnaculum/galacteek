@@ -22,6 +22,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
+
+    - name: Checkout notbit
+      uses: actions/checkout@v2
+      with:
+        repository: pinnaculum/notbit
+        path: notbit
+
     - name: Set up Python 3.7
       uses: actions/setup-python@v2
       with:
@@ -34,11 +41,13 @@ jobs:
         sudo apt-get install -y libxcb-xkb1 libxkbcommon-x11-0
         sudo apt-get install -y libzbar0
         sudo apt-get install -y tor
+        sudo apt-get install -y autoconf automake gcc
 
     - name: Install packages (macos)
       if: startsWith(matrix.os, 'mac')
       run: |
-        brew install tor
+        brew install tor openssl
+        brew install pkg-config automake
 
     - name: Install unzip (Windows)
       if: startsWith(matrix.os, 'windows')
@@ -69,6 +78,18 @@ jobs:
       uses: crazy-max/ghaction-chocolatey@v1
       with:
         args: install tor
+
+    - name: Install cygwin (Windows)
+      if: startsWith(matrix.os, 'windows')
+      uses: crazy-max/ghaction-chocolatey@v1
+      with:
+        args: install cygwin
+
+    - name: Install cygwin packages
+      if: startsWith(matrix.os, 'windows')
+      run: |
+        C:\tools\cygwin\cygwinsetup.exe -qgnNdO -R C:/tools/cygwin -s http://mirrors.kernel.org/sourceware/cygwin/ -P autoconf,automake,gcc-core,libssl1.1,make,patch
+      shell: cmd
 
     - name: Configure environment (1)
       run: |
@@ -118,6 +139,10 @@ jobs:
         echo "HOMEBREW_NO_AUTO_UPDATE=1" >> $GITHUB_ENV
         echo "HOMEBREW_AUTO_UPDATING=0" >> $GITHUB_ENV
         echo "HOMEBREW_UPDATE_PREINSTALL=0" >> $GITHUB_ENV
+
+        # Set PKG_CONFIG_PATH to point to brew's openssl libcrypto, for notbit
+        # compilation
+        echo "PKG_CONFIG_PATH=/usr/local/Cellar/openssl@1.1/1.1.1h/lib/pkgconfig" >> $GITHUB_ENV
 
     - name: OS-specific vars (win)
       if: startsWith(matrix.os, 'windows')
@@ -169,6 +194,23 @@ jobs:
       if: startsWith(matrix.os, 'windows')
       run: |
         wget https://aka.ms/vs/16/release/vc_redist.x64.exe
+
+    - name: Compile notbit
+      if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'mac')
+      run: |
+        cd ${GITHUB_WORKSPACE}/notbit
+        ./autogen.sh
+        make
+      shell: bash
+
+    - name: Compile notbit (windows)
+      if: startsWith(matrix.os, 'windows')
+      run: |
+        path C:\tools\cygwin\bin;C:\tools\cygwin\usr\bin
+        cd ${GITHUB_WORKSPACE}/notbit
+        ./autogen.sh
+        make
+      shell: cmd
 
     - name: Install dependencies
       run: |

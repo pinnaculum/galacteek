@@ -32,33 +32,33 @@ SOURCES = galacteek/application.py \
 	galacteek/ui/userwebsite.py \
 	galacteek/ui/widgets.py
 
-FORMS += galacteek/ui/addkeydialog.ui \
-	galacteek/ui/addhashmarkdialog.ui \
-	galacteek/ui/addfeeddialog.ui \
-	galacteek/ui/atomfeeds.ui \
-	galacteek/ui/browsertab.ui \
-	galacteek/ui/camera.ui \
-	galacteek/ui/chatchannelnew.ui \
-	galacteek/ui/chatchannelslist.ui \
-	galacteek/ui/chatroom.ui \
-	galacteek/ui/dagview.ui \
-	galacteek/ui/donatedialog.ui \
-	galacteek/ui/files.ui\
-	galacteek/ui/ipfscidinputdialog.ui \
-	galacteek/ui/ipfsinfos.ui \
-	galacteek/ui/ipfsmultiplecidinputdialog.ui \
-	galacteek/ui/iptagsmanager.ui \
-	galacteek/ui/keys.ui\
-	galacteek/ui/mediaplaylist.ui \
-	galacteek/ui/mfsoptionsdialog.ui \
-	galacteek/ui/newseeddialog.ui \
-	galacteek/ui/profileeditdialog.ui \
-	galacteek/ui/peersmgr.ui \
-	galacteek/ui/batchpinlist.ui \
-	galacteek/ui/qschemecreatemapping.ui \
-	galacteek/ui/seeds.ui \
-	galacteek/ui/settings.ui \
-	galacteek/ui/timeframeselector.ui
+FORMS += galacteek/ui/forms/addkeydialog.ui \
+	galacteek/ui/forms/addhashmarkdialog.ui \
+	galacteek/ui/forms/addfeeddialog.ui \
+	galacteek/ui/forms/atomfeeds.ui \
+	galacteek/ui/forms/browsertab.ui \
+	galacteek/ui/forms/camera.ui \
+	galacteek/ui/forms/chatchannelnew.ui \
+	galacteek/ui/forms/chatchannelslist.ui \
+	galacteek/ui/forms/chatroom.ui \
+	galacteek/ui/forms/dagview.ui \
+	galacteek/ui/forms/donatedialog.ui \
+	galacteek/ui/forms/files.ui\
+	galacteek/ui/forms/ipfscidinputdialog.ui \
+	galacteek/ui/forms/ipfsinfos.ui \
+	galacteek/ui/forms/ipfsmultiplecidinputdialog.ui \
+	galacteek/ui/forms/iptagsmanager.ui \
+	galacteek/ui/forms/keys.ui\
+	galacteek/ui/forms/mediaplaylist.ui \
+	galacteek/ui/forms/mfsoptionsdialog.ui \
+	galacteek/ui/forms/newseeddialog.ui \
+	galacteek/ui/forms/profileeditdialog.ui \
+	galacteek/ui/forms/peersmgr.ui \
+	galacteek/ui/forms/batchpinlist.ui \
+	galacteek/ui/forms/qschemecreatemapping.ui \
+	galacteek/ui/forms/seeds.ui \
+	galacteek/ui/forms/settings.ui \
+	galacteek/ui/forms/timeframeselector.ui
 
 TRANSLATIONS = share/translations/galacteek_en.ts \
 		share/translations/galacteek_fr.ts \

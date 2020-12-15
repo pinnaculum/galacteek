@@ -84,7 +84,7 @@ from galacteek.dweb.page import pyqtSlot
 from galacteek.dweb.render import renderTemplate
 from galacteek.dweb.htmlparsers import IPFSLinksParser
 
-from . import ui_browsertab
+from .forms import ui_browsertab
 from .dag import DAGViewer
 from .pin import PinBatchWidget, PinBatchTab
 from .helpers import *

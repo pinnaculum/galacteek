@@ -18,7 +18,7 @@ from galacteek.core.models.atomfeeds import AtomFeedEntryItem
 from galacteek.core.models.atomfeeds import AtomFeedItem
 from galacteek.dweb.page import BasePage
 
-from . import ui_atomfeeds
+from .forms import ui_atomfeeds
 from .dialogs import AddAtomFeedDialog
 from .widgets import GalacteekTab
 from .widgets import IPFSWebView

@@ -30,7 +30,7 @@ from .widgets import GalacteekTab
 from .widgets import PopupToolButton
 from .colors import *
 
-from . import ui_dagview
+from .forms import ui_dagview
 
 
 def iDagError(path):
