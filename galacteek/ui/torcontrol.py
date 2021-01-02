@@ -1,7 +1,7 @@
 
 from galacteek.core import runningApp
 from galacteek.qt.webengine import *
-from galacteek.core.webproxy import TorNetworkProxy
+from galacteek.browser.webproxy import TorNetworkProxy
 
 from PyQt5.QtWidgets import QToolButton
 

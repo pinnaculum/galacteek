@@ -1,9 +1,0 @@
-conn:
-  networks:
-    mainnet:
-      providerType: http
-      # rpcUrl: http://localhost:7545
-      rpcUrl: http://192.168.0.12:7545
-    pytest:
-      providerType: http
-      rpcUrl: http://192.168.0.12:7545

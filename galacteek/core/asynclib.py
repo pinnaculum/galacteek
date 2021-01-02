@@ -1,3 +1,4 @@
+import os.path
 from collections import UserList
 from asyncqt import QThreadExecutor
 import threading
@@ -126,9 +127,23 @@ def ensure(coro, **kw):
     return future
 
 
+def ensureSafe(coro, *kw):
+    loop = asyncio.get_event_loop()
+    return asyncio.run_coroutine_threadsafe(
+        coro,
+        loop
+    )
+
+
 def partialEnsure(coro, *args, **kw):
+    loop = asyncio.get_event_loop()
+
     def _pwrapper(coro, *args, **kw):
-        ensure(coro(*args, **kw))
+        # ensure(coro(*args, **kw))
+        asyncio.run_coroutine_threadsafe(
+            coro(*args, **kw),
+            loop
+        )
 
     return functools.partial(_pwrapper, coro, *args, **kw)
 
@@ -309,11 +324,13 @@ async def cancelAllTasks(*, timeout=None, raise_timeout_error=False):
 
 async def asyncRmTree(path: str):
     loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(
-        None,
-        shutil.rmtree,
-        path
-    )
+
+    if os.path.isdir(path):
+        return await loop.run_in_executor(
+            None,
+            shutil.rmtree,
+            path
+        )
 
 
 def clientSessionWithProxy(proxyUrl: str):

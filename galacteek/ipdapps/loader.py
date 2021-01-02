@@ -1,18 +1,21 @@
-import importlib
 from galacteek import ensure
 
 from galacteek import log
 from galacteek.core.objects import GObject
 from galacteek.ipdapps import availableDapps
-from galacteek.ipdapps import dappsPkg
+from galacteek.ipdapps import dappGetModule
 from galacteek.smartcontracts import getContractByName
 
 
 class DappsRegistry(GObject):
-    def __init__(self, ethController, parent=None):
+    def __init__(self, ethService, parent=None):
         super().__init__(parent)
         self._dapps = {}
-        self.ethCtrl = ethController
+        self.ethService = ethService
+
+    @property
+    def ethCtrl(self):
+        return self.ethService.ctrl
 
     async def loadDappFromAddr(self, dappName, contractName, address):
         lContract = getContractByName(contractName)
@@ -32,19 +35,13 @@ class DappsRegistry(GObject):
             log.debug('Contract invalid: {}'.format(address))
 
     async def loadDapp(self, dappName, **params):
-        dapps = availableDapps()
+        dapps = dict(availableDapps())
         dappPath = dapps.get(dappName, None)
 
         if not dappPath:
             return None
 
-        modname = '{0}.{1}'.format(dappsPkg, dappName)
-
-        try:
-            module = importlib.import_module(modname)
-        except Exception as err:
-            print(str(err))
-            return None
+        module = dappGetModule(dappName)
 
         if module:
             dapp = module.Dapp(
@@ -55,9 +52,10 @@ class DappsRegistry(GObject):
                 parent=self,
                 **params
             )
-            dapp.pkgContentsChanged.connect(self.onDappPkgChanged)
+            # dapp.pkgContentsChanged.connect(self.onDappPkgChanged)
+
             await dapp.registerSchemeHandlers()
-            await dapp.init()
+            await dapp.dappInit()
             self._dapps[dappName] = dapp
             return dapp
 

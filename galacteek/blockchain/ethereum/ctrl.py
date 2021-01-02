@@ -3,10 +3,14 @@ import asyncio
 import concurrent.futures
 import async_timeout
 import time
+from yarl import URL
 
+from eth_keys import keys
 from web3 import Web3
 from web3.providers.websocket import WebsocketProvider
 from web3.auto import w3
+from web3.middleware import geth_poa_middleware
+
 from ens import ENS
 
 from PyQt5.QtWidgets import QApplication
@@ -15,8 +19,11 @@ from galacteek import log
 from galacteek import logUser
 from galacteek import ensure
 from galacteek import AsyncSignal
+from galacteek.config import dictconfig
 
 from .contract import ContractOperator
+from .account import createWithMnemonic
+
 from galacteek.smartcontracts import listContracts
 from galacteek.smartcontracts import getContractByName
 from galacteek.smartcontracts import getContractDeployments
@@ -24,21 +31,58 @@ from galacteek.smartcontracts import getContractDeployments
 from requests.exceptions import ConnectionError
 
 
-class EthereumConnectionParams:
-    def __init__(self, rpcUrl, provType='http'):
-        self.provType = provType
-        self.rpcUrl = rpcUrl
-
-
 class EthBlock:
     def __init__(self, block):
         self._block = block
 
 
-class DeployedContract:
-    def __init__(self, cInterface, address):
-        self.interface = cInterface
-        self.address = address
+def web3Connect(params: dictconfig.DictConfig):
+    from galacteek.blockchain.ethereum.infura import endpoints
+
+    if params.provType in ['http', 'https']:
+        scheme = 'https'
+    elif params.provType == 'websocket':
+        scheme = 'ws'
+    else:
+        scheme = 'https'
+
+    if params.mode == 'infura':
+        projectId = params.infura.projectId
+        projectSecret = params.infura.projectSecret
+
+        if scheme == 'ws':
+            url = URL.build(
+                host=endpoints.INFURA_RINKEBY_DOMAIN,
+                scheme=scheme,
+                user='',
+                password=projectSecret,
+                path=f'/ws/v3/{projectId}'
+            )
+        elif scheme == 'https':
+            url = URL.build(
+                host='rinkeby.infura.io',
+                scheme=scheme,
+                user='',
+                password=projectSecret,
+                path=f'/v3/{projectId}'
+            )
+    elif params.mode in ['manual', 'ganache']:
+        url = URL(params.rpcUrl)
+
+    urlString = str(url)
+    log.debug(f'Using web3 provider URL: {urlString}')
+
+    if scheme == 'https':
+        w3 = Web3(Web3.HTTPProvider(urlString))
+    elif scheme == 'websocket':
+        w3 = Web3(WebsocketProvider(urlString))
+    else:
+        return None
+
+    if params.mode == 'infura':
+        w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+
+    return w3
 
 
 class EthereumController:
@@ -60,6 +104,8 @@ class EthereumController:
         self._stop = False
         self._loadedContracts = {}
 
+        self._accountCurrent = None
+
     @property
     def web3(self):
         return self._web3
@@ -68,33 +114,59 @@ class EthereumController:
     def params(self):
         return self._params
 
+    @property
+    def currentAccount(self):
+        return self._accountCurrent
+
+    @property
+    def currentPrivKey(self):
+        if self.currentAccount:
+            return keys.PrivateKey(self.currentAccount.key)
+
+    @property
+    def currentPubKey(self):
+        if self.currentAccount:
+            pk = keys.PrivateKey(self.currentAccount.key)
+            return pk.public_key.to_hex()
+
     def changeParams(self, params):
         self._params = params
 
     def getWeb3(self):
         try:
-            if self._params.provType == 'http':
-                web3 = Web3(Web3.HTTPProvider(self.params.rpcUrl))
-            elif self._params.provType == 'websocket':
-                web3 = Web3(WebsocketProvider(self.params.rpcUrl))
-            else:
+            web3 = web3Connect(self.params)
+
+            if not web3:
                 raise Exception(
                     f'unsupported provType {self._params.provType}')
 
             account = None
-            if hasattr(web3, 'personal') and web3.personal.listAccounts:
-                # Geth Node
-                account = web3.personal.listAccounts[0]
+            try:
+                if hasattr(web3, 'personal') and web3.personal.listAccounts:
+                    # Geth Node
+                    account = web3.personal.listAccounts[0]
+                else:
+                    account = web3.eth.accounts[0]
+                    # raise Exception('Nothing ..')
+            except Exception:
+                log.debug('No eth account found')
+                self.createAccount(web3)
             else:
-                # Ganache ?
-                account = web3.eth.accounts[0]
+                web3.eth.defaultAccount = account
 
-            web3.eth.defaultAccount = account
+            log.debug(f'Using account {account}', account)
+
             self._ns = ENS.fromWeb3(web3)
             return web3
         except Exception as err:
             log.debug('Cannot get Web3 connector: {}'.format(str(err)))
             return None
+
+    def createAccount(self, web3):
+        acct, mnemonic = createWithMnemonic()
+        web3.eth.defaultAccount = acct.address
+        self._accountCurrent = acct
+        log.debug(f'Created account {acct.address}')
 
     async def _e(self, fn, *args, **kw):
         timeout = kw.pop('timeout', None)
@@ -117,6 +189,7 @@ class EthereumController:
 
     async def stop(self):
         self._stop = True
+        self._web3 = None
 
     async def start(self):
         if not self._web3:
@@ -132,6 +205,7 @@ class EthereumController:
             await self.ethConnected.emit(True)
 
             self._watchTask = ensure(self._e(self.watchTask))
+
             ensure(self.loadAutoDeploy())
             # await self.loadContracts()
         else:
@@ -150,6 +224,8 @@ class EthereumController:
         return await self._e(self._ns.address, name)
 
     def watchTask(self):
+        return
+
         try:
             blkfilter = self.web3.eth.filter('latest')
         except Exception:
@@ -170,6 +246,7 @@ class EthereumController:
             self.ethNewBlock.emitSafe(blockHex)
 
     async def loadAutoDeploy(self):
+        # NOT USED
         # Load contracts with autoload=True
 
         for lContract in listContracts():
@@ -224,8 +301,11 @@ class EthereumController:
 
         contract = await self._e(load, lContract, address)
         if contract:
-            operator = lContract.module.contractOperator(self, contract,
-                                                         address, parent=self)
+            operator = lContract.module.contractOperator(
+                self, contract,
+                address, parent=self,
+                contractName=contractName
+            )
             self._loadedContracts.setdefault(contractName, {'default': None})
             self._loadedContracts[contractName][address] = operator
 

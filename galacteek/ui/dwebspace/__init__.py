@@ -501,6 +501,10 @@ class PlanetWorkspace(TabbedWorkspace):
         self.app.manuals.browseManualPage('browsing.html')
 
     async def loadDapps(self):
+        self.app = QApplication.instance()
+
+        await self.app.dappsRegistry.loadDapp('multihash_palace')
+
         if self.app.cmdArgs.enablequest and 0:
             await self.loadQuestService()
 

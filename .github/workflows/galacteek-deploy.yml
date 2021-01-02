@@ -15,9 +15,10 @@ jobs:
     if: contains(toJson(github.event.commits), '[skip ci]') == false
     needs: create_release
     strategy:
-      # fail-fast: false
+      fail-fast: false
       matrix:
-        os: [ubuntu-18.04, macos-latest, windows-latest]
+        # os: [ubuntu-18.04, macos-latest, windows-latest]
+        os: [windows-latest]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -47,49 +48,17 @@ jobs:
       if: startsWith(matrix.os, 'mac')
       run: |
         brew install tor openssl
-        brew install pkg-config automake
+        brew install pkg-config autoconf automake
 
-    - name: Install unzip (Windows)
-      if: startsWith(matrix.os, 'windows')
-      uses: crazy-max/ghaction-chocolatey@v1
-      with:
-        args: install unzip
-
-    - name: Install wget (Windows)
-      if: startsWith(matrix.os, 'windows')
-      uses: crazy-max/ghaction-chocolatey@v1
-      with:
-        args: install wget
-
-    - name: Install 7zip (Windows)
-      if: startsWith(matrix.os, 'windows')
-      uses: crazy-max/ghaction-chocolatey@v1
-      with:
-        args: install 7zip.portable
-
-    - name: Install NSIS (Windows)
-      if: startsWith(matrix.os, 'windows')
-      uses: crazy-max/ghaction-chocolatey@v1
-      with:
-        args: install nsis
-
-    - name: Install Tor (Windows)
-      if: startsWith(matrix.os, 'windows')
-      uses: crazy-max/ghaction-chocolatey@v1
-      with:
-        args: install tor
-
-    - name: Install cygwin (Windows)
-      if: startsWith(matrix.os, 'windows')
-      uses: crazy-max/ghaction-chocolatey@v1
-      with:
-        args: install cygwin
-
-    - name: Install cygwin packages
+    - name: Install choco packages (Windows)
       if: startsWith(matrix.os, 'windows')
       run: |
-        C:\tools\cygwin\cygwinsetup.exe -qgnNdO -R C:/tools/cygwin -s http://mirrors.kernel.org/sourceware/cygwin/ -P autoconf,automake,gcc-core,libssl1.1,make,patch
-      shell: cmd
+        choco install unzip
+        choco install wget
+        choco install 7zip.portable
+        choco install nsis
+        choco install tor
+      shell: bash
 
     - name: Configure environment (1)
       run: |
@@ -142,12 +111,11 @@ jobs:
 
         # Set PKG_CONFIG_PATH to point to brew's openssl libcrypto, for notbit
         # compilation
-        echo "PKG_CONFIG_PATH=/usr/local/Cellar/openssl@1.1/1.1.1h/lib/pkgconfig" >> $GITHUB_ENV
+        echo "PKG_CONFIG_PATH=/usr/local/Cellar/openssl@1.1/1.1.1i/lib/pkgconfig:/usr/local/Cellar/openssl/1.1.1i/lib/pkgconfig" >> $GITHUB_ENV
 
     - name: OS-specific vars (win)
       if: startsWith(matrix.os, 'windows')
       run: |
-        # We create 2 versions (one-file and installer)
         echo "IPFS_DIST_OS=windows" >> $GITHUB_ENV
 
         # echo "BUNDLE_FILENAME=${BUNDLE_ROOT}-x86_64.exe" >> $GITHUB_ENV
@@ -175,8 +143,8 @@ jobs:
     - name: Fetch IPFS dists (windows)
       if: startsWith(matrix.os, 'windows')
       run: |
-        wget https://dist.ipfs.io/go-ipfs/v${GO_IPFS_VERSION}/go-ipfs_v${GO_IPFS_VERSION}_${IPFS_DIST_OS}-amd64.zip
-        wget https://dist.ipfs.io/fs-repo-migrations/v${FS_MIGRATE_VERSION}/fs-repo-migrations_v${FS_MIGRATE_VERSION}_${IPFS_DIST_OS}-amd64.zip
+        wget "https://dist.ipfs.io/go-ipfs/v${GO_IPFS_VERSION}/go-ipfs_v${GO_IPFS_VERSION}_${IPFS_DIST_OS}-amd64.zip"
+        wget "https://dist.ipfs.io/fs-repo-migrations/v${FS_MIGRATE_VERSION}/fs-repo-migrations_v${FS_MIGRATE_VERSION}_${IPFS_DIST_OS}-amd64.zip"
 
         unzip go-ipfs_v${GO_IPFS_VERSION}_${IPFS_DIST_OS}-amd64.zip
         unzip fs-repo-migrations_v${FS_MIGRATE_VERSION}_${IPFS_DIST_OS}-amd64.zip
@@ -203,14 +171,13 @@ jobs:
         make
       shell: bash
 
-    - name: Compile notbit (windows)
+    - name: Fetch notbit (windows)
       if: startsWith(matrix.os, 'windows')
       run: |
-        path C:\tools\cygwin\bin;C:\tools\cygwin\usr\bin
-        cd ${GITHUB_WORKSPACE}/notbit
-        ./autogen.sh
-        make
-      shell: cmd
+        wget https://github.com/pinnaculum/notbit/releases/download/continuous-ci/notbit.exe
+        ln -s notbit.exe notbit-keygen.exe
+        ln -s notbit.exe notbit-sendmail.exe
+      shell: bash
 
     - name: Install dependencies
       run: |
@@ -350,7 +317,7 @@ jobs:
           release_name: Galacteek ${{ env.G_VERSION }}
           draft: false
           body: |
-            # Galacteek ${{ env.G_VERSION }} released!
+            # Galacteek ${{ env.G_VERSION }} **prerelease**
 
             ## Release log
 

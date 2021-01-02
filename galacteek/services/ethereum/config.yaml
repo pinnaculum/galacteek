@@ -1,0 +1,8 @@
+ethEnvs:
+  default:
+    providerType: http
+    mode: infura
+
+    infura:
+      projectId: ???
+      projectSecret: ???

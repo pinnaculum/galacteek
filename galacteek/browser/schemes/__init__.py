@@ -24,6 +24,7 @@ from PyQt5.QtCore import QMutex
 from galacteek import log
 from galacteek import logUser
 from galacteek import ensure
+from galacteek import ensureSafe
 from galacteek import database
 from galacteek import AsyncSignal
 from galacteek.ipfs import ipfsOp
@@ -38,6 +39,8 @@ from galacteek.dweb.render import renderTemplate
 from galacteek.dweb.enswhois import ensContentHash
 from galacteek.core.asynccache import cachedcoromethod
 from galacteek.core import runningApp
+
+from galacteek.ipdapps import dappsRegisterSchemes
 
 
 # Core schemes (the URL schemes your children will soon teach you how to use)
@@ -91,6 +94,12 @@ def isSchemeRegistered(scheme):
     for section, schemes in urlSchemes.items():
         if scheme in schemes:
             return True
+
+
+def schemeSectionMatch(scheme, section):
+    global urlSchemes
+    schemes = urlSchemes.get(section, {})
+    return scheme in schemes
 
 
 def isUrlSupported(url):
@@ -193,6 +202,8 @@ def initializeSchemes():
         syntax=QWebEngineUrlScheme.Syntax.Host
     )
 
+    dappsRegisterSchemes()
+
     registerMiscSchemes()
 
 
@@ -219,6 +230,8 @@ def isHttpUrl(url):
 
 class BaseURLSchemeHandler(QWebEngineUrlSchemeHandler):
     webProfileNeeded = None
+    psListener = None
+    psListenerClass = None
 
     def __init__(self, parent=None, noMutexes=False):
         super(BaseURLSchemeHandler, self).__init__(parent)
@@ -226,6 +239,10 @@ class BaseURLSchemeHandler(QWebEngineUrlSchemeHandler):
         self.requests = {}
         self.noMutexes = noMutexes
         self.app = runningApp()
+
+        if self.psListenerClass:
+            # can't instantiate this before the hub is created ..
+            self.psListener = self.psListenerClass()
 
     def reqFailedCall(self, request, code):
         try:
@@ -281,7 +298,7 @@ class BaseURLSchemeHandler(QWebEngineUrlSchemeHandler):
         uid = self.allocReqId(request)
         request.destroyed.connect(
             functools.partial(self.onRequestDestroyed, uid))
-        ensure(self.handleRequest(request, uid))
+        ensureSafe(self.handleRequest(request, uid))
 
 
 class IPFSObjectProxyScheme:
@@ -450,7 +467,7 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
     is responsible for fetching the objects from IPFS. When the data
     is ready it will call the renderData() coroutine which will detect
     the MIME type, and emit the 'contentReady' signal which is handled
-    by the 'onContent' callback.
+    by the 'serveContent' callback.
     """
 
     # contentReady signal (handled by onContent())
@@ -563,7 +580,7 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
     async def renderDagListing(self, request, client, path, **kw):
         return b'ENOTIMPLEMENTED'
 
-    async def renderDagNode(self, request, client, ipfsPath, **kw):
+    async def renderDagNode(self, request, uid, ipfsop, ipfsPath, **kw):
         self.debug('DAG node render: {}'.format(ipfsPath))
         indexPath = ipfsPath.child('index.html')
 
@@ -571,14 +588,15 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
             stat = None
             try:
                 with async_timeout.timeout(8):
-                    stat = await client.object.stat(str(indexPath))
+                    stat = await ipfsop.client.object.stat(str(indexPath))
             except asyncio.TimeoutError:
                 return self.urlInvalid(request)
             except Exception:
                 return self.reqFailed(request)
 
             if not stat:
-                return await self.renderDagListing(request, client, ipfsPath,
+                return await self.renderDagListing(request,
+                                                   ipfsop.client, ipfsPath,
                                                    **kw)
             else:
                 # The index is present, redirect
@@ -587,7 +605,8 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
                 if urlR.isValid():
                     request.redirect(urlR)
         except aioipfs.APIError:
-            return await self.renderDagListing(request, client, ipfsPath, **kw)
+            return await self.renderDagListing(
+                request, ipfsop.client, ipfsPath, **kw)
 
     async def renderDataEmit(self, request, ipfsPath, data, uid):
         cType = await detectMimeTypeFromBuffer(data[0:512])
@@ -689,11 +708,15 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
                 # DAG / TODO
                 data = await self.renderDagNode(
                     request,
-                    ipfsop.client,
+                    uid,
+                    ipfsop,
                     ipfsPath
                 )
                 if data:
                     return await self.renderData(request, ipfsPath, data, uid)
+        except Exception as gerr:
+            log.debug(f'fetchFromPath, unknown error: {gerr}')
+            return None
         else:
             if data:
                 return await self.renderData(request, ipfsPath, data, uid)
@@ -878,6 +901,32 @@ class DAGProxySchemeHandler(NativeIPFSSchemeHandler):
         else:
             return data.encode()
 
+    async def renderDagNode(self, request, uid, ipfsop, ipfsPath, **kw):
+        self.debug('DAG node render: {}'.format(ipfsPath))
+
+        indexPath = ipfsPath.child('index.html')
+
+        try:
+            stat = None
+            try:
+                with async_timeout.timeout(8):
+                    stat = await ipfsop.client.object.stat(str(indexPath))
+            except asyncio.TimeoutError:
+                return self.urlInvalid(request)
+            except Exception:
+                return self.reqFailed(request)
+
+            if not stat:
+                return await self.renderDagListing(
+                    request, ipfsop.client, ipfsPath, **kw)
+            else:
+                # The index is present, fetch it
+                return await self.fetchFromPath(
+                    ipfsop, request, indexPath, uid)
+        except aioipfs.APIError:
+            return await self.renderDagListing(
+                request, ipfsop.client, ipfsPath, **kw)
+
     @ipfsOp
     async def handleRequest(self, ipfsop, request, uid):
         if self.proxied is None:
@@ -890,19 +939,13 @@ class DAGProxySchemeHandler(NativeIPFSSchemeHandler):
         path = rUrl.path()
         ipfsPathS = joinIpfs(self.proxied.dagCid) + path
 
+        log.debug(f'Proxying from DAG {self.proxied}: {ipfsPathS}')
+
         ipfsPath = IPFSPath(ipfsPathS)
         if not ipfsPath.valid:
             return self.urlInvalid(request)
 
         return await self.fetchFromPath(ipfsop, request, ipfsPath, uid)
-
-
-class GalacteekSchemeHandler(DAGProxySchemeHandler):
-    @ipfsOp
-    async def getDag(self, ipfsop):
-        curProfile = ipfsop.ctx.currentProfile
-        if curProfile:
-            return curProfile.dagUser
 
 
 class DAGWatchSchemeHandler(DAGProxySchemeHandler):
@@ -1116,7 +1159,8 @@ class MultiDAGProxySchemeHandler(NativeIPFSSchemeHandler):
                 # UNK DAG / TODO
                 data = await self.renderDagNode(
                     request,
-                    ipfsop.client,
+                    uid,
+                    ipfsop,
                     ipfsPath,
                     dag=dag
                 )

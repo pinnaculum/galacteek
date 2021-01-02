@@ -1,7 +1,9 @@
-enabled: True
-notbit:
-  useTor: False
-  listenPort: 8444
+envs:
+  default:
+    enabled: True
+    notbit:
+      useTor: False
+      listenPort: 8444
 
-  # Purge objects directory before starting notbit
-  purgeObjectsOnStartup: True
+      # Purge objects directory before starting notbit
+      purgeObjectsOnStartup: True

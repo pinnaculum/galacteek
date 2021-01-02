@@ -1,18 +1,28 @@
+import attr
 from galacteek import AsyncSignal
 from galacteek.config import cModuleContext
+from galacteek.config import dictconfig
 
 
+@attr.s(auto_attribs=True)
 class EthereumConnectionParams:
-    def __init__(self, rpcUrl, provType='http'):
-        self.provType = provType
-        self.rpcUrl = rpcUrl
+    rpcUrl: str
+    provType: str
+    mode: str = 'auto'
+
+    infura: dictconfig.DictConfig = None
 
 
 def ethConnConfigParams(network='mainnet'):
-    with cModuleContext('galacteek.blockchain.ethereum') as cfg:
-        provType = cfg['conn']['networks'][network]['providerType']
-        rpcUrl = cfg['conn']['networks'][network]['rpcUrl']
-        return EthereumConnectionParams(rpcUrl, provType=provType)
+    with cModuleContext('galacteek.services.ethereum') as cfg:
+        provType = cfg['providerType']
+        rpcUrl = cfg['rpcUrl']
+        mode = cfg.get('mode', 'infura')
+
+        return EthereumConnectionParams(rpcUrl=rpcUrl,
+                                        provType=provType,
+                                        infura=cfg['infura'],
+                                        mode=mode)
 
 
 class MockEthereumController:

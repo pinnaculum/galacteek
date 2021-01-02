@@ -4,6 +4,7 @@ import argparse
 import faulthandler
 import sys
 import platform
+import os
 
 from PyQt5.QtCore import QProcess
 from PyQt5.QtWebEngine import QtWebEngine
@@ -11,7 +12,7 @@ from PyQt5.QtWebEngine import QtWebEngine
 from galacteek.__version__ import __version__
 from galacteek.core import glogger
 from galacteek.core import inPyInstaller
-from galacteek.core.schemes import initializeSchemes
+from galacteek.browser.schemes import initializeSchemes
 
 from galacteek.ui.helpers import *  # noqa
 from galacteek import application
@@ -93,8 +94,8 @@ def galacteekGui(args):
             loop.run_forever()
 
 
-def buildArgsParser():
-    parser = argparse.ArgumentParser()
+def buildArgsParser(fromParser=None):
+    parser = fromParser if fromParser else argparse.ArgumentParser()
     parser.add_argument('--version', dest='version',
                         action='store_true',
                         help='Show version number')
@@ -187,9 +188,29 @@ def buildArgsParser():
         dest='asynciodebug',
         help="Enable asyncio tasks debug output")
 
+    parser.add_argument(
+        '--eth-network',
+        default='rinkeby',
+        dest='ethnet',
+        help="ETH network")
+    parser.add_argument('--eth-contracts', default='',
+                        dest='contracts',
+                        help='ethcontracts')
+    parser.add_argument('--eth-deploy', default='*',
+                        dest='deploy',
+                        help='ethdeploy')
     parser.add_argument('-d', action='store_true',
                         dest='debug', help='Activate debugging')
     return parser
+
+
+def gArgsParse():
+    parser = buildArgsParser()
+    args = parser.parse_args()
+
+    os.environ['GALACTEEK_ETHNETWORK_ENV'] = args.ethnet
+
+    return args
 
 
 def hideConsoleWindow():
@@ -208,8 +229,7 @@ def start():
         # Hide the console window when running with pyinstaller
         hideConsoleWindow()
 
-    parser = buildArgsParser()
-    args = parser.parse_args()
+    args = gArgsParse()
 
     if args.version is True:
         print(__version__)

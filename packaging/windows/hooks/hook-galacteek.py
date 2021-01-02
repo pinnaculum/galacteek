@@ -1,4 +1,5 @@
 import os
+import os.path
 from pathlib import Path
 
 from PyInstaller.utils.hooks import *
@@ -79,8 +80,10 @@ for root, dirs, files in os.walk('galacteek'):
     for file in files:
         if file.endswith('.yaml'):
             p = Path(root).joinpath(file)
-            dst = Path(pkgrDest).joinpath(p)
+            dst = Path(pkgrDest).joinpath(str(p.parent).lstrip('/'))
             datas += [(str(p), str(dst))]
-            print('Copying YAML file', p)
 
-print(datas)
+            print(f'YAML file copied from {p} to {dst}')
+
+for elem in datas:
+    print(elem)

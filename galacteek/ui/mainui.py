@@ -1059,7 +1059,7 @@ class MainWindow(QMainWindow):
         self.ipfsStatusCube.startClip()
 
         self.torControlButton = TorControllerButton(
-            self.app.coreS.torService)
+            self.app.s.torService)
         self.torControlButton.setIcon(getIcon('tor.png'))
         self.torControlButton.setToolTip('Tor not connected yet')
 
