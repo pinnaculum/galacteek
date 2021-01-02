@@ -316,7 +316,7 @@ async def urlHistoryGet(url):
 
 
 async def urlHistoryRecord(url, title):
-    from galacteek.core.schemes import isIpfsUrl
+    from galacteek.browser.schemes import isIpfsUrl
 
     item = await urlHistoryGet(url)
 

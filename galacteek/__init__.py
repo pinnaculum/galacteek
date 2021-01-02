@@ -50,8 +50,9 @@
 from galacteek.core.asynclib import *  # noqa
 from galacteek.core import glogger
 
-from galacteek.config import cGet
-from galacteek.config import cParentGet
+from galacteek.config import cGet  # noqa
+from galacteek.config import cParentGet  # noqa
+from mode.utils.objects import cached_property  # noqa
 
 GALACTEEK_NAME = 'galacteek'
 

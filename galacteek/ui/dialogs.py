@@ -50,8 +50,8 @@ from galacteek import database
 from galacteek.core.ipfsmarks import *
 from galacteek.core.ipfsmarks import categoryValid
 from galacteek.core.iptags import ipTagsFormat
-from galacteek.core.schemes import isEnsUrl
-from galacteek.core.schemes import isHttpUrl
+from galacteek.browser.schemes import isEnsUrl
+from galacteek.browser.schemes import isHttpUrl
 from galacteek.ipfs import cidhelpers
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import ipfsOp

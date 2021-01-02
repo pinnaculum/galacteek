@@ -82,14 +82,15 @@ class build_contracts(Command):
         from galacteek.smartcontracts import solCompileFile
         from galacteek.smartcontracts import vyperCompileFile
         from galacteek.blockchain.ethereum.contract import contractDeploy
+        from galacteek.blockchain.ethereum.contract import Deployer
+        from galacteek.blockchain.ethereum.ctrl import web3Connect
 
         usrcontracts = [c for c in self.contracts.split(',')] if \
             self.contracts else ['*']
         cdeploy = [c for c in self.deploy.split(',')] if \
             self.deploy else []
 
-        w3 = Web3(Web3.HTTPProvider(self.rpcurl))
-        w3.eth.defaultAccount = w3.eth.accounts[0]
+        w3 = web3Connect(self.rpcurl)
 
         for contract in listContracts():
             print('>', contract, contract.dir)
@@ -283,6 +284,9 @@ setup(
     entry_points={
         'gui_scripts': [
             'galacteek = galacteek.guientrypoint:start'
+        ],
+        'console_scripts': [
+            'galacteek-eth-master = galacteek.entrypoints.ethtool:ethTool'
         ]
     },
     classifiers=[

@@ -1,7 +1,9 @@
-enabled: True
-socksPortRange:
-  minimum: 9050
-  maximum: 9060
-dnsPortRange:
-  minimum: 9060
-  maximum: 9070
+envs:
+  default:
+    enabled: True
+    socksPortRange:
+      minimum: 9050
+      maximum: 9060
+    dnsPortRange:
+      minimum: 9060
+      maximum: 9070

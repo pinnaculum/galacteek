@@ -50,6 +50,9 @@ class RSAExecutor(object):
     async def importKey(self, keyData, passphrase=None):
         def _import(key, pphrase):
             try:
+                assert key is not None
+                assert isinstance(key, bytes) or isinstance(key, str)
+
                 return RSA.import_key(key, passphrase=pphrase)
             except Exception as err:
                 log.debug(f'Could not import RSA key: {err}')

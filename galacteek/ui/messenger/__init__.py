@@ -164,7 +164,7 @@ class MessageComposer(QWidget):
         self.cancelled.emit()
 
     async def onSend(self, *args):
-        result = await self.app.coreS.bmService.mailer.send(
+        result = await self.app.s.bmService.mailer.send(
             self.ui.msgFrom.currentText(),
             self.ui.msgTo.text(),
             self.ui.msgSubject.text(),
@@ -432,7 +432,7 @@ class MessengerWidget(QWidget):
         if mailBox:
             self.ui.curMailboxCombo.setCurrentText(bmAddress)
 
-            key, mailDir = await self.app.coreS.bmService.mailer.getMailBox(
+            key, mailDir = await self.app.s.bmService.mailer.getMailBox(
                 bmAddress)
             self.bmCurrentMailDir = mailDir
             self.bmCurrentMailBox = mailBox
@@ -441,7 +441,7 @@ class MessengerWidget(QWidget):
 
     async def createMailBox(self, label='default', select=False,
                             default=False):
-        key, mailDir = await self.app.coreS.bmService.mailer.createMailBox()
+        key, mailDir = await self.app.s.bmService.mailer.createMailBox()
         if not key:
             return None, None, None
 

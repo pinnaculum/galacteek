@@ -16,12 +16,12 @@ from galacteek import log
 from galacteek.dweb.render import renderTemplate
 from galacteek.dweb.webscripts import ipfsClientScripts
 from galacteek.dweb.webscripts import orbitScripts
-from galacteek.core.schemes import isIpfsUrl
+from galacteek.browser.schemes import isIpfsUrl
 from galacteek.ipfs.cidhelpers import IPFSPath
 
 
 class BaseHandler(QObject):
-    def __init__(self, parent):
+    def __init__(self, parent=None):
         super().__init__(parent)
 
     @pyqtSlot()

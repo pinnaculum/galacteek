@@ -21,11 +21,13 @@ block_cipher = None
 
 source_mods = [
     tortoise.models,
-    galacteek.database.models.core,
     galacteek.database.models.atomfeeds,
+    galacteek.database.models.browser,
+    galacteek.database.models.bm,
+    galacteek.database.models.core,
     galacteek.database.models.pubsub,
-    galacteek.database.models.seeds,
-    galacteek.database.models.pubchattokens
+    galacteek.database.models.pubchattokens,
+    galacteek.database.models.seeds
 ]
 
 
@@ -66,6 +68,12 @@ a = Analysis(['galacteek_win.py'],
      '.'),
     ('./packaging/windows/zbar/libzbar-64.dll',
      '.'),
+    ('./notbit.exe',
+     '.'),
+    ('./notbit-keygen.exe',
+     '.'),
+    ('./notbit-sendmail.exe',
+     '.'),
     ('./go-ipfs/ipfs.exe',
      '.'),
     ('./packaging/windows/tor/tor.exe',
@@ -88,7 +96,10 @@ a = Analysis(['galacteek_win.py'],
     datas=[],
     hiddenimports=[
         'multiaddr',
-        'multiaddr.codecs.*'
+        'multiaddr.codecs.*',
+        'omegaconf',
+        'mode',
+        'claptcha'
     ],
     hookspath=['packaging/windows/hooks'],
     runtime_hooks=[],

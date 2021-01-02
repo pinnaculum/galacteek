@@ -4,7 +4,7 @@ from urllib.parse import unquote
 from PyQt5.QtCore import QUrl
 
 from galacteek.ipfs.cidhelpers import IPFSPath
-from galacteek.core.schemes import isIpfsUrl
+from galacteek.browser.schemes import isIpfsUrl
 
 
 class IPFSLinksParser(HTMLParser):

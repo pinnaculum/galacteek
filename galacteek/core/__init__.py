@@ -48,7 +48,10 @@ def pkgResourcesListDir(pkg: str, rscName: str):
         if rscName != '':
             root = root.joinpath(rscName)
 
-        return os.listdir(str(root))
+        try:
+            return os.listdir(str(root))
+        except Exception:
+            return []
     else:
         return pkg_resources.resource_listdir(pkg, rscName)
 
@@ -183,3 +186,11 @@ class SingletonDecorator:
             self.instance = self._class(*args, **kwds)
 
         return self.instance
+
+
+def debugTrace():
+    from PyQt5.QtCore import pyqtRemoveInputHook
+    from pdb import set_trace
+
+    pyqtRemoveInputHook()
+    set_trace()

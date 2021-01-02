@@ -33,8 +33,8 @@ from galacteek.ipfs.mimetype import mimeTypeDagUnknown
 
 from galacteek.ipfs.cidhelpers import IPFSPath
 
-from galacteek.core.schemes import isEnsUrl
-from galacteek.core.schemes import isUrlSupported
+from galacteek.browser.schemes import isEnsUrl
+from galacteek.browser.schemes import isUrlSupported
 
 from .dwebspace import *
 from .dag import DAGViewer

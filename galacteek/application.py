@@ -62,10 +62,8 @@ from galacteek.core.clipboard import ClipboardTracker
 from galacteek.core.db import SqliteDatabase
 from galacteek.core import pkgResourcesListDir
 from galacteek.core import pkgResourcesRscFilename
-from galacteek.services.tor.service import TorService
-from galacteek.services.tor.service import TorServiceRuntimeConfig
 
-from galacteek.core.webproxy import NullProxy
+from galacteek.browser.webproxy import NullProxy
 
 from galacteek import database
 from galacteek.database import models
@@ -78,15 +76,18 @@ from galacteek.core.signaltowers import URLSchemesTower
 from galacteek.core.signaltowers import DIDTower
 from galacteek.core.analyzer import ResourceAnalyzer
 
-from galacteek.core.schemes import SCHEME_MANUAL
-from galacteek.core.schemes import DWebSchemeHandlerGateway
-from galacteek.core.schemes import EthDNSSchemeHandler
-from galacteek.core.schemes import EthDNSProxySchemeHandler
-from galacteek.core.schemes import NativeIPFSSchemeHandler
-from galacteek.core.schemes import ObjectProxySchemeHandler
-from galacteek.core.schemes import MultiObjectHostSchemeHandler
+from galacteek.browser.schemes import SCHEME_MANUAL
+from galacteek.browser.schemes import DWebSchemeHandlerGateway
+from galacteek.browser.schemes import EthDNSSchemeHandler
+from galacteek.browser.schemes import EthDNSProxySchemeHandler
+from galacteek.browser.schemes import NativeIPFSSchemeHandler
+from galacteek.browser.schemes import ObjectProxySchemeHandler
+from galacteek.browser.schemes import MultiObjectHostSchemeHandler
 
-from galacteek.blockchain.ethereum import MockEthereumController
+
+from galacteek.browser import BrowserRuntimeObjects
+from galacteek.browser import browserSetup
+
 from galacteek.blockchain.ethereum import ethConnConfigParams
 
 from galacteek.space.solarsystem import SolarSystem
@@ -104,10 +105,10 @@ from galacteek.did.ipid import IPIDManager
 
 from galacteek.ipdapps.loader import DappsRegistry
 
-from galacteek.core.webprofiles import IPFSProfile
-from galacteek.core.webprofiles import Web3Profile
-from galacteek.core.webprofiles import MinimalProfile
-from galacteek.core.webprofiles import AnonymousProfile
+from galacteek.browser.webprofiles import IPFSProfile
+from galacteek.browser.webprofiles import Web3Profile
+from galacteek.browser.webprofiles import MinimalProfile
+from galacteek.browser.webprofiles import AnonymousProfile
 
 from galacteek.dweb.webscripts import ipfsClientScripts
 from galacteek.dweb.render import defaultJinjaEnv
@@ -129,6 +130,9 @@ from galacteek.appsettings import *
 from galacteek.core.ipfsmarks import IPFSMarks
 
 from galacteek.services.bitmessage.service import BitMessageClientService
+from galacteek.services.tor.service import TorService
+from galacteek.services.tor.service import TorServiceRuntimeConfig
+from galacteek.services.ethereum.service import EthereumService
 
 from yarl import URL
 
@@ -233,6 +237,14 @@ class AppService(GService):
     # Tor service
     torService: TorService = None
 
+    # Eth
+    ethService: EthereumService = None
+
+    def __init__(self, *args, **kw):
+        self.app = kw.pop('app')
+
+        super().__init__(*args, **kw)
+
     @cached_property
     def bmService(self) -> BitMessageClientService:
         return BitMessageClientService(
@@ -240,8 +252,15 @@ class AppService(GService):
         )
 
     @cached_property
+    def ethService(self) -> EthereumService:
+        return EthereumService(
+            self.app._ethDataLocation
+        )
+
+    @cached_property
     def torService(self) -> TorService:
         return TorService(
+            self.app.dataPathForService('tor'),
             TorServiceRuntimeConfig(
                 cfgLocation=self.app._torConfigLocation,
                 dataLocation=self.app._torDataDirLocation
@@ -257,6 +276,7 @@ class AppService(GService):
 
         await self.add_runtime_dependency(self.bmService)
         await self.add_runtime_dependency(self.torService)
+        await self.add_runtime_dependency(self.ethService)
 
     async def on_stop(self) -> None:
         log.debug('Stopping main application service')
@@ -277,7 +297,8 @@ class GalacteekApplication(QApplication):
     dbConfigured = AsyncSignal(bool)
 
     def __init__(self, debug=False, profile='main', sslverify=True,
-                 enableOrbital=False, progName=None, cmdArgs={}):
+                 enableOrbital=False, progName=None, cmdArgs={},
+                 mode='gui'):
         QApplication.__init__(self, sys.argv)
 
         QCoreApplication.setApplicationName(GALACTEEK_NAME)
@@ -286,6 +307,7 @@ class GalacteekApplication(QApplication):
 
         self.setQuitOnLastWindowClosed(False)
 
+        self._mode = mode
         self._cmdArgs = cmdArgs
         self._debugEnabled = debug
         self._appProfile = profile
@@ -330,8 +352,12 @@ class GalacteekApplication(QApplication):
         self.peersTracker = peers.PeersTracker(self.ipfsCtx)
 
     @cached_property
-    def coreS(self) -> AppService:
-        return AppService()
+    def s(self) -> AppService:
+        return AppService(self.dataPathForService('g'), app=self)
+
+    @cached_property
+    def eth(self):
+        return self.s.ethService
 
     @property
     def cmdArgs(self):
@@ -561,6 +587,8 @@ class GalacteekApplication(QApplication):
 
         self._goIpfsBinPath = self.suitableGoIpfsBinary()
 
+        self.browserRuntime = BrowserRuntimeObjects(app=self)
+
     def tempDirCreate(self, basedir, name=None):
         tmpdir = QDir(basedir)
 
@@ -630,7 +658,7 @@ class GalacteekApplication(QApplication):
 
     async def startCoreServices(self):
         # By starting the top service, all subservices will be started
-        await self.coreS.start()
+        await self.s.start()
 
     @ipfsOp
     async def setupRepository(self, op):
@@ -799,7 +827,7 @@ class GalacteekApplication(QApplication):
             )
 
     def getEthParams(self):
-        return ethConnConfigParams()
+        return ethConnConfigParams(self.cmdArgs.ethnet)
 
     async def updateIpfsClient(self, client=None):
         if not client:
@@ -868,18 +896,22 @@ class GalacteekApplication(QApplication):
         if not configured:
             return
 
+        if self._mode != 'gui':
+            return
+
         self.debug('Database ready')
 
         self.setupClipboard()
         self.setupTranslator()
         self.initSystemTray()
         self.initMisc()
-        self.initEthereum()
         self.initWebProfiles()
-        self.initDapps()
+
         self.createMainWindow()
         self.clipboardInit()
+        await self.initDapps()
 
+        await browserSetup(self.browserRuntime)
         await self.startCoreServices()
 
         await self.setupIpfsConnection()
@@ -1121,6 +1153,18 @@ class GalacteekApplication(QApplication):
         os.environ['PATH'] += self.ipfsBinLocation + os.pathsep + \
             os.environ['PATH']
 
+        self.setupServicesPaths()
+
+    def dataPathForService(self, serviceName: str) -> Path:
+        return Path(self.dataLocation).joinpath('services').joinpath(
+            serviceName)
+
+    def setupServicesPaths(self):
+        self._bitMessageDataLocation = self.dataPathForService(
+            'bitmessage')
+        self._ethDataLocation = self.dataPathForService(
+            'ethereum')
+
     def which(self, prog='ipfs'):
         path = self.ipfsBinLocation + os.pathsep + os.environ['PATH']
         result = shutil.which(prog, path=path)
@@ -1135,6 +1179,7 @@ class GalacteekApplication(QApplication):
         setDefaultSettings(self)
         self.settingsMgr.sync()
 
+        log.debug(f'Using config from directory: {self.configDirLocation}')
         cSetSavePath(Path(self.configDirLocation))
 
         # Init new config system
@@ -1383,18 +1428,6 @@ class GalacteekApplication(QApplication):
             await self.startIpfsDaemon(
                 failedReason=iIpfsDaemonInitProblem())
 
-    def initEthereum(self):
-        try:
-            from galacteek.blockchain.ethereum.ctrl import EthereumController
-
-            self.ethereum = EthereumController(self.getEthParams(),
-                                               loop=self.loop, parent=self,
-                                               executor=self.executor)
-            if self.settingsMgr.ethereumEnabled:
-                ensure(self.ethereum.start())
-        except ImportError:
-            self.ethereum = MockEthereumController()
-
     def normalCursor(self):
         cursor = QCursor(Qt.ArrowCursor)
         QApplication.setOverrideCursor(cursor)
@@ -1432,10 +1465,12 @@ class GalacteekApplication(QApplication):
     def availableWebProfilesNames(self):
         return [p.profileName for n, p in self.webProfiles.items()]
 
-    def initDapps(self):
-        self.dappsRegistry = DappsRegistry(self.ethereum, parent=self)
+    async def initDapps(self):
+        self.dappsRegistry = DappsRegistry(self.eth, parent=self)
 
     def setupSchemeHandlers(self):
+        # from galacteek.browser.schemes.g import GalacteekSchemeHandler
+
         self.dwebSchemeHandler = DWebSchemeHandlerGateway(self)
         self.ensSchemeHandler = EthDNSSchemeHandler(self)
         self.ensProxySchemeHandler = EthDNSProxySchemeHandler(self)
@@ -1443,6 +1478,8 @@ class GalacteekApplication(QApplication):
             self, noMutexes=self.cmdArgs.noipfsmutexlock
         )
         self.qSchemeHandler = MultiObjectHostSchemeHandler(self)
+
+        # self.gSchemeHandler = GalacteekSchemeHandler(self)
 
     def subUrl(self, path):
         """ Joins the gatewayUrl and path to form a new URL """
@@ -1519,7 +1556,7 @@ class GalacteekApplication(QApplication):
         self.lock.release()
 
         # Shutdown the core service
-        await self.coreS.stop()
+        await self.s.stop()
 
         self.mainWindow.stopTimers()
         await self.mainWindow.stack.shutdown()
@@ -1534,8 +1571,6 @@ class GalacteekApplication(QApplication):
         await self.loop.shutdown_asyncgens()
         await self.shutdownScheduler()
         await cancelAllTasks()
-
-        await self.ethereum.stop()
 
         if self.ipfsClient:
             await self.ipfsClient.close()

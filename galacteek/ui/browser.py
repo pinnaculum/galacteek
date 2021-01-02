@@ -58,25 +58,28 @@ from galacteek.ipfs.cidhelpers import joinIpns
 from galacteek.ipfs.cidhelpers import cidValid
 from galacteek.core.asynclib import asyncify
 
-from galacteek.core.schemes import isSchemeRegistered
-from galacteek.core.schemes import SCHEME_ENS
-from galacteek.core.schemes import SCHEME_IPFS
-from galacteek.core.schemes import SCHEME_IPNS
-from galacteek.core.schemes import SCHEME_DWEB
-from galacteek.core.schemes import SCHEME_HTTP
-from galacteek.core.schemes import SCHEME_HTTPS
-from galacteek.core.schemes import SCHEME_FTP
-from galacteek.core.schemes import SCHEME_Z
-from galacteek.core.schemes import DAGProxySchemeHandler
-from galacteek.core.schemes import MultiDAGProxySchemeHandler
-from galacteek.core.schemes import IPFSObjectProxyScheme
-from galacteek.core.schemes import isUrlSupported
+from galacteek.browser.schemes import isSchemeRegistered
+from galacteek.browser.schemes import SCHEME_ENS
+from galacteek.browser.schemes import SCHEME_IPFS
+from galacteek.browser.schemes import SCHEME_IPNS
+from galacteek.browser.schemes import SCHEME_DWEB
+from galacteek.browser.schemes import SCHEME_HTTP
+from galacteek.browser.schemes import SCHEME_HTTPS
+from galacteek.browser.schemes import SCHEME_FTP
+from galacteek.browser.schemes import SCHEME_Z
+from galacteek.browser.schemes import DAGProxySchemeHandler
+from galacteek.browser.schemes import MultiDAGProxySchemeHandler
+from galacteek.browser.schemes import IPFSObjectProxyScheme
+from galacteek.browser.schemes import isUrlSupported
+from galacteek.browser.schemes import schemeSectionMatch
 
-from galacteek.core.webprofiles import WP_NAME_IPFS
-from galacteek.core.webprofiles import WP_NAME_MINIMAL
-from galacteek.core.webprofiles import WP_NAME_WEB3
-from galacteek.core.webprofiles import WP_NAME_ANON
-from galacteek.core.webprofiles import webProfilesPrio
+from galacteek.browser.web3channels import Web3Channel
+
+from galacteek.browser.webprofiles import WP_NAME_IPFS
+from galacteek.browser.webprofiles import WP_NAME_MINIMAL
+from galacteek.browser.webprofiles import WP_NAME_WEB3
+from galacteek.browser.webprofiles import WP_NAME_ANON
+from galacteek.browser.webprofiles import webProfilesPrio
 
 from galacteek.dweb.webscripts import scriptFromString
 from galacteek.dweb.page import BaseHandler
@@ -353,8 +356,13 @@ class DefaultBrowserWebPage (QWebEnginePage):
             partialEnsure(self.onPermissionRequest))
         self.featurePermissionRequestCanceled.connect(
             partialEnsure(self.onPermissionRequestCanceled))
-        self.channel = None
         self.setBackgroundColor(desertStrikeColor)
+
+        # self.changeWebChannel(QWebChannel(self))
+
+    @property
+    def channel(self):
+        return self.webChannel()
 
     def onRenderProcessPid(self, pid):
         log.debug(f'{self.url().toString()}: renderer process has PID: {pid}')
@@ -438,16 +446,20 @@ class DefaultBrowserWebPage (QWebEnginePage):
         # Accept fullscreen requests unconditionally
         req.accept()
 
+    def changeWebChannel(self, channel):
+        self.setWebChannel(channel)
+
     def registerPageHandler(self):
-        self.channel = QWebChannel()
-        self.setWebChannel(self.channel)
+        # self.channel = QWebChannel(self)
+        # self.changeWebChannel(self.channel)
+
+        self.changeWebChannel(QWebChannel(self))
         self.pageHandler = CurrentPageHandler(self)
         self.channel.registerObject('gpage', self.pageHandler)
 
     def registerChannelHandler(self, name, handler):
         if not self.channel:
-            self.channel = QWebChannel()
-            self.setWebChannel(self.channel)
+            self.changeWebChannel(QWebChannel(self))
 
         self.channel.registerObject(name, handler)
 
@@ -553,6 +565,9 @@ class WebView(IPFSWebView):
             QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
         self.webSettings.setAttribute(
             QWebEngineSettings.FocusOnNavigationEnabled, True)
+
+    def web3ChangeChannel(self, channel: Web3Channel):
+        self.installDefaultPage(web3Channel=channel)
 
     def createWindow(self, wintype):
         log.debug('createWindow called, wintype: {}'.format(wintype))
@@ -857,13 +872,18 @@ class WebView(IPFSWebView):
         url = menudata.linkUrl()
         self.page().download(url, None)
 
-    def installDefaultPage(self):
+    def installDefaultPage(self, web3Channel: Web3Channel = None):
         if self.webPage:
-            del self.webPage
+            # del self.webPage
+            self.webPage.deleteLater()
 
         self.webPage = DefaultBrowserWebPage(self.webProfile, self)
         self.webPage.jsConsoleMessage.connect(self.onJsMessage)
         self.webPage.linkHovered.connect(self.onLinkHovered)
+
+        if web3Channel:
+            self.webPage.changeWebChannel(web3Channel)
+
         self.setPage(self.webPage)
 
     async def setSearchPage(self):
@@ -1001,6 +1021,8 @@ class URLInputWidget(QLineEdit):
     async def onReturnPressed(self):
         self.urlEditing = False
         self.unfocus()
+
+        # ensureSafe(self.browser.handleEditedUrl(self.text()))
         await self.browser.handleEditedUrl(self.text())
 
     def onHistoryCollapse(self):
@@ -2315,7 +2337,6 @@ class BrowserTab(GalacteekTab):
         self.urlZone.hideMatches()
         self.urlZone.cancelTimer()
         self.urlZone.unfocus()
-        self.webEngineView.setBrowserPage()
 
         engineMatch = re.search(r'^(d|s|c|i|ip)\s(.*)$', inputStr)
         if engineMatch:
@@ -2379,6 +2400,25 @@ class BrowserTab(GalacteekTab):
                 return messageBox(iInvalidUrl(inputStr))
 
         scheme = url.scheme()
+
+        # Decide if we're using any web3 channel for this scheme
+        if schemeSectionMatch(scheme, 'dapps'):
+            # dapp
+
+            channel = self.app.browserRuntime.web3Channel(scheme)
+
+            if channel:
+                log.debug(f'Using web3 channel for {scheme}: {channel}')
+                self.webEngineView.web3ChangeChannel(channel)
+                channel.webChannelDebug()
+            else:
+                log.debug(f'No web3 channel for {scheme}')
+        else:
+            self.webEngineView.webPage.changeWebChannel(None)
+
+            log.debug(f'No using any web3 channel for {scheme}')
+
+        self.webEngineView.setBrowserPage()
 
         if isSchemeRegistered(scheme):
             self.enterUrl(url)

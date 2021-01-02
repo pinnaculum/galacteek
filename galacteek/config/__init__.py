@@ -4,11 +4,14 @@ import inspect
 from pathlib import Path
 
 from omegaconf import OmegaConf
+from omegaconf import dictconfig  # noqa
 
 from galacteek.core import pkgResourcesRscFilename
 from galacteek.core import pkgResourcesListDir
 
 from types import SimpleNamespace
+
+from .util import configFromFile
 
 
 class NestedNamespace(SimpleNamespace):
@@ -47,13 +50,6 @@ def merge(*cfgs):
     return OmegaConf.merge(*cfgs)
 
 
-def configFromFile(fpath):
-    try:
-        return OmegaConf.load(fpath)
-    except Exception:
-        return None
-
-
 def configSavePackage(pkgName: str):
     cEntry = regConfigFromPyPkg(pkgName)
     if cEntry:
@@ -74,18 +70,24 @@ def regConfigFromFile(pkgName: str, fpath: str):
 
     savePath = configSaveRootPath.joinpath(f'{pkgName}.{yamlExt}')
 
-    cfg = configFromFile(fpath)
+    cfgAll, cfg = configFromFile(fpath)
+    if not cfg:
+        return None
 
     if savePath.is_file():
         # Merge existing
-        eCfg = configFromFile(str(savePath))
+        eCfgAll, eCfg = configFromFile(str(savePath))
         if eCfg:
-            cfg = merge(eCfg, cfg)
+            # cfg = merge(eCfg, cfg)
+            # cfg = merge(cfg, eCfg)
+            cfgAll = merge(cfgAll, eCfgAll)
 
     savePath.parent.mkdir(parents=True, exist_ok=True)
-    OmegaConf.save(cfg, str(savePath))
+    # OmegaConf.save(cfg, str(savePath))
+    OmegaConf.save(cfgAll, str(savePath))
 
     cCache[pkgName] = {
+        'configAll': cfgAll,
         'config': cfg,
         'path': savePath
     }

@@ -1,71 +1,83 @@
-import pkg_resources
 import importlib
 import os.path
 import os
 import jinja2
 
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer  # noqa
 
 from galacteek import log
-from galacteek.core.objects import GObject
 from galacteek.core.objects import pyqtSignal
 from galacteek.core import runningApp
+from galacteek.core import pkgResourcesListDir
+from galacteek.core import pkgResourcesRscFilename
+from galacteek.core.aservice import GService
+from galacteek.config import cGet
 from galacteek.dweb import render
 from galacteek.ipfs import ipfsOp
 from galacteek.core.fswatcher import FileWatcher
+
+from galacteek.browser.web3channels import Web3Channel
+
+from galacteek.services.ethereum import PS_EVENT_CONTRACTLOADED
 
 dappsPkg = __name__
 
 
 def availableDapps():
-    _dapps = {}
     try:
-        listing = pkg_resources.resource_listdir(dappsPkg, '')
+        listing = pkgResourcesListDir(dappsPkg, '')
         for fn in listing:
-            path = pkg_resources.resource_filename(dappsPkg, fn)
+            path = pkgResourcesRscFilename(dappsPkg, fn)
             if not fn.startswith('_') and os.path.isdir(path):
-                _dapps[fn] = path
-        return _dapps
-    except Exception:
-        pass
+                yield fn, path
+    except Exception as err:
+        log.debug(str(err))
 
 
 def dappGetModule(dappName):
-    modname = '{0}.{1}'.format(dappsPkg, dappName)
+    modname = f'{dappsPkg}.{dappName}'
 
     try:
         module = importlib.import_module(modname)
     except Exception as err:
-        print(str(err))
-        return None
+        log.debug(f'Error importing dapp module: {modname}: {err}')
     else:
         return module
 
 
 def dappsRegisterSchemes():
     # Called early (register dapps schemes before app creation)
-    dapps = availableDapps()
-    for dappName in dapps:
+
+    for dappName, dappPath in availableDapps():
         mod = dappGetModule(dappName)
         if mod:
-            print(dappName, mod, 'reg schemes')
+            log.debug(f'Registering ipdapp schemes for {dappName}')
             mod.declareUrlSchemes()
+        else:
+            log.info(f'Cannot load dapp {dappName}')
 
 
-class IPLiveDapp(GObject):
+class IPDapp(GService):
     """
     Inter-Planetary Dapp
     """
 
     pkgContentsChanged = pyqtSignal(str)
 
+    schemeHandler: object = None
+    web3Channel: Web3Channel = None
+
+    name = 'ipdapp'
+
+    # service identifier
+    ident = 'ipdapp'
+
     def __init__(self, ethCtrl, name, pkgPath,
                  offline=False, **kwargs):
-        parent = kwargs.pop('parent', None)
         planet = kwargs.pop('planet', 'earth')
         initmod = kwargs.pop('initModule', None)
 
-        super(IPLiveDapp, self).__init__(parent)
+        super(IPDapp, self).__init__()
 
         self.app = runningApp()
 
@@ -78,6 +90,7 @@ class IPLiveDapp(GObject):
         self._args = kwargs
         self._planet = planet
         self._offline = offline
+        self.cStore = {}
 
         self._ctx_params = {}
 
@@ -86,18 +99,17 @@ class IPLiveDapp(GObject):
             enable_async=True
         )
 
+        self.web3Channel = self.app.browserRuntime.web3Channel(
+            self.name)
+
         self._moduleInit = initmod
         self._watcher = FileWatcher()
-        self._watchT = QTimer(self)
-        self._watchT.timeout.connect(
-            lambda: self.pkgContentsChanged.emit(self.name))
+        # self._watchT = QTimer()
+        # self._watchT.timeout.connect(
+        #    lambda: self.pkgContentsChanged.emit(self.name))
 
         self.watch(self._pkgPath)
         self._watcher.pathChanged.connect(self.onFileWatchChange)
-
-    @property
-    def name(self):
-        return self._name
 
     @property
     def offline(self):
@@ -109,12 +121,8 @@ class IPLiveDapp(GObject):
         return self._planet
 
     @property
-    def eth(self):
+    def ethCtrl(self):
         return self._ethController
-
-    @property
-    def web3(self):
-        return self.eth.web3
 
     @property
     def args(self):
@@ -138,13 +146,14 @@ class IPLiveDapp(GObject):
 
     def compileTemplates(self):
         try:
-            self.jEnv.compile_templates(self._templatesCompiledPath, zip=None)
+            self.jEnv.compile_templates(self._templatesPath, zip=None)
         except Exception as err:
-            print('Templates recompile error', str(err))
+            log.debug(f'Templates recompile error: {err}')
 
     @ipfsOp
-    async def init(self, ipfsop):
+    async def dappInit(self, ipfsop):
         self.compileTemplates()
+        await self.loadContracts()
         await self.importAssets()
 
     def stop(self):
@@ -174,8 +183,9 @@ class IPLiveDapp(GObject):
         return dag.mkLink(result)
 
     def onFileWatchChange(self, path):
-        self._watchT.stop()
-        self._watchT.start(3000)
+        # self._watchT.stop()
+        # self._watchT.start(3000)
+        pass
 
     def reimportModule(self):
         self._watchT.stop()
@@ -187,11 +197,53 @@ class IPLiveDapp(GObject):
                     self._moduleInit))
 
     async def dappReload(self):
-        self._watchT.stop()
         log.debug('Dapp reload')
+        self._watchT.stop()
 
         await self.importAssets()
-        try:
-            self.jEnv.compile_templates(self._templatesCompiledPath)
-        except Exception as err:
-            print('Templates recompile error', str(err))
+        self.compileTemplates()
+
+    async def loadContracts(self):
+        config = cGet('contracts.deployed',
+                      'galacteek.ipdapps.{self.name}')
+        await self.loadContractsFromConfig(config)
+
+    async def loadContractsFromConfig(self, config):
+        dpls = config
+
+        if not dpls:
+            return
+
+        for cConfig in dpls:
+            try:
+                ident = cConfig.get('ident')
+                name = cConfig.get('name')
+                addr = cConfig.get('address')
+
+                if not ident or ident in self.cStore:
+                    continue
+
+                lContract, lOp = await self.ethCtrl.loadLocalContractFromAddr(
+                    name, addr)
+
+                if lOp:
+                    self.cStore[ident] = lOp
+
+                    await self.psPublish({
+                        'type': PS_EVENT_CONTRACTLOADED,
+                        'contractConfig': cConfig,
+                        'contract': {
+                            'address': addr,
+                            'name': name,
+                            'operator': lOp,
+                            'webchannel': cConfig.get('web3Channel'),
+                            'web3Channel': cConfig.get('web3Channel')
+                        }
+                    })
+
+                    # It's a service
+                    await lOp.start()
+            except Exception as err:
+                import traceback
+                traceback.print_exc()
+                log.debug(str(err))

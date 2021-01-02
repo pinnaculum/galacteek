@@ -5,14 +5,15 @@ from PyQt5.QtWebEngineCore import QWebEngineUrlRequestInterceptor
 
 from galacteek.dweb.webscripts import ethereumClientScripts
 
-from galacteek.core.schemes import SCHEME_DWEB
-from galacteek.core.schemes import SCHEME_ENS
-from galacteek.core.schemes import SCHEME_ENSR
-from galacteek.core.schemes import SCHEME_FS
-from galacteek.core.schemes import SCHEME_IPFS
-from galacteek.core.schemes import SCHEME_IPNS
-from galacteek.core.schemes import SCHEME_Q
-from galacteek.core.schemes import isIpfsUrl
+from galacteek.browser.schemes import SCHEME_DWEB
+from galacteek.browser.schemes import SCHEME_ENS
+from galacteek.browser.schemes import SCHEME_ENSR
+from galacteek.browser.schemes import SCHEME_FS
+from galacteek.browser.schemes import SCHEME_IPFS
+from galacteek.browser.schemes import SCHEME_IPNS
+from galacteek.browser.schemes import SCHEME_Q
+from galacteek.browser.schemes import SCHEME_GALACTEEK
+from galacteek.browser.schemes import isIpfsUrl
 
 
 WP_NAME_ANON = 'anonymous'
@@ -107,6 +108,7 @@ class BaseProfile(QWebEngineProfile):
         self.installHandler(SCHEME_ENS, self.app.ensProxySchemeHandler)
         self.installHandler(SCHEME_ENSR, self.app.ensSchemeHandler)
         self.installHandler(SCHEME_Q, self.app.qSchemeHandler)
+        # self.installHandler(SCHEME_GALACTEEK, self.app.gSchemeHandler)
 
 
 class MinimalProfile(BaseProfile):
