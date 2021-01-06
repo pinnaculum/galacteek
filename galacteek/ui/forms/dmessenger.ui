@@ -6,14 +6,75 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>531</width>
-    <height>415</height>
+    <width>590</width>
+    <height>470</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_4">
+     <item>
+      <widget class="QPushButton" name="copyBmKeyButton">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Copy your Bitmessage address to the clipboard&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset resource="../galacteek.qrc">
+         <normaloff>:/share/icons/clipboard.png</normaloff>:/share/icons/clipboard.png</iconset>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="curMailboxCombo"/>
+     </item>
+     <item>
+      <widget class="QPushButton" name="createMailboxButton">
+       <property name="text">
+        <string>Create new mailbox</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="composeButton">
+       <property name="font">
+        <font>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="styleSheet">
+        <string notr="true"/>
+       </property>
+       <property name="text">
+        <string>Compose</string>
+       </property>
+       <property name="icon">
+        <iconset resource="../galacteek.qrc">
+         <normaloff>:/share/icons/dmessenger/dmessenger.png</normaloff>:/share/icons/dmessenger/dmessenger.png</iconset>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
    <item>
     <layout class="QVBoxLayout" name="verticalLayout">
      <item>
@@ -29,47 +90,7 @@
             </widget>
            </item>
            <item row="0" column="0">
-            <layout class="QVBoxLayout" name="verticalLayout_4">
-             <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_4">
-               <item>
-                <widget class="QPushButton" name="copyBmKeyButton">
-                 <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Copy your Bitmessage address to the clipboard&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                 </property>
-                 <property name="text">
-                  <string/>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="../galacteek.qrc">
-                   <normaloff>:/share/icons/clipboard.png</normaloff>:/share/icons/clipboard.png</iconset>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QComboBox" name="curMailboxCombo"/>
-               </item>
-               <item>
-                <widget class="QPushButton" name="createMailboxButton">
-                 <property name="text">
-                  <string>Create mailbox</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="composeButton">
-                 <property name="text">
-                  <string>Compose</string>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="../galacteek.qrc">
-                   <normaloff>:/share/icons/dmessenger/dmessenger.png</normaloff>:/share/icons/dmessenger/dmessenger.png</iconset>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </item>
-            </layout>
+            <layout class="QVBoxLayout" name="verticalLayout_4"/>
            </item>
           </layout>
          </item>

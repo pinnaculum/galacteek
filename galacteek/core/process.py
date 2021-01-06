@@ -1,5 +1,5 @@
 import asyncio
-import psutil
+from psutil import Process
 import platform
 import subprocess
 
@@ -111,9 +111,9 @@ class ProcessLauncher:
             self.transport, self.proto = await f
 
             self._procPid = self.transport.get_pid()
-            self.process = psutil.Process(self._procPid)
-        except Exception:
-            log.debug(f'Could not run process with args {args}')
+            self.process = Process(self._procPid)
+        except Exception as err:
+            log.debug(f'Could not run process with args {args}: {err}')
             if self.transport:
                 self.transport.close()
 

@@ -39,6 +39,7 @@ from galacteek.dweb.render import renderTemplate
 from galacteek.dweb.enswhois import ensContentHash
 from galacteek.core.asynccache import cachedcoromethod
 from galacteek.core import runningApp
+from galacteek.config import cGet
 
 from galacteek.ipdapps import dappsRegisterSchemes
 
@@ -479,7 +480,7 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
     # served to a QtWebEngine request
     objectServed = pyqtSignal(IPFSPath, str, float)
 
-    def __init__(self, app, parent=None, validCidQSize=32, reqTimeout=60 * 10,
+    def __init__(self, app, parent=None, validCidQSize=32,
                  noMutexes=True):
         super(NativeIPFSSchemeHandler, self).__init__(
             parent=parent,
@@ -487,7 +488,8 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
 
         self.app = app
         self.validCids = collections.deque([], validCidQSize)
-        self.requestTimeout = reqTimeout
+
+        self.requestTimeout = cGet('schemes.all.reqTimeout')
 
     def debug(self, msg):
         log.debug('Native scheme handler: {}'.format(msg))
@@ -510,7 +512,8 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
 
             request.reply(ctype.encode('ascii'), buf)
 
-            self.objectServed.emit(ipfsPath, ctype, time.time())
+            # Should disabled based on config for the scheme
+            # self.objectServed.emit(ipfsPath, ctype, time.time())
 
             if mutex and not self.noMutexes:
                 mutex.unlock()

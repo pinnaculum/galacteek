@@ -7,19 +7,24 @@ from mailbox import Maildir
 # from mailbox import MaildirMessage
 import email.errors
 
-from mode import Service
-from mode.utils.objects import cached_property
-
 from galacteek import log
 from galacteek import AsyncSignal
+from galacteek import cached_property
 from galacteek.config import cParentGet
 from galacteek.core.process import ProcessLauncher
+from galacteek.core.process import Process
 from galacteek.core.process import LineReaderProcessProtocol
 from galacteek.core.process import shellExec
 from galacteek.core.asynclib import asyncRmTree
+from galacteek.core.asynclib import asyncReadFile
+from galacteek.core.asynclib import asyncWriteFile
+from galacteek.core.aservice import GService
 
 from galacteek.services.bitmessage import bmAddressValid
 from galacteek.services.bitmessage.storage import RegularMailDir
+
+
+NOTBIT = 'notbit'
 
 
 class NotBitProtocol(LineReaderProcessProtocol):
@@ -31,20 +36,44 @@ class NotBitProtocol(LineReaderProcessProtocol):
 
 
 class NotBitProcess(ProcessLauncher):
-    def __init__(self, dataPath: Path, mailDirPath: Path, listenPort=8444):
+    def __init__(self, dataPath: Path, mailDirPath: Path,
+                 listenPort=8444,
+                 useTor=False):
         super().__init__()
 
         self.dataPath = dataPath
         self.objectsPath = self.dataPath.joinpath('objects')
+        self.pidFilePath = self.dataPath.joinpath('notbit.pid')
         self.mDirPath = mailDirPath
         self.listenPort = listenPort
-        self.useTor = False
+        self.useTor = useTor
+
+    def removePidFile(self):
+        if self.pidFilePath.is_file():
+            log.debug(f'PID file {self.pidFilePath}: unlinking')
+
+            self.pidFilePath.unlink()
 
     async def startProcess(self):
         if cParentGet('notbit.purgeObjectsOnStartup') is True:
             log.debug(f'Purging objects cache: {self.objectsPath}')
 
             await asyncRmTree(str(self.objectsPath))
+
+        if self.pidFilePath.is_file():
+            # TODO: move to ProcessLauncher
+
+            log.debug(f'PID file {self.pidFilePath} exists, checking process')
+
+            text = await asyncReadFile(str(self.pidFilePath), mode='rt')
+            try:
+                pid = int(text.split('\n').pop(0))
+                prevProc = Process(pid)
+                prevProc.terminate()
+            except Exception as err:
+                log.debug(f'Invalid PID file {self.pidFilePath}: {err}')
+
+            self.removePidFile()
 
         args = [
             '-m', str(self.mDirPath),
@@ -55,16 +84,28 @@ class NotBitProcess(ProcessLauncher):
         if self.useTor:
             args.append('-T')
 
-        await self.runProcess(
-            ['notbit'] + args,
+        if await self.runProcess(
+            [NOTBIT] + args,
             NotBitProtocol(
                 self.loop, self.exitFuture, self.startedFuture
             )
-        )
-        log.debug('Started notbit')
+        ):
+            log.debug(f'Started notbit at PID: {self.process.pid}')
+
+            await asyncWriteFile(
+                str(self.pidFilePath),
+                f"{self.process.pid}\n",
+                mode='w+t'
+            )
+
+            return True
+        else:
+            log.debug('Could not start nobit')
+
+        return False
 
 
-class BitMessageMailManService(Service):
+class BitMessageMailManService(GService):
     def __init__(self, mailDirPath: Path, mailBoxesPath: Path):
         super().__init__()
         self.clearMailDirPath = mailDirPath
@@ -99,7 +140,7 @@ class BitMessageMailManService(Service):
         log.debug('Starting BM mailman ..')
         # await self.loadMailBoxes()
 
-    @Service.task
+    @GService.task
     async def watchMailDir(self):
         while not self.should_stop:
             await asyncio.sleep(2)
@@ -136,7 +177,9 @@ class BitMessageMailManService(Service):
                    bmDest: str,
                    subject: str,
                    message: str,
-                   contentType='text/markdown',
+                   mailDir=None,
+                   contentType='text/plain',
+                   textMarkup='markdown',
                    encoding='utf-8'):
         """
         Send a BitMessage via notbit-sendmail
@@ -148,12 +191,16 @@ class BitMessageMailManService(Service):
         msg['From'] = f'{bmSource}@bitmessage'
         msg['To'] = f'{bmDest}@bitmessage'
         msg['Subject'] = subject
-        msg['Content-Type'] = f'{contentType}; charset={encoding.upper()}'
+        msg['Content-Type'] = \
+            f'{contentType}; charset={encoding.upper()}; markup={textMarkup}'
 
         msg.set_content(message)
         msgBytes = msg.as_bytes()
 
         pcode, result = await shellExec('notbit-sendmail', input=msgBytes)
+
+        if pcode == 0 and mailDir:
+            await mailDir.storeSent(message)
 
         log.debug(f'BM send: {bmSource} {bmDest}: OK')
 
@@ -211,10 +258,12 @@ class BitMessageMailManService(Service):
             return key, maildir
 
 
-class BitMessageClientService(Service):
+class BitMessageClientService(GService):
     notbitProcess: ProcessLauncher = None
-
     mailer: BitMessageMailManService = None
+
+    ident = 'bitmessage'
+    name = 'bitmessage'
 
     @cached_property
     def mailer(self) -> BitMessageMailManService:
@@ -245,14 +294,26 @@ class BitMessageClientService(Service):
 
         await self.add_runtime_dependency(self.mailer)
 
-        self.notbitProcess = NotBitProcess(
-            self.notBitDataPath,
-            self.mailDirPath,
-            listenPort=cParentGet('notbit.listenPort')
-        )
-        await self.notbitProcess.start()
+        if self.which(NOTBIT):
+            self.notbitProcess = NotBitProcess(
+                self.notBitDataPath,
+                self.mailDirPath,
+                listenPort=cParentGet('notbit.listenPort'),
+                useTor=cParentGet('notbit.useTor')
+            )
+            if await self.notbitProcess.start():
+                await self.psPublish({
+                    'type': 'ServiceStarted',
+                    'event': {
+                        'servicePort': self.notbitProcess.listenPort
+                    }
+                })
+        else:
+            log.debug('Notbit could not be found, not starting process')
 
     async def on_stop(self) -> None:
         log.debug('Stopping bitmessage client')
 
-        self.notbitProcess.stop()
+        if self.notbitProcess:
+            self.notbitProcess.stop()
+            self.notbitProcess.removePidFile()

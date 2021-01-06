@@ -8,6 +8,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import QModelIndex
+from PyQt5.QtCore import QItemSelectionModel
 
 from galacteek import log
 from galacteek import partialEnsure
@@ -27,6 +28,7 @@ from galacteek.database.models.bm import BitMessageMailBox
 from galacteek.services.bitmessage.storage import BitMessageMailDir
 from galacteek.services.bitmessage.storage import MaildirMessage
 from galacteek.services.bitmessage import bmAddressExtract
+from galacteek.services.bitmessage import bmAddressValid
 
 from ..forms import ui_dmessenger
 from ..forms import ui_dmessenger_compose
@@ -102,12 +104,16 @@ class MessageComposer(QWidget):
             partialEnsure(self.onCancelClicked))
 
     @property
+    def messengerWidget(self):
+        return self.parent()
+
+    @property
     def subject(self):
-        return self.ui.msgSubject
+        return self.ui.msgSubject.text()
 
     @property
     def recipient(self):
-        return self.ui.msgTo
+        return self.ui.msgTo.text()
 
     @subject.setter
     def subject(self, s: str):
@@ -164,11 +170,18 @@ class MessageComposer(QWidget):
         self.cancelled.emit()
 
     async def onSend(self, *args):
+        if not bmAddressValid(self.recipient):
+            return await messageBoxAsync('Invalid recipient BM address')
+
+        # curMailDir = self.messengerWidget.bmCurrentMailDir
+        curMailDir = None
+
         result = await self.app.s.bmService.mailer.send(
             self.ui.msgFrom.currentText(),
             self.ui.msgTo.text(),
             self.ui.msgSubject.text(),
-            self.messageBody
+            self.messageBody,
+            mailDir=curMailDir
         )
 
         if result is True:
@@ -188,9 +201,11 @@ class MessageListView(QTreeWidget):
         super().__init__(parent)
 
         self.maildir = maildir
-        self.itemClicked.connect(partialEnsure(self.onMessageClicked))
+        self.currentItemChanged.connect(
+            partialEnsure(self.onCurMessageChanged))
         self.setColumnCount(2)
         self.setHeaderLabels(['Subject', 'Date'])
+        self.setHeaderHidden(True)
         self.setSortingEnabled(True)
 
         self.sMessageNeedsDisplay = AsyncSignal(MaildirMessage)
@@ -203,12 +218,16 @@ class MessageListView(QTreeWidget):
         self.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.hideColumn(1)
 
+    @property
+    def selModel(self):
+        return self.selectionModel()
+
     async def onNewMessageReceived(self, key, msg):
         # TODO: UI notification here
 
         await self.insertMessage(key, msg)
 
-    async def onMessageClicked(self, item, column, *a):
+    async def onCurMessageChanged(self, item, itemPrevious, *a):
         mKey = item.data(0, Qt.UserRole)
         if not mKey:
             return
@@ -260,6 +279,16 @@ class MessageListView(QTreeWidget):
             except Exception as err:
                 log.debug(f'Refresh error: {err}')
                 continue
+
+        # Select latest message
+        curIndex = self.selModel.currentIndex()
+        if not curIndex.isValid():
+            idxLatest = self.model().index(0, 0, QModelIndex())
+            if idxLatest.isValid():
+                self.selModel.select(
+                    idxLatest, QItemSelectionModel.Select)
+                self.selModel.setCurrentIndex(
+                    idxLatest, QItemSelectionModel.SelectCurrent)
 
 
 class Messenger(QObject):
@@ -324,6 +353,17 @@ class MessengerWidget(QWidget):
             range(self.ui.curMailboxCombo.count())
         ]
 
+    @property
+    def isComposing(self):
+        return self.ui.mailStack.currentIndex() == self.sIdxCompose
+
+    def resizeEventNo(self, event):
+        try:
+            for _addr, view in self.messageBoxViews.items():
+                view.setMaximumWidth(self.width() / 3)
+        except Exception:
+            pass
+
     def setDefaultView(self):
         self.ui.mailStack.setCurrentIndex(self.sIdxView)
 
@@ -364,8 +404,10 @@ class MessengerWidget(QWidget):
             await self.selectMailBox(bmMbDefault.bmAddress)
 
     async def onMessageDisplay(self, message):
-        self.setDefaultView()
         self.messageView.showMessage(message)
+
+        if not self.isComposing and 0:
+            self.setDefaultView()
 
     async def onMailBoxSelect(self, idx, *qa):
         await self.selectMailBox(self.bmComboText)

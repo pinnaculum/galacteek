@@ -12,7 +12,7 @@ from stem import Signal
 from stem.control import Controller
 
 from galacteek import log
-from galacteek import cParentGet
+from galacteek.config import cParentGet
 from galacteek import ensure
 from galacteek import AsyncSignal
 from galacteek.core.asynclib import asyncWriteFile

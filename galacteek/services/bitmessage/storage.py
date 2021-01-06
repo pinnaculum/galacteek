@@ -52,6 +52,9 @@ class BitMessageMailDir:
     async def store(self, message):
         raise Exception('Not implemented')
 
+    async def storeSent(self, message):
+        raise Exception('Not implemented')
+
     def updateMessage(self, mKey, msg):
         try:
             self.folderInbox[mKey] = msg
@@ -139,6 +142,14 @@ class RegularMailDir(BitMessageMailDir):
         else:
             await self.emitNewMessage(key, message)
             return True
+
+    async def storeSent(self, message):
+        log.debug('Storing message in outbox ..')
+        try:
+            key = self.folderSent.add(message)
+            log.debug(f'Sent mail key: {key}')
+        except Exception as err:
+            log.debug(str(err))
 
     async def getMessageByKey(self, key):
         try:

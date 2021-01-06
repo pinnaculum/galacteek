@@ -3,8 +3,6 @@ from PyQt5.QtWidgets import QDialog
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QUrl
 
-from galacteek import ensure
-
 from .forms import ui_settings
 from ..appsettings import *
 from .helpers import *
@@ -266,10 +264,9 @@ class SettingsDialog(QDialog):
         self.sManager.sync()
         self.sManager.changed = True
 
-        ensure(self.applySettings())
         self.done(1)
 
-    async def applySettings(self):
+    async def applySettingsEth(self):
         self.app.ethereum.changeParams(self.app.getEthParams())
 
         if self.sManager.isTrue(CFG_SECTION_ETHEREUM, CFG_KEY_ENABLED):

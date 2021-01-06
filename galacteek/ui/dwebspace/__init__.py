@@ -24,6 +24,10 @@ from PyQt5.QtGui import QKeySequence
 from galacteek.ui.peers import PeersManager
 from galacteek import partialEnsure
 from galacteek import ensure
+from galacteek import log
+
+from galacteek.core.ps import KeyListener
+from galacteek.core.ps import makeKeyService
 
 from galacteek.ui import files
 from galacteek.ui import ipfssearch
@@ -159,6 +163,8 @@ WS_DMESSENGER = 'dmessenger'
 
 
 class BaseWorkspace(QWidget):
+    listenTo = []
+
     def __init__(self, stack,
                  name,
                  description=None,
@@ -167,6 +173,7 @@ class BaseWorkspace(QWidget):
                  acceptsDrops=False):
         super().__init__(parent=stack)
 
+        self.app = QApplication.instance()
         self.acceptsDrops = acceptsDrops
 
         self.stack = stack
@@ -178,6 +185,9 @@ class BaseWorkspace(QWidget):
         self.defaultAction = None
         self.wLayout = QVBoxLayout(self)
         self.setLayout(self.wLayout)
+
+        self.wLayout.setSpacing(0)
+        self.wLayout.setContentsMargins(0, 0, 0, 0)
 
     def __enter__(self):
         return self
@@ -295,8 +305,6 @@ class TabbedWorkspace(BaseWorkspace):
 
         self.wsTagRules = []
         self.wsActions = {}
-
-        self.app = QApplication.instance()
 
         self.toolBarCtrl = QToolBar()
         self.toolBarActions = QToolBar()
@@ -798,15 +806,21 @@ class WorkspaceMisc(TabbedWorkspace):
             icon=getIcon('pin-zoom.png'))
 
 
-class WorkspaceMessenger(SingleWidgetWorkspace):
+class WorkspaceMessenger(SingleWidgetWorkspace, KeyListener):
+    listenTo = [makeKeyService('bitmessage')]
+
     def __init__(self, stack):
         super().__init__(stack, WS_DMESSENGER,
                          icon=getIcon('dmessenger/dmessenger.png'),
-                         description='Decentralized messenger')
+                         description='Messenger')
 
     def setupWorkspace(self):
         super().setupWorkspace()
 
         self.msger = MessengerWidget()
         self.wLayout.addWidget(self.msger)
-        ensure(self.msger.setup())
+
+    async def event_g_services_bitmessage(self, key, message):
+        log.debug(f'Bitmessage service event: {message}')
+
+        await self.msger.setup()
