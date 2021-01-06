@@ -75,11 +75,18 @@ class NotBitProcess(ProcessLauncher):
 
             self.removePidFile()
 
-        args = [
-            '-m', str(self.mDirPath),
-            '-D', str(self.dataPath),
-            '-p', str(self.listenPort)
-        ]
+        if self.system == 'Windows':
+            args = [
+                '-m', str(self.toCygwinPath(self.mDirPath)),
+                '-D', str(self.toCygwinPath(self.dataPath)),
+                '-p', str(self.listenPort)
+            ]
+        else:
+            args = [
+                '-m', str(self.mDirPath),
+                '-D', str(self.dataPath),
+                '-p', str(self.listenPort)
+            ]
 
         if self.useTor:
             args.append('-T')

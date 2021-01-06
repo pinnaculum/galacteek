@@ -1,7 +1,11 @@
 import asyncio
-from psutil import Process
 import platform
 import subprocess
+import posixpath
+import re
+
+from psutil import Process
+from pathlib import Path
 
 from galacteek import log
 
@@ -68,6 +72,10 @@ class ProcessLauncher:
         self.transport, self.proto = None, None
 
     @property
+    def system(self):
+        return platform.system()
+
+    @property
     def process(self):
         return self._process
 
@@ -85,6 +93,17 @@ class ProcessLauncher:
 
     def message(self, msg):
         log.debug(msg)
+
+    def toCygwinPath(self, path: Path):
+        def conv(pp):
+            for elem in pp:
+                ma = re.search(r'^(c|d|e|f|g|h):', elem.lower())
+                if ma:
+                    yield '/cygdrive/{d}'.format(d=ma.group(1))
+                else:
+                    yield elem
+
+        return posixpath.join(*conv(path.parts))
 
     async def start(self):
         return await self.startProcess()

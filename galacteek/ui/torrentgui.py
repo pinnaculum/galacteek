@@ -471,7 +471,7 @@ class ControlManagerThread(QObject):
         super().__init__()
 
         self.app = QApplication.instance()
-        self._control = ControlManager(self.app._torrentStateLocation)
+        self._control = ControlManager(str(self.app._torrentStateLocation))
         self._control_server = ControlServer(self._control, None)
         self._stopping = False
         self._started = False
