@@ -14,15 +14,19 @@ class EthereumConnectionParams:
 
 
 def ethConnConfigParams(network='mainnet'):
-    with cModuleContext('galacteek.services.ethereum') as cfg:
-        provType = cfg['providerType']
-        rpcUrl = cfg['rpcUrl']
-        mode = cfg.get('mode', 'infura')
+    try:
+        with cModuleContext('galacteek.services.ethereum') as cfg:
+            provType = cfg['providerType']
+            rpcUrl = cfg['rpcUrl']
+            mode = cfg.get('mode', 'infura')
 
-        return EthereumConnectionParams(rpcUrl=rpcUrl,
-                                        provType=provType,
-                                        infura=cfg['infura'],
-                                        mode=mode)
+            return EthereumConnectionParams(rpcUrl=rpcUrl,
+                                            provType=provType,
+                                            infura=cfg['infura'],
+                                            mode=mode)
+    except Exception:
+        return EthereumConnectionParams(rpcUrl='http://localhost:7545',
+                                        provType='http')
 
 
 class MockEthereumController:

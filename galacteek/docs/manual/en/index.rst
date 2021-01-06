@@ -18,6 +18,7 @@ galacteek's manual (english)
     File manager <filemanager>
     File sharing <filesharing>
     Explorer <unixfs>
+    Messenger <messenger>
     Browsing <browsing>
     Markdown <markdown> 
     Editing <editing> 

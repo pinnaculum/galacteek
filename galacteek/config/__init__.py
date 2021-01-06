@@ -8,6 +8,7 @@ from omegaconf import dictconfig  # noqa
 
 from galacteek.core import pkgResourcesRscFilename
 from galacteek.core import pkgResourcesListDir
+from galacteek import log
 
 from types import SimpleNamespace
 
@@ -205,3 +206,18 @@ def cModuleContext(mod: str):
         return ModuleConfigContext(mCfg=cEntry['config'])
     else:
         raise Exception(f'No config for module {mod}')
+
+
+def initFromTable():
+    from galacteek.config.table import cfgInitTable
+
+    for pkg, dst in cfgInitTable.items():
+        log.debug(f'Config: initializing from package/module {pkg}')
+
+        try:
+            regConfigFromPyPkg(pkg)
+        except Exception:
+            log.debug(f'Failed to load config from package: {pkg}')
+            continue
+
+    return True

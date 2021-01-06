@@ -174,9 +174,8 @@ jobs:
     - name: Fetch notbit (windows)
       if: startsWith(matrix.os, 'windows')
       run: |
-        wget https://github.com/pinnaculum/notbit/releases/download/continuous-ci/notbit.exe
-        ln -s notbit.exe notbit-keygen.exe
-        ln -s notbit.exe notbit-sendmail.exe
+        wget https://github.com/pinnaculum/notbit/releases/download/continuous-ci/notbit-cygwin.zip
+        unzip notbit-cygwin.zip
       shell: bash
 
     - name: Install dependencies

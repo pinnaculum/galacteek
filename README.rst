@@ -118,6 +118,7 @@ for more information).
 - File sharing
 - BitTorrent to IPFS bridge
 - Tor support
+- Simple messenger based on the Bitmessage_ protocol
 - Search content with the ipfs-search_ search engine as well as with cyber_
 - Built-in blog with Atom feeds
 - Webcam to IPFS capture (image and videos)
@@ -238,3 +239,4 @@ from the ipfs-logo_ project's repository is included, unchanged.
 .. _IPID: https://github.com/jonnycrunch/ipid
 .. _wasmer: https://wasmer.io/
 .. _cyber: https://cybercongress.ai
+.. _Bitmessage: https://wiki.bitmessage.org/Bitmessage%20Technical%20Paper.pdf

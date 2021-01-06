@@ -63,6 +63,11 @@ keySmartContracts = aiopubsub.Key('g', 'smartcontracts', '*')
 mSubscriber = psSubscriber('main')
 
 
+def hubPublish(key, message):
+    log.debug(f'hubPublish \\ {key} // {message}')
+    gHub.publish(key, message)
+
+
 class KeyListener:
     listenTo = []
 
@@ -71,6 +76,7 @@ class KeyListener:
             try:
                 varName = '_'.join([c for c in key if c != '*'])
                 coro = getattr(self, f'event_{varName}')
+                log.debug(f'KeyListener for key {key}: binding to {coro}')
                 mSubscriber.add_async_listener(key, coro)
             except Exception as err:
                 log.debug(f'KeyListener: could not connect key {key}: {err}')

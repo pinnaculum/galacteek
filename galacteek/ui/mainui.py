@@ -529,6 +529,8 @@ class CentralStack(QStackedWidget):
         self.currentChanged.connect(
             partialEnsure(self.onWorkspaceChanged))
         self.toolBarWs = wsToolBar
+        self.layout().setContentsMargins(0, 0, 0, 0)
+        self.layout().setSpacing(0)
         self.setContentsMargins(0, 0, 0, 0)
         self.setMouseTracking(True)
 
@@ -537,6 +539,12 @@ class CentralStack(QStackedWidget):
     @property
     def mainWindow(self):
         return self.parent()
+
+    @property
+    def defaultWorkspace(self):
+        idx, wspace = self.workspaceByName('@Earth')
+        if wspace:
+            return wspace
 
     def workspaces(self):
         for idx in range(0, self.count()):
@@ -1481,6 +1489,10 @@ class MainWindow(QMainWindow):
         else:
             sidx, wspace = self.stack.currentWorkspace()
 
+        if not wspace or not issubclass(wspace.__class__, TabbedWorkspace):
+            # return
+            wspace = self.stack.defaultWorkspace
+
         wspace.wsRegisterTab(tab, name, icon=icon, current=current,
                              tooltip=tooltip,
                              position=position)
@@ -1628,6 +1640,13 @@ class MainWindow(QMainWindow):
         self.getMediaPlayer()
 
     def onOpenBrowserTabClicked(self, pinBrowsed=False):
+        sidx, wspace = self.stack.currentWorkspace()
+
+        if not wspace or not issubclass(wspace.__class__, TabbedWorkspace):
+            wspace = self.stack.defaultWorkspace
+            print('Not a tabbed wspace, using def')
+            # return
+
         self.addBrowserTab(pinBrowsed=pinBrowsed, urlFocus=True)
 
     def onWriteNewDocumentClicked(self):

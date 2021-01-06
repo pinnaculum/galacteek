@@ -1171,7 +1171,7 @@ class GalacteekApplication(QApplication):
         return result
 
     def initSettings(self):
-        from galacteek.config.table import initFromTable
+        from galacteek.config import initFromTable
         if not os.path.isfile(self.settingsFileLocation):
             self._freshInstall = True
 
