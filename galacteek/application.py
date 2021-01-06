@@ -183,7 +183,7 @@ async def fetchFsMigrateWrapper(app, timeout=60 * 10):
 
 async def fetchIpfsSoft(app, software, executable, version):
     async for msg in distipfsfetch.distIpfsExtract(
-            dstdir=app.ipfsBinLocation, software=software,
+            dstdir=str(app.ipfsBinLocation), software=software,
             executable=executable, version=version, loop=app.loop,
             sslverify=app.sslverify):
         try:
@@ -568,17 +568,18 @@ class GalacteekApplication(QApplication):
         # Start with no proxy
         self.networkProxySet(NullProxy())
 
-        self.multihashDb = IPFSObjectMetadataDatabase(self._mHashDbLocation,
-                                                      loop=self.loop)
+        self.multihashDb = IPFSObjectMetadataDatabase(
+            str(self._mHashDbLocation), loop=self.loop)
 
         self.resourceOpener = IPFSResourceOpener(parent=self)
 
         self.downloadsManager = downloads.DownloadsManager(self)
-        self.marksLocal = IPFSMarks(self.localMarksFileLocation, backup=True)
+        self.marksLocal = IPFSMarks(
+            str(self.localMarksFileLocation), backup=True)
 
         self.marksLocal.addCategory('general')
         self.marksLocal.addCategory('uncategorized')
-        self.marksNetwork = IPFSMarks(self.networkMarksFileLocation,
+        self.marksNetwork = IPFSMarks(str(self.networkMarksFileLocation),
                                       autosave=False)
 
         self.tempDir = QTemporaryDir()
@@ -806,7 +807,7 @@ class GalacteekApplication(QApplication):
         """
         return GalacteekOperator(self.ipfsClient, ctx=self.ipfsCtx,
                                  debug=self.debugEnabled,
-                                 nsCachePath=self.nsCacheLocation)
+                                 nsCachePath=str(self.nsCacheLocation))
 
     def getIpfsConnectionParams(self):
         mgr = self.settingsMgr
@@ -866,7 +867,7 @@ class GalacteekApplication(QApplication):
         log.debug(f'Scheduler jobs: {self.scheduler.active_count} active,'
                   f'{self.scheduler.pending_count} pending jobs')
 
-    async def setupOrmDb(self, dbpath):
+    async def setupOrmDb(self, dbpath: Path):
         self.scheduler = await aiojobs.create_scheduler(
             close_timeout=1.0,
             limit=250,
@@ -875,7 +876,7 @@ class GalacteekApplication(QApplication):
 
         # Old database, just for Atom feeds right now
 
-        self.sqliteDb = SqliteDatabase(self._sqliteDbLocation)
+        self.sqliteDb = SqliteDatabase(str(self._sqliteDbLocation))
         ensure(self.sqliteDb.setup())
         self.modelAtomFeeds = AtomFeedsModel(self.sqliteDb.feeds, parent=self)
 
@@ -885,7 +886,7 @@ class GalacteekApplication(QApplication):
             parent=self
         )
 
-        if not await database.initOrm(self._mainDbLocation):
+        if not await database.initOrm(str(dbpath)):
             await self.dbConfigured.emit(False)
             return
 
@@ -1075,58 +1076,58 @@ class GalacteekApplication(QApplication):
         return True
 
     def setupPaths(self):
-        qtDataLocation = QStandardPaths.writableLocation(
-            QStandardPaths.DataLocation)
+        locr = QStandardPaths.writableLocation(QStandardPaths.DataLocation)
 
-        if not qtDataLocation:
+        if not locr:
             raise Exception('No writable data location found')
 
-        self._dataLocation = os.path.join(
-            qtDataLocation, self._appProfile)
-        self._logsLocation = os.path.join(self.dataLocation, 'logs')
-        self.mainLogFileLocation = os.path.join(
-            self._logsLocation, 'galacteek.log')
+        qtDataLocation = Path(locr)
 
-        self._ipfsBinLocation = os.path.join(qtDataLocation, 'ipfs-bin')
-        self._ipfsDataLocation = os.path.join(self.dataLocation, 'ipfs')
-        self._ipfsdStatusLocation = os.path.join(
-            self.dataLocation, 'ipfsd.status')
-        self._orbitDataLocation = os.path.join(self.dataLocation, 'orbitdb')
-        self._mHashDbLocation = os.path.join(self.dataLocation, 'mhashmetadb')
-        self._sqliteDbLocation = os.path.join(self.dataLocation, 'db.sqlite')
-        self._torConfigLocation = os.path.join(self.dataLocation, 'torrc')
-        self._torDataDirLocation = os.path.join(self.dataLocation, 'tor-data')
-        self._pLockLocation = os.path.join(self.dataLocation, 'profile.lock')
-        self._mainDbLocation = os.path.join(
-            self.dataLocation, 'db_main.sqlite3')
-        self.marksDataLocation = os.path.join(self.dataLocation, 'marks')
-        self.uiDataLocation = os.path.join(self.dataLocation, 'ui')
+        self._dataLocation = qtDataLocation.joinpath(self._appProfile)
+        self._logsLocation = self.dataLocation.joinpath('logs')
+        self.mainLogFileLocation = self._logsLocation.joinpath('galacteek.log')
 
-        self.cryptoDataLocation = os.path.join(self.dataLocation, 'crypto')
-        self.eccDataLocation = os.path.join(self.cryptoDataLocation, 'ecc')
-        self.eccChatChannelsDataLocation = os.path.join(
-            self.eccDataLocation, 'channels')
+        self._ipfsBinLocation = qtDataLocation.joinpath('ipfs-bin')
+        self._ipfsDataLocation = self.dataLocation.joinpath('ipfs')
+        self._ipfsdStatusLocation = self.dataLocation.joinpath('ipfsd.status')
 
-        self.gpgDataLocation = os.path.join(self.cryptoDataLocation, 'gpg')
-        self.localMarksFileLocation = os.path.join(self.marksDataLocation,
-                                                   'ipfsmarks.local.json')
-        self.networkMarksFileLocation = os.path.join(self.marksDataLocation,
-                                                     'ipfsmarks.network.json')
-        self.pinStatusLocation = os.path.join(self.dataLocation,
-                                              'pinstatus.json')
-        self._nsCacheLocation = os.path.join(self.dataLocation,
-                                             'nscache.json')
-        self._torrentStateLocation = os.path.join(self.dataLocation,
-                                                  'torrent_state.pickle')
-        self._bitMessageDataLocation = Path(self.dataLocation).joinpath(
+        self._orbitDataLocation = self.dataLocation.joinpath('orbitdb')
+        self._mHashDbLocation = self.dataLocation.joinpath('mhashmetadb')
+        self._sqliteDbLocation = self.dataLocation.joinpath('db.sqlite')
+        self._torConfigLocation = self.dataLocation.joinpath('torrc')
+        self._torDataDirLocation = self.dataLocation.joinpath('tor-data')
+        self._pLockLocation = self.dataLocation.joinpath('profile.lock')
+        self._mainDbLocation = self.dataLocation.joinpath('db_main.sqlite3')
+        self.marksDataLocation = self.dataLocation.joinpath('marks')
+        self.uiDataLocation = self.dataLocation.joinpath('ui')
+
+        self.cryptoDataLocation = self.dataLocation.joinpath('crypto')
+        self.eccDataLocation = self.cryptoDataLocation.joinpath('ecc')
+        self.eccChatChannelsDataLocation = self.eccDataLocation.joinpath(
+            'channels')
+
+        self.gpgDataLocation = self.cryptoDataLocation.joinpath('gpg')
+        self.localMarksFileLocation = self.marksDataLocation.joinpath(
+            'ipfsmarks.local.json')
+        self.networkMarksFileLocation = self.marksDataLocation.joinpath(
+            'ipfsmarks.network.json')
+        self.pinStatusLocation = self.dataLocation.joinpath(
+            'pinstatus.json')
+        self._nsCacheLocation = self.dataLocation.joinpath(
+            'nscache.json')
+        self._torrentStateLocation = self.dataLocation.joinpath(
+            'torrent_state.pickle')
+        self._bitMessageDataLocation = self.dataLocation.joinpath(
             'bitmessage')
 
-        qtConfigLocation = QStandardPaths.writableLocation(
-            QStandardPaths.ConfigLocation)
-        self.configDirLocation = os.path.join(
-            qtConfigLocation, GALACTEEK_NAME, self._appProfile)
-        self.settingsFileLocation = os.path.join(
-            self.configDirLocation, '{}.conf'.format(GALACTEEK_NAME))
+        qtConfigLocation = Path(QStandardPaths.writableLocation(
+            QStandardPaths.ConfigLocation))
+
+        self.configDirLocation = qtConfigLocation.joinpath(
+            GALACTEEK_NAME).joinpath(self._appProfile)
+
+        self.settingsFileLocation = self.configDirLocation.joinpath(
+            f'{GALACTEEK_NAME}.conf')
 
         for dir in [self._mHashDbLocation,
                     self._logsLocation,
@@ -1139,8 +1140,9 @@ class GalacteekApplication(QApplication):
                     self.gpgDataLocation,
                     self.uiDataLocation,
                     self.configDirLocation]:
-            if not os.path.exists(dir):
-                os.makedirs(dir)
+            # if not os.path.exists(dir):
+            #    os.makedirs(dir)
+            dir.mkdir(parents=True, exist_ok=True)
 
         self.defaultDownloadsLocation = QStandardPaths.writableLocation(
             QStandardPaths.DownloadLocation)
@@ -1150,13 +1152,13 @@ class GalacteekApplication(QApplication):
             self.configDirLocation,
             self.settingsFileLocation))
 
-        os.environ['PATH'] += self.ipfsBinLocation + os.pathsep + \
+        os.environ['PATH'] += str(self.ipfsBinLocation) + os.pathsep + \
             os.environ['PATH']
 
         self.setupServicesPaths()
 
     def dataPathForService(self, serviceName: str) -> Path:
-        return Path(self.dataLocation).joinpath('services').joinpath(
+        return self.dataLocation.joinpath('services').joinpath(
             serviceName)
 
     def setupServicesPaths(self):
@@ -1166,7 +1168,7 @@ class GalacteekApplication(QApplication):
             'ethereum')
 
     def which(self, prog='ipfs'):
-        path = self.ipfsBinLocation + os.pathsep + os.environ['PATH']
+        path = str(self.ipfsBinLocation) + os.pathsep + os.environ['PATH']
         result = shutil.which(prog, path=path)
         return result
 
@@ -1175,12 +1177,12 @@ class GalacteekApplication(QApplication):
         if not os.path.isfile(self.settingsFileLocation):
             self._freshInstall = True
 
-        self.settingsMgr = SettingsManager(path=self.settingsFileLocation)
+        self.settingsMgr = SettingsManager(path=str(self.settingsFileLocation))
         setDefaultSettings(self)
         self.settingsMgr.sync()
 
         log.debug(f'Using config from directory: {self.configDirLocation}')
-        cSetSavePath(Path(self.configDirLocation))
+        cSetSavePath(self.configDirLocation)
 
         # Init new config system
         initFromTable()
@@ -1214,7 +1216,7 @@ class GalacteekApplication(QApplication):
         if self.ipfsd is None:
             # TODO: FFS rewrite the constructor
             self._ipfsd = asyncipfsd.AsyncIPFSDaemon(
-                Path(self.ipfsDataLocation),
+                self.ipfsDataLocation,
                 goIpfsPath=self.goIpfsBinPath,
                 statusPath=self._ipfsdStatusLocation,
                 apiport=sManager.getInt(

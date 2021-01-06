@@ -4,6 +4,7 @@ import asyncio
 import time
 import re
 import uuid
+from pathlib import Path
 
 from cachetools import cached
 from cachetools import TTLCache
@@ -395,7 +396,7 @@ class SharedHashmarksManager(QObject):
 
 
 class DIDRsaKeyStore:
-    def __init__(self, profile, _storeRoot):
+    def __init__(self, profile, _storeRoot: Path):
         self.__root = _storeRoot
         self.__profile = profile
 
@@ -404,12 +405,11 @@ class DIDRsaKeyStore:
         if not match:
             return None
 
-        return os.path.join(
-            self.__root,
+        return str(self.__root.joinpath(
             'rsa_{0}_ipid_{1}_priv.key'.format(
                 self.__profile, match.group('id')
             )
-        )
+        ))
 
     @cached(TTLCache(8, 720))
     def _privateKeyForDid(self, did):
@@ -467,12 +467,11 @@ class UserProfile(QObject):
             self.ctx.app.cryptoDataLocation
         )
 
-        self._rsaPrivKeyPath = os.path.join(
-            self.ctx.app.cryptoDataLocation,
+        self._rsaPrivKeyPath = self.ctx.app.cryptoDataLocation.joinpath(
             'rsa_{0}_priv.key'.format(
                 self.name))
-        self._rsaPubKeyPath = os.path.join(self.ctx.app.cryptoDataLocation,
-                                           'rsa_{0}_pub.key'.format(self.name))
+        self._rsaPubKeyPath = self.ctx.app.cryptoDataLocation.joinpath(
+            'rsa_{0}_pub.key'.format(self.name))
         self._rsaPubKey = None
 
         self._filesModel = None
@@ -854,8 +853,8 @@ class UserProfile(QObject):
 
     @ipfsOp
     async def cryptoInit(self, op):
-        if not os.path.isfile(self.rsaPrivKeyPath) and \
-                not os.path.isfile(self.rsaPubKeyPath):
+        if not self.rsaPrivKeyPath.is_file() and \
+                not self.rsaPubKeyPath.is_file():
             self.userLogInfo('Creating RSA keypair')
 
             privKey, pubKey = await self.ctx.rsaExec.genKeys()
@@ -864,17 +863,18 @@ class UserProfile(QObject):
                 return False
 
             try:
-                async with aiofiles.open(self.rsaPrivKeyPath, 'w+b') as fd:
+                async with aiofiles.open(
+                        str(self.rsaPrivKeyPath), 'w+b') as fd:
                     await fd.write(privKey)
 
-                async with aiofiles.open(self.rsaPubKeyPath, 'w+b') as fd:
+                async with aiofiles.open(str(self.rsaPubKeyPath), 'w+b') as fd:
                     await fd.write(pubKey)
             except Exception as err:
                 self.debug('RSA: could not save keys: {}'.format(str(err)))
                 self.userLogInfo('Error while saving RSA keys!')
                 return False
             else:
-                os.chmod(self.rsaPrivKeyPath, 0o400)
+                os.chmod(str(self.rsaPrivKeyPath), 0o400)
                 self.userLogInfo('Successfully created RSA keypair')
 
         if not await self.cryptoRegisterKeys():
@@ -905,7 +905,7 @@ class UserProfile(QObject):
     async def cryptoRegisterKeys(self, op):
         self.userLogInfo('Registering keys')
         try:
-            pubKey = await asyncReadFile(self.rsaPubKeyPath)
+            pubKey = await asyncReadFile(str(self.rsaPubKeyPath))
             if pubKey is None:
                 self.debug('RSA: could not read public key')
                 raise Exception('pubkey error')
@@ -916,7 +916,7 @@ class UserProfile(QObject):
         else:
             self.rsaAgent = IpfsRSAAgent(self.ctx.rsaExec,
                                          self.rsaPubKey,
-                                         self.rsaPrivKeyPath)
+                                         str(self.rsaPrivKeyPath))
             op.setRsaAgent(self.rsaAgent)
 
             return await self.setupProfileEDag(op)
@@ -1072,15 +1072,14 @@ class UserProfile(QObject):
         except Exception as e:
             self.debug(str(e))
         else:
-            didPrivKeyPath = os.path.join(
-                self.ctx.app.cryptoDataLocation,
+            didPrivKeyPath = self.ctx.app.cryptoDataLocation.joinpath(
                 'rsa_{0}_ipid_{1}_priv.key'.format(
                     self.name, ipid.ipnsKey))
 
-            async with aiofiles.open(didPrivKeyPath, 'w+b') as fd:
+            async with aiofiles.open(str(didPrivKeyPath), 'w+b') as fd:
                 await fd.write(privKey)
 
-            os.chmod(didPrivKeyPath, 0o400)
+            os.chmod(str(didPrivKeyPath), 0o400)
 
             self.userLogInfo('Generated IPID with DID: {did}'.format(
                 did=ipid.did))
@@ -1150,7 +1149,7 @@ class UserProfile(QObject):
 
     async def __rsaReadPrivateKey(self):
         log.debug('RSA: reading private key')
-        return await asyncReadFile(self.rsaPrivKeyPath)
+        return await asyncReadFile(str(self.rsaPrivKeyPath))
 
     def onUserInfoChanged(self):
         ensure(self.update())

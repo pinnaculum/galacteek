@@ -556,7 +556,7 @@ class AsyncIPFSDaemon(object):
             if self.process and ident:
                 # Remember orjson.dumps returns bytes
 
-                async with aiofiles.open(self.statusPath, 'w+b') as fd:
+                async with aiofiles.open(str(self.statusPath), 'w+b') as fd:
                     await fd.write(orjson.dumps({
                         'ident': ident,
                         'pid': self.process.pid,
@@ -581,7 +581,7 @@ class AsyncIPFSDaemon(object):
     async def loadStatus(self):
         client = self.daemonClient
         try:
-            async with aiofiles.open(self.statusPath, 'r') as fd:
+            async with aiofiles.open(str(self.statusPath), 'r') as fd:
                 status = orjson.loads(await fd.read())
                 assert 'ident' in status
                 assert 'pid' in status

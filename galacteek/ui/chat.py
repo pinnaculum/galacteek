@@ -2,7 +2,6 @@ import asyncio
 import functools
 import weakref
 import aiorwlock
-import os.path
 import orjson
 import re
 
@@ -305,12 +304,11 @@ class PrivateChatChannelNewDialog(QDialog):
         uid = doubleUid4()
         eccPriv, eccPub = await ipfsop.ctx.eccExec.genKeys()
 
-        privPath = os.path.join(
-            self.app.eccChatChannelsDataLocation,
+        privPath = self.app.eccChatChannelsDataLocation.joinpath(
             'ecc_channel_{uid}.priv.key'
         )
 
-        with open(privPath, 'w+t') as fd:
+        with open(str(privPath), 'w+t') as fd:
             fd.write(eccPriv)
 
         eccEntry = await ipfsop.addString(eccPub)
