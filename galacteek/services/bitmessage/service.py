@@ -44,6 +44,7 @@ class NotBitProcess(ProcessLauncher):
         self.dataPath = dataPath
         self.objectsPath = self.dataPath.joinpath('objects')
         self.pidFilePath = self.dataPath.joinpath('notbit.pid')
+        self.logFilePath = self.dataPath.joinpath('notbit.log')
         self.mDirPath = mailDirPath
         self.listenPort = listenPort
         self.useTor = useTor
@@ -78,15 +79,18 @@ class NotBitProcess(ProcessLauncher):
         if self.system == 'Windows':
             args = [
                 '-m', str(self.toCygwinPath(self.mDirPath)),
-                '-D', str(self.toCygwinPath(self.dataPath)),
-                '-p', str(self.listenPort)
+                '-D', str(self.toCygwinPath(self.dataPath))
             ]
         else:
             args = [
                 '-m', str(self.mDirPath),
-                '-D', str(self.dataPath),
-                '-p', str(self.listenPort)
+                '-D', str(self.dataPath)
             ]
+
+        args += [
+            '-p', str(self.listenPort),
+            '-l', str(self.logFilePath)
+        ]
 
         if self.useTor:
             args.append('-T')
