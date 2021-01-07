@@ -195,7 +195,8 @@ class BitMessageMailManService(GService):
         """
         Send a BitMessage via notbit-sendmail
 
-        We use text/markdown as the default content-type
+        We use text/plain as the default content-type, with markup
+        field set to 'markdown'
         """
 
         msg = EmailMessage()
@@ -208,14 +209,23 @@ class BitMessageMailManService(GService):
         msg.set_content(message)
         msgBytes = msg.as_bytes()
 
-        pcode, result = await shellExec('notbit-sendmail', input=msgBytes)
+        retCode, result = await shellExec(
+            'notbit-sendmail', input=msgBytes,
+            returnStdout=False
+        )
 
-        if pcode == 0 and mailDir:
-            await mailDir.storeSent(message)
+        log.debug(f'BM send: {bmSource} => {bmDest}: '
+                  f'exit code: {retCode}, output: {result}')
 
-        log.debug(f'BM send: {bmSource} {bmDest}: OK')
+        if retCode == 0:
+            log.debug(f'BM send: {bmSource} => {bmDest}: OK')
 
-        return pcode == 0
+            if mailDir:
+                await mailDir.storeSent(message)
+        else:
+            log.debug(f'BM send: {bmSource} => {bmDest}: failed')
+
+        return retCode == 0
 
     async def on_stop(self) -> None:
         log.debug('Stopping BM mailer ..')

@@ -12,6 +12,7 @@ from PyQt5.QtWebEngine import QtWebEngine
 from galacteek.__version__ import __version__
 from galacteek.core import glogger
 from galacteek.core import inPyInstaller
+from galacteek.core import pyInstallerBundleFolder
 from galacteek.browser.schemes import initializeSchemes
 
 from galacteek.ui.helpers import *  # noqa
@@ -47,6 +48,11 @@ class ApplicationStarter:
 
 def galacteekGui(args):
     progName = args.binaryname if args.binaryname else sys.argv[0]
+
+    if inPyInstaller():
+        folder = pyInstallerBundleFolder()
+        binPath = folder.joinpath('bin')
+        os.environ['PATH'] = str(binPath) + os.pathsep + os.environ['PATH']
 
     if args.debug:
         faulthandler.enable()

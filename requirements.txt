@@ -57,7 +57,6 @@ qrcode==6.1
 qtawesome>=0.7.2
 random-username>=1.0.2
 rule-engine>=2.1.0
-stem>=1.8.0
 strict-rfc3339>=0.7
 tortoise-orm==0.16.13
 validators>=0.18.1
