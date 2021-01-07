@@ -8,8 +8,14 @@ from os import urandom
 from binascii import b2a_hex
 from hashlib import sha1
 
-from stem import Signal
-from stem.control import Controller
+try:
+    from stem import Signal
+    from stem.control import Controller
+except ImportError:
+    haveStem = False
+else:
+    haveStem = True
+
 
 from galacteek import log
 from galacteek.config import cParentGet
@@ -269,12 +275,13 @@ class TorLauncher:
                 self.transport.close()
                 continue
             else:
-                self.torController = TorController(
-                    self.torCfg.controlPort,
-                    self.torCfg._controlPass
-                )
-                log.debug(f'Starting TOR OK on port {socksPort}')
+                if 0:
+                    self.torController = TorController(
+                        self.torCfg.controlPort,
+                        self.torCfg._controlPass
+                    )
 
+                log.debug(f'Starting TOR: OK on port {socksPort}')
                 return True
 
         return False
