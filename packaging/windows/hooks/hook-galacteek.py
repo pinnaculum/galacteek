@@ -70,6 +70,7 @@ excludedimports = [
 pkgrDest = '_pkg'
 
 datas += [('galacteek/templates', f'{pkgrDest}/galacteek/templates')]
+datas += [('galacteek/ui/themes', f'{pkgrDest}/galacteek/ui/themes')]
 datas += [('galacteek/hashmarks', f'{pkgrDest}/galacteek/hashmarks')]
 datas += [('galacteek/docs/manual', f'{pkgrDest}/galacteek/docs/manual')]
 datas += [('galacteek/ld/contexts', f'{pkgrDest}/galacteek/ld/contexts')]
