@@ -197,11 +197,12 @@ class PinStatusWidget(GalacteekTab):
             items['itemStatus'].setText(iPinned())
             items['itemProgress'].setText('OK')
 
-            color = QBrush(QColor('#c1f0c1'))
-            for item in [items['itemQname'],
-                         items['itemPath'], items['itemStatus'],
-                         items['itemProgress']]:
-                item.setBackground(color)
+            if 0:
+                color = QBrush(QColor('#c1f0c1'))
+                for item in [items['itemQname'],
+                             items['itemPath'], items['itemStatus'],
+                             items['itemProgress']]:
+                    item.setBackground(color)
 
             if items['cancelButton']:
                 items['cancelButton'].setEnabled(False)

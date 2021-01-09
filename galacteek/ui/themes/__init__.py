@@ -1,6 +1,7 @@
 import subprocess
 from pathlib import Path
 import importlib
+import sys
 
 from galacteek import log
 from galacteek.core import pkgResourcesDirEntries
@@ -39,6 +40,18 @@ def themesCompileAll():
         log.debug(output)
 
 
+def modSpecImport(name, path):
+    try:
+        spec = importlib.util.spec_from_file_location(name, path)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+
+        return module
+    except Exception:
+        return None
+
+
 class ThemesManager:
     def __init__(self):
         self.app = runningApp()
@@ -49,16 +62,27 @@ class ThemesManager:
             'galacteek.ui.themes', 'fonts.qss'
         )
 
-        # themeDir = pkgResourcesRscFilename('galacteek.ui.themes', theme)
-        # rcPath = Path(themeDir).joinpath('style_rc.py')
+        themeDir = pkgResourcesRscFilename('galacteek.ui.themes', theme)
+        if not themeDir:
+            return False
 
-        themeModule = importlib.import_module(
-            f'galacteek.ui.themes.{theme}'
-        )
+        initPath = Path(themeDir).joinpath('__init__.py')
+        rcPath = Path(themeDir).joinpath('style_rc.py')
 
-        importlib.import_module(
-            f'galacteek.ui.themes.{theme}.style_rc'
-        )
+        try:
+            if 0:
+                themeModule = importlib.import_module(
+                    f'galacteek.ui.themes.{theme}'
+                )
+
+                importlib.import_module(
+                    f'galacteek.ui.themes.{theme}.style_rc'
+                )
+
+            themeModule = modSpecImport(theme, str(initPath))
+            modSpecImport('style_rc', str(rcPath))
+        except Exception as err:
+            log.debug(f'Error importing theme {theme}: {err}')
 
         try:
             style = themeModule.style
@@ -85,3 +109,5 @@ class ThemesManager:
 
         if style:
             self.app.setStyle(style)
+
+        return True
