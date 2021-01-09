@@ -17,10 +17,25 @@
    <string notr="true"/>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_18">
+   <property name="spacing">
+    <number>6</number>
+   </property>
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
    <item>
     <layout class="QVBoxLayout" name="verticalLayout_17">
      <property name="spacing">
-      <number>2</number>
+      <number>6</number>
      </property>
      <property name="bottomMargin">
       <number>0</number>
@@ -283,7 +298,7 @@
              </property>
              <property name="icon">
               <iconset resource="../galacteek.qrc">
-               <normaloff>:/share/icons/pin-black.png</normaloff>:/share/icons/pin-black.png</iconset>
+               <normaloff>:/share/icons/pin-curve.png</normaloff>:/share/icons/pin-curve.png</iconset>
              </property>
             </widget>
            </item>
@@ -334,7 +349,7 @@
      <item>
       <layout class="QVBoxLayout" name="vLayoutBrowser">
        <property name="spacing">
-        <number>2</number>
+        <number>0</number>
        </property>
        <property name="sizeConstraint">
         <enum>QLayout::SetMaximumSize</enum>
@@ -346,7 +361,7 @@
    <item>
     <layout class="QVBoxLayout" name="vLayoutConsole">
      <property name="spacing">
-      <number>2</number>
+      <number>0</number>
      </property>
      <property name="sizeConstraint">
       <enum>QLayout::SetMaximumSize</enum>

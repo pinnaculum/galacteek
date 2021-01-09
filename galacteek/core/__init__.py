@@ -56,6 +56,14 @@ def pkgResourcesListDir(pkg: str, rscName: str):
         return pkg_resources.resource_listdir(pkg, rscName)
 
 
+def pkgResourcesDirEntries(pkg: str):
+    for entry in pkgResourcesListDir(pkg, ''):
+        if entry.startswith('__'):
+            continue
+
+        yield entry
+
+
 def pkgResourcesRscFilename(pkg, rscName):
     # Simple wrapper around pkg_resources.resource_filename
 

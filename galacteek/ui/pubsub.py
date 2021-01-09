@@ -64,13 +64,15 @@ class PubsubSnifferWidget(GalacteekTab):
         sItem = QTableWidgetItem(sender)
 
         for item in [dItem, tItem, sItem]:
+            item.setBackground(QBrush(QColor('#2b5278')))
+
             if key is keyPsEncJson:
                 item.setBackground(QBrush(QColor(Qt.darkGray)))
 
             if topic == TOPIC_PEERS:
                 item.setBackground(QBrush(QColor(Qt.darkGreen)))
             elif topic == TOPIC_CHAT:
-                item.setBackground(QBrush(QColor(Qt.cyan)))
+                item.setBackground(QBrush(QColor('#2b5278')))
 
         viewButton = QToolButton(self)
         viewButton.setIcon(getIcon('search-engine.png'))

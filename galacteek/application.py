@@ -50,6 +50,7 @@ from galacteek import AsyncSignal
 from galacteek import pypicheck, GALACTEEK_NAME
 
 from galacteek.config import cSetSavePath
+from galacteek.config import cGet
 
 from galacteek.core.asynclib import asyncify
 from galacteek.core.asynclib import cancelAllTasks
@@ -125,6 +126,7 @@ from galacteek.ui.helpers import *
 from galacteek.ui.i18n import *
 from galacteek.ui.dialogs import IPFSDaemonInitDialog
 from galacteek.ui.dialogs import UserProfileInitDialog
+from galacteek.ui.themes import ThemesManager
 
 from galacteek.appsettings import *
 from galacteek.core.ipfsmarks import IPFSMarks
@@ -348,6 +350,7 @@ class GalacteekApplication(QApplication):
         self.setupAsyncLoop()
         self.setupPaths()
 
+        self.themes = ThemesManager()
         self.ipfsCtx = IPFSContext(self)
         self.peersTracker = peers.PeersTracker(self.ipfsCtx)
 
@@ -512,20 +515,14 @@ class GalacteekApplication(QApplication):
             # in the resources file..  set some default stylesheet here?
             pass
 
-    def applyStyle(self, theme='default'):
-        sysName = self.system.lower()
-        qssPath = f":/share/static/qss/{theme}/galacteek.qss"
-        qssPlatformPath = \
-            f":/share/static/qss/{theme}/galacteek_{sysName}.qss"
+    def themeChange(self, name=None):
+        theme = cGet('theme', mod='galacteek.ui')
+        self.themes.change(theme)
 
-        mainQss = self.readQSSFile(qssPath)
-        pQss = self.readQSSFile(qssPlatformPath)
+        if self.mainWindow:
+            self.repolishWidget(self.mainWindow)
 
-        if pQss:
-            self.setStyleSheet(mainQss + '\n' + pQss)
-        else:
-            self.setStyleSheet(mainQss)
-
+    def applyStyle(self):
         self.gStyle = GalacteekStyle()
         self.setStyle(self.gStyle)
 
@@ -1054,6 +1051,7 @@ class GalacteekApplication(QApplication):
         self.setupMainObjects()
         self.setupSchemeHandlers()
         self.applyStyle()
+        self.themeChange()
         self.setupDb()
 
     def acquireLock(self):
@@ -1123,10 +1121,11 @@ class GalacteekApplication(QApplication):
         qtConfigLocation = Path(QStandardPaths.writableLocation(
             QStandardPaths.ConfigLocation))
 
-        self.configDirLocation = qtConfigLocation.joinpath(
+        cRoot = qtConfigLocation.joinpath(
             GALACTEEK_NAME).joinpath(self._appProfile)
+        self.configDirLocation = cRoot.joinpath('config-0')
 
-        self.settingsFileLocation = self.configDirLocation.joinpath(
+        self.settingsFileLocation = cRoot.joinpath(
             f'{GALACTEEK_NAME}.conf')
 
         for dir in [self._mHashDbLocation,

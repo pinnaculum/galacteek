@@ -187,9 +187,9 @@ Section G
     ExecWait 'netsh advfirewall firewall add rule name=g_ipfs_out dir=out action=allow program="$GFILESDIR\ipfs.exe" enable=yes profile=public,private'
 
     # fw rules (notbit)
-    ExecWait 'netsh advfirewall firewall add rule name=g_notbit_in dir=in action=allow program="$GFILESDIR\notbit.exe" enable=yes profile=public,private'
-    ExecWait 'netsh advfirewall firewall add rule name=g_notbit_out dir=out action=allow program="$GFILESDIR\notbit.exe" enable=yes profile=public,private'
-    ExecWait 'netsh advfirewall firewall add rule name=g_notbit_send_out dir=out action=allow program="$GFILESDIR\notbit-sendmail.exe" enable=yes profile=public,private'
+    ExecWait 'netsh advfirewall firewall add rule name=g_notbit_in dir=in action=allow program="$GFILESDIR\bin\notbit.exe" enable=yes profile=public,private'
+    ExecWait 'netsh advfirewall firewall add rule name=g_notbit_out dir=out action=allow program="$GFILESDIR\bin\notbit.exe" enable=yes profile=public,private'
+    ExecWait 'netsh advfirewall firewall add rule name=g_notbit_send_out dir=out action=allow program="$GFILESDIR\bin\notbit-sendmail.exe" enable=yes profile=public,private'
 
     # Registry
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayName" "${APPNAME}"

@@ -1462,17 +1462,18 @@ class DefaultProgressDialog(QWidget):
         self.pBar.setValue(p)
 
     def paintEvent(self, event):
-        from PyQt5.QtGui import QPainter, QBrush, QPen
+        from PyQt5.QtGui import QPainter, QPen
 
         center = self.rect().center()
         w, h = 420, 420  # it's a coincidence
 
         painter = QPainter(self)
-        b = QBrush(desertStrikeColor, Qt.SolidPattern)
-        painter.setBrush(b)
-        painter.fillRect(self.rect(), b)
 
-        painter.setBrush(QBrush(brownColor1, Qt.SolidPattern))
+        # b = QBrush(desertStrikeColor, Qt.SolidPattern)
+        # painter.setBrush(b)
+        # painter.fillRect(self.rect(), b)
+        # painter.setBrush(QBrush(brownColor1, Qt.SolidPattern))
+
         painter.setPen(QPen(ipfsColor1, 2, Qt.SolidLine))
         painter.drawEllipse(center.x() - w / 2, center.y() - h / 2, w, h)
 

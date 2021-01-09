@@ -42,10 +42,9 @@ identity). This is an example of an IPID identifier::
 inf our case *method-name* is *ipid* and the *method-specific-id*
 is the IPNS key associated with our IPID).
 
-By using IPIDs you have immense control over your (possibly
-numerous if you have dissociative disorders) digital identities:
-your identity is backed by a strongly-crypto-based Merkle tree
-that lives and evolves **on your machine** (the IPFS repository).
+By using IPIDs you have immense control over your digital identities:
+your identity is backed by a crypto-based Merkle tree stored
+on your system.
 
 Implementation and goals
 ^^^^^^^^^^^^^^^^^^^^^^^^

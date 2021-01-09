@@ -77,16 +77,12 @@ class build_contracts(Command):
         pass
 
     def run(self):
-        from web3 import Web3
         from galacteek.smartcontracts import listContracts
         from galacteek.smartcontracts import solCompileFile
         from galacteek.smartcontracts import vyperCompileFile
         from galacteek.blockchain.ethereum.contract import contractDeploy
-        from galacteek.blockchain.ethereum.contract import Deployer
         from galacteek.blockchain.ethereum.ctrl import web3Connect
 
-        usrcontracts = [c for c in self.contracts.split(',')] if \
-            self.contracts else ['*']
         cdeploy = [c for c in self.deploy.split(',')] if \
             self.deploy else []
 
@@ -125,11 +121,15 @@ class build_contracts(Command):
 
 class build_ui(Command):
     user_options = [
+        ("tasks=", None, 'Tasks'),
         ("uiforms=", None, "UI forms list to build, separated by ','"),
+        ("themes=", None, "Themes ','")
     ]
 
     def initialize_options(self):
         self.uiforms = None
+        self.tasks = 'forms,themes'
+        self.themes = '*'
 
         # Forms where we don't want to have automatic slots
         # connection with connectSlotsByName()
@@ -163,9 +163,14 @@ class build_ui(Command):
                 fd.write(nCode)
 
     def run(self):
+        from galacteek.ui.themes import themesCompileAll
+
         uifiles = []
         uidir = 'galacteek/ui'
         formsdir = 'galacteek/ui/forms'
+
+        tasks = self.tasks.split(',')
+        themes = self.themes.split(',')
 
         if self.uiforms:
             uifiles = [os.path.join(formsdir, '{0}.ui'.format(form)) for form
@@ -173,37 +178,43 @@ class build_ui(Command):
         else:
             uifiles = glob.iglob('{}/*.ui'.format(formsdir))
 
-        for uifile in uifiles:
-            print('* Building UI form:', uifile)
-            base = os.path.basename(uifile).replace('.ui', '')
-            out = 'ui_{}.py'.format(base)
-            fp_out = os.path.join(formsdir, out)
+        if 'forms' in tasks:
+            for uifile in uifiles:
+                print('* Building UI form:', uifile)
+                base = os.path.basename(uifile).replace('.ui', '')
+                out = 'ui_{}.py'.format(base)
+                fp_out = os.path.join(formsdir, out)
 
-            run(['pyuic5', '--from-imports',
-                 uifile,
-                 '-o', fp_out])
+                run(['pyuic5', '--from-imports',
+                     uifile,
+                     '-o', fp_out])
 
-            self.filterUic(uifile, fp_out)
+                self.filterUic(uifile, fp_out)
 
-        run(['pylupdate5', '-verbose', 'galacteek.pro'])
+            run(['pylupdate5', '-verbose', 'galacteek.pro'])
 
-        trdir = './share/translations'
-        lrelease = shutil.which('lrelease-qt5')
+            trdir = './share/translations'
+            lrelease = shutil.which('lrelease-qt5')
 
-        if not lrelease:
-            lrelease = shutil.which('lrelease')
+            if not lrelease:
+                lrelease = shutil.which('lrelease')
 
-        for lang in ['en', 'fr']:
-            if lrelease:
-                run([lrelease,
-                     os.path.join(trdir, 'galacteek_{}.ts'.format(lang)),
-                     '-qm',
-                     os.path.join(trdir, 'galacteek_{}.qm'.format(lang))])
-            else:
-                print('lrelease was not found, cannot build translation files')
+            for lang in ['en', 'fr']:
+                if lrelease:
+                    run([lrelease,
+                         os.path.join(trdir, 'galacteek_{}.ts'.format(lang)),
+                         '-qm',
+                         os.path.join(trdir, 'galacteek_{}.qm'.format(lang))])
+                else:
+                    print('lrelease was not found'
+                          ', cannot build translation files')
 
-        run(['pyrcc5', os.path.join(uidir, 'galacteek.qrc'), '-o',
-             os.path.join(formsdir, 'galacteek_rc.py')])
+            run(['pyrcc5', os.path.join(uidir, 'galacteek.qrc'), '-o',
+                 os.path.join(formsdir, 'galacteek_rc.py')])
+
+        if 'themes' in tasks:
+            if '*' in themes:
+                themesCompileAll()
 
 
 class _build(build):
@@ -263,8 +274,11 @@ setup(
     },
     dependency_links=deps_links,
     package_data={
-        # Include all YAML files
-        '': ['*.yaml'],
+        '': [
+            '*.yaml',
+            '*.qss',
+            '*.css'
+        ],
         'galacteek': [
             'docs/manual/en/html/*.html',
             'docs/manual/en/html/_images/*',

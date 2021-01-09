@@ -196,7 +196,7 @@ def magicInstance():
                 dbPath = os.environ.get('GALACTEEK_MAGIC_DBPATH')
 
             if dbPath:
-                log.info(f'Using magic DB from path: {dbPath}')
+                log.debug(f'Using magic DB from path: {dbPath}')
                 iMagic = magic.Magic(mime=True, magic_file=dbPath)
 
     return iMagic
@@ -216,7 +216,7 @@ def mimeTypeProcess(mTypeText, buff, info=None):
 
         if buff[0:4] == wasmMagic:
             version = struct.unpack('<I', buff[4:8])[0]
-            log.info('Detected WASM binary, version {}'.format(version))
+            log.warning('Detected WASM binary, version {}'.format(version))
             return mimeTypeWasm
 
     return MIMEType(mTypeText)

@@ -425,7 +425,7 @@ class SeedingObjectTreeItem(SeedObjectTreeItem):
 
             if objConfig.pin:
                 if objConfig.pinned:
-                    self.setIcon(0, getIcon('pin-black.png'))
+                    self.setIcon(0, getIcon('pin-curve.png'))
                     self.status(iPinned())
 
                     if objConfig.downloaded is True:
