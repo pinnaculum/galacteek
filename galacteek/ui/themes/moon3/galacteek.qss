@@ -309,6 +309,7 @@ QWidget:disabled
     background-color: #323232;
 }
 
+/*
 QAbstractItemView
 {
     alternate-background-color: #323232;
@@ -316,6 +317,7 @@ QAbstractItemView
     border: 1px solid 3A3939;
     border-radius: 2px;
 }
+*/
 
 QWidget:focus, QMenuBar:focus,QToolBar:focus,QScrollAreaViewer:focus
 {
@@ -1007,13 +1009,14 @@ QTreeView::branch:open:has-children:!has-siblings:hover,
 QTreeView::branch:open:has-children:has-siblings:hover  {
     image: url(:/theme_icons/rc/branch_open-on.png);
     }
-*/
+
 
 QListView::item:!selected:hover, QTreeView::item:!selected:hover  {
     background: #848383;
     outline: 0;
     color: #eff0f1;
 }
+*/
 
 QListView::item:selected, QTreeView::item:selected  {
     background: #2b5278;
@@ -1151,12 +1154,12 @@ QTableView, QHeaderView
 }
 
 QTableView::item:pressed, QListView::item:pressed, QTreeView::item:pressed  {
-    background: #D1DBCB;
+    /* background: #D1DBCB; */
     color: black;
 }
 
 QTableView::item:selected:active, QTreeView::item:selected:active, QListView::item:selected:active  {
-    background: #D1DBCB;
+    /* background: #D1DBCB; */
     color: black;
 }
 
@@ -1333,7 +1336,7 @@ QDateEdit::down-arrow:focus
 /* G */
 
 QTreeView {
-    background-color: #72797a;
+    /* background-color: #72797a; */
 }
 
 QTreeView {
@@ -1349,7 +1352,8 @@ QTreeView::item#mfsTree {
 }
 
 QTextBrowser {
-    background-color: #323232;
+    /* background-color: #323232; */
+    background-color: #72797a;
 }
 
 /* COMMON */

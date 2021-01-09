@@ -221,15 +221,11 @@
     <file>../../share/icons/ipfs-qrcode.png</file>
     <file>../../share/translations/galacteek_en.ts</file>
     <file>../../share/translations/galacteek_en.qm</file>
-    <file>../../share/static/qss/default/galacteek.qss</file>
-    <file>../../share/static/qss/default/galacteek_linux.qss</file>
-    <file>../../share/static/qss/default/galacteek_darwin.qss</file>
-    <file>../../share/static/qss/default/galacteek_windows.qss</file>
   </qresource>
 
   <qresource>
     <file>../../galacteek/ui/themes/fonts.qss</file>
-    <file>../../galacteek/ui/themes/darkweb/galacteek.qss</file>
+    <file>../../galacteek/ui/themes/moon3/galacteek.qss</file>
     <file>../../galacteek/ui/themes/chloride/galacteek.qss</file>
   </qresource>
 
