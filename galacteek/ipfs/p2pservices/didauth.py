@@ -132,9 +132,10 @@ class DIDAuthSiteHandler:
                     raise Exception('Invalid req schema')
 
                 # Token not mandatory but soon
-                token = js.get('ident_token')
-                if token != self.service._token:
-                    raise Exception(f'Invalid DIDAuth token {token}')
+                if 0:
+                    token = js.get('ident_token')
+                    if token != self.service._token:
+                        raise Exception(f'Invalid DIDAuth token {token}')
             except Exception as err:
                 self.message(f'authPss error: {err}')
                 return await self.msgError(error='Invalid token or schema')

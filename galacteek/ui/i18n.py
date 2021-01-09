@@ -974,3 +974,12 @@ def iBtAddFromMagnetLink():
         'Galacteek',
         'Add from magnet link'
     )
+
+
+# Themes
+
+def iThemes():
+    return QCoreApplication.translate(
+        'Galacteek',
+        'Themes'
+    )

@@ -20,7 +20,7 @@ def merge(*cfgs):
 def environment():
     return {
         'env': os.environ.get(
-            'GALACTEEK_ENV', 'main'),
+            'GALACTEEK_ENV', 'mainnet'),
         'ethenv': os.environ.get(
             'GALACTEEK_ETHNETWORK_ENV', 'rinkeby'),
     }
@@ -49,8 +49,12 @@ def load(configPath: Path, envConf: dict = None) -> dictconfig.DictConfig:
             if default:
                 base = merge(base, default)
 
-            if env in envs:
+            if env not in envs:
+                envs[env] = default
+                base = envs[env]
+            else:
                 base = merge(base, envs.get(env))
+
         genvs = config.get(ethEnvs, None)
         if genvs:
             default = genvs.get('default', None)

@@ -1,0 +1,25 @@
+@font-face {
+    font-family: 'Montserrat';
+    font-style: normal;
+    font-weight: 400;
+    src: url('qrc:/share/static/fonts/Montserrat-Regular.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Inter UI';
+    font-style:  normal;
+    font-weight: 400;
+    src: url('qrc:/share/static/fonts/Inter-UI-Medium.woff2') format('woff2');
+}
+
+
+@font-face {
+    font-family: 'Segoe UI';
+    src: url('qrc:/share/static/fonts/SegoeUI.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+* {
+    font: 14pt "Segoe UI";
+}

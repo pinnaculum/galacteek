@@ -577,38 +577,39 @@
        <string>UI</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_2">
-       <item row="0" column="0">
-        <layout class="QGridLayout" name="gridLayout">
-         <item row="0" column="0">
-          <widget class="QGroupBox" name="groupBox_2">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="title">
-            <string>Language</string>
-           </property>
-           <layout class="QHBoxLayout" name="horizontalLayout_2">
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout">
-              <item>
-               <widget class="QLabel" name="label_6">
-                <property name="text">
-                 <string>Language</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QComboBox" name="language"/>
-              </item>
-             </layout>
+       <item row="2" column="0">
+        <widget class="QGroupBox" name="groupBox_3">
+         <property name="title">
+          <string>Browser</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_6">
+          <item row="0" column="0">
+           <layout class="QGridLayout" name="gridLayout_3">
+            <item row="1" column="0">
+             <widget class="QCheckBox" name="urlHistoryEnable">
+              <property name="text">
+               <string>Enable navigation history</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_12">
+              <property name="text">
+               <string>Default web profile</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QComboBox" name="comboDefaultWebProfile"/>
             </item>
            </layout>
-          </widget>
-         </item>
-         <item row="1" column="0">
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <layout class="QGridLayout" name="gridLayout">
+         <item row="0" column="0">
           <widget class="QGroupBox" name="groupBox">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
@@ -662,30 +663,33 @@
          </item>
         </layout>
        </item>
-       <item row="1" column="0">
-        <widget class="QGroupBox" name="groupBox_3">
+       <item row="0" column="0">
+        <widget class="QGroupBox" name="groupBox_4">
          <property name="title">
-          <string>Browser</string>
+          <string>Appearance</string>
          </property>
-         <layout class="QGridLayout" name="gridLayout_6">
+         <layout class="QGridLayout" name="gridLayout_10">
           <item row="0" column="0">
-           <layout class="QGridLayout" name="gridLayout_3">
+           <layout class="QGridLayout" name="gridLayout_9">
+            <item row="1" column="1">
+             <widget class="QComboBox" name="language"/>
+            </item>
             <item row="1" column="0">
-             <widget class="QCheckBox" name="urlHistoryEnable">
+             <widget class="QLabel" name="label_6">
               <property name="text">
-               <string>Enable navigation history</string>
+               <string>Language</string>
               </property>
              </widget>
             </item>
-            <item row="0" column="0">
-             <widget class="QLabel" name="label_12">
+            <item row="2" column="1">
+             <widget class="QComboBox" name="themeCombo"/>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_21">
               <property name="text">
-               <string>Default web profile</string>
+               <string>Theme</string>
               </property>
              </widget>
-            </item>
-            <item row="0" column="1">
-             <widget class="QComboBox" name="comboDefaultWebProfile"/>
             </item>
            </layout>
           </item>

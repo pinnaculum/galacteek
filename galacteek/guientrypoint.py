@@ -54,6 +54,8 @@ def galacteekGui(args):
         binPath = folder.joinpath('bin')
         os.environ['PATH'] = str(binPath) + os.pathsep + os.environ['PATH']
 
+        os.chdir(str(folder))
+
     if args.debug:
         faulthandler.enable()
 
@@ -196,9 +198,16 @@ def buildArgsParser(fromParser=None):
 
     parser.add_argument(
         '--eth-network',
-        default='rinkeby',
+        default='mainnet',
         dest='ethnet',
-        help="ETH network")
+        help="ETH network name")
+
+    parser.add_argument(
+        '--env',
+        default='mainnet',
+        dest='env',
+        help="Environment")
+
     parser.add_argument('--eth-contracts', default='',
                         dest='contracts',
                         help='ethcontracts')
@@ -215,6 +224,7 @@ def gArgsParse():
     args = parser.parse_args()
 
     os.environ['GALACTEEK_ETHNETWORK_ENV'] = args.ethnet
+    os.environ['GALACTEEK_ENV'] = args.env
 
     return args
 

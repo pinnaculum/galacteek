@@ -135,6 +135,7 @@
     <file>../../share/icons/hashmarks-library.png</file>
     <file>../../share/static/fonts/Inter-UI-Regular.woff2</file>
     <file>../../share/static/fonts/DejaVuSans.ttf</file>
+    <file>../../share/static/fonts/SegoeUI.woff2</file>
     <file>../../share/icons/chat.png</file>
     <file>../../share/icons/camera.png</file>
     <file>../../share/icons/chat-active.png</file>
@@ -181,7 +182,7 @@
     <file>../../share/icons/go-home.png</file>
     <file>../../share/icons/network-offline.png</file>
     <file>../../share/icons/network-transmit.png</file>
-    <file>../../share/icons/pin-black.png</file>
+    <file>../../share/icons/pin-curve.png</file>
     <file>../../share/icons/pin-blue-loading.png</file>
     <file>../../share/icons/right-arrow.png</file>
     <file>../../share/icons/refresh.png</file>
@@ -225,4 +226,11 @@
     <file>../../share/static/qss/default/galacteek_darwin.qss</file>
     <file>../../share/static/qss/default/galacteek_windows.qss</file>
   </qresource>
+
+  <qresource>
+    <file>../../galacteek/ui/themes/fonts.qss</file>
+    <file>../../galacteek/ui/themes/darkweb/galacteek.qss</file>
+    <file>../../galacteek/ui/themes/chloride/galacteek.qss</file>
+  </qresource>
+
 </RCC>

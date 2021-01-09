@@ -1052,7 +1052,7 @@ class MainWindow(QMainWindow):
         self.pinningStatusButton.setShortcut(
             QKeySequence('Ctrl+u'))
         self.pinningStatusButton.setToolTip(iNoStatus())
-        self.pinningStatusButton.setIcon(getIcon('pin-black.png'))
+        self.pinningStatusButton.setIcon(getIcon('pin-curve.png'))
         self.pinningStatusButton.clicked.connect(
             self.showPinningStatusWidget)
         self.pubsubStatusButton = QPushButton(self)
@@ -1147,7 +1147,7 @@ class MainWindow(QMainWindow):
         self.hashmarksPage = None
 
         self.pinIconLoading = getIcon('pin-blue-loading.png')
-        self.pinIconNormal = getIcon('pin-black.png')
+        self.pinIconNormal = getIcon('pin-curve.png')
 
         self.setCentralWidget(self.stack)
         self.showMaximized()

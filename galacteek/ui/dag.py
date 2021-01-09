@@ -277,8 +277,8 @@ class DAGViewer(GalacteekTab):
             rawItem = QTreeWidgetItem(item)
             rawItem.setText(0, 'Leaf node')
             rawItem.setText(1, data[0:128])
-            rawItem.setBackground(0, rawLeafColor)
-            rawItem.setBackground(1, rawLeafColor)
+            # rawItem.setBackground(0, rawLeafColor)
+            # rawItem.setBackground(1, rawLeafColor)
 
     def copyFileData(self, data):
         path = saveFileSelect()

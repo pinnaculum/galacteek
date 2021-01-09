@@ -1801,9 +1801,10 @@ class BrowserTab(GalacteekTab):
         self.searchControlsSetVisible(not self.ui.searchInPage.isVisible())
 
     def onSearchInPageEdit(self, text):
-        self.ui.searchInPage.setStyleSheet(
-            'QLineEdit { color: black; }'
-        )
+        if 0:
+            self.ui.searchInPage.setStyleSheet(
+                'QLineEdit { color: black; }'
+            )
 
     def onSearchInPage(self):
         self.searchInPage()
@@ -1825,9 +1826,10 @@ class BrowserTab(GalacteekTab):
                 'QLineEdit { color: red; }'
             )
         else:
-            self.ui.searchInPage.setStyleSheet(
-                'QLineEdit { color: black; }'
-            )
+            # self.ui.searchInPage.setStyleSheet(
+            #     'QLineEdit { color: black; }'
+            # )
+            pass
 
     def onSearchInPageNext(self):
         self.searchInPage()
@@ -2127,10 +2129,11 @@ class BrowserTab(GalacteekTab):
         self.ui.hashmarkThisPage.setEnabled(True)
 
         if url.scheme() in [SCHEME_IPFS, SCHEME_IPNS, SCHEME_DWEB]:
-            self.urlZone.setStyleSheet('''
-                QLineEdit {
-                    background-color: #C3D7DF;
-                }''')
+            if 0:
+                self.urlZone.setStyleSheet('''
+                    QLineEdit {
+                        background-color: #C3D7DF;
+                    }''')
 
             self.urlZoneInsert(url.toString())
 

@@ -3,7 +3,11 @@ from PyQt5.QtWidgets import QDialog
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QUrl
 
+from galacteek.config import cGet
+from galacteek.config import cSet
+
 from .forms import ui_settings
+from .themes import themesList
 from ..appsettings import *
 from .helpers import *
 from .i18n import *
@@ -73,6 +77,15 @@ class SettingsDialog(QDialog):
         return self.sManager.setSetting(section, key, value)
 
     def loadSettings(self):
+        self.ui.themeCombo.clear()
+        for themeName, tPath in themesList():
+            self.ui.themeCombo.addItem(themeName)
+
+        curTheme = cGet('theme', mod='galacteek.ui')
+        print('cur theme is', curTheme)
+        if curTheme:
+            self.ui.themeCombo.setCurrentText(curTheme)
+
         # IPFSD
         section = CFG_SECTION_IPFSD
         ipfsdEnabled = self.sManager.isTrue(section, CFG_KEY_ENABLED)
@@ -264,7 +277,14 @@ class SettingsDialog(QDialog):
         self.sManager.sync()
         self.sManager.changed = True
 
+        self.applyTheme(self.ui.themeCombo.currentText())
+
         self.done(1)
+
+    def applyTheme(self, themeName: str):
+        cSet('theme', themeName, mod='galacteek.ui')
+
+        self.app.themes.change(themeName)
 
     async def applySettingsEth(self):
         self.app.ethereum.changeParams(self.app.getEthParams())

@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from PyQt5.QtWidgets import QApplication
 
 from galacteek.core import glogger
-from galacteek.config.table import initFromTable
+from galacteek.config import initFromTable
 from galacteek.ipfs.ipfsops import IPFSOperator
 from galacteek.ipfs.ipfsops import IPFSOpRegistry
 from galacteek.ipfs import asyncipfsd

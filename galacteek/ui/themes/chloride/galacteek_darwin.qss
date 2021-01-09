@@ -1,0 +1,7 @@
+* {
+    font: 14pt "Montserrat";
+}
+
+QTabBar::tab {
+    font: 13pt "Montserrat";
+}

@@ -13,6 +13,8 @@ from galacteek import log
 from types import SimpleNamespace
 
 from .util import configFromFile
+from .util import environment
+from .util import empty
 
 
 class NestedNamespace(SimpleNamespace):
@@ -56,7 +58,8 @@ def configSavePackage(pkgName: str):
     if cEntry:
         savePath = cEntry['path']
         savePath.parent.mkdir(parents=True, exist_ok=True)
-        OmegaConf.save(cEntry['config'], str(savePath))
+
+        OmegaConf.save(cEntry['configAll'], str(savePath))
 
 
 def regConfigFromFile(pkgName: str, fpath: str):
@@ -84,7 +87,6 @@ def regConfigFromFile(pkgName: str, fpath: str):
             cfgAll = merge(cfgAll, eCfgAll)
 
     savePath.parent.mkdir(parents=True, exist_ok=True)
-    # OmegaConf.save(cfg, str(savePath))
     OmegaConf.save(cfgAll, str(savePath))
 
     cCache[pkgName] = {
@@ -98,6 +100,9 @@ def regConfigFromFile(pkgName: str, fpath: str):
 
 def regConfigFromPyPkg(pkgName: str):
     global cCache
+
+    if not pkgName:
+        return None
 
     eConf = cCache.get(pkgName, None)
     if eConf:
@@ -122,8 +127,13 @@ def regConfigFromPyPkg(pkgName: str):
 
 
 def cAttr(mod, cfg, attr, value=None):
-    cfgMove = cfg
+    environ = environment()
+    env = environ['env']
+
+    cfgMove = cfg['envs'].setdefault(env, empty())
+
     attrs = attr.split('.')
+
     if len(attrs) == 0:
         return cfg.get(attr)
 
@@ -154,8 +164,9 @@ def callerMod():
         frm = inspect.stack()[2]
         mod = inspect.getmodule(frm[0])
         return mod.__name__
-    except Exception:
+    except Exception as err:
         # Unlikely
+        log.debug(f'Cannot determine caller module: {err}')
         return None
 
 
@@ -165,7 +176,7 @@ def cGet(attr: str, mod=None):
 
     cEntry = regConfigFromPyPkg(mod)
     if cEntry:
-        return cAttr(mod, cEntry['config'], attr)
+        return cAttr(mod, cEntry['configAll'], attr)
 
 
 def cParentGet(attr: str):
@@ -174,7 +185,7 @@ def cParentGet(attr: str):
 
     cEntry = regConfigFromPyPkg(parentMod)
     if cEntry:
-        return cAttr(parentMod, cEntry['config'], attr)
+        return cAttr(parentMod, cEntry['configAll'], attr)
 
 
 def cSet(attr: str, value, mod=None):
@@ -183,7 +194,7 @@ def cSet(attr: str, value, mod=None):
 
     cEntry = regConfigFromPyPkg(mod)
     if cEntry:
-        return cAttr(mod, cEntry['config'], attr, value)
+        cAttr(mod, cEntry['configAll'], attr, value)
 
 
 @attr.s(auto_attribs=True)
@@ -211,7 +222,7 @@ def cModuleContext(mod: str):
 def initFromTable():
     from galacteek.config.table import cfgInitTable
 
-    for pkg, dst in cfgInitTable.items():
+    for pkg in cfgInitTable:
         log.debug(f'Config: initializing from package/module {pkg}')
 
         try:

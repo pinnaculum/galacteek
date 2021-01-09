@@ -1,0 +1,562 @@
+
+QToolTip {
+    border: 1px solid black;
+    border-radius: 4px;
+    padding: 2px;
+    background-color: #C3D7DF;
+}
+
+QWidget#centralWidget {
+    padding: 0px;
+    margin: 0px;
+}
+
+QWidget#BrowserTabForm {
+    padding: 0px;
+    margin: 0px;
+}
+
+QWidget#galacteekTab {
+    padding: 0px;
+    margin: 0px;
+}
+
+
+QToolBar#mainToolBar {
+    padding: 0px;
+    margin: 0px;
+}
+
+QTabBar::tab {
+    color: black;
+    text-align: center;
+    min-width: 140px;
+    max-width: 220px;
+    background-color: #7f8491;
+    padding-left: 2px;
+    padding-right: 2px;
+    padding-top: 2px;
+    font: 11pt "Montserrat";
+}
+
+QTabBar::tab:selected {
+    margin-top: 1px;
+    background-color: #60cccf;
+    border: 1px solid #4b9fa2;
+}
+
+QTabBar::tab:!selected {
+    margin-top: 4px;
+}
+
+QTabBar::tab:hover:!selected {
+    background-color: #4b9fa2;
+    border: 1px solid grey;
+}
+
+QTreeView {
+    background-color: #f6fafb;
+    alternate-background-color: #d9dbe2;
+}
+
+QTreeView::item:open {
+    color: #0a214c;
+}
+
+QLabel {
+    color: #244e66;
+    font: 12pt "Montserrat";
+}
+
+QTreeView {
+    font: 13pt "Montserrat";
+    padding: 4px;
+}
+
+QTreeView#mfsTree {
+    padding: 8px;
+}
+
+QTreeView::item#mfsTree {
+    padding: 8px;
+}
+
+QTreeView::item:hover {
+    background-color: #eec146;
+    border: 1px solid #4b9fa2;
+}
+
+QTreeView::item:selected {
+    background-color: #60cccf;
+    border: 1px solid #4b9fa2;
+    color: black;
+}
+
+QTreeWidget::item#dagTree {
+    padding: 0;
+    margin: 0;
+}
+
+QTreeWidget::item:hover#dagTree,
+QTreeWidget::item:selected#dagTree {
+    margin: 0;
+    padding: 0;
+    border: 0px;
+}
+
+QTreeView::branch {
+    background: #f6fafb;
+}
+
+QTreeView::branch:open:has-children:!has-siblings,
+QTreeView::branch:open:has-children:has-siblings {
+    image: url(:/share/icons/treeview/branch_open.png);
+}
+
+QTreeView::branch:has-children:!has-siblings:closed,
+QTreeView::branch:closed:has-children:has-siblings {
+    image: url(:/share/icons/treeview/branch_closed.png);
+}
+
+QTreeView::branch:open:has-children:!has-siblings:hover,
+QTreeView::branch:open:has-children:has-siblings:hover {
+    image: url(:/share/icons/treeview/branch_open.png);
+}
+
+QListView::item:hover {
+    background-color: #eec146;
+    border: 1px solid #4b9fa2;
+}
+
+QListView::item:selected {
+    background-color: #60cccf;
+    border: 1px solid #4b9fa2;
+    color: black;
+}
+
+QToolBox {
+    background-color: #f6fafb;
+}
+
+QToolBox::tab:selected {
+    background-color: #7f8491;
+    color: black;
+    font-weight: bold;
+}
+
+QLineEdit {
+    background-color: #C3D7DF;
+    selection-background-color: #4a9ea1;
+    selection-color: black;
+    border: 1px solid #244e66;
+    border-radius: 4px;
+    padding: 0 8px;
+}
+
+QTextBrowser {
+    background-color: #f6fafb;
+}
+
+QToolButton#pyramidsController::pressed {
+    background-color: #eec146;
+}
+
+QToolButton#helpToolButton::pressed {
+    background-color: #eec146;
+}
+
+QToolButton#quitToolButton::hover {
+    background-color: #eec146;
+}
+
+QToolButton#pyramidsController::hover {
+    background-color: #B7CDC2;
+}
+
+QToolButton#hashmarksMgrButton::hover {
+    background-color: #4a9ea1;
+}
+
+QToolButton#hashmarksMgrButton::pressed {
+    background-color: #eec146;
+}
+
+QToolButton#hashmarksSearcher::hover {
+    background-color: #4a9ea1;
+}
+
+QToolButton#hashmarksSearcher::pressed {
+    background-color: #eec146;
+}
+
+QToolButton#filemanagerOfflineButton::checked {
+    background-color: #eec146;
+}
+
+QToolButton#pinGlobalButton::checked {
+    background-color: #eec146;
+}
+
+QToolButton#wsSwitchButton::checked {
+    background-color: #eec146;
+}
+
+QToolBar#mainToolBar QToolButton {
+    min-width: 32px;
+    min-height: 32px;
+}
+
+
+
+QLabel#linkInfos {
+    color: black;
+    font: 12pt "Inter UI";
+}
+
+QProgressBar#pBarBrowser {
+    text-align: center;
+    color: black;
+    background-color: transparent;
+    border-radius: 5px;
+}
+
+QProgressBar::chunk#pBarBrowser {
+    background-color: #7f8491;
+}
+
+QTextBrowser#javascriptConsole {
+    background-color: lightgrey;
+}
+
+QToolButton#jsConsoleButton::checked {
+    background-color: #eec146;
+}
+
+QTreeView#historySearchResults {
+    font: 12pt "Inter UI";
+}
+
+QLabel#ipfsStatusLabel {
+    padding-left: 10px;
+    font: 10pt "Inter UI";
+    font-weight: bold;
+}
+
+QLabel#statusProgressLabel {
+    font: 14pt "Inter UI";
+    font-weight: bold;
+}
+
+
+
+QLabel#lastLogLabel {
+    font: 10pt "Montserrat";
+    color: black;
+    padding-right: 100px;
+}
+
+QLineEdit#urlZone {
+    font: 13pt "Inter UI";
+    font-weight: bold;
+    margin-left: 4px;
+    padding: 2px;
+}
+
+QTreeWidget::item#dagTree {
+    margin-left: 4px;
+    margin-right: 4px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+
+QTreeWidget#dagTree {
+    font: 12pt "Inter UI";
+}
+
+QWidget#logsTextWindow {
+    background-color: #4a9ea1;
+}
+
+QTextEdit#logsTextWidget {
+    background-color: #E0DEDE;
+    font: 12pt "Inter UI";
+    margin: 1px;
+    padding: 0px;
+}
+
+/*
+ * Hashmarks search
+ */
+
+QLineEdit#hLibrarySearch {
+    font: 11pt "Montserrat";
+}
+
+QMenu::item#hashmarksSearchMenu {
+    font: 14pt "Montserrat";
+    padding-left: 25px;
+    padding-right: 25px;
+}
+
+/* Hashmarks manager menu */
+
+QMenu::item:selected#hashmarksMgrMenu {
+    background-color: #4a9ea1;
+}
+
+QMenu#hashmarksMgrMenu {
+    font: 10pt "Inter UI";
+}
+
+/* Popular tags menu */
+
+QMenu#popularTagsMenu {
+    font: 9pt "Inter UI";
+}
+
+/* Menus */
+
+QMenu::item:selected {
+    background-color: #4a9ea1;
+}
+
+QMenu {
+    font: 11pt "Inter UI";
+}
+
+/* Main browse button */
+
+QToolButton#buttonBrowseIpfs::hover {
+    background-color: #4a9ea1;
+}
+
+QToolButton#buttonBrowseIpfs::pressed {
+    background-color: #eec146;
+}
+
+/* Profile button */
+
+QToolButton#profileButton::hover {
+    background-color: #4a9ea1;
+}
+
+QToolButton#profileButton::pressed {
+    background-color: #eec146;
+}
+
+/* Quick Access tool buttons */
+
+QToolButton#qaToolButton::hover {
+    background-color: #C3D7DF;
+}
+
+/* Dialogs */
+
+QDialog#profileEditDialog {
+    background-color: #DBDBDB;
+}
+
+/* IP Services search widgets */
+
+QLineEdit#ipServicesSearcher {
+    margin-left: 20px;
+    margin-right: 10px;
+    margin-top: 5px;
+    margin-bottom: 2px;
+    padding: 10px;
+    font: 11pt "Inter UI";
+}
+
+QLineEdit QAbstractItemView {
+    background-color: #7f8491;
+    alternate-background-color: #4a9ea1;
+    color: black;
+    border: 1px solid #4a9ea1;
+    border-radius: 14px;
+}
+
+/* Combobox */
+
+QComboBox QAbstractItemView {
+    font: 12pt "Inter UI";
+    margin: 2px;
+    selection-background-color: #60cccf;
+    border: 1px solid #4b9fa2;
+    border-radius: 14px;
+}
+
+QComboBox:on {
+    padding-top: 4px;
+    padding-left: 8px;
+}
+
+/* QSlider */
+
+QSlider::groove:horizontal {
+    border: 1px solid lightgray;
+    height: 4px;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #B1B1B1, stop:1 #c4c4c4);
+    margin: 2px 0;
+}
+
+QSlider::handle:horizontal {
+    background: #4b9fa2;
+    border: 1px solid #60cccf;
+    width: 24px;
+    height: 12px;
+    border-radius: 8px;
+    margin: -12px 0;
+}
+
+QSlider::sub-page:horizontal {
+    border: 1px solid lightgray;
+    background: #60cccf;
+}
+
+/* Workspaces */
+
+QToolBar#wsActionsToolBar QToolButton {
+    margin-right: 5px;
+    margin-left: 5px;
+}
+
+QToolBar QToolButton::hover {
+    background-color: #4a9ea1;
+}
+
+QToolBar QToolButton::pressed {
+    background-color: #eec146;
+}
+
+/* UnixFS QListView */
+
+QListView#unixFsDirView {
+    border: 1px solid lightgray;
+    padding-left: 10px;
+    padding-top: 10px;
+}
+
+QListView#unixFsDirView::item {
+    font: 13pt "Montserrat";
+}
+
+QListView#unixFsDirView::item:hover {
+    background-color: #eec146;
+    border: 1px solid #4b9fa2;
+    margin-left: 10px;
+}
+
+QListView#unixFsDirView::item:selected {
+    background-color: #60cccf;
+    border: 1px solid #4b9fa2;
+    color: black;
+    margin-left: 15px;
+}
+
+/* Markdown */
+
+QPlainTextEdit#markdownTextEdit {
+    background-color: #F0F7F7;
+}
+
+/* Peers manager */
+
+QTreeView#peersMgrView::item {
+    margin-top: 3px;
+    margin-bottom: 3px;
+}
+
+/* Push buttons */
+
+QPushButton {
+    background-color: #F0F7F7;
+    padding-left: 6px;
+    padding-right: 6px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    border: 1px solid #8f8f91;
+    border-radius: 6px;
+}
+
+QPushButton::hover {
+    background-color: #B7CDC2;
+}
+
+/* Close button in the UnixFS explorer */
+
+QPushButton#unixFsBackButton {
+    font-weight: bold;
+}
+
+QTextEdit#ipfsGcLog {
+    background-color: #F0F7F7;
+    font: 14pt "Inter UI";
+}
+
+/* Progressbar +/
+
+QProgressBar:horizontal {
+    border: 1px solid gray;
+    border-radius: 5px;
+    text-align: center;
+}
+
+QProgressBar::chunk:horizontal {
+    text-align: center;
+    background-color: #4b9fa2;
+}
+
+/* Scrollbars
+
+QScrollBar:vertical {
+    border: 1px solid grey;
+    width: 8px;
+    margin: 30px 0px 30px 0;
+}
+
+QScrollBar:horizontal {
+    border: 1px solid grey;
+    height: 8px;
+    margin: 0px 30px 0 30px;
+}
+
+QScrollBar::handle:horizontal {
+    background-color: #4b9fa2;
+    min-width: 30px;
+}
+
+QScrollBar::handle:vertical {
+    background-color: #4b9fa2;
+    min-height: 30px;
+}
+
+*/
+
+
+QToolButton#seedsToolButton::checked {
+    background-color: #CFCC94;
+}
+
+QGroupBox[niceBox="true"] {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #E0E0E0, stop: 1 #FFFFFF);
+    border: 2px solid gray;
+    border-radius: 5px;
+    margin-top: 1ex;
+    padding: 20px;
+}
+
+QGroupBox::title[niceBox="true"] {
+    font: 14pt "Inter UI";
+    subcontrol-origin: margin;
+    subcontrol-position: top center;
+    padding: 0 5px;
+    color: #4b9fa2;
+}
+
+
+/* Other QToolButtons */
+
+QToolButton#torControlButton::checked {
+    background-color: #4b9fa2;
+}
