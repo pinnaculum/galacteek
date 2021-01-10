@@ -44,7 +44,7 @@ from galacteek.ui.helpers import runDialogAsync
 
 from galacteek.ui.dialogs import DefaultProgressDialog
 
-from galacteek.ui.torrentgui import TorrentClientTab
+
 from galacteek.ui.messenger import MessengerWidget
 
 from galacteek.ui.feeds import AtomFeedsViewTab
@@ -584,6 +584,12 @@ class WorkspaceFiles(TabbedWorkspace):
             await btClient.stop()
 
     async def getTorrentClient(self, show=True):
+        try:
+            from galacteek.ui.torrentgui import TorrentClientTab
+        except ImportError:
+            # bt client should be a service now
+            return None
+
         try:
             btClient = self.btClient()
             assert btClient is not None
