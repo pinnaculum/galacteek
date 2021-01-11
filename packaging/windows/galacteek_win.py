@@ -12,8 +12,10 @@ def hideConsoleWindow():
 
 print("Starting galacteek ..")
 
-hideConsoleWindow()
 faulthandler.enable(sys.stderr)
+
+if '-d' not in sys.argv:
+    hideConsoleWindow()
 
 from galacteek.guientrypoint import start
 start()
