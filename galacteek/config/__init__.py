@@ -1,4 +1,3 @@
-import os
 import attr
 import inspect
 from pathlib import Path
@@ -30,7 +29,7 @@ class NestedNamespace(SimpleNamespace):
 gConf = OmegaConf.create({})
 cCache = {}
 
-configSaveRootPath = Path(os.getenv('HOME')).joinpath('.galacteek')
+configSaveRootPath = None
 yamlExt = 'yaml'
 configYamlName = f'config.{yamlExt}'
 
@@ -43,6 +42,8 @@ def cSetSavePath(path: Path):
         path.mkdir(parents=True, exist_ok=True)
 
     configSaveRootPath = path
+
+    log.debug(f'cSetSavePath: using {path}')
 
 
 def gTranslate(name):
