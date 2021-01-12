@@ -178,7 +178,7 @@ class PeerTreeItem(PeerBaseItem):
             if column == 1:
                 return self.ctx.ipid.did
 
-        elif role == Qt.BackgroundRole:
+        elif role == Qt.BackgroundRole and 0:
             if self.ctx.ipid.local:
                 color = QColor('#cce4ff')
             else:

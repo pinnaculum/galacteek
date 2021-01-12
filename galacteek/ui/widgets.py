@@ -1076,7 +1076,7 @@ class IconSelector(QComboBox):
         ':/share/icons/ipld-logo.png',
         ':/share/icons/pyramid-aqua.png',
         ':/share/icons/pyramid-stack.png',
-        ':/share/icons/multimedia.png',
+        ':/share/icons/mediaplayer.png',
         ':/share/icons/folder-documents.png',
         ':/share/icons/folder-pictures.png',
         ':/share/icons/orbitdb.png',

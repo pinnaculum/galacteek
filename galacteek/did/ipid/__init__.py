@@ -1127,9 +1127,12 @@ class IPIDManager:
             req['ident_token'] = token
 
         try:
+            # log.debug(f'didAuthPerform, sending request: {req}')
+
             async with streamCtx.session as session:
                 async with session.post(
-                        streamCtx.httpUrl('/auth')) as resp:
+                        streamCtx.httpUrl('/auth'),
+                        data=json.dumps(req)) as resp:
                     if resp.status != HTTPOk.status_code:
                         payload = await resp.json()
                         log.debug(f'Error payload: {payload}')

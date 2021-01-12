@@ -22,6 +22,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 QToolTip
 {
      border: 1px solid black;
@@ -754,7 +755,6 @@ QLabel
     margin-left: 2px;
     margin-right: 2px;
     color: #D1DBCB;
-
 }
 
 QTabWidget{
@@ -965,6 +965,11 @@ QDockWidget::close-button:pressed, QDockWidget::float-button:pressed {
 QTreeView, QListView
 {
     border: 1px solid #76797C;
+    background-color: #1e1e1e;
+}
+
+QTreeView:branch
+{
     background-color: #1e1e1e;
 }
 
@@ -1274,15 +1279,6 @@ QSplitter::handle:vertical {
     height: 1px;
 }
 
-QProgressBar {
-    border: 1px solid #76797C;
-    border-radius: 5px;
-    text-align: center;
-}
-
-QProgressBar::chunk {
-    /* background-color: #D1DBCB; */
-}
 
 QDateEdit
 {
@@ -1332,7 +1328,6 @@ QDateEdit::down-arrow:focus
     image: url(:/theme_icons/rc/down_arrow.png);
 }
 
-
 /* G */
 
 QTreeView {
@@ -1376,7 +1371,14 @@ QToolBar#mainToolBar QToolButton {
     min-height: 32px;
 }
 
-/* Progressbar +/
+/* Progressbar */
+
+QProgressBar {
+    border: 1px solid #76797C;
+    border-radius: 5px;
+    text-align: center;
+    background-color: #323232;
+}
 
 QProgressBar:horizontal {
     border: 1px solid gray;
@@ -1391,37 +1393,37 @@ QProgressBar::chunk:horizontal {
 
 QProgressBar#pBarBrowser {
     text-align: center;
-    color: black;
-    background-color: transparent;
     border-radius: 5px;
+    border: 0;
 }
 
 QProgressBar::chunk#pBarBrowser {
-    background-color: #7f8491;
 }
-
-
 
 QTreeView#historySearchResults {
     font: 12pt "Inter UI";
 }
 
-
 QLabel#statusProgressLabel {
     font: 14pt "Inter UI";
     font-weight: bold;
+    color: #D1DBCB;
 }
-
 
 QLineEdit#urlZone {
     font: 13pt "Inter UI";
     margin-left: 4px;
     padding: 2px;
 }
+
+QLineEdit#urlZone::hover {
+    border: 1px solid #4a9ea1;
+}
+
+
 QWidget#logsTextWindow {
     background-color: #4a9ea1;
 }
-
 
 
 QTextEdit#logsTextWidget {
@@ -1486,5 +1488,3 @@ QToolBar QToolButton::pressed {
 QPlainTextEdit#markdownTextEdit {
     background-color: #F0F7F7;
 }
-
-

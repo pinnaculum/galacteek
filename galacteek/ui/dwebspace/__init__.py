@@ -25,6 +25,7 @@ from galacteek.ui.peers import PeersManager
 from galacteek import partialEnsure
 from galacteek import ensure
 from galacteek import log
+from galacteek import cached_property
 
 from galacteek.core.ps import KeyListener
 from galacteek.core.ps import makeKeyService
@@ -640,35 +641,23 @@ class WorkspaceFiles(TabbedWorkspace):
         self.fileManagerTab.fileManager.updateTree()
 
 
-class WorkspaceMultimedia(TabbedWorkspace):
+class WorkspaceMultimedia(SingleWidgetWorkspace):
     def __init__(self, stack):
-        super().__init__(stack, WS_MULTIMEDIA, icon=getIcon('multimedia.png'),
+        super().__init__(stack, WS_MULTIMEDIA, icon=getIcon('mediaplayer.png'),
                          description='Multimedia',
                          acceptsDrops=True)
+
+    @cached_property
+    def mPlayer(self):
+        return mediaplayer.MediaPlayerTab(self.app.mainWindow)
 
     def setupWorkspace(self):
         super().setupWorkspace()
 
-        self.mpAction = self.wsAddCustomAction(
-            'mplayer', self.wsIcon,
-            iMediaPlayer(),
-            self.onAddMplayerTab, default=True)
+        self.wLayout.addWidget(self.mPlayer)
 
     def mPlayerTab(self):
-        tab = self.wsFindTabWithName(iMediaPlayer())
-        if tab:
-            return tab
-        else:
-            tab = mediaplayer.MediaPlayerTab(self.app.mainWindow)
-
-            if tab.playerAvailable():
-                self.wsRegisterTab(
-                    tab, self.mpAction.text(), icon=self.wsIcon,
-                    current=True)
-                return tab
-
-    def onAddMplayerTab(self):
-        return self.mPlayerTab()
+        return self.mPlayer
 
     async def handleObjectDrop(self, ipfsPath):
         tab = self.mPlayerTab()

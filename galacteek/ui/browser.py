@@ -2247,10 +2247,6 @@ class BrowserTab(GalacteekTab):
         self.ui.stopButton.setEnabled(progress >= 0 and progress < 100)
 
         if progress == 100:
-            self.ui.pBarBrowser.setStyleSheet(
-                '''QProgressBar::chunk#pBarBrowser {
-                    background-color: #244e66;
-                }''')
             self.loop.call_later(
                 1,
                 self.ui.pBarBrowser.setStyleSheet,
