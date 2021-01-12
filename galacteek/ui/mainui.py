@@ -808,7 +808,7 @@ class MainWindow(QMainWindow):
         if self.app.windowsSystem:
             self.restartAction.setEnabled(False)
 
-        self.mPlayerOpenAction = QAction(getIcon('multimedia.png'),
+        self.mPlayerOpenAction = QAction(getIcon('mediaplayer.png'),
                                          iMediaPlayer(),
                                          triggered=self.onOpenMediaPlayer)
 

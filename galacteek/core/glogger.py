@@ -153,10 +153,8 @@ class LogRecordStyler:
 
         # ui
         'galacteek.ui': {
-            'basecolor': 'white',
-            'blue': -0.2,
-            'red': -0.1,
-            'green': -0.5
+            'basecolor': 'darkred',
+            'red': -0.2
         },
 
         # hashmarks

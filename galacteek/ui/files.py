@@ -1273,12 +1273,12 @@ class FileManager(QWidget):
         # Media player actions
         if nameItem.isFile():
             actionsMenu.addAction(
-                getIcon('multimedia.png'),
+                getIcon('mediaplayer.png'),
                 iMediaPlayerQueue(), partialEnsure(
                     self.mediaPlayerQueueFile, str(ipfsPath)))
         elif nameItem.isDir():
             actionsMenu.addAction(
-                getIcon('multimedia.png'),
+                getIcon('mediaplayer.png'),
                 iMediaPlayerQueue(), partialEnsure(
                     self.mediaPlayerQueueDir, str(ipfsPath)))
 
@@ -1602,7 +1602,8 @@ class FileManager(QWidget):
         self.ui.mfsStatusLabel.setText('')
 
     def onAddFilesClicked(self):
-        dialog = QFileDialog(None)
+        # dialog = QFileDialog(None)
+        dialog = QFileDialog(self)
         dialog.setFileMode(QFileDialog.ExistingFiles)
 
         dialog.filesSelected.connect(

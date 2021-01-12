@@ -1,3 +1,4 @@
+import attr
 import subprocess
 from pathlib import Path
 import importlib
@@ -57,7 +58,18 @@ class ThemesManager:
         self.app = runningApp()
         self.fsWatcher = FileWatcher()
 
+        self.fsWatcher.pathChanged.connect(self.onThemeChanged)
+
+    def onThemeChanged(self, path: str):
+        tp = Path(path)
+        self.themeApply(tp.name)
+
+        # self.app.repolishWidget(self.app.mainWindow)
+
     def change(self, theme):
+        self.themeApply(theme)
+
+    def themeApply(self, theme):
         libFontsPath = pkgResourcesRscFilename(
             'galacteek.ui.themes', 'fonts.qss'
         )
@@ -91,7 +103,6 @@ class ThemesManager:
 
         sysName = self.app.system.lower()
         qssPath = f":/galacteek/ui/themes/{theme}/galacteek.qss"
-        # qssPath = f":/theme_{theme}/galacteek.qss"
         qssPlatformPath = \
             f":/galacteek/ui/themes/{theme}/galacteek_{sysName}.qss"
 
@@ -110,4 +121,10 @@ class ThemesManager:
         if style:
             self.app.setStyle(style)
 
+        self.fsWatcher.watch(themeDir)
         return True
+
+
+@attr.s(auto_attribs=True)
+class Theme:
+    name: str = None
