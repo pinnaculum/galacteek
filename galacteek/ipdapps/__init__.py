@@ -10,7 +10,7 @@ from galacteek.core.objects import pyqtSignal
 from galacteek.core import runningApp
 from galacteek.core import pkgResourcesListDir
 from galacteek.core import pkgResourcesRscFilename
-from galacteek.core.aservice import GService
+from galacteek.services import GService
 from galacteek.config import cGet
 from galacteek.dweb import render
 from galacteek.ipfs import ipfsOp

@@ -5,7 +5,8 @@ from PyQt5.QtGui import QColor
 # Used by the DAG viewer
 # dagLinkColor = QColor(212, 184, 116)
 # unixfsNodeColor = QColor('#C3D7DF')
-dagLinkColor = QColor('#4a9ea1')
+
+dagLinkColor = QColor('#2f7fc6')
 unixfsNodeColor = QColor('#121212')
 rawLeafColor = QColor('lightgreen')
 

@@ -24,3 +24,9 @@ tox:
 
 upload: dists
 	twine upload --repository-url https://upload.pypi.org/legacy/ dist/*
+
+themes:
+	@python setup.py build_ui --tasks=themes
+
+ui:
+	@python setup.py build_ui

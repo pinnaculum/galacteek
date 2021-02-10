@@ -1,10 +1,14 @@
+body {
+    background-color: #323232;
+    color: white;
+}
 
 header nav ul {
     list-style-type: none;
     margin: 0;
     padding: 0;
     overflow: hidden;
-    background-color: #333;
+    background-color: #4a9ea1;
 }
 
 header nav ul li {
@@ -23,7 +27,8 @@ header nav ul li a {
     -webkit-box-shadow: 0 8px 6px -6px black;
     -moz-box-shadow: 0 8px 6px -6px black;
     box-shadow: 0 8px 6px -6px black;
-    background-color: #DAD6B5;
+    /* background-color: #DAD6B5; */
+    background-color: #3c98e8;
     padding: 10px;
     margin-bottom: 20px;
     margin-top: 20px;
@@ -36,6 +41,10 @@ h2.blog-title {
 
 a {
     color: #2457A2;
+}
+
+a:hover {
+    background-color: #323232;
 }
 
 .blog-post-body {

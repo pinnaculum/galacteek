@@ -1,0 +1,14 @@
+envs:
+  default:
+    peers:
+      didLoadTimeout: 10
+      didLoadAttempts: 5
+
+      liveness:
+        pingDelay: 300
+
+      didFail:
+        sleepInterval: 60
+
+      watcherTask:
+        sleepInterval: 180

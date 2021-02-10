@@ -69,142 +69,142 @@ from .i18n import iEditObject
 
 def iCreateRawPyramid():
     return QCoreApplication.translate(
-        'pyramidMaster',
+        'PyramidMaster',
         'Create pyramid')
 
 
 def iCreateGallery():
     return QCoreApplication.translate(
-        'pyramidMaster',
+        'PyramidMaster',
         'Create image gallery')
 
 
 def iCreateAutoSyncPyramid():
     return QCoreApplication.translate(
-        'pyramidMaster',
+        'PyramidMaster',
         'Create auto-sync pyramid')
 
 
 def iCreateWebsiteMkdocs():
     return QCoreApplication.translate(
-        'pyramidMaster',
+        'PyramidMaster',
         'Create website (mkdocs)')
 
 
 def iOpenLatestInPyramid():
     return QCoreApplication.translate(
-        'pyramidMaster',
+        'PyramidMaster',
         'Open latest item in the pyramid')
 
 
 def iEmptyPyramid():
     return QCoreApplication.translate(
-        'pyramidMaster',
+        'PyramidMaster',
         'Pyramid is empty')
 
 
 def iPopItemFromPyramid():
     return QCoreApplication.translate(
-        'pyramidMaster',
+        'PyramidMaster',
         'Pop item off the pyramid')
 
 
 def iForcePyramidSync():
     return QCoreApplication.translate(
-        'pyramidMaster',
+        'PyramidMaster',
         'Force sync')
 
 
 def iRewindDAG():
     return QCoreApplication.translate(
-        'pyramidMaster',
+        'PyramidMaster',
         'Rewind DAG')
 
 
 def iProfilePublishToDID():
     return QCoreApplication.translate(
-        'pyramidMaster',
+        'PyramidMaster',
         'Publish on my DID')
 
 
 def iProfilePublishToDIDToolTip():
     return QCoreApplication.translate(
-        'pyramidMaster',
+        'PyramidMaster',
         'Register this pyramid as a service in the list '
         'of IP services on your DID (Decentralized Identifier)')
 
 
 def iRewindDAGToolTip():
     return QCoreApplication.translate(
-        'pyramidMaster',
+        'PyramidMaster',
         "Rewinding the DAG cancels the latest "
         "operation/transformation in the DAG's history")
 
 
 def iCopyIpnsAddress():
     return QCoreApplication.translate(
-        'pyramidMaster',
+        'PyramidMaster',
         'Copy IPNS address to clipboard')
 
 
 def iCopyIpnsAddressGw():
     return QCoreApplication.translate(
-        'pyramidMaster',
+        'PyramidMaster',
         'Copy IPNS gateway address to clipboard')
 
 
 def iPyramidPublishCurrentClipboard():
     return QCoreApplication.translate(
-        'pyramidMaster',
+        'PyramidMaster',
         'Add current clipboard item to the pyramid'
     )
 
 
 def iPyramidGenerateQr():
     return QCoreApplication.translate(
-        'pyramidMaster',
+        'PyramidMaster',
         "Generate pyramid's QR code"
     )
 
 
 def iPyramidGenerateIndexQr():
     return QCoreApplication.translate(
-        'pyramidMaster',
+        'PyramidMaster',
         "Generate index's QR code"
     )
 
 
 def iPyramidDropper():
     return QCoreApplication.translate(
-        'pyramidMaster',
+        'PyramidMaster',
         'Choose a pyramid to publish this object to'
     )
 
 
 def iPyramidDropObject():
     return QCoreApplication.translate(
-        'pyramidMaster',
+        'PyramidMaster',
         'Drop object to a pyramid'
     )
 
 
 def iGalleryBrowse():
     return QCoreApplication.translate(
-        'pyramidMaster',
+        'PyramidMaster',
         "Browse image gallery"
     )
 
 
 def iGalleryBrowseIpns():
     return QCoreApplication.translate(
-        'pyramidMaster',
+        'PyramidMaster',
         "Browse image gallery (IPNS)"
     )
 
 
 def iGalleryChangeTitle():
     return QCoreApplication.translate(
-        'pyramidMaster',
+        'PyramidMaster',
         "Change image gallery's title"
     )
 

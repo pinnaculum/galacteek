@@ -1,0 +1,23 @@
+envs:
+  default:
+    enabled: True
+    notbit:
+      useTor: False
+      listenPort: 8444
+
+      # Purge objects directory before starting notbit
+      purgeObjectsOnStartup: True
+
+    bmCoreContacts:
+      - name: 'galacteek-support'
+        address: 'BM-87bMT2xqtucvbs7TPJb9nrEKumP7NVpWFdv'
+        group: 'galacteek'
+
+    messages:
+      welcome:
+        body: >
+          Be sure to [check the manual](manual:/messenger.html)
+
+    mdirWatcher:
+      # Settings for notbit's maildir watcher task
+      sleepInterval: 60

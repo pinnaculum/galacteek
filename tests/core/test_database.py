@@ -138,6 +138,126 @@ class TestCatalogLoader:
         sync = HashmarksSynchronizer()
         await sync.sync()
 
-        await sync.sync()
+        await database.closeOrm()
+
+
+class TestBitMessageAccounts:
+    @pytest.mark.parametrize('label', ['mybm'])
+    @pytest.mark.parametrize('label2', ['ole'])
+    @pytest.mark.parametrize(
+        'bmaddr', ['BM-87eLyoLh91n8r65S7itLzU9b3BV1y6v6d2N'])
+    @pytest.mark.parametrize(
+        'bmaddr2', ['BM-87eLyoLh91n8r6517vtLzU7b3BV1y6v6d2N'])
+    @pytest.mark.asyncio
+    async def test_create_bmaccounts(self, label, bmaddr, bmaddr2, label2):
+        await database.initOrm(dbpath)
+
+        mbox = await database.bmMailBoxRegister(
+            bmaddr,
+            label,
+            bmaddr,
+            default=True
+        )
+        assert mbox is not None
+        assert mbox.prefs is not None
+        assert mbox.prefs.cContentType == 'text/plain'
+        assert mbox.prefs.markupType == 'markdown'
+        assert mbox.mDirType == 0
+
+        # Fail to create a mailbox with same address
+        mbox = await database.bmMailBoxRegister(
+            bmaddr,
+            'otherlabel',
+            bmaddr
+        )
+        assert mbox is None
+
+        # Fail to create a mailbox with same label
+        mbox = await database.bmMailBoxRegister(
+            bmaddr2,
+            label,
+            bmaddr
+        )
+        assert mbox is None
+
+        # Create second account
+        mbox2 = await database.bmMailBoxRegister(
+            bmaddr2,
+            label2,
+            bmaddr2
+        )
+        assert mbox2 is not None
+        assert mbox2.bmAddress == bmaddr2
+
+        mbox = await database.bmMailBoxGet(bmaddr)
+        assert mbox.bmAddress == bmaddr
+        assert mbox.label == label
+        assert mbox is not None
+
+        # Check the default get
+        mbox = await database.bmMailBoxGetDefault()
+        assert mbox is not None
+        assert mbox.bmAddress == bmaddr
+
+        assert await database.bmMailBoxSetDefault(bmaddr2) is True
+        mbox = await database.bmMailBoxGetDefault()
+        assert mbox is not None
+        assert mbox.bmAddress == bmaddr2
+
+        await database.closeOrm()
+
+    @pytest.mark.parametrize(
+        'bmcontact1', [
+            ('BM-87eLyoLh91n8r65S7itLzU9b3BV1y6v6d2N', 'John Stoner')])
+    @pytest.mark.parametrize(
+        'bmcontact2', [
+            ('BM-89eLyBLh91n8r65S7itLzU9b3BV1y6v6d2N', 'Hilary Stone')])
+    @pytest.mark.parametrize(
+        'bmcontact3', [
+            ('BM-19eLyBLh91n8r65S7itLzU9b3BV1y6v6d2F', 'galacteek', '@')])
+    @pytest.mark.asyncio
+    async def test_contacts(self, bmcontact1, bmcontact2, bmcontact3):
+        await database.initOrm(dbpath)
+
+        contact = await database.bmContactAdd(
+            'invalidaddr',
+            'some name'
+        )
+        assert contact is None
+
+        contact = await database.bmContactAdd(
+            bmcontact1[0],
+            bmcontact1[1]
+        )
+        assert contact is not None
+        assert contact.fullname == bmcontact1[1]
+
+        contact = await database.bmContactAdd(
+            bmcontact2[0],
+            bmcontact2[1]
+        )
+
+        contact = await database.bmContactAdd(
+            bmcontact3[0],
+            bmcontact3[1],
+            separator=bmcontact3[2]
+        )
+        assert contact is not None
+        assert contact.cSeparator == '@'
+
+        assert await database.bmMailBoxCount() == 2
+
+        contacts = await database.bmContactByName(bmcontact1[1])
+        assert len(contacts) == 1
+        assert contacts.pop().fullname == bmcontact1[1]
+
+        contacts = await database.bmContactByName('stone')
+        assert len(contacts) == 2
+
+        contact = await database.bmContactByNameFirst(
+            bmcontact3[1],
+            separator=bmcontact3[2]
+        )
+        assert contact.fullname == bmcontact3[1]
 
         await database.closeOrm()

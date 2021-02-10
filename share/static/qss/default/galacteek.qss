@@ -12,6 +12,18 @@
     src: url('qrc:/share/static/fonts/Inter-UI-Medium.woff2') format('woff2');
 }
 
+
+@font-face {
+    font-family: 'Segoe UI';
+    src: url('qrc:/share/static/fonts/SegoeUI.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+* {
+    font: 14pt "Segoe UI";
+}
+
 QToolTip {
     border: 1px solid black;
     border-radius: 4px;
@@ -282,7 +294,7 @@ QTreeWidget::item#dagTree {
     margin-bottom: 2px;
 }
 
-QTreeWidgetdagTree {
+QTreeWidget#dagTree {
     font: 12pt "Inter UI";
 }
 

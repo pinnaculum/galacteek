@@ -1,0 +1,22 @@
+envs:
+  default:
+    search:
+      ipfsSearch:
+        pageResultsTimeout: 12.0
+        getMetadataTimeout: 10.0
+
+    unixfs:
+      dirWrapRules:
+        # Rules that determine which UnixFS files/directories will be
+        # directory-wrapped.
+        # The 'types' list can contain either 'file' or 'directory'
+        # The 'mfsTranslate' attribute sets the replacement regular
+        # expression for the MFS entry name
+
+        - match: '(.*)'
+          types:
+            - 'file'
+
+          mfsTranslate: '\1.dirw'
+          enabled: True
+          priority: 0

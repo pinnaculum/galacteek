@@ -182,7 +182,7 @@ class PeerTreeItem(PeerBaseItem):
             if self.ctx.ipid.local:
                 color = QColor('#cce4ff')
             else:
-                if self.ctx.alive():
+                if self.ctx.peerActive:
                     color = QColor('#90C983')
                 else:
                     color = QColor('#F0F7F7')
@@ -215,7 +215,7 @@ class PeerTreeItem(PeerBaseItem):
                 await pSItem.updateContained()
 
     def icon(self):
-        if self.ctx.alive():
+        if self.ctx.peerActive:
             return self.ctx.avatarPixmapScaled(32, 32)
         else:
             return getIcon('offline.png')
@@ -712,8 +712,6 @@ class PeersManager(GalacteekTab):
                 menu = future.result()
                 menu.exec(self.ui.peersMgrView.mapToGlobal(point))
             except Exception as e:
-                import traceback
-                traceback.print_exc()
                 log.debug(str(e))
 
         ensure(self.showPeerContextMenu(piCtx, point), futcallback=menuBuilt)

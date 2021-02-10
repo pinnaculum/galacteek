@@ -1,0 +1,4 @@
+envs:
+  default:
+    zoom:
+      default: 100

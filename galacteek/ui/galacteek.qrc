@@ -12,6 +12,7 @@
     <file>../../share/icons/ipservice.png</file>
     <file>../../share/icons/logs.png</file>
     <file>../../share/icons/tor.png</file>
+    <file>../../share/icons/markdown.png</file>
     <file>../../share/icons/planets/mercury.png</file>
     <file>../../share/icons/planets/jupiter.png</file>
     <file>../../share/icons/planets/earth.png</file>
@@ -22,6 +23,8 @@
     <file>../../share/clips/funky-cube-1.gif</file>
     <file>../../share/clips/rotating-cube-redflash-140-6fps.gif</file>
     <file>../../share/clips/rotating-cube.gif</file>
+    <file>../../share/clips/bouncing-cube-12fps.gif</file>
+    <file>../../share/clips/bouncing-cube-18fps.gif</file>
     <file>../../share/icons/ipfs-repo.png</file>
     <file>../../share/icons/cube-blue.png</file>
     <file>../../share/icons/cube-orange.png</file>
@@ -136,6 +139,7 @@
     <file>../../share/static/fonts/Inter-UI-Regular.woff2</file>
     <file>../../share/static/fonts/DejaVuSans.ttf</file>
     <file>../../share/static/fonts/SegoeUI.woff2</file>
+    <file>../../share/static/fonts/Chopsic-K6Dp.ttf</file>
     <file>../../share/icons/chat.png</file>
     <file>../../share/icons/camera.png</file>
     <file>../../share/icons/chat-active.png</file>
@@ -166,7 +170,7 @@
     <file>../../share/icons/expand.png</file>
     <file>../../share/icons/hash.png</file>
     <file>../../share/icons/information.png</file>
-    <file>../../share/translations/galacteek_fr.qm</file>
+    <file>../../share/translations/galacteek_es.qm</file>
     <file>../../share/icons/code-fork.png</file>
     <file>../../share/icons/fullscreen.png</file>
     <file>../../share/icons/folder-pictures.png</file>
@@ -219,7 +223,7 @@
     <file>../../share/icons/planets/uranus.png</file>
     <file>../../share/icons/planets/venus.png</file>
     <file>../../share/icons/ipfs-qrcode.png</file>
-    <file>../../share/translations/galacteek_en.ts</file>
+    <file>../../share/translations/galacteek_es.qm</file>
     <file>../../share/translations/galacteek_en.qm</file>
   </qresource>
 
@@ -227,6 +231,10 @@
     <file>../../galacteek/ui/themes/fonts.qss</file>
     <file>../../galacteek/ui/themes/moon3/galacteek.qss</file>
     <file>../../galacteek/ui/themes/chloride/galacteek.qss</file>
+  </qresource>
+  <qresource>
+    <file>../../share/crypto/btc/btc-donate.png</file>
+    <file>../../share/crypto/btc/btc-donate-001.png</file>
   </qresource>
 
 </RCC>

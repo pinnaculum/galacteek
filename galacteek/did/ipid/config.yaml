@@ -1,0 +1,21 @@
+envs:
+  default:
+    publish:
+      # Automatically republish local IPID
+      autoRepublish: True
+
+      # Republish delay (seconds)
+      autoRepublishDelay: 600
+
+      ipns:
+        timeout: 300
+        lifetime: '48h'
+        ttl: '12h'
+
+    resolve:
+      # Timeout in seconds for resolving IPID documents
+      timeout: 30
+
+      cacheLifetime:
+        default: 5184000
+        local: 1728000

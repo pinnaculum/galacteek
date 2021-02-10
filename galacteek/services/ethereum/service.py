@@ -1,13 +1,12 @@
 
 from galacteek import log
 from galacteek import cached_property
-from galacteek.config import cParentGet
-from galacteek.core.aservice import GService
+from galacteek.services import GService
 
 from galacteek.blockchain.ethereum import MockEthereumController
 from galacteek.blockchain.ethereum import ethConnConfigParams
 
-from galacteek.services.ethereum import PS_EVENT_CONTRACTLOADED
+# from galacteek.services.ethereum import PS_EVENT_CONTRACTLOADED
 
 
 class EthereumService(GService):
@@ -20,11 +19,14 @@ class EthereumService(GService):
     def ctrl(self):
         try:
             from galacteek.blockchain.ethereum.ctrl import EthereumController
+
+            raise Exception('Disabled')
+
             return EthereumController(ethConnConfigParams(
                 self.app.cmdArgs.ethnet),
                 parent=self.app,
                 executor=self.app.executor)
-        except ImportError:
+        except (ImportError, BaseException):
             # Don't have the web3 package
             return MockEthereumController()
 

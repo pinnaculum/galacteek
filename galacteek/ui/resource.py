@@ -4,7 +4,6 @@ import asyncio
 import aioipfs
 
 from PyQt5.QtWidgets import QApplication
-from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import QUrl
@@ -46,14 +45,7 @@ from .helpers import messageBox
 from .helpers import runDialogAsync
 from .imgview import ImageViewerTab
 from .i18n import iDagViewer
-
-
-def iResourceCannotOpen(path):
-    return QCoreApplication.translate(
-        'resourceOpener',
-        '{}: cannot determine resource type or timeout occured '
-        '(check connectivity)').format(
-            path)
+from .i18n import iResourceCannotOpen
 
 
 class IPFSResourceOpener(QObject):

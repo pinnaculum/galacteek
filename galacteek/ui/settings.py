@@ -1,11 +1,27 @@
+import asyncio
+
 from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import QTreeWidget
+from PyQt5.QtWidgets import QTreeWidgetItem
+from PyQt5.QtWidgets import QHeaderView
+from PyQt5.QtWidgets import QStyledItemDelegate
+from PyQt5.QtWidgets import QSpinBox
+from PyQt5.QtWidgets import QDoubleSpinBox
+from PyQt5.QtWidgets import QComboBox
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QUrl
+from PyQt5.QtCore import QSize
 
+from galacteek.config import configModLeafAttributes
+from galacteek.config import configModules
 from galacteek.config import cGet
 from galacteek.config import cSet
 
+from galacteek import ensureSafe
+from galacteek import partialEnsure
+
+from .widgets import GalacteekTab
 from .forms import ui_settings
 from .themes import themesList
 from ..appsettings import *
@@ -29,11 +45,11 @@ class SettingsDialog(QDialog):
         self.ui.pubsubRoutingMode.insertItem(0, ROUTER_TYPE_FLOOD)
         self.ui.pubsubRoutingMode.insertItem(1, ROUTER_TYPE_GOSSIP)
 
-        self.ui.language.insertItem(0, iLangEnglish())
-
-        self.ui.swarmMaxConns.valueChanged.connect(self.onSwarmMaxConns)
-
         self.loadSettings()
+
+        self.ui.themeCombo.currentTextChanged.connect(
+            self.onThemeSelectionChanged)
+        self.ui.swarmMaxConns.valueChanged.connect(self.onSwarmMaxConns)
 
     def enableGroupDaemon(self):
         self.ui.groupBoxIpfsConn.setEnabled(False)
@@ -76,13 +92,44 @@ class SettingsDialog(QDialog):
     def setS(self, section, key, value):
         return self.sManager.setSetting(section, key, value)
 
+    def onThemeSelectionChanged(self, themeName):
+        self.applyTheme(themeName)
+
     def loadSettings(self):
+        # lang
+
+        langCodeCurrent = cGet(
+            'language',
+            mod='galacteek.application'
+        )
+
+        langsAvailable = cGet(
+            'languagesAvailable',
+            mod='galacteek.application'
+        )
+
+        for langEntry in langsAvailable:
+            langCode = langEntry.get('code')
+            langDisplayName = langEntry.get('displayName')
+
+            self.ui.language.addItem(
+                langDisplayName,
+                langCode
+            )
+
+        for idx in range(self.ui.language.count()):
+            code = self.ui.language.itemData(idx)
+            if code == langCodeCurrent:
+                self.ui.language.setCurrentIndex(idx)
+
+        # Theme
+
         self.ui.themeCombo.clear()
+
         for themeName, tPath in themesList():
             self.ui.themeCombo.addItem(themeName)
 
         curTheme = cGet('theme', mod='galacteek.ui')
-        print('cur theme is', curTheme)
         if curTheme:
             self.ui.themeCombo.setCurrentText(curTheme)
 
@@ -143,8 +190,9 @@ class SettingsDialog(QDialog):
             self.getS(section, CFG_KEY_DLPATH, str))
 
         # Default web profile combo box
-        currentDefault = self.sManager.getSetting(
-            section, CFG_KEY_DEFAULTWEBPROFILE)
+
+        currentDefault = cGet('defaultWebProfile',
+                              mod='galacteek.browser.webprofiles')
         pNameList = self.app.availableWebProfilesNames()
 
         for pName in pNameList:
@@ -160,15 +208,9 @@ class SettingsDialog(QDialog):
         self.setChecked(self.ui.urlHistoryEnable,
                         self.sManager.isTrue(CFG_SECTION_HISTORY,
                                              CFG_KEY_HISTORYENABLED))
-
         # UI
-        section = CFG_SECTION_UI
-        self.setChecked(self.ui.wrapFiles,
-                        self.sManager.isTrue(section, CFG_KEY_WRAPSINGLEFILES))
-        self.setChecked(self.ui.wrapDirectories,
-                        self.sManager.isTrue(section, CFG_KEY_WRAPDIRECTORIES))
-        self.setChecked(self.ui.hideHashes,
-                        self.sManager.isTrue(section, CFG_KEY_HIDEHASHES))
+        self.ui.webEngineDefaultZoom.setValue(
+            cGet('zoom.default', mod='galacteek.ui.browser'))
 
         # Eth
         section = CFG_SECTION_ETHEREUM
@@ -182,12 +224,6 @@ class SettingsDialog(QDialog):
             self.sManager.getSetting(section, CFG_KEY_PROVIDERTYPE))
         self.ui.ethRpcUrl.setText(
             self.sManager.getSetting(section, CFG_KEY_RPCURL))
-
-        lang = self.sManager.getSetting(section, CFG_KEY_LANG)
-        if lang == 'en':
-            self.ui.language.setCurrentText(iLangEnglish())
-        elif lang == 'fr':
-            self.ui.language.setCurrentText(iLangFrench())
 
     def accept(self):
         section = CFG_SECTION_IPFSD
@@ -230,27 +266,25 @@ class SettingsDialog(QDialog):
 
         section = CFG_SECTION_BROWSER
         self.setS(section, CFG_KEY_HOMEURL, self.ui.home.text())
-        self.setS(section, CFG_KEY_DEFAULTWEBPROFILE,
-                  self.ui.comboDefaultWebProfile.currentText())
+
+        cSet('defaultWebProfile',
+             self.ui.comboDefaultWebProfile.currentText(),
+             mod='galacteek.browser.webprofiles')
 
         section = CFG_SECTION_HISTORY
-        self.sManager.setBoolFrom(section, CFG_KEY_HISTORYENABLED,
-                                  self.isChecked(self.ui.urlHistoryEnable))
+        cSet('enabled', self.isChecked(self.ui.urlHistoryEnable),
+             mod='galacteek.ui.history')
 
-        section = CFG_SECTION_UI
-        self.sManager.setBoolFrom(section, CFG_KEY_WRAPSINGLEFILES,
-                                  self.isChecked(self.ui.wrapFiles))
-        self.sManager.setBoolFrom(section, CFG_KEY_WRAPDIRECTORIES,
-                                  self.isChecked(self.ui.wrapDirectories))
-        self.sManager.setBoolFrom(section, CFG_KEY_HIDEHASHES,
-                                  self.isChecked(self.ui.hideHashes))
+        cSet('zoom.default', self.ui.webEngineDefaultZoom.value(),
+             mod='galacteek.ui.browser')
 
-        lang = self.ui.language.currentText()
-        if lang == iLangEnglish():
-            self.sManager.setSetting(section, CFG_KEY_LANG, 'en')
-        elif lang == iLangFrench():
-            self.sManager.setSetting(section, CFG_KEY_LANG, 'fr')
-        self.app.setupTranslator()
+        idx = self.ui.language.currentIndex()
+        langCode = self.ui.language.itemData(idx)
+
+        curLang = cGet('language', mod='galacteek.application')
+        if langCode != curLang:
+            cSet('language', langCode, mod='galacteek.application')
+            self.app.setupTranslator()
 
         section = CFG_SECTION_ETHEREUM
 
@@ -277,8 +311,6 @@ class SettingsDialog(QDialog):
         self.sManager.sync()
         self.sManager.changed = True
 
-        self.applyTheme(self.ui.themeCombo.currentText())
-
         self.done(1)
 
     def applyTheme(self, themeName: str):
@@ -295,3 +327,149 @@ class SettingsDialog(QDialog):
 
     def reject(self):
         self.done(0)
+
+
+ModRole = Qt.UserRole + 1
+AttrRole = Qt.UserRole + 2
+AttrTypeRole = Qt.UserRole + 3
+
+
+class ConfigItemDelegate(QStyledItemDelegate):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.model = parent.model()
+        self.tree = parent
+
+    def _tr(self, index):
+        mod = self.model.data(index, ModRole)
+        attr = self.model.data(index, AttrRole)
+        atype = self.model.data(index, AttrTypeRole)
+        return mod, attr, atype
+
+    def setEditorData(self, editor, index):
+        mod, attr, atype = self._tr(index)
+        value = cGet(attr, mod=mod)
+
+        if isinstance(editor, QSpinBox) or isinstance(editor, QDoubleSpinBox):
+            editor.setValue(value)
+
+        if isinstance(editor, QComboBox):
+            editor.setCurrentText(str(value))
+
+    def setModelData(self, editor, model, index):
+        mod, attr, atype = self._tr(index)
+
+        if isinstance(editor, QSpinBox) or isinstance(editor, QDoubleSpinBox):
+            cSet(attr, editor.value(), mod=mod)
+        elif isinstance(editor, QComboBox):
+            if editor.currentText() == str(True):
+                cSet(attr, True, mod=mod)
+            else:
+                cSet(attr, False, mod=mod)
+
+    def createEditor(self, parent, option, index):
+        mod, attr, atype = self._tr(index)
+
+        if atype is int:
+            editor = QSpinBox(parent)
+            editor.setMinimum(0)
+            editor.setMaximum(65535)
+            editor.setSingleStep(1)
+
+            if attr.lower().endswith('iconsize'):
+                editor.setSingleStep(16)
+        elif atype is float:
+            editor = QDoubleSpinBox(parent)
+            editor.setMinimum(0)
+            editor.setMaximum(65535)
+            editor.setSingleStep(0.1)
+        elif atype is bool:
+            editor = QComboBox(parent)
+            editor.addItem(str(True))
+            editor.addItem(str(False))
+        else:
+            return None
+
+        return editor
+
+    def destroyEditor(self, editor, index):
+        editor.deleteLater()
+
+    def displayText(self, value, locale):
+        return str(value)
+
+    def sizeHint(self, option, index):
+        return QSize(
+            self.tree.width() / 8,
+            32
+        )
+
+
+class ConfigModuleItem(QTreeWidgetItem):
+    pass
+
+
+class ConfigManager(GalacteekTab):
+    def tabSetup(self):
+        self.tree = QTreeWidget(self)
+        self.delegate = ConfigItemDelegate(self.tree)
+        self.tree.setColumnCount(2)
+        self.tree.setHeaderLabels(['Setting', 'Value'])
+        self.tree.setHeaderHidden(True)
+        self.tree.setItemDelegateForColumn(1, self.delegate)
+        self.tree.itemDoubleClicked.connect(
+            partialEnsure(self.onDoubleClick))
+        self.tree.header().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.tree.header().setStretchLastSection(False)
+        self.addToLayout(self.tree)
+        self.setEnabled(False)
+
+        ensureSafe(self.load())
+
+    @property
+    def root(self):
+        return self.tree.invisibleRootItem()
+
+    async def load(self):
+        await self.loadSettings()
+        self.setEnabled(True)
+
+    async def loadSettings(self):
+        self.tree.clear()
+
+        bfont = self.font()
+        bfont.setBold(True)
+        bfont.setPointSize(16)
+
+        for mod in configModules():
+            modItem = ConfigModuleItem(self.root)
+            modItem.setText(0, mod)
+            modItem.setFont(0, bfont)
+
+            await asyncio.sleep(0)
+
+    async def onDoubleClick(self, modItem, col, *args):
+        if not isinstance(modItem, ConfigModuleItem):
+            return
+
+        mod = modItem.text(0)
+
+        if modItem.childCount() == 0:
+            self.setEnabled(False)
+
+            for attr in configModLeafAttributes(mod):
+                value = cGet(attr, mod=mod)
+
+                if isinstance(value, int) or isinstance(value, float):
+                    item = QTreeWidgetItem(modItem)
+                    item.setText(0, attr)
+                    item.setText(1, str(value))
+
+                    item.setData(1, ModRole, mod)
+                    item.setData(1, AttrRole, attr)
+                    item.setData(1, AttrTypeRole, type(value))
+
+                    self.tree.openPersistentEditor(item, 1)
+
+            modItem.setExpanded(True)
+            self.setEnabled(True)

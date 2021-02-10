@@ -1,15 +1,20 @@
+
 from PyQt5.QtGui import QMovie
 from PyQt5.QtGui import QIcon
 
 
 class BaseClip(QMovie):
-    def __init__(self, clipname='rotating-cube.gif', cache=True, speed=100):
+    clipname = 'rotating-cube.gif'
+    speedStart = 100
+    cache = True
+
+    def __init__(self, cache=True, speed=None):
         super(BaseClip, self).__init__(
-            ':share/clips/{}'.format(clipname))
-        self.setSpeed(speed)
+            ':share/clips/{}'.format(self.clipname))
+        self.setSpeed(speed if speed else self.speedStart)
 
         self.setCacheMode(
-            QMovie.CacheAll if cache is True else QMovie.CacheNone)
+            QMovie.CacheAll if self.cache is True else QMovie.CacheNone)
 
     def createIcon(self):
         return QIcon(self.currentPixmap())
@@ -19,15 +24,22 @@ class BaseClip(QMovie):
 
 
 class RotatingCubeClipSimple(BaseClip):
-    def __init__(self, **kw):
-        super().__init__(clipname='rotating-cube.gif', **kw)
+    clipname = 'rotating-cube.gif'
+
+
+class BouncingCubeClip1(BaseClip):
+    clipname = 'bouncing-cube-12fps.gif'
+    speedStart = 220
+
+
+class BouncingCubeClip2(BaseClip):
+    clipname: str = 'bouncing-cube-18fps.gif'
+    speedStart = 160
 
 
 class RotatingCubeRedFlash140d(BaseClip):
-    def __init__(self, **kw):
-        super().__init__(clipname='rotating-cube-redflash-140-6fps.gif', **kw)
+    clipname = 'rotating-cube-redflash-140-6fps.gif'
 
 
 class RotatingCubeClipFunky(BaseClip):
-    def __init__(self, **kw):
-        super().__init__(clipname='funky-cube-1.gif', **kw)
+    clipname = 'funky-cube-1.gif'

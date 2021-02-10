@@ -20,6 +20,7 @@ from galacteek import ensure
 from galacteek import ensureLater
 from galacteek import log
 from galacteek.core import SingletonDecorator
+from galacteek.config import cGet
 
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import cidValid
@@ -654,10 +655,17 @@ class IPIdentifier(DAGOperations):
             self.message('Could not inject new DID document!')
 
     @ipfsOp
-    async def resolve(self, ipfsop, resolveTimeout=30):
+    async def resolve(self, ipfsop, resolveTimeout=None):
+        resolveTimeout = resolveTimeout if resolveTimeout else \
+            cGet('resolve.timeout')
+
+        if self.local:
+            maxLifetime = cGet('resolve.cacheLifetime.local')
+        else:
+            maxLifetime = cGet('resolve.cacheLifetime.default')
+
         useCache = 'always'
         cache = 'always'
-        maxLifetime = 86400 * 20 if self.local else 86400 * 30
 
         self.message('DID resolve: {did} (using cache: {usecache})'.format(
             did=self.ipnsKey, usecache=useCache))
@@ -682,7 +690,7 @@ class IPIdentifier(DAGOperations):
     async def load(self, ipfsop, pin=True, initialCid=None,
                    resolveTimeout=30):
         if not initialCid:
-            resolved = await self.resolve(resolveTimeout=resolveTimeout)
+            resolved = await self.resolve()
 
             if not resolved:
                 self.message('Failed to resolve ?')
@@ -726,7 +734,7 @@ class IPIdentifier(DAGOperations):
         return False
 
     @ipfsOp
-    async def publish(self, ipfsop, timeout=60 * 5, autoRepublish=False):
+    async def publish(self, ipfsop, timeout=None):
         """
         Publish the DID document to the IPNS key
 
@@ -736,22 +744,29 @@ class IPIdentifier(DAGOperations):
         :rtype: bool
         """
 
+        # Get config settings
+        timeout = timeout if timeout else cGet('publish.ipns.timeout')
+        autoRepublish = cGet('publish.autoRepublish')
+        republishDelay = cGet('publish.autoRepublishDelay')
+
+        ipnsLifetime = cGet('publish.ipns.lifetime')
+        ipnsTtl = cGet('publish.ipns.ttl')
+
         if not self.docCid:
             return False
 
         if autoRepublish is True:
             # Auto republish for local IPIDs
             ensureLater(
-                60 * 10,
-                self.publish,
-                autoRepublish=autoRepublish,
-                timeout=timeout
+                republishDelay,
+                self.publish
             )
 
         try:
             if await ipfsop.publish(self.docCid,
                                     key=self.ipnsKey,
-                                    lifetime='96h',
+                                    lifetime=ipnsLifetime,
+                                    ttl=ipnsTtl,
                                     cache='always',
                                     cacheOrigin='ipidmanager',
                                     timeout=timeout):
@@ -881,8 +896,7 @@ class IPIdentifier(DAGOperations):
                     self._document['service'].remove(srv)
                     await self.flush()
         except Exception as err:
-            print(str(err))
-            pass
+            log.debug(str(err))
 
     async def avatarService(self):
         avatarServiceId = self.didUrl(path='/avatar')
@@ -933,10 +947,10 @@ class IPIdentifier(DAGOperations):
 
 @SingletonDecorator
 class IPIDManager:
-    def __init__(self, resolveTimeout=60 * 5):
+    def __init__(self):
         self._managedIdentifiers = {}
         self._lock = asyncio.Lock()
-        self._resolveTimeout = resolveTimeout
+        self._resolveTimeout = cGet('resolve.timeout')
         self._rsaExec = RSAExecutor()
 
         # JSON-LD cache
@@ -1013,7 +1027,7 @@ class IPIDManager:
 
             if localIdentifier:
                 log.debug('Publishing (first load) local IPID: {}'.format(did))
-                ensure(ipid.publish(autoRepublish=True))
+                ensure(ipid.publish())
 
             return ipid
 
@@ -1079,7 +1093,7 @@ class IPIDManager:
         })
 
         # Publish the DID document to the key
-        ensure(identifier.publish(autoRepublish=True))
+        ensure(identifier.publish())
 
         if track:
             await self.track(identifier)
@@ -1127,8 +1141,6 @@ class IPIDManager:
             req['ident_token'] = token
 
         try:
-            # log.debug(f'didAuthPerform, sending request: {req}')
-
             async with streamCtx.session as session:
                 async with session.post(
                         streamCtx.httpUrl('/auth'),

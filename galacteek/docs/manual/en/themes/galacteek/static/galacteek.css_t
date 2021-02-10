@@ -8,12 +8,18 @@
  */
  
 @import url("basic.css");
+
+@font-face {
+    font-family: 'Segoe UI';
+    src: url('../../../../share/static/fonts/SegoeUI.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
  
 /* -- page layout ----------------------------------------------------------- */
  
 body {
-    font-family: "Nobile", sans-serif;
-    font-size: 110%;
+    font: 12pt "Segoe UI";
     background-color: #fff;
     color: #555;
     margin: 0;

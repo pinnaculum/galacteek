@@ -1,3 +1,4 @@
-from galacteek.ui.style import GalacteekStyle
+from galacteek.ui.themes import Theme
 
-style = GalacteekStyle()
+theme = Theme(name='chloride')
+theme.colors.webEngineBackground = 'lightgray'

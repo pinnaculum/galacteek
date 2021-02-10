@@ -236,6 +236,10 @@ def getIconFromMimeType(mimeType, defaultIcon=None):
         defaultIcon if defaultIcon else 'unknown')
 
 
+def iconSizeGet(size):
+    return QSize(size, size)
+
+
 def getHomePath():
     pList = QStandardPaths.standardLocations(QStandardPaths.HomeLocation)
     return pList[0] if len(pList) > 0 else os.getenv('HOME')
@@ -332,7 +336,11 @@ async def questionBoxAsync(title, text, parent=None):
     return box._question_result
 
 
-async def areYouSure():
+def areYouSure():
+    return questionBox('Please confirm', 'Are you sure?')
+
+
+async def areYouSureAsync():
     return await questionBoxAsync('Please confirm', 'Are you sure?')
 
 

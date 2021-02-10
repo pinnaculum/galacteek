@@ -33,6 +33,7 @@ from galacteek.ipfs.search import multiSearch
 from galacteek.ipfs.stat import StatInfo
 from galacteek.dweb.render import renderTemplate
 from galacteek.core import uid4
+from galacteek.core import runningApp
 from galacteek import ensure
 from galacteek import log
 
@@ -178,11 +179,14 @@ class SearchResultsPage(BaseSearchPage):
             parent=None):
         super(SearchResultsPage, self).__init__(parent, profile=profile)
 
+        self.app = runningApp()
+
         self.channel = QWebChannel(self)
         self.handler = IPFSSearchHandler(self)
         self.channel.registerObject('ipfssearch', self.handler)
         self.setWebChannel(self.channel)
-        self.setBackgroundColor(desertStrikeColor)
+        self.setBackgroundColor(
+            QColor(self.app.theme.colors.webEngineBackground))
 
         self.app = QApplication.instance()
 
@@ -311,6 +315,12 @@ class IPFSSearchHandler(QObject):
         self._cancelTasks()
         self.clear.emit()
         self.vPageCurrent += 1
+        self.spawnSearchTask()
+
+    @pyqtSlot()
+    def searchRetry(self):
+        self._cancelTasks()
+        self.clear.emit()
         self.spawnSearchTask()
 
     @pyqtSlot(str)
@@ -496,13 +506,13 @@ class IPFSSearchHandler(QObject):
                         self._tasks.append(
                             ensure(self.sendCyberHit(hit)))
         except asyncio.TimeoutError:
+            log.debug('Search timeout')
             self.searchTimeout.emit(timeout)
             return False
         except asyncio.CancelledError:
+            log.debug('Search cancelled')
             return False
         except Exception as e:
-            import traceback
-            traceback.print_exc()
             log.debug(
                 'IPFSSearch: unknown exception while searching: {}'.format(
                     str(e)))

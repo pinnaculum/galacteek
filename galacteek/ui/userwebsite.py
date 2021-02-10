@@ -66,7 +66,8 @@ class WebsiteAddPostDialog(QDialog):
         self.contents = None
 
         buttonBox = QDialogButtonBox(
-            QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self)
+            QDialogButtonBox.Cancel, self)
+        buttonBox.addButton('Post', QDialogButtonBox.AcceptRole)
 
         mainLayout = QVBoxLayout()
 

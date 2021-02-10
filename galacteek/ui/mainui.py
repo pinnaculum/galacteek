@@ -58,9 +58,9 @@ from . import keys
 from . import settings
 from . import orbital
 from . import textedit
-from . import unixfs
 from . import ipfssearch
 from . import eventlog
+from .files import unixfs
 
 from .dids import DIDExplorer
 from .clips import RotatingCubeClipSimple
@@ -101,13 +101,11 @@ def iPinningItemStatus(pinPath, pinProgress):
         '\nPath: {0}, nodes processed: {1}').format(pinPath, pinProgress)
 
 
-def iAbout():
+def iAboutGalacteek():
     from galacteek.__version__ import __version__
-    return QCoreApplication.translate('GalacteekWindow', '''
-        <p align='center'>
-        <img src=':/share/icons/galacteek.png' />
-        </p>
+    from PyQt5.QtCore import QT_VERSION_STR
 
+    return QCoreApplication.translate('GalacteekWindow', '''
         <p>
         <b>galacteek</b> is a multi-platform Qt5-based browser
         for the distributed web
@@ -119,13 +117,16 @@ def iAbout():
             https://github.com/pinnaculum/galacteek
         </a>
         </p>
-
-        <p>Authors: see
-        <a href="https://github.com/pinnaculum/galacteek/blob/master/AUTHORS.rst">
-            AUTHORS.rst
+        <p>
+        Author:
+        <a href="mailto: BM-87dtCqLxqnpwzUyjzL8etxGK8MQQrhnxnt1@bitmessage">
+        cipres
         </a>
         </p>
-        <p>galacteek version {0}</p>''').format(__version__)  # noqa
+
+        <p>galacteek version: {0}</p>
+        <p>PyQt5 version: {1}</p>
+        ''').format(__version__, QT_VERSION_STR)  # noqa
 
 
 class UserLogsWindow(QMainWindow):
@@ -593,13 +594,16 @@ class CentralStack(QStackedWidget):
 
     def __addWorkspace(self, workspace):
         if not workspace.wsAttached:
+            switchButton = self.wsSwitchButton(workspace)
+
             self.addWidget(workspace)
             workspace.wsAttached = True
+            workspace.wsSwitchButton = switchButton
 
             if isinstance(workspace, TabbedWorkspace) or isinstance(
                     workspace, SingleWidgetWorkspace):
                 self.toolBarWs.add(
-                    self.wsSwitchButton(workspace),
+                    switchButton,
                     dst=workspace.wsSection
                 )
 
@@ -969,10 +973,11 @@ class MainWindow(QMainWindow):
         menu.addMenu(self.menuManual)
         menu.addSeparator()
 
-        dMenu = QMenu('Donate', self)
-        dMenu.addAction('With Liberapay', self.onHelpDonateLiberaPay)
-        dMenu.addAction('With Github Sponsors', self.onHelpDonateGSponsors)
-        dMenu.addAction('With Patreon', self.onHelpDonatePatreon)
+        dMenu = QMenu(iDonate(), self)
+        dMenu.addAction(iDonateLiberaPay(), self.onHelpDonateLiberaPay)
+        dMenu.addAction(iDonateGithubSponsors(), self.onHelpDonateGSponsors)
+        dMenu.addSeparator()
+        dMenu.addAction(iDonateBitcoin(), self.onHelpDonateBitcoin)
         menu.addMenu(dMenu)
 
         menu.addAction('About', self.onAboutGalacteek)
@@ -1007,7 +1012,7 @@ class MainWindow(QMainWindow):
         self.toolbarMain.addWidget(self.qaToolbar)
 
         self.toolbarMain.actionStatuses = self.toolbarMain.addAction(
-            'Statuses')
+            trTodo('Statuses'))
         self.toolbarMain.actionStatuses.setVisible(False)
 
         self.toolbarMain.addWidget(self.toolbarMain.emptySpace)
@@ -1191,6 +1196,12 @@ class MainWindow(QMainWindow):
                         self.toolbarMain.unwanted()
 
         return False
+
+    def changeEvent(self, event):
+        if event.type() == QEvent.LanguageChange:
+            messageBox(iLanguageChanged())
+
+        super().changeEvent(event)
 
     def keyPressEvent(self, event):
         modifiers = event.modifiers()
@@ -1522,7 +1533,7 @@ class MainWindow(QMainWindow):
         self.pinAllGlobalChecked = checked
 
     def onAboutGalacteek(self):
-        runDialog(AboutDialog, iAbout())
+        runDialog(AboutDialog, iAboutGalacteek())
 
     def setConnectionInfoMessage(self, msg):
         self.app.systemTray.setToolTip('{app}: {msg}'.format(
@@ -1669,6 +1680,9 @@ class MainWindow(QMainWindow):
         tab = self.app.mainWindow.addBrowserTab(workspace='@Earth')
         tab.enterUrl(QUrl('https://liberapay.com/galacteek'))
 
+    def onHelpDonateBitcoin(self):
+        ensure(runDialogAsync(BTCDonateDialog))
+
     def onHelpDonatePatreon(self):
         tab = self.app.mainWindow.addBrowserTab(workspace='@Earth')
         tab.enterUrl(QUrl('https://patreon.com/galacteek'))
@@ -1681,7 +1695,8 @@ class MainWindow(QMainWindow):
         icon = getIconIpfsIce()
         tab = browser.BrowserTab(self,
                                  minProfile=minProfile,
-                                 pinBrowsed=pinBrowsed)
+                                 pinBrowsed=pinBrowsed,
+                                 parent=workspace)
         self.registerTab(tab, label, icon=icon, current=current,
                          workspace=workspace,
                          position=position)

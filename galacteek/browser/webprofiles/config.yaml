@@ -1,0 +1,68 @@
+envs:
+  default:
+    defaultWebProfile: 'minimal'
+
+    # Web profiles definition
+    webprofiles:
+      anonymous:
+        descr: Anonymous profile
+
+        settings:
+          javascript:
+            enabled: False
+
+          cacheType: 'nocache'
+          cookiesPolicy: 'deny'
+          offTheRecord: True
+
+        contexts:
+          tor:
+            settings:
+              javascript:
+                enabled: False
+
+      ipfs:
+        descr: IPFS profile
+
+        scripts:
+          - type: 'builtin'
+            name: 'js-ipfs-client'
+
+      web3:
+        descr: Web3 profile
+        scripts:
+          - type: 'builtin'
+            name: 'js-ipfs-client'
+          - type: 'builtin'
+            name: 'ethereum-web3'
+
+      minimal:
+        descr: Minimal profile
+
+      defaultProfile:
+        descr: Default profile
+
+        settings:
+          fullScreenSupport: True
+          plugins: True
+          localStorage: True
+
+          minFontSize: 14
+          defaultFontSize: 14
+
+          xssAuditing: False
+          cacheType: 'nocache'
+          cookiesPolicy: 'allow'
+          offTheRecord: False
+
+          javascript:
+            enabled: True
+            canOpenWindows: False
+            canAccessClipboard: False
+            allowWindowActivation: False
+
+        fonts:
+          standard: 'Inter UI'
+          fixed: 'Inter UI'
+          serif: 'Inter UI'
+          sansSerif: 'Inter UI'
