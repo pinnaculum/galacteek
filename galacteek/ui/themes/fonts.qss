@@ -12,7 +12,6 @@
     src: url('qrc:/share/static/fonts/Inter-UI-Medium.woff2') format('woff2');
 }
 
-
 @font-face {
     font-family: 'Segoe UI';
     src: url('qrc:/share/static/fonts/SegoeUI.woff2') format('woff2');
@@ -21,5 +20,5 @@
 }
 
 * {
-    font: 14pt "Segoe UI";
+    font: 12pt "Segoe UI";
 }

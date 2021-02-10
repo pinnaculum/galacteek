@@ -18,7 +18,7 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_18">
    <property name="spacing">
-    <number>6</number>
+    <number>2</number>
    </property>
    <property name="leftMargin">
     <number>0</number>
@@ -356,16 +356,6 @@
        </property>
       </layout>
      </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QVBoxLayout" name="vLayoutConsole">
-     <property name="spacing">
-      <number>0</number>
-     </property>
-     <property name="sizeConstraint">
-      <enum>QLayout::SetMaximumSize</enum>
-     </property>
     </layout>
    </item>
    <item>

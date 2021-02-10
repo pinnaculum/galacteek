@@ -32,6 +32,10 @@ This is build 42.
   This makes the boot process faster.
 - Change default fonts for web engine widgets
 
+### Fixed
+- Memory leak in the BrowserTab object
+- UTF-8 rendering of blog posts
+
 ## [0.4.41] - 2020-12-04
 ### Added
 - Tor support

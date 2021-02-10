@@ -25,9 +25,12 @@ class AsyncSignal(UserList):
 
     def __init__(self, *signature, **kw):
         super().__init__()
-        self._id = kw.pop('_id', 'no id')
+        self.eventFired = asyncio.Event()
+
+        self._id = kw.pop('_id', 'No ID')
         self._sig = signature
         self._loop = asyncio.get_event_loop()  # loop attached to this signal
+        self._emitCount = 0
 
     def __str__(self):
         return '<AsyncSignal({id}): signature: {!r}>'.format(
@@ -52,6 +55,14 @@ class AsyncSignal(UserList):
             self.emit(*args, **kwargs),
             self._loop
         )
+
+    async def fire(self):
+        from galacteek import log
+        try:
+            self.eventFired.clear()
+            self.eventFired.set()
+        except Exception as err:
+            log.debug(f'Could not fire signal event: {err}')
 
     async def emit(self, *args, **kwargs):
         from galacteek import log
@@ -87,6 +98,9 @@ class AsyncSignal(UserList):
                         self, cbk=receiver, e=str(err)))
                 traceback.print_exc()
                 continue
+            else:
+                self._emitCount += 0
+                await self.fire()
 
 
 def loopTime():
@@ -100,6 +114,20 @@ def ensureGenericCallback(future):
         future.result()
     except Exception:
         traceback.print_exc()
+
+
+def ensureSafe(coro, **kw):
+    loop = kw.pop('loop', asyncio.get_event_loop())
+    callback = kw.pop('futcallback', ensureGenericCallback)
+
+    future = asyncio.run_coroutine_threadsafe(
+        coro,
+        loop
+    )
+    if callback:
+        future.add_done_callback(callback)
+
+    return future
 
 
 def ensure(coro, **kw):
@@ -127,25 +155,19 @@ def ensure(coro, **kw):
     return future
 
 
-def ensureSafe(coro, *kw):
-    loop = asyncio.get_event_loop()
-    return asyncio.run_coroutine_threadsafe(
-        coro,
-        loop
-    )
-
-
-def partialEnsure(coro, *args, **kw):
+def partialEnsureSafe(coro, *args, **kw):
     loop = asyncio.get_event_loop()
 
     def _pwrapper(coro, *args, **kw):
-        # ensure(coro(*args, **kw))
         asyncio.run_coroutine_threadsafe(
             coro(*args, **kw),
             loop
         )
 
     return functools.partial(_pwrapper, coro, *args, **kw)
+
+
+partialEnsure = partialEnsureSafe
 
 
 def soonish(cbk, *args, **kw):
@@ -267,11 +289,15 @@ async def asyncWriteFile(path, data, mode='w+b'):
         return None
 
 
-async def threadExec(fn, *args):
+async def threadExec(fn, *args, processor=None):
     loop = asyncio.get_event_loop()
 
     with QThreadExecutor(1) as texec:
-        return await loop.run_in_executor(texec, fn, *args)
+        res = await loop.run_in_executor(texec, fn, *args)
+        if asyncio.iscoroutinefunction(processor):
+            return await processor(res)
+
+        return res
 
 
 def _all_tasks(loop=None):
@@ -323,12 +349,19 @@ async def cancelAllTasks(*, timeout=None, raise_timeout_error=False):
 
 
 async def asyncRmTree(path: str):
+    from galacteek import log
+
     loop = asyncio.get_event_loop()
 
+    def _rmtree(dirpath):
+        shutil.rmtree(dirpath, ignore_errors=True)
+
     if os.path.isdir(path):
+        log.debug(f'asyncRmTree: {path}')
+
         return await loop.run_in_executor(
             None,
-            shutil.rmtree,
+            _rmtree,
             path
         )
 

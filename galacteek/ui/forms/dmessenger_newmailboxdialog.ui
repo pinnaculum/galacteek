@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>587</width>
-    <height>203</height>
+    <height>212</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -55,9 +55,6 @@
         <string>Icon</string>
        </property>
       </widget>
-     </item>
-     <item row="2" column="1">
-      <widget class="QComboBox" name="iconCombo"/>
      </item>
     </layout>
    </item>

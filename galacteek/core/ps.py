@@ -60,11 +60,15 @@ keyTokensIdent = aiopubsub.Key('g', 'tokens', 'ident')
 keyServices = aiopubsub.Key('g', 'services')
 keySmartContracts = aiopubsub.Key('g', 'smartcontracts', '*')
 
+# The answer to everything
+key42 = aiopubsub.Key('g', '42')
+
 mSubscriber = psSubscriber('main')
 
 
 def hubPublish(key, message):
-    log.debug(f'hubPublish \\ {key} // {message}')
+    log.debug(f'hubPublish ({key}) : {message}')
+
     gHub.publish(key, message)
 
 

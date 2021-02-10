@@ -82,17 +82,18 @@ async def buildIpServicesMenu(ipid: IPIdentifier,
         sMenu.addAction(action)
         sMenu.addSeparator()
 
-        action = QAction(
-            getIcon('blocks-cluster.png'),
-            'Add video call service',
-            sMenu)
+        if 0:
+            action = QAction(
+                getIcon('blocks-cluster.png'),
+                'Add video call service',
+                sMenu)
 
-        action.triggered.connect(functools.partial(
-            addIpServiceVideoCall, ipid
-        ))
+            action.triggered.connect(functools.partial(
+                addIpServiceVideoCall, ipid
+            ))
 
-        sMenu.addAction(action)
-        sMenu.addSeparator()
+            sMenu.addAction(action)
+            sMenu.addSeparator()
 
     async for service in ipid.discoverServices():
         if service.type == IPService.SRV_TYPE_COLLECTION:

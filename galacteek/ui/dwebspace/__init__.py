@@ -29,6 +29,7 @@ from galacteek import cached_property
 
 from galacteek.core.ps import KeyListener
 from galacteek.core.ps import makeKeyService
+from galacteek.core.ps import key42
 
 from galacteek.ui import files
 from galacteek.ui import ipfssearch
@@ -45,6 +46,7 @@ from galacteek.ui.helpers import runDialogAsync
 
 from galacteek.ui.dialogs import DefaultProgressDialog
 
+from galacteek.ui.settings import ConfigManager
 
 from galacteek.ui.messenger import MessengerWidget
 
@@ -182,6 +184,7 @@ class BaseWorkspace(QWidget):
         self.wsDescription = description
         self.wsSection = section
         self.wsAttached = False
+        self.wsSwitchButton = None
         self.wsIcon = icon if icon else getIcon('galacteek.png')
         self.defaultAction = None
         self.wLayout = QVBoxLayout(self)
@@ -696,7 +699,7 @@ class WorkspaceEdition(TabbedWorkspace):
             iHelp(), self.onHelpEditing)
 
         self.actionMarkdownHelp = self.wsAddCustomAction(
-            'help', getIcon('qta:fa5b.markdown'),
+            'help', getIcon('markdown.png'),
             'Have you completely lost your Markdown ?',
             self.onHelpMarkdown)
 
@@ -800,9 +803,29 @@ class WorkspaceMisc(TabbedWorkspace):
             self.pinStatusTab, iPinningStatus(),
             icon=getIcon('pin-zoom.png'))
 
+        self.actionConfigure = self.wsAddCustomAction(
+            'config', getIcon('settings.png'),
+            iSettings(), self.onOpenConfig
+        )
+
+    def onOpenConfig(self):
+
+        mgr = ConfigManager(self.app.mainWindow)
+
+        self.wsRegisterTab(
+            mgr, iSettings(),
+            icon=getIcon('settings.png'),
+            current=True
+        )
+
 
 class WorkspaceMessenger(SingleWidgetWorkspace, KeyListener):
-    listenTo = [makeKeyService('bitmessage')]
+
+    # PS keys we listen to
+    listenTo = [
+        makeKeyService('bitmessage'),
+        key42
+    ]
 
     def __init__(self, stack):
         super().__init__(stack, WS_DMESSENGER,
@@ -812,6 +835,8 @@ class WorkspaceMessenger(SingleWidgetWorkspace, KeyListener):
     def setupWorkspace(self):
         super().setupWorkspace()
 
+        self.wsSwitchButton.setEnabled(False)
+
         self.msger = MessengerWidget()
         self.wLayout.addWidget(self.msger)
 
@@ -819,3 +844,13 @@ class WorkspaceMessenger(SingleWidgetWorkspace, KeyListener):
         log.debug(f'Bitmessage service event: {message}')
 
         await self.msger.setup()
+        self.wsSwitchButton.setEnabled(True)
+
+    async def event_g_42(self, key, message):
+        if message['event'] == 'bmComposeRequest':
+            self.wsSwitch()
+
+            self.msger.composeMessage(
+                message['recipient'],
+                subject=message['subject']
+            )

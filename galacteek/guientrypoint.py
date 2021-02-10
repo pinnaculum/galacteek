@@ -5,6 +5,8 @@ import faulthandler
 import sys
 import platform
 import os
+import gc
+import tracemalloc
 
 from PyQt5.QtCore import QProcess
 from PyQt5.QtWebEngine import QtWebEngine
@@ -49,12 +51,17 @@ class ApplicationStarter:
 def galacteekGui(args):
     progName = args.binaryname if args.binaryname else sys.argv[0]
 
+    gc.enable()
+
     if inPyInstaller():
         folder = pyInstallerBundleFolder()
         binPath = folder.joinpath('bin')
         os.environ['PATH'] = str(binPath) + os.pathsep + os.environ['PATH']
 
         os.chdir(str(folder))
+
+    if args.mallocdebug:
+        tracemalloc.start()
 
     if args.debug:
         faulthandler.enable()
@@ -186,10 +193,26 @@ def buildArgsParser(fromParser=None):
         dest='enablequest',
         help="Enable quest connector")
     parser.add_argument(
+        '--force-fusion-style',
+        action='store_true',
+        default=True,
+        dest='forceFusion',
+        help="Force fusion style")
+    parser.add_argument(
         '--goipfs-debug',
         action='store_true',
         dest='goipfsdebug',
         help="Enable go-ipfs daemon debug output")
+    parser.add_argument(
+        '--malloc-debug',
+        action='store_true',
+        dest='mallocdebug',
+        help="Enable malloc statistics")
+    parser.add_argument(
+        '--memory-profiling',
+        action='store_true',
+        dest='memprofiling',
+        help="Enable memory profiling")
     parser.add_argument(
         '--asyncio-tasks-debug',
         action='store_true',
@@ -201,10 +224,9 @@ def buildArgsParser(fromParser=None):
         default='mainnet',
         dest='ethnet',
         help="ETH network name")
-
     parser.add_argument(
         '--env',
-        default='mainnet',
+        default='main',
         dest='env',
         help="Environment")
 
@@ -225,6 +247,9 @@ def gArgsParse():
 
     os.environ['GALACTEEK_ETHNETWORK_ENV'] = args.ethnet
     os.environ['GALACTEEK_ENV'] = args.env
+
+    if args.forceFusion and 'QT_STYLE_OVERRIDE' not in os.environ:
+        os.environ['QT_STYLE_OVERRIDE'] = 'Fusion'
 
     return args
 

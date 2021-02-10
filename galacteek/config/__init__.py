@@ -1,3 +1,4 @@
+import weakref
 import attr
 import inspect
 from pathlib import Path
@@ -14,6 +15,7 @@ from types import SimpleNamespace
 from .util import configFromFile
 from .util import environment
 from .util import empty
+from .util import dictDotLeaves
 
 
 class NestedNamespace(SimpleNamespace):
@@ -26,7 +28,6 @@ class NestedNamespace(SimpleNamespace):
                 self.__setattr__(key, value)
 
 
-gConf = OmegaConf.create({})
 cCache = {}
 
 configSaveRootPath = None
@@ -83,8 +84,6 @@ def regConfigFromFile(pkgName: str, fpath: str):
         # Merge existing
         eCfgAll, eCfg = configFromFile(str(savePath))
         if eCfg:
-            # cfg = merge(eCfg, cfg)
-            # cfg = merge(cfg, eCfg)
             cfgAll = merge(cfgAll, eCfgAll)
 
     savePath.parent.mkdir(parents=True, exist_ok=True)
@@ -93,7 +92,8 @@ def regConfigFromFile(pkgName: str, fpath: str):
     cCache[pkgName] = {
         'configAll': cfgAll,
         'config': cfg,
-        'path': savePath
+        'path': savePath,
+        'callbacks': []
     }
 
     return cCache[pkgName]
@@ -127,37 +127,53 @@ def regConfigFromPyPkg(pkgName: str):
             regConfigFromFile(modName, fpath)
 
 
+def configModLeafAttributes(pkgName: str):
+    global cCache
+
+    eConf = cCache.get(pkgName, None)
+    if not eConf:
+        return
+
+    conf = eConf['config']
+
+    try:
+        return dictDotLeaves(OmegaConf.to_container(conf))
+    except Exception:
+        return []
+
+
+def configModules():
+    global cCache
+    return cCache.keys()
+
+
+def configLeafAttributes():
+    global cCache
+
+    for modName, cEntry in cCache.items():
+        attrs = configModLeafAttributes(modName)
+
+        for attribute in attrs:
+            yield modName, attribute
+
+
 def cAttr(mod, cfg, attr, value=None):
     environ = environment()
     env = environ['env']
 
-    cfgMove = cfg['envs'].setdefault(env, empty())
+    conf = cfg['envs'].setdefault(env, empty())
 
-    attrs = attr.split('.')
-
-    if len(attrs) == 0:
-        return cfg.get(attr)
-
-    aCur = attrs.pop(0)
-    while aCur:
+    if value is not None:
+        # Set
         try:
-            val = getattr(cfgMove, aCur)
+            OmegaConf.update(conf, attr, value, merge=False)
         except Exception:
-            return None
-
-        try:
-            aCur = attrs.pop(0)
-        except:
-            break
-
-        if val:
-            cfgMove = val
-
-    if value:
-        setattr(cfgMove, aCur, value)
-        configSavePackage(mod)
+            log.debug(f'{mod}: cannot set value for attribute {attr}')
+        else:
+            configSavePackage(mod)
     else:
-        return getattr(cfgMove, aCur)
+        # Get
+        return OmegaConf.select(conf, attr)
 
 
 def callerMod():
@@ -197,6 +213,17 @@ def cSet(attr: str, value, mod=None):
     if cEntry:
         cAttr(mod, cEntry['configAll'], attr, value)
 
+        for ref in cEntry['callbacks']:
+            try:
+                callback = ref()
+                callback()
+            except Exception:
+                pass
+
+
+def cModuleSave():
+    configSavePackage(callerMod())
+
 
 @attr.s(auto_attribs=True)
 class ModuleConfigContext:
@@ -220,6 +247,16 @@ def cModuleContext(mod: str):
         raise Exception(f'No config for module {mod}')
 
 
+def configModRegCallback(callback):
+    global cCache
+
+    pkgName = callerMod()
+
+    eConf = cCache.get(pkgName)
+    if eConf:
+        eConf['callbacks'].append(weakref.ref(callback))
+
+
 def initFromTable():
     from galacteek.config.table import cfgInitTable
 
@@ -228,8 +265,8 @@ def initFromTable():
 
         try:
             regConfigFromPyPkg(pkg)
-        except Exception:
-            log.debug(f'Failed to load config from package: {pkg}')
+        except Exception as err:
+            log.debug(f'Failed to load config from package {pkg}: {err}')
             continue
 
     return True

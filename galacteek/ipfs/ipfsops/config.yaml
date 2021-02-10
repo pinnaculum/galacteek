@@ -1,0 +1,37 @@
+envs:
+  default:
+    ops:
+      # nameResolveStream (streamed resolve)
+      nameResolveStream:
+        # resolve timeout (seconds)
+        timeout: 30
+        # how many records to ask for
+        recordCount: 3
+        # how long we cache results by default (seconds)
+        maxCacheLifetime: 600
+        # recursive lookups
+        recursive: True
+
+      # nameResolveStreamFirst (streamed resolve, first)
+      nameResolveStreamFirst:
+        timeout: 10
+        recordCount: 2
+        maxCacheLifetime: 600
+
+      publish:
+        timeout: 300
+        allowOffline: False
+        lifetime: '48h'
+        ttl: '24h'
+        resolve: True
+
+      resolve:
+        timeout: 300
+        recursive: False
+
+      filesStat:
+        timeout: 5
+
+      nameResolve:
+        timeout: 20
+        recursive: False

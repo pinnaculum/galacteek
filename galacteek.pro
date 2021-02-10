@@ -1,6 +1,6 @@
-SOURCES = galacteek/application.py \
+SOURCES = galacteek/application/__init__.py \
 	galacteek/appsettings.py \
-	galacteek/ui/browser.py \
+	galacteek/ui/browser/__init__.py \
 	galacteek/ui/camera.py \
 	galacteek/ui/chat.py \
 	galacteek/ui/clipboard.py \
@@ -10,14 +10,14 @@ SOURCES = galacteek/application.py \
 	galacteek/ui/dids.py \
 	galacteek/ui/downloads.py \
 	galacteek/ui/feeds.py \
-	galacteek/ui/files.py \
+	galacteek/ui/files/__init__.py \
 	galacteek/ui/hashmarks.py \
 	galacteek/ui/helpers.py \
-	galacteek/ui/history.py \
+	galacteek/ui/history/__init__.py \
 	galacteek/ui/i18n.py \
 	galacteek/ui/imgview.py \
 	galacteek/ui/ipfssearch.py \
-	galacteek/ui/unixfs.py \
+	galacteek/ui/files/unixfs.py \
 	galacteek/ui/keys.py \
 	galacteek/ui/mainui.py \
 	galacteek/ui/mediaplayer.py \
@@ -30,7 +30,7 @@ SOURCES = galacteek/application.py \
 	galacteek/ui/settings.py \
 	galacteek/ui/textedit.py \
 	galacteek/ui/userwebsite.py \
-	galacteek/ui/widgets.py
+	galacteek/ui/widgets/__init__.py
 
 FORMS += galacteek/ui/forms/addkeydialog.ui \
 	galacteek/ui/forms/addhashmarkdialog.ui \
@@ -42,6 +42,7 @@ FORMS += galacteek/ui/forms/addkeydialog.ui \
 	galacteek/ui/forms/chatchannelslist.ui \
 	galacteek/ui/forms/chatroom.ui \
 	galacteek/ui/forms/dagview.ui \
+	galacteek/ui/forms/dmessenger.ui \
 	galacteek/ui/forms/donatedialog.ui \
 	galacteek/ui/forms/files.ui\
 	galacteek/ui/forms/ipfscidinputdialog.ui \
@@ -61,4 +62,5 @@ FORMS += galacteek/ui/forms/addkeydialog.ui \
 	galacteek/ui/forms/timeframeselector.ui
 
 TRANSLATIONS = share/translations/galacteek_en.ts \
-		share/translations/galacteek_fr.ts \
+	share/translations/galacteek_es.ts \
+	share/translations/galacteek_fr.ts

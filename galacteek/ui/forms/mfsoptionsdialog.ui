@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>555</width>
-    <height>380</height>
+    <height>447</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -24,13 +24,29 @@
        <layout class="QGridLayout" name="gridLayout_3">
         <item row="0" column="0">
          <layout class="QGridLayout" name="gridLayout_2">
+          <item row="0" column="1">
+           <widget class="QComboBox" name="dirWrap">
+            <item>
+             <property name="text">
+              <string>Use config rules (default)</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Don't use a directory wrapper</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Use a directory wrapper</string>
+             </property>
+            </item>
+           </widget>
+          </item>
           <item row="0" column="0">
-           <widget class="QCheckBox" name="wrap">
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Wrap added files/directories with a directory&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
+           <widget class="QLabel" name="label">
             <property name="text">
-             <string>Wrap with directory</string>
+             <string>Directory wrapper</string>
             </property>
            </widget>
           </item>

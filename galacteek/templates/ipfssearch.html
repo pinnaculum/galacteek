@@ -1,204 +1,41 @@
 <html>
   <head>
     <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
-
-    <style>
-      body {
-        background-color: #e0dbc8;
-      }
-
-      label {
-        position: absolute;
-        top: 36.66667px;
-        color: rgba(255, 255, 255, 0.5);
-        cursor: text;
-        transition: .25s ease;
-      }
-
-      form {
-        padding: 10px;
-      }
-
-      input {
-        font: 14pt "Montserrat";
-        padding: 20px;
-      }
-
-      div#results {
-        margin-left: 20px;
-        margin-right: 20px;
-      }
-
-      input.waitinput[type=text] {
-        font: 14pt "Montserrat";
-        background-color: #C3D7DF;
-        background-image: url('qrc:///share/icons/cube-orange.png');
-        background-position: 10px 10px;
-        background-size: 32px 32px;
-        background-repeat: no-repeat;
-        border: 1px solid #4a9ea1;
-        border-radius: 4px;
-        width: 42%;
-        height: 50px;
-        margin: 8px 0;
-        padding-left: 50px;
-        padding-right: 50px;
-        box-sizing: border-box;
-      }
-
-      input.searching[type=text] {
-        font: 14pt "Montserrat";
-        background-color: #C3D7DF;
-        background-image: url('qrc:///share/clips/rotating-cube.gif');
-        background-position: 10px 10px;
-        background-size: 32px 32px;
-        background-repeat: no-repeat;
-        border: 1px solid #4a9ea1;
-        border-radius: 4px;
-        width: 42%;
-        height: 50px;
-        margin: 8px 0;
-        padding-left: 50px;
-        box-sizing: border-box;
-      }
-
-      input[type=text]:focus {
-        background-color: lightblue;
-      }
-
-      input[type=button], input[type=submit], input[type=reset] {
-        background-color: #C3D7DF;
-        border: 1px solid #4a9ea1;
-        padding: 8px 8px;
-        text-decoration: none;
-        margin: 4px 2px;
-        cursor: pointer;
-      }
-
-      select {
-        background-color: #C3D7DF;
-        padding: 4px 4px;
-        border: none;
-        border-radius: 4px;
-      }
-
-      .grayout {
-        opacity: 0.6; /* Real browsers */
-        filter: alpha(opacity = 60); /* MSIE */
-      }
-
-      .container {
-        display: grid;
-        grid-template-columns: 3fr 1fr 1fr;
-      }
-
-      ul {
-        list-style-type: none;
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-      }
-
-      .textpreview {
-        margin-left: 10px;
-        margin-top: 10px;
-        background-color: lightgrey;
-        border: 1px solid black;
-        border-radius: 4px;
-        padding: 5px;
-        display: none;
-      }
-
-      .hitdescr {
-        margin-left: 10px;
-      }
-
-      .hit {
-        -webkit-box-shadow: 0 8px 6px -6px black;
-        -moz-box-shadow: 0 8px 6px -6px black;
-        box-shadow: 0 8px 6px -6px black;
-        background-color: #a2b5cd;
-        padding: 8px;
-        margin: 12px;
-        border-radius: 4px;
-      }
-
-      a.hitlink:hover {
-        background-color: #4b9fa2;
-      }
-
-      a.pagecontrol:hover {
-        background-color: #4b9fa2;
-      }
-
-      a {
-        padding: 2px;
-      }
-
-      .unavailable {
-        -webkit-box-shadow: 0 8px 6px -6px black;
-        -moz-box-shadow: 0 8px 6px -6px black;
-        box-shadow: 0 8px 6px -6px black;
-        opacity: 0.6; /* Real browsers */
-        filter: alpha(opacity = 60); /* MSIE */
-        text-align: right;
-      }
-
-      pre {
-        white-space: pre-wrap;
-        white-space: -moz-pre-wrap;
-        white-space: -pre-wrap;
-        white-space: -o-pre-wrap;
-        word-wrap: break-word;
-      }
-
-      .loader {
-        border: 16px solid #f3f3f3; /* Light grey */
-        border-top: 16px solid #3498db; /* Blue */
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        animation: spin 2s linear infinite;
-      }
-
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-    </style>
+    <link rel="stylesheet" type="text/css"
+      href="qrc:///theme/css/search.css"></script>
 
     <script type="text/javascript">
       function renderHit(engine, hit, div) {
         markup = `
     <p style="text-align: left">
       <img src="qrc:///share/icons/${ engine }.png"
-        width="16" height="16"
+        width="32" height="auto"
         title="Search engine: ${ engine }"/>
 
       <a class="hitlink" style="margin-right: 15px" href="${hit.url}" onclick='event.preventDefault(); window.openIpfs("${hit.path}")' >${hit.title}</a>
-      <a href="#" onclick='event.preventDefault(); window.hashmark("${hit.path}")'><img src="qrc:///share/icons/hashmarks.png" width="16" height="16"/></a>
-      <a href="#" onclick='event.preventDefault(); window.ipfssearch.pinObject("${hit.path }")'><img src="qrc:///share/icons/pin.png" width="16" height="16"/></a>
-      <a href="#" onclick='event.preventDefault(); window.ipfssearch.clipboardInput("${hit.path}")'><img src="qrc:///share/icons/clipboard.png" width="16" height="16"/></a>
+      <a href="#" onclick='event.preventDefault(); window.hashmark("${hit.path}")'><img src="qrc:///share/icons/hashmarks.png" width="32" height="auto"/></a>
+      <a href="#" onclick='event.preventDefault(); window.ipfssearch.pinObject("${hit.path }")'><img src="qrc:///share/icons/pin.png" width="32" height="auto"/></a>
+      <a href="#" onclick='event.preventDefault(); window.ipfssearch.clipboardInput("${hit.path}")'><img src="qrc:///share/icons/clipboard.png" width="32" height="auto"/></a>
       `;
 
         if (hit['mimetype'].startsWith('audio') || hit['mimetype'].startsWith('video')) {
           markup += `
         <a href="#" onclick='event.preventDefault(); window.ipfssearch.mplayerQueue("${hit.path}")'>
-        <img src="qrc:/share/icons/multimedia.png" width="16" />
+        <img src="qrc:/share/icons/mediaplayer.png" width="16" />
         </a>`;
         }
 
         if (engine == 'cyber') {
           markup += `
           <img src="qrc:///share/icons/${ engine }.png"
-            width="16" height="16"
+            width="32" height="auto"
             title="Cyberlink ${hit.cyberlink.source} => ${hit.cyberlink.target}"/>
             `;
         }
 
         if (hit['type'] == 'directory' || hit['mimetype'] == 'inode/directory') {
           markup += `
-        <a href="#" onclick='event.preventDefault(); window.exploreIpfs("${hit.path}")'><img src="qrc:///share/icons/folder-open-black.png" width="16" height="16"/></a>
+        <a href="#" onclick='event.preventDefault(); window.exploreIpfs("${hit.path}")'><img src="qrc:///share/icons/folder-open-black.png" width="32" height="auto"/></a>
         `;
         }
 
@@ -326,7 +163,7 @@
         })
 
         window.ipfssearch.searchError.connect(function() {
-          document.getElementById('statusmessage').innerHTML = "<b>Search error</b>"
+          document.getElementById('statusmessage').innerHTML = '<b>Search error</b><a href="#" onclick="event.preventDefault(); window.ipfssearch.searchRetry();">Retry</a>'
           statusWaiting()
         })
 

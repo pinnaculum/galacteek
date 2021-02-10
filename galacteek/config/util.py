@@ -96,3 +96,29 @@ def configFromFile(fpath: Path,
         return None
 
     return configAll, top
+
+
+def dictDotLeaves(dic: dict, parent=None, leaves=None):
+    """
+    For a dictionary, return the list of leaf nodes,
+    using a dot-style notation
+
+    :rtype: list
+
+    """
+    leaves = leaves if isinstance(leaves, list) else []
+
+    # for node in dic.keys():
+    for node, subnode in dic.items():
+        # subnode = dic[node]
+
+        if isinstance(subnode, dict):
+            dictDotLeaves(
+                subnode,
+                parent=f'{parent}.{node}' if parent else node,
+                leaves=leaves
+            )
+        else:
+            leaves.append(f'{parent}.{node}' if parent else node)
+
+    return leaves

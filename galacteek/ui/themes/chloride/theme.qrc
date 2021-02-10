@@ -1,0 +1,8 @@
+<RCC>
+  <qresource prefix="theme_chloride">
+      <file>galacteek.qss</file>
+  </qresource>
+  <qresource prefix="theme">
+      <file>css/search.css</file>
+  </qresource>
+</RCC>

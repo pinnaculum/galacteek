@@ -199,7 +199,7 @@ class build_ui(Command):
             if not lrelease:
                 lrelease = shutil.which('lrelease')
 
-            for lang in ['en', 'fr']:
+            for lang in ['en', 'es', 'fr']:
                 if lrelease:
                     run([lrelease,
                          os.path.join(trdir, 'galacteek_{}.ts'.format(lang)),
@@ -213,8 +213,7 @@ class build_ui(Command):
                  os.path.join(formsdir, 'galacteek_rc.py')])
 
         if 'themes' in tasks:
-            if '*' in themes:
-                themesCompileAll()
+            themesCompileAll()
 
 
 class _build(build):
@@ -277,7 +276,8 @@ setup(
         '': [
             '*.yaml',
             '*.qss',
-            '*.css'
+            '*.css',
+            '*.qrc'
         ],
         'galacteek': [
             'docs/manual/en/html/*.html',

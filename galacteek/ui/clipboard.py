@@ -76,13 +76,13 @@ from .i18n import iEditObject
 
 def iClipboardEmpty():
     return QCoreApplication.translate(
-        'clipboardManager',
+        'ClipboardManager',
         'No valid IPFS CID/path in the clipboard')
 
 
 def iClipboardStackItemsCount(count):
     return QCoreApplication.translate(
-        'clipboardManager',
+        'ClipboardManager',
         '{} item(s) in the clipboard stack').format(count)
 
 
@@ -112,65 +112,65 @@ def iCopyPubGwUrlToClipboard():
 
 def iCopyToClipboard():
     return QCoreApplication.translate(
-        'clipboardManager',
+        'ClipboardManager',
         'Copy to clipboard')
 
 
 def iClipboardNoValidAddress():
     return QCoreApplication.translate(
-        'clipboardManager',
+        'ClipboardManager',
         'No valid address for this item')
 
 
 def iFromClipboard(path):
     return QCoreApplication.translate(
-        'clipboardManager',
+        'ClipboardManager',
         'Clipboard: browse IPFS path: {0}').format(path)
 
 
 def iClipboardClearHistory():
     return QCoreApplication.translate(
-        'clipboardManager',
+        'ClipboardManager',
         'Clear clipboard history')
 
 
 def iClipItemExplore():
-    return QCoreApplication.translate('clipboardManager',
+    return QCoreApplication.translate('ClipboardManager',
                                       'Explore directory')
 
 
 def iClipItemSubscribeToFeed():
-    return QCoreApplication.translate('clipboardManager',
+    return QCoreApplication.translate('ClipboardManager',
                                       'Subscribe to Atom feed')
 
 
 def iClipItemHashmark():
-    return QCoreApplication.translate('clipboardManager',
+    return QCoreApplication.translate('ClipboardManager',
                                       'Hashmark')
 
 
 def iClipItemPin():
-    return QCoreApplication.translate('clipboardManager',
+    return QCoreApplication.translate('ClipboardManager',
                                       'Pin')
 
 
 def iClipItemDownload():
-    return QCoreApplication.translate('clipboardManager',
+    return QCoreApplication.translate('ClipboardManager',
                                       'Download')
 
 
 def iClipItemIpldExplorer():
-    return QCoreApplication.translate('clipboardManager',
+    return QCoreApplication.translate('ClipboardManager',
                                       'Run IPLD Explorer')
 
 
 def iClipItemMarkupRocks():
-    return QCoreApplication.translate('clipboardManager',
+    return QCoreApplication.translate('ClipboardManager',
                                       'Open with Markdown editor')
 
 
 def iClipItemEditText():
-    return QCoreApplication.translate('clipboardManager',
+    return QCoreApplication.translate('ClipboardManager',
                                       'Edit text file')
 
 
@@ -179,63 +179,63 @@ def iClipItemDagView():
 
 
 def iClipboardHistory():
-    return QCoreApplication.translate('clipboardManager', 'Clipboard history')
+    return QCoreApplication.translate('ClipboardManager', 'Clipboard history')
 
 
 def iClipItemBrowse():
-    return QCoreApplication.translate('clipboardManager',
+    return QCoreApplication.translate('ClipboardManager',
                                       'Browse IPFS path')
 
 
 def iClipItemOpen():
-    return QCoreApplication.translate('clipboardManager', 'Open')
+    return QCoreApplication.translate('ClipboardManager', 'Open')
 
 
 def iClipItemOpenWithApp():
-    return QCoreApplication.translate('clipboardManager',
+    return QCoreApplication.translate('ClipboardManager',
                                       'Open with application')
 
 
 def iClipItemOpenWithDefaultApp():
-    return QCoreApplication.translate('clipboardManager',
+    return QCoreApplication.translate('ClipboardManager',
                                       'Open with default system application')
 
 
 def iClipItemSetCurrent():
-    return QCoreApplication.translate('clipboardManager',
+    return QCoreApplication.translate('ClipboardManager',
                                       'Set as current clipboard item')
 
 
 def iClipItemSetAsHome():
-    return QCoreApplication.translate('clipboardManager',
+    return QCoreApplication.translate('ClipboardManager',
                                       'Set as homepage')
 
 
 def iClipItemRemove():
-    return QCoreApplication.translate('clipboardManager',
+    return QCoreApplication.translate('ClipboardManager',
                                       'Remove item')
 
 
 def iClipItemSwitch(num):
     return QCoreApplication.translate(
-        'clipboardManager',
+        'ClipboardManager',
         'Switch to item {} in the stack').format(num)
 
 
 def iClipboardStack():
-    return QCoreApplication.translate('clipboardManager',
+    return QCoreApplication.translate('ClipboardManager',
                                       'Clipboard stack')
 
 
 def iClipStackQrEncrypted():
     return QCoreApplication.translate(
-        'clipboardManager',
+        'ClipboardManager',
         'QR codes: encode clipboard stack to image (encrypted)')
 
 
 def iClipStackQrPublic():
     return QCoreApplication.translate(
-        'clipboardManager',
+        'ClipboardManager',
         'QR codes: encode clipboard stack to image (clear)')
 
 

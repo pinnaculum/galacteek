@@ -1,6 +1,6 @@
 
-Welcome to the InterPlanetary Madness !
-=======================================
+Welcome to the dweb
+===================
 
 [![bafkreick5f6rcyowd4b7n3rseg3dfki2m7kul2alhs4te4wbbvkwfvya2y](ipfs://bafkreick5f6rcyowd4b7n3rseg3dfki2m7kul2alhs4te4wbbvkwfvya2y){: style="width:128px; height:128px" }](ipfs://bafkreick5f6rcyowd4b7n3rseg3dfki2m7kul2alhs4te4wbbvkwfvya2y)
 
@@ -15,8 +15,11 @@ Donate
 **galacteek** will always be opensource and hopefully free of charge.
 If you use the software and want to contribute to its improvement,
 please [make a donation](https://liberapay.com/galacteek/donate)
-(also with [GitHub](https://github.com/sponsors/pinnaculum) and
-[Patreon](https://www.patreon.com/galacteek))
+(also with [GitHub](https://github.com/sponsors/pinnaculum))
+
+You can also donate via Bitcoin at the following address:
+
+**1Cgwbzi6R4TgWp7AG67BPwYY1iz15ATR7A**
 
 How to use
 ----------
@@ -35,6 +38,9 @@ For sharing files, check out the
 
 - **Earth** workspace: dedicated to browsing. All content
 tagged with @Earth is automatically opened here.
+
+- **Messenger** workspace: allows you to send messages with the
+BitMessage protocol.
 
 - **Peers**: lists the peers you're connected with, and contains
 tools to communicate, like the encrypted chat and the Atom

@@ -777,7 +777,7 @@ class SeedsTrackerTab(GalacteekTab):
     async def onSeedsDagReset(self, ipfsop, *a):
         profile = ipfsop.ctx.currentProfile
 
-        if await areYouSure():
+        if await areYouSureAsync():
             seedsDag = profile.dagSeedsAll
             await seedsDag._clear()
 

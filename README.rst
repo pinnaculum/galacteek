@@ -42,6 +42,8 @@ See the releases_ page for all releases.
 Sponsor this project
 ====================
 
+See the sponsor_ page for all the possible ways to donate to this project.
+
 .. image:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/share/icons/github-mark.png
     :target: https://github.com/sponsors/pinnaculum
     :alt: Sponsor with Github Sponsors
@@ -51,13 +53,6 @@ Sponsor this project
     :target: https://liberapay.com/galacteek/donate
     :alt: Sponsor with Liberapay
     :align: left
-
-.. image:: https://github.githubassets.com/images/modules/site/icons/funding_platforms/patreon.svg
-    :target: https://patreon.com/galacteek
-    :alt: Sponsor with Patreon
-    :align: left
-    :width: 90
-    :height: 90
 
 Screencasts
 ===========
@@ -220,6 +215,7 @@ from the ipfs-logo_ project's repository is included, unchanged.
 .. _aioipfs: https://gitlab.com/cipres/aioipfs
 .. _aiomonitor: https://github.com/aio-libs/aiomonitor
 .. _asyncqt: https://github.com/gmarull/asyncqt
+.. _sponsor: https://github.com/pinnaculum/galacteek/SPONSOR.rst
 .. _quamash: https://github.com/harvimt/quamash
 .. _go-ipfs: https://github.com/ipfs/go-ipfs
 .. _dist.ipfs.io: https://dist.ipfs.io
@@ -239,4 +235,4 @@ from the ipfs-logo_ project's repository is included, unchanged.
 .. _IPID: https://github.com/jonnycrunch/ipid
 .. _wasmer: https://wasmer.io/
 .. _cyber: https://cybercongress.ai
-.. _Bitmessage: https://wiki.bitmessage.org/Bitmessage%20Technical%20Paper.pdf
+.. _Bitmessage: https://wiki.bitmessage.org/

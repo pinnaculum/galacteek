@@ -1,7 +1,7 @@
 from galacteek import log
 from galacteek.dweb.page import BaseHandler
 from galacteek.dweb.page import pyqtSlot
-from galacteek.core.aservice import cached_property
+from galacteek.services import cached_property
 
 from mode.utils.objects import cached_property  # noqa
 

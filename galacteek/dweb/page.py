@@ -6,6 +6,7 @@ from PyQt5.QtWebChannel import QWebChannel
 from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal
 from PyQt5.QtCore import QJsonValue, QVariant, QUrl
 from PyQt5.QtCore import QTimer
+from PyQt5.QtGui import QColor
 
 from PyQt5.QtWidgets import QApplication
 
@@ -13,6 +14,7 @@ from galacteek.ui.widgets import GalacteekTab
 from galacteek.ui.helpers import questionBox
 from galacteek import ensure
 from galacteek import log
+from galacteek.core import runningApp
 from galacteek.dweb.render import renderTemplate
 from galacteek.dweb.webscripts import ipfsClientScripts
 from galacteek.dweb.webscripts import orbitScripts
@@ -267,8 +269,13 @@ class PDFViewerPage(IPFSPage):
 
 
 class DWebView(QWebEngineView):
+    """
+    TODO: deprecate asap
+    """
+
     def __init__(self, page=None, parent=None):
         super(DWebView, self).__init__(parent)
+        self.app = runningApp()
         self.channel = QWebChannel()
         self.p = page
         self.show()
@@ -286,6 +293,8 @@ class DWebView(QWebEngineView):
         if page:
             self._currentPage = page
             self.setPage(page)
+            self.page().setBackgroundColor(
+                QColor(self.app.theme.colors.webEngineBackground))
 
 
 class WebTab(GalacteekTab):

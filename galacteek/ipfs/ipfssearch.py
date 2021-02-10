@@ -1,6 +1,7 @@
 
 from galacteek import log
 from galacteek.core.asynclib import clientSessionWithProxy
+from galacteek.config import cParentGet
 
 import aiohttp
 import async_timeout
@@ -58,7 +59,8 @@ async def searchPage(query, page, filters={}, sslverify=True,
 
 async def getPageResults(query, page, filters={}, sslverify=True,
                          proxyUrl=None,
-                         timeout=12):
+                         timeout=None):
+    timeout = cParentGet('search.ipfsSearch.pageResultsTimeout')
     try:
         with async_timeout.timeout(timeout):
             results = await searchPage(query, page, filters=filters,
@@ -70,10 +72,12 @@ async def getPageResults(query, page, filters={}, sslverify=True,
         return emptyResults
 
 
-async def objectMetadata(cid, timeout=10, sslverify=True):
+async def objectMetadata(cid, timeout=None, sslverify=True):
     """
     Returns object metadata for a CID from ipfs-search.com
     """
+
+    timeout = cParentGet('search.ipfsSearch.getMetadataTimeout')
     try:
         with async_timeout.timeout(timeout):
             async with aiohttp.ClientSession() as session:

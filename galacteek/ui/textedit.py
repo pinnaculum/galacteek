@@ -84,70 +84,70 @@ from .i18n import *
 
 
 def iSave():
-    return QCoreApplication.translate('textEditor',
+    return QCoreApplication.translate('TextEditor',
                                       'Save')
 
 
 def iAddNewFile():
-    return QCoreApplication.translate('textEditor',
+    return QCoreApplication.translate('TextEditor',
                                       'Create new file')
 
 
 def iImportFile():
-    return QCoreApplication.translate('textEditor',
+    return QCoreApplication.translate('TextEditor',
                                       'Import file')
 
 
 def iImportError():
-    return QCoreApplication.translate('textEditor',
+    return QCoreApplication.translate('TextEditor',
                                       'Import error')
 
 
 def iImportDir():
-    return QCoreApplication.translate('textEditor',
+    return QCoreApplication.translate('TextEditor',
                                       'Import directory')
 
 
 def iAddNewDir():
-    return QCoreApplication.translate('textEditor',
+    return QCoreApplication.translate('TextEditor',
                                       'Create new directory')
 
 
 def iEdit():
-    return QCoreApplication.translate('textEditor',
+    return QCoreApplication.translate('TextEditor',
                                       'Edit')
 
 
 def iFilesystemView():
-    return QCoreApplication.translate('textEditor',
+    return QCoreApplication.translate('TextEditor',
                                       'Filesystem view')
 
 
 def iEditorView():
-    return QCoreApplication.translate('textEditor',
+    return QCoreApplication.translate('TextEditor',
                                       'Editor view')
 
 
 def iPreview():
-    return QCoreApplication.translate('textEditor',
+    return QCoreApplication.translate('TextEditor',
                                       'Preview')
 
 
 def iObjectDiff():
-    return QCoreApplication.translate('textEditor',
+    return QCoreApplication.translate('TextEditor',
                                       'Object diff')
 
 
 def iAutoMarkdownToHtmlSave():
     return QCoreApplication.translate(
-        'textEditor',
+        'TextEditor',
         'Automatic markdown to HTML saving'
     )
 
 
 def iOfflineMode():
     return QCoreApplication.translate(
-        'textEditor',
+        'TextEditor',
         'Offline mode (announce your content manually later)')
 
 

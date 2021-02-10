@@ -1,6 +1,10 @@
+import base64
+import io
 import aioipfs
 import os.path
 import os
+import math
+
 from pathlib import Path
 
 from PyQt5.QtWidgets import QSizePolicy
@@ -43,6 +47,7 @@ from PyQt5.QtGui import QRegExpValidator
 
 from galacteek import GALACTEEK_NAME
 from galacteek import ensure
+from galacteek import ensureSafe
 from galacteek import partialEnsure
 from galacteek import logUser
 from galacteek import database
@@ -50,13 +55,18 @@ from galacteek import database
 from galacteek.core.ipfsmarks import *
 from galacteek.core.ipfsmarks import categoryValid
 from galacteek.core.iptags import ipTagsFormat
+from galacteek.core import readQrcFileRaw
+
 from galacteek.browser.schemes import isEnsUrl
 from galacteek.browser.schemes import isHttpUrl
+
 from galacteek.ipfs import cidhelpers
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.appsettings import *
+
+from galacteek.crypto.qrcode import ZbarCryptoCurrencyQrDecoder
 
 from .forms import ui_addhashmarkdialog
 from .forms import ui_addfeeddialog
@@ -74,6 +84,7 @@ from .forms import ui_browserfeaturereqdialog
 from .forms import ui_captchachallengedialog
 from .forms import ui_videochatackwaitdialog
 from .forms import ui_videochatackwait
+from .forms import ui_donatecryptodialog
 
 from .helpers import *
 from .widgets import ImageWidget
@@ -82,7 +93,7 @@ from .widgets import IconSelector
 from .widgets import PlanetSelector
 from .widgets import LabelWithURLOpener
 from .widgets import AnimatedLabel
-from .clips import RotatingCubeClipSimple
+from .clips import BouncingCubeClip1
 from .colors import *
 
 from .i18n import iTitle
@@ -95,6 +106,7 @@ from .i18n import iHashmarkIPTagsEdit
 from .i18n import iDownload
 from .i18n import iDownloadOpenDialog
 from .i18n import iOpen
+from .i18n import iDonateBitcoin
 
 
 def boldLabelStyle():
@@ -489,6 +501,92 @@ class DonateDialog(QDialog):
         self.done(1)
 
 
+class BTCDonateDialog(BaseDialog):
+    uiClass = ui_donatecryptodialog.Ui_DonateCrypdoDialog
+
+    qrQrcPath = ":/share/crypto/btc/btc-donate-001.png"
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.decoder = ZbarCryptoCurrencyQrDecoder()
+        self._imageBuffer = None
+
+        self.setMinimumSize(
+            self.app.desktopGeometry.width() / 2,
+            (2 * self.app.desktopGeometry.height()) / 3
+        )
+        self.setWindowTitle(iDonateBitcoin())
+        self.changeQrCode(self.qrQrcPath)
+
+        self.ui.closeButton.clicked.connect(self.accept)
+        self.ui.copyAddress.clicked.connect(self.onCopyAddress)
+
+        ensureSafe(self.scanQr())
+
+    @property
+    def address(self):
+        return self.ui.cryptoAddress.text()
+
+    @property
+    def image(self):
+        return self._imageBuffer
+
+    def changeQrCode(self, url):
+        self.ui.qrCode.setText(
+            f'<img src="{url}" width="256" height="256"></img>'
+        )
+
+    def onCopyAddress(self):
+        if self.address:
+            self.app.setClipboardText(self.address)
+
+    async def onAmountChanged(self, value: float, *a):
+        from galacteek.crypto.qrcode import CCQrEncoder
+
+        try:
+            encoder = CCQrEncoder()
+            uri = f'bitcoin:{self.address}?amount={value}'
+            img = await encoder.encode(uri)
+
+            buff = io.BytesIO()
+            img.save(buff, format='PNG')
+            buff.seek(0, 0)
+
+            url = 'data:image/png;base64, {}'.format(
+                base64.b64encode(buff.getvalue()).decode()
+            )
+        except Exception:
+            pass
+        else:
+            self._imageBuffer = buff
+            self.changeQrCode(url)
+
+            await self.scanQr(setAmount=False)
+
+    async def scanQr(self, setAmount=True):
+        data = self.image if self.image else readQrcFileRaw(self.qrQrcPath)
+        if not data:
+            return
+
+        addrs = self.decoder.decode(data)
+        if len(addrs) > 0:
+            cc = addrs.pop()
+
+            self.ui.ccTypeLabel.setText(f"<b>{cc['currency']}</b>")
+            self.ui.cryptoAddress.setText(cc['address'])
+
+            if cc['amount'] and setAmount:
+                self.ui.amount.setValue(cc['amount'])
+            else:
+                self.ui.amount.setEnabled(False)
+                self.ui.amount.setValue(0)
+
+        disconnectSig(self.ui.amount.valueChanged, self.onAmountChanged)
+        self.ui.amount.valueChanged.connect(
+            partialEnsure(self.onAmountChanged))
+
+
 class ChooseProgramDialog(QInputDialog):
     def __init__(self, cmd=None, parent=None):
         super().__init__(parent)
@@ -755,22 +853,60 @@ class AddMultihashPyramidDialog(QDialog):
 class AboutDialog(QDialog):
     def __init__(self, text, parent=None):
         super().__init__(parent)
+        self.setWindowTitle('About')
 
         buttonBox = QDialogButtonBox(
             QDialogButtonBox.Ok, self)
         buttonBox.accepted.connect(self.accept)
         buttonBox.setCenterButtons(True)
 
-        self.setWindowTitle('About')
+        self.cube = AnimatedLabel(BouncingCubeClip1())
+
+        aboutLabel = LabelWithURLOpener(text, parent=self)
+        aboutLabel.linkActivated.connect(self.accept)
 
         layout = QVBoxLayout()
-        layout.addWidget(LabelWithURLOpener(text, parent=self))
+        layout.addWidget(self.cube, 0, Qt.AlignCenter)
+        layout.addWidget(aboutLabel)
         layout.addWidget(buttonBox)
 
         self.setLayout(layout)
+        self.cube.startClip()
+        self.task = ensure(self.cubeSpinner())
+
+    async def cubeSpinner(self):
+        """
+        Make the cube spin faster/slower, based on a sinus curve
+        """
+        try:
+            loop = asyncio.get_event_loop()
+            startlt = loop.time()
+
+            while True:
+                await asyncio.sleep(1)
+                lt = loop.time()
+
+                mul = divmod(lt - startlt, 4)[0]
+                afactor = min(mul * 10, 300)
+
+                s = 130 + (max(-0.1, math.sin(lt / 2)) * (100 + afactor))
+
+                self.cube.clip.setSpeed(s)
+        except (asyncio.CancelledError, Exception):
+            pass
+
+    def _cancel(self):
+        if self.task:
+            self.task.cancel()
+            self.task = None
 
     def accept(self):
+        self._cancel()
         self.done(1)
+
+    def hideEvent(self, event):
+        self._cancel()
+        super().hideEvent(event)
 
 
 class QSchemeCreateMappingDialog(QDialog):
@@ -1144,13 +1280,21 @@ class MFSImportOptionsDialog(QDialog):
         self.ui.buttonBox.rejected.connect(self.reject)
 
     def options(self):
+        wrapChoice = self.ui.dirWrap.currentIndex()
+        if wrapChoice == 0:
+            wrap = None
+        elif wrapChoice == 1:
+            wrap = False
+        elif wrapChoice == 2:
+            wrap = True
+
         return {
             'hiddenFiles': self.ui.hiddenFiles.isChecked(),
             'useGitIgnore': self.ui.gitignore.isChecked(),
             'useFilestore': self.ui.filestore.isChecked(),
             'tsMetadata': self.ui.tsMetadata.isChecked(),
             'rawLeaves': self.ui.rawLeaves.isChecked(),
-            'wrap': self.ui.wrap.isChecked()
+            'wrap': wrap
         }
 
     def accept(self):
@@ -1432,7 +1576,7 @@ class DefaultProgressDialog(QWidget):
         super().__init__(parent)
         self.setObjectName('statusProgressDialog')
         self.vl = QVBoxLayout(self)
-        self.cube = AnimatedLabel(RotatingCubeClipSimple())
+        self.cube = AnimatedLabel(BouncingCubeClip1())
         self.pBar = QProgressBar()
         self.status = QLabel()
         self.status.setObjectName('statusProgressLabel')
@@ -1444,8 +1588,9 @@ class DefaultProgressDialog(QWidget):
         self.vl.addWidget(self.pBar, 0, Qt.AlignCenter)
         self.vl.addItem(
             QSpacerItem(10, 50, QSizePolicy.Expanding, QSizePolicy.Expanding))
+        self.showProgress(False)
 
-        self.cube.clip.setScaledSize(QSize(128, 128))
+        self.cube.clip.setScaledSize(QSize(256, 256))
         self.setContentsMargins(0, 0, 0, 0)
         self.vl.setContentsMargins(0, 0, 0, 0)
 
@@ -1458,8 +1603,14 @@ class DefaultProgressDialog(QWidget):
     def log(self, text):
         self.status.setText(text)
 
+    def showProgress(self, show=True):
+        self.pBar.setVisible(show)
+
     def progress(self, p: int):
         self.pBar.setValue(p)
+
+        if p in range(0, 100):
+            self.showProgress(True)
 
     def paintEventNoNeed(self, event):
         from PyQt5.QtGui import QPainter, QPen

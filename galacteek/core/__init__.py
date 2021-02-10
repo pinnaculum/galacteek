@@ -58,7 +58,7 @@ def pkgResourcesListDir(pkg: str, rscName: str):
 
 def pkgResourcesDirEntries(pkg: str):
     for entry in pkgResourcesListDir(pkg, ''):
-        if entry.startswith('__'):
+        if entry.startswith('_'):
             continue
 
         yield entry
@@ -83,6 +83,16 @@ def readQrcTextFile(path):
         qFile.open(QFile.ReadOnly)
         ba = qFile.readAll()
         return ba.data().decode()
+    except BaseException:
+        pass
+
+
+def readQrcFileRaw(path):
+    try:
+        qFile = QFile(path)
+        qFile.open(QFile.ReadOnly)
+        ba = qFile.readAll()
+        return bytes(ba.data())
     except BaseException:
         pass
 

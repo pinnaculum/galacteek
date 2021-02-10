@@ -1,0 +1,20 @@
+envs:
+  default:
+    unixfs:
+      iconSize: 32
+
+      directoryView:
+        mode: 'list'
+
+      list:
+        # Timeout for the entry generator when doing streamed UnixFS listing
+        entryFetchTimeout: 30
+        entryBatchSize: 64
+        entryProgressEvery: 32
+
+        entryProcessSleep: 0.02
+        entryListSleep: 0.05
+
+    fileManager:
+      mfsIconSize: 32
+      pathSelectorIconSize: 32

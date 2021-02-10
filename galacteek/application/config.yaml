@@ -1,0 +1,10 @@
+envs:
+  default:
+    language: en
+
+    languagesAvailable:
+      - code: en
+        displayName: 'English'
+
+      - code: es
+        displayName: 'Spanish (Castilian)'
