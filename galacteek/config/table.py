@@ -1,18 +1,25 @@
 cfgInitTable = [
     'galacteek.application',
     'galacteek.core.ctx',
+
     'galacteek.did.ipid',
+
     'galacteek.ipfs',
     'galacteek.ipfs.ipfsops',
+    'galacteek.ipfs.pubsub',
+    'galacteek.ipfs.pubsub.srvs',
+
     'galacteek.services.net.bitmessage',
     'galacteek.services.net.tor',
-    'galacteek.browser.schemes',
+
     'galacteek.ui',
     'galacteek.ui.files',
     'galacteek.ui.history',
     'galacteek.ui.messenger',
+    'galacteek.ui.widgets',
 
     # browser
+    'galacteek.browser.schemes',
     'galacteek.browser.webprofiles',
 
     'galacteek.ui.browser'

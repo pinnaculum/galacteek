@@ -1,7 +1,6 @@
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWebEngineWidgets import QWebEngineProfile
 from PyQt5.QtWebEngineWidgets import QWebEngineSettings
-from PyQt5.QtWebEngineCore import QWebEngineUrlRequestInterceptor
 
 from galacteek.dweb.webscripts import ethereumClientScripts
 
@@ -13,10 +12,14 @@ from galacteek.browser.schemes import SCHEME_IPFS
 from galacteek.browser.schemes import SCHEME_IPNS
 from galacteek.browser.schemes import SCHEME_Q
 # from galacteek.browser.schemes import SCHEME_GALACTEEK
-from galacteek.browser.schemes import isIpfsUrl
+
+from galacteek import log
+from galacteek.core import runningApp
 
 from galacteek.config import cGet
 from galacteek.config import cSet
+from galacteek.config import configModRegCallback
+from galacteek.config import merge
 
 
 WP_NAME_ANON = 'anonymous'
@@ -32,44 +35,42 @@ webProfilesPrio = {
 }
 
 
-class IPFSRequestInterceptor(QWebEngineUrlRequestInterceptor):
-    """
-    IPFS requests interceptor
-    """
-
-    def interceptRequest(self, info):
-        url = info.requestUrl()
-
-        if url and url.isValid() and isIpfsUrl(url):
-            path = url.path()
-
-            # Force Content-type for JS modules
-            if path and path.endswith('.js'):
-                info.setHttpHeader(
-                    'Content-Type'.encode(),
-                    'text/javascript'.encode()
-                )
-
-
 class BaseProfile(QWebEngineProfile):
-    def __init__(self, name, config, parent=None):
-        super(BaseProfile, self).__init__(
-            name, parent)
+    def __init__(self,
+                 defaultProfile,
+                 name=None,
+                 otr=False,
+                 storageName=None,
+                 parent=None):
+        if storageName:
+            super(BaseProfile, self).__init__(
+                storageName, parent=parent)
+        else:
+            super(BaseProfile, self).__init__(
+                parent=parent)
 
-        self.config = config
         self.profileName = name
+        self.defaults = defaultProfile
 
         self.app = QApplication.instance()
         self.webScripts = self.scripts()
         self.webSettings = self.settings()
 
-        self.iceptor = IPFSRequestInterceptor(self)
-        self.setUrlRequestInterceptor(self.iceptor)
+        if self.app.browserRuntime.ipfsCeptor:
+            self.setUrlRequestInterceptor(self.app.browserRuntime.ipfsCeptor)
+
         self.installIpfsSchemeHandlers()
         self.installScripts()
 
         self.downloadRequested.connect(
             self.app.downloadsManager.onDownloadRequested)
+
+    @property
+    def config(self):
+        return merge(
+            self.defaults,
+            cGet(f'webProfiles.{self.profileName}')
+        )
 
     def installHandler(self, scheme, handler):
         sch = scheme if isinstance(scheme, bytes) else scheme.encode()
@@ -114,13 +115,13 @@ class BaseProfile(QWebEngineProfile):
         self.installHandler(SCHEME_Q, self.app.qSchemeHandler)
         # self.installHandler(SCHEME_GALACTEEK, self.app.gSchemeHandler)
 
-    def profileSetting(self, defaults, name, default=False):
+    def profileSetting2(self, defaults, name, default=False):
         return self.config.settings.get(
             name,
             defaults.settings.get(name, default)
         )
 
-    def profileJsSetting(self, defaults, name, default=False):
+    def profileJsSetting2(self, defaults, name, default=False):
         return self.config.settings.javascript.get(
             name,
             defaults.settings.javascript.get(name, default)
@@ -129,20 +130,35 @@ class BaseProfile(QWebEngineProfile):
     def profileFont(self, name, default=None):
         return self.config.fonts.get(name, default)
 
-    def configure(self, defaults={}):
+    def configure(self):
+        config = self.config
+        defaults = self.defaults
+
+        def profileSetting(name, default=False):
+            return config.settings.get(
+                name,
+                defaults.settings.get(name, default)
+            )
+
+        def profileJsSetting(name, default=False):
+            return config.settings.javascript.get(
+                name,
+                defaults.settings.javascript.get(name, default)
+            )
+
         self.webSettings.setAttribute(
             QWebEngineSettings.FullScreenSupportEnabled,
-            self.profileSetting(defaults, 'fullScreenSupport')
+            profileSetting('fullScreenSupport')
         )
 
         self.webSettings.setAttribute(
             QWebEngineSettings.PluginsEnabled,
-            self.profileSetting(defaults, 'plugins')
+            profileSetting('plugins')
         )
 
         self.webSettings.setAttribute(
             QWebEngineSettings.LocalStorageEnabled,
-            self.profileSetting(defaults, 'localStorage', True)
+            profileSetting('localStorage', True)
         )
 
         self.webSettings.setFontFamily(
@@ -159,17 +175,18 @@ class BaseProfile(QWebEngineProfile):
         )
         self.webSettings.setFontSize(
             QWebEngineSettings.MinimumFontSize,
-            self.profileSetting(defaults, 'minFontSize', 12)
+            profileSetting('minFontSize', 12)
         )
         self.webSettings.setFontSize(
             QWebEngineSettings.DefaultFontSize,
-            self.profileSetting(defaults, 'defaultFontSize', 12)
+            profileSetting('defaultFontSize', 12)
         )
         self.webSettings.setUnknownUrlSchemePolicy(
             QWebEngineSettings.DisallowUnknownUrlSchemes
         )
 
-        cacheType = self.profileSetting(defaults, 'cacheType', 'nocache')
+        # cacheType = self.profileSetting(defaults, 'cacheType', 'nocache')
+        cacheType = profileSetting('cacheType', 'nocache')
 
         if cacheType == 'nocache':
             self.setHttpCacheType(QWebEngineProfile.NoCache)
@@ -180,8 +197,7 @@ class BaseProfile(QWebEngineProfile):
         else:
             self.setHttpCacheType(QWebEngineProfile.NoCache)
 
-        cookiesPolicy = self.profileSetting(
-            defaults, 'cookiesPolicy', 'none')
+        cookiesPolicy = profileSetting('cookiesPolicy', 'none')
 
         if cookiesPolicy == 'none':
             self.setPersistentCookiesPolicy(
@@ -194,42 +210,77 @@ class BaseProfile(QWebEngineProfile):
                 QWebEngineProfile.ForcePersistentCookies)
 
         self.webSettings.setAttribute(
+            QWebEngineSettings.XSSAuditingEnabled,
+            profileSetting('xssAuditing')
+        )
+        self.webSettings.setAttribute(
+            QWebEngineSettings.LocalContentCanAccessRemoteUrls,
+            profileSetting('localContentCanAccessRemoteUrls')
+        )
+        self.webSettings.setAttribute(
+            QWebEngineSettings.FocusOnNavigationEnabled,
+            profileSetting('focusOnNavigation')
+        )
+        self.webSettings.setAttribute(
+            QWebEngineSettings.WebGLEnabled,
+            profileSetting('webGL')
+        )
+        self.webSettings.setAttribute(
+            QWebEngineSettings.Accelerated2dCanvasEnabled,
+            profileSetting('accelerated2dCanvas')
+        )
+
+        self.webSettings.setAttribute(
             QWebEngineSettings.JavascriptEnabled,
-            self.profileJsSetting(defaults, 'enabled')
+            profileJsSetting('enabled')
         )
         self.webSettings.setAttribute(
             QWebEngineSettings.JavascriptCanOpenWindows,
-            self.profileJsSetting(defaults, 'canOpenWindows')
+            profileJsSetting('canOpenWindows')
         )
         self.webSettings.setAttribute(
             QWebEngineSettings.JavascriptCanAccessClipboard,
-            self.profileJsSetting(defaults, 'canAccessClipboard')
+            profileJsSetting('canAccessClipboard')
         )
 
-        self.webSettings.setAttribute(
-            QWebEngineSettings.XSSAuditingEnabled,
-            self.profileSetting(defaults, 'xssAuditing')
-        )
+
+def onProfilesChanged():
+    app = runningApp()
+
+    for wpName, wp in app.webProfiles.items():
+        log.warning(f'Reconfiguring webprofile: {wpName}')
+
+        wp.configure()
 
 
 def wpRegisterFromConfig(app):
-    from galacteek.config import merge
+    """
+    Initialize all the configured web profiles
+    """
 
-    cfgWpList = cGet('webprofiles')
+    cfgWpList = cGet('webProfiles')
 
-    defaults = cfgWpList.get('defaultProfile', None)
+    defaults = cfgWpList.get('defaultProfile')
 
     for wpName, config in cfgWpList.items():
         if wpName == 'defaultProfile':
             continue
 
-        if defaults:
-            config = merge(config, defaults)
-            cfgWpList[wpName] = config
+        otr = cGet(f'webProfiles.{wpName}.settings.offTheRecord')
+        sName = cGet(f'webProfiles.{wpName}.storageName')
 
-            cSet(f'webprofiles.{wpName}', config, merge=True)
-
-        wp = BaseProfile(wpName, config, parent=app)
-        wp.configure(defaults=defaults)
+        wp = BaseProfile(
+            defaults,
+            otr=True if otr else False,
+            storageName=sName,
+            name=wpName,
+            parent=app
+        )
+        wp.configure()
 
         app.webProfiles[wpName] = wp
+
+        cSet(f'webProfiles.{wpName}', wp.config, merge=True,
+             noCallbacks=True)
+
+    configModRegCallback(onProfilesChanged)

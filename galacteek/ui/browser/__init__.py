@@ -324,8 +324,7 @@ class JSConsoleWidget(QWidget):
 
 
 class WebView(IPFSWebView):
-    def __init__(self, browserTab, webProfile, enablePlugins=False,
-                 parent=None):
+    def __init__(self, browserTab, webProfile, parent=None):
         super(WebView, self).__init__(parent=parent)
 
         self.app = QCoreApplication.instance()
@@ -343,18 +342,17 @@ class WebView(IPFSWebView):
         actionVSource.triggered.connect(self.onViewSource)
 
         self.webSettings = self.settings()
-        self.webSettings.setAttribute(QWebEngineSettings.PluginsEnabled,
-                                      enablePlugins)
-        self.webSettings.setAttribute(QWebEngineSettings.LocalStorageEnabled,
-                                      True)
-        self.webSettings.setAttribute(QWebEngineSettings.PdfViewerEnabled,
-                                      False)
-        self.webSettings.setAttribute(
-            QWebEngineSettings.LocalContentCanAccessFileUrls, True)
-        self.webSettings.setAttribute(
-            QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
-        self.webSettings.setAttribute(
-            QWebEngineSettings.FocusOnNavigationEnabled, True)
+        if 0:
+            self.webSettings.setAttribute(QWebEngineSettings.PluginsEnabled,
+                                          enablePlugins)
+            self.webSettings.setAttribute(
+                QWebEngineSettings.LocalStorageEnabled, True)
+            self.webSettings.setAttribute(QWebEngineSettings.PdfViewerEnabled,
+                                          False)
+            self.webSettings.setAttribute(
+                QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
+            self.webSettings.setAttribute(
+                QWebEngineSettings.FocusOnNavigationEnabled, True)
 
     def web3ChangeChannel(self, channel: Web3Channel):
         self.installDefaultPage(web3Channel=channel)
@@ -611,8 +609,7 @@ class WebView(IPFSWebView):
             menu = QMenu(self)
             scheme = url.scheme()
 
-            if scheme in [SCHEME_HTTP, SCHEME_HTTPS] and \
-                    self.app.settingsMgr.allowHttpBrowsing:
+            if scheme in [SCHEME_HTTP, SCHEME_HTTPS]:
                 menu.addAction(
                     iOpenHttpInTab(),
                     functools.partial(self.openUrlInTab, url)
@@ -1105,7 +1102,8 @@ class BrowserTab(GalacteekTab):
         self.curObjectCtrl.hide()
         self.ui.layoutObjectInfo.addWidget(self.curObjectCtrl)
 
-        initialProfileName = self.app.settingsMgr.defaultWebProfile
+        initialProfileName = cGet('defaultWebProfile',
+                                  mod='galacteek.browser.webprofiles')
         if initialProfileName not in self.app.availableWebProfilesNames():
             initialProfileName = WP_NAME_MINIMAL
 
@@ -1123,7 +1121,6 @@ class BrowserTab(GalacteekTab):
 
         self.webEngineView = WebView(
             self, webProfile,
-            enablePlugins=self.app.settingsMgr.ppApiPlugins,
             parent=self
         )
         self.ui.vLayoutBrowser.addWidget(self.webEngineView)
@@ -1210,9 +1207,10 @@ class BrowserTab(GalacteekTab):
 
         self.jsConsoleAction = QAction(getIcon('terminal.png'),
                                        iJsConsole(), self,
-                                       shortcut=QKeySequence('Ctrl+j'))
-        self.jsConsoleAction.setCheckable(True)
-        self.jsConsoleAction.toggled.connect(self.onJsConsoleToggle)
+                                       shortcut=QKeySequence('Ctrl+j'),
+                                       triggered=self.onJsConsoleToggle)
+        # self.jsConsoleAction.setCheckable(True)
+        # self.jsConsoleAction.toggled.connect(self.onJsConsoleToggle)
 
         self.mapPathAction = QAction(
             getIconIpfsIce(),
@@ -1651,7 +1649,8 @@ class BrowserTab(GalacteekTab):
         self.searchControlsSetVisible(False)
 
     def onJsConsoleToggle(self, checked):
-        self.jsConsoleWidget.setVisible(checked)
+        if not self.jsConsoleWidget.isVisible():
+            self.jsConsoleWidget.show()
 
     async def onCreateMapping(self, *args):
         if not self.currentIpfsObject:
@@ -2234,8 +2233,7 @@ class BrowserTab(GalacteekTab):
 
         if isSchemeRegistered(scheme):
             self.enterUrl(url)
-        elif scheme in [SCHEME_HTTP, SCHEME_HTTPS, SCHEME_FTP] and \
-                self.app.settingsMgr.allowHttpBrowsing is True:
+        elif scheme in [SCHEME_HTTP, SCHEME_HTTPS, SCHEME_FTP]:
             # Browse http urls if allowed
             self.enterUrl(url)
         else:

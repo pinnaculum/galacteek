@@ -22,3 +22,12 @@
 * {
     font: 12pt "Segoe UI";
 }
+
+QTreeView, QListView
+{
+    font-size: 14pt;
+}
+
+QListView::item:selected, QTreeView::item:selected  {
+    font-size: 16pt;
+}

@@ -36,6 +36,8 @@ from galacteek.services.net.bitmessage.storage import MaildirMessage
 from galacteek.services.net.bitmessage import bmAddressExtract
 from galacteek.services.net.bitmessage import bmAddressValid
 
+from galacteek.i18n.bm import *  # noqa
+
 from ..forms import ui_dmessenger
 from ..forms import ui_dmessenger_compose
 from ..forms import ui_dmessenger_messageview
@@ -208,20 +210,23 @@ class MessageViewer(QWidget):
         date = message.get('Date')
 
         self.browser.insertHtml(
-            f'<p>From: <a href="mailto: '
-            f'{sender}@bitmessage">{senderName}</a></p>\n')
+            f'<p><b>From</b>: '
+            f'<a href="mailto: {sender}@bitmessage">{senderName}</a></p>\n')
         self.browser.insertHtml('<br />')
         self.browser.insertHtml(
-            f'<p>To: <a href="mailto: {recp}@bitmessage">{recpName}</a></p>\n')
+            f'<p><b>To</b>: '
+            f'<a href="mailto: {recp}@bitmessage">{recpName}</a></p>\n')
         self.browser.insertHtml('<br />')
 
         if subject:
-            self.browser.insertHtml(f"<p>Subject: {subject}</p><br />\n")
+            self.browser.insertHtml(f"<p><b>Subject</b>: {subject}</p>\n")
+            self.browser.insertHtml('<br />')
 
         if date:
-            self.browser.insertHtml(f"<p>Date: {date}</p><br />\n")
+            self.browser.insertHtml(f"<p><b>Date</b>: {date}</p>\n")
+            self.browser.insertHtml('<br />')
 
-        # self.browser.insertPlainText("\n")
+        self.browser.insertHtml('<br />')
 
         for part in message.walk():
             try:
@@ -273,6 +278,7 @@ class MessageComposer(QWidget):
         self.ui.cancelButton.clicked.connect(self.onCancelClicked)
 
         self.ui.msgTo.setCompleter(self.completer)
+        self.ui.msgTo.textChanged.connect(self.onRecpChanged)
 
     @property
     def messengerWidget(self):
@@ -342,6 +348,10 @@ class MessageComposer(QWidget):
 
         self.cancelled.emit()
 
+    def onRecpChanged(self, text):
+        if bmAddressValid(text) and 0:
+            self.ui.msgSubject.setFocus(Qt.OtherFocusReason)
+
     async def onSend(self, *args):
         if not bmAddressValid(self.recipient):
             return await messageBoxAsync('Invalid recipient BM address')
@@ -375,6 +385,7 @@ class MessageListView(QTreeWidget):
     def __init__(self, maildir: BitMessageMailDir, parent=None):
         super().__init__(parent)
 
+        self.app = QApplication.instance()
         self.maildir = maildir
         self.currentItemChanged.connect(
             partialEnsure(self.onCurMessageChanged))
@@ -403,7 +414,10 @@ class MessageListView(QTreeWidget):
         self.selectLatestMessage(force=True)
 
     async def onNewMessageReceived(self, key, msg):
-        # TODO: UI notification here
+        self.app.systemTrayMessage(
+            iBitMessage(),
+            iBitMessageReceivedMessage()
+        )
 
         await self.insertMessage(key, msg)
 
@@ -432,6 +446,7 @@ class MessageListView(QTreeWidget):
         )
 
         if len(idxL) > 0:
+            log.debug(f'Message {mKey} already exists')
             raise MessageHandlingError(f'Already exists: {mKey}')
 
         msgSubDir = msg.get_subdir()
@@ -439,7 +454,7 @@ class MessageListView(QTreeWidget):
         itemFrom = QTreeWidgetItem(self)
         itemFrom.setText(0, msg['Subject'])
         itemFrom.setData(0, Qt.UserRole, mKey)
-        itemFrom.setToolTip(0, mKey)
+        itemFrom.setToolTip(0, msg['Subject'])
         itemFrom.setText(1, msg['Date'])
         itemFrom.setText(2, msg['From'])
 
@@ -449,8 +464,10 @@ class MessageListView(QTreeWidget):
         elif msgSubDir == 'cur':
             pass
 
-        self.insertTopLevelItem(0, itemFrom)
+        self.addTopLevelItem(itemFrom)
         self.sortByColumn(1, Qt.DescendingOrder)
+
+        log.debug(f'Message {mKey}: added to view')
 
     async def refresh(self):
         async for mKey, msg in self.maildir.yieldNewMessages():

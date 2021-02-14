@@ -44,6 +44,7 @@ from galacteek.core.chattokens import PubChatTokensManager
 from galacteek.core.chattokens import ChatToken
 
 from galacteek.core import SingletonDecorator
+from galacteek.config import cGet
 
 from galacteek.dweb.markdown import markitdown
 from galacteek.dweb.page import IPFSPage
@@ -118,6 +119,12 @@ class ChatChannels(QObject):
             del self.channelWidgets[channel]
 
     async def sendChannelsStatus(self):
+        msgConfig = cGet(
+            'services.chat.messages.UserChannelsListMessage',
+            mod='galacteek.ipfs.pubsub.srvs'
+        )
+        delay = msgConfig.publishTimer
+
         pubChannels = {}
         pubChannels = []
 
@@ -130,8 +137,11 @@ class ChatChannels(QObject):
         userChannelsMsg = UserChannelsListMessage.make(
             self.userListRev, pubChannels)
 
+        # Publish on the keyChatChanList PS key, the PS service catches it
+        # and sends the message
         gHub.publish(keyChatChanList, userChannelsMsg)
-        ensureLater(10, self.sendChannelsStatus)
+
+        ensureLater(delay, self.sendChannelsStatus)
 
     @ipfsOp
     async def joinChannel(self, ipfsop, channel, chanSticky=False):

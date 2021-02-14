@@ -40,22 +40,21 @@ class BitMessageMailDir:
         await self.sNewMessage.emit(key, msg)
 
     async def storeWelcome(self):
-        contact = await database.bmContactByNameFirst(
-            'galacteek-support'
-        )
+        contact = await database.bmContactByNameFirst('galacteek-support')
 
         if not contact:
             # not found
             return
 
         body = cParentGet('messages.welcome.body')
+        subject = cParentGet('messages.welcome.subject')
 
         msg = EmailMessage()
         msg['From'] = f'{contact.bmAddress}@bitmessage'
         msg['To'] = f'{self.bmAddress}@bitmessage'
-        msg['Subject'] = 'BitMessage is easy'
+        msg['Subject'] = subject
 
-        msg.set_payload(body)
+        msg.set_payload(body.format(bmAddress=self.bmAddress))
 
         await self.store(msg)
 
@@ -146,9 +145,7 @@ class EncryptedMailDir(BitMessageMailDir):
             else:
                 raise Exception('Could not encrypt message')
         except Exception as err:
-            traceback.print_exc()
-            print('ERR')
-            print(str(err))
+            log.debug(str(err))
             return False
         else:
             return True

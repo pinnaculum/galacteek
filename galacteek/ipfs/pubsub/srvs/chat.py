@@ -2,6 +2,10 @@ import asyncio
 import orjson
 
 from galacteek import log
+from galacteek import cached_property
+from galacteek.config import cParentGet
+from galacteek.config import merge as configMerge
+
 from galacteek.ipfs.pubsub import TOPIC_CHAT
 
 from galacteek.ipfs.pubsub.service import JSONPubsubService
@@ -27,8 +31,7 @@ class PSChatService(JSONPubsubService):
     def __init__(self, ipfsCtx, client, **kw):
         super().__init__(ipfsCtx, client, topic=TOPIC_CHAT,
                          runPeriodic=True,
-                         minMsgTsDiff=5,
-                         filterSelfMessages=False, **kw)
+                         **kw)
         mSubscriber.add_async_listener(
             keyChatChanList, self.onUserChannelList)
 
@@ -37,6 +40,14 @@ class PSChatService(JSONPubsubService):
 
         self.tokManager.sChanChanged.connectTo(self.onChanChanged)
         self.tokManager.sTokenStatus.connectTo(self.onTokenStatus)
+
+    def config(self):
+        base = super().config()
+        return configMerge(base, cParentGet('services.chat'))
+
+    @cached_property
+    def cUserChannelsListMessage(self):
+        return self.messageConfig('UserChannelsListMessage')
 
     async def start(self):
         await super().start()
@@ -89,6 +100,8 @@ class PSChatService(JSONPubsubService):
     @ipfsOp
     async def handleUserChannelsMessage(self, ipfsop, sender, piCtx, msg,
                                         dbRecord):
+        msgConfig = self.cUserChannelsListMessage
+
         cMsg = UserChannelsListMessage(msg)
         if not cMsg.valid():
             return
@@ -103,7 +116,8 @@ class PSChatService(JSONPubsubService):
                 await self.tokManager.tokenUpdate(token)
             else:
                 # Fetch the JWS first
-                jws = await ipfsop.getJson(jwsCid, timeout=5)
+                jws = await ipfsop.getJson(
+                    jwsCid, timeout=msgConfig.jwsFetchTimeout)
 
                 if not jws:
                     log.debug(f'Could not fetch JWS with CID: {jwsCid}')
@@ -186,7 +200,9 @@ class PSChatService(JSONPubsubService):
     @ipfsOp
     async def periodic(self, ipfsop):
         while True:
-            await asyncio.sleep(90)
+            msgConfig = self.messageConfig('ChatChannelsListMessage')
+
+            await asyncio.sleep(msgConfig.sendInterval)
 
             if ipfsop.ctx.currentProfile:
                 channelsDag = ipfsop.ctx.currentProfile.dagChatChannels

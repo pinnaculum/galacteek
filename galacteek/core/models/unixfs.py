@@ -5,6 +5,7 @@ from PyQt5.QtCore import QModelIndex
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QMimeData
 from PyQt5.QtCore import QUrl
+from PyQt5.QtCore import QSize
 from PyQt5.QtCore import QVariant
 
 from galacteek.ipfs.paths import posixIpfsPath
@@ -209,8 +210,10 @@ class UnixFSDirectoryModel(QAbstractListModel):
                         return self.iconFile
                 else:
                     return self.iconUnknown
-        if role == Qt.ToolTipRole:
+        elif role == Qt.ToolTipRole:
             return iUnixFSFileToolTip(eInfo)
+        elif role == Qt.SizeHintRole and 0:
+            return QSize(64, 64)
 
     def searchByFilename(self, filename):
         return self.match(

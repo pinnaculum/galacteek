@@ -1,0 +1,36 @@
+envs:
+  default:
+
+    serviceTypes:
+      base:
+        throttler:
+          name: 'ps-throttler'
+          rateLimit: 60
+          period: 30.0
+          retryInterval: 0.08
+
+        filters:
+          filterSelf:
+            enabled: True
+
+          messageSize:
+            max: 32768
+
+          timeStampDiff:
+            min: 0.0
+            max: 86400.0
+
+      json:
+        filters:
+          messageSize:
+            max: 16384
+
+      rsaEncJson:
+        filters:
+          filterSelf:
+            enabled: False
+
+      curve25519EncJson:
+        filters:
+          filterSelf:
+            enabled: False

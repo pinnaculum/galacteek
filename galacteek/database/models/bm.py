@@ -15,6 +15,9 @@ class BitMessageMailBox(Model):
     nickname = fields.CharField(max_length=32, null=True)
     fullname = fields.CharField(max_length=96, null=True)
 
+    # Associated DID, if any
+    did = fields.CharField(max_length=128, null=True)
+
     # Icon
     iconCid = fields.CharField(max_length=128, null=True)
 

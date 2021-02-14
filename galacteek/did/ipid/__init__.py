@@ -19,6 +19,7 @@ from galacteek import AsyncSignal
 from galacteek import ensure
 from galacteek import ensureLater
 from galacteek import log
+from galacteek import loopTime
 from galacteek.core import SingletonDecorator
 from galacteek.config import cGet
 
@@ -660,9 +661,11 @@ class IPIdentifier(DAGOperations):
             cGet('resolve.timeout')
 
         if self.local:
-            maxLifetime = cGet('resolve.cacheLifetime.local')
+            hours = cGet('resolve.cacheLifetime.local.hours')
         else:
-            maxLifetime = cGet('resolve.cacheLifetime.default')
+            hours = cGet('resolve.cacheLifetime.default.hours')
+
+        maxLifetime = hours * 3600
 
         useCache = 'always'
         cache = 'always'
@@ -681,9 +684,12 @@ class IPIdentifier(DAGOperations):
         )
 
     async def refresh(self):
-        if not self._lastResolve or \
-                (time.time() - self._lastResolve) > 60 * 1:
+        staleValue = cGet('resolve.staleAfterDelay')
+        last = self._lastResolve
+
+        if not last or (loopTime() - last) > staleValue:
             self.message('Reloading')
+
             return await self.load()
 
     @ipfsOp
@@ -709,7 +715,7 @@ class IPIdentifier(DAGOperations):
             self.message('DID document already at latest iteration')
             return False
 
-        self._lastResolve = time.time()
+        self._lastResolve = loopTime()
 
         if pin is True:
             await ipfsop.ctx.pin(dagCid, qname='ipid')

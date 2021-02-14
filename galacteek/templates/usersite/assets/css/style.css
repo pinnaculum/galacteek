@@ -1,6 +1,8 @@
 body {
     background-color: #323232;
     color: white;
+    font-family: Verdana, sans-serif;
+    font-size: 14pt;
 }
 
 header nav ul {
@@ -27,31 +29,46 @@ header nav ul li a {
     -webkit-box-shadow: 0 8px 6px -6px black;
     -moz-box-shadow: 0 8px 6px -6px black;
     box-shadow: 0 8px 6px -6px black;
-    /* background-color: #DAD6B5; */
-    background-color: #3c98e8;
+
+    background-color: #2e7690;
+
     padding: 10px;
     margin-bottom: 20px;
-    margin-top: 20px;
-    margin-right: 70px;
+    margin-top: 10px;
+    margin-right: 60px;
 }
 
 h2.blog-title {
     color: #2457A2;
+    color: black;
 }
 
 a {
-    color: #2457A2;
+    color: black;
 }
 
 a:hover {
-    background-color: #323232;
+    color: blue;
+}
+
+a:visited {
+    color: lightgray;
 }
 
 .blog-post-body {
     margin-left: 20px;
+    word-wrap: break-word;
 }
 
 .blog-posts {
     padding: 10px;
     margin: 10px;
+}
+
+pre {
+  white-space: pre-wrap;
+  white-space: -moz-pre-wrap;
+  white-space: -pre-wrap;
+  white-space: -o-pre-wrap;
+  word-wrap: break-word;
 }

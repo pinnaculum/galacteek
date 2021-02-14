@@ -84,7 +84,7 @@ from .widgets import HashmarksSearcher
 from .widgets import AnimatedLabel
 from .widgets import URLDragAndDropProcessor
 from .widgets import SpacingHWidget
-from .torcontrol import TorControllerButton
+from .widgets.torcontrol import TorControllerButton
 from .dialogs import *
 from ..appsettings import *
 from .i18n import *
@@ -950,6 +950,9 @@ class MainWindow(QMainWindow):
         menu.addAction(settingsIcon, iSettings(),
                        self.onSettings)
         menu.addSeparator()
+        menu.addAction(settingsIcon, iConfigurationEditor(),
+                       self.onRunConfigEditor)
+        menu.addSeparator()
         menu.addAction(settingsIcon, iEventLog(),
                        self.onOpenEventLog)
         menu.addAction(getIcon('lock-and-key.png'), iKeys(),
@@ -1314,8 +1317,6 @@ class MainWindow(QMainWindow):
             except Exception as err:
                 log.debug(str(err))
 
-        profile.sharedHManager.hashmarksLoaded.connect(hashmarksLoaded)
-
         await profile.userInfo.loaded
         self.profileButton.setEnabled(True)
 
@@ -1487,7 +1488,8 @@ class MainWindow(QMainWindow):
 
     def registerTab(self, tab, name, icon=None, current=True,
                     tooltip=None, workspace=None,
-                    position='append'):
+                    position='append',
+                    wsSwitch=True):
         if workspace is None:
             sidx, wspace = self.stack.currentWorkspace()
         elif isinstance(workspace, str):
@@ -1508,8 +1510,10 @@ class MainWindow(QMainWindow):
                              tooltip=tooltip,
                              position=position)
 
-        if self.stack.currentWorkspace() is not wspace:
+        if self.stack.currentWorkspace() is not wspace and wsSwitch:
             wspace.wsSwitch()
+        else:
+            tab.tabActiveNotify()
 
     def findTabFileManager(self):
         with self.stack.workspaceCtx(WS_FILES, show=False) as ws:
@@ -1528,6 +1532,10 @@ class MainWindow(QMainWindow):
 
     def onSettings(self):
         runDialog(settings.SettingsDialog, self.app)
+
+    def onRunConfigEditor(self):
+        with self.stack.workspaceCtx(WS_MISC) as wspace:
+            wspace.openConfigEditor()
 
     def onToggledPinAllGlobal(self, checked):
         self.pinAllGlobalChecked = checked
@@ -1690,15 +1698,16 @@ class MainWindow(QMainWindow):
     def addBrowserTab(self, label='No page loaded', pinBrowsed=False,
                       minProfile=None, current=True,
                       workspace=None,
+                      wsSwitch=True,
                       urlFocus=False,
                       position='append'):
         icon = getIconIpfsIce()
         tab = browser.BrowserTab(self,
                                  minProfile=minProfile,
-                                 pinBrowsed=pinBrowsed,
-                                 parent=workspace)
+                                 pinBrowsed=pinBrowsed)
         self.registerTab(tab, label, icon=icon, current=current,
                          workspace=workspace,
+                         wsSwitch=wsSwitch,
                          position=position)
 
         if urlFocus:

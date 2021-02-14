@@ -35,7 +35,6 @@ from PyQt5.QtCore import QFileInfo
 from PyQt5.QtCore import QRegExp
 from PyQt5.QtCore import QTimer
 from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtCore import QObject
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QUrl
 from PyQt5.QtCore import QMimeData
@@ -71,6 +70,7 @@ from galacteek.space import allPlanetsNames
 from galacteek.dweb.markdown import markitdown
 from galacteek.config import cWidgetGet
 from galacteek.config import cObjectGet
+from galacteek.config import Configurable
 
 from galacteek import database
 from galacteek.database.models.core import Hashmark
@@ -102,15 +102,15 @@ from ..i18n import iIPFSUrlTypeNative
 from ..i18n import iIPFSUrlTypeHttpGateway
 
 
-class ReconfigurableObject(QObject):
-    def __init__(self, objectName=None, parent=None):
-        super(ReconfigurableObject, self).__init__(parent=parent)
-        if objectName:
-            self.setObjectName(objectName)
+class Reconfigurable(object):
+    configModuleName = None
 
-    @property
+    def __init__(self, parent=None):
+        super(Reconfigurable, self).__init__()
+        self.parent = parent
+
     def config(self):
-        return cObjectGet(self.objectName())
+        return cObjectGet(self.objectName(), mod=self.configModuleName)
 
     def onConfigChanged(self):
         self.configApply()
@@ -119,7 +119,7 @@ class ReconfigurableObject(QObject):
         pass
 
 
-class ReconfigurableWidget(QWidget):
+class ReconfigurableWidget(Reconfigurable, QWidget):
     def __init__(self, objectName=None, parent=None):
         super(ReconfigurableWidget, self).__init__(parent=parent)
         if objectName:
@@ -258,6 +258,37 @@ class GalacteekTab(QWidget):
         pass
 
 
+class GToolButton(QToolButton, Configurable):
+    configModuleName = 'galacteek.ui.widgets'
+    gObjName = 'gToolButton'
+
+    def __init__(self, parent=None, **kw):
+        super(GToolButton, self).__init__(parent=parent, **kw)
+        self.setObjectName(self.gObjName)
+        self.cApply()
+
+    def configApply(self, config):
+        self.setIconSize(QSize(
+            config.defaultIconSize,
+            config.defaultIconSize
+        ))
+
+    def config(self):
+        return cWidgetGet(self.objectName(), mod=self.configModuleName)
+
+
+class GMediumToolButton(GToolButton):
+    gObjName = 'gMediumToolButton'
+
+
+class GLargeToolButton(GToolButton):
+    gObjName = 'gLargeToolButton'
+
+
+class GSmallToolButton(GToolButton):
+    gObjName = 'gSmallToolButton'
+
+
 class HorizontalLine(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -344,7 +375,7 @@ class CheckableToolButton(QToolButton):
             self.setIcon(icon)
 
 
-class IPFSPathClipboardButton(QToolButton):
+class IPFSPathClipboardButton(GMediumToolButton):
     def __init__(self, ipfsPath, parent=None):
         super(IPFSPathClipboardButton, self).__init__(parent)
 
@@ -444,11 +475,13 @@ class LabelWithURLOpener(QLabel):
                 hubPublish(key42, {
                     'event': 'bmComposeRequest',
                     'recipient': bmAddr,
-                    'subject': 'Contact: galacteek'
+                    'subject': 'galacteek: Contact'
                 })
 
 
 class PopupToolButton(QToolButton, URLDragAndDropProcessor):
+    # gObjName = 'gPopupToolButton'
+
     def __init__(self, icon=None, parent=None, menu=None,
                  mode=QToolButton.MenuButtonPopup, acceptDrops=False,
                  menuSizeHint=None, toolTipsVisible=True):
@@ -525,7 +558,7 @@ class QAObjTagItemToolButton(QToolButton):
         super().mousePressEvent(event)
 
 
-class HashmarkThisButton(QToolButton):
+class HashmarkThisButton(GMediumToolButton):
     def __init__(self, ipfsPath: IPFSPath, parent=None):
         super(HashmarkThisButton, self).__init__(parent=parent)
         self.setIcon(getIcon('hashmarks.png'))
@@ -547,7 +580,7 @@ class HashmarkThisButton(QToolButton):
                 'Hashmark object: {}'.format(str(self.ipfsPath)))
 
     def onClicked(self):
-        from .hashmarks import addHashmarkAsync
+        from ..hashmarks import addHashmarkAsync
         ensure(addHashmarkAsync(str(self.ipfsPath)))
 
 
@@ -1502,7 +1535,7 @@ class MarkdownInputWidget(QWidget):
         self.app = QApplication.instance()
         self.setObjectName('markdownInputWidget')
 
-        self.markdownDocButton = QToolButton()
+        self.markdownDocButton = GMediumToolButton()
         self.markdownDocButton.setIcon(getIcon('markdown.png'))
         self.markdownDocButton.setToolTip(
             'Have you completely lost your Markdown ?')

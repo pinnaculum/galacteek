@@ -59,25 +59,28 @@ These settings are used by the *web3* web profile to provide
 a web3.js *Web3* instance available as *window.web3* in the main
 Javascript world.
 
+Configuration editor
+--------------------
+
+You can use the configuration editor to tune the application's
+configuration more finely (the settings dialog only shows
+basic settings). From the *Information* menu, select
+*Config editor* to open it.
+
+The configuration is separated by module.
+
+**Do not change any settings you are ensure about**
+
 User interface settings
 -----------------------
-
-Hide hashes
-^^^^^^^^^^^
-
-This will hide the IPFS hashes wherever possible (file manager, explorer..)
-
-Wrap single files or directories
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-If enabled, files or directories will be wrapped within a directory object
-(.dirw)
 
 Enable navigation history
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If enabled, visited dweb and ENS URLs are recorded and you will get
+If enabled, visited dweb URLs are recorded and you will get
 history search results when typing an URL.
+
+This is *disabled* by default.
 
 Default web profile
 ^^^^^^^^^^^^^^^^^^^
@@ -89,5 +92,5 @@ enabled you should select *ipfs* here, or *web3* if you want both
 the IPFS and Ethereum API enabled.
 
 When the browser needs the JS API to render a page it will
-automatically use at least the *ipfs* profile (if *minimal* is the
-default).
+automatically use at least the *ipfs* profile (if *minimal* or
+another profile is the default).

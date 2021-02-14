@@ -18,7 +18,6 @@ from PyQt5.QtWidgets import QLabel
 from PyQt5.QtWidgets import QScrollArea
 from PyQt5.QtWidgets import QHBoxLayout
 from PyQt5.QtWidgets import QVBoxLayout
-from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtWidgets import QSpacerItem
 from PyQt5.QtWidgets import QLayout
 from PyQt5.QtWidgets import QApplication
@@ -35,6 +34,7 @@ from .widgets import GalacteekTab
 from .widgets import IPFSUrlLabel
 from .widgets import IPFSPathClipboardButton
 from .widgets import HashmarkThisButton
+from .widgets import GMediumToolButton
 from .helpers import getIcon
 from .helpers import messageBox
 from .clipboard import iCopyToClipboard
@@ -60,20 +60,20 @@ class ImageViewerTab(GalacteekTab):
     def __init__(self, mainW):
         super().__init__(mainW)
 
-        self.pinButton = QToolButton(self)
+        self.pinButton = GMediumToolButton(self)
         self.pinButton.setIcon(getIcon('pin.png'))
         self.pinButton.setEnabled(True)
 
-        self.zoomIn = QToolButton(self)
+        self.zoomIn = GMediumToolButton(self)
         self.zoomIn.setIcon(getIcon('zoom-in.png'))
         self.zoomIn.setShortcut(QKeySequence('Ctrl++'))
         self.zoomIn.setToolTip(iZoomIn())
-        self.zoomOut = QToolButton(self)
+        self.zoomOut = GMediumToolButton(self)
         self.zoomOut.setIcon(getIcon('zoom-out.png'))
         self.zoomOut.setShortcut(QKeySequence('Ctrl+-'))
         self.zoomOut.setToolTip(iZoomOut())
 
-        self.fitWindow = QToolButton(self)
+        self.fitWindow = GMediumToolButton(self)
         self.fitWindow.setCheckable(True)
         self.fitWindow.setToolTip('Fit to window')
         self.fitWindow.setIcon(getIcon('expand.png'))
@@ -158,13 +158,13 @@ class ImageViewerTab(GalacteekTab):
             lbl.setToolTip(urlString)
             lbl.setStyleSheet('QLabel { font-size: 12pt }')
 
-            clipBtn = QToolButton(self)
+            clipBtn = GMediumToolButton(self)
             clipBtn.setIcon(getIcon('clipboard.png'))
             clipBtn.setToolTip(iCopyToClipboard())
             clipBtn.clicked.connect(
                 functools.partial(self.app.setClipboardText, str(url)))
 
-            openBtn = QToolButton(self)
+            openBtn = GMediumToolButton(self)
             openBtn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
             openBtn.setIcon(iconOpen)
             openBtn.setText(iOpen())

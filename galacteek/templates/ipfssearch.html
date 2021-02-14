@@ -65,12 +65,24 @@
         }
 
         if (hit['mimetype'].startsWith('text')) {
+          if (hit['mimetype'] === 'text/html') {
+              markup += `
+                <button onclick="previewFile('${hit.hash}');">Preview</button>
+                <div id="${hit.hash}_preview" class="textpreview">
+                  <embed type="text/html"
+                  src="{{ ipfsConnParams.gatewayUrl }}/${hit.path}"
+                  width="100%" height="300">
+                </div>
+              `;
+
+          } else {
           markup += `
-        <button onclick="previewFile('${hit.hash}');">Preview</button>
-        <div id="${hit.hash}_preview" class="textpreview">
-          <pre id="${hit.hash}_text"></pre>
-        </div>
+            <button onclick="previewFile('${hit.hash}');">Preview</button>
+            <div id="${hit.hash}_preview" class="textpreview">
+              <pre id="${hit.hash}_text"></pre>
+            </div>
           `;
+          }
         }
 
         div.innerHTML = markup;

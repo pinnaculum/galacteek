@@ -1,5 +1,7 @@
 import os.path
 from collections import UserList
+from collections import deque
+from typing import Deque
 from asyncqt import QThreadExecutor
 import threading
 import asyncio
@@ -388,3 +390,55 @@ class ThreadLoop:
 
     def stop(self):
         self.loop.call_soon_threadsafe(self.loop.stop)
+
+
+class GThrottler:
+    """
+    Same as asyncio_throttle but uses loop time instead of clock time
+    """
+    def __init__(self, rate_limit: int, period=1.0, retry_interval=0.01,
+                 name='generic-throttler'):
+        self.rate_limit = rate_limit
+        self.period = period
+        self.retry_interval = retry_interval
+        self.name = name
+
+        self._running = True
+
+        self._task_logs: Deque[float] = deque()
+
+    def shutdown(self):
+        self._running = False
+
+    def debug(self, msg):
+        from galacteek import log
+        log.debug(f'Throttler {self.name}: {msg}')
+
+    def flush(self):
+        nowLt = loopTime()
+
+        while self._task_logs:
+            diff = nowLt - self._task_logs[0]
+            if diff > self.period:
+                # self.debug(f'Flush item: diff {diff} > {self.period}')
+                self._task_logs.popleft()
+            else:
+                break
+
+    async def acquire(self):
+        while self._running:
+            self.flush()
+
+            if len(self._task_logs) < self.rate_limit:
+                # self.debug(f'acquired (log count: {len(self._task_logs)})')
+                break
+
+            await asyncio.sleep(self.retry_interval)
+
+        self._task_logs.append(loopTime())
+
+    async def __aenter__(self):
+        await self.acquire()
+
+    async def __aexit__(self, exc_type, exc, tb):
+        pass

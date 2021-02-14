@@ -1,5 +1,12 @@
 envs:
   default:
+    nsCache:
+      origins:
+        unknown:
+          maxCacheLifetime: 600
+        ipidmanager:
+          maxCacheLifetime: 1800
+
     ops:
       # nameResolveStream (streamed resolve)
       nameResolveStream:
@@ -35,3 +42,9 @@ envs:
       nameResolve:
         timeout: 20
         recursive: False
+
+      catObject:
+        timeout: 60
+
+      listObject:
+        timeout: 60

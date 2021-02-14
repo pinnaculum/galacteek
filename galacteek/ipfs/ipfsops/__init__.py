@@ -337,6 +337,10 @@ class IPFSOperator(object):
         return cGet('unixfs.dirWrapRules',
                     mod='galacteek.ipfs')
 
+    @property
+    def cNsCache(self):
+        return cGet('nsCache')
+
     def opConfig(self, opName):
         return cGet(f'ops.{opName}')
 
@@ -915,7 +919,7 @@ class IPFSOperator(object):
                                 cache='never',
                                 cacheOrigin='unknown',
                                 recursive=True,
-                                maxCacheLifetime=60 * 10,
+                                maxCacheLifetime=None,
                                 debug=True):
         """
         DHT is used first for resolution.
@@ -923,6 +927,13 @@ class IPFSOperator(object):
         """
 
         cfg = self.opConfig('nameResolveStream')
+
+        cacheCfg = self.cNsCache.origins.get(cacheOrigin)
+        if not cacheCfg:
+            cacheCfg = self.cNsCache.origins.unknown
+
+        mCacheLifetime = maxCacheLifetime if maxCacheLifetime else \
+            cacheCfg.maxCacheLifetime
 
         recCount = count if count else cfg.recordCount
         timeout = timeout if timeout else cfg.timeout
@@ -965,7 +976,7 @@ class IPFSOperator(object):
         if _yieldedcn == 0 and usingCache:
             # The NS cache is used only for IPIDs when offline
             rPath = self.nsCacheGet(
-                path, maxLifetime=maxCacheLifetime,
+                path, maxLifetime=mCacheLifetime,
                 knownOrigin=True
             )
 
@@ -1199,11 +1210,12 @@ class IPFSOperator(object):
             self.debug(f'listStreamed ({path}): generator exit')
             raise
         except aioipfs.APIError as e:
+            self.debug(f'listStreamed ({path}): IPFS error: {e.message}')
             raise e
+        except asyncio.CancelledError:
+            self.debug('listStreamed ({path}): cancelled')
         except BaseException as err:
-            import traceback
-            traceback.print_exc()
-            self.debug(str(err))
+            self.debug(f'listStreamed ({path}): unknown error: {err}')
             raise err
 
     async def listStreamedMonitored(self, path, resolve_type=True,
@@ -1642,19 +1654,22 @@ class IPFSOperator(object):
 
         return path
 
-    async def catObject(self, path, offset=None, length=None, timeout=30):
+    async def catObject(self, path, offset=None, length=None, timeout=None):
+        cfg = self.opConfig('catObject')
+
         return await self.waitFor(
             self.client.cat(
                 await self.objectPathMapper(path),
                 offset=offset, length=length
-            ), timeout
+            ), timeout if timeout else cfg.timeout
         )
 
-    async def listObject(self, path, timeout=30):
+    async def listObject(self, path, timeout=None):
+        cfg = self.opConfig('listObject')
         return await self.waitFor(
             self.client.core.ls(
                 await self.objectPathMapper(path)
-            ), timeout
+            ), timeout if timeout else cfg.timeout
         )
 
     async def walk(self, path):

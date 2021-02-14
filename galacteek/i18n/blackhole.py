@@ -54,6 +54,19 @@ def iSettings():
     return QCoreApplication.translate('GalacteekWindow', 'Settings')
 
 
+def iConfigurationEditor():
+    return QCoreApplication.translate('GalacteekWindow', 'Config Editor')
+
+
+def iConfigurationEditorWarning():
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Change the settings <b>with caution</b>.'
+        'Start the application with <b>--config-defaults</b> '
+        'if something goes wrong, to use the default configuration settings'
+    )
+
+
 def iEventLog():
     return QCoreApplication.translate('GalacteekWindow', 'Event Log')
 

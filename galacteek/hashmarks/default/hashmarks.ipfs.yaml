@@ -10,6 +10,16 @@ hashmarks:
       - '#ipfs'
       - '#dweb'
 
+  - url: /ipns/blog.ipfs.io
+    title: IPFS blog
+    description: IPFS project's blog
+    date: "2021-02-13T21:06:57.654261"
+    icon: "/ipfs/QmSGfXuqtuGX5FLdBEH5hRQJc6ZrZWV6rqExLXjfpsihV2"
+    category: ipfs
+    tags:
+      - '#ipfs'
+      - '#blog'
+
   - url: /ipns/dist.ipfs.io
     title: IPFS Distributions
     description: IPFS distributions dwebsite

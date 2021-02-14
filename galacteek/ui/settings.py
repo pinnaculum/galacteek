@@ -8,10 +8,13 @@ from PyQt5.QtWidgets import QStyledItemDelegate
 from PyQt5.QtWidgets import QSpinBox
 from PyQt5.QtWidgets import QDoubleSpinBox
 from PyQt5.QtWidgets import QComboBox
+from PyQt5.QtWidgets import QLabel
 
 from PyQt5.QtCore import Qt
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import QUrl
 from PyQt5.QtCore import QSize
+from PyQt5.QtCore import QModelIndex
 
 from galacteek.config import configModLeafAttributes
 from galacteek.config import configModules
@@ -335,6 +338,10 @@ AttrTypeRole = Qt.UserRole + 3
 
 
 class ConfigItemDelegate(QStyledItemDelegate):
+    INT_MAX = 2147483647
+
+    attributeChanged = pyqtSignal(QModelIndex)
+
     def __init__(self, parent):
         super().__init__(parent)
         self.model = parent.model()
@@ -361,11 +368,13 @@ class ConfigItemDelegate(QStyledItemDelegate):
 
         if isinstance(editor, QSpinBox) or isinstance(editor, QDoubleSpinBox):
             cSet(attr, editor.value(), mod=mod)
+            self.attributeChanged.emit(index)
         elif isinstance(editor, QComboBox):
             if editor.currentText() == str(True):
                 cSet(attr, True, mod=mod)
             else:
                 cSet(attr, False, mod=mod)
+            self.attributeChanged.emit(index)
 
     def createEditor(self, parent, option, index):
         mod, attr, atype = self._tr(index)
@@ -373,15 +382,16 @@ class ConfigItemDelegate(QStyledItemDelegate):
         if atype is int:
             editor = QSpinBox(parent)
             editor.setMinimum(0)
-            editor.setMaximum(65535)
+            editor.setMaximum(self.INT_MAX)
             editor.setSingleStep(1)
 
+            # Icons
             if attr.lower().endswith('iconsize'):
-                editor.setSingleStep(16)
+                editor.setSingleStep(8)
         elif atype is float:
             editor = QDoubleSpinBox(parent)
             editor.setMinimum(0)
-            editor.setMaximum(65535)
+            editor.setMaximum(float(self.INT_MAX))
             editor.setSingleStep(0.1)
         elif atype is bool:
             editor = QComboBox(parent)
@@ -410,17 +420,27 @@ class ConfigModuleItem(QTreeWidgetItem):
 
 
 class ConfigManager(GalacteekTab):
+    COL_ATTR = 0
+    COL_EDITOR = 1
+    COL_STATUS = 2
+
     def tabSetup(self):
+        self.setContentsMargins(8, 8, 8, 8)
+        self.wLabel = QLabel(iConfigurationEditorWarning())
         self.tree = QTreeWidget(self)
         self.delegate = ConfigItemDelegate(self.tree)
-        self.tree.setColumnCount(2)
-        self.tree.setHeaderLabels(['Setting', 'Value'])
+
+        self.delegate.attributeChanged.connect(self.onAttrChanged)
+
+        self.tree.setColumnCount(3)
+        self.tree.setHeaderLabels(['Setting', 'Value', ''])
         self.tree.setHeaderHidden(True)
         self.tree.setItemDelegateForColumn(1, self.delegate)
         self.tree.itemDoubleClicked.connect(
             partialEnsure(self.onDoubleClick))
         self.tree.header().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.tree.header().setStretchLastSection(False)
+        self.addToLayout(self.wLabel)
         self.addToLayout(self.tree)
         self.setEnabled(False)
 
@@ -447,6 +467,18 @@ class ConfigManager(GalacteekTab):
             modItem.setFont(0, bfont)
 
             await asyncio.sleep(0)
+
+    def onAttrChanged(self, aIdx):
+        item = self.tree.itemFromIndex(aIdx)
+        if item:
+            item.setText(self.COL_STATUS, 'OK')
+
+            self.app.loop.call_later(
+                2.0,
+                item.setText,
+                self.COL_STATUS,
+                ''
+            )
 
     async def onDoubleClick(self, modItem, col, *args):
         if not isinstance(modItem, ConfigModuleItem):

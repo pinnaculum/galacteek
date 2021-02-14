@@ -436,6 +436,10 @@ class IPFSHashExplorerWidget(QWidget):
         if self.parentView:
             return self.parentView.rootHash
 
+    @property
+    def cUnixFs(self):
+        return cParentGet('unixfs')
+
     def statusLoading(self, busy=True):
         if busy:
             self.loadingCube.setVisible(busy)
@@ -668,7 +672,8 @@ class IPFSHashExplorerWidget(QWidget):
             self.listTask = self.app.task(
                 self.listObject,
                 self.rootPath.objPath,
-                parentItem=self.itemRoot)
+                parentItem=self.itemRoot
+            )
 
     def onContextMenu(self, point):
         selModel = self.dirListView.selectionModel()
@@ -786,11 +791,11 @@ class IPFSHashExplorerWidget(QWidget):
         """
 
         # Settings
-        entryBatchCount = cParentGet('unixfs.list.entryBatchSize')
-        entryProgressEvery = cParentGet('unixfs.list.entryProgressEvery')
-        entryProcessSleep = cParentGet('unixfs.list.entryProcessSleep')
-        entryListSleep = cParentGet('unixfs.list.entryListSleep')
-        genTimeout = cParentGet('unixfs.list.entryFetchTimeout')
+        entryBatchCount = self.cUnixFs.list.entryBatchSize
+        entryProgressEvery = self.cUnixFs.list.entryProgressEvery
+        entryProcessSleep = self.cUnixFs.list.entryProcessSleep
+        entryListSleep = self.cUnixFs.list.entryListSleep
+        genTimeout = self.cUnixFs.list.entryFetchTimeout
 
         eCount = 0  # entry count
         wiStart, wiEnd = None, None
@@ -876,6 +881,13 @@ class IPFSHashExplorerWidget(QWidget):
 
         if wiStart and wiEnd:
             self.model.dataChanged.emit(wiStart, wiEnd)
+
+        # Pin the directory
+        # TODO: add a config section by mimetype, to decide what gets
+        # pinned automatically
+        log.debug(f'UnixFS: autopinning dir {path}')
+
+        await ipfsop.ctx.pin(str(path), recursive=False)
 
         _c, _de, deExists = self.app.multihashDb.pathDirEntries(
             self.rootPath.objPath)
