@@ -229,23 +229,20 @@ QMenuBar::item:pressed
 QMenu
 {
     background-color: #323232;
-    /* border: 1px solid #76797C; */
     color: #eff0f1;
-    /*margin: 2px; */
     margin: 2px;
-    border: 1px solid #3996e8;
+    border: 1px solid lightgray;
 }
 
 QMenu::icon
 {
-    /*margin: 5px;*/
     margin: 5px;
 }
 
 QMenu::item
 {
     padding: 2px 30px 2px 30px;
-    /*margin-left: 5px;*/
+    margin-left: 2px;
     border: 1px solid transparent; /* reserve space for selection border */
 }
 

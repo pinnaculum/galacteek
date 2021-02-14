@@ -5,6 +5,9 @@ import secrets
 from galacteek import log as logger
 from galacteek import ensure
 
+from galacteek.config import cParentGet
+from galacteek.config import merge as configMerge
+
 from galacteek.core.asynclib import asyncify
 from galacteek.core.asynccache import selfcachedcoromethod
 from galacteek.core.ps import keyTokensIdent
@@ -24,11 +27,9 @@ class PSPeersService(JSONPubsubService):
     def __init__(self, ipfsCtx, client, **kw):
         super().__init__(ipfsCtx, client, topic=TOPIC_PEERS,
                          runPeriodic=True,
-                         minMsgTsDiff=5,
-                         filterSelfMessages=False, **kw)
+                         **kw)
 
         self._curProfile = None
-        self._identEvery = 50
         self.ipfsCtx.profileChanged.connect(self.onProfileChanged)
         self.__identToken = secrets.token_hex(64)
 
@@ -39,6 +40,15 @@ class PSPeersService(JSONPubsubService):
     @property
     def identEvery(self):
         return self._identEvery
+
+    def config(self):
+        base = super().config()
+        return configMerge(base, cParentGet('services.peers'))
+
+    def configApply(self, cfg):
+        super().configApply(cfg)
+
+        self._identEvery = cfg.ident.sendInterval
 
     @asyncify
     async def onProfileChanged(self, pName, profile):

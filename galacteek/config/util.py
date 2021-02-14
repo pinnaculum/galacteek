@@ -1,12 +1,11 @@
 import os
 import sys
+import traceback
 
 from omegaconf import OmegaConf
 from omegaconf import dictconfig
 
 from pathlib import Path
-
-from galacteek.core import pkgResourcesRscFilename
 
 
 class ConfigError(Exception):
@@ -14,7 +13,11 @@ class ConfigError(Exception):
 
 
 def merge(*cfgs):
-    return OmegaConf.merge(*cfgs)
+    try:
+        return OmegaConf.merge(*cfgs)
+    except Exception:
+        traceback.print_exc()
+        return None
 
 
 def environment():
@@ -74,26 +77,15 @@ def load(configPath: Path, envConf: dict = None) -> dictconfig.DictConfig:
 def configFromFile(fpath: Path,
                    env_name: str = None) -> dictconfig.DictConfig:
     envConf = environment()
-
-    # TODO: cache
-    dpath = Path(pkgResourcesRscFilename(
-        'galacteek.config.defaults',
-        'config-default.yaml'
-    ))
-
     top = empty()
-    defaultsAll, defaults = load(str(dpath), envConf)
 
     configAll, config = load(str(fpath), envConf)
-
-    if defaults:
-        top = merge(top, defaults)
 
     if config:
         top = merge(config, top)
 
     if not top:
-        return None
+        return None, None
 
     return configAll, top
 
@@ -108,10 +100,7 @@ def dictDotLeaves(dic: dict, parent=None, leaves=None):
     """
     leaves = leaves if isinstance(leaves, list) else []
 
-    # for node in dic.keys():
     for node, subnode in dic.items():
-        # subnode = dic[node]
-
         if isinstance(subnode, dict):
             dictDotLeaves(
                 subnode,

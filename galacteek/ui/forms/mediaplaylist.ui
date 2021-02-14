@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>441</width>
-    <height>328</height>
+    <width>738</width>
+    <height>444</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,16 +19,45 @@
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
-        <widget class="QToolButton" name="savePlaylistButton">
+        <widget class="QToolButton" name="queueFromClipboard">
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Load multimedia content from the current clipboard object (can be a multimedia file or a directory)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
          <property name="text">
-          <string>Save playlist</string>
+          <string>Queue from clipboard</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../galacteek.qrc">
+           <normaloff>:/share/icons/clipboard.png</normaloff>:/share/icons/clipboard.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>32</width>
+           <height>32</height>
+          </size>
+         </property>
+         <property name="toolButtonStyle">
+          <enum>Qt::ToolButtonTextBesideIcon</enum>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="loadPlaylistButton">
+        <widget class="QToolButton" name="playlistButton">
          <property name="text">
-          <string>Load playlist</string>
+          <string>Playlist</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../galacteek.qrc">
+           <normaloff>:/share/icons/playlist.png</normaloff>:/share/icons/playlist.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>32</width>
+           <height>32</height>
+          </size>
+         </property>
+         <property name="toolButtonStyle">
+          <enum>Qt::ToolButtonTextBesideIcon</enum>
          </property>
         </widget>
        </item>
@@ -37,16 +66,14 @@
          <property name="text">
           <string>Clear</string>
          </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="clipPlaylistButton">
-         <property name="text">
-          <string/>
+         <property name="iconSize">
+          <size>
+           <width>32</width>
+           <height>32</height>
+          </size>
          </property>
-         <property name="icon">
-          <iconset resource="../galacteek.qrc">
-           <normaloff>:/share/icons/clipboard.png</normaloff>:/share/icons/clipboard.png</iconset>
+         <property name="toolButtonStyle">
+          <enum>Qt::ToolButtonTextBesideIcon</enum>
          </property>
         </widget>
        </item>

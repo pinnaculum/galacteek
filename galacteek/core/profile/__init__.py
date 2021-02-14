@@ -1,6 +1,5 @@
 import os
 import os.path
-import asyncio
 import time
 import re
 import uuid
@@ -11,7 +10,7 @@ from cachetools import TTLCache
 
 import aiofiles
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject
 from PyQt5.QtCore import QFile
 from PyQt5.QtCore import QIODevice
 from PyQt5.QtWidgets import QMenu
@@ -23,7 +22,7 @@ from galacteek import ensure
 from galacteek import ensureLater
 from galacteek import AsyncSignal
 
-from galacteek.ipfs.mutable import MutableIPFSJson, CipheredIPFSJson
+from galacteek.ipfs.mutable import CipheredIPFSJson
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.encrypt import IpfsRSAAgent
 from galacteek.ipfs.encrypt import IpfsCurve25519Agent
@@ -37,11 +36,7 @@ from galacteek.did.ipid.services.videocall import VideoCallService  # noqa
 from galacteek.core.iphandle import ipHandleGen
 from galacteek.core.iphandle import SpaceHandle
 from galacteek.core.asynclib import asyncReadFile
-from galacteek.core.orbitdb import OrbitConfigMap
-from galacteek.core.orbitdbcfg import defaultOrbitConfigMap
-from galacteek.core.jsono import QJSONFile
 from galacteek.core.models.mfs import createMFSModel
-from galacteek.core.ipfsmarks import IPFSMarks
 
 from galacteek.core.userdag import UserDAG
 from galacteek.core.userdag import UserWebsite
@@ -72,20 +67,6 @@ from galacteek.dweb.markdown import markitdown
 
 class CipheredHashmarks(CipheredIPFSJson):
     pass
-
-
-class OrbitalProfileConfig(MutableIPFSJson):
-    def configMap(self):
-        return OrbitConfigMap(self.root['config'])
-
-    @property
-    def valid(self):
-        return 'config' in self.root
-
-    def initObj(self):
-        return {
-            'config': {}
-        }
 
 
 class IPHandlesDAG(EvolvingDAG):
@@ -282,7 +263,7 @@ class UserProfileEDAG(EvolvingDAG):
         if self.personDid:
             return await ipfsop.ipidManager.load(
                 self.personDid,
-                timeout=5,
+                timeout=10,
                 localIdentifier=True
             )
 
@@ -316,85 +297,6 @@ class ProfileError(Exception):
     pass
 
 
-class SharedHashmarksManager(QObject):
-    hashmarksLoaded = pyqtSignal(str, IPFSMarks)
-
-    def __init__(self, parent):
-        super(SharedHashmarksManager, self).__init__(parent)
-        self._profile = parent
-        self._state = {}
-        self._loaded = []
-
-    @property
-    def profile(self):
-        return self._profile
-
-    async def loadFromPath(self, path):
-        marksCiphered = CipheredHashmarks(path, self.profile.rsaAgent)
-        await marksCiphered.load()
-        return marksCiphered
-
-    async def scanningTask(self):
-        while True:
-            await self.scan()
-            await asyncio.sleep(60)
-
-    @ipfsOp
-    async def scan(self, ipfsop):
-        log.debug('Scanning hashmarks MFS library')
-
-        listing = await ipfsop.filesList(self.profile.pathHMarksLibrary)
-
-        for file in listing:
-            await ipfsop.sleep()
-
-            uid = file['Name']
-            marksHash = file['Hash']
-
-            if marksHash in self._loaded:
-                continue
-
-            fPath = posixIpfsPath.join(self.profile.pathHMarksLibrary, uid)
-
-            try:
-                marksCiphered = await self.loadFromPath(fPath)
-
-                marks = IPFSMarks(None, data=marksCiphered.root)
-                self.hashmarksLoaded.emit(uid, marks)
-                self._loaded.append(marksHash)
-            except BaseException as err:
-                log.debug('Could not load hashmarks from CID {0}: {1}'.format(
-                    marksHash, str(err)))
-            else:
-                logUser.info('Loaded hashmarks from peer {0}'.format(uid))
-                await asyncio.sleep(1)
-
-    async def store(self, ipfsop, sender, marksJson):
-        mfsPath = posixIpfsPath.join(self.profile.pathHMarksLibrary, sender)
-
-        exists = await ipfsop.filesLookup(self.profile.pathHMarksLibrary,
-                                          sender)
-        if not exists:
-            marks = CipheredHashmarks(
-                mfsPath, self.profile.rsaAgent, data=marksJson)
-            await marks.ipfsSave()
-            self._state[sender] = marks
-        else:
-            if sender not in self._state:
-                marks = CipheredHashmarks(
-                    mfsPath, self.profile.rsaAgent)
-                await marks.load()
-                self._state[sender] = marks
-                marks._root = marksJson
-                marks.changed.emit()
-            else:
-                marks = self._state[sender]
-                marks._root = marksJson
-                marks.changed.emit()
-
-        await asyncio.sleep(1)
-
-
 class DIDRsaKeyStore:
     def __init__(self, profile, _storeRoot: Path):
         self.__root = _storeRoot
@@ -423,7 +325,8 @@ class DIDRsaKeyStore:
             try:
                 with open(privKeyPath, 'rb') as fd:
                     privKey = RSA.import_key(fd.read())
-            except Exception:
+            except Exception as err:
+                log.debug(f'Cannot find privkey for DID: {did}: {err}')
                 return None
             else:
                 return privKey
@@ -484,7 +387,6 @@ class UserProfile(QObject):
         self.orbitalCfgMap = None
 
         self.rsaAgent = None
-        self.sharedHManager = SharedHashmarksManager(self)
 
         self.qrImageEncoded.connectTo(self.onQrImageEncoded)
         self.webPageSaved.connectTo(self.onWebPageSaved)
@@ -1154,68 +1056,9 @@ class UserProfile(QObject):
     def onUserInfoChanged(self):
         ensure(self.update())
 
-    def onUserNameChanged(self):
-        ensure(self.publishProfile())
-
-    def onOrbitalConfigChanged(self):
-        pass
-
     @ipfsOp
     async def reconfigureOrbit(self, ipfsop):
         await ipfsop.ctx.orbitConnector.reconfigure()
-
-    def syncOrbital(self):
-        self.orbitalCfgFile.set(self.orbitalCfgMap.data)
-        self.orbitalCfgFile.changed.emit()
-
-    async def orbitalSetup(self, conn):
-        conn.useConfigMap(OrbitConfigMap(defaultOrbitConfigMap))
-
-        self.orbitalCfgFile = QJSONFile(os.path.join(
-            self.ctx.app.dataLocation, 'orbital.profile.json'))
-        self.orbitalCfgMap = OrbitConfigMap(self.orbitalCfgFile.root)
-        conn.useConfigMap(self.orbitalCfgMap)
-
-        self.orbitalCfgMap.notifier.changed.connect(
-            lambda: self.syncOrbital())
-
-        userNs = self.userInfo.uid
-
-        self.orbitalDbProfile = conn.database(userNs,
-                                              'profile', dbtype='keyvalue')
-
-        if not self.orbitalCfgMap.hasDatabase(userNs, 'profile'):
-            self.orbitalCfgMap.newDatabase(
-                self.orbitalDbProfile.ns,
-                self.orbitalDbProfile.dbname,
-                self.orbitalDbProfile.dbtype
-            )
-            await self.orbitalDbProfile.create()
-            self.orbitalCfgFile.changed.emit()
-            await self.reconfigureOrbit()
-
-        await self.reconfigureOrbit()
-        await self.orbitalDbProfile.open()
-
-    async def publishProfile(self):
-        if self.ctx.inOrbit:
-            conn = self.ctx.orbitConnector
-            log.debug('Publishing username {0}'.format(self.userInfo.username))
-
-            usernames = await conn.usernamesList()
-
-            logUser.debug('Existing usernames in database: {users}'.format(
-                users=','.join(usernames)))
-
-            if self.userInfo.username not in usernames:
-                await conn.dbUsernames.add({
-                    'name': self.userInfo.username
-                })
-
-            entry = await self.orbitalDbProfile.get(self.userInfo.username)
-            if not entry:
-                await self.orbitalDbProfile.set(
-                    self.userInfo.username, self.userInfo.root['userinfo'])
 
     def onDagChange(self):
         ensure(self.publishDag())
@@ -1244,7 +1087,7 @@ class UserProfile(QObject):
 
         if reschedule is True:
             self.debug('Rescheduling user DAG publish')
-            ensureLater(60 * 5,
+            ensureLater(60 * 10,
                         self.publishDag, reschedule=reschedule,
                         allowOffline=allowOffline)
 
@@ -1333,12 +1176,12 @@ class UserProfile(QObject):
 
     def edagMetadataPath(self, name):
         return posixIpfsPath.join(
-            self.pathEDags, '{0}.edag.json'.format(name))
+            self.pathEDags, f'{name}.edag.json')
 
     def edagEncMetadataPath(self, name):
         return posixIpfsPath.join(
-            self.pathEDags, '{0}.edag.enc.json'.format(name))
+            self.pathEDags, f'{name}.edag.enc.json')
 
     def edagPyramidMetadataPath(self, name):
         return posixIpfsPath.join(
-            self.pathEDagsPyramids, '{0}.edag.json'.format(name))
+            self.pathEDagsPyramids, f'{name}.edag.json')

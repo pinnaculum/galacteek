@@ -183,6 +183,12 @@ def buildArgsParser(fromParser=None):
         dest='offline',
         help="Run IPFS daemon in offline mode")
     parser.add_argument(
+        '--config-defaults',
+        action='store_true',
+        default=False,
+        dest='configDefault',
+        help="Start with default configuration")
+    parser.add_argument(
         '--enable-orbital',
         action='store_true',
         dest='enableorbital',
@@ -228,7 +234,7 @@ def buildArgsParser(fromParser=None):
         '--env',
         default='main',
         dest='env',
-        help="Environment")
+        help="Config environment")
 
     parser.add_argument('--eth-contracts', default='',
                         dest='contracts',

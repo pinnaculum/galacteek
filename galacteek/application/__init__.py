@@ -85,7 +85,6 @@ from galacteek.browser.schemes import NativeIPFSSchemeHandler
 from galacteek.browser.schemes import ObjectProxySchemeHandler
 from galacteek.browser.schemes import MultiObjectHostSchemeHandler
 
-
 from galacteek.browser import BrowserRuntimeObjects
 from galacteek.browser import browserSetup
 
@@ -263,7 +262,6 @@ class GalacteekApplication(QApplication):
         self._progName = progName
         self._progCid = None
         self._system = platform.system()
-        self._urlSchemes = {}
         self._shuttingDown = False
         self._freshInstall = False
         self._process = psutil.Process(os.getpid())
@@ -273,7 +271,6 @@ class GalacteekApplication(QApplication):
         self._ipfsIconsCacheMax = 32
         self._goIpfsBinPath = None
 
-        self.enableOrbital = enableOrbital
         self.orbitConnector = None
         self.netProxy = None
 
@@ -302,6 +299,15 @@ class GalacteekApplication(QApplication):
     @cached_property
     def eth(self):
         return self.s.ethService
+
+    @cached_property
+    def lock(self):
+        lpath = Path(self._pLockLocation)
+
+        if not lpath.exists():
+            lpath.touch()
+
+        return FileLock(lpath, timeout=2)
 
     @property
     def theme(self):
@@ -334,8 +340,7 @@ class GalacteekApplication(QApplication):
 
     @property
     def bsdSystem(self):
-        if self.system:
-            return self.system.endswith('BSD')
+        return self.system.endswith('BSD')
 
     @property
     def unixSystem(self):
@@ -453,6 +458,10 @@ class GalacteekApplication(QApplication):
     @property
     def orbitDataLocation(self):
         return self._orbitDataLocation
+
+    @property
+    def cAsyncio(self):
+        return cGet('asyncio')
 
     def readQSSFile(self, path):
         try:
@@ -611,8 +620,7 @@ class GalacteekApplication(QApplication):
         # By starting the top service, all subservices will be started
         await self.s.start()
 
-    @ipfsOp
-    async def setupRepository(self, op):
+    async def importCommonResources(self):
         self.ipfsCtx.resources['ipfs-logo-ice'] = await self.importQtResource(
             '/share/icons/ipfs-logo-128-ice.png')
         self.ipfsCtx.resources['ipfs-cube-64'] = await self.importQtResource(
@@ -623,6 +631,8 @@ class GalacteekApplication(QApplication):
             await self.importQtResource(
                 '/share/static/docs/markdown-reference.html')
 
+    @ipfsOp
+    async def setupRepository(self, op):
         vPath = pkgResourcesRscFilename(
             'galacteek.extapps', 'video-rendezvous')
         # CHANGE
@@ -807,8 +817,9 @@ class GalacteekApplication(QApplication):
         if self.feedFollowerTask is not None:
             await self.feedFollowerTask.close()
 
-    def setupDb(self):
-        ensure(self.setupOrmDb(self._mainDbLocation))
+    def setupDb(self, emitConfigured=True):
+        ensure(self.setupOrmDb(
+            self._mainDbLocation, emitConfigured=emitConfigured))
 
     def jobsExceptionHandler(self, scheduler, context):
         pass
@@ -817,12 +828,19 @@ class GalacteekApplication(QApplication):
         log.debug(f'Scheduler jobs: {self.scheduler.active_count} active,'
                   f'{self.scheduler.pending_count} pending jobs')
 
-    async def setupOrmDb(self, dbpath: Path):
+    async def createAioScheduler(self):
+        # Create the aiojobs scheduler
+
+        cfg = self.cAsyncio.aioSchedulers.main
+
         self.scheduler = await aiojobs.create_scheduler(
-            close_timeout=1.0,
-            limit=250,
-            pending_limit=1000
+            close_timeout=cfg.closeTimeout,
+            limit=cfg.jobsLimit,
+            pending_limit=cfg.pendingJobsLimit
         )
+
+    async def setupOrmDb(self, dbpath: Path, emitConfigured=True):
+        await self.createAioScheduler()
 
         # Old database, just for Atom feeds right now
 
@@ -837,7 +855,9 @@ class GalacteekApplication(QApplication):
             return
 
         await self.setupHashmarks()
-        await self.dbConfigured.emit(True)
+
+        if emitConfigured:
+            await self.dbConfigured.emit(True)
 
     async def onDbConfigured(self, configured):
         if not configured:
@@ -851,14 +871,15 @@ class GalacteekApplication(QApplication):
         self.setupClipboard()
         self.setupTranslator()
         self.initSystemTray()
-        self.initMisc()
+
+        await browserSetup(self, self.browserRuntime)
+
         self.initWebProfiles()
 
         self.createMainWindow()
         self.clipboardInit()
         await self.initDapps()
 
-        await browserSetup(self.browserRuntime)
         await self.startCoreServices()
 
         await self.setupIpfsConnection()
@@ -993,21 +1014,23 @@ class GalacteekApplication(QApplication):
     def task(self, fn, *args, **kw):
         return self.loop.create_task(fn(*args, **kw))
 
-    def configure(self):
+    def configure(self, dbSigEmit=True):
         self.initSettings()
+        self.initMisc()
         self.setupMainObjects()
         self.setupSchemeHandlers()
         self.applyStyle()
         self.themeChange()
-        self.setupDb()
+        self.setupDb(emitConfigured=dbSigEmit)
 
     def acquireLock(self):
-        lpath = Path(self._pLockLocation)
+        if 0:
+            lpath = Path(self._pLockLocation)
 
-        if not lpath.exists():
-            lpath.touch()
+            if not lpath.exists():
+                lpath.touch()
 
-        self.lock = FileLock(lpath, timeout=2)
+            self.lock = FileLock(lpath, timeout=2)
 
         try:
             self.lock.acquire()
@@ -1070,7 +1093,9 @@ class GalacteekApplication(QApplication):
 
         cRoot = qtConfigLocation.joinpath(
             GALACTEEK_NAME).joinpath(self._appProfile)
+
         self.configDirLocation = cRoot.joinpath('config-0')
+        self.config2DirLocation = cRoot.joinpath('config-1')
 
         self.settingsFileLocation = cRoot.joinpath(
             f'{GALACTEEK_NAME}.conf')
@@ -1126,6 +1151,22 @@ class GalacteekApplication(QApplication):
         self.settingsMgr = SettingsManager(path=str(self.settingsFileLocation))
         setDefaultSettings(self)
         self.settingsMgr.sync()
+
+        if self.cmdArgs.configDefault:
+            log.debug('Starting with fresh config')
+
+            try:
+                p = Path(self.configDirLocation)
+                if self.config2DirLocation.exists():
+                    shutil.rmtree(
+                        str(self.config2DirLocation),
+                        ignore_errors=True
+                    )
+                if p.is_dir():
+                    log.debug('Moving old config')
+                    p.replace(self.config2DirLocation)
+            except Exception as err:
+                log.debug(f'Error replacing config: {err}')
 
         log.debug(f'Using config from directory: {self.configDirLocation}')
         cSetSavePath(self.configDirLocation)
@@ -1235,6 +1276,8 @@ class GalacteekApplication(QApplication):
             idx, ws = self.mainWindow.stack.workspaceByName(WS_STATUS)
 
             await ipfsop.ctx.createRootEntry()
+
+            await self.importCommonResources()
 
             await self.ipfsCtx.setup(pubsubEnable=True)
 
@@ -1482,10 +1525,13 @@ class GalacteekApplication(QApplication):
     async def shutdownScheduler(self):
         # It ain't that bad. STFS with dignity
 
-        for stry in range(0, 8):
+        cfg = self.cAsyncio.aioSchedulers.main.shutdown
+
+        for stry in range(0, max(5, cfg.closeAttempts)):
             try:
                 log.warning(f'Scheduler shutdown attempt: {stry}')
-                async with async_timeout.timeout(2):
+
+                with async_timeout.timeout(cfg.closeTimeout):
                     await self.scheduler.close()
             except asyncio.TimeoutError:
                 log.warning(
@@ -1495,9 +1541,11 @@ class GalacteekApplication(QApplication):
                 log.debug(f'Error shutting down the scheduler: {gerr}')
             else:
                 log.debug(f'Scheduler went down (try: {stry})')
-                return
+                break
 
     async def exitApp(self, detachIpfsd=False):
+        tasksCfg = self.cAsyncio.tasks
+
         self._shuttingDown = True
 
         self.lock.release()
@@ -1508,16 +1556,18 @@ class GalacteekApplication(QApplication):
         self.mainWindow.stopTimers()
         await self.mainWindow.stack.shutdown()
 
-        try:
-            self.systemTray.hide()
-        except:
-            pass
+        if 0:
+            try:
+                self.systemTray.hide()
+            except:
+                pass
 
         await self.stopIpfsServices()
 
+        # Asyncio shutdown
         await self.loop.shutdown_asyncgens()
         await self.shutdownScheduler()
-        await cancelAllTasks()
+        await cancelAllTasks(timeout=tasksCfg.cancelTimeout)
 
         if self.ipfsClient:
             await self.ipfsClient.close()
@@ -1531,10 +1581,11 @@ class GalacteekApplication(QApplication):
                 self.ipfsd.stop()
 
         try:
-            await self.sqliteDb.close()
-            await database.closeOrm()
+            with async_timeout.timeout(0.5):
+                await self.sqliteDb.close()
+                await database.closeOrm()
         except Exception as err:
-            self.debug(f'Error while closing databases: {err}')
+            self.debug(f'Error while closing database: {err}')
 
         if self.debug:
             self.showTasks()

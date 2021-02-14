@@ -4,11 +4,17 @@ import time
 import collections
 import traceback
 import base64
-from asyncio_throttle import Throttler
 
 from galacteek import log as logger
 from galacteek import AsyncSignal
 from galacteek import ensureLater
+
+from galacteek.core.asynclib import GThrottler
+
+from galacteek.config import cParentGet
+from galacteek.config import configModRegCallback
+from galacteek.config import Configurable
+from galacteek.config import merge as configMerge
 
 from galacteek.ipfs.pubsub import TOPIC_MAIN
 from galacteek.ipfs.pubsub import TOPIC_HASHMARKS
@@ -74,7 +80,7 @@ class MsgSpy(object):
             )
 
 
-class PubsubService(object):
+class PubsubService(Configurable):
     """
     Generic IPFS pubsub service
     """
@@ -91,6 +97,8 @@ class PubsubService(object):
                  thrRetry=0.5,
                  hubPublishDD=True,
                  scheduler=None):
+        self.throttler = None
+
         self.client = client
         self.ipfsCtx = ipfsCtx
         self.topic = topic
@@ -104,9 +112,9 @@ class PubsubService(object):
         self._runPeriodic = runPeriodic
         self._filters = []
         self._peerActivity = {}
-        self._maxMsgTsDiff = maxMsgTsDiff
-        self._minMsgTsDiff = minMsgTsDiff
-        self._maxMessageSize = maxMessageSize
+
+        super().__init__(applyNow=True)
+
         self._shuttingDown = False
 
         # Async sigs
@@ -117,17 +125,11 @@ class PubsubService(object):
         self.tskProcess = None
         self.tskPeriodic = None
 
-        self.throttler = Throttler(
-            rate_limit=thrRateLimit,
-            period=thrPeriod,
-            retry_interval=thrRetry
-        )
-
         self.addMessageFilter(self.filterMessageSize)
         self.addMessageFilter(self.filterPeerActivity)
 
-        if filterSelfMessages is True:
-            self.addMessageFilter(self.filterSelf)
+        configModRegCallback(self.onConfigChanged,
+                             mod='galacteek.ipfs.pubsub')
 
     @property
     def receivedCount(self):
@@ -141,6 +143,40 @@ class PubsubService(object):
     def runPeriodic(self):
         return self._runPeriodic
 
+    def config(self):
+        return cParentGet('serviceTypes.base')
+
+    def messageConfig(self, messageType: str):
+        cfg = self.config()
+        try:
+            return cfg.messages.get(messageType)
+        except Exception:
+            return None
+
+    def configApply(self, cfg):
+        if not self.throttler:
+            self.throttler = GThrottler(
+                rate_limit=cfg.throttler.rateLimit,
+                period=cfg.throttler.period,
+                retry_interval=cfg.throttler.retryInterval,
+                name=cfg.throttler.name
+            )
+        else:
+            self.throttler.rate_limit = cfg.throttler.rateLimit
+            self.throttler.period = cfg.throttler.period
+            self.throttler.retry_interval = cfg.throttler.retryInterval
+
+        self._minMsgTsDiff = cfg.filters.timeStampDiff.min
+        self._maxMsgTsDiff = cfg.filters.timeStampDiff.max
+
+        if cfg.filters.messageSize:
+            self._maxMessageSize = cfg.filters.messageSize.max
+        else:
+            self._maxMessageSize = 0
+
+        if cfg.filters.filterSelf.enabled:
+            self.addMessageFilter(self.filterSelf)
+
     def debug(self, msg):
         logger.debug('PS[{0}]: {1}'.format(self.topic, msg))
 
@@ -150,6 +186,12 @@ class PubsubService(object):
     def logStatus(self):
         self.debug('** Messages received: {0}, errors: {1}'.format(
             self.receivedCount, self.errorsCount))
+
+    async def restartProcessTask(self):
+        if self.tskProcess:
+            await self.tskProcess.close()
+
+        self.tskProcess = await self.scheduler.spawn(self.processMessages())
 
     async def start(self):
         """ Create the different tasks for this service """
@@ -170,6 +212,9 @@ class PubsubService(object):
         self._shuttingDown = True
         await self.shutdown()
 
+        if self.throttler:
+            self.throttler.shutdown()
+
         for tsk in [self.tskServe, self.tskProcess, self.tskPeriodic]:
             if not tsk:
                 continue
@@ -188,16 +233,16 @@ class PubsubService(object):
             else:
                 self.debug('task {}: shutdown ok'.format(tsk))
 
-    def addMessageFilter(self, filtercoro):
-        if asyncio.iscoroutinefunction(filtercoro):
-            self._filters.append(filtercoro)
+    def addMessageFilter(self, filter):
+        if filter not in self._filters:
+            self._filters.append(filter)
 
-    async def filterMessageSize(self, msg):
+    def filterMessageSize(self, msg):
         if len(msg['data']) > self._maxMessageSize:
             return True
         return False
 
-    async def filterPeerActivity(self, msg):
+    def filterPeerActivity(self, msg):
         ltime = self.client.loop.time()
 
         senderNodeId = msg['from'] if isinstance(msg['from'], str) else \
@@ -229,7 +274,7 @@ class PubsubService(object):
 
         return False
 
-    async def filterSelf(self, msg):
+    def filterSelf(self, msg):
         sender = msg['from'] if isinstance(msg['from'], str) else \
             msg['from'].decode()
 
@@ -240,8 +285,9 @@ class PubsubService(object):
 
     async def filtered(self, message):
         for filter in self._filters:
-            if await filter(message):  # That means we drop it
+            if filter(message) is True:  # That means we drop it
                 return True
+
         return False
 
     async def shutdown(self):
@@ -334,6 +380,15 @@ class JSONPubsubService(PubsubService):
     jsonMessageReceived = AsyncSignal(str, str, bytes)
     hubKey = keyPsJson
 
+    def config(self):
+        base = super().config()
+        jsonConfig = cParentGet('serviceTypes.json')
+
+        if jsonConfig:
+            return configMerge(base, jsonConfig)
+
+        return base
+
     def msgDataToJson(self, msg):
         """
         Decode JSON data contained in a pubsub message
@@ -354,12 +409,12 @@ class JSONPubsubService(PubsubService):
 
         try:
             while not self._shuttingDown:
+                data = await self.inQueue.get()
+
+                if data is None:
+                    continue
+
                 async with self.throttler:
-                    data = await self.inQueue.get()
-
-                    if data is None:
-                        continue
-
                     if self._shuttingDown:
                         return
 
@@ -545,6 +600,10 @@ class RSAEncryptedJSONPubsubService(JSONPubsubService):
 
         super().__init__(ipfsCtx, client, **kw)
 
+    def config(self):
+        base = super().config()
+        return configMerge(base, cParentGet('serviceTypes.rsaEncJson'))
+
     def peeredTopic(self, peerId):
         if self.peered:
             return f'{self.baseTopic}.{peerId}'
@@ -615,6 +674,10 @@ class Curve25519JSONPubsubService(JSONPubsubService):
         kw.update(topic=self.peeredTopic(ipfsCtx.node.id))
 
         super().__init__(ipfsCtx, client, **kw)
+
+    def config(self):
+        base = super().config()
+        return configMerge(base, cParentGet('serviceTypes.curve25519EncJson'))
 
     def peeredTopic(self, peerId):
         if self.peered:

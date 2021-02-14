@@ -1,0 +1,43 @@
+envs:
+  default:
+    services:
+      peers:
+        ident:
+          sendInterval: 90
+
+        throttler:
+          name: 'ps-peers-throttler'
+          rateLimit: 300
+          period: 30.0
+          retryInterval: 0.15
+
+        filters:
+          filterSelf:
+            enabled: False
+          messageSize:
+            max: 8192
+
+          timeStampDiff:
+            # Mininum timestamp difference for ident messages (in seconds)
+            min: 120.0
+
+      chat:
+        messages:
+          ChatChannelsListMessage:
+            sendInterval: 90
+
+          UserChannelsListMessage:
+            # JWS fetch timeout in seconds
+            jwsFetchTimeout: 10
+
+            publishTimer: 12
+
+        throttler:
+          name: 'ps-chat-throttler'
+          rateLimit: 300
+          period: 30.0
+          retryInterval: 0.2
+
+        filters:
+          filterSelf:
+            enabled: False

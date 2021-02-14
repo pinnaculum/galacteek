@@ -168,6 +168,8 @@ class AtomFeedsViewTab(GalacteekTab):
     def __init__(self, gWindow, view=None):
         super(AtomFeedsViewTab, self).__init__(gWindow)
 
+        self.ctx.tabIdent = 'dweb-atom-feeds'
+
         self.view = view if view else AtomFeedsView(
             self.app.modelAtomFeeds, parent=self)
         self.addToLayout(self.view)

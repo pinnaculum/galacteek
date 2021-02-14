@@ -1,16 +1,18 @@
 import asyncio
 import os
+import re
+
 from pathlib import Path
 from email.message import EmailMessage
 # from email.utils import parseaddr as parseEmailAddress
 from mailbox import Maildir
-# from mailbox import MaildirMessage
 import email.errors
 
 from galacteek import log
 from galacteek import AsyncSignal
 from galacteek import cached_property
 from galacteek import database
+from galacteek import ensure
 
 from galacteek.config import cParentGet
 from galacteek.core.process import ProcessLauncher
@@ -25,13 +27,43 @@ from galacteek.services import GService
 from galacteek.services.net.bitmessage import bmAddressValid
 from galacteek.services.net.bitmessage.storage import RegularMailDir
 
+from galacteek.i18n.bm import *  # noqa
+
 
 NOTBIT = 'notbit'
 
 
 class NotBitProtocol(LineReaderProcessProtocol):
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
+
+        self.sPowCalculated = AsyncSignal()
+        self.sMessageAccepted = AsyncSignal(str)
+
     def lineReceived(self, fd, line):
-        log.debug(f'Notbit: {line}')
+        log.debug(f'NotBit daemon message: {line}')
+
+        match = re.search(
+            r'\[\d*\-\d*\-\d.*?\]\s(.*)$',
+            line
+        )
+
+        if match:
+            # Handle specific events
+
+            msg = match.group(1)
+
+            # POW
+            if msg.startswith('Finished calculating proof-of-work'):
+                ensure(self.sPowCalculated.emit())
+
+            # Message accepted
+            ma = re.search(
+                r'Accepted message from (BM-\w*)$',
+                msg
+            )
+            if ma:
+                ensure(self.sMessageAccepted.emit(ma.group(1)))
 
         if line.startswith('Failed to bind socket'):
             log.debug('Notbit failed to start')
@@ -51,6 +83,10 @@ class NotBitProcess(ProcessLauncher):
         self.listenPort = listenPort
         self.useTor = useTor
 
+        self.nbProtocol = NotBitProtocol(
+            self.loop, self.exitFuture, self.startedFuture
+        )
+
     def removePidFile(self):
         if self.pidFilePath.is_file():
             log.debug(f'PID file {self.pidFilePath}: unlinking')
@@ -58,7 +94,7 @@ class NotBitProcess(ProcessLauncher):
             self.pidFilePath.unlink()
 
     async def startProcess(self):
-        if cParentGet('notbit.purgeObjectsOnStartup') is True:
+        if cParentGet('notbit.objects.purgeOnStartup') is True:
             log.debug(f'Purging objects cache: {self.objectsPath}')
 
             await asyncRmTree(str(self.objectsPath))
@@ -94,14 +130,12 @@ class NotBitProcess(ProcessLauncher):
             '-p', str(self.listenPort)
         ]
 
-        if self.useTor:
+        if self.useTor and 0:
             args.append('-T')
 
         if await self.runProcess(
             [NOTBIT] + args,
-            NotBitProtocol(
-                self.loop, self.exitFuture, self.startedFuture
-            )
+            self.nbProtocol
         ):
             log.debug(f'Started notbit at PID: {self.process.pid}')
 
@@ -151,12 +185,13 @@ class BitMessageMailManService(GService):
 
     async def on_start(self) -> None:
         log.debug('Starting BM mailman ..')
-        # await self.loadMailBoxes()
 
     @GService.task
     async def watchMailDir(self):
-        while not self.should_stop:
+        while True:
             await asyncio.sleep(cParentGet('mdirWatcher.sleepInterval'))
+
+            log.debug(f'NotBit maildir ({self.clearMailDirPath}): reading')
 
             for key in self.clearMailDir.iterkeys():
                 try:
@@ -165,25 +200,33 @@ class BitMessageMailManService(GService):
                     bmAddr, domain = recipient.split('@')
                     assert domain == 'bitmessage'
                     assert bmAddressValid(bmAddr)
-                except email.errors.MessageParseError:
+                except email.errors.MessageParseError as err:
+                    log.debug(
+                        f'Error parsing message {key}: {err}')
+                    continue
+                except Exception as err:
+                    log.debug(
+                        f'Unknown error parsing message {key}: {err}')
                     continue
                 else:
-                    # Lookup if we have a mailbox for this recipient
+                    # Check if we have a mailbox for this recipient
                     mbox = self.mailBoxGet(bmAddr)
 
                     if not mbox:
                         log.debug(f'No mailbox for {recipient}')
-                        await asyncio.sleep(0)
+                        await asyncio.sleep(0.05)
                         continue
 
                     log.debug(f'Found mailbox for {recipient}')
                     if await mbox.store(message):
                         # Delete the message from notbit's maildir
-                        log.debug('Transferred message to maildir')
+                        log.debug('Transferred message to destination maildir')
 
                         self.clearMailDir.remove(key)
                     else:
-                        log.debug('Error Transferring message to maildir')
+                        log.debug('Error transferring message to maildir')
+
+                    await asyncio.sleep(0.1)
 
     async def send(self,
                    bmSource: str,
@@ -327,6 +370,12 @@ class BitMessageClientService(GService):
                 listenPort=cParentGet('notbit.listenPort'),
                 useTor=cParentGet('notbit.useTor')
             )
+            self.notbitProcess.nbProtocol.sPowCalculated.connectTo(
+                self.onPowCalculated
+            )
+            self.notbitProcess.nbProtocol.sMessageAccepted.connectTo(
+                self.onMessageAccepted
+            )
             if await self.notbitProcess.start():
                 await self.psPublish({
                     'type': 'ServiceStarted',
@@ -351,6 +400,18 @@ class BitMessageClientService(GService):
                 contact.get('name'),
                 groupName=contact.get('group')
             )
+
+    async def onPowCalculated(self):
+        self.app.systemTrayMessage(
+            iBitMessage(),
+            iBitMessagePowCalculated()
+        )
+
+    async def onMessageAccepted(self, bmSource: str):
+        self.app.systemTrayMessage(
+            iBitMessage(),
+            iBitMessageAcceptedMessage(bmSource)
+        )
 
     async def on_stop(self) -> None:
         log.debug('Stopping bitmessage client')

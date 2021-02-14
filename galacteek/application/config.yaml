@@ -6,5 +6,18 @@ envs:
       - code: en
         displayName: 'English'
 
-      - code: es
-        displayName: 'Spanish (Castilian)'
+    asyncio:
+      # aiojobs schedulers
+      aioSchedulers:
+        main:
+          closeTimeout: 0.5
+          jobsLimit: 300
+          pendingJobsLimit: 2000
+
+          shutdown:
+            closeAttempts: 10
+            closeTimeout: 5.0
+
+      # Tasks settings
+      tasks:
+        cancelTimeout: 0.2

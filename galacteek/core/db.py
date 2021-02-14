@@ -160,6 +160,7 @@ class AtomFeedsDatabase(QObject):
 
         try:
             feed = await self.parser.parse(resolved)
+            assert feed is not None
         except AtomParseFeedError:
             return False
 

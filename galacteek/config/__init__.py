@@ -1,14 +1,18 @@
-import weakref
+import asyncio
 import attr
 import inspect
+import functools
 from pathlib import Path
 
 from omegaconf import OmegaConf
 from omegaconf import dictconfig  # noqa
 
+from PyQt5.QtCore import QTimer
+
 from galacteek.core import pkgResourcesRscFilename
 from galacteek.core import pkgResourcesListDir
 from galacteek import log
+from galacteek import ensure
 
 from types import SimpleNamespace
 
@@ -16,6 +20,30 @@ from .util import configFromFile
 from .util import environment
 from .util import empty
 from .util import dictDotLeaves
+
+
+class Configurable(object):
+    configModuleName = None
+
+    def __init__(self, parent=None, applyNow=False):
+        super(Configurable, self).__init__()
+        self.parent = parent
+
+        if applyNow:
+            self.cApply()
+
+    def cApply(self):
+        self.configApply(self.config())
+
+    def config(self):
+        # raise Exception(f'Implement config() for {self!r}')
+        return None
+
+    def onConfigChanged(self):
+        self.configApply(self.config())
+
+    def configApply(self, config):
+        pass
 
 
 class NestedNamespace(SimpleNamespace):
@@ -87,14 +115,19 @@ def regConfigFromFile(pkgName: str, fpath: str):
             cfgAll = merge(cfgAll, eCfgAll)
 
     savePath.parent.mkdir(parents=True, exist_ok=True)
-    OmegaConf.save(cfgAll, str(savePath))
+
+    try:
+        del cfgAll['envs']['default']
+    except:
+        pass
 
     cCache[pkgName] = {
         'configAll': cfgAll,
-        'config': cfg,
         'path': savePath,
+        'timer': None,
         'callbacks': []
     }
+    OmegaConf.save(cfgAll, str(savePath))
 
     return cCache[pkgName]
 
@@ -114,29 +147,38 @@ def regConfigFromPyPkg(pkgName: str):
     if fpath.is_file():
         regConfigFromFile(pkgName, fpath)
 
-    listing = pkgResourcesListDir(pkgName, '')
-    for entry in listing:
-        if entry == configYamlName:
-            continue
+    if 0:
+        listing = pkgResourcesListDir(pkgName, '')
+        for entry in listing:
+            if entry == configYamlName:
+                continue
 
-        mod = entry.replace(f'.{yamlExt}', '')
-        modName = f'{pkgName}.{mod}'
-        fpath = Path(pkgResourcesRscFilename(pkgName, entry))
+            mod = entry.replace(f'.{yamlExt}', '')
+            modName = f'{pkgName}.{mod}'
+            fpath = Path(pkgResourcesRscFilename(pkgName, entry))
 
-        if fpath.exists() and fpath.name.endswith(yamlExt):
-            regConfigFromFile(modName, fpath)
+            if fpath.exists() and fpath.name.endswith(yamlExt):
+                regConfigFromFile(modName, fpath)
+
+
+def configForModule(mod: str):
+    global cCache
+
+    environ = environment()
+    env = environ['env']
+
+    eConf = cCache.get(mod, None)
+    if not eConf:
+        return
+
+    return eConf['configAll']['envs'].get(env, None)
 
 
 def configModLeafAttributes(pkgName: str):
     global cCache
 
-    eConf = cCache.get(pkgName, None)
-    if not eConf:
-        return
-
-    conf = eConf['config']
-
     try:
+        conf = configForModule(pkgName)
         return dictDotLeaves(OmegaConf.to_container(conf))
     except Exception:
         return []
@@ -157,7 +199,7 @@ def configLeafAttributes():
             yield modName, attribute
 
 
-def cAttr(mod, cfg, attr, value=None):
+def cAttr(mod, cfg, attr, value=None, merge=False):
     environ = environment()
     env = environ['env']
 
@@ -166,7 +208,7 @@ def cAttr(mod, cfg, attr, value=None):
     if value is not None:
         # Set
         try:
-            OmegaConf.update(conf, attr, value, merge=False)
+            OmegaConf.update(conf, attr, value, merge=merge)
         except Exception:
             log.debug(f'{mod}: cannot set value for attribute {attr}')
         else:
@@ -196,6 +238,22 @@ def cGet(attr: str, mod=None):
         return cAttr(mod, cEntry['configAll'], attr)
 
 
+def cWidgetGet(widget: str, mod=None):
+    return cGet(f'widgets.{widget}', mod=mod if mod else callerMod())
+
+
+def cObjectGet(object: str, mod=None):
+    return cGet(f'objects.{object}', mod if mod else callerMod())
+
+
+def cQtClassConfigGet(qtClass: str):
+    return cGet(f'qtClasses.{qtClass}', mod=callerMod())
+
+
+def cClassConfigGet(cls: str):
+    return cGet(f'classes.{cls}', mod=callerMod())
+
+
 def cParentGet(attr: str):
     mod = callerMod()
     parentMod = '.'.join(mod.split('.')[:-1])
@@ -205,20 +263,48 @@ def cParentGet(attr: str):
         return cAttr(parentMod, cEntry['configAll'], attr)
 
 
-def cSet(attr: str, value, mod=None):
+def cSet(attr: str, value, mod=None,
+         merge=False,
+         noCallbacks=False):
     if not mod:
         mod = callerMod()
 
     cEntry = regConfigFromPyPkg(mod)
     if cEntry:
-        cAttr(mod, cEntry['configAll'], attr, value)
+        cAttr(mod, cEntry['configAll'], attr, value, merge=merge)
 
-        for ref in cEntry['callbacks']:
-            try:
-                callback = ref()
-                callback()
-            except Exception:
-                pass
+        # log.debug(f'cSet ({mod}): {attr} => {value}')
+
+        def onTimeout(timer, cfgEntry):
+            timer.stop()
+
+            for callback in cfgEntry['callbacks']:
+                try:
+                    if asyncio.iscoroutinefunction(callback):
+                        ensure(callback())
+                    else:
+                        callback()
+                except Exception as err:
+                    log.debug(f'Cannot call {callback}: {err}')
+                    continue
+
+        if not noCallbacks:
+            if not cEntry['timer']:
+                timer = QTimer()
+                timer.timeout.connect(
+                    functools.partial(onTimeout, timer, cEntry))
+                timer.start(2000)
+                cEntry['timer'] = timer
+            else:
+                cEntry['timer'].stop()
+                cEntry['timer'].start(2000)
+
+
+def cParentSet(attr: str, value, merge=False):
+    mod = callerMod()
+    parentMod = '.'.join(mod.split('.')[:-1])
+
+    return cSet(attr, value, mod=parentMod, merge=merge)
 
 
 def cModuleSave():
@@ -237,24 +323,19 @@ class ModuleConfigContext:
 
 
 def cModuleContext(mod: str):
-    if not mod:
-        mod = callerMod()
-
-    cEntry = regConfigFromPyPkg(mod)
-    if cEntry:
-        return ModuleConfigContext(mCfg=cEntry['config'])
+    cfg = configForModule(mod if mod else callerMod())
+    if cfg:
+        return ModuleConfigContext(mCfg=cfg)
     else:
         raise Exception(f'No config for module {mod}')
 
 
-def configModRegCallback(callback):
+def configModRegCallback(callback, mod=None):
     global cCache
 
-    pkgName = callerMod()
-
-    eConf = cCache.get(pkgName)
+    eConf = cCache.get(mod if mod else callerMod())
     if eConf:
-        eConf['callbacks'].append(weakref.ref(callback))
+        eConf['callbacks'].append(callback)
 
 
 def initFromTable():

@@ -75,6 +75,14 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>msgFrom</tabstop>
+  <tabstop>msgTo</tabstop>
+  <tabstop>msgSubject</tabstop>
+  <tabstop>msgText</tabstop>
+  <tabstop>sendButton</tabstop>
+  <tabstop>cancelButton</tabstop>
+ </tabstops>
  <resources>
   <include location="../galacteek.qrc"/>
  </resources>

@@ -2,7 +2,6 @@ import asyncio
 import aiorwlock
 import re
 import collections
-import time
 from datetime import datetime
 
 from PyQt5.QtWidgets import QApplication
@@ -17,9 +16,11 @@ from galacteek import log
 from galacteek import loopTime
 from galacteek import GALACTEEK_NAME
 from galacteek import ensure
-from galacteek import ensureLater
 from galacteek import partialEnsure
 from galacteek import AsyncSignal
+from galacteek import cached_property
+
+from galacteek.config import cGet
 
 from galacteek.ipfs import pinning
 from galacteek.ipfs import kilobytes
@@ -57,6 +58,8 @@ from galacteek.crypto.rsa import RSAExecutor
 from galacteek.crypto.ecc import ECCExecutor
 from galacteek.crypto.ecc import Curve25519
 
+from galacteek.services import GService
+
 
 class PeerIdentityCtx:
     def __init__(self, ipfsCtx, peerId, ipHandle,
@@ -68,9 +71,9 @@ class PeerIdentityCtx:
         self._ipid = ipIdentifier
         self.peerId = peerId
         self.iphandle = ipHandle
-        self.pinghist = collections.deque([], 8)
+        self.pinghist = collections.deque([], 4)
         self._didPongLast = None
-        self._identLast = int(time.time())
+        self._identLast = None
         self._validated = validated
         self._authenticated = authenticated
         self._authFailedAttemptsCn = 0
@@ -94,6 +97,10 @@ class PeerIdentityCtx:
     def ident(self):
         return self._identMsg
 
+    @cached_property
+    def cfgPeers(self):
+        return cGet('peers')
+
     @property
     def avatarImage(self):
         return self._avatarImage
@@ -116,6 +123,7 @@ class PeerIdentityCtx:
 
     @property
     def identLast(self):
+        # Last ident received (in loop time)
         return self._identLast
 
     @property
@@ -127,8 +135,13 @@ class PeerIdentityCtx:
         return self._authenticated
 
     @property
-    def peerUnresponsive(self):
-        return (int(time.time()) - self.identLast) > (60 * 5)
+    def peerActive(self):
+        delay = self.cfgPeers.liveness.inactiveNoIdent
+
+        if not self.identLast:
+            return False
+
+        return (loopTime() - self.identLast) < delay
 
     @property
     def authFailedAttemptsCn(self):
@@ -146,7 +159,7 @@ class PeerIdentityCtx:
     @ident.setter
     def ident(self, v):
         self._identMsg = v
-        self._identLast = int(time.time())
+        self._identLast = loopTime()
 
     def debug(self, msg):
         log.debug('Peer {p}@{ipid}: {msg}'.format(
@@ -156,13 +169,16 @@ class PeerIdentityCtx:
         self._authFailedAttemptsCn += 1
         self._authFailedLtLast = loopTime()
 
-    def alive(self):
+    @property
+    def pingedRecently(self):
+        pDelay = self.cfgPeers.liveness.didPingEvery
+
         if self.ipid.local:
             return True
 
         try:
             prec = self.pinghist[-1]
-            return int(loopTime()) - prec[1] < (60 * 5)
+            return int(loopTime()) - prec[1] < pDelay
         except:
             return False
 
@@ -205,7 +221,6 @@ class PeerIdentityCtx:
     async def getDidRsaPubKey(self, ipfsop):
         return await self.ipid.pubKeyPemGet()
 
-    @ipfsOp
     async def watch(self, ipfsop):
         if self.ipid.local:
             self.pinghist.append((
@@ -215,7 +230,6 @@ class PeerIdentityCtx:
             return
 
         if self.ident is None:
-            ensureLater(15, self.watch)
             return
 
         if isinstance(self.ident, PeerIdentMessageV4):
@@ -223,16 +237,13 @@ class PeerIdentityCtx:
 
             pongReply = await ipfsop.waitFor(ipfsop.didPing(
                 self.peerId, self.ipid.did,
-                idToken), 30
+                idToken), self.cfgPeers.liveness.didPingCallTimeout
             )
-
-            # self.debug(f'didping({self.ipid.did}) returned {pongReply}')
 
             if pongReply:
                 ms, pong = pongReply
                 if not pong:
                     # Retry later
-                    ensureLater(30, self.watch)
                     return
 
                 self._didPongLast = pong['didpong'][self.ipid.did]
@@ -242,17 +253,14 @@ class PeerIdentityCtx:
                     int(loopTime())
                 ))
 
-                ensureLater(140, self.watch)
                 await self.sStatusChanged.emit()
             else:
                 self.debug('Could not ping DID {self.ipid.did}')
-                ensureLater(60, self.watch)
 
                 await self.sStatusChanged.emit()
         else:
-            return await self.watchOldStyle()
+            return await self.watchOldStyle(ipfsop)
 
-    @ipfsOp
     async def watchOldStyle(self, ipfsop):
         if self.ipid.local:
             self.pinghist.append((
@@ -270,12 +278,9 @@ class PeerIdentityCtx:
                 int(loopTime())
             ))
 
-            ensureLater(180, self.watch)
-
             await self.sStatusChanged.emit()
         else:
             self.debug('Could not ping peer')
-            ensureLater(60, self.watch)
 
             await self.sStatusChanged.emit()
 
@@ -338,7 +343,7 @@ class PeerIdentityCtx:
         return f'PeerIdentityCtx: handle {self.iphandle} ({self.ipid.did})'
 
 
-class Peers:
+class Peers(GService):
     changed = AsyncSignal()
     peerAdded = AsyncSignal(PeerIdentityCtx)
     peerNew = AsyncSignal(PeerIdentityCtx)
@@ -350,6 +355,8 @@ class Peers:
     peerLogout = AsyncSignal(str)
 
     def __init__(self, ctx):
+        super().__init__()
+
         self.app = QApplication.instance()
         self.ctx = ctx
         self.lock = aiorwlock.RWLock()
@@ -449,19 +456,22 @@ class Peers:
 
     async def loadDidFromGraph(self, ipfsop, peerId: str, did: str,
                                sHandle: str):
+        loadTimeout = cGet('peers.didLoadTimeout')
+        loadAttempts = cGet('peers.didLoadAttempts')
+
         peersService = ipfsop.ctx.pubsub.byTopic(TOPIC_PEERS)
 
-        for attempt in range(0, 8):
+        for attempt in range(0, max(2, loadAttempts)):
             ipid = await self.app.ipidManager.load(
                 did,
                 track=True,
-                timeout=8,
+                timeout=loadTimeout,
                 localIdentifier=(peerId == ipfsop.ctx.node.id)
             )
 
             if not ipid:
                 log.debug(f'Cannot load IPID: {did}, attempt {attempt}')
-                await ipfsop.sleep(60)
+                await ipfsop.sleep(cGet('peers.didFail.sleepInterval'))
                 continue
             else:
                 break
@@ -484,8 +494,6 @@ class Peers:
             self.onPeerDidModified, piCtx))
         piCtx.sStatusChanged.connectTo(partialEnsure(
             self.peerModified.emit, piCtx))
-
-        ensureLater(1, piCtx.watch)
 
         async with self.lock.writer_lock:
             self._byHandle[str(sHandle)] = piCtx
@@ -593,7 +601,9 @@ class Peers:
 
             # Load the IPID
 
-            for attempt in range(0, 2):
+            loadAttempts = cGet('peers.didLoadAttempts')
+
+            for attempt in range(0, loadAttempts):
                 ipid = await self.app.ipidManager.load(
                     personDid,
                     localIdentifier=(iMsg.peer == ipfsop.ctx.node.id)
@@ -624,7 +634,6 @@ class Peers:
                         self.onPeerDidModified, piCtx))
                     piCtx.sStatusChanged.connectTo(partialEnsure(
                         self.peerModified.emit, piCtx))
-                    ensureLater(5, piCtx.watch)
 
                 piCtx.ident = iMsg
 
@@ -806,6 +815,33 @@ class Peers:
 
     async def stop(self):
         pass
+
+    async def on_start(self):
+        pass
+
+    @GService.task
+    async def peersWatcherTask(self):
+        interval = cGet('peers.watcherTask.sleepInterval')
+
+        while not self.should_stop:
+            await asyncio.sleep(interval)
+
+            await self.peersWatcherRun()
+
+    @ipfsOp
+    async def peersWatcherRun(self, ipfsop):
+        if ipfsop.noPeers:
+            # No need
+            log.debug('Peers watch: no peers, skipping')
+            return
+
+        async with self.lock.reader_lock:
+            for peerId, piCtx in self._byPeerId.items():
+                if not piCtx.identLast:
+                    continue
+
+                if not piCtx.pingedRecently:
+                    await piCtx.watch(ipfsop)
 
     def getByPeerId(self, peerId):
         return self._byPeerId.get(peerId, None)
@@ -1064,6 +1100,8 @@ class IPFSContext(QObject):
 
         if pubsubEnable is True and not offline:
             await self.setupPubsub(pubsubHashmarksExch=pubsubHashmarksExch)
+
+        await self.app.s.add_runtime_dependency(self.peers)
 
     async def start(self):
         log.debug('Starting IPFS context services')

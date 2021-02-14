@@ -31,8 +31,8 @@ class AtomParseFeedError(Exception):
 def parseFeed(data):
     try:
         feed = feedparser.parse(data)
-    except:
-        log.debug('Feed parsing error')
+    except Exception as err:
+        log.debug(f'Feed parsing error: {err}')
         return None
     else:
         return feed
@@ -205,11 +205,10 @@ class IPFSAtomFeedParser:
             return
 
         try:
-            data = await ipfsop.waitFor(
-                ipfsop.catObject(objPath), 12
-            )
+            data = await ipfsop.catObject(objPath)
 
             if not data:
+                log.debug(f'Could not get feed object: {objPath}')
                 return None
 
             feed = parseFeed(data.decode())

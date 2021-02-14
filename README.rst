@@ -54,6 +54,18 @@ See the sponsor_ page for all the possible ways to donate to this project.
     :alt: Sponsor with Liberapay
     :align: left
 
+Contact
+=======
+
+From the *galacteek* main window, go to the *Messenger* workspace
+and select *Compose*. In the recipient field, type in *galacteek*,
+select the *galacteek-support* contact, write your message and hit *Send*.
+
+Alternatively, from the *galacteek* main window, go to the *Information* menu
+on the top right and select *About*. Just click on the *Author*
+link (**cipres**) and it will automatically start the BitMessage_
+composer with my BitMessage address.
+
 Screencasts
 ===========
 
@@ -130,6 +142,9 @@ Command-line usage
 Use the *-d* command-line switch to enable debugging output. Using *--profile* gives
 you the ability to have separate application profiles (*main* is the default
 profile). Use *--help* for all options.
+
+If you've changed some settings and want to go back to the default
+configuration, use **--config-defaults**.
 
 You can run the IPFS daemon in *offline* mode, using **--offline**
 

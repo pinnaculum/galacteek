@@ -10,10 +10,14 @@ the changes in the CHANGELOG formatting.
 
 ## [0.4.42] - 2020-12-12
 
-This is build 42.
+This is build 42 (the end of the cycle).
+
+RIP Douglas Adams, and thanks for all the fun.
 
 ### Added
 - BitMessage support
+- Themes support. *moon3* is the default theme
+- Hierarchical, per-module config system based on omegaconf
 
 - Introduce APIs to dynamically start P2P services associated with
   a DID service
@@ -22,18 +26,22 @@ This is build 42.
 - Async logging handlers (logbook)
 - *galacteek.ipfs.ipfsops.IPFSOperator*: add coroutines to dial P2P
   services from a full service address, e.g /p2p/Qm..../x/myservice
-- Basic hierarchical config system based on omegaconf
+
 - Python dependencies
-  - [mode](https://github.com/ask/mode) >=4.4.0
+  - [mode](https://github.com/ask/mode) == 4.4.0
+  - [omegaconf](https://github.com/omry/omegaconf) == 2.0.5
 
 ### Changed
+- Combine async services (*GService*) with in-app JSON-LD PubSub messaging.
+  This should become the official way of pushing events throughout the app.
+- Use dynamic, configurable processing throttlers for all pubsub services
 - *galacteek.ipfs.asyncipfsd.AsyncIPFSDaemon*: the daemon's configuration
   is now done in an atomic call (by externally calling *ipfs config replace*).
   This makes the boot process faster.
-- Change default fonts for web engine widgets
+- Configurable webprofiles
 
 ### Fixed
-- Memory leak in the BrowserTab object
+- Memory leak in the BrowserTab class (Qt reparenting)
 - UTF-8 rendering of blog posts
 
 ## [0.4.41] - 2020-12-04

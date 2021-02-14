@@ -142,5 +142,10 @@ async def bmContactByNameFirst(name: str,
     return await (await bmContactFilter(name, separator)).first()
 
 
+async def bmContactByAddr(bmAddr: str):
+    return await BitMessageContact.filter(
+        bmAddress=bmAddr).first()
+
+
 async def bmContactAll():
     return await BitMessageContact.all()

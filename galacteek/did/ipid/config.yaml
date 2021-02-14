@@ -5,8 +5,9 @@ envs:
       autoRepublish: True
 
       # Republish delay (seconds)
-      autoRepublishDelay: 600
+      autoRepublishDelay: 900
 
+      # IPNS publish values (local IPID)
       ipns:
         timeout: 300
         lifetime: '48h'
@@ -14,8 +15,14 @@ envs:
 
     resolve:
       # Timeout in seconds for resolving IPID documents
-      timeout: 30
+      timeout: 40
 
       cacheLifetime:
-        default: 5184000
-        local: 1728000
+        # IPNS cache records values (in hours)
+        default:
+          hours: 720
+        local:
+          hours: 1440
+
+      # Delay before a resolved IPID is considered "stale", in seconds
+      staleAfterDelay: 600

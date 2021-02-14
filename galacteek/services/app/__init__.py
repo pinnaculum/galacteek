@@ -1,3 +1,4 @@
+import io
 import asyncio
 
 from galacteek import log
@@ -24,29 +25,29 @@ class AppService(GService):
     ethService: EthereumService = None
 
     def __init__(self, *args, **kw):
-        self.app = kw.pop('app')
+        self._app = kw.pop('app')
 
         super().__init__(*args, **kw)
 
     @cached_property
     def bmService(self) -> BitMessageClientService:
         return BitMessageClientService(
-            self.app._bitMessageDataLocation
+            self._app._bitMessageDataLocation
         )
 
     @cached_property
     def ethService(self) -> EthereumService:
         return EthereumService(
-            self.app._ethDataLocation
+            self._app._ethDataLocation
         )
 
     @cached_property
     def torService(self) -> TorService:
         return TorService(
-            self.app.dataPathForService('tor'),
+            self._app.dataPathForService('tor'),
             TorServiceRuntimeConfig(
-                cfgLocation=self.app._torConfigLocation,
-                dataLocation=self.app._torDataDirLocation
+                cfgLocation=self._app._torConfigLocation,
+                dataLocation=self._app._torDataDirLocation
             )
         )
 
@@ -68,17 +69,34 @@ class AppService(GService):
     async def mProfileTask(self):
         try:
             from memory_profiler import memory_usage
-            assert self.app.cmdArgs.memprofiling is True
+            assert self._app.cmdArgs.memprofiling is True
         except (ImportError, Exception):
             pass
 
         while not self.should_stop:
             await asyncio.sleep(10)
 
-            lt = int(self.app.loop.time())
+            lt = int(self._app.loop.time())
 
             usage = memory_usage(-1, interval=.2, timeout=1)
             if usage:
                 log.debug(
                     f'Memory Usage (LT: {lt}): {usage[0]}'
                 )
+
+    async def getGraphImage(self) -> None:
+        try:
+            import pydot
+        except ImportError:
+            return
+
+        try:
+            out = io.StringIO()
+            beacon = self.beacon.root or self.beacon
+            beacon.as_graph().to_dot(out)
+            graph, = pydot.graph_from_dot_data(out.getvalue())
+        except Exception:
+            return
+
+        with open('ggraph.png', 'wb') as fh:
+            fh.write(graph.create_png())

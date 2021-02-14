@@ -1,9 +1,9 @@
 envs:
   default:
-    defaultWebProfile: 'minimal'
+    defaultWebProfile: 'ipfs'
 
     # Web profiles definition
-    webprofiles:
+    webProfiles:
       anonymous:
         descr: Anonymous profile
 
@@ -21,8 +21,19 @@ envs:
               javascript:
                 enabled: False
 
+      minimal:
+        descr: Minimal profile
+        storageName: 'minimal'
+
+        settings:
+          plugins: False
+
       ipfs:
         descr: IPFS profile
+        storageName: 'ipfs'
+
+        settings:
+          accelerated2dCanvas: True
 
         scripts:
           - type: 'builtin'
@@ -30,14 +41,16 @@ envs:
 
       web3:
         descr: Web3 profile
+        storageName: 'web3'
+
+        settings:
+          accelerated2dCanvas: True
+
         scripts:
           - type: 'builtin'
             name: 'js-ipfs-client'
           - type: 'builtin'
             name: 'ethereum-web3'
-
-      minimal:
-        descr: Minimal profile
 
       defaultProfile:
         descr: Default profile
@@ -46,6 +59,12 @@ envs:
           fullScreenSupport: True
           plugins: True
           localStorage: True
+          pdfViewerInternal: False
+          localContentCanAccessRemoteUrls: False
+          webGL: True
+          accelerated2dCanvas: False
+          focusOnNavigation: True
+          allowGeolocationOnInsecureOrigins: False
 
           minFontSize: 14
           defaultFontSize: 14

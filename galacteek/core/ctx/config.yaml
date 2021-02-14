@@ -5,7 +5,10 @@ envs:
       didLoadAttempts: 5
 
       liveness:
-        pingDelay: 300
+        didPingEvery: 300
+        didPingCallTimeout: 30
+
+        inactiveNoIdent: 300
 
       didFail:
         sleepInterval: 60

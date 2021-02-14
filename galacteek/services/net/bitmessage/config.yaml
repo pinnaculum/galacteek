@@ -1,22 +1,35 @@
 envs:
   default:
     enabled: True
+
     notbit:
       useTor: False
       listenPort: 8444
 
-      # Purge objects directory before starting notbit
-      purgeObjectsOnStartup: True
+      objects:
+        # Purge objects directory before starting notbit
+        purgeOnStartup: False
+        purgeOlderThan:
+          days: 60
 
     bmCoreContacts:
       - name: 'galacteek-support'
         address: 'BM-87bMT2xqtucvbs7TPJb9nrEKumP7NVpWFdv'
         group: 'galacteek'
+      - name: 'cipres'
+        address: 'BM-87dtCqLxqnpwzUyjzL8etxGK8MQQrhnxnt1'
+        group: 'galacteek'
 
     messages:
       welcome:
+        subject: 'BitMessage is easy'
         body: >
-          Be sure to [check the manual](manual:/messenger.html)
+          Your BitMessage identity has been generated. Your address is:
+
+          **{bmAddress}**
+
+          Be sure to [check the manual](manual:/messenger.html) for more
+          information.
 
     mdirWatcher:
       # Settings for notbit's maildir watcher task

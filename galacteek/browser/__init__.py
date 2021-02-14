@@ -4,6 +4,7 @@ from galacteek.browser.web3channels import Web3Channel
 from galacteek.browser.web3channels import Web3Transport
 
 from galacteek.browser import pslisteners
+from galacteek.browser.interceptor import IPFSRequestInterceptor
 from galacteek import log
 
 
@@ -14,6 +15,8 @@ class BrowserRuntimeObjects:
     # XXX
     # web3ContractHandlers = weakref.WeakValueDictionary()
     web3ContractHandlers = dict = {}
+
+    ipfsCeptor: IPFSRequestInterceptor = None
 
     app: object = None
 
@@ -39,6 +42,9 @@ class BrowserRuntimeObjects:
         return self.web3Channel(name).clone()
 
 
-async def browserSetup(runtime: BrowserRuntimeObjects):
+async def browserSetup(app, runtime: BrowserRuntimeObjects):
     listener = pslisteners.ServicesListener()
     log.debug(f'Services listener: {listener}')
+
+    # Requests interceptor
+    runtime.ipfsCeptor = IPFSRequestInterceptor(app)

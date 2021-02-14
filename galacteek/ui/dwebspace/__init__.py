@@ -51,7 +51,6 @@ from galacteek.ui.settings import ConfigManager
 from galacteek.ui.messenger import MessengerWidget
 
 from galacteek.ui.feeds import AtomFeedsViewTab
-from galacteek.ui.feeds import AtomFeedsView
 from galacteek.ui.i18n import *
 
 
@@ -662,6 +661,9 @@ class WorkspaceMultimedia(SingleWidgetWorkspace):
     def mPlayerTab(self):
         return self.mPlayer
 
+    async def workspaceSwitched(self):
+        self.mPlayer.update()
+
     async def handleObjectDrop(self, ipfsPath):
         tab = self.mPlayerTab()
         tab.queueFromPath(ipfsPath.objPath)
@@ -760,7 +762,6 @@ class WorkspacePeers(TabbedWorkspace):
             icon=getIcon('peers.png'))
 
         self.app.mainWindow.atomButton.clicked.connect(self.onShowAtomFeeds)
-        self.atomFeedsViewWidget = AtomFeedsView(self.app.modelAtomFeeds)
 
         self.wsAddWidget(self.app.mainWindow.atomButton)
         self.wsAddWidget(self.chatCenterButton)
@@ -768,11 +769,11 @@ class WorkspacePeers(TabbedWorkspace):
     def onShowAtomFeeds(self):
         name = iAtomFeeds()
 
-        tab = self.wsFindTabWithName(name)
+        tab = self.wsFindTabWithId('dweb-atom-feeds')
         if tab:
             return self.tabWidget.setCurrentWidget(tab)
 
-        tab = AtomFeedsViewTab(self, view=self.atomFeedsViewWidget)
+        tab = AtomFeedsViewTab(self.app.mainWindow)
         self.wsRegisterTab(tab, name,
                            getIcon('atom-feed.png'), current=True)
 
@@ -805,22 +806,27 @@ class WorkspaceMisc(TabbedWorkspace):
 
         self.actionConfigure = self.wsAddCustomAction(
             'config', getIcon('settings.png'),
-            iSettings(), self.onOpenConfig
+            iConfigurationEditor(), self.openConfigEditor
         )
 
-    def onOpenConfig(self):
+    def openConfigEditor(self):
+        tab = self.wsFindTabWithName(iConfigurationEditor())
 
-        mgr = ConfigManager(self.app.mainWindow)
-
-        self.wsRegisterTab(
-            mgr, iSettings(),
-            icon=getIcon('settings.png'),
-            current=True
-        )
+        if not tab:
+            self.wsRegisterTab(
+                ConfigManager(
+                    self.app.mainWindow,
+                    parent=self
+                ),
+                iConfigurationEditor(),
+                icon=getIcon('settings.png'),
+                current=True
+            )
+        else:
+            self.tabWidget.setCurrentWidget(tab)
 
 
 class WorkspaceMessenger(SingleWidgetWorkspace, KeyListener):
-
     # PS keys we listen to
     listenTo = [
         makeKeyService('bitmessage'),

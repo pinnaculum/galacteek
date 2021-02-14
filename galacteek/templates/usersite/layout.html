@@ -2,6 +2,7 @@
 {% from "usersite/macros/urls.html" import public_ipns_url %}
 <html>
     <head>
+        <meta charset="UTF-8">
         <title>
             {{ profile.userInfo.spaceHandle.short }}'s dweb page
         </title>
@@ -19,9 +20,6 @@
             <ul class="banner">
                 <li>
                     <a href="{{ site_ipns_url(siteIpns, 'blog/index.html') }}">Blog</a>
-                </li>
-                <li>
-                    <a href="{{ site_ipns_url(siteIpns, 'pinrequests.html') }}">Pin requests</a>
                 </li>
                 <li>
                     <a href="{{ site_ipns_url(siteIpns, 'about.html') }}">About</a>

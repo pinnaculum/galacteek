@@ -29,6 +29,8 @@ from PyQt5.QtCore import QTime
 from PyQt5.QtCore import QTimer
 from PyQt5.QtCore import QItemSelectionModel
 
+from galacteek import partialEnsure
+
 from galacteek.core.jsono import *
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import qurlPercentDecode
@@ -136,6 +138,13 @@ class JSONPlaylistV1(QJSONObj):
     def items(self):
         return self.root['playlist']['items']
 
+    @property
+    def name(self):
+        try:
+            return self.root['playlist']['name']
+        except Exception:
+            return None
+
 
 class MPlayerVideoWidget(QVideoWidget):
     def __init__(self, player, parent=None):
@@ -203,45 +212,53 @@ class MediaPlayerTab(GalacteekTab):
     def __init__(self, gWindow):
         super(MediaPlayerTab, self).__init__(gWindow, sticky=True)
 
+        self.playlistCurrent = None
         self.playlistIpfsPath = None
         self.playlist = QMediaPlaylist()
         self.model = ListModel(self.playlist)
 
-        self.playlistsMenu = QMenu(self)
+        self.pMenu = QMenu(self)
+        self.playlistsMenu = QMenu('Load playlist', self.pMenu)
+
+        self.savePlaylistAction = QAction(getIcon('save-file.png'),
+                                          'Save playlist', self,
+                                          triggered=self.onSavePlaylist)
+        self.savePlaylistAction.setEnabled(False)
+        self.copyPathAction = QAction(getIconIpfsIce(),
+                                      iCopyPlaylistPath(), self,
+                                      triggered=self.onCopyPlaylistPath)
+        self.copyPathAction.setEnabled(False)
+        self.loadPathAction = QAction(getIconIpfsIce(),
+                                      iLoadPlaylistFromPath(), self,
+                                      triggered=self.onLoadPlaylistPath)
+
+        self.pMenu.addAction(self.savePlaylistAction)
+        self.pMenu.addSeparator()
+
+        self.pMenu.addAction(self.copyPathAction)
+        self.pMenu.addSeparator()
+        self.pMenu.addAction(self.loadPathAction)
+        self.pMenu.addSeparator()
+
+        self.pMenu.addMenu(self.playlistsMenu)
+
         self.playlistsMenu.triggered.connect(self.onPlaylistsMenu)
 
         self.pListWidget = QWidget(self)
         self.uipList = ui_mediaplaylist.Ui_MediaPlaylist()
         self.uipList.setupUi(self.pListWidget)
-        self.uipList.savePlaylistButton.clicked.connect(self.onSavePlaylist)
-        self.uipList.savePlaylistButton.setEnabled(False)
-        self.uipList.loadPlaylistButton.setPopupMode(
+        self.uipList.playlistButton.setPopupMode(
             QToolButton.InstantPopup)
-        self.uipList.loadPlaylistButton.setMenu(self.playlistsMenu)
+        self.uipList.playlistButton.setMenu(self.pMenu)
+        self.uipList.queueFromClipboard.clicked.connect(
+            partialEnsure(self.onClipboardClicked))
 
-        self.clipMenu = QMenu(self)
-        self.copyPathAction = QAction(getIconIpfsIce(),
-                                      iCopyPlaylistPath(), self,
-                                      triggered=self.onCopyPlaylistPath)
-        self.loadPathAction = QAction(getIconIpfsIce(),
-                                      iLoadPlaylistFromPath(), self,
-                                      triggered=self.onLoadPlaylistPath)
-
-        self.copyPathAction.setEnabled(False)
-        self.clipMenu.addAction(self.copyPathAction)
-        self.clipMenu.addAction(self.loadPathAction)
-
-        self.uipList.clipPlaylistButton.setPopupMode(
-            QToolButton.InstantPopup)
-        self.uipList.clipPlaylistButton.setMenu(self.clipMenu)
         self.uipList.clearButton.clicked.connect(self.onClearPlaylist)
 
         self.uipList.nextButton.clicked.connect(self.onPlaylistNext)
         self.uipList.previousButton.clicked.connect(self.onPlaylistPrevious)
-        self.uipList.nextButton.setIcon(
-            self.style().standardIcon(QStyle.SP_MediaSkipForward))
-        self.uipList.previousButton.setIcon(
-            self.style().standardIcon(QStyle.SP_MediaSkipBackward))
+        self.uipList.nextButton.setIcon(getIcon('go-next.png'))
+        self.uipList.previousButton.setIcon(getIcon('go-previous.png'))
 
         self.pListView = self.uipList.listView
         self.pListView.mousePressEvent = self.playlistMousePressEvent
@@ -274,37 +291,38 @@ class MediaPlayerTab(GalacteekTab):
         self.playlist.mediaInserted.connect(self.playlistMediaInserted)
         self.playlist.mediaRemoved.connect(self.playlistMediaRemoved)
 
-        self.togglePList = QToolButton(self)
-        self.togglePList.setIcon(self.style().standardIcon(
-            QStyle.SP_ArrowRight))
-        self.togglePList.setFixedSize(32, 128)
-        self.togglePList.clicked.connect(self.onTogglePlaylist)
+        self.togglePList = GLargeToolButton(parent=self)
+        self.togglePList.setIcon(getIcon('playlist.png'))
+        self.togglePList.setCheckable(True)
+        self.togglePList.toggled.connect(self.onTogglePlaylist)
 
         self.clipboardMediaItem = None
-        self.clipboardButton = QToolButton(clicked=self.onClipboardClicked)
-        self.clipboardButton.setIcon(getIconClipboard())
         self.clipboardButton.setEnabled(False)
-        self.clipboardButton.setToolTip('Load media from clipboard')
 
-        self.pinButton = QToolButton(clicked=self.onPinMediaClicked)
+        self.pinButton = GMediumToolButton(
+            parent=self, clicked=self.onPinMediaClicked)
         self.pinButton.setIcon(getIcon('pin.png'))
 
-        self.processClipboardItem(self.app.clipTracker.current, force=True)
+        # self.processClipboardItem(self.app.clipTracker.current, force=True)
         self.app.clipTracker.currentItemChanged.connect(self.onClipItemChange)
 
-        self.playButton = QToolButton(clicked=self.onPlayClicked)
+        self.playButton = GMediumToolButton(
+            parent=self, clicked=self.onPlayClicked)
         self.playButton.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
 
-        self.pauseButton = QToolButton(clicked=self.onPauseClicked)
+        self.pauseButton = GMediumToolButton(
+            parent=self, clicked=self.onPauseClicked)
         self.pauseButton.setIcon(self.style().standardIcon(
             QStyle.SP_MediaPause))
         self.pauseButton.setEnabled(False)
 
-        self.stopButton = QToolButton(clicked=self.onStopClicked)
+        self.stopButton = GMediumToolButton(
+            parent=self, clicked=self.onStopClicked)
         self.stopButton.setIcon(self.style().standardIcon(QStyle.SP_MediaStop))
         self.stopButton.setEnabled(False)
 
-        self.fullscreenButton = QToolButton(clicked=self.onFullScreen)
+        self.fullscreenButton = GMediumToolButton(
+            parent=self, clicked=self.onFullScreen)
         self.fullscreenButton.setIcon(getIcon('fullscreen.png'))
         self.fullscreenButton.setToolTip(iFullScreen())
 
@@ -315,8 +333,8 @@ class MediaPlayerTab(GalacteekTab):
 
         vLayout = QVBoxLayout()
         hLayoutControls = QHBoxLayout()
-        hLayoutControls.setContentsMargins(0, 0, 0, 0)
-        hLayoutControls.addWidget(self.clipboardButton)
+        hLayoutControls.setContentsMargins(4, 4, 4, 4)
+        hLayoutControls.addWidget(self.togglePList)
         hLayoutControls.addWidget(self.pinButton)
         hLayoutControls.addWidget(self.playButton)
         hLayoutControls.addWidget(self.pauseButton)
@@ -330,13 +348,16 @@ class MediaPlayerTab(GalacteekTab):
         hLayout = QHBoxLayout()
         hLayout.addLayout(vLayout)
         hLayout.addWidget(self.pListWidget)
-        hLayout.addWidget(self.togglePList)
 
         self.pListWidget.hide()
 
         self.vLayout.addLayout(hLayout)
         self.update()
         self.videoWidget.changeFocus()
+
+    @property
+    def clipboardButton(self):
+        return self.uipList.queueFromClipboard
 
     @property
     def isPlaying(self):
@@ -391,14 +412,23 @@ class MediaPlayerTab(GalacteekTab):
 
     @ipfsOp
     async def updatePlaylistsMenu(self, ipfsop):
-        currentList = [action.text() for action in
-                       self.playlistsMenu.actions()]
+        def actionForName(name):
+            for action in self.playlistsMenu.actions():
+                if action.text() == name:
+                    return action
+
         listing = await ipfsop.filesList(self.profile.pathPlaylists)
+
         for entry in listing:
-            if entry['Name'] in currentList:
+            eAction = actionForName(entry['Name'])
+            if eAction:
+                eAction.setData(entry)
                 continue
+
             action = QAction(entry['Name'], self)
+            action.setIcon(getIcon('playlist.png'))
             action.setData(entry)
+
             self.playlistsMenu.addAction(action)
 
     def playlistShowContextMenu(self, event):
@@ -436,16 +466,23 @@ class MediaPlayerTab(GalacteekTab):
 
     def onPlaylistsMenu(self, action):
         entry = action.data()
-        self.app.task(self.loadPlaylistFromPath, joinIpfs(entry['Hash']))
+        if entry:
+            ensure(self.loadPlaylistFromPath(joinIpfs(entry['Hash'])))
 
     def onSavePlaylist(self):
         paths = self.playlistGetPaths()
-        listName = inputText(title=iPlaylistName(), label=iPlaylistName())
+
+        currentPl = self.playlistCurrent
+        if currentPl:
+            listName = currentPl.name
+        else:
+            listName = inputText(title=iPlaylistName(), label=iPlaylistName())
+
         if not listName:
             return
 
         obj = JSONPlaylistV1(listName=listName, itemPaths=paths)
-        self.app.task(self.savePlaylist, obj, listName)
+        ensure(self.savePlaylist(obj, listName))
 
     @ipfsOp
     async def savePlaylist(self, ipfsop, obj, name):
@@ -485,16 +522,19 @@ class MediaPlayerTab(GalacteekTab):
 
             self.playlistIpfsPath = path
             self.copyPathAction.setEnabled(True)
+            self.playlistCurrent = pList
         except Exception:
             return messageBox(iCannotLoadPlaylist())
 
-    def playlistMediaInserted(self, start, end):
-        self.uipList.savePlaylistButton.setEnabled(
+    def refreshActions(self):
+        self.savePlaylistAction.setEnabled(
             self.playlist.mediaCount() > 0)
 
+    def playlistMediaInserted(self, start, end):
+        self.refreshActions()
+
     def playlistMediaRemoved(self, start, end):
-        self.uipList.savePlaylistButton.setEnabled(
-            self.playlist.mediaCount() > 0)
+        self.refreshActions()
 
         self.model.modelReset.emit()
 
@@ -509,9 +549,9 @@ class MediaPlayerTab(GalacteekTab):
         return urls
 
     def onClipItemChange(self, item):
-        self.processClipboardItem(item)
+        ensure(self.processClipboardItem(item))
 
-    def processClipboardItem(self, item, force=False):
+    async def processClipboardItem(self, item, force=False):
         if not item:
             return
 
@@ -520,21 +560,32 @@ class MediaPlayerTab(GalacteekTab):
                 self.clipboardMediaItem = cItem
                 self.clipboardButton.setEnabled(True)
                 self.clipboardButton.setToolTip(cItem.path)
+            elif cItem.mimeType.isDir:
+                self.clipboardMediaItem = cItem
+                self.clipboardButton.setEnabled(True)
+                self.clipboardButton.setToolTip(cItem.path)
             else:
                 self.clipboardButton.setEnabled(False)
                 self.clipboardButton.setToolTip(iClipboardEmpty())
-
         if force:
             analyzeMimeType(item)
         else:
             item.mimeTypeAvailable.connect(
                 lambda mType: analyzeMimeType(item))
 
-    def onClipboardClicked(self):
-        if self.clipboardMediaItem:
-            self.playFromPath(self.clipboardMediaItem.path)
+    @ipfsOp
+    async def onClipboardClicked(self, ipfsop, *args):
+        if not self.clipboardMediaItem:
+            # messageBox('Not a multimedia object')
+            return
+
+        if self.clipboardMediaItem.mimeType.isDir:
+            # Queue from directory
+            async for objPath, parent in ipfsop.walk(
+                    str(self.clipboardMediaItem.path)):
+                self.queueFromPath(objPath)
         else:
-            messageBox('Not a multimedia resource')
+            self.playFromPath(self.clipboardMediaItem.path)
 
     def onSliderReleased(self):
         pass
@@ -566,15 +617,15 @@ class MediaPlayerTab(GalacteekTab):
 
     def showEvent(self, event):
         if self.playlist.mediaCount() == 0:
-            self.pListWidget.setVisible(True)
+            self.togglePList.setChecked(True)
 
         super().showEvent(event)
 
-    def onTogglePlaylist(self):
-        self.togglePlaylist()
+    def onTogglePlaylist(self, checked):
+        self.togglePlaylist(checked)
 
-    def togglePlaylist(self):
-        self.pListWidget.setVisible(self.pListWidget.isHidden())
+    def togglePlaylist(self, show):
+        self.pListWidget.setVisible(show)
 
     def onError(self, error):
         messageBox(iPlayerError(error))
@@ -646,6 +697,8 @@ class MediaPlayerTab(GalacteekTab):
     def clearPlaylist(self):
         self.playlist.clear()
         self.pListView.reset()
+        self.playlistCurrent = None
+        self.copyPathAction.setEnabled(False)
 
     def playlistPositionChanged(self, position):
         self.pListView.setCurrentIndex(self.model.index(position, 0))

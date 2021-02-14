@@ -14,6 +14,9 @@ from galacteek import ensure
 from galacteek import partialEnsure
 from galacteek import AsyncSignal
 from galacteek.database import hashmarksByPath
+from galacteek.config import cGet
+
+from galacteek import loopTime
 
 from galacteek.did.ipid import IPService
 
@@ -59,6 +62,10 @@ class IPFSResourceOpener(QObject):
         self.app = QApplication.instance()
         self.setObjectName('resourceOpener')
         self.needUserConfirm.connectTo(self.onNeedUserConfirm)
+
+    @property
+    def cObjectOpener(self):
+        return cGet('objectOpener', mod='galacteek.ui')
 
     def openEnsUrl(self, url, pin=False):
         self.app.mainWindow.addBrowserTab(
@@ -146,8 +153,17 @@ class IPFSResourceOpener(QObject):
                 if cachedStat:
                     statInfo = StatInfo(cachedStat)
 
+        wsSwitch = True
+        mtConfig = self.cObjectOpener.mimeTypes.default
+
         if mimeType is None:
+            ltBefore = loopTime()
             mimeType = await detectMimeType(rscPath)
+            spent = loopTime() - ltBefore
+
+            if spent > mtConfig.slowObjectTimer:
+                # We won't switch workspaces
+                wsSwitch = False
 
         if mimeType and mimeType.valid:
             logUser.info('{path} ({type}): opening'.format(
@@ -282,7 +298,8 @@ class IPFSResourceOpener(QObject):
             return self.app.mainWindow.addBrowserTab(
                 minProfile=minWebProfile,
                 pinBrowsed=pin,
-                workspace=useWorkspace).browseFsPath(
+                workspace=useWorkspace,
+                wsSwitch=wsSwitch).browseFsPath(
                     ipfsPath, schemePreferred=schemePreferred)
 
         if mimeType.isDir:
@@ -294,7 +311,8 @@ class IPFSResourceOpener(QObject):
                 return self.app.mainWindow.addBrowserTab(
                     minProfile=minWebProfile,
                     pinBrowsed=pin,
-                    workspace=useWorkspace).browseFsPath(
+                    workspace=useWorkspace,
+                    wsSwitch=wsSwitch).browseFsPath(
                         ipfsPath, schemePreferred=schemePreferred)
             else:
                 return await self.app.mainWindow.exploreIpfsPath(ipfsPath)
