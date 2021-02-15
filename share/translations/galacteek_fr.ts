@@ -1223,57 +1223,57 @@ Path: {0}, nodes processed: {1}</source>
 <context>
     <name>MediaPlayer</name>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="46"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="48"/>
         <source>No media player support available on your system</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="52"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="54"/>
         <source>Media player error (code: {0})</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="58"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="60"/>
         <source>Fullscreen</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="62"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="64"/>
         <source>Copy playlist&apos;s IPFS path to the clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="68"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="70"/>
         <source>Load playlist from the clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="74"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="76"/>
         <source>Cannot load playlist</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="79"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="81"/>
         <source>A playlist with this name already exists</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="85"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="87"/>
         <source>Remove media from playlist</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="91"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="93"/>
         <source>Playlist name</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="97"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="99"/>
         <source>Already queued in the current playlist</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="102"/>
+        <location filename="../../galacteek/ui/mediaplayer.py" line="104"/>
         <source>No media in playlist</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1301,18 +1301,18 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="27"/>
+        <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="47"/>
         <source>Queue from clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="47"/>
+        <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="24"/>
         <source>Playlist</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="24"/>
-        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Load media from the clipboard&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="44"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Load multimedia content from the current clipboard object (can be a multimedia file or a directory)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

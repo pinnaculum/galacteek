@@ -232,6 +232,7 @@ QMenu
     color: #eff0f1;
     margin: 2px;
     border: 1px solid lightgray;
+    font-size: 14pt;
 }
 
 QMenu::icon

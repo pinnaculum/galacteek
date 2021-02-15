@@ -172,7 +172,7 @@ class PeerTreeItem(PeerBaseItem):
         if role == Qt.DisplayRole or role == Qt.EditRole:
             if column == 0:
                 if handle.valid:
-                    return handle.short
+                    return handle.human
                 else:
                     return iUnknown()
             if column == 1:

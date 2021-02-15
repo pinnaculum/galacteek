@@ -218,6 +218,7 @@ class PyramidsDropButton(PopupToolButton):
         )
         self.menu.setTitle(iPyramidDropObject())
         self.menu.setIcon(getIcon('pyramid-blue.png'))
+        self.setIconSize(QSize(32, 32))
         self.setToolTip(iPyramidDropper())
 
 

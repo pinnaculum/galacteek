@@ -222,6 +222,7 @@ This software incudes icons made by the following FlatIcon authors:
 - `FreePik <https://www.flaticon.com/authors/freepik>`_
 - `Pixel perfect <https://www.flaticon.com/authors/pixel-perfect>`_
 - `Kiranshastry <https://www.flaticon.com/authors/Kiranshastry>`_
+- `Smashicons <https://smashicons.com>`_
 
 Some of the beautiful artwork (under the Creative Commons CC-BY-SA license)
 from the ipfs-logo_ project's repository is included, unchanged.
