@@ -61,10 +61,11 @@ def iConfigurationEditor():
 def iConfigurationEditorWarning():
     return QCoreApplication.translate(
         'GalacteekWindow',
-        'Change the settings <b>with caution</b>.'
+        '<p>Hit <b>Enter</b> after changing a setting.</p>'
+        '<p>Be careful with the settings you change. '
         'Start the application with <b>--config-defaults</b> '
-        'if something goes wrong, to use the default configuration settings'
-    )
+        'if something goes wrong, to use the default '
+        'configuration settings</p>')
 
 
 def iEventLog():

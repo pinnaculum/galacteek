@@ -170,7 +170,7 @@
         });
 
         window.ipfssearch.searchTimeout.connect(function(timeout) {
-          document.getElementById('statusmessage').innerHTML = "<b>Search timeout</b>"
+          document.getElementById('statusmessage').innerHTML = '<b>Search timeout</b><a href="#" onclick="event.preventDefault(); window.ipfssearch.searchRetry();">Retry</a>'
           statusWaiting()
         })
 

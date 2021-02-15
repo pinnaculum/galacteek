@@ -37,10 +37,7 @@ class SpaceHandle:
     @property
     def human(self):
         if self.valid:
-            return ipHandleGen(
-                self.m.group('username'),
-                self.m.group('vplanet')
-            )
+            return f'{self.username}@{self.vPlanet}'
 
     @property
     def short(self):

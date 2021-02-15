@@ -223,6 +223,8 @@ class MediaPlayerTab(GalacteekTab):
         self.savePlaylistAction = QAction(getIcon('save-file.png'),
                                           'Save playlist', self,
                                           triggered=self.onSavePlaylist)
+        self.clearPlaylistAction = QAction('Clear', self,
+                                           triggered=self.onClearPlaylist)
         self.savePlaylistAction.setEnabled(False)
         self.copyPathAction = QAction(getIconIpfsIce(),
                                       iCopyPlaylistPath(), self,
@@ -232,6 +234,8 @@ class MediaPlayerTab(GalacteekTab):
                                       iLoadPlaylistFromPath(), self,
                                       triggered=self.onLoadPlaylistPath)
 
+        self.pMenu.addAction(self.clearPlaylistAction)
+        self.pMenu.addSeparator()
         self.pMenu.addAction(self.savePlaylistAction)
         self.pMenu.addSeparator()
 
@@ -293,6 +297,8 @@ class MediaPlayerTab(GalacteekTab):
 
         self.togglePList = GLargeToolButton(parent=self)
         self.togglePList.setIcon(getIcon('playlist.png'))
+        self.togglePList.setText('Playlist')
+        self.togglePList.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
         self.togglePList.setCheckable(True)
         self.togglePList.toggled.connect(self.onTogglePlaylist)
 
@@ -780,6 +786,20 @@ class ListModel(QAbstractItemModel):
     def changeItems(self, start, end):
         self.dataChanged.emit(self.index(start, 0), self.index(end, 1))
 
+    def basenameForIndex(self, index):
+        if index.column() == 0:
+            media = self.playlist.media(index.row())
+            if media is None:
+                return iUnknown()
+            location = media.canonicalUrl()
+            path = location.path()
+            basename = posixpath.basename(path)
+
+            if basename:
+                return basename
+            else:
+                return path
+
     def data(self, index, role=Qt.DisplayRole):
         if not index.isValid():
             return
@@ -797,7 +817,9 @@ class ListModel(QAbstractItemModel):
                 else:
                     return path
             return self.m_data[index]
-        elif role == Qt.FontRole:
+        elif role == Qt.ToolTipRole:
+            return self.basenameForIndex(index)
+        elif role == Qt.FontRole and 0:
             curPlIndex = self.playlist.currentIndex()
 
             font = QFont('Times', pointSize=12)

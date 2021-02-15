@@ -1,8 +1,29 @@
 envs:
   default:
-    theme: moon3
+    # Theme used
+    theme: 'moon3'
 
     objectOpener:
       mimeTypes:
         default:
           slowObjectTimer: 6
+
+    styles:
+      # galacteek Qt style
+      galacteek:
+        styleType: 'desktopGeneric'
+
+        desktopGeneric:
+          # Pixel metrics
+          metrics:
+            toolBarIconSize: 32
+            toolBarItemSpacing: 2
+            toolBarItemMargin: 0
+            toolBarSeparatorExtent: 2
+
+            buttonDefaultIconSize: 16
+
+            tabBarIconSize: 16
+            textCursorWidth: 12
+
+            scrollBarExtent: 32

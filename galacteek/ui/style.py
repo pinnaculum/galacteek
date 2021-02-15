@@ -2,22 +2,83 @@
 from PyQt5.QtWidgets import QStyle
 from PyQt5.QtWidgets import QProxyStyle
 
+from galacteek import cached_property
+from galacteek.config import cGet
+
 
 class GalacteekStyle(QProxyStyle):
+    """
+    Galacteek UI style (configurable)
+
+    The configuration and the properties are cached for fast lookup
+    (will need restart for changes to take effect)
+    """
     def __init__(self, baseStyle='Fusion'):
         super().__init__(baseStyle)
 
+    @cached_property
+    def cStyle(self):
+        sType = cGet('styles.galacteek.styleType',
+                     mod='galacteek.ui')
+        if not sType:
+            sType = 'desktopGeneric'
+
+        return cGet(f'styles.galacteek.{sType}',
+                    mod='galacteek.ui')
+
+    @cached_property
+    def cToolBarIconSize(self):
+        return self.cStyle.metrics.toolBarIconSize
+
+    @cached_property
+    def cToolBarItemMargin(self):
+        return self.cStyle.metrics.toolBarItemMargin
+
+    @cached_property
+    def cToolBarItemSpacing(self):
+        return self.cStyle.metrics.toolBarItemSpacing
+
+    @cached_property
+    def cToolBarSeparatorExtent(self):
+        return self.cStyle.metrics.toolBarSeparatorExtent
+
+    @cached_property
+    def cTabBarIconSize(self):
+        return self.cStyle.metrics.tabBarIconSize
+
+    @cached_property
+    def cTbIconSize(self):
+        return self.cStyle.metrics.toolBarIconSize
+
+    @cached_property
+    def cTextCursorWidth(self):
+        return self.cStyle.metrics.textCursorWidth
+
+    @cached_property
+    def cScrollBarExtent(self):
+        return self.cStyle.metrics.scrollBarExtent
+
+    @cached_property
+    def cButtonDefaultIconSize(self):
+        return self.cStyle.metrics.buttonDefaultIconSize
+
     def pixelMetric(self, metric, option, widget):
         if metric == QStyle.PM_ToolBarIconSize:
-            return 24
+            return self.cToolBarIconSize
+        elif metric == QStyle.PM_ToolBarSeparatorExtent:
+            return self.cToolBarSeparatorExtent
         elif metric == QStyle.PM_TextCursorWidth:
-            return 10
+            return self.cTextCursorWidth
         elif metric == QStyle.PM_TabBarIconSize:
-            return 16
+            return self.cTabBarIconSize
         elif metric == QStyle.PM_ToolBarItemSpacing:
-            return 0
+            return self.cToolBarItemSpacing
         elif metric == QStyle.PM_ToolBarItemMargin:
-            return 0
+            return self.cToolBarItemMargin
+        elif metric == QStyle.PM_ScrollBarExtent:
+            return self.cScrollBarExtent
+        elif metric == QStyle.PM_ButtonIconSize:
+            return self.cButtonDefaultIconSize
         elif metric == QStyle.PM_TreeViewIndentation:
             return 25
         else:

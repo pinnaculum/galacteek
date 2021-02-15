@@ -6,16 +6,16 @@ Welcome to the dweb
 
 **galacteek** is a browser for the distributed web (AKA the
 dweb). It works with the [IPFS](ipns://ipfs.io) protocol,
-which uses content-addressing to distribute content
-more efficiently between people.
+which uses the concept of content-addressing to distribute
+information more efficiently.
 
-Donate
-------
+Donations
+---------
 
 **galacteek** will always be opensource and hopefully free of charge.
 If you use the software and want to contribute to its improvement,
 please [make a donation](https://liberapay.com/galacteek/donate)
-(also with [GitHub](https://github.com/sponsors/pinnaculum))
+(also with [GitHub Sponsors](https://github.com/sponsors/pinnaculum))
 
 You can also donate via Bitcoin at the following address:
 

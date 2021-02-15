@@ -144,12 +144,12 @@ class ToolBarActionsContainer(QWidget):
         hLayout = QHBoxLayout(self)
         self.setLayout(hLayout)
 
-        self.toolBar = QToolBar(self)
+        self.toolBar = QToolBar()
         self.toolBar.setSizePolicy(
             QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         hLayout.addItem(
-            QSpacerItem(20, 10, QSizePolicy.Maximum, QSizePolicy.Expanding))
+            QSpacerItem(40, 0, QSizePolicy.Expanding, QSizePolicy.Maximum))
         hLayout.addWidget(self.toolBar)
 
 

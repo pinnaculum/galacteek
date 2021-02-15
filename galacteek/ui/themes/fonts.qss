@@ -23,11 +23,12 @@
     font: 12pt "Segoe UI";
 }
 
-QTreeView, QListView
+QTreeView::item, QListView::item, QTreeWidget::item, QListWidget::item
 {
     font-size: 14pt;
 }
 
-QListView::item:selected, QTreeView::item:selected  {
+QTreeView::item:selected, QListView::item:selected, QTreeWidget::item:selected, QListWidget::item:selected
+{
     font-size: 16pt;
 }
