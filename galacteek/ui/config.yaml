@@ -16,7 +16,7 @@ envs:
         desktopGeneric:
           # Pixel metrics
           metrics:
-            toolBarIconSize: 32
+            toolBarIconSize: 24
             toolBarItemSpacing: 2
             toolBarItemMargin: 0
             toolBarSeparatorExtent: 2

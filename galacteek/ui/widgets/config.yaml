@@ -5,8 +5,8 @@ envs:
         defaultIconSize: 16
 
       gMediumToolButton:
-        defaultIconSize: 32
+        defaultIconSize: 24
       gSmallToolButton:
         defaultIconSize: 16
       gLargeToolButton:
-        defaultIconSize: 48
+        defaultIconSize: 32

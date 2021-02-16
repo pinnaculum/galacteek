@@ -3,12 +3,11 @@ import aioipfs
 import asyncio
 import time
 import random
-from concurrent.futures import ThreadPoolExecutor
-
-from PyQt5.QtWidgets import QApplication
+from pathlib import Path
 
 from galacteek.core import glogger
 from galacteek.config import initFromTable
+from galacteek.config import cSetSavePath
 from galacteek.ipfs.ipfsops import IPFSOperator
 from galacteek.ipfs.ipfsops import IPFSOpRegistry
 from galacteek.ipfs import asyncipfsd
@@ -18,8 +17,13 @@ from galacteek.appsettings import *
 
 from . import mockipfsctx
 
-
+parser = buildArgsParser()
 glogger.basicConfig(level='DEBUG')
+
+qGlobalApp = application.GalacteekApplication(
+    profile='pytest-galacteek-app',
+    cmdArgs=parser.parse_args([])
+)
 
 
 @pytest.fixture
@@ -28,20 +32,35 @@ def dbpath(tmpdir):
 
 
 @pytest.fixture
-def gConfigInit():
+def configpath(tmpdir):
+    return str(tmpdir.join('g-config-0'))
+
+
+@pytest.fixture
+def gConfigInit(configpath):
+    cSetSavePath(Path(configpath))
     initFromTable()
 
 
 @pytest.fixture
-def mockApp(event_loop):
-    app = QApplication([])
-    app.loop = event_loop
-    app.executor = ThreadPoolExecutor()
+def event_loop():
+    global qGlobalApp
+    qGlobalApp.setupAsyncLoop()
+    loop = qGlobalApp.loop
+    yield loop
+    loop.close()
 
-    return app
 
+@pytest.fixture
+def mockApp(gConfigInit):
+    global qGlobalApp
+    app = qGlobalApp
+    app.themes.change('moon3')
+    app.configure(dbSigEmit=False)
 
-parser = buildArgsParser()
+    app._icons = {}
+    yield app
+    app.onExit()
 
 
 def makeApp(profile='pytest-withipfsd'):
@@ -65,7 +84,12 @@ def makeApp(profile='pytest-withipfsd'):
 
 
 @pytest.fixture
-def gApp(event_loop, qtbot, tmpdir):
+def gAppNoWait(qtbot, tmpdir):
+    return makeApp()
+
+
+@pytest.fixture
+def gApp(qtbot, tmpdir):
     gApp = makeApp()
     sManager = gApp.settingsMgr
     sManager.setSetting(CFG_SECTION_BROWSER, CFG_KEY_DLPATH, str(tmpdir))
@@ -80,8 +104,8 @@ def gApp(event_loop, qtbot, tmpdir):
 
 
 @pytest.fixture(scope='function')
-def localipfsclient(event_loop):
-    client = aioipfs.AsyncIPFS(loop=event_loop, host='127.0.0.1', port=5042)
+def localipfsclient(mockApp):
+    client = aioipfs.AsyncIPFS(loop=mockApp.loop, host='127.0.0.1', port=5042)
     yield client
 
 

@@ -1499,7 +1499,7 @@ class IPFSOperator(object):
             self.debug(err.message)
             return None
 
-    async def getJson(self, cid, timeout=5):
+    async def getJson(self, cid, timeout=30):
         try:
             data = await self.catObject(cid, timeout=timeout)
             return orjson.loads(data.decode())
@@ -1726,7 +1726,7 @@ class IPFSOperator(object):
         """
         return await self.dagPut(data, pin=pin, offline=True)
 
-    async def dagGet(self, dagPath, timeout=10):
+    async def dagGet(self, dagPath, timeout=30):
         """
         Get the DAG object referenced by the DAG path and returns a JSON object
         """

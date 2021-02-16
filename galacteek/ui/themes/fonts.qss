@@ -20,7 +20,7 @@
 }
 
 * {
-    font: 12pt "Segoe UI";
+    font: 13pt "Segoe UI";
 }
 
 QTreeView::item, QListView::item, QTreeWidget::item, QListWidget::item

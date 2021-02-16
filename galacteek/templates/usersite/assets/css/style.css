@@ -65,6 +65,12 @@ a:visited {
     margin: 10px;
 }
 
+.blog-posts-bytag {
+    margin: 10px;
+    background-color: #2e7690;
+    padding: 20px;
+}
+
 pre {
   white-space: pre-wrap;
   white-space: -moz-pre-wrap;

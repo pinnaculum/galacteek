@@ -295,7 +295,7 @@ class PeerServiceTreeItem(PeerBaseItem):
             exploded = didExplode(self.service.id)
 
             if exploded['path']:
-                return posixIpfsPath.join(handle.short,
+                return posixIpfsPath.join(handle.human,
                                           exploded['path'].lstrip('/'))
         if column == 1:
             return str(self.service.id)

@@ -83,5 +83,5 @@ envs:
         fonts:
           standard: 'Inter UI'
           fixed: 'Inter UI'
-          serif: 'Inter UI'
-          sansSerif: 'Inter UI'
+          serif: 'Verdana'
+          sansSerif: 'Verdana'

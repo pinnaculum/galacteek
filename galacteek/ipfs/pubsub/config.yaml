@@ -5,7 +5,7 @@ envs:
       base:
         throttler:
           name: 'ps-throttler'
-          rateLimit: 60
+          rateLimit: 180
           period: 30.0
           retryInterval: 0.08
 
@@ -14,7 +14,7 @@ envs:
             enabled: True
 
           messageSize:
-            max: 32768
+            max: 65535
 
           timeStampDiff:
             min: 0.0
@@ -23,7 +23,7 @@ envs:
       json:
         filters:
           messageSize:
-            max: 16384
+            max: 32768
 
       rsaEncJson:
         filters:

@@ -54,6 +54,11 @@ class SettingsDialog(QDialog):
             self.onThemeSelectionChanged)
         self.ui.swarmMaxConns.valueChanged.connect(self.onSwarmMaxConns)
 
+        self.setMinimumSize(
+            (2 * self.app.desktopGeometry.height()) / 3,
+            (3 * self.app.desktopGeometry.height()) / 4
+        )
+
     def enableGroupDaemon(self):
         self.ui.groupBoxIpfsConn.setEnabled(False)
         self.ui.groupBoxDaemon.setEnabled(True)
