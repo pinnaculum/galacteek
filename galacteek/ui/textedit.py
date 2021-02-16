@@ -79,6 +79,7 @@ from .widgets import GalacteekTab
 from .widgets import CheckableToolButton
 from .widgets import HashmarkThisButton
 from .widgets import MarkdownTextEdit
+from .widgets import GMediumToolButton
 from .clips import RotatingCubeRedFlash140d
 from .i18n import *
 
@@ -1305,7 +1306,7 @@ class TextEditorWidget(QWidget):
                 changes = await ipfsop.objectDiff(prevSessPath, path)
 
                 if isinstance(changes, list):
-                    diffButton = QToolButton()
+                    diffButton = GMediumToolButton()
                     diffButton.setIcon(getIcon('code-fork.png'))
                     diffButton.setToolTip(
                         objectDiffSummaryShort(changes)

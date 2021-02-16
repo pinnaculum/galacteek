@@ -5,7 +5,7 @@ envs:
         unknown:
           maxCacheLifetime: 600
         ipidmanager:
-          maxCacheLifetime: 1800
+          maxCacheLifetime: 3600
 
     ops:
       # nameResolveStream (streamed resolve)
@@ -21,7 +21,7 @@ envs:
 
       # nameResolveStreamFirst (streamed resolve, first)
       nameResolveStreamFirst:
-        timeout: 10
+        timeout: 15
         recordCount: 2
         maxCacheLifetime: 600
 
@@ -40,11 +40,11 @@ envs:
         timeout: 5
 
       nameResolve:
-        timeout: 20
+        timeout: 30
         recursive: False
 
       catObject:
         timeout: 60
 
       listObject:
-        timeout: 60
+        timeout: 90

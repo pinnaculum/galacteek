@@ -1033,7 +1033,6 @@ class UserProfile(QObject):
         }, publish=False)
 
         await ipid.addServiceCollection('default')
-        await ipid.addServiceRendezVous()
 
         entry = await self.ctx.app.importQtResource('/share/icons/helmet.png')
 

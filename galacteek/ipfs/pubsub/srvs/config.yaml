@@ -7,7 +7,7 @@ envs:
 
         throttler:
           name: 'ps-peers-throttler'
-          rateLimit: 300
+          rateLimit: 400
           period: 30.0
           retryInterval: 0.15
 
@@ -28,8 +28,9 @@ envs:
 
           UserChannelsListMessage:
             # JWS fetch timeout in seconds
-            jwsFetchTimeout: 10
+            jwsFetchTimeout: 20
 
+            # How often we publish our pubchat tokens (in seconds)
             publishTimer: 12
 
         throttler:

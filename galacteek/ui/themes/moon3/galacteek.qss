@@ -987,63 +987,12 @@ QTreeView:branch
     background-color: #54575B;
 }
 
-/*
-QTreeView:branch:selected, QTreeView:branch:hover
-{
-    background: url(:/theme_icons/rc/transparent.png);
-}
-
-QTreeView::branch {
-    border-image: url(:/theme_icons/rc/transparent.png);
-}
-
-QTreeView::branch:has-siblings:!adjoins-item {
-    border-image: url(:/theme_icons/rc/transparent.png);
-}
-
-QTreeView::branch:has-siblings:adjoins-item {
-    border-image: url(:/theme_icons/rc/transparent.png);
-}
-
-QTreeView::branch:!has-children:!has-siblings:adjoins-item {
-    border-image: url(:/theme_icons/rc/transparent.png);
-}
-
-QTreeView::branch:has-children:!has-siblings:closed,
-QTreeView::branch:closed:has-children:has-siblings {
-    image: url(:/theme_icons/rc/branch_closed.png);
-}
-
-QTreeView::branch:open:has-children:!has-siblings,
-QTreeView::branch:open:has-children:has-siblings  {
-    image: url(:/theme_icons/rc/branch_open.png);
-}
-
-QTreeView::branch:has-children:!has-siblings:closed:hover,
-QTreeView::branch:closed:has-children:has-siblings:hover {
-    image: url(:/theme_icons/rc/branch_closed-on.png);
-    }
-
-QTreeView::branch:open:has-children:!has-siblings:hover,
-QTreeView::branch:open:has-children:has-siblings:hover  {
-    image: url(:/theme_icons/rc/branch_open-on.png);
-    }
-
-
-QListView::item:!selected:hover, QTreeView::item:!selected:hover  {
-    background: #848383;
-    outline: 0;
-    color: #eff0f1;
-}
-*/
-
 QListView::item:selected, QTreeView::item:selected  {
     background: #2b5278;
 }
 
 QListView::item:selected:hover, QTreeView::item:selected:hover  {
     /* background: #D1DBCB; */
-
 }
 
 QSlider::groove:horizontal {
@@ -1172,14 +1121,17 @@ QTableView, QHeaderView
     border-radius: 0px;
 }
 
+QTableView::item, QListView::item, QTreeView::item  {
+    color: white;
+}
+
 QTableView::item:pressed, QListView::item:pressed, QTreeView::item:pressed  {
     /* background: #D1DBCB; */
-    color: black;
+    color: #eec146;
 }
 
 QTableView::item:selected:active, QTreeView::item:selected:active, QListView::item:selected:active  {
-    /* background: #D1DBCB; */
-    color: black;
+    color: #eec146;
 }
 
 QHeaderView
@@ -1189,7 +1141,6 @@ QHeaderView
     border-radius: 0px;
     margin: 0px;
     padding: 0px;
-
 }
 
 QHeaderView::section  {

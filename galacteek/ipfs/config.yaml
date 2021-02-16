@@ -2,7 +2,7 @@ envs:
   default:
     search:
       ipfsSearch:
-        pageResultsTimeout: 12.0
+        pageResultsTimeout: 15.0
         getMetadataTimeout: 10.0
 
     unixfs:

@@ -89,10 +89,45 @@ def iPlaylistRemoveMedia():
         'Remove media from playlist')
 
 
+def iPlaylist():
+    return QCoreApplication.translate(
+        'MediaPlayer',
+        'Playlist'
+    )
+
+
 def iPlaylistName():
     return QCoreApplication.translate(
         'MediaPlayer',
         'Playlist name')
+
+
+def iPlaylistPinItems():
+    return QCoreApplication.translate(
+        'MediaPlayer',
+        'Pin playlist items'
+    )
+
+
+def iPlaylistClear():
+    return QCoreApplication.translate(
+        'MediaPlayer',
+        'Clear playlist'
+    )
+
+
+def iPlaylistSave():
+    return QCoreApplication.translate(
+        'MediaPlayer',
+        'Save playlist'
+    )
+
+
+def iPlaylistLoad():
+    return QCoreApplication.translate(
+        'MediaPlayer',
+        'Load playlist'
+    )
 
 
 def iAlreadyInPlaylist():
@@ -218,12 +253,17 @@ class MediaPlayerTab(GalacteekTab):
         self.model = ListModel(self.playlist)
 
         self.pMenu = QMenu(self)
-        self.playlistsMenu = QMenu('Load playlist', self.pMenu)
+        self.playlistsMenu = QMenu(iPlaylistLoad(), self.pMenu)
 
         self.savePlaylistAction = QAction(getIcon('save-file.png'),
-                                          'Save playlist', self,
+                                          iPlaylistSave(), self,
                                           triggered=self.onSavePlaylist)
-        self.clearPlaylistAction = QAction('Clear', self,
+        self.pinPlaylistAction = QAction(getIcon('pin.png'),
+                                         iPlaylistPinItems(), self,
+                                         triggered=partialEnsure(
+            self.onPinPlaylistMedia))
+        self.clearPlaylistAction = QAction(getIcon('clear-all.png'),
+                                           iPlaylistClear(), self,
                                            triggered=self.onClearPlaylist)
         self.savePlaylistAction.setEnabled(False)
         self.copyPathAction = QAction(getIconIpfsIce(),
@@ -237,6 +277,8 @@ class MediaPlayerTab(GalacteekTab):
         self.pMenu.addAction(self.clearPlaylistAction)
         self.pMenu.addSeparator()
         self.pMenu.addAction(self.savePlaylistAction)
+        self.pMenu.addSeparator()
+        self.pMenu.addAction(self.pinPlaylistAction)
         self.pMenu.addSeparator()
 
         self.pMenu.addAction(self.copyPathAction)
@@ -297,7 +339,7 @@ class MediaPlayerTab(GalacteekTab):
 
         self.togglePList = GLargeToolButton(parent=self)
         self.togglePList.setIcon(getIcon('playlist.png'))
-        self.togglePList.setText('Playlist')
+        self.togglePList.setText(iPlaylist())
         self.togglePList.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
         self.togglePList.setCheckable(True)
         self.togglePList.toggled.connect(self.onTogglePlaylist)
@@ -366,6 +408,14 @@ class MediaPlayerTab(GalacteekTab):
         return self.uipList.queueFromClipboard
 
     @property
+    def mediaCount(self):
+        return self.playlist.mediaCount()
+
+    @property
+    def playlistEmpty(self):
+        return self.mediaCount == 0
+
+    @property
     def isPlaying(self):
         return self.playerState == self.statePlaying
 
@@ -382,6 +432,7 @@ class MediaPlayerTab(GalacteekTab):
         self.videoWidget.setUpdatesEnabled(updates)
 
     def update(self):
+        self.refreshActions()
         self.app.task(self.updatePlaylistsMenu)
 
     def onFullScreen(self):
@@ -532,9 +583,18 @@ class MediaPlayerTab(GalacteekTab):
         except Exception:
             return messageBox(iCannotLoadPlaylist())
 
+    @ipfsOp
+    async def onPinPlaylistMedia(self, ipfsop, *args):
+        """
+        Pin each media in the playlist
+        """
+        for path in self.playlistGetPaths():
+            await ipfsop.ctx.pin(
+                path, recursive=False, qname='mediaplayer')
+
     def refreshActions(self):
-        self.savePlaylistAction.setEnabled(
-            self.playlist.mediaCount() > 0)
+        self.pinPlaylistAction.setEnabled(not self.playlistEmpty)
+        self.savePlaylistAction.setEnabled(not self.playlistEmpty)
 
     def playlistMediaInserted(self, start, end):
         self.refreshActions()
@@ -549,7 +609,7 @@ class MediaPlayerTab(GalacteekTab):
 
     def playlistGetUrls(self):
         urls = []
-        for idx in range(0, self.playlist.mediaCount()):
+        for idx in range(0, self.mediaCount):
             media = self.playlist.media(idx)
             urls.append(media.canonicalUrl())
         return urls
@@ -622,7 +682,7 @@ class MediaPlayerTab(GalacteekTab):
             self.player.setPosition(seconds * 1000)
 
     def showEvent(self, event):
-        if self.playlist.mediaCount() == 0:
+        if self.playlistEmpty:
             self.togglePList.setChecked(True)
 
         super().showEvent(event)

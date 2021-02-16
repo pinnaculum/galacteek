@@ -250,7 +250,7 @@ class JoinChannelDialog(QDialog):
         widget = await self.chans.joinChannel(channel)
         self.app.mainWindow.registerTab(
             widget, name=channel,
-            icon=getIcon('qta:mdi.chat-outline'),
+            icon=getIcon('chat.png'),
             current=True,
             workspace=WS_PEERS
         )
@@ -354,7 +354,7 @@ class ChatCenterButton(PopupToolButton):
 
         self.app = QApplication.instance()
         self.menu.addAction(
-            getIcon('qta:mdi.chat'),
+            getIcon('chat.png'),
             'Create public channel',
             self.onCreateChannel
         )
@@ -369,7 +369,7 @@ class ChatCenterButton(PopupToolButton):
             self.menu.addSeparator()
 
         self.menu.addAction(
-            getIcon('qta:mdi.chat'),
+            getIcon('chat.png'),
             'Join channel',
             self.onJoinChannelFromList
         )
@@ -386,7 +386,7 @@ class ChatCenterButton(PopupToolButton):
 
         for channel in dagChannels.channels:
             self.chanMenu.addAction(
-                getIcon('qta:mdi.chat'),
+                getIcon('chat.png'),
                 channel, partialEnsure(
                     self.chans.onJoinChannel,
                     channel
@@ -530,7 +530,7 @@ class ChatRoomWidget(GalacteekTab):
         self.ui.message.setFocus(Qt.OtherFocusReason)
 
     async def onTabChanged(self):
-        self.setTabIcon(getIcon('qta:mdi.chat-outline'))
+        self.setTabIcon(getIcon('chat.png'))
 
     async def participantsHandles(self):
         return [p['handle'] for p in await self.participantsData()]
@@ -671,7 +671,7 @@ class ChatRoomWidget(GalacteekTab):
                 self.setTabIcon(getIcon('chat-active.png'))
                 self.tabActiveNotify()
             else:
-                self.setTabIcon(getIcon('qta:mdi.chat-outline'))
+                self.setTabIcon(getIcon('chat.png'))
 
             # System tray notification if the main window is not visible
             if not self.app.mainWindow.isActiveWindow():

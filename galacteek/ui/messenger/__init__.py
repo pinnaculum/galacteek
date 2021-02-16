@@ -580,6 +580,10 @@ class MessengerWidget(QWidget):
     def isComposing(self):
         return self.ui.mailStack.currentIndex() == self.sIdxCompose
 
+    @property
+    def bmReady(self):
+        return self.bmCurrentMailBox is not None
+
     def resizeEventNo(self, event):
         try:
             for _addr, view in self.messageBoxViews.items():
@@ -707,6 +711,10 @@ class MessengerWidget(QWidget):
         await runDialogAsync(dlg)
 
         opts = dlg.options()
+
+        if not opts['label']:
+            await messageBoxAsync('Please set a label')
+            return
 
         await self.createMailBox(
             label=opts['label'],

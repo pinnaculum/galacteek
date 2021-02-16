@@ -12,14 +12,19 @@ information more efficiently.
 Donations
 ---------
 
-**galacteek** will always be opensource and hopefully free of charge.
+**galacteek** will always be opensource and free of charge.
 If you use the software and want to contribute to its improvement,
-please [make a donation](https://liberapay.com/galacteek/donate)
+please [help the project by making a donation](https://liberapay.com/galacteek/donate)
 (also with [GitHub Sponsors](https://github.com/sponsors/pinnaculum))
 
 You can also donate via Bitcoin at the following address:
 
 **1Cgwbzi6R4TgWp7AG67BPwYY1iz15ATR7A**
+
+If you make a cryptocurrency donation, please send a BitMessage
+to *galacteek-support* with the messenger with your name and
+cryptocurrency address if you want your donation to appear in
+the sponsor page. Thanks!
 
 How to use
 ----------

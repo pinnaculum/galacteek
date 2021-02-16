@@ -853,7 +853,7 @@ class WorkspaceMessenger(SingleWidgetWorkspace, KeyListener):
         self.wsSwitchButton.setEnabled(True)
 
     async def event_g_42(self, key, message):
-        if message['event'] == 'bmComposeRequest':
+        if self.msger.bmReady and message['event'] == 'bmComposeRequest':
             self.wsSwitch()
 
             self.msger.composeMessage(
