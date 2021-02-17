@@ -40,7 +40,7 @@ jobs:
         sudo apt-get install -y dzen2 xvfb herbstluftwm
         sudo apt-get install -y libxcb-xkb1 libxkbcommon-x11-0
         sudo apt-get install -y libzbar0
-        sudo apt-get install -y tor
+        sudo apt-get install -y tor libsystemd0
         sudo apt-get install -y autoconf automake gcc
 
     - name: Install packages (macos)
