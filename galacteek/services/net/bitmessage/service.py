@@ -348,6 +348,10 @@ class BitMessageClientService(GService):
         self.notBitDataPath = self.rootPath.joinpath('notbit-data')
 
     async def on_start(self) -> None:
+        if self.app.windowsSystem:
+            log.debug('Bitmessage service not yet supported on this platform')
+            return
+
         if not cParentGet('enabled'):
             log.debug('Bitmessage service is not enabled')
             return
