@@ -101,6 +101,9 @@ cp -av /usr/local/Cellar/libmagic/*/share/misc galacteek.app/Contents/Resources/
 cp -av ${GITHUB_WORKSPACE}/packaging/macos/zbar/*.dylib galacteek.app/Contents/Resources/lib
 cp -av ${GITHUB_WORKSPACE}/packaging/macos/jpeg/*.dylib galacteek.app/Contents/Resources/lib
 
+cp /usr/local/Cellar/openssl@1.1/1.1.1i/lib/libssl*.dylib galacteek.app/Contents/Resources/lib
+cp /usr/local/Cellar/openssl@1.1/1.1.1i/lib/libcrypto*.dylib galacteek.app/Contents/Resources/lib
+
 # create entry script for galacteek
 cat > galacteek.app/Contents/MacOS/galacteek <<\EAT
 #!/usr/bin/env bash
