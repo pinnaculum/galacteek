@@ -3,5 +3,5 @@ envs:
 
     # URL schemes configuration
     schemes:
-      all:
-        reqTimeout: 60
+      ipfsNative:
+        reqTimeout: 240

@@ -15,14 +15,14 @@ envs:
 
     resolve:
       # Timeout in seconds for resolving IPID documents
-      timeout: 40
+      timeout: 45
 
       cacheLifetime:
         # IPNS cache records values (in hours)
         default:
-          hours: 720
+          hours: 1080
         local:
           hours: 1440
 
       # Delay before a resolved IPID is considered "stale", in seconds
-      staleAfterDelay: 600
+      staleAfterDelay: 1200
