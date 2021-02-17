@@ -72,6 +72,9 @@ class TorProtocol(asyncio.SubprocessProtocol):
         self.startedFuture = startedFuture
         self.errAlreadyRunning = False
 
+        self.bstrapRe = re.compile(
+            r'\s*\d+:\d+:\d+\.\d*\s\[\w*\] Bootstrapped (\d+)\%')
+
         self.sTorBootstrapStatus = AsyncSignal(int, str)
 
     @property
@@ -85,21 +88,17 @@ class TorProtocol(asyncio.SubprocessProtocol):
             return
 
         for line in msg.split('\n'):
-            ma = re.search(
-                r'\w*\s\d*\s\d+:\d+:\d+\.\d* \[.*\] '
-                r'Bootstrapped (\d+)\%\s\(([\w\_]*)\)',
-                line)
+            if self.debug:
+                log.debug(f'TOR: {line}')
+
+            ma = self.bstrapRe.search(line)
             if ma:
                 try:
                     pc = ma.group(1)
-                    status = ma.group(2)
-                    log.debug(f'TOR bootstrapped at {pc} percent: {status}')
-                    ensure(self.sTorBootstrapStatus.emit(int(pc), status))
+                    ensure(self.sTorBootstrapStatus.emit(
+                        int(pc), 'bootstrapped'))
                 except Exception:
                     continue
-
-            if self.debug:
-                log.debug(f'TOR: {line}')
 
     def process_exited(self):
         if not self.exitFuture.done():
