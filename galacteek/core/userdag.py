@@ -1,4 +1,5 @@
 import uuid
+import re
 from datetime import datetime
 from datetime import timezone
 
@@ -72,6 +73,18 @@ class UserDAG(EvolvingDAG):
     async def neverUpdated(self):
         metadata = await self.siteMetadata()
         return metadata['date_updated'] is None
+
+
+def titleToPostName(title: str):
+    flags = re.IGNORECASE | re.UNICODE
+
+    words = re.findall(r'[a-z]+', title, flags=flags)
+    if words:
+        return '-'.join(words)
+    else:
+        return '-'.join(
+            re.findall(r'[\w]+', title, flags=flags)
+        )
 
 
 class UserWebsite:
@@ -160,10 +173,10 @@ class UserWebsite:
 
             username = sHandle.short
             uid = str(uuid.uuid4())
-            postName = title.strip().lower().replace(' ', '-')
+            postName = titleToPostName(title.strip().lower())
 
             exEntries = await self.blogEntries()
-            if postName in exEntries:
+            if not postName or postName in exEntries:
                 raise Exception(
                     'A blog post with this name already exists')
 

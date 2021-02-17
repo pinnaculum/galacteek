@@ -385,7 +385,7 @@ class EthDNSResolver:
 
             return match.group(1)
 
-    async def resolveEnsDomain(self, domain, timeout=15):
+    async def resolveEnsDomain(self, domain, timeout=20):
         """
         Resolve an ENS domain with EthDNS, and return the
         IPFS path for this domain
@@ -489,7 +489,7 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
         self.app = app
         self.validCids = collections.deque([], validCidQSize)
 
-        self.requestTimeout = cGet('schemes.all.reqTimeout')
+        self.requestTimeout = cGet('schemes.ipfsNative.reqTimeout')
 
     def debug(self, msg):
         log.debug('Native scheme handler: {}'.format(msg))
@@ -590,7 +590,7 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
         try:
             stat = None
             try:
-                with async_timeout.timeout(8):
+                with async_timeout.timeout(20):
                     stat = await ipfsop.client.object.stat(str(indexPath))
             except asyncio.TimeoutError:
                 return self.urlInvalid(request)
@@ -912,7 +912,7 @@ class DAGProxySchemeHandler(NativeIPFSSchemeHandler):
         try:
             stat = None
             try:
-                with async_timeout.timeout(8):
+                with async_timeout.timeout(20):
                     stat = await ipfsop.client.object.stat(str(indexPath))
             except asyncio.TimeoutError:
                 return self.urlInvalid(request)

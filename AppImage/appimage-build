@@ -99,6 +99,10 @@ cp $GITHUB_WORKSPACE/fs-repo-migrations/fs-repo-migrations $APPDIR/usr/bin
 
 # Copy tor
 cp /usr/bin/tor $APPDIR/usr/bin
+find /usr/lib -iname 'libevent-2.1.so*' -exec cp -av {} $APPDIR/usr/lib \;
+find /usr/lib -iname 'libcrypto.so*' -exec cp -av {} $APPDIR/usr/lib \;
+find /usr/lib -iname 'libsystemd.so*' -exec cp -av {} $APPDIR/usr/lib \;
+find /usr/lib -iname 'libssl.so*' -exec cp -av {} $APPDIR/usr/lib \;
 
 # Copy notbit
 cp $GITHUB_WORKSPACE/notbit/src/notbit $APPDIR/usr/bin
