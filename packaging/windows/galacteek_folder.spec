@@ -127,7 +127,8 @@ a = Analysis(['galacteek_win.py'],
         'pip',
         'setuptools',
         'pytest',
-        'Cryptodome.SelfTest'
+        'Cryptodome.SelfTest',
+        'PIL.ImageQt'
     ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
