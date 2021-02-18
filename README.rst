@@ -34,7 +34,8 @@ allow the system to install applications *from anywhere* in the security
 settings. `Create an issue <https://github.com/pinnaculum/galacteek/issues/new?assignees=&labels=dmg&template=dmg-issue.md&title=Cannot+run+the+DMG+image>`_ if you
 have problems running the DMG image.
 
-*On Windows*: GIT is not packaged in the installer. `Install it  here <https://github.com/git-for-windows/git/releases/download/v2.29.2.windows.2/Git-2.29.2.2-64-bit.exe>`_
+*On Windows*: GIT is not packaged in the installer. `Install it  here <https://github.com/git-for-windows/git/releases/download/v2.29.2.windows.2/Git-2.29.2.2-64-bit.exe>`_.
+If you run into an issue with the installer, `please create an issue here <https://github.com/pinnaculum/galacteek/issues/new?assignees=&labels=windows-installer&template=windows-installer-issue.md>`_ .
 
 You'll need to have *git* installed to sync hashmarks repositories.
 See the releases_ page for all releases.
