@@ -186,6 +186,11 @@ Platforms supported
 - MacOS
 - Windows
 
+The following features are not yet available for windows:
+
+- Bitmessage client (receiving messages works, but a cygwin IPC bug
+  prevents sending messages)
+
 Because of the nature of the software's stack (asyncio/Quamash),
 support for any other platform is unlikely.
 
