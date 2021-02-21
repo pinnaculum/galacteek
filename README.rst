@@ -237,7 +237,7 @@ from the ipfs-logo_ project's repository is included, unchanged.
 .. _aioipfs: https://gitlab.com/cipres/aioipfs
 .. _aiomonitor: https://github.com/aio-libs/aiomonitor
 .. _asyncqt: https://github.com/gmarull/asyncqt
-.. _sponsor: https://github.com/pinnaculum/galacteek/SPONSOR.rst
+.. _sponsor: https://github.com/pinnaculum/galacteek/blob/master/SPONSOR.rst
 .. _quamash: https://github.com/harvimt/quamash
 .. _go-ipfs: https://github.com/ipfs/go-ipfs
 .. _dist.ipfs.io: https://dist.ipfs.io
