@@ -46,9 +46,9 @@ pygments>=2.3.1
 pyld>=2.0.2
 PyNaCl>=1.4.0
 pypika>=0.36.5
-pyqt5==5.13.2
+pyqt5==5.15.2
 pyqtchart==5.13.1
-pyqtwebengine==5.13.2
+pyqtwebengine==5.15.2
 python-magic>=0.4.15
 python3-crdt>=1.0.3
 py-multibase>=1.0.3
@@ -59,6 +59,6 @@ qtawesome>=0.7.2
 random-username>=1.0.2
 rule-engine>=2.1.0
 strict-rfc3339>=0.7
-tortoise-orm==0.16.17
+tortoise-orm>=0.16.21
 validators>=0.18.1
 yarl==1.5.1
