@@ -237,7 +237,7 @@ jobs:
     - name: Build Flatpak
       if: startsWith(matrix.os, 'ubuntu')
       run: |
-        flatpak-builder --force-clean flatpak-build packaging/linux/flatpak/packaging/linux/flatpak/io.github.galacteek.Galacteek.yaml
+        flatpak-builder --force-clean flatpak-build packaging/linux/flatpak/io.github.galacteek.Galacteek.yaml
 
     - name: Build DMG
       if: startsWith(matrix.os, 'macOS')
