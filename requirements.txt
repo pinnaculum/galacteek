@@ -59,6 +59,6 @@ qtawesome>=0.7.2
 random-username>=1.0.2
 rule-engine>=2.1.0
 strict-rfc3339>=0.7
-tortoise-orm==0.16.17
+tortoise-orm>=0.16.21
 validators>=0.18.1
 yarl==1.5.1
