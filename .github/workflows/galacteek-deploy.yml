@@ -17,7 +17,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-18.04, macos-latest, windows-latest]
+        os: [ubuntu-18.04]
+        # os: [ubuntu-18.04, macos-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -42,6 +43,7 @@ jobs:
         sudo apt-get install -y libzbar0
         sudo apt-get install -y tor libsystemd0
         sudo apt-get install -y autoconf automake gcc
+        sudo apt-get install -y flatpak flatpak-builder
 
     - name: Install packages (macos)
       if: startsWith(matrix.os, 'mac')
@@ -231,6 +233,11 @@ jobs:
         cd AppImage
         ./appimage-build
         cd ..
+
+    - name: Build Flatpak
+      if: startsWith(matrix.os, 'ubuntu')
+      run: |
+        flatpak-builder --force-clean flatpak-build packaging/linux/flatpak/packaging/linux/flatpak/io.github.galacteek.Galacteek.yaml
 
     - name: Build DMG
       if: startsWith(matrix.os, 'macOS')
