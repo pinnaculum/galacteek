@@ -29,6 +29,7 @@ from galacteek import database
 from galacteek import AsyncSignal
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.mimetype import detectMimeTypeFromBuffer
+from galacteek.ipfs.mimetype import MIMEType
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import joinIpns
 from galacteek.ipfs.cidhelpers import IPFSPath
@@ -50,6 +51,7 @@ SCHEME_DWEBGW = 'dwebgw'
 SCHEME_FS = 'fs'
 SCHEME_IPFS = 'ipfs'
 SCHEME_IPNS = 'ipns'
+SCHEME_IPID = 'ipid'
 
 # ENS-related schemes (ensr is redirect-on-resolve ENS scheme)
 SCHEME_ENS = 'ens'
@@ -74,7 +76,9 @@ SCHEME_CHROMIUM = 'chromium'
 
 # Default flags used by declareUrlScheme()
 defaultSchemeFlags = QWebEngineUrlScheme.SecureScheme | \
-    QWebEngineUrlScheme.ViewSourceAllowed
+    QWebEngineUrlScheme.ViewSourceAllowed | \
+    QWebEngineUrlScheme.CorsEnabled
+
 
 defaultLocalSchemeFlags = defaultSchemeFlags | QWebEngineUrlScheme.LocalScheme
 serviceWorkersFlags = \
@@ -190,6 +194,13 @@ def initializeSchemes():
         SCHEME_IPNS,
         syntax=QWebEngineUrlScheme.Syntax.Host,
         flags=serviceWorkersFlags
+    )
+
+    declareUrlScheme(
+        SCHEME_IPID,
+        syntax=QWebEngineUrlScheme.Syntax.Host,
+        flags=defaultSchemeFlags |
+        QWebEngineUrlScheme.ContentSecurityPolicyIgnored
     )
 
     declareUrlScheme(
@@ -625,6 +636,12 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
 
     async def renderData(self, request, ipfsPath, data, uid):
         cType = await detectMimeTypeFromBuffer(data[0:512])
+
+        if cType and cType.isText:
+            if ipfsPath.objPath.endswith('.css'):
+                # Should add CSS rules in libmagic
+                # QtWebEngine really wants 'text/css'
+                cType = MIMEType('text/css')
 
         if cType:
             self.serveContent(

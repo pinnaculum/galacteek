@@ -99,6 +99,10 @@ async def ipfsConfigGetJson(binPath, param):
     return await shell("{0} config --json '{1}'".format(binPath, param))
 
 
+async def ipfsMigrateRepo():
+    return await shell("fs-repo-migrations -y")
+
+
 class IPFSDProtocol(asyncio.SubprocessProtocol):
     """
     IPFS daemon process protocol
@@ -221,6 +225,7 @@ class AsyncIPFSDaemon(object):
         self.repoApiFilePath = self.repoPath.joinpath('api')
         self.repoConfigPath = self.repoPath.joinpath('config')
         self.repoKeyStorePath = self.repoPath.joinpath('keystore')
+        self.repoVersionPath = self.repoPath.joinpath('version')
         self.statusPath = statusPath
         self.detached = detached
         self.autoRestart = autoRestart
@@ -304,6 +309,16 @@ class AsyncIPFSDaemon(object):
 
         return True
 
+    def repoVersion(self):
+        if self.repoVersionPath.is_file():
+            try:
+                with open(str(self.repoVersionPath), 'rt') as fdv:
+                    version = fdv.readline()
+                    return int(version)
+            except Exception:
+                log.debug(
+                    f'Could not read version from {self.repoVersionPath}')
+
     def availableProfiles(self):
         return [
             'lowpower',
@@ -344,7 +359,19 @@ class AsyncIPFSDaemon(object):
                 yield 20, 'Creating repos with default datastore'
                 await shell('ipfs init')
 
-            yield 30, 'Repository initialized'
+            yield 20, 'Repository initialized'
+
+        repoV = self.repoVersion()
+
+        if isinstance(repoV, int) and repoV < 11:
+            # Migrate
+            self.message('Detected repository version {repoV}, migrating')
+
+            yield 25, 'Running migration'
+            await ipfsMigrateRepo()
+            yield 30, 'Migration finished'
+        else:
+            yield 25, 'No migration needed'
 
         if self.repoApiFilePath.exists():
             self.repoApiFilePath.unlink()

@@ -1,11 +1,11 @@
 import attr
 
+from galacteek import log
 from galacteek.browser.web3channels import Web3Channel
 from galacteek.browser.web3channels import Web3Transport
 
 from galacteek.browser import pslisteners
 from galacteek.browser.interceptor import IPFSRequestInterceptor
-from galacteek import log
 
 
 @attr.s(auto_attribs=True)

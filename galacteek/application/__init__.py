@@ -84,6 +84,7 @@ from galacteek.browser.schemes import EthDNSProxySchemeHandler
 from galacteek.browser.schemes import NativeIPFSSchemeHandler
 from galacteek.browser.schemes import ObjectProxySchemeHandler
 from galacteek.browser.schemes import MultiObjectHostSchemeHandler
+from galacteek.browser.schemes.ipid import IPIDSchemeHandler
 
 from galacteek.browser import BrowserRuntimeObjects
 from galacteek.browser import browserSetup
@@ -146,7 +147,7 @@ def ipfsVersion():
 async def fetchGoIpfsWrapper(app, timeout=60 * 10):
     try:
         await asyncio.wait_for(fetchIpfsSoft(
-            app, 'go-ipfs', 'ipfs', '0.7.0'), timeout)
+            app, 'go-ipfs', 'ipfs', '0.8.0'), timeout)
     except asyncio.TimeoutError:
         app.mainWindow.statusMessage(iGoIpfsFetchTimeout())
         return None
@@ -295,6 +296,10 @@ class GalacteekApplication(QApplication):
     @cached_property
     def s(self) -> AppService:
         return AppService(self.dataPathForService('g'), app=self)
+
+    @cached_property
+    def nsCache(self) -> IPNSCache:
+        return IPNSCache(self.nsCacheLocation)
 
     @cached_property
     def eth(self):
@@ -765,9 +770,7 @@ class GalacteekApplication(QApplication):
         Returns a new GalacteekOperator with the currently
         active IPFS client
         """
-        return GalacteekOperator(self.ipfsClient, ctx=self.ipfsCtx,
-                                 debug=self.debugEnabled,
-                                 nsCachePath=str(self.nsCacheLocation))
+        return self.ipfsOperatorForLoop(self.loop)
 
     def getIpfsConnectionParams(self):
         mgr = self.settingsMgr
@@ -789,6 +792,17 @@ class GalacteekApplication(QApplication):
 
     def getEthParams(self):
         return ethConnConfigParams(self.cmdArgs.ethnet)
+
+    def ipfsClientForLoop(self, loop):
+        connParams = self.getIpfsConnectionParams()
+        return aioipfs.AsyncIPFS(host=connParams.host,
+                                 port=connParams.apiPort, loop=loop)
+
+    def ipfsOperatorForLoop(self, loop):
+        return GalacteekOperator(self.ipfsClientForLoop(loop),
+                                 ctx=self.ipfsCtx,
+                                 debug=self.debugEnabled,
+                                 nsCache=self.nsCache)
 
     async def updateIpfsClient(self, client=None):
         if not client:
@@ -1468,6 +1482,7 @@ class GalacteekApplication(QApplication):
             self, noMutexes=self.cmdArgs.noipfsmutexlock
         )
         self.qSchemeHandler = MultiObjectHostSchemeHandler(self)
+        self.ipidSchemeHandler = IPIDSchemeHandler(self)
 
         # self.gSchemeHandler = GalacteekSchemeHandler(self)
 

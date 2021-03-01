@@ -8,6 +8,15 @@ the changes in the CHANGELOG formatting.
 
 ## [Unreleased]
 
+## [0.5.0] - 2021-02-28
+
+### Added
+- GService: add methods to load services automatically from the
+  filesystem tree
+
+### Changed
+
+
 ## [0.4.42] - 2020-12-12
 
 This is build 42 (the end of the cycle).

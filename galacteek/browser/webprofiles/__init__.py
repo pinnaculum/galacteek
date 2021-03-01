@@ -10,6 +10,7 @@ from galacteek.browser.schemes import SCHEME_ENSR
 from galacteek.browser.schemes import SCHEME_FS
 from galacteek.browser.schemes import SCHEME_IPFS
 from galacteek.browser.schemes import SCHEME_IPNS
+from galacteek.browser.schemes import SCHEME_IPID
 from galacteek.browser.schemes import SCHEME_Q
 # from galacteek.browser.schemes import SCHEME_GALACTEEK
 
@@ -113,6 +114,7 @@ class BaseProfile(QWebEngineProfile):
         self.installHandler(SCHEME_ENS, self.app.ensProxySchemeHandler)
         self.installHandler(SCHEME_ENSR, self.app.ensSchemeHandler)
         self.installHandler(SCHEME_Q, self.app.qSchemeHandler)
+        self.installHandler(SCHEME_IPID, self.app.ipidSchemeHandler)
         # self.installHandler(SCHEME_GALACTEEK, self.app.gSchemeHandler)
 
     def profileSetting2(self, defaults, name, default=False):

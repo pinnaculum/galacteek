@@ -2,7 +2,6 @@ import time
 import io
 import os.path
 import os
-import json
 import orjson
 import uuid
 import aiofiles
@@ -24,10 +23,8 @@ from galacteek.ipfs.paths import posixIpfsPath
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import joinIpns
 from galacteek.ipfs.cidhelpers import stripIpfs
-from galacteek.ipfs.cidhelpers import stripIpns
 from galacteek.ipfs.cidhelpers import cidConvertBase32
 from galacteek.ipfs.cidhelpers import IPFSPath
-from galacteek.ipfs.cidhelpers import ipnsKeyCidV1
 from galacteek.ipfs.multi import multiAddrTcp4
 from galacteek.ipfs.stat import StatInfo
 
@@ -38,7 +35,6 @@ from galacteek.core.asynccache import cachedcoromethod
 from galacteek.core.asynclib import async_enterable
 from galacteek.core.asynclib import asyncReadFile
 from galacteek.core.jtraverse import traverseParser
-from galacteek.core import jsonSchemaValidate
 from galacteek.core import pkgResourcesRscFilename
 from galacteek.core.tmpf import TmpFile
 from galacteek.core.asynclib import asyncRmTree
@@ -50,6 +46,10 @@ from galacteek import logUser
 from galacteek import AsyncSignal
 
 import aioipfs
+
+from .nscache import IPNSCache
+from .pinops import RemotePinningOps
+from .pinops import RemotePinningServiceOps
 
 
 GFILES_ROOT_PATH = '/galacteek/'
@@ -230,41 +230,21 @@ class APIErrorDecoder:
         return self.exc.message == 'unknown node type'
 
 
-ppRe = r"^(/ipns/[\w<>\:\;\,\?\!\*\%\&\=\@\$\~/\s\.\-_\\\'\(\)\+]{1,1024}$)"
-nsCacheSchema = {
-    "title": "NS cache",
-    "description": "NS cache schema",
-    "type": "object",
-    "patternProperties": {
-        ppRe: {
-            "properties": {
-                "resolved": {
-                    "type": "string"
-                },
-                "resolvedLast": {
-                    "type": "integer"
-                },
-                "cacheOrigin": {
-                    "type": "string"
-                }
-            }
-        }
-    }
-}
-
-
 # Stream-resolve cache
 sResolveCache = TTLCache(512, 30)
 
 
-class IPFSOperator(object):
+class IPFSOperator(RemotePinningOps, RemotePinningServiceOps):
     """
     IPFS operator, for your daily operations!
     """
 
     def __init__(self, client, ctx=None, rsaAgent=None, debug=False,
-                 offline=False, nsCachePath=None,
+                 offline=False,
+                 nsCache=None,
                  objectMapping=False):
+        super().__init__()
+
         self._lock = asyncio.Lock()
         self._id = uuid.uuid1()
         self._cache = {}
@@ -272,8 +252,7 @@ class IPFSOperator(object):
         self._objectMapping = objectMapping
         self._rsaAgent = rsaAgent
         self._curve25519Agent = None
-        self._nsCache = {}
-        self._nsCachePath = nsCachePath
+        self._nsCache = nsCache if nsCache else IPNSCache(Path('ncache.json'))
         self._noPeers = True
         self._ldDocLoader = None
         self.debugInfo = debug
@@ -288,8 +267,7 @@ class IPFSOperator(object):
         self.gotNoPeers = AsyncSignal()
         self.gotPeers = AsyncSignal(int)
 
-        if self._nsCachePath:
-            self.nsCacheLoad()
+        self.nsCache.nsCacheLoad()
 
     @property
     def nsCache(self):
@@ -712,7 +690,7 @@ class IPFSOperator(object):
                 self.debug('Caching IPNS key: {key} (origin: {origin})'.format(
                     key=key, origin=cacheOrigin))
 
-                await self.nsCacheSet(
+                await self.nsCache.nsCacheSet(
                     joinIpns(key), path, origin=cacheOrigin)
 
             self.debug(
@@ -768,57 +746,6 @@ class IPFSOperator(object):
         self.noPeers = False
         await self.gotPeers.emit(peerCount)
 
-    def nsCacheLoad(self):
-        try:
-            with open(self._nsCachePath, 'r') as fd:
-                cache = json.load(fd)
-
-            if not jsonSchemaValidate(cache, nsCacheSchema):
-                raise Exception('Invalid NS cache schema')
-        except Exception as err:
-            self.debug(f'Error loading NS cache: {err}')
-        else:
-            self.debug(f'NS cache: loaded from {self._nsCachePath}')
-            self._nsCache = cache
-
-    async def nsCacheSave(self):
-        if not self._nsCachePath or not isinstance(self.nsCache, dict):
-            return
-
-        async with self._lock:
-            async with aiofiles.open(self._nsCachePath, 'w+t') as fd:
-                await fd.write(json.dumps(self.nsCache))
-
-    def nsCacheGet(self, path, maxLifetime=None, knownOrigin=False):
-        entry = self.nsCache.get(path)
-
-        if isinstance(entry, dict):
-            rLast = entry['resolvedLast']
-
-            if knownOrigin is True and entry.get('cacheOrigin') == 'unknown':
-                return None
-
-            if not maxLifetime or (int(time.time()) - rLast) < maxLifetime:
-                return entry['resolved']
-
-    async def nsCacheSet(self, path, resolved, origin=None):
-        self._nsCache[path] = {
-            'resolved': resolved,
-            'resolvedLast': int(time.time()),
-            'cacheOrigin': origin
-        }
-
-        # Cache v1
-        v1 = ipnsKeyCidV1(stripIpns(path))
-        if v1:
-            self._nsCache[joinIpns(v1)] = {
-                'resolved': resolved,
-                'resolvedLast': int(time.time()),
-                'cacheOrigin': origin
-            }
-
-        await self.nsCacheSave()
-
     async def nameResolve(self, path,
                           timeout=None,
                           recursive=False,
@@ -839,7 +766,7 @@ class IPFSOperator(object):
             if usingCache:
                 # The NS cache is used only for IPIDs when offline
 
-                rPath = self.nsCacheGet(
+                rPath = self.nsCache.nsCacheGet(
                     path, maxLifetime=maxCacheLifetime,
                     knownOrigin=True)
 
@@ -862,7 +789,7 @@ class IPFSOperator(object):
             return None
         else:
             if cache and resolved:
-                await self.nsCacheSet(
+                await self.nsCache.nsCacheSet(
                     path, resolved['Path'], origin=cacheOrigin)
 
             return resolved
@@ -885,7 +812,7 @@ class IPFSOperator(object):
             if usingCache:
                 # The NS cache is used only for IPIDs when offline
 
-                rPath = self.nsCacheGet(
+                rPath = self.nsCache.nsCacheGet(
                     path, maxLifetime=maxCacheLifetime,
                     knownOrigin=True
                 )
@@ -954,7 +881,7 @@ class IPFSOperator(object):
                     dht_timeout=rTimeout):
                 if cache:
                     self.debug(f'nameResolveStream ({path}): caching {nentry}')
-                    await self.nsCacheSet(
+                    await self.nsCache.nsCacheSet(
                         path, nentry['Path'], origin=cacheOrigin)
 
                 if debug:
@@ -975,7 +902,7 @@ class IPFSOperator(object):
 
         if _yieldedcn == 0 and usingCache:
             # The NS cache is used only for IPIDs when offline
-            rPath = self.nsCacheGet(
+            rPath = self.nsCache.nsCacheGet(
                 path, maxLifetime=mCacheLifetime,
                 knownOrigin=True
             )
@@ -1549,7 +1476,7 @@ class IPFSOperator(object):
 
         async def process(data):
             if isinstance(data, dict):
-                for objKey, objValue in data.items():
+                for objKey, objValue in data.copy().items():
                     if objKey == '@context' and isinstance(objValue, dict):
                         link = objValue.get('/')
                         if not link:
