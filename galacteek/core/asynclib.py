@@ -3,6 +3,7 @@ from collections import UserList
 from collections import deque
 from typing import Deque
 from asyncqt import QThreadExecutor
+import concurrent.futures
 import threading
 import asyncio
 import shutil
@@ -442,3 +443,22 @@ class GThrottler:
 
     async def __aexit__(self, exc_type, exc, tb):
         pass
+
+
+def coroInThread(coro, *args):
+    app = QApplication.instance()
+    loop = asyncio.new_event_loop()
+    return loop.run_until_complete(coro(app, loop, *args))
+
+
+def threadedCoro(coro, *args):
+    """
+    Runs a coroutine in a new event loop (using a dedicated thread)
+    """
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future = executor.submit(coroInThread, coro, *args)
+        try:
+            return future.result()
+        except Exception as err:
+            print(str(err))

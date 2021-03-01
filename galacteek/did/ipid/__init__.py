@@ -612,7 +612,6 @@ class IPIdentifier(DAGOperations):
 
     @ipfsOp
     async def addServiceVideoCall(self, ipfsop, roomName):
-        # servicePath = posixpath.join('/videocall', roomName)
         servicePath = posixpath.join('videocall', roomName)
 
         return await self.addServiceContexted({
@@ -850,7 +849,8 @@ class IPIdentifier(DAGOperations):
                 return key['publicKeyPem']
 
     async def getServices(self):
-        return await self.dagGet('service')
+        node = await self.dagGet('service')
+        return node if node else []
 
     def _serviceInst(self, srv):
         stype = srv.get('type')
@@ -894,7 +894,7 @@ class IPIdentifier(DAGOperations):
 
     async def removeServiceById(self, _id: str):
         """
-        Remove the service with the give DID identifier
+        Remove the service with the given DID identifier
         """
         try:
             for srv in self._document['service']:

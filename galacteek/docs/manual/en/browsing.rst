@@ -85,6 +85,24 @@ its base32 representation at the following URL::
 *Note*: the scheme handler for these URL schemes does not
 use the *go-ipfs* daemon's HTTP gateway
 
+ipid://
+^^^^^^^
+
+The *ipid* URL scheme allows direct access to the content published
+by *IPID* holders. URLs use the following format::
+
+    ipid://{did-id}/{service-path}
+
+Where *did-id* is the *IPID identifier* (it actually corresponds
+to an IPNS key).
+
+Examples::
+
+    ipid://k2k4r8jz0dyx3przi8mk1trj1ga0ibgroyhbvwumkbig70uphz7qpnqn
+    ipid://k2k4r8jz0dyx3przi8mk1trj1ga0ibgroyhbvwumkbig70uphz7qpnqn/blog
+
+This scheme currently only supports the *GET* method.
+
 dweb:/
 ^^^^^^
 

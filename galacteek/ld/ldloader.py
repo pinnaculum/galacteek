@@ -11,7 +11,8 @@ from galacteek import log
 from pyld.jsonld import JsonLdError
 
 
-async def aioipfs_document_loader(ipfsClient, loop=None,
+async def aioipfs_document_loader(ipfsClient: aioipfs.AsyncIPFS,
+                                  loop=None,
                                   secure=False, **kwargs):
     if loop is None:
         loop = asyncio.get_event_loop()
@@ -23,7 +24,7 @@ async def aioipfs_document_loader(ipfsClient, loop=None,
         :return: the RemoteDocument.
         """
         try:
-            if url.startswith('ipschema://'):
+            if url.startswith('ipschema://') or url.startswith('ips://'):
                 o = urlparse(url)
                 kList = await client.key.list()
 

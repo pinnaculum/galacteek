@@ -7,8 +7,8 @@ on:
     branches: [ master ]
 
 env:
-  GO_IPFS_VERSION: 0.7.0
-  FS_MIGRATE_VERSION: 1.6.4
+  GO_IPFS_VERSION: 0.8.0
+  FS_MIGRATE_VERSION: 1.7.1
 
 jobs:
   build:
@@ -235,9 +235,9 @@ jobs:
         cd ..
 
     - name: Build Flatpak
-      if: startsWith(matrix.os, 'ubuntu')
+      if: contains(toJson(github.event.commits), '[deploy-flatpak]') == true
       run: |
-        flatpak-builder --force-clean flatpak-build packaging/linux/flatpak/io.github.galacteek.Galacteek.yaml
+        flatpak-builder --force-clean --repo=flatpak-repo flatpak-build packaging/linux/flatpak/io.github.galacteek.Galacteek.yaml
 
     - name: Build DMG
       if: startsWith(matrix.os, 'macOS')
