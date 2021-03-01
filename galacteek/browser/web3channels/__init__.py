@@ -40,7 +40,6 @@ class Web3Channel(QWebChannel):
         nc = QWebChannel(self)
 
         objects = self.registeredObjects()
-        print('cloning', objects)
         for objName, obj in objects:
             log.debug(f'{self}: cloning object with ID: {objName}')
             nc.registerObject(objName, obj)

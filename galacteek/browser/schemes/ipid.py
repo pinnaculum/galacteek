@@ -1,3 +1,5 @@
+
+from galacteek import log
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
 
@@ -12,30 +14,36 @@ class IPIDSchemeHandler(NativeIPFSSchemeHandler):
     @ipfsOp
     async def handleRequest(self, ipfsop, request, uid):
         rUrl = request.requestUrl()
+        rMethod = bytes(request.requestMethod()).decode()
+        rInitiator = request.initiator().toString()
 
         # The host is the IPNS key for the DID
         ipnsKey = rUrl.host()
         path = rUrl.path()
         did = f'did:ipid:{ipnsKey}'
 
+        log.debug(f'IPID REQ {rMethod} ({rInitiator}): DID {did}, path {path}')
+
         ipid = await self.app.ipidManager.load(did)
-        print(ipid)
 
         if not ipid:
             return self.urlInvalid(request)
 
         serviceId = did + path
-        print(serviceId)
 
         service = await ipid.searchServiceById(serviceId)
         if not service:
             return self.urlInvalid(request)
 
         endpoint = service.endpoint
-        print(endpoint)
 
-        path = IPFSPath(endpoint)
-        if path.valid:
-            return await self.fetchFromPath(ipfsop, request, path, uid)
-        else:
-            return self.urlInvalid(request)
+        if rMethod == 'GET':
+            path = IPFSPath(endpoint)
+            if path.valid:
+                return await self.fetchFromPath(ipfsop, request, path, uid)
+            else:
+                return self.urlInvalid(request)
+        elif rMethod == 'POST':
+            # TODO
+            # rHeaders = request.requestHeaders()
+            pass
