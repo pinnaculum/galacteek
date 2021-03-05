@@ -352,16 +352,19 @@ class IPFSOperator(RemotePinningOps, RemotePinningServiceOps):
     async def waitReady(self, timeout=10):
         return await self.waitFor(self.evReady.wait(), timeout)
 
-    async def waitFor(self, fncall, timeout):
+    async def waitFor(self, awaitable, timeout,
+                      raiseCancelled=True):
         try:
             with async_timeout.timeout(timeout):
-                return await fncall
+                return await awaitable
         except asyncio.TimeoutError:
-            self.debug('Timeout waiting for coroutine {0}'.format(fncall))
+            self.debug('Timeout waiting for coroutine {0}'.format(awaitable))
             return None
         except asyncio.CancelledError:
-            self.debug('Cancelled coroutine {0}'.format(fncall))
-            raise
+            self.debug('Cancelled coroutine {0}'.format(awaitable))
+
+            if raiseCancelled:
+                raise
 
     @amlrucache
     async def daemonConfig(self):
@@ -458,9 +461,13 @@ class IPFSOperator(RemotePinningOps, RemotePinningServiceOps):
     async def filesList(self, path, sort=False):
         try:
             listing = await self.client.files.ls(path, long=True)
+            assert listing is not None
         except aioipfs.APIError as err:
             self.debug(err.message)
             return None
+        except Exception as err:
+            self.debug(f'filesList ({path}): unknown error: {err}')
+            return []
 
         if 'Entries' not in listing or listing['Entries'] is None:
             return []
@@ -613,6 +620,11 @@ class IPFSOperator(RemotePinningOps, RemotePinningServiceOps):
         info = await self.client.core.id()
         if isDict(info):
             return info.get('ID', 'Unknown')
+
+    async def alive(self, timeout=5):
+        nodeId = await self.waitFor(self.nodeId(), timeout,
+                                    raiseCancelled=False)
+        return nodeId is not None
 
     async def nodeWsAdresses(self):
         addrs = []
@@ -999,10 +1011,14 @@ class IPFSOperator(RemotePinningOps, RemotePinningServiceOps):
         try:
             mHash = stripIpfs(hashRef)
             result = await self.client.pin.ls(multihash=mHash)
+            assert isinstance(result, dict)
             keys = result.get('Keys', {})
             return mHash in keys
         except aioipfs.APIError as e:
             self.debug('isPinned error: {}'.format(e.message))
+            return False
+        except Exception as err:
+            self.debug(f'isPinned: unknown error {err}')
             return False
 
     async def pinned(self, type='all'):
@@ -1359,7 +1375,11 @@ class IPFSOperator(RemotePinningOps, RemotePinningServiceOps):
                     returnEntry = entry
 
                 if callbackvalid:
-                    await callback(entry)
+                    try:
+                        await callback(entry)
+                    except Exception as cbError:
+                        self.debug(f'addPath error on callback: {cbError}')
+                        continue
         except aioipfs.APIError as err:
             self.debug('addPath: {path}: API error: {e}'.format(
                 path=path, e=err.message))
@@ -1663,6 +1683,8 @@ class IPFSOperator(RemotePinningOps, RemotePinningServiceOps):
 
         if output is not None:
             return orjson.loads(output)
+        else:
+            self.debug(f'dagGet: {dagPath} seems invalid')
 
     async def dagStatBlocks(self, cid, timeout=360):
         # TODO

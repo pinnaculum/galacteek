@@ -165,7 +165,6 @@ class ChatChannels(QObject):
         key = makeKeyChatChannel(channel)
         service = PSEncryptedChatChannelService(
             ipfsop.ctx,
-            self.app.ipfsClient,
             channel,
             chatToken.psTopic,
             jwsTokenEntry['Hash'],
@@ -175,7 +174,7 @@ class ChatChannels(QObject):
         )
 
         ipfsop.ctx.pubsub.reg(service)
-        await service.start()
+        await service.startListening()
 
         self.userListRev = uid4()
 
@@ -528,6 +527,9 @@ class ChatRoomWidget(GalacteekTab):
 
     def focusMessage(self):
         self.ui.message.setFocus(Qt.OtherFocusReason)
+
+    def showEvent(self, event):
+        self.setTabIcon(getIcon('chat.png'))
 
     async def onTabChanged(self):
         self.setTabIcon(getIcon('chat.png'))

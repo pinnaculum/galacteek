@@ -13,9 +13,14 @@ the changes in the CHANGELOG formatting.
 ### Added
 - GService: add methods to load services automatically from the
   filesystem tree
+- Add a workspace action to view the application's graph
 
 ### Changed
-
+- MFS: recursive collapse when double-clicking an already-expanded
+  directory
+- Pubsub services are now part of the services tree
+- P2P services (like the DIDauth service) are now part of the
+  services tree
 
 ## [0.4.42] - 2020-12-12
 

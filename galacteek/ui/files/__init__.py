@@ -23,6 +23,7 @@ from PyQt5.QtWidgets import QHeaderView
 from PyQt5.QtWidgets import QWidgetAction
 from PyQt5.QtWidgets import QToolBar
 from PyQt5.QtWidgets import QTextEdit
+from PyQt5.QtWidgets import QStackedWidget
 
 from PyQt5.QtCore import QModelIndex
 from PyQt5.QtCore import QItemSelectionModel
@@ -36,6 +37,7 @@ from PyQt5.QtCore import QSortFilterProxyModel
 
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtGui import QImage
+from PyQt5.QtGui import QKeySequence
 
 from galacteek import ensure
 from galacteek import partialEnsure
@@ -78,6 +80,7 @@ from ..clipboard import iCopyPathToClipboard
 from ..clipboard import iCopyPubGwUrlToClipboard
 from ..dialogs import MFSImportOptionsDialog
 from ..dialogs import NewSeedDialog
+from ..dialogs import DefaultProgressDialog
 
 
 # Files messages
@@ -268,6 +271,10 @@ def iEntryExistsHere():
     )
 
 
+class MFSOperationProgressWidget(DefaultProgressDialog):
+    pass
+
+
 class MFSTreeView(QTreeView):
     def mousePressEvent(self, event):
         item = self.indexAt(event.pos())
@@ -288,6 +295,19 @@ class MFSTreeView(QTreeView):
         self.header().setMaximumSectionSize(
             self.size().width() / 2)
         super().resizeEvent(event)
+
+    def recursiveExpand(self, index, expand):
+        for childNo in range(0, self.model().rowCount(index)):
+            childIndex = index.child(childNo, 0)
+            if expand:
+                self.setExpanded(childIndex, expand)
+
+            subChildCount = self.model().rowCount(childIndex)
+            if subChildCount > 0:
+                self.recursiveExpand(childIndex, expand)
+
+            if not expand:
+                self.setExpanded(childIndex, expand)
 
 
 class CustomSortFilterProxyModel(QSortFilterProxyModel):
@@ -422,6 +442,10 @@ class FileManager(QWidget):
 
         self.app = QApplication.instance()
 
+        self.mfsProgressWidget = MFSOperationProgressWidget()
+        self.mfsProgressWidget.statusAlignLeft()
+        self.fsStack = QStackedWidget()
+
         self.lock = asyncio.Lock()
         self.model = None
         self._offlineMode = False
@@ -449,6 +473,7 @@ class FileManager(QWidget):
             self,
             tooltip=iRefresh()
         )
+        self.refreshAction.setShortcut(QKeySequence('F5'))
         self.newSeedAction = FileManagerButtonAction(
             getIcon('fileshare.png'),
             self,
@@ -472,7 +497,6 @@ class FileManager(QWidget):
 
         # Build file browser
         self.displayedItem = None
-        self.createFileManager()
 
         self.timeFrameSelector = TimeFrameSelectorWidget()
         self.timeFrameSelector.datesChanged.connectTo(
@@ -505,7 +529,8 @@ class FileManager(QWidget):
         self.ui.searchFiles.setToolTip(iSearchFilesHelp())
         self.ui.localFileManagerSwitch.toggled.connect(
             self.onLocalFileManagerToggled)
-        self.ui.fileManagerButton.clicked.connect(self.onLocalFileManager)
+        self.ui.fileManagerButton.toggled.connect(
+            self.onLocalFileManagerToggled)
         self.ui.cancelButton.hide()
         self.ui.cancelButton.clicked.connect(self.onCancelOperation)
 
@@ -581,8 +606,13 @@ class FileManager(QWidget):
         self.ui.offlineButton.setChecked(False)
         self.ui.offlineButton.setVisible(False)
 
+        # Add the MFS tree in the stack
         self.mfsTree = MFSTreeView()
-        self.ui.hLayoutFilesView.insertWidget(0, self.mfsTree)
+        self.fsStack.addWidget(self.mfsTree)
+        self.fsStack.addWidget(self.mfsProgressWidget)
+        self.ui.hLayoutFilesView.insertWidget(0, self.fsStack)
+
+        self.createFileManager()
 
         # Connect the tree view actions
         self.mfsTree.doubleClicked.connect(self.onDoubleClicked)
@@ -690,6 +720,19 @@ class FileManager(QWidget):
     def isBusy(self):
         return self.status == self.statusBusy
 
+    @property
+    def progress(self):
+        return self.mfsProgressWidget
+
+    @property
+    def rscOpenTryDecrypt(self):
+        return self.displayedItem is self.model.itemEncrypted or \
+            self.displayedItem is self.model.itemQrCodes
+
+    @property
+    def inEncryptedFolder(self):
+        return self.displayedItem is self.model.itemEncrypted
+
     def onConfigChanged(self):
         self.configApply()
 
@@ -706,7 +749,8 @@ class FileManager(QWidget):
         elif iconSize in range(40, 64):
             self.actionLargeIcon.setChecked(True)
 
-    def busy(self, busy=True, showClip=False):
+    def busy(self, busy=True, showClip=False,
+             showProgress=False):
         if busy:
             self.status = self.statusBusy
         else:
@@ -731,14 +775,14 @@ class FileManager(QWidget):
             self.busyCube.setVisible(False)
             self.busyCube.stopClip()
 
-    @property
-    def rscOpenTryDecrypt(self):
-        return self.displayedItem is self.model.itemEncrypted or \
-            self.displayedItem is self.model.itemQrCodes
-
-    @property
-    def inEncryptedFolder(self):
-        return self.displayedItem is self.model.itemEncrypted
+        if busy:
+            self.progress.clear()
+            if showProgress:
+                self.fsStack.setCurrentWidget(self.progress)
+                self.progress.spin()
+        else:
+            self.progress.stop()
+            self.fsStack.setCurrentWidget(self.mfsTree)
 
     def buildHashFuncMenu(self):
         # Build the menu to select the hashing function
@@ -832,6 +876,7 @@ class FileManager(QWidget):
         self.localTree.setDragDropMode(QAbstractItemView.DragOnly)
         self.localTree.setSelectionMode(QAbstractItemView.SingleSelection)
         self.localTree.setItemsExpandable(True)
+        self.localTree.setHeaderHidden(True)
 
         rootIndex = self.fManagerModel.index(QDir.rootPath())
         if rootIndex.isValid():
@@ -1035,6 +1080,9 @@ class FileManager(QWidget):
 
     def onLocalFileManagerToggled(self, checked):
         self.localTree.setVisible(checked)
+
+        self.ui.localFileManagerSwitch.setChecked(checked)
+        self.ui.fileManagerButton.setChecked(checked)
 
     def onLocalFileManager(self):
         self.ui.localFileManagerSwitch.setChecked(
@@ -1481,8 +1529,12 @@ class FileManager(QWidget):
             ))
 
         elif nameItem.isDir():
-            self.app.task(self.listFiles, item.path, parentItem=item,
-                          autoexpand=True)
+            if self.model.rowCount(idx) == 0:
+                self.app.task(self.listFiles, item.path, parentItem=item,
+                              autoexpand=True)
+            else:
+                if self.mfsTree.isExpanded(idx):
+                    self.mfsTree.recursiveExpand(idx, False)
 
     def expandIndexBackwards(self, idx, scroll=False):
         while idx.isValid():
@@ -1601,7 +1653,11 @@ class FileManager(QWidget):
                 await self.scheduleAddDirectory(str(dir), options)
 
     def statusAdded(self, name):
-        self.statusSet(iAddedFile(name))
+        dirname = os.path.dirname(name)
+        basename = os.path.basename(name)
+
+        self.progress.log(dirname)
+        self.progress.logExtra(basename)
 
     def statusLoading(self, name):
         self.statusSet(iLoading(name))
@@ -2025,7 +2081,7 @@ class FileManager(QWidget):
     @ipfsOp
     async def addFilesSelfEncrypt(self, op, files, parent):
         self.enableButtons(flag=False)
-        self.busy(showClip=True)
+        self.busy(showClip=True, showProgress=True)
 
         async def onEntry(entry):
             self.statusAdded(entry['Name'])
@@ -2066,7 +2122,7 @@ class FileManager(QWidget):
         wrapChoice = options['wrap']
 
         self.enableButtons(flag=False)
-        self.busy(showClip=True)
+        self.busy(showClip=True, showProgress=True)
 
         async def onEntry(entry):
             self.statusAdded(entry['Name'])
@@ -2140,7 +2196,7 @@ class FileManager(QWidget):
         useGitIgn = options['useGitIgnore']
 
         self.enableButtons(flag=False)
-        self.busy(showClip=True)
+        self.busy(showClip=True, showProgress=True)
 
         basename = os.path.basename(path)
 

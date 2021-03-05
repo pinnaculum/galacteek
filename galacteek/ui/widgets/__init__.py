@@ -496,6 +496,11 @@ class PopupToolButton(QToolButton, URLDragAndDropProcessor):
         if icon:
             self.setIcon(icon)
 
+        ensure(self.populateMenuAsync(self.menu))
+
+    async def populateMenuAsync(self, menu):
+        pass
+
 
 class IPFSObjectToolButton(QToolButton):
     """

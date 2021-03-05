@@ -208,7 +208,8 @@ class MainWindowLogHandler(Handler):
 
     def emit(self, record):
         # The emit could be called from another thread so play it safe ..
-        self.app.loop.call_soon_threadsafe(self._handleRecord, record)
+        if not self.app.shuttingDown:
+            self.app.loop.call_soon_threadsafe(self._handleRecord, record)
 
     def _handleRecord(self, record):
         try:
@@ -1552,6 +1553,8 @@ class MainWindow(QMainWindow):
     async def displayConnectionInfo(self, ipfsop):
         try:
             info = await ipfsop.client.core.id()
+            assert info is not None
+
             bwStats = await ipfsop.client.stats.bw()
         except Exception:
             self.setConnectionInfoMessage(iErrNoCx())

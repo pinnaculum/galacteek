@@ -23,6 +23,7 @@ class ThemeColors:
     wItemBgColor: str = 'gray'
 
     webEngineBackground: str = '#323232'
+    webEngineBackgroundActive: str = '#FFFAF0'
 
     paletteLink: str = '#99C7FF'
     paletteLinkVisited: str = '#BBEBFF'

@@ -45,6 +45,3 @@ class BrowserRuntimeObjects:
 async def browserSetup(app, runtime: BrowserRuntimeObjects):
     listener = pslisteners.ServicesListener()
     log.debug(f'Services listener: {listener}')
-
-    # Requests interceptor
-    runtime.ipfsCeptor = IPFSRequestInterceptor(app)

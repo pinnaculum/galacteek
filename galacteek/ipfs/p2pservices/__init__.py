@@ -4,6 +4,7 @@ from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.paths import posixIpfsPath
 from galacteek.ipfs.regexps import peerIdRe
 from galacteek.core import runningApp
+from galacteek.services import GService
 
 
 def p2pEndpointAddrExplode(addr: str):
@@ -76,7 +77,7 @@ def p2pEndpointMake(peerId: str, serviceName: str, protocolVersion='1.0.0'):
     )
 
 
-class P2PService:
+class P2PService(GService):
     def __init__(self, name,
                  description='P2P description',
                  protocolName=None,
@@ -84,7 +85,10 @@ class P2PService:
                  listenerClass=None,
                  handler=None, enabled=True, didDefaultRegister=False,
                  protocolVersion=None,
-                 setupCtx=None):
+                 setupCtx=None,
+                 **kwargs):
+        super().__init__(**kwargs)
+
         self.app = runningApp()
         self._name = name
         self._description = description

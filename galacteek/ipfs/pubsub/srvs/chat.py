@@ -28,10 +28,11 @@ from galacteek.core.chattokens import verifyTokenPayload
 
 
 class PSChatService(JSONPubsubService):
-    def __init__(self, ipfsCtx, client, **kw):
-        super().__init__(ipfsCtx, client, topic=TOPIC_CHAT,
-                         runPeriodic=True,
-                         **kw)
+    def __init__(self, ipfsCtx, **kw):
+        super(PSChatService, self).__init__(
+            ipfsCtx, topic=TOPIC_CHAT,
+            runPeriodic=True,
+            **kw)
         mSubscriber.add_async_listener(
             keyChatChanList, self.onUserChannelList)
 
@@ -217,7 +218,7 @@ class PSChatService(JSONPubsubService):
 
 
 class RSAPSEncryptedChatChannelService(RSAEncryptedJSONPubsubService):
-    def __init__(self, ipfsCtx, client,
+    def __init__(self, ipfsCtx,
                  channel: str, topic: str,
                  jwsTokenCid, psKey, **kw):
         self.channel = channel
@@ -226,12 +227,13 @@ class RSAPSEncryptedChatChannelService(RSAEncryptedJSONPubsubService):
         self._chatPeers = []
         self.mChatService = ipfsCtx.pubsub.byTopic(TOPIC_CHAT)
 
-        super().__init__(ipfsCtx, client,
-                         topic,
-                         runPeriodic=True,
-                         peered=False,
-                         minMsgTsDiff=1,
-                         filterSelfMessages=False, **kw)
+        super(RSAPSEncryptedChatChannelService, self).__init__(
+            ipfsCtx,
+            topic,
+            runPeriodic=True,
+            peered=False,
+            minMsgTsDiff=1,
+            filterSelfMessages=False, **kw)
 
     async def processJsonMessage(self, sender, msg, msgDbRecord=None):
         msgType = msg.get('msgtype', None)
@@ -283,9 +285,18 @@ class RSAPSEncryptedChatChannelService(RSAEncryptedJSONPubsubService):
 
 
 class PSEncryptedChatChannelService(Curve25519JSONPubsubService):
-    def __init__(self, ipfsCtx, client,
+    def __init__(self, ipfsCtx,
                  channel: str, topic: str,
                  jwsTokenCid, privEccKey, psKey, **kw):
+        super(PSEncryptedChatChannelService, self).__init__(
+            ipfsCtx,
+            topic,
+            privEccKey,
+            runPeriodic=True,
+            peered=False,
+            minMsgTsDiff=1,
+            filterSelfMessages=False, **kw)
+
         self.channel = channel
         self.psKey = psKey
         self.privEccKey = privEccKey
@@ -295,14 +306,6 @@ class PSEncryptedChatChannelService(Curve25519JSONPubsubService):
 
         mSubscriber.add_sync_listener(
             keyChatChanUserList, self.onChatChanUserList)
-
-        super().__init__(ipfsCtx, client,
-                         topic,
-                         privEccKey,
-                         runPeriodic=True,
-                         peered=False,
-                         minMsgTsDiff=1,
-                         filterSelfMessages=False, **kw)
 
     def onChatChanUserList(self, key, message):
         chan, chanList = message

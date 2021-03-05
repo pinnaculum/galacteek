@@ -48,6 +48,7 @@ from galacteek import logUser
 from galacteek import ensure
 from galacteek import AsyncSignal
 from galacteek import pypicheck, GALACTEEK_NAME
+from galacteek import asyncSigWait
 
 from galacteek.config import cSetSavePath
 from galacteek.config import cGet
@@ -295,7 +296,10 @@ class GalacteekApplication(QApplication):
 
     @cached_property
     def s(self) -> AppService:
-        return AppService(self.dataPathForService('g'), app=self)
+        return AppService(
+            dotPath='app',
+            dataPath=self.dataPathForService('g'), app=self
+        )
 
     @cached_property
     def nsCache(self) -> IPNSCache:
@@ -623,7 +627,9 @@ class GalacteekApplication(QApplication):
 
     async def startCoreServices(self):
         # By starting the top service, all subservices will be started
-        await self.s.start()
+
+        async with asyncSigWait(self.s.sServiceStarted):
+            await self.s.start()
 
     async def importCommonResources(self):
         self.ipfsCtx.resources['ipfs-logo-ice'] = await self.importQtResource(
@@ -652,6 +658,10 @@ class GalacteekApplication(QApplication):
 
         await self.ipfsCtx.ipfsRepositoryReady.emit()
         self.ipfsCtx._ipfsRepositoryReady.emit()
+
+        await self.s.psPublish({
+            'type': 'RepositoryReady'
+        })
 
         #
         # If the application's binary name is a valid CID, pin it!
@@ -818,6 +828,12 @@ class GalacteekApplication(QApplication):
         self.ipfsOpMain.ipidManager = self.ipidManager
 
         IPFSOpRegistry.regDefault(self.ipfsOpMain)
+
+        # Publish an event for services that need a notification
+        # when the IPFS operator is changed
+        await self.s.psPublish({
+            'type': 'IpfsOperatorChange'
+        })
 
     async def stopIpfsServices(self):
         try:
@@ -1125,8 +1141,6 @@ class GalacteekApplication(QApplication):
                     self.gpgDataLocation,
                     self.uiDataLocation,
                     self.configDirLocation]:
-            # if not os.path.exists(dir):
-            #    os.makedirs(dir)
             dir.mkdir(parents=True, exist_ok=True)
 
         self.defaultDownloadsLocation = QStandardPaths.writableLocation(
@@ -1287,6 +1301,9 @@ class GalacteekApplication(QApplication):
     async def setupProfileAndRepo(self, ipfsop):
         from galacteek.ipfs import ConnectionError
         try:
+            if not await ipfsop.alive():
+                raise ConnectionError('Node could not be contacted')
+
             idx, ws = self.mainWindow.stack.workspaceByName(WS_STATUS)
 
             await ipfsop.ctx.createRootEntry()
@@ -1320,9 +1337,12 @@ class GalacteekApplication(QApplication):
                             pDialog.log(msg)
                             pDialog.progress(pct)
                     except Exception as err:
-                        pDialog.log(f'Error: {err}')
-                        await ipfsop.sleep(5)
-                        continue
+                        for z in range(5):
+                            pDialog.log(
+                                f'Error: {err} (reconfigure in {5-z} secs')
+                            await ipfsop.sleep(1)
+
+                        raise err
                     else:
                         break
 
@@ -1339,6 +1359,8 @@ class GalacteekApplication(QApplication):
                         pDialog.log(msg)
                         pDialog.progress(pct)
                 except Exception as err:
+                    import traceback
+                    traceback.print_exc()
                     pDialog.log(f'Error: {err}')
                     return
 
@@ -1355,6 +1377,8 @@ class GalacteekApplication(QApplication):
         except ConnectionError as err:
             await messageBoxAsync(
                 f'IPFS connection error: {err}')
+            await self.setupIpfsConnection(reconfigure=True)
+        except Exception:
             await self.setupIpfsConnection(reconfigure=True)
         else:
             await self.ipfsCtx.ipfsConnectionReady.emit()

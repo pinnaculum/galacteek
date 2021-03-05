@@ -93,3 +93,29 @@ def iDoNotPin():
 def iGlobalAutoPinning():
     return QCoreApplication.translate('GalacteekWindow',
                                       'Global automatic pinning')
+
+
+def iPinataInstructions():
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        '''
+        <p>
+            Please first <a href="https://pinata.cloud/signup">
+            sign up for an account at Pinata</a>.
+        </p>
+        '''
+    )
+
+
+def iPinToRemoteSingle(serviceName):
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Pin to remote: {}'
+    ).format(serviceName)
+
+
+def iPinToRemoteRecursive(serviceName):
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Pin to remote: {} (recursive)'
+    ).format(serviceName)
