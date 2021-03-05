@@ -1,6 +1,6 @@
-app-id: io.github.galacteek.Galacteek
+app-id: org.flatpak.galacteek.Galacteek
 runtime: org.freedesktop.Platform
-runtime-version: '19.08'
+runtime-version: '20.08'
 sdk: org.freedesktop.Sdk
 command: galacteek
 finish-args:
@@ -17,7 +17,7 @@ modules:
   - name: conda
     buildsystem: simple
     build-commands:
-      - bash Miniconda3-py37_4.8.3-Linux-x86_64.sh -b -p ${FLATPAK_DEST} -f
+      - bash Miniconda3-py37_4.9.2-Linux-x86_64.sh -b -p ${FLATPAK_DEST} -f
       - conda install -y -c conda-forge libxkbcommon pip libjpeg-turbo zbar
       - conda install -y --no-deps libxcb
     build-options:
@@ -25,8 +25,27 @@ modules:
         - --share=network
     sources:
       - type: file
-        url: "https://repo.anaconda.com/miniconda/Miniconda3-py37_4.8.3-Linux-x86_64.sh"
-        md5: "751786b92c00b1aeae3f017b781018df"
+        url: "https://repo.anaconda.com/miniconda/Miniconda3-py37_4.9.2-Linux-x86_64.sh"
+        sha256: "79510c6e7bd9e012856e25dcb21b3e093aa4ac8113d9aa7e82a86987eabe1c31"
+
+  - name: libevent
+    build-options:
+      build-args:
+        - --share=network
+    sources:
+      - type: archive
+        url: "https://github.com/libevent/libevent/releases/download/release-2.1.12-stable/libevent-2.1.12-stable.tar.gz"
+        sha256: "92e6de1be9ec176428fd2367677e61ceffc2ee1cb119035037a27d346b0403bb"
+
+  # Tor
+  - name: tor
+    build-options:
+      build-args:
+        - --share=network
+    sources:
+      - type: archive
+        url: "https://dist.torproject.org/tor-0.4.5.6.tar.gz"
+        sha256: "22cba3794fedd5fa87afc1e512c6ce2c21bc20b4e1c6f8079d832dc1e545e733"
 
   # Fetch and extract go-ipfs 0.8.0
   - name: fetch-go-ipfs
@@ -81,20 +100,22 @@ modules:
 
       # Copy appdata, .desktop, licenses and icon
       - cp galacteek.appdata.xml
-          ${FLATPAK_DEST}/share/metainfo/io.github.galacteek.Galacteek.xml
+          ${FLATPAK_DEST}/share/metainfo/org.flatpak.galacteek.Galacteek.xml
       - cp {LICENSE,LICENSE.go-ipfs,LICENSE.Qt.GPLv3}
           ${FLATPAK_DEST}/share/licenses/galacteek
       - cp galacteek.desktop
-          ${FLATPAK_DEST}/share/applications/io.github.galacteek.Galacteek.desktop
+          ${FLATPAK_DEST}/share/applications/org.flatpak.galacteek.Galacteek.desktop
       - cp share/icons/galacteek.png
-          ${FLATPAK_DEST}/share/icons/hicolor/512x512/apps
+          ${FLATPAK_DEST}/share/icons/hicolor/512x512/apps/org.flatpak.galacteek.Galacteek.png
 
       # Activate the conda venv
       - source ${FLATPAK_DEST}/bin/activate
 
       # Install requirements; build and install via setup.py
+      - pip install -r requirements-docs.txt
       - pip install -r requirements.txt
-      - python3 setup.py build install
+      - pip install -r requirements-extra-markdown.txt
+      - python3 setup.py build build_docs install
     build-options:
       build-args:
         - --share=network

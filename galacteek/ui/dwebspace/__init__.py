@@ -27,6 +27,10 @@ from galacteek import ensure
 from galacteek import log
 from galacteek import cached_property
 
+from galacteek.ipfs import ipfsOp
+
+from galacteek.core.tmpf import TmpFile
+
 from galacteek.core.ps import KeyListener
 from galacteek.core.ps import makeKeyService
 from galacteek.core.ps import key42
@@ -35,7 +39,7 @@ from galacteek.ui import files
 from galacteek.ui import ipfssearch
 from galacteek.ui import textedit
 from galacteek.ui import mediaplayer
-from galacteek.ui import pin
+from galacteek.ui.pinning import pinstatus
 from galacteek.ui import seeds
 
 from galacteek.ui.helpers import getIcon
@@ -47,6 +51,7 @@ from galacteek.ui.helpers import runDialogAsync
 from galacteek.ui.dialogs import DefaultProgressDialog
 
 from galacteek.ui.settings import ConfigManager
+from galacteek.ui.settings import SettingsCenterTab
 
 from galacteek.ui.messenger import MessengerWidget
 
@@ -791,23 +796,50 @@ class WorkspacePeers(TabbedWorkspace):
 
 class WorkspaceMisc(TabbedWorkspace):
     def __init__(self, stack):
-        super().__init__(stack, WS_MISC, icon=getIcon('settings.png'),
-                         description='Misc')
+        super(WorkspaceMisc, self).__init__(
+            stack, WS_MISC, icon=getIcon('settings.png'),
+            description='Misc'
+        )
 
     def setupWorkspace(self):
         super().setupWorkspace()
 
-        self.pinStatusTab = pin.PinStatusWidget(
+        self.pinStatusTab = pinstatus.PinStatusWidget(
             self.app.mainWindow, sticky=True)
 
         self.wsRegisterTab(
             self.pinStatusTab, iPinningStatus(),
             icon=getIcon('pin-zoom.png'))
 
+        self.wsRegisterTab(
+            SettingsCenterTab(self.app.mainWindow, sticky=True),
+            iSettings(),
+            icon=getIcon('settings.png')
+        )
+
         self.actionConfigure = self.wsAddCustomAction(
             'config', getIcon('settings.png'),
             iConfigurationEditor(), self.openConfigEditor
         )
+
+        self.actionAppGraph = self.wsAddCustomAction(
+            'app-graph', getIcon('ipld.png'),
+            'Application graph', partialEnsure(self.openAppGraph)
+        )
+
+    @ipfsOp
+    async def openAppGraph(self, ipfsop, *args):
+        entry = None
+        image = await self.app.s.getGraphImagePil()
+
+        if image:
+            with TmpFile(suffix='.png') as tfile:
+                image.save(tfile.name)
+                entry = await ipfsop.addPath(tfile.name)
+
+                await self.app.resourceOpener.open(entry['Hash'])
+        else:
+            log.debug('Could not generate the app graph')
 
     def openConfigEditor(self):
         tab = self.wsFindTabWithName(iConfigurationEditor())
@@ -824,6 +856,9 @@ class WorkspaceMisc(TabbedWorkspace):
             )
         else:
             self.tabWidget.setCurrentWidget(tab)
+
+    def showPinSettings(self):
+        pass
 
 
 class WorkspaceMessenger(SingleWidgetWorkspace, KeyListener):

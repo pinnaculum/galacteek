@@ -174,3 +174,4 @@ The following keyboard shortcuts are available within the files manager:
 - **Mod + c** or **Mod + y**: Copy selected item's IPFS path to the clipboard
 - **Mod + a**: Copy selected item's CID to the clipboard
 - **Mod+x**: Explore item if it is a directory
+- **F5**: Refresh the filemanager

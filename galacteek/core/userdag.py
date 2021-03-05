@@ -171,7 +171,7 @@ class UserWebsite:
         async with self.edag:
             sHandle = self.profile.userInfo.spaceHandle
 
-            username = sHandle.short
+            username = sHandle.human
             uid = str(uuid.uuid4())
             postName = titleToPostName(title.strip().lower())
 

@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QPushButton
 from PyQt5.QtWidgets import QMenu
 
 from PyQt5.QtCore import QCoreApplication
+from PyQt5.QtCore import QSize
 
 from PyQt5.QtGui import QKeySequence
 
@@ -221,7 +222,7 @@ class DAGViewer(GalacteekTab):
 
                     button = PopupToolButton(icon=getIcon('ipld.png'),
                                              parent=self)
-                    button.setMaximumWidth(self.ipldMetric.width())
+                    button.setIconSize(QSize(64, 64))
                     actionView = QAction(getIcon('ipld.png'),
                                          "View link's node", self,
                                          triggered=functools.partial(

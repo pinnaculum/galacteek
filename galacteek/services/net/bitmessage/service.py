@@ -184,6 +184,8 @@ class BitMessageMailManService(GService):
         return self.mailBoxes.get(bmAddr)
 
     async def on_start(self) -> None:
+        await super().on_start()
+
         log.debug('Starting BM mailman ..')
 
     @GService.task
@@ -339,15 +341,16 @@ class BitMessageClientService(GService):
             self.mailBoxesPath
         )
 
-    def __init__(self, dataPath: Path):
-        super().__init__()
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
 
-        self.rootPath = dataPath
         self.mailDirPath = self.rootPath.joinpath('maildir')
         self.mailBoxesPath = self.rootPath.joinpath('mailboxes')
         self.notBitDataPath = self.rootPath.joinpath('notbit-data')
 
     async def on_start(self) -> None:
+        await super().on_start()
+
         if self.app.windowsSystem:
             log.debug('Bitmessage service not yet supported on this platform')
             return

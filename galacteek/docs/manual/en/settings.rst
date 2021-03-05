@@ -69,7 +69,7 @@ basic settings). From the *Information* menu, select
 
 The configuration is separated by module.
 
-**Do not change any settings you are ensure about**
+**Do not change any settings you are unsure about**
 
 User interface settings
 -----------------------

@@ -6,7 +6,7 @@ SOURCES = galacteek/application/__init__.py \
 	galacteek/ui/clipboard.py \
 	galacteek/ui/colors.py \
 	galacteek/ui/dag.py \
-	galacteek/ui/dialogs.py \
+	galacteek/ui/dialogs/__init__.py \
 	galacteek/ui/dids.py \
 	galacteek/ui/downloads.py \
 	galacteek/ui/feeds.py \
@@ -22,12 +22,13 @@ SOURCES = galacteek/application/__init__.py \
 	galacteek/ui/mainui.py \
 	galacteek/ui/mediaplayer.py \
 	galacteek/ui/peers.py \
-	galacteek/ui/pin.py \
+	galacteek/ui/pin/pinstatus.py \
 	galacteek/ui/pyramids.py \
 	galacteek/ui/quickaccess.py \
 	galacteek/ui/resource.py \
 	galacteek/ui/seeds.py \
-	galacteek/ui/settings.py \
+	galacteek/ui/settings/__init__.py \
+	galacteek/ui/settings/pinning.py \
 	galacteek/ui/textedit.py \
 	galacteek/ui/userwebsite.py \
 	galacteek/ui/widgets/__init__.py

@@ -12,7 +12,6 @@ from galacteek.browser.schemes import SCHEME_IPFS
 from galacteek.browser.schemes import SCHEME_IPNS
 from galacteek.browser.schemes import SCHEME_IPID
 from galacteek.browser.schemes import SCHEME_Q
-# from galacteek.browser.schemes import SCHEME_GALACTEEK
 
 from galacteek import log
 from galacteek.core import runningApp
@@ -21,6 +20,9 @@ from galacteek.config import cGet
 from galacteek.config import cSet
 from galacteek.config import configModRegCallback
 from galacteek.config import merge
+
+from galacteek.core.ps import KeyListener
+from galacteek.core.ps import makeKeyService
 
 
 WP_NAME_ANON = 'anonymous'
@@ -36,7 +38,7 @@ webProfilesPrio = {
 }
 
 
-class BaseProfile(QWebEngineProfile):
+class BaseProfile(QWebEngineProfile, KeyListener):
     def __init__(self,
                  defaultProfile,
                  name=None,
@@ -57,14 +59,14 @@ class BaseProfile(QWebEngineProfile):
         self.webScripts = self.scripts()
         self.webSettings = self.settings()
 
-        if self.app.browserRuntime.ipfsCeptor:
-            self.setUrlRequestInterceptor(self.app.browserRuntime.ipfsCeptor)
-
         self.installIpfsSchemeHandlers()
         self.installScripts()
 
         self.downloadRequested.connect(
             self.app.downloadsManager.onDownloadRequested)
+
+        # Listen to ps key: dweb.inter
+        self.psListen(makeKeyService('dweb', 'inter'))
 
     @property
     def config(self):
@@ -72,6 +74,17 @@ class BaseProfile(QWebEngineProfile):
             self.defaults,
             cGet(f'webProfiles.{self.profileName}')
         )
+
+    async def event_g_services_dweb_inter(self, key, message):
+        """
+        Handles messages coming from the interceptor service
+        """
+        from galacteek.services.dweb.inter import InterceptorMessageTypes
+
+        event = message['event']
+
+        if event['type'] == InterceptorMessageTypes.Ready:
+            self.setUrlRequestInterceptor(event['interceptor'])
 
     def installHandler(self, scheme, handler):
         sch = scheme if isinstance(scheme, bytes) else scheme.encode()

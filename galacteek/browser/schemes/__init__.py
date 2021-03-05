@@ -308,9 +308,26 @@ class BaseURLSchemeHandler(QWebEngineUrlSchemeHandler):
 
     def requestStarted(self, request):
         uid = self.allocReqId(request)
+        request.reqUid = uid
         request.destroyed.connect(
             functools.partial(self.onRequestDestroyed, uid))
         ensureSafe(self.handleRequest(request, uid))
+
+    async def serveTemplate(self,
+                            request,
+                            tmplName,
+                            **kwargs):
+        tmpl = await renderTemplate(
+            tmplName,
+            **kwargs
+        )
+        if tmpl:
+            self.serveContent(
+                request.reqUid,
+                request,
+                'text/html',
+                tmpl.encode()
+            )
 
 
 class IPFSObjectProxyScheme:
@@ -505,7 +522,7 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
     def debug(self, msg):
         log.debug('Native scheme handler: {}'.format(msg))
 
-    def serveContent(self, uid, request, ipfsPath, ctype, data):
+    def serveContent(self, uid, request, ctype, data):
         if uid not in self.requests:
             # Destroyed ?
             return
@@ -645,7 +662,7 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
 
         if cType:
             self.serveContent(
-                uid, request, ipfsPath, cType.type, data)
+                uid, request, cType.type, data)
         else:
             self.debug('Impossible to detect MIME type for URL: {0}'.format(
                 request.requestUrl().toString()))

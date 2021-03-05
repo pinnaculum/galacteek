@@ -9,6 +9,7 @@ import asyncio
 import shutil
 import traceback
 import functools
+import async_timeout  # noqa
 from asyncio_extras.file import open_async
 import aiofiles
 import aiohttp
@@ -16,6 +17,41 @@ from aiohttp_socks import ProxyConnector
 
 
 from PyQt5.QtWidgets import QApplication
+
+
+class SignalNotEmittedError(Exception):
+    pass
+
+
+class AsyncSigSpy(object):
+    """
+    Async context, waits for an async signal to be fired.
+    Raise an error if it's not fired before the timeout.
+    """
+    def __init__(self, signal, timeout=5.0):
+        self.asignal = signal
+        self.emitted = False
+        self.args = None
+        self.timeout = timeout
+
+    async def slot(self, *args):
+        self.emitted = True
+        self.args = args
+
+    async def __aenter__(self):
+        self.asignal.connectTo(self.slot)
+        return self
+
+    async def __aexit__(self, *args):
+        self.asignal.remove(self.slot)
+
+        if not self.emitted:
+            raise SignalNotEmittedError(
+                'Async signal not emitted after {self.timeout} seconds')
+
+
+def asyncSigWait(asignal, timeout=5.0):
+    return AsyncSigSpy(asignal, timeout=timeout)
 
 
 class AsyncSignal(UserList):
@@ -58,6 +94,9 @@ class AsyncSignal(UserList):
             self.emit(*args, **kwargs),
             self._loop
         )
+
+    async def waitFired(self):
+        pass
 
     async def fire(self):
         from galacteek import log
@@ -408,8 +447,8 @@ class GThrottler:
 
         self._task_logs: Deque[float] = deque()
 
-    def shutdown(self):
-        self._running = False
+    def pause(self, pause=True):
+        self._running = not pause
 
     def debug(self, msg):
         from galacteek import log

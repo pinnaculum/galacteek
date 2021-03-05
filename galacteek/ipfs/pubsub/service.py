@@ -25,6 +25,7 @@ from galacteek.ipfs.pubsub.messages.core import MarksBroadcastMessage
 
 from galacteek.ipfs.wrappers import ipfsOp
 
+from galacteek.core.asynclib import loopTime
 from galacteek.core.asynclib import asyncify
 from galacteek.core.asynclib import async_enterable
 from galacteek.core.ipfsmarks import IPFSMarks
@@ -33,8 +34,11 @@ from galacteek.core.ps import keyPsJson
 from galacteek.core.ps import keyPsEncJson
 from galacteek.core.ps import psSubscriber
 from galacteek.core.ps import gHub
+from galacteek.core.ps import makeKeyService
 
 from galacteek.database.psmanager import psManagerForTopic
+
+from galacteek.services import GService
 
 import aioipfs
 
@@ -80,7 +84,7 @@ class MsgSpy(object):
             )
 
 
-class PubsubService(Configurable):
+class PubsubService(Configurable, GService):
     """
     Generic IPFS pubsub service
     """
@@ -88,21 +92,19 @@ class PubsubService(Configurable):
     hubPublish = True
     encodingType = PS_ENCTYPE_NULL
 
-    def __init__(self, ipfsCtx, client, topic='galacteek.default',
+    def __init__(self,
+                 ipfsCtx,
+                 topic='galacteek.default',
                  runPeriodic=False, filterSelfMessages=True,
                  maxMsgTsDiff=None, minMsgTsDiff=None,
                  maxMessageSize=32768,
-                 thrRateLimit=10,
-                 thrPeriod=1.0,
-                 thrRetry=0.5,
-                 hubPublishDD=True,
-                 scheduler=None):
+                 scheduler=None,
+                 **kw):
         self.throttler = None
 
-        self.client = client
         self.ipfsCtx = ipfsCtx
         self.topic = topic
-        self.inQueue = asyncio.Queue()
+        self.inQueue = asyncio.Queue(maxsize=256)
         self.errorsQueue = asyncio.Queue()
         self.lock = asyncio.Lock()
         self.scheduler = scheduler
@@ -113,7 +115,8 @@ class PubsubService(Configurable):
         self._filters = []
         self._peerActivity = {}
 
-        super().__init__(applyNow=True)
+        GService.__init__(self, **kw)
+        Configurable.__init__(self, applyNow=True)
 
         self._shuttingDown = False
 
@@ -127,6 +130,8 @@ class PubsubService(Configurable):
 
         self.addMessageFilter(self.filterMessageSize)
         self.addMessageFilter(self.filterPeerActivity)
+
+        self.psListen(makeKeyService('app'))
 
         configModRegCallback(self.onConfigChanged,
                              mod='galacteek.ipfs.pubsub')
@@ -187,19 +192,40 @@ class PubsubService(Configurable):
         self.debug('** Messages received: {0}, errors: {1}'.format(
             self.receivedCount, self.errorsCount))
 
+    async def on_stop(self):
+        await super().on_stop()
+
+        await self.stopListening()
+
     async def restartProcessTask(self):
         if self.tskProcess:
             await self.tskProcess.close()
 
         self.tskProcess = await self.scheduler.spawn(self.processMessages())
 
-    async def start(self):
+    async def event_g_services_app(self, key, message):
+        event = message['event']
+
+        if event['type'] == 'IpfsOperatorChange':
+            await self.stopListening()
+            await asyncio.sleep(0.1)
+            await self.startListening()
+
+    async def event_g_services(self, key, message):
+        pass
+
+    @ipfsOp
+    async def startListening(self, ipfsop):
         """ Create the different tasks for this service """
+
+        self._shuttingDown = False
+
+        self.debug(f'{self!r}: Start listening')
 
         if self.scheduler is None:
             raise Exception('No scheduler specified')
 
-        self.tskServe = await self.scheduler.spawn(self.serve())
+        self.tskServe = await self.scheduler.spawn(self.serve(ipfsop))
         self.tskProcess = await self.scheduler.spawn(self.processMessages())
 
         if self.runPeriodic:
@@ -208,12 +234,13 @@ class PubsubService(Configurable):
         self.psDbManager = await psManagerForTopic(
             self.topic, encType=self.encodingType)
 
-    async def stop(self):
+    async def stopListening(self):
         self._shuttingDown = True
+
         await self.shutdown()
 
         if self.throttler:
-            self.throttler.shutdown()
+            self.throttler.pause()
 
         for tsk in [self.tskServe, self.tskProcess, self.tskPeriodic]:
             if not tsk:
@@ -243,7 +270,7 @@ class PubsubService(Configurable):
         return False
 
     def filterPeerActivity(self, msg):
-        ltime = self.client.loop.time()
+        ltime = loopTime()
 
         senderNodeId = msg['from'] if isinstance(msg['from'], str) else \
             msg['from'].decode()
@@ -300,7 +327,7 @@ class PubsubService(Configurable):
     async def periodic(self):
         return True
 
-    async def serve(self):
+    async def serve(self, ipfsop):
         """
         Subscribe to the pubsub topic, read and filter incoming messages
         (dropping the ones emitted by us). Selected messages are put on the
@@ -308,7 +335,7 @@ class PubsubService(Configurable):
         """
 
         try:
-            async for message in self.client.pubsub.sub(self.topic):
+            async for message in ipfsop.client.pubsub.sub(self.topic):
                 if await self.filtered(message):
                     continue
 
@@ -328,9 +355,10 @@ class PubsubService(Configurable):
             traceback.print_exc()
             self.debug('Serve interrupted by unknown exception {}'.format(
                 str(e)))
-            ensureLater(10, self.serve)
+            ensureLater(10, self.serve, ipfsop)
 
-    async def send(self, msg, topic=None):
+    @ipfsOp
+    async def send(self, ipfsop, msg, topic=None):
         """
         Publish a message
 
@@ -348,17 +376,20 @@ class PubsubService(Configurable):
             raise ValueError('Invalid message data')
 
         try:
-            status = await self.client.pubsub.pub(topic, data)
+            status = await ipfsop.client.pubsub.pub(topic, data)
             self.ipfsCtx.pubsub.psMessageTx.emit()
         except aioipfs.APIError:
             logger.debug('Could not send pubsub message to {topic}'.format(
                 topic=topic))
+        except Exception as err:
+            logger.debug(f'Unknown error on pubsub send: {err}')
         else:
             return status
 
     async def gHubPublish(self, key, msg):
         gHub.publish(key, msg)
-        await asyncio.sleep(0.5)
+
+        await asyncio.sleep(0.05)
 
     @async_enterable
     async def msgSpy(self, dbRecord, msgType, attrName, value):
@@ -453,6 +484,7 @@ class JSONPubsubService(PubsubService):
                         self._errorsCount += 1
 
                     self.inQueue.task_done()
+
         except asyncio.CancelledError:
             self.debug('JSON process cancelled')
         except Exception as err:
@@ -470,7 +502,7 @@ class JSONLDPubsubService(JSONPubsubService):
     """
 
     def __init__(self, *args, autoExpand=False, **kw):
-        super().__init__(*args, **kw)
+        super(JSONLDPubsubService, self).__init__(*args, **kw)
 
         self.autoExpand = autoExpand
 
@@ -496,10 +528,9 @@ class JSONLDPubsubService(JSONPubsubService):
 
 
 class PSHashmarksExchanger(JSONPubsubService):
-    def __init__(self, ipfsCtx, client, marksLocal, marksNetwork):
-        super().__init__(
+    def __init__(self, ipfsCtx, marksLocal, marksNetwork):
+        super(PSHashmarksExchanger, self).__init__(
             ipfsCtx,
-            client,
             topic=TOPIC_HASHMARKS,
             runPeriodic=True,
             filterSelfMessages=True,
@@ -584,21 +615,21 @@ class PSHashmarksExchanger(JSONPubsubService):
 
 
 class PSMainService(JSONPubsubService):
-    def __init__(self, ipfsCtx, client, **kw):
-        super().__init__(ipfsCtx, client, topic=TOPIC_MAIN, **kw)
+    def __init__(self, ipfsCtx, **kw):
+        super(PSMainService, self).__init__(ipfsCtx, topic=TOPIC_MAIN, **kw)
 
 
 class RSAEncryptedJSONPubsubService(JSONPubsubService):
     encodingType = PS_ENCTYPE_RSA_AES
     hubKey = keyPsEncJson
 
-    def __init__(self, ipfsCtx, client, baseTopic, peered=True, **kw):
+    def __init__(self, ipfsCtx, baseTopic, peered=True, **kw):
         self.baseTopic = baseTopic
         self.peered = peered
 
         kw.update(topic=self.peeredTopic(ipfsCtx.node.id))
 
-        super().__init__(ipfsCtx, client, **kw)
+        super(RSAEncryptedJSONPubsubService, self).__init__(ipfsCtx, **kw)
 
     def config(self):
         base = super().config()
@@ -664,7 +695,7 @@ class Curve25519JSONPubsubService(JSONPubsubService):
     encodingType = PS_ENCTYPE_CURVE25519
     hubKey = keyPsEncJson
 
-    def __init__(self, ipfsCtx, client, baseTopic, privEccKey,
+    def __init__(self, ipfsCtx, baseTopic, privEccKey,
                  peered=True, **kw):
         self.baseTopic = baseTopic
         self.peered = peered
@@ -673,7 +704,7 @@ class Curve25519JSONPubsubService(JSONPubsubService):
 
         kw.update(topic=self.peeredTopic(ipfsCtx.node.id))
 
-        super().__init__(ipfsCtx, client, **kw)
+        super(Curve25519JSONPubsubService, self).__init__(ipfsCtx, **kw)
 
     def config(self):
         base = super().config()

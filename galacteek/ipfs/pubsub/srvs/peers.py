@@ -24,10 +24,12 @@ from galacteek.ipfs.pubsub.service import JSONPubsubService
 
 
 class PSPeersService(JSONPubsubService):
-    def __init__(self, ipfsCtx, client, **kw):
-        super().__init__(ipfsCtx, client, topic=TOPIC_PEERS,
-                         runPeriodic=True,
-                         **kw)
+    name = 'ident'
+    ident = 'g/core/peers/ident'
+
+    def __init__(self, ipfsCtx, **kw):
+        super().__init__(ipfsCtx, topic=TOPIC_PEERS,
+                         runPeriodic=True, **kw)
 
         self._curProfile = None
         self.ipfsCtx.profileChanged.connect(self.onProfileChanged)

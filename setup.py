@@ -170,18 +170,19 @@ class build_ui(Command):
         formsdir = 'galacteek/ui/forms'
 
         tasks = self.tasks.split(',')
-        themes = self.themes.split(',')
 
         if self.uiforms:
             uifiles = [os.path.join(formsdir, '{0}.ui'.format(form)) for form
                        in self.uiforms.split(',')]
         else:
-            uifiles = glob.iglob('{}/*.ui'.format(formsdir))
+            uifiles = glob.glob(f'{formsdir}/*.ui')
 
         if 'forms' in tasks:
             for uifile in uifiles:
                 print('* Building UI form:', uifile)
-                base = os.path.basename(uifile).replace('.ui', '')
+
+                base = uifile.replace(formsdir, '').replace(
+                    '.ui', '').lstrip('/')
                 out = 'ui_{}.py'.format(base)
                 fp_out = os.path.join(formsdir, out)
 

@@ -19,6 +19,7 @@ from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.database.models import *  # noqa
 
 from galacteek.database.ops.bm import *  # noqa
+from galacteek.database.ops.pinning import *  # noqa
 
 databaseLock = asyncio.Lock()
 

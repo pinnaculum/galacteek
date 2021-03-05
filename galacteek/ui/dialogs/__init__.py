@@ -56,6 +56,7 @@ from galacteek.core.ipfsmarks import *
 from galacteek.core.ipfsmarks import categoryValid
 from galacteek.core.iptags import ipTagsFormat
 from galacteek.core import readQrcFileRaw
+from galacteek import AsyncSignal
 
 from galacteek.browser.schemes import isEnsUrl
 from galacteek.browser.schemes import isHttpUrl
@@ -68,45 +69,45 @@ from galacteek.appsettings import *
 
 from galacteek.crypto.qrcode import ZbarCryptoCurrencyQrDecoder
 
-from .forms import ui_addhashmarkdialog
-from .forms import ui_addfeeddialog
-from .forms import ui_ipfscidinputdialog, ui_ipfsmultiplecidinputdialog
-from .forms import ui_donatedialog
-from .forms import ui_qschemecreatemapping
-from .forms import ui_iptagsmanager
-from .forms import ui_mfsoptionsdialog
-from .forms import ui_newseeddialog
-from .forms import ui_ipfsdaemoninitdialog
-from .forms import ui_profileinitdialog
-from .forms import ui_ipidrsapasswordprompt
-from .forms import ui_torrenttransferdialog
-from .forms import ui_browserfeaturereqdialog
-from .forms import ui_captchachallengedialog
-from .forms import ui_videochatackwaitdialog
-from .forms import ui_videochatackwait
-from .forms import ui_donatecryptodialog
+from ..forms import ui_addhashmarkdialog
+from ..forms import ui_addfeeddialog
+from ..forms import ui_ipfscidinputdialog, ui_ipfsmultiplecidinputdialog
+from ..forms import ui_donatedialog
+from ..forms import ui_qschemecreatemapping
+from ..forms import ui_iptagsmanager
+from ..forms import ui_mfsoptionsdialog
+from ..forms import ui_newseeddialog
+from ..forms import ui_ipfsdaemoninitdialog
+from ..forms import ui_profileinitdialog
+from ..forms import ui_ipidrsapasswordprompt
+from ..forms import ui_torrenttransferdialog
+from ..forms import ui_browserfeaturereqdialog
+from ..forms import ui_captchachallengedialog
+from ..forms import ui_videochatackwaitdialog
+from ..forms import ui_videochatackwait
+from ..forms import ui_donatecryptodialog
 
-from .helpers import *
-from .widgets import ImageWidget
-from .widgets import HorizontalLine
-from .widgets import IconSelector
-from .widgets import PlanetSelector
-from .widgets import LabelWithURLOpener
-from .widgets import AnimatedLabel
-from .clips import BouncingCubeClip1
-from .colors import *
+from ..helpers import *
+from ..widgets import ImageWidget
+from ..widgets import HorizontalLine
+from ..widgets import IconSelector
+from ..widgets import PlanetSelector
+from ..widgets import LabelWithURLOpener
+from ..widgets import AnimatedLabel
+from ..clips import BouncingCubeClip1
+from ..colors import *
 
-from .i18n import iTitle
-from .i18n import iDoNotPin
-from .i18n import iPinSingle
-from .i18n import iPinRecursive
-from .i18n import iNoTitleProvided
-from .i18n import iNoCategory
-from .i18n import iHashmarkIPTagsEdit
-from .i18n import iDownload
-from .i18n import iDownloadOpenDialog
-from .i18n import iOpen
-from .i18n import iDonateBitcoin
+from ..i18n import iTitle
+from ..i18n import iDoNotPin
+from ..i18n import iPinSingle
+from ..i18n import iPinRecursive
+from ..i18n import iNoTitleProvided
+from ..i18n import iNoCategory
+from ..i18n import iHashmarkIPTagsEdit
+from ..i18n import iDownload
+from ..i18n import iDownloadOpenDialog
+from ..i18n import iOpen
+from ..i18n import iDonateBitcoin
 
 
 def boldLabelStyle():
@@ -124,6 +125,11 @@ class BaseDialog(QDialog):
         if self.uiClass:
             self.ui = self.uiClass()
             self.ui.setupUi(self)
+
+        self.dialogSetup()
+
+    def dialogSetup(self):
+        pass
 
     def accept(self):
         self.done(1)
@@ -1575,17 +1581,39 @@ class DefaultProgressDialog(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName('statusProgressDialog')
+        self.sWantRetry = AsyncSignal()
+
         self.vl = QVBoxLayout(self)
         self.cube = AnimatedLabel(BouncingCubeClip1())
         self.pBar = QProgressBar()
+        self.retryButton = QPushButton('Retry')
+        self.retryButton.hide()
+        self.retryButton.clicked.connect(partialEnsure(self.sWantRetry.emit))
+
         self.status = QLabel()
         self.status.setObjectName('statusProgressLabel')
+        self.status.setAlignment(Qt.AlignCenter)
+
+        self.statusExtra = QLabel()
+        self.statusExtra.setStyleSheet(
+            'QLabel { background-color: blue; }')
+        self.statusExtra.setObjectName('statusExtraProgressLabel')
+        self.statusExtra.setAlignment(Qt.AlignCenter)
+        self.statusExtra.hide()
+
+        self.status.setSizePolicy(
+            QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred))
+        self.statusExtra.setSizePolicy(
+            QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred))
+
         self.setLayout(self.vl)
         self.vl.addItem(
             QSpacerItem(10, 50, QSizePolicy.Expanding, QSizePolicy.Expanding))
         self.vl.addWidget(self.cube, 0, Qt.AlignCenter)
         self.vl.addWidget(self.status, 0, Qt.AlignCenter)
+        self.vl.addWidget(self.statusExtra, 0, Qt.AlignCenter)
         self.vl.addWidget(self.pBar, 0, Qt.AlignCenter)
+        self.vl.addWidget(self.retryButton, 0, Qt.AlignCenter)
         self.vl.addItem(
             QSpacerItem(10, 50, QSizePolicy.Expanding, QSizePolicy.Expanding))
         self.showProgress(False)
@@ -1593,6 +1621,23 @@ class DefaultProgressDialog(QWidget):
         self.cube.clip.setScaledSize(QSize(256, 256))
         self.setContentsMargins(0, 0, 0, 0)
         self.vl.setContentsMargins(0, 0, 0, 0)
+
+    def resizeEvent(self, event):
+        fWidth = (event.size().width() / 2) - 16
+        self.status.setFixedWidth(fWidth)
+        self.statusExtra.setFixedWidth(fWidth)
+        super().resizeEvent(event)
+
+    def statusAlignLeft(self):
+        self.status.setAlignment(Qt.AlignLeft)
+        self.statusExtra.setAlignment(Qt.AlignLeft)
+
+    async def retry(self):
+        pass
+
+    def clear(self):
+        self.status.setText('')
+        self.statusExtra.setText('')
 
     def spin(self):
         self.cube.startClip()
@@ -1602,6 +1647,13 @@ class DefaultProgressDialog(QWidget):
 
     def log(self, text):
         self.status.setText(text)
+
+    def logExtra(self, text):
+        self.statusExtra.setText(text)
+        self.statusExtra.setVisible(True)
+
+    def showRetry(self, visible=True):
+        self.retryButton.setVisible(visible)
 
     def showProgress(self, show=True):
         self.pBar.setVisible(show)

@@ -30,6 +30,15 @@ class RemotePinningServiceOps(object):
         except APIError:
             return None
 
+    async def pinRemoteServiceSearch(self, name):
+        try:
+            sList = await self.pinRemoteServiceList()
+            for service in sList:
+                if service['Name'] == name:
+                    return service
+        except (APIError, Exception):
+            return None
+
 
 class RemotePinningOps(object):
     async def pinRemoteAdd(self,

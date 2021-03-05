@@ -1,3 +1,4 @@
+import re
 
 from galacteek import log
 from galacteek.ipfs import ipfsOp
@@ -6,13 +7,40 @@ from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.browser.schemes import NativeIPFSSchemeHandler
 
 
-class IPIDSchemeHandler(NativeIPFSSchemeHandler):
+class IPIDProtocolCommon(object):
+    def ipidUrlPathValid(self, path: str) -> bool:
+        return re.search(
+            r'([\w\/\-\+]+)', path, re.IGNORECASE) is not None
+
+
+class IPIDRenderer(object):
+    async def ipidRenderSummary(self,
+                                request,
+                                uid,
+                                ipid,
+                                path='/',
+                                rMethod='GET'):
+        if rMethod == 'GET':
+            services = [s async for s in ipid.discoverServices()]
+
+            return await self.serveTemplate(
+                request,
+                'ipid/summary.html',
+                ipid=ipid,
+                services=services
+            )
+
+
+class IPIDSchemeHandler(NativeIPFSSchemeHandler,
+                        IPIDRenderer,
+                        IPIDProtocolCommon):
     """
     IPID scheme handler
     """
 
     @ipfsOp
     async def handleRequest(self, ipfsop, request, uid):
+        endpoint = None
         rUrl = request.requestUrl()
         rMethod = bytes(request.requestMethod()).decode()
         rInitiator = request.initiator().toString()
@@ -22,20 +50,32 @@ class IPIDSchemeHandler(NativeIPFSSchemeHandler):
         path = rUrl.path()
         did = f'did:ipid:{ipnsKey}'
 
-        log.debug(f'IPID REQ {rMethod} ({rInitiator}): DID {did}, path {path}')
+        log.debug(f'IPID ({rMethod} request) ({rInitiator}): '
+                  f'DID {did}, path {path}')
 
         ipid = await self.app.ipidManager.load(did)
 
         if not ipid:
             return self.urlInvalid(request)
 
-        serviceId = did + path
+        if path == '/':
+            print('Summary')
+            return await self.ipidRenderSummary(
+                request,
+                uid,
+                ipid,
+                rMethod=rMethod
+            )
+        elif self.ipidUrlPathValid(path):
+            serviceId = ipid.didUrl(path=path)
 
-        service = await ipid.searchServiceById(serviceId)
-        if not service:
+            service = await ipid.searchServiceById(serviceId)
+            if not service:
+                return self.urlInvalid(request)
+
+            endpoint = service.endpoint
+        else:
             return self.urlInvalid(request)
-
-        endpoint = service.endpoint
 
         if rMethod == 'GET':
             path = IPFSPath(endpoint)
