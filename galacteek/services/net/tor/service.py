@@ -25,6 +25,8 @@ class TorService(GService):
         )
 
     async def on_start(self):
+        await super().on_start()
+
         if cParentGet('enabled') is True:
             await self.proc.start()
 

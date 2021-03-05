@@ -20,6 +20,7 @@ from galacteek.i18n.mplayer import *  # noqa
 from galacteek.i18n.peers import *  # noqa
 from galacteek.i18n.pin import *  # noqa
 from galacteek.i18n.search import *  # noqa
+from galacteek.i18n.settings import *  # noqa
 from galacteek.i18n.treeview import *  # noqa
 
 

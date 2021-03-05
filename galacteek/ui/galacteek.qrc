@@ -139,7 +139,6 @@
     <file>../../share/static/fonts/Inter-UI-Regular.woff2</file>
     <file>../../share/static/fonts/DejaVuSans.ttf</file>
     <file>../../share/static/fonts/SegoeUI.woff2</file>
-    <file>../../share/static/fonts/Chopsic-K6Dp.ttf</file>
     <file>../../share/icons/chat.png</file>
     <file>../../share/icons/camera.png</file>
     <file>../../share/icons/chat-active.png</file>
@@ -194,6 +193,8 @@
     <file>../../share/icons/clipboard.png</file>
     <file>../../share/icons/network-offline.png</file>
     <file>../../share/icons/pin.png</file>
+    <file>../../share/icons/pin/pin-diago-blue.png</file>
+    <file>../../share/icons/pin/pin-diago-red.png</file>
     <file>../../share/icons/lock-and-key.png</file>
     <file>../../share/icons/left-arrow.png</file>
     <file>../../share/icons/kgpg.png</file>

@@ -29,8 +29,10 @@
     {{ render_blog_post_tags(post, from_index=from_index) }}
 
     <p class="blog-meta">
-      written by <b>{{ post.author }}</b>
-      at {{ post.date_published|dtclean }}
+      written by
+      <a href="ipid://{{ post.authordid|ipidExtract }}">
+        <b>{{ post.author }}</b>
+      </a> at {{ post.date_published|dtclean }}
     </p>
   {% else %}
     <h2 class="blog-title">{{ post.title }}</h2>
@@ -38,8 +40,12 @@
     {{ render_blog_post_tags(post, from_index=from_index) }}
 
     <p class="blog-meta">
-    written by <b>{{ post.author }}</b> at {{ post.date_published|dtclean }}
+      written by
+      <a href="ipid://{{ post.authordid|ipidExtract }}">
+        <b>{{ post.author }}</b>
+      </a> at {{ post.date_published|dtclean }}
     </p>
+
   {% endif %}
 
     <div class="blog-post-body">

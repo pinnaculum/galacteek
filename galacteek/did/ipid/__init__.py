@@ -126,6 +126,18 @@ class IPService(metaclass=IPServiceRegistry):
         return self._ipid
 
     @property
+    def ipidServiceUrl(self):
+        try:
+            return URL.build(
+                scheme='ipid',
+                host=self.srvIpId,
+                path=self.srvPath,
+                fragment=self.srvFragment
+            )
+        except Exception:
+            return None
+
+    @property
     def id(self):
         return self._srv['id']
 

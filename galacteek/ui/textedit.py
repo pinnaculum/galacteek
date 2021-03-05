@@ -19,7 +19,6 @@ from PyQt5.QtWidgets import QPlainTextEdit
 from PyQt5.QtWidgets import QPlainTextDocumentLayout
 from PyQt5.QtWidgets import QSpacerItem
 from PyQt5.QtWidgets import QSizePolicy
-from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtWidgets import QPushButton
 from PyQt5.QtWidgets import QLabel
 from PyQt5.QtWidgets import QFrame
@@ -71,6 +70,7 @@ from galacteek.dweb.markdown import markitdown
 
 from .helpers import *
 
+from .widgets import GMediumToolButton
 from .widgets import IPFSWebView
 from .widgets import AnimatedLabel
 from .widgets import IPFSPathClipboardButton
@@ -79,7 +79,6 @@ from .widgets import GalacteekTab
 from .widgets import CheckableToolButton
 from .widgets import HashmarkThisButton
 from .widgets import MarkdownTextEdit
-from .widgets import GMediumToolButton
 from .clips import RotatingCubeRedFlash140d
 from .i18n import *
 
@@ -570,7 +569,7 @@ class TextEditorWidget(QWidget):
             toggled=self.onEditToggled, parent=self
         )
 
-        self.saveButton = QToolButton(self)
+        self.saveButton = GMediumToolButton(self)
         self.saveButton.setIcon(getIcon('save-file.png'))
         self.saveButton.clicked.connect(self.onSave)
         self.saveButton.setToolTip(iSave())
@@ -1330,7 +1329,7 @@ class TextEditorWidget(QWidget):
 
             hmarkButton = HashmarkThisButton(str(path))
 
-            publishButton = QToolButton()
+            publishButton = GMediumToolButton()
             publishButton.setText('Publish')
             publishButton.clicked.connect(functools.partial(
                 self.onPublishFile, entry, publishButton))

@@ -98,7 +98,7 @@
           <layout class="QHBoxLayout" name="layoutUrl"/>
          </item>
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <layout class="QHBoxLayout" name="hLayoutMisc">
            <property name="spacing">
             <number>4</number>
            </property>

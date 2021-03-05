@@ -8,60 +8,65 @@ gHub = aiopubsub.Hub()
 publisher = aiopubsub.Publisher(gHub, prefix=aiopubsub.Key('g'))
 
 
+@functools.lru_cache(maxsize=256)
 def makeKey(*args):
-    return aiopubsub.Key(*args)
+    if isinstance(args, str):
+        return aiopubsub.Key(args)
+    elif isinstance(args, tuple):
+        return aiopubsub.Key(*args)
 
 
 def makeKeyChatChannel(channel):
-    return aiopubsub.Key('g', 'chat', 'channels', channel)
+    return makeKey('g', 'chat', 'channels', channel)
 
 
-@functools.lru_cache(maxsize=1)
 def makeKeyChatUsersList(channel):
-    return aiopubsub.Key('g', 'pubsub', 'chatuserslist', channel)
+    return makeKey('g', 'pubsub', 'chatuserslist', channel)
 
 
-@functools.lru_cache(maxsize=1)
 def makeKeyPubChatTokens(channel):
-    return aiopubsub.Key('g', 'pubsub', 'tokens', 'pubchat', channel)
+    return makeKey('g', 'pubsub', 'tokens', 'pubchat', channel)
 
 
-@functools.lru_cache(maxsize=1)
-def makeKeyService(name: str):
-    return aiopubsub.Key('g', 'services', name)
+def makeKeyService(*names):
+    return makeKey(*(('g', 'services') + tuple(names)))
+
+
+def makeKeyServiceAll(*names):
+    return makeKey(*(('g', 'services') + tuple(names) + tuple('*')))
 
 
 def makeKeySmartContract(cname: str, address: str):
-    return aiopubsub.Key('g', 'smartcontracts', cname, address)
+    return makeKey('g', 'smartcontracts', cname, address)
 
 
 def psSubscriber(sid):
     return aiopubsub.Subscriber(gHub, sid)
 
 
-keyAll = aiopubsub.Key('*')
+keyAll = makeKey('*')
 
-keyPsJson = aiopubsub.Key('g', 'pubsub', 'json')
-keyPsEncJson = aiopubsub.Key('g', 'pubsub', 'enc', 'json')
+keyPsJson = makeKey('g', 'pubsub', 'json')
+keyPsEncJson = makeKey('g', 'pubsub', 'enc', 'json')
 
-keyChatAll = aiopubsub.Key('g', 'pubsub', 'chat', '*')
-keyChatChannels = aiopubsub.Key('g', 'pubsub', 'chat', 'channels')
+keyChatAll = makeKey('g', 'pubsub', 'chat', '*')
+keyChatChannels = makeKey('g', 'pubsub', 'chat', 'channels')
 
-keyChatChanList = aiopubsub.Key('g', 'pubsub', 'userchanlist')
-keyChatChanListRx = aiopubsub.Key('g', 'pubsub', 'userchanlist', 'rx')
+keyChatChanList = makeKey('g', 'pubsub', 'userchanlist')
+keyChatChanListRx = makeKey('g', 'pubsub', 'userchanlist', 'rx')
 
-keyChatChanUserList = aiopubsub.Key('g', 'pubsub', 'chatuserlist', 'rx')
-keyChatTokens = aiopubsub.Key('g', 'pubsub', 'chattokens')
+keyChatChanUserList = makeKey('g', 'pubsub', 'chatuserlist', 'rx')
+keyChatTokens = makeKey('g', 'pubsub', 'chattokens')
 
-keyTokensDagExchange = aiopubsub.Key('g', 'tokens', 'dagexchange')
-keySnakeDagExchange = aiopubsub.Key('g', 'dagexchange', 'snake')
-keyTokensIdent = aiopubsub.Key('g', 'tokens', 'ident')
+keyTokensDagExchange = makeKey('g', 'tokens', 'dagexchange')
+keySnakeDagExchange = makeKey('g', 'dagexchange', 'snake')
+keyTokensIdent = makeKey('g', 'tokens', 'ident')
 
-keyServices = aiopubsub.Key('g', 'services')
-keySmartContracts = aiopubsub.Key('g', 'smartcontracts', '*')
+keyServices = makeKey('g', 'services')
+keySmartContracts = makeKey('g', 'smartcontracts', '*')
 
 # The answer to everything
-key42 = aiopubsub.Key('g', '42')
+key42 = makeKey('g', '42')
 
 mSubscriber = psSubscriber('main')
 
@@ -73,15 +78,40 @@ def hubPublish(key, message):
 
 
 class KeyListener:
-    listenTo = []
+    # Default PS keys we'll listen to
+    psListenKeysDefault = [
+        makeKeyService('app'),
+        key42
+    ]
+
+    # User-defined keys, change this in descendant
+    psListenKeys = []
 
     def __init__(self):
-        for key in self.listenTo:
+        self.psListenL(self.psListenKeysDefault)
+        self.psListenL(self.psListenKeys)
+
+    def psListen(self, key, receiver=None):
+        rcv = receiver if receiver else self
+        try:
+            varName = '_'.join([c for c in key if c != '*'])
+            coro = getattr(rcv, f'event_{varName}')
+            log.debug(f'KeyListener for key {key}: binding to {coro}')
+
+            mSubscriber.add_async_listener(key, coro)
+        except Exception as err:
+            log.debug(f'KeyListener: could not connect key {key}: {err}')
+
+    def psListenL(self, keys: list, receiver=None):
+        for key in keys:
+            self.psListen(key, receiver=receiver)
+
+    def psListenFromConfig(self, cfg, receiver=None):
+        for keyPath in cfg.psKeysListen:
             try:
-                varName = '_'.join([c for c in key if c != '*'])
-                coro = getattr(self, f'event_{varName}')
-                log.debug(f'KeyListener for key {key}: binding to {coro}')
-                mSubscriber.add_async_listener(key, coro)
+                keyName = tuple(keyPath.split('/'))
+                self.psListen(makeKey(keyName))
             except Exception as err:
-                log.debug(f'KeyListener: could not connect key {key}: {err}')
+                log.debug(
+                    f'KeyListener: could not connect key {keyPath}: {err}')
                 continue

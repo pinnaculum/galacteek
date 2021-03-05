@@ -126,14 +126,19 @@ class DefaultBrowserWebPage (QWebEnginePage):
             partialEnsure(self.onPermissionRequest))
         self.featurePermissionRequestCanceled.connect(
             partialEnsure(self.onPermissionRequestCanceled))
-        self.setBackgroundColor(
-            QColor(self.app.theme.colors.webEngineBackground))
+        self.setBgColor(self.app.theme.colors.webEngineBackground)
 
         # self.changeWebChannel(QWebChannel(self))
 
     @property
     def channel(self):
         return self.webChannel()
+
+    def setBgColor(self, col):
+        self.setBackgroundColor(QColor(col))
+
+    def setBgActive(self):
+        self.setBgColor(self.app.theme.colors.webEngineBackgroundActive)
 
     def onRenderProcessPid(self, pid):
         log.debug(f'{self.url().toString()}: renderer process has PID: {pid}')
@@ -1362,8 +1367,6 @@ class BrowserTab(GalacteekTab):
         self.urlZone.deleteLater()
         self.browserWidget.setParent(None)
         self.browserWidget.deleteLater()
-        self.jsConsoleWidget.close()
-        self.jsConsoleWidget.deleteLater()
 
     def configApply(self):
         zoom = cGet('zoom.default')
@@ -1929,6 +1932,8 @@ class BrowserTab(GalacteekTab):
     async def onUrlChanged(self, url):
         if not url.isValid() or url.scheme() in ['data', SCHEME_Z]:
             return
+
+        self.webEngineView.webPage.setBgActive()
 
         sHandler = self.webEngineView.webProfile.urlSchemeHandler(
             url.scheme().encode())

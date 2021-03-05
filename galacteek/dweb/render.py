@@ -19,6 +19,8 @@ from galacteek.ipfs.cidhelpers import isIpfsPath
 from galacteek.ipfs.cidhelpers import isIpnsPath
 from galacteek.ipfs.wrappers import ipfsOpFn
 
+from galacteek.did import didExplode
+
 from galacteek.dweb.markdown import markitdown
 
 
@@ -41,6 +43,13 @@ def ipfspathnorm(input):
 
 def markdownconv(text):
     return markitdown(text)
+
+
+def ipidExtract(text):
+    # Extract the id from "did:ipid:<id>"
+    exploded = didExplode(text)
+    if exploded:
+        return exploded['id']
 
 
 def datetimeclean(datestring):
@@ -71,6 +80,7 @@ def defaultJinjaEnv():
     env.filters['ipfspathnorm'] = ipfspathnorm
     env.filters['markdown'] = markdownconv
     env.filters['dtclean'] = datetimeclean
+    env.filters['ipidExtract'] = ipidExtract
     return env
 
 
