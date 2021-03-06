@@ -245,6 +245,7 @@ def reqs_parse(path):
 
 install_reqs = reqs_parse('requirements.txt')
 install_reqs_extra_markdown = reqs_parse('requirements-extra-markdown.txt')
+install_reqs_ui_qt = reqs_parse('requirements-ui-qt.txt')
 
 found_packages = find_packages(exclude=['tests', 'tests.*'])
 
@@ -268,6 +269,7 @@ setup(
     install_requires=install_reqs,
     extras_require={
         'markdown-extensions': install_reqs_extra_markdown,
+        'ui-qt': install_reqs_ui_qt,
         'docs': [
             'sphinx>=1.7.0'
         ]
