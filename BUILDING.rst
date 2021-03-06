@@ -18,6 +18,12 @@ Install the dependencies with:
     pip install -r requirements-dev.txt
     pip install -r requirements.txt
 
+Install the PyQt dependencies:
+
+.. code-block:: shell
+
+    pip install -e '.[ui-qt]'
+
 To build and install the application, use:
 
 .. code-block:: shell
