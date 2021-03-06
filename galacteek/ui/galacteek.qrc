@@ -216,6 +216,8 @@
     <file>../../share/icons/add-folder.png</file>
     <file>../../share/icons/add-file.png</file>
     <file>../../share/icons/ipfs-favicon.ico</file>
+    <file>../../share/icons/dweb/dweb-arrow-next.png</file>
+    <file>../../share/icons/dweb/dweb-arrow-back.png</file>
     <file>../../share/static/sounds/mime-detected.wav</file>
     <file>../../share/static/misc/welcome.md</file>
   </qresource>

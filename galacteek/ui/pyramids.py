@@ -240,9 +240,14 @@ class MultihashPyramidsToolBar(QToolBar):
         self.setToolTip('Hashmark pyramids toolbar')
         self.setContextMenuPolicy(Qt.PreventContextMenu)
         self.setFloatable(False)
-        self.setMovable(False)
+        # self.setMovable(False)
+        self.setMovable(True)
         self.setAcceptDrops(True)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        self.setAllowedAreas(
+            Qt.LeftToolBarArea | Qt.RightToolBarArea
+        )
         self.setOrientation(Qt.Vertical)
 
         pyrIcon = getIcon('pyramid-blue.png')

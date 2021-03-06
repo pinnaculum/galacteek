@@ -103,19 +103,46 @@ def iPinataInstructions():
             Please first <a href="https://pinata.cloud/signup">
             sign up for an account at Pinata</a>.
         </p>
+        <p>
+            Once registered, paste the pinning API key in the
+            form field named <i>Key</i>.
+        </p>
         '''
     )
 
 
-def iPinToRemoteSingle(serviceName):
+def iPinToRps(serviceName):
     return QCoreApplication.translate(
         'GalacteekWindow',
-        'Pin to remote: {}'
+        'Pin to remote service: {}'
     ).format(serviceName)
 
 
-def iPinToRemoteRecursive(serviceName):
+def iPinToRpsWithName(serviceName):
     return QCoreApplication.translate(
         'GalacteekWindow',
-        'Pin to remote: {} (recursive)'
+        'Custom Pin to remote service: {}'
     ).format(serviceName)
+
+
+def iPinToRpsToolTip(serviceName):
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Pin this content to the remote '
+        'pinning service named {}'
+    ).format(serviceName)
+
+
+def iPinToAllRps():
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Pin to all remote services'
+    )
+
+
+def iPinToAllRpsToolTip():
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Pin this content to all remote pinning '
+        'services configured'
+    )

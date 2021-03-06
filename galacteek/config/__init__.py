@@ -36,7 +36,9 @@ class Configurable(object):
         self.configApply(self.config())
 
     def config(self):
-        # raise Exception(f'Implement config() for {self!r}')
+        if self.configModuleName:
+            return configForModule(self.configModuleName)
+
         return None
 
     def onConfigChanged(self):

@@ -1,0 +1,18 @@
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>IPID profile</title>
+  </head>
+  <body>
+    <div>
+      <p><b>{{ ipid.did }}</b></p>
+
+{% for service in services %}
+      <p>
+        <a href="{{ service.ipidServiceUrl }}">{{ service.srvPath }}</a>
+      </p>
+{% endfor %}
+
+    </div>
+  </body>
+</html>

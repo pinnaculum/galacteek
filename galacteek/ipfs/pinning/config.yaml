@@ -1,0 +1,4 @@
+envs:
+  default:
+    remotePinning:
+      services: []

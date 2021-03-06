@@ -1,0 +1,17 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "type": "@type",
+
+    "dc": "http://purl.org/dc/terms/",
+    "genericMessage": "ips://galacteek.ld.contexts/services/GenericServiceMessage#",
+
+    "created": {"@id": "dc:created", "@type": "xsd:dateTime"},
+    "serviceIdent": {"@id": "genericMessage:serviceIdent", "@type": "xsd:string"},
+    "event": {
+      "@id": "genericMessage:event",
+      "@type": "@id",
+      "@container": "@set"
+    }
+  }
+}

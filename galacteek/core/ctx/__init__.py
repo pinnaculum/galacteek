@@ -956,14 +956,17 @@ class P2PServices(QObject):
 
     @ipfsOp
     async def init(self, ipfsop):
-        from galacteek.ipfs.p2pservices import didauth
-        from galacteek.ipfs.p2pservices import dagexchange
-
         if not await ipfsop.hasCommand('p2p') is True:
             log.debug('No P2P streams support')
             return
 
         log.debug('P2P streams support available')
+
+    @ipfsOp
+    async def oldP2PInit(self, ipfsop):
+        # Unused
+        from galacteek.ipfs.p2pservices import didauth
+        from galacteek.ipfs.p2pservices import dagexchange
 
         try:
             self.didAuthService = didauth.DIDAuthService()
@@ -1107,7 +1110,7 @@ class IPFSContext(QObject):
         log.debug('Starting IPFS context services')
 
         await self.pinner.start()
-        await self.pubsub.startServices()
+
         await self.p2p.startServices()
 
     async def shutdown(self):
@@ -1119,6 +1122,9 @@ class IPFSContext(QObject):
         await self.pubsub.stop()
 
     async def setupPubsub(self, pubsubHashmarksExch=False):
+        pass
+
+    async def setupPubsubLegacy(self, pubsubHashmarksExch=False):
         psServiceMain = PSMainService(self, self.app.ipfsClient,
                                       scheduler=self.app.scheduler)
         self.pubsub.reg(psServiceMain)

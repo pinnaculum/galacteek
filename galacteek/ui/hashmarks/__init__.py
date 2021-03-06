@@ -4,10 +4,10 @@ from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.cidhelpers import *
 from galacteek.database import hashmarksExists
 
-from .helpers import *
-from .dialogs import *
-from .widgets import *
-from .i18n import *
+from ..helpers import *
+from ..dialogs import *
+from ..widgets import *
+from ..i18n import *
 
 
 def iPath():

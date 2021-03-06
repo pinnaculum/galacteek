@@ -63,7 +63,7 @@ class QuickAccessToolBar(QToolBar, URLDragAndDropProcessor):
     async def load(self):
         try:
             for item in await database.qaHashmarkItems():
-                await self.registerHashmark(item.ithashmark)
+                ensure(self.registerHashmark(item.ithashmark))
         except Exception as err:
             log.debug(str(err))
 
@@ -149,7 +149,7 @@ class QuickAccessToolBar(QToolBar, URLDragAndDropProcessor):
         if not ipfsPath.valid:
             return
 
-        result = await self.analyzer(ipfsPath)
+        result = await self.analyzer(ipfsPath, mimeTimeout=5)
         if result is None:
             return
 
