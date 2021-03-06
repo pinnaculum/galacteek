@@ -127,6 +127,9 @@ class GService(Service, KeyListener):
     async def declareIpfsComponents(self):
         pass
 
+    async def declareSystem(self):
+        pass
+
     async def ipfsPubsubService(self, service):
         # Register a pubsub service
         await self.add_runtime_dependency(service)
@@ -144,6 +147,7 @@ class GService(Service, KeyListener):
         self.rootPath.mkdir(parents=True, exist_ok=True)
 
         await self.declareIpfsComponents()
+        await self.declareSystem()
 
         if self.serviceConfigForIdent:
 

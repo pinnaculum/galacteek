@@ -90,7 +90,6 @@ from galacteek.dweb.htmlparsers import IPFSLinksParser
 
 from ..forms import ui_browsertab
 from ..dag import DAGViewer
-from ..pin import PinBatchWidget, PinBatchTab
 from ..helpers import *
 from ..dialogs import *
 from ..hashmarks import *
@@ -101,6 +100,9 @@ from ..clipboard import iCopyPubGwUrlToClipboard
 from ..clipboard import iClipboardEmpty
 from ..history import HistoryMatchesWidget
 from ..widgets import *
+
+from galacteek.ui.pinning.pinstatus import PinBatchWidget, PinBatchTab
+from galacteek.ui.widgets.pinwidgets import PinObjectButton
 from galacteek.appsettings import *
 
 
@@ -910,7 +912,7 @@ class CurrentObjectController(PopupToolButton):
 
     def __init__(self, parent=None):
         super(CurrentObjectController, self).__init__(
-            mode=QToolButton.MenuButtonPopup, parent=parent)
+            mode=QToolButton.InstantPopup, parent=parent)
 
         self.app = QApplication.instance()
 
@@ -963,6 +965,8 @@ class CurrentObjectController(PopupToolButton):
         self.menu.addSeparator()
         self.menu.addAction(self.hashmarkObjectAction)
         self.menu.addSeparator()
+
+        self.setIconSize(QSize(48, 48))
 
     def onQaLink(self):
         if self.currentPath and self.currentPath.valid:
@@ -1158,13 +1162,12 @@ class BrowserTab(GalacteekTab):
         self.ui.hashmarkThisPage.setEnabled(False)
         self.ui.hashmarkThisPage.setAutoRaise(True)
 
-        self.ui.hLayoutCtrl.addWidget(self.pageOpsButton)
-
         # Setup the IPFS control tool button (has actions
         # for browsing CIDS and web profiles etc..)
 
         self.ipfsControlMenu = QMenu(self)
         self.webProfilesMenu = QMenu('Web profile', self.ipfsControlMenu)
+        self.ipfsControlMenu.addMenu(self.pageOpsButton.menu)
 
         self.webProfilesGroup = QActionGroup(self.webProfilesMenu)
         self.webProfilesGroup.setExclusive(True)
@@ -1278,9 +1281,9 @@ class BrowserTab(GalacteekTab):
         pinMenu.addAction(getIcon('help.png'), iHelp(), functools.partial(
             self.app.manuals.browseManualPage, 'pinning.html'))
 
-        self.ui.pinToolButton.setMenu(pinMenu)
-        self.ui.pinToolButton.setIcon(iconPin)
-        self.ui.pinToolButton.setText(iPin())
+        self.pinToolButton = PinObjectButton(
+            mode=QToolButton.InstantPopup)
+        self.ui.hLayoutCtrl.insertWidget(0, self.pinToolButton)
 
         self.ui.zoomInButton.clicked.connect(self.onZoomIn)
         self.ui.zoomOutButton.clicked.connect(self.onZoomOut)
@@ -1309,7 +1312,6 @@ class BrowserTab(GalacteekTab):
         self.currentPageTitle = None
 
         # Bind tab signals
-        # self.sVisibilityChanged.connectTo(self.onTabVisibility)
         self.tabVisibilityChanged.connect(self.onTabVisibility)
 
         self.configApply()
@@ -1402,9 +1404,11 @@ class BrowserTab(GalacteekTab):
         iconPrinter = getIcon('printer.png')
 
         self.pageOpsButton = PopupToolButton(
-            icon, mode=QToolButton.InstantPopup, parent=self
+            icon, mode=QToolButton.InstantPopup, parent=None
         )
         self.pageOpsButton.setAutoRaise(True)
+        self.pageOpsButton.menu.setTitle('Page')
+        self.pageOpsButton.menu.setIcon(icon)
         self.pageOpsButton.menu.addAction(
             icon, iSaveContainedWebPage(), self.onSavePageContained)
         self.pageOpsButton.menu.addAction(
@@ -1953,7 +1957,9 @@ class BrowserTab(GalacteekTab):
             self._currentIpfsObject = IPFSPath(url.toString())
             self._currentUrl = url
             self.ipfsObjectVisited.emit(self.currentIpfsObject)
-            self.ui.pinToolButton.setEnabled(True)
+
+            self.pinToolButton.setEnabled(True)
+            self.pinToolButton.changeObject(self.currentIpfsObject)
 
             self.followIpnsAction.setEnabled(
                 self.currentIpfsObject.isIpns)
@@ -1977,7 +1983,8 @@ class BrowserTab(GalacteekTab):
 
                 self.urlZoneInsert(nurl.toString())
 
-                self.ui.pinToolButton.setEnabled(True)
+                self.pinToolButton.setEnabled(True)
+                self.pinToolButton.changeObject(self.currentIpfsObject)
 
                 self.ipfsObjectVisited.emit(self.currentIpfsObject)
 

@@ -28,22 +28,22 @@ from galacteek.ipfs import ipfsOp
 from galacteek.core.modelhelpers import UneditableItem
 from galacteek.core.modelhelpers import modelSearch
 
-from .widgets import GalacteekTab
+from ..widgets import GalacteekTab
 
-from .forms.ui_batchpinlist import Ui_BatchPinList
-from .helpers import messageBox
+from ..forms.ui_batchpinlist import Ui_BatchPinList
+from ..helpers import messageBox
 
-from .i18n import iPath
-from .i18n import iCidOrPath
-from .i18n import iUnknown
-from .i18n import iPinned
-from .i18n import iPinning
-from .i18n import iPin
-from .i18n import iDoNotPin
-from .i18n import iPinSingle
-from .i18n import iPinRecursive
-from .i18n import iCancel
-from .i18n import iInvalidInput
+from ..i18n import iPath
+from ..i18n import iCidOrPath
+from ..i18n import iUnknown
+from ..i18n import iPinned
+from ..i18n import iPinning
+from ..i18n import iPin
+from ..i18n import iDoNotPin
+from ..i18n import iPinSingle
+from ..i18n import iPinRecursive
+from ..i18n import iCancel
+from ..i18n import iInvalidInput
 
 
 def iQueue():

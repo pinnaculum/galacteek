@@ -55,7 +55,6 @@ from . import userwebsite
 from . import browser
 from . import files
 from . import keys
-from . import settings
 from . import orbital
 from . import textedit
 from . import ipfssearch
@@ -361,7 +360,7 @@ class MiscToolBar(QToolBar):
 
         self.setObjectName('miscToolBar')
         self.setAllowedAreas(
-            Qt.RightToolBarArea
+            Qt.LeftToolBarArea | Qt.RightToolBarArea
         )
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
@@ -418,6 +417,8 @@ class WorkspacesToolBar(QToolBar):
         self.wsPlanetsToolBar = QToolBar()
         self.wsPlanetsToolBarAdded = False
         self.setAcceptDrops(True)
+
+        self.setOrientation(Qt.Horizontal)
 
     def dragEnterEvent(self, ev):
         ev.accept()
@@ -797,6 +798,7 @@ class MainWindow(QMainWindow):
         # Apps/shortcuts toolbar
         self.qaToolbar = QuickAccessToolBar(self)
         self.qaToolbar.setOrientation(self.toolbarMain.orientation())
+        self.qaToolbar.setOrientation(self.toolbarPyramids.orientation())
 
         # Main actions and browse button setup
         self.quitAction = QAction(getIcon('quit.png'),
@@ -1006,6 +1008,7 @@ class MainWindow(QMainWindow):
 
         self.toolbarMain.addSeparator()
         self.toolbarMain.addWidget(self.toolbarWs)
+
         self.toolbarMain.addSeparator()
         self.toolbarMain.addWidget(self.cameraController)
         self.toolbarMain.addSeparator()
@@ -1013,7 +1016,7 @@ class MainWindow(QMainWindow):
         self.hashmarkMgrButton.hashmarkClicked.connect(self.onHashmarkClicked)
         self.hashmarksSearcher.hashmarkClicked.connect(self.onHashmarkClicked)
 
-        self.toolbarMain.addWidget(self.qaToolbar)
+        self.toolbarPyramids.addWidget(self.qaToolbar)
 
         self.toolbarMain.actionStatuses = self.toolbarMain.addAction(
             trTodo('Statuses'))
@@ -1176,6 +1179,9 @@ class MainWindow(QMainWindow):
     @property
     def allTabs(self):
         return self._allTabs
+
+    def toolBarArea(self, toolbar):
+        return Qt.AllToolBarArea
 
     def contextMessage(self, msgText: str):
         self.lastLogLabel.setText(msgText)
@@ -1532,7 +1538,8 @@ class MainWindow(QMainWindow):
         return None, None
 
     def onSettings(self):
-        runDialog(settings.SettingsDialog, self.app)
+        with self.stack.workspaceCtx(WS_MISC) as wspace:
+            wspace.showSettings()
 
     def onRunConfigEditor(self):
         with self.stack.workspaceCtx(WS_MISC) as wspace:

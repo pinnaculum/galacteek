@@ -485,7 +485,11 @@ class ClipboardItemButton(PopupToolButton):
         self.app = QApplication.instance()
         self.setObjectName('currentClipItem')
         self.setIcon(getMimeIcon('unknown'))
-        self.setIconSize(QSize(32, 32))
+
+        self.setMinimumSize(QSize(64, 64))
+        self.setMaximumSize(QSize(96, 96))
+        self.setIconSize(QSize(48, 48))
+
         self.setToolTip(iClipboardNoValidAddress())
         self.setEnabled(False)
         self.rscOpener = rscOpener
@@ -973,8 +977,10 @@ class ClipboardItemsStack(QStackedWidget):
         self.app.clipTracker.itemRemoved.connect(self.onItemRemoved)
         self.setObjectName('currentClipItem')
         self.rscOpener = self.app.resourceOpener
-        self.setFixedSize(40, 32)
         self.addItemButton()
+
+        self.setMinimumSize(QSize(64, 64))
+        self.setMaximumSize(QSize(64, 64))
 
     def onItemRemoved(self, item):
         for idx in range(0, self.count() + 1):

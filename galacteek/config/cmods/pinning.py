@@ -1,5 +1,6 @@
 from galacteek.config import cGet
 from galacteek.config import cSet
+from galacteek.config import configSavePackage
 
 
 cmod = 'galacteek.ipfs.pinning'
@@ -22,6 +23,12 @@ def remoteServiceExistsByName(name: str):
     return False
 
 
+def rpsByDisplayName(name: str):
+    for srv in remoteServices():
+        if srv.serviceName == name:
+            return srv
+
+
 def rpsExists(rService, services=None):
     """
     Checks if we already have this service in the config
@@ -33,6 +40,14 @@ def rpsExists(rService, services=None):
             return True
 
     return False
+
+
+def configSave():
+    configSavePackage(cmod)
+
+
+def rpsConfigRemove(serviceName: str):
+    pass
 
 
 def rpsConfigRegister(rService: dict, peerId: str):
@@ -49,7 +64,6 @@ def rpsConfigRegister(rService: dict, peerId: str):
     services = remoteServices()
 
     if rpsExists(rService, services=services):
-        print('exists', name)
         return False
 
     # Append

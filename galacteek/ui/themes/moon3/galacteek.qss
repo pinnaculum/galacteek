@@ -231,8 +231,10 @@ QMenu
     background-color: #323232;
     color: #eff0f1;
     margin: 2px;
-    border: 1px solid lightgray;
+    border: 1px solid #3a556c;
     font-size: 14pt;
+
+    font: 14pt "Segoe UI";
 }
 
 QMenu::icon
@@ -242,14 +244,18 @@ QMenu::icon
 
 QMenu::item
 {
-    padding: 2px 30px 2px 30px;
+    /* padding: 2px 30px 2px 30px; */
+    padding: 5px 30px 5px 30px;
     margin-left: 2px;
     border: 1px solid transparent; /* reserve space for selection border */
 }
 
 QMenu::item:selected
 {
-    color: #000000;
+    /* color: #000000; */
+
+    color: black;
+    font-size: 15pt;
 }
 
 QMenu::separator {
@@ -376,7 +382,7 @@ QScrollBar:horizontal
 
 QScrollBar::handle:horizontal
 {
-    background-color: #605F5F;
+    background-color: #4a9ea1;
     min-width: 5px;
     border-radius: 4px;
 }
@@ -442,7 +448,7 @@ QScrollBar:vertical
 
 QScrollBar::handle:vertical
 {
-    background-color: #605F5F;
+    background-color: #4a9ea1;
     min-height: 5px;
     border-radius: 4px;
 }
@@ -658,6 +664,8 @@ QComboBox
     border-radius: 2px;
     padding: 5px;
     min-width: 75px;
+
+    color: white;
 }
 
 QPushButton:checked{
@@ -683,8 +691,15 @@ QComboBox QAbstractItemView
 
     border-radius: 2px;
     border: 1px solid #76797C;
-    selection-background-color: #D1DBCB;
+    selection-background-color: black;
+    color: black;
 }
+
+QComboBox QAbstractItemView::item
+{
+    color: black;
+}
+
 
 QComboBox::drop-down
 {
@@ -697,6 +712,8 @@ QComboBox::drop-down
     border-left-style: solid;
     border-top-right-radius: 3px;
     border-bottom-right-radius: 3px;
+
+    color: black;
 }
 
 QComboBox::down-arrow
@@ -1066,7 +1083,7 @@ QToolButton[popupMode="2"] { /* only for InstantPopup */
 
 QToolButton:hover, QToolButton::menu-button:hover {
     background-color: transparent;
-    border: 1px solid #D1DBCB;
+    border: 1px solid black;
     padding: 2px;
 }
 
@@ -1080,7 +1097,7 @@ QToolButton:checked, QToolButton:pressed,
 
 /* the subcontrol below is used only in the InstantPopup or DelayedPopup mode */
 QToolButton::menu-indicator {
-    image: url(:/theme_icons/rc/down_arrow.png);
+    /* image: url(:/theme_icons/rc/down_arrow.png); */
     top: -7px; left: -2px; /* shift it a bit */
 }
 
@@ -1105,6 +1122,7 @@ QToolButton::menu-arrow:open {
 QPushButton::menu-indicator  {
     subcontrol-origin: padding;
     subcontrol-position: bottom right;
+    image: url(:/theme_icons/rc/down_arrow.png);
     left: 8px;
 }
 
@@ -1384,7 +1402,6 @@ QLineEdit#urlZone::hover {
     border: 1px solid #4a9ea1;
 }
 
-
 QWidget#logsTextWindow {
     background-color: #4a9ea1;
 }
@@ -1440,13 +1457,14 @@ QToolBar#wsActionsToolBar QToolButton {
 }
 
 QToolBar QToolButton::hover {
-    background-color: #4a9ea1;
+    background-color: #b6b9bd;
 }
 
 QToolBar QToolButton::pressed {
-    background-color: #eec146;
+    background-color: #ed8f1c;
+    border: 1px solid black;
+    padding: 5px;
 }
-
 
 /* Markdown
 

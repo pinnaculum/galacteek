@@ -6,6 +6,7 @@ cfgInitTable = [
 
     'galacteek.ipfs',
     'galacteek.ipfs.ipfsops',
+    'galacteek.ipfs.pinning',
     'galacteek.ipfs.pubsub',
     'galacteek.ipfs.pubsub.srvs',
 

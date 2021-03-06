@@ -67,6 +67,12 @@
               <iconset resource="../galacteek.qrc">
                <normaloff>:/share/icons/ipfs-logo-128-ice.png</normaloff>:/share/icons/ipfs-logo-128-ice.png</iconset>
              </property>
+             <property name="iconSize">
+              <size>
+               <width>48</width>
+               <height>48</height>
+              </size>
+             </property>
              <property name="popupMode">
               <enum>QToolButton::InstantPopup</enum>
              </property>
@@ -89,6 +95,12 @@
             <iconset resource="../galacteek.qrc">
              <normaloff>:/share/icons/hashmark-black.png</normaloff>:/share/icons/hashmark-black.png</iconset>
            </property>
+           <property name="iconSize">
+            <size>
+             <width>32</width>
+             <height>32</height>
+            </size>
+           </property>
           </widget>
          </item>
          <item>
@@ -98,12 +110,94 @@
           <layout class="QHBoxLayout" name="layoutUrl"/>
          </item>
          <item>
+          <widget class="QToolButton" name="backButton">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>64</width>
+             <height>64</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>32</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Previous&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="../galacteek.qrc">
+             <normaloff>:/share/icons/dweb/dweb-arrow-back.png</normaloff>:/share/icons/dweb/dweb-arrow-back.png</iconset>
+           </property>
+           <property name="iconSize">
+            <size>
+             <width>64</width>
+             <height>64</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QToolButton" name="forwardButton">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>64</width>
+             <height>64</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>32</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Next&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="../galacteek.qrc">
+             <normaloff>:/share/icons/dweb/dweb-arrow-next.png</normaloff>:/share/icons/dweb/dweb-arrow-next.png</iconset>
+           </property>
+           <property name="iconSize">
+            <size>
+             <width>64</width>
+             <height>64</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item>
           <layout class="QHBoxLayout" name="hLayoutMisc">
            <property name="spacing">
             <number>4</number>
            </property>
            <item>
             <widget class="QToolButton" name="stopButton">
+             <property name="minimumSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
              <property name="toolTip">
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Stop&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
@@ -113,6 +207,12 @@
              <property name="icon">
               <iconset resource="../galacteek.qrc">
                <normaloff>:/share/icons/cancel.png</normaloff>:/share/icons/cancel.png</iconset>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>48</width>
+               <height>48</height>
+              </size>
              </property>
             </widget>
            </item>
@@ -127,6 +227,12 @@
              <property name="icon">
               <iconset resource="../galacteek.qrc">
                <normaloff>:/share/icons/refresh.png</normaloff>:/share/icons/refresh.png</iconset>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>32</width>
+               <height>32</height>
+              </size>
              </property>
             </widget>
            </item>
@@ -145,58 +251,6 @@
               </size>
              </property>
             </spacer>
-           </item>
-           <item>
-            <widget class="QToolButton" name="backButton">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>32</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Previous&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="icon">
-              <iconset resource="../galacteek.qrc">
-               <normaloff>:/share/icons/left-arrow.png</normaloff>:/share/icons/left-arrow.png</iconset>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QToolButton" name="forwardButton">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>32</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Next&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="icon">
-              <iconset resource="../galacteek.qrc">
-               <normaloff>:/share/icons/right-arrow.png</normaloff>:/share/icons/right-arrow.png</iconset>
-             </property>
-            </widget>
            </item>
            <item>
             <spacer name="horizontalSpacer_2">
@@ -225,6 +279,12 @@
              <property name="icon">
               <iconset resource="../galacteek.qrc">
                <normaloff>:/share/icons/search-engine.png</normaloff>:/share/icons/search-engine.png</iconset>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>32</width>
+               <height>32</height>
+              </size>
              </property>
             </widget>
            </item>
@@ -256,6 +316,12 @@
               <iconset resource="../galacteek.qrc">
                <normaloff>:/share/icons/zoom-out.png</normaloff>:/share/icons/zoom-out.png</iconset>
              </property>
+             <property name="iconSize">
+              <size>
+               <width>32</width>
+               <height>32</height>
+              </size>
+             </property>
             </widget>
            </item>
            <item>
@@ -269,6 +335,12 @@
              <property name="icon">
               <iconset resource="../galacteek.qrc">
                <normaloff>:/share/icons/zoom-in.png</normaloff>:/share/icons/zoom-in.png</iconset>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>32</width>
+               <height>32</height>
+              </size>
              </property>
             </widget>
            </item>
@@ -300,18 +372,11 @@
               <iconset resource="../galacteek.qrc">
                <normaloff>:/share/icons/pin-curve.png</normaloff>:/share/icons/pin-curve.png</iconset>
              </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QToolButton" name="pinToolButton">
-             <property name="text">
-              <string/>
-             </property>
-             <property name="popupMode">
-              <enum>QToolButton::InstantPopup</enum>
-             </property>
-             <property name="toolButtonStyle">
-              <enum>Qt::ToolButtonTextBesideIcon</enum>
+             <property name="iconSize">
+              <size>
+               <width>32</width>
+               <height>32</height>
+              </size>
              </property>
             </widget>
            </item>
@@ -365,9 +430,12 @@
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
+       <property name="sizeType">
+        <enum>QSizePolicy::Maximum</enum>
+       </property>
        <property name="sizeHint" stdset="0">
         <size>
-         <width>40</width>
+         <width>200</width>
          <height>20</height>
         </size>
        </property>

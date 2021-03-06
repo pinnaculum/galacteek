@@ -26,9 +26,12 @@ class RemotePinningServiceOps(object):
 
     async def pinRemoteServiceList(self, stat=False):
         try:
-            return await self.client.pin.remote.service.ls(stat=stat)
-        except APIError:
+            reply = await self.client.pin.remote.service.ls(stat=stat)
+            assert reply is not None
+        except (Exception, APIError):
             return None
+        else:
+            return reply['RemoteServices']
 
     async def pinRemoteServiceSearch(self, name):
         try:
@@ -51,6 +54,9 @@ class RemotePinningOps(object):
                 serviceName, objPath, name=name, background=background)
         except APIError as err:
             self.debug(f'Error adding remote pin: {err.message}')
+            return False
+        except Exception as err:
+            self.debug(f'Error adding remote pin: {err}')
             return False
         else:
             return True
