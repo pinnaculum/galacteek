@@ -45,9 +45,6 @@ pycryptodomex==3.9.8
 pygments>=2.3.1
 pyld>=2.0.2
 PyNaCl>=1.4.0
-pyqt5==5.15.2
-pyqtchart==5.13.1
-pyqtwebengine==5.15.2
 python-magic>=0.4.15
 python3-crdt>=1.0.3
 py-multibase>=1.0.3
