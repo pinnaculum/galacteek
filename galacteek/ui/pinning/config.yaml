@@ -1,0 +1,12 @@
+envs:
+  defaults:
+    policies:
+      default:
+        - displayName: 'sensible'
+          description: 'Sensible pinning policy'
+
+          content:
+            default:
+              pinSingle: False
+            image/png:
+              pinSingle: True

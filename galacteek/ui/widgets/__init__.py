@@ -362,7 +362,7 @@ class URLDragAndDropProcessor:
             pass
 
 
-class CheckableToolButton(QToolButton):
+class CheckableToolButton(GMediumToolButton):
     def __init__(self, toggled=None, icon=None, parent=None):
         super(CheckableToolButton, self).__init__(parent)
         self.setCheckable(True)
@@ -483,7 +483,7 @@ class PopupToolButton(QToolButton, URLDragAndDropProcessor):
     # gObjName = 'gPopupToolButton'
 
     def __init__(self, icon=None, parent=None, menu=None,
-                 mode=QToolButton.MenuButtonPopup, acceptDrops=False,
+                 mode=QToolButton.InstantPopup, acceptDrops=False,
                  menuSizeHint=None, toolTipsVisible=True):
         super(PopupToolButton, self).__init__(parent)
 
@@ -496,7 +496,12 @@ class PopupToolButton(QToolButton, URLDragAndDropProcessor):
         if icon:
             self.setIcon(icon)
 
+        self.setupButton()
+
         ensure(self.populateMenuAsync(self.menu))
+
+    def setupButton(self):
+        pass
 
     async def populateMenuAsync(self, menu):
         pass
@@ -638,7 +643,7 @@ class _HashmarksCommon:
 
         if not mark.icon or not loadIcon:
             # Default icon
-            action.setIcon(getIcon('ipfs-logo-128-white-outline.png'))
+            action.setIcon(getIcon('cube-blue.png'))
         else:
             ensure(self.loadMarkIcon(action, mark.icon.path))
 
@@ -846,7 +851,7 @@ class HashmarkMgrButton(PopupToolButton, _HashmarksCommon):
             self.cMenus[category].triggered.connect(
                 lambda action: ensure(self.linkActivated(action)))
             self.cMenus[category].setObjectName('hashmarksMgrMenu')
-            self.cMenus[category].setIcon(getIcon('stroke-cube.png'))
+            self.cMenus[category].setIcon(getIcon('cube-blue.png'))
             self.menu.addMenu(self.cMenus[category])
 
         return self.cMenus[category]
@@ -854,6 +859,8 @@ class HashmarkMgrButton(PopupToolButton, _HashmarksCommon):
     async def updateMenu(self):
         self.hCount = 0
         categories = await database.categoriesNames()
+
+        categories.sort()
 
         for category in categories:
             marks = await database.hashmarksSearch(category=category)

@@ -234,6 +234,9 @@ class PinningMaster(object):
             self.debug('Queue {qname}: pinning success for {path}'.format(
                 qname=qname, path=path))
 
+            if 'status' not in pItem or not pItem['status']:
+                return (path, 1, 'Invalid pin status')
+
             pins = pItem['status'].get('Pins', None)
             if pins and isinstance(pins, list):
                 # 'Pins' is a list of CIDs, mark it as pinned

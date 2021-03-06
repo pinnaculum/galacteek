@@ -1,0 +1,11 @@
+envs:
+  default:
+    services:
+
+      g/core/peers/ident:
+        psKeysListen:
+          - 'g/services/app'
+          - 'g/services'
+
+    peers:
+      limit: 2048

@@ -33,7 +33,6 @@ from galacteek.core.tmpf import TmpFile
 
 from galacteek.core.ps import KeyListener
 from galacteek.core.ps import makeKeyService
-from galacteek.core.ps import key42
 
 from galacteek.ui import files
 from galacteek.ui import ipfssearch
@@ -50,7 +49,7 @@ from galacteek.ui.helpers import runDialogAsync
 
 from galacteek.ui.dialogs import DefaultProgressDialog
 
-from galacteek.ui.settings import ConfigManager
+from galacteek.ui.settings.cfgeditor import ConfigManager
 from galacteek.ui.settings import SettingsCenterTab
 
 from galacteek.ui.messenger import MessengerWidget
@@ -801,6 +800,10 @@ class WorkspaceMisc(TabbedWorkspace):
             description='Misc'
         )
 
+    @cached_property
+    def settingsCenter(self):
+        return SettingsCenterTab(self.app.mainWindow, sticky=True)
+
     def setupWorkspace(self):
         super().setupWorkspace()
 
@@ -812,7 +815,7 @@ class WorkspaceMisc(TabbedWorkspace):
             icon=getIcon('pin-zoom.png'))
 
         self.wsRegisterTab(
-            SettingsCenterTab(self.app.mainWindow, sticky=True),
+            self.settingsCenter,
             iSettings(),
             icon=getIcon('settings.png')
         )
@@ -860,18 +863,17 @@ class WorkspaceMisc(TabbedWorkspace):
     def showPinSettings(self):
         pass
 
+    def showSettings(self):
+        self.tabWidget.setCurrentWidget(self.settingsCenter)
+
 
 class WorkspaceMessenger(SingleWidgetWorkspace, KeyListener):
-    # PS keys we listen to
-    listenTo = [
-        makeKeyService('bitmessage'),
-        key42
-    ]
-
     def __init__(self, stack):
         super().__init__(stack, WS_DMESSENGER,
                          icon=getIcon('dmessenger/dmessenger.png'),
                          description='Messenger')
+
+        self.psListen(makeKeyService('net', 'bitmessage'))
 
     def setupWorkspace(self):
         super().setupWorkspace()
@@ -881,7 +883,7 @@ class WorkspaceMessenger(SingleWidgetWorkspace, KeyListener):
         self.msger = MessengerWidget()
         self.wLayout.addWidget(self.msger)
 
-    async def event_g_services_bitmessage(self, key, message):
+    async def event_g_services_net_bitmessage(self, key, message):
         log.debug(f'Bitmessage service event: {message}')
 
         await self.msger.setup()

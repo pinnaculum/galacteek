@@ -26,7 +26,8 @@ class ResourceAnalyzer(QObject):
         self.qrDecoder = IPFSQrDecoder()
 
     @ipfsOp
-    async def __call__(self, ipfsop, pathRef, fetchExtraMetadata=False):
+    async def __call__(self, ipfsop, pathRef, fetchExtraMetadata=False,
+                       mimeTimeout=15):
         """
         :param IPFSPath ipfsPath
         """
@@ -49,7 +50,10 @@ class ResourceAnalyzer(QObject):
             statInfo = mHashMeta.get('stat')
             return mimetype, statInfo
         else:
-            mimetype = await detectMimeType(path)
+            mimetype = await detectMimeType(
+                path,
+                timeout=mimeTimeout
+            )
 
             statInfo = await ipfsop.objStat(path)
             if not statInfo or not isinstance(statInfo, dict):

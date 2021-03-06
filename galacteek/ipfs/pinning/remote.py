@@ -1,24 +1,47 @@
 from galacteek.ipfs import ipfsOp
-from galacteek.ipfs import ipfsOpFn
+
+from galacteek import log
+
+from galacteek.core import runningApp
+from galacteek.core.ps import KeyListener
 
 from galacteek.config.cmods import pinning as cfgpinning
-from galacteek.core.ps import KeyListener
-from galacteek.core.ps import makeKeyService
 
 
 class RemotePinServicesManager(KeyListener):
     async def event_g_services_app(self, key, message):
         event = message['event']
 
-        if event['type'] == 'IpfsOperatorChange':
+        reactTo = [
+            'IpfsOperatorChange',
+            'RPSAdded'
+        ]
+
+        if event['type'] in reactTo:
             # IPFS connection change. Scan remote pin services
+
+            log.debug('Performing RPS ascan')
             await self.remoteServicesScan()
+
+    @ipfsOp
+    async def remoteServicesStat(self, ipfsop):
+        try:
+            listing = await ipfsop.waitFor(
+                ipfsop.pinRemoteServiceList(stat=True),
+                timeout=30
+            )
+        except Exception as err:
+            log.debug(str(err))
+        else:
+            return listing
 
     @ipfsOp
     async def remoteServicesScan(self, ipfsop):
         """
         Scan remote pinning services and sync them to the config
         """
+
+        app = runningApp()
 
         nodeId = await ipfsop.nodeId()
 
@@ -27,8 +50,15 @@ class RemotePinServicesManager(KeyListener):
         if not nodeId or not listing:
             return
 
+        changed = False
         for rService in listing:
-            cfgpinning.rpsConfigRegister(rService, nodeId)
+            if cfgpinning.rpsConfigRegister(rService, nodeId):
+                changed = True
+
+        if changed:
+            await app.s.ldPublish({
+                'type': 'RPSConfigChanged'
+            })
 
 
 __all__ = ['RemotePinServicesManager']

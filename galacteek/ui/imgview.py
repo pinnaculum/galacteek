@@ -30,6 +30,8 @@ from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs.mimetype import MIMEType
 
+from .widgets.pinwidgets import PinObjectButton
+
 from .widgets import GalacteekTab
 from .widgets import IPFSUrlLabel
 from .widgets import IPFSPathClipboardButton
@@ -60,8 +62,7 @@ class ImageViewerTab(GalacteekTab):
     def __init__(self, mainW):
         super().__init__(mainW)
 
-        self.pinButton = GMediumToolButton(self)
-        self.pinButton.setIcon(getIcon('pin.png'))
+        self.pinButton = PinObjectButton(parent=self)
         self.pinButton.setEnabled(True)
 
         self.zoomIn = GMediumToolButton(self)
@@ -111,6 +112,7 @@ class ImageViewerTab(GalacteekTab):
     def onImageLoaded(self, path, mimeType):
         self.hashmarkButton.ipfsPath = path
         self.pinButton.setEnabled(True)
+        self.pinButton.changeObject(path)
         self.pathLabel.path = path
         self.pathClipB.path = path
 
