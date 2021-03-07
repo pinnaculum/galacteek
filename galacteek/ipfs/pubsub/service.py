@@ -99,14 +99,16 @@ class PubsubService(Configurable, GService):
                  maxMsgTsDiff=None, minMsgTsDiff=None,
                  maxMessageSize=32768,
                  scheduler=None,
+                 peered=False,
                  **kw):
         self.throttler = None
 
         self.ipfsCtx = ipfsCtx
-        self.topic = topic
+        self.topicBase = topic
         self.inQueue = asyncio.Queue(maxsize=256)
         self.errorsQueue = asyncio.Queue()
         self.lock = asyncio.Lock()
+        self.peered = peered
         self.scheduler = scheduler
 
         self._receivedCount = 0
@@ -151,6 +153,13 @@ class PubsubService(Configurable, GService):
     def config(self):
         return cParentGet('serviceTypes.base')
 
+    def topic(self):
+        if self.peered:
+            peerId = self.ipfsCtx.node.id
+            return f'{self.topicBase}.{peerId}'
+        else:
+            return self.topicBase
+
     def messageConfig(self, messageType: str):
         cfg = self.config()
         try:
@@ -183,10 +192,10 @@ class PubsubService(Configurable, GService):
             self.addMessageFilter(self.filterSelf)
 
     def debug(self, msg):
-        logger.debug('PS[{0}]: {1}'.format(self.topic, msg))
+        logger.debug('PS[{0}]: {1}'.format(self.topic(), msg))
 
     def info(self, msg):
-        logger.info('PS[{0}]: {1}'.format(self.topic, msg))
+        logger.info('PS[{0}]: {1}'.format(self.topic(), msg))
 
     def logStatus(self):
         self.debug('** Messages received: {0}, errors: {1}'.format(
@@ -208,7 +217,9 @@ class PubsubService(Configurable, GService):
 
         if event['type'] == 'IpfsOperatorChange':
             await self.stopListening()
-            await asyncio.sleep(0.1)
+
+            await asyncio.sleep(0.3)
+
             await self.startListening()
 
     async def event_g_services(self, key, message):
@@ -232,7 +243,7 @@ class PubsubService(Configurable, GService):
             self.tskPeriodic = await self.scheduler.spawn(self.periodic())
 
         self.psDbManager = await psManagerForTopic(
-            self.topic, encType=self.encodingType)
+            self.topic(), encType=self.encodingType)
 
     async def stopListening(self):
         self._shuttingDown = True
@@ -334,8 +345,13 @@ class PubsubService(Configurable, GService):
         async queue (inQueue) to be later treated in the processMessages() task
         """
 
+        topic = self.topic()
+
+        # We're only in the bytopic list when listening
+        self.ipfsCtx.pubsub.reg(self)
+
         try:
-            async for message in ipfsop.client.pubsub.sub(self.topic):
+            async for message in ipfsop.client.pubsub.sub(topic):
                 if await self.filtered(message):
                     continue
 
@@ -348,14 +364,20 @@ class PubsubService(Configurable, GService):
                 self._receivedCount += 1
                 await asyncio.sleep(0)
         except asyncio.CancelledError:
+            self.ipfsCtx.pubsub.unreg(self)
             self.debug('Cancelled, queue size was {0}'.format(
                 self.inQueue.qsize()))
             return
-        except Exception as e:
+        except Exception as err:
             traceback.print_exc()
-            self.debug('Serve interrupted by unknown exception {}'.format(
-                str(e)))
-            ensureLater(10, self.serve, ipfsop)
+
+            # Unregister
+            self.ipfsCtx.pubsub.reg(self)
+
+            self.debug(
+                f'Serve interrupted by unknown exception {err}')
+
+            ensureLater(5, self.serve, ipfsop)
 
     @ipfsOp
     async def send(self, ipfsop, msg, topic=None):
@@ -366,7 +388,7 @@ class PubsubService(Configurable, GService):
         """
 
         if topic is None:
-            topic = self.topic
+            topic = self.topic()
 
         if issubclass(msg.__class__, PubsubMessage):
             data = str(msg)
@@ -464,7 +486,7 @@ class JSONPubsubService(PubsubService):
                     try:
                         if self.hubPublish:
                             gHub.publish(
-                                self.hubKey, (sender, self.topic, msg))
+                                self.hubKey, (sender, self.topic(), msg))
 
                         rec = await self.psDbManager.recordMessage(
                             sender,
@@ -623,23 +645,13 @@ class RSAEncryptedJSONPubsubService(JSONPubsubService):
     encodingType = PS_ENCTYPE_RSA_AES
     hubKey = keyPsEncJson
 
-    def __init__(self, ipfsCtx, baseTopic, peered=True, **kw):
-        self.baseTopic = baseTopic
-        self.peered = peered
-
-        kw.update(topic=self.peeredTopic(ipfsCtx.node.id))
-
-        super(RSAEncryptedJSONPubsubService, self).__init__(ipfsCtx, **kw)
+    def __init__(self, ipfsCtx, baseTopic, **kw):
+        super(RSAEncryptedJSONPubsubService, self).__init__(
+            ipfsCtx, baseTopic, peered=True, **kw)
 
     def config(self):
         base = super().config()
         return configMerge(base, cParentGet('serviceTypes.rsaEncJson'))
-
-    def peeredTopic(self, peerId):
-        if self.peered:
-            return f'{self.baseTopic}.{peerId}'
-        else:
-            return self.baseTopic
 
     @ipfsOp
     async def asyncMsgDataToJson(self, ipfsop, msg):
@@ -666,7 +678,7 @@ class RSAEncryptedJSONPubsubService(JSONPubsubService):
             if await self.peerEncFilter(piCtx, msg) is True:
                 continue
 
-            topic = _topic if _topic else self.peeredTopic(peerId)
+            topic = _topic if _topic else self.topic()
 
             pubKey = await piCtx.defaultRsaPubKey()
 
@@ -696,25 +708,16 @@ class Curve25519JSONPubsubService(JSONPubsubService):
     hubKey = keyPsEncJson
 
     def __init__(self, ipfsCtx, baseTopic, privEccKey,
-                 peered=True, **kw):
-        self.baseTopic = baseTopic
-        self.peered = peered
+                 **kw):
         self.__privEccKey = privEccKey
         self._authorizedPeers = []
 
-        kw.update(topic=self.peeredTopic(ipfsCtx.node.id))
-
-        super(Curve25519JSONPubsubService, self).__init__(ipfsCtx, **kw)
+        super(Curve25519JSONPubsubService, self).__init__(
+            ipfsCtx, baseTopic, **kw)
 
     def config(self):
         base = super().config()
         return configMerge(base, cParentGet('serviceTypes.curve25519EncJson'))
-
-    def peeredTopic(self, peerId):
-        if self.peered:
-            return f'{self.baseTopic}.{peerId}'
-        else:
-            return self.baseTopic
 
     @ipfsOp
     async def asyncMsgDataToJson(self, ipfsop, msg):
@@ -724,7 +727,7 @@ class Curve25519JSONPubsubService(JSONPubsubService):
 
             if sender not in self._authorizedPeers:
                 raise Exception(f'Unauthorized message from {sender} '
-                                'on curve25519 topic {self.topic}')
+                                'on curve25519 topic {self.topic()}')
 
             # Load the peer context
             piCtx = ipfsop.ctx.peers.getByPeerId(sender)
@@ -757,7 +760,7 @@ class Curve25519JSONPubsubService(JSONPubsubService):
             if await self.peerEncFilter(piCtx, msg) is True:
                 continue
 
-            topic = _topic if _topic else self.peeredTopic(piCtx.peerId)
+            topic = _topic if _topic else self.topic()
 
             pubKey = await ipfsop.ctx.curve25Exec.pubKeyFromCid(pubKeyCid)
 

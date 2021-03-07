@@ -376,17 +376,12 @@ class MainToolBar(QToolBar):
         super().__init__(parent)
         self.setObjectName('mainToolBar')
 
+        self.setMovable(False)
         self.setFloatable(False)
         self.setAllowedAreas(
-            Qt.LeftToolBarArea | Qt.TopToolBarArea
+            Qt.BottomToolBarArea | Qt.TopToolBarArea
         )
         self.setContextMenuPolicy(Qt.NoContextMenu)
-
-        # 1st widget
-        # self.pad = QWidget()
-        # self.pad.setSizePolicy(
-        #     QSizePolicy.Expanding, QSizePolicy.Expanding)
-        # self.addWidget(self.pad)
 
         # Empty widget
         self.emptySpace = QWidget()
@@ -407,6 +402,19 @@ class MainToolBar(QToolBar):
 
     def dropEvent(self, event):
         pass
+
+
+class DwebDepotToolBar(QToolBar):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.setObjectName('dwebToolBar')
+
+        self.setMovable(True)
+        self.setAllowedAreas(
+            Qt.LeftToolBarArea | Qt.RightToolBarArea
+        )
+        self.setOrientation(Qt.Vertical)
 
 
 class WorkspacesToolBar(QToolBar):
@@ -787,8 +795,11 @@ class MainWindow(QMainWindow):
         self.pinAllGlobalButton.toggled.connect(self.onToggledPinAllGlobal)
         self.pinAllGlobalButton.setChecked(self.app.settingsMgr.browserAutoPin)
 
+        # Toolbars
         self.toolbarMain = MainToolBar(self)
-        self.toolbarPyramids = MultihashPyramidsToolBar(self)
+        self.toolbarDepot = DwebDepotToolBar(self)
+        self.toolbarPyramids = MultihashPyramidsToolBar(self.toolbarDepot)
+        self.toolbarDepot.addWidget(self.toolbarPyramids)
         self.toolbarWs = WorkspacesToolBar()
 
         self.toolbarMain.orientationChanged.connect(self.onMainToolbarMoved)
@@ -797,8 +808,7 @@ class MainWindow(QMainWindow):
 
         # Apps/shortcuts toolbar
         self.qaToolbar = QuickAccessToolBar(self)
-        self.qaToolbar.setOrientation(self.toolbarMain.orientation())
-        self.qaToolbar.setOrientation(self.toolbarPyramids.orientation())
+        self.qaToolbar.setOrientation(self.toolbarDepot.orientation())
 
         # Main actions and browse button setup
         self.quitAction = QAction(getIcon('quit.png'),
@@ -1016,7 +1026,7 @@ class MainWindow(QMainWindow):
         self.hashmarkMgrButton.hashmarkClicked.connect(self.onHashmarkClicked)
         self.hashmarksSearcher.hashmarkClicked.connect(self.onHashmarkClicked)
 
-        self.toolbarPyramids.addWidget(self.qaToolbar)
+        self.toolbarDepot.addWidget(self.qaToolbar)
 
         self.toolbarMain.actionStatuses = self.toolbarMain.addAction(
             trTodo('Statuses'))
@@ -1036,7 +1046,7 @@ class MainWindow(QMainWindow):
         self.toolbarMain.addWidget(self.quitButton)
 
         self.addToolBar(Qt.TopToolBarArea, self.toolbarMain)
-        self.addToolBar(Qt.RightToolBarArea, self.toolbarPyramids)
+        self.addToolBar(Qt.RightToolBarArea, self.toolbarDepot)
 
         self.stack = CentralStack(self, self.toolbarWs)
 
@@ -1563,16 +1573,17 @@ class MainWindow(QMainWindow):
             assert info is not None
 
             bwStats = await ipfsop.client.stats.bw()
+
+            # Get IPFS peers list
+            peers = await ipfsop.peersList()
+            assert peers is not None
+            peersCount = len(peers)
         except Exception:
             self.setConnectionInfoMessage(iErrNoCx())
             return
 
         nodeId = info.get('ID', iUnknown())
         nodeAgent = info.get('AgentVersion', iUnknownAgent())
-
-        # Get IPFS peers list
-        peers = await ipfsop.peersList()
-        peersCount = len(peers)
 
         if peersCount == 0:
             await ipfsop.noPeersFound()

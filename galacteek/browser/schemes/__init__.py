@@ -851,7 +851,7 @@ class MultiObjectHostSchemeHandler(NativeIPFSSchemeHandler,
 
             await mapping.fetch_related('qahashmark')
 
-            with await self.lock:
+            async with self.lock:
                 self.mappings[mapping.name] = {
                     'path': IPFSPath(mapping.qahashmark.path),
                     'rfrequency': mapping.ipnsresolvefreq,
@@ -868,7 +868,7 @@ class MultiObjectHostSchemeHandler(NativeIPFSSchemeHandler,
     @ipfsOp
     async def mappingsResolver(self, ipfsop):
         while True:
-            with await self.lock:
+            async with self.lock:
                 for name, m in self.mappings.items():
                     now = datetime.now()
                     path = m['path']

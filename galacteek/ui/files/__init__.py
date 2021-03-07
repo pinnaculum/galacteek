@@ -599,12 +599,13 @@ class FileManager(QWidget):
         self.ui.fsOptionsButton.setMenu(fsOptsMenu)
 
         # Offline mode button
-        self.ui.offlineButton.setObjectName('filemanagerOfflineButton')
-        self.ui.offlineButton.setText(iOfflineMode())
-        self.ui.offlineButton.setCheckable(True)
-        self.ui.offlineButton.toggled.connect(self.onOfflineToggle)
-        self.ui.offlineButton.setChecked(False)
-        self.ui.offlineButton.setVisible(False)
+        if 0:
+            self.ui.offlineButton.setObjectName('filemanagerOfflineButton')
+            self.ui.offlineButton.setText(iOfflineMode())
+            self.ui.offlineButton.setCheckable(True)
+            self.ui.offlineButton.toggled.connect(self.onOfflineToggle)
+            self.ui.offlineButton.setChecked(False)
+            self.ui.offlineButton.setVisible(False)
 
         # Add the MFS tree in the stack
         self.mfsTree = MFSTreeView()
@@ -666,6 +667,14 @@ class FileManager(QWidget):
     def pathSelectorIconSize(self):
         size = cGet('fileManager.pathSelectorIconSize')
         return QSize(size, size)
+
+    @property
+    def cFileToolTipsEnabled(self):
+        return cGet('fileManager.mfsToolTips.showForFiles')
+
+    @property
+    def cDirToolTipsEnabled(self):
+        return cGet('fileManager.mfsToolTips.showForDirectories')
 
     @property
     def gWindow(self):
@@ -995,7 +1004,6 @@ class FileManager(QWidget):
                      self.ui.fileManagerButton,
                      self.ui.fsOptionsButton,
                      self.ui.pathSelector,
-                     self.ui.offlineButton,
                      self.ui.searchFiles]:
             elem.setEnabled(flag)
 
@@ -1064,8 +1072,8 @@ class FileManager(QWidget):
     def onItemChange(self, item):
         self.collapseButtonUpdate()
 
-        if isinstance(item, MFSRootItem):
-            self.ui.offlineButton.setChecked(item.offline)
+        # if isinstance(item, MFSRootItem):
+        #     self.ui.offlineButton.setChecked(item.offline)
 
     def collapseButtonUpdate(self):
         self.ui.collapseAll.setVisible(
@@ -1863,6 +1871,9 @@ class FileManager(QWidget):
         then proceed to do a streamed unixfs ls call.
         """
 
+        dirToolTips = self.cDirToolTipsEnabled
+        fileToolTips = self.cFileToolTipsEnabled
+
         if not parentItem or not parentItem.path:
             return
 
@@ -1950,6 +1961,7 @@ class FileManager(QWidget):
                     nItemName = modelParent.findChildByCid(cidString)
                 else:
                     icon = None
+
                     if entry['Type'] == 1:  # directory
                         icon = self.iconFolder
 
@@ -1959,12 +1971,17 @@ class FileManager(QWidget):
 
                     if entry['Type'] == 1:
                         nItemName.mimeDirectory(self.app.mimeDb)
+                        if dirToolTips:
+                            nItemName.setToolTip(
+                                mfsItemInfosMarkup(nItemName))
                     else:
                         nItemName.mimeFromDb(self.app.mimeDb)
+                        if fileToolTips:
+                            nItemName.setToolTip(
+                                mfsItemInfosMarkup(nItemName))
 
                     nItemName.setParentHash(parentItemHash)
                     nItemSize = MFSItem(sizeFormat(entry['Size']))
-                    nItemName.setToolTip(mfsItemInfosMarkup(nItemName))
 
                     if not icon and nItemName.mimeTypeName:
                         # If we have a better icon matching the file's type..

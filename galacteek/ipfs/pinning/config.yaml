@@ -1,4 +1,24 @@
 envs:
   default:
     remotePinning:
+      # Remote Pinning Service list (scanned from the daemon)
       services: []
+
+    objects:
+      #
+      # Local pinning orchestrator object configuration
+      #
+      lpOrchestrator:
+        # Max empty-no-progress messages to tolerate before
+        # giving up on an object we're trying to pin
+        maxStalledMessages: 24
+
+        # Delay (in seconds) after which a pinned item will
+        # be considered inactive (and disappear from the
+        # pinning status widget)
+        pinnedExpires: 120
+
+        # Pinning queue configuration
+        queue:
+          type: 'standard'
+          size: 1024

@@ -182,7 +182,9 @@ Contributions that can help:
 Platforms supported
 ===================
 
-- Linux (main target)
+- Linux (x86_64) (main target)
+- Linux (aarch64). If you have a Raspberry PI (64-bit), check the
+  Raspberry_ page.
 - Any BSD operating system (with manual build)
 - MacOS
 - Windows
@@ -198,7 +200,7 @@ support for any other platform is unlikely.
 Requirements
 ============
 
-- python3 >= 3.7
+- python3 >= 3.7 (Works with python *3.7*, *3.8*, *3.9*)
 - go-ipfs_ >= 0.5.0
 - PyQt5 >= 5.13.2
 - PyQtWebengine >= 5.13.2
@@ -239,6 +241,7 @@ from the ipfs-logo_ project's repository is included, unchanged.
 .. _aiomonitor: https://github.com/aio-libs/aiomonitor
 .. _asyncqt: https://github.com/gmarull/asyncqt
 .. _sponsor: https://github.com/pinnaculum/galacteek/blob/master/SPONSOR.rst
+.. _raspberry: https://github.com/pinnaculum/galacteek/RASPBERRY.rst
 .. _quamash: https://github.com/harvimt/quamash
 .. _go-ipfs: https://github.com/ipfs/go-ipfs
 .. _dist.ipfs.io: https://dist.ipfs.io

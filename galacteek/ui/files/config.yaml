@@ -18,3 +18,7 @@ envs:
     fileManager:
       mfsIconSize: 32
       pathSelectorIconSize: 32
+
+      mfsToolTips:
+        showForDirectories: False
+        showForFiles: False

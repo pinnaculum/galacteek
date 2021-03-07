@@ -542,7 +542,8 @@ class WorkspaceCore(TabbedWorkspace):
 
 class WorkspaceFiles(TabbedWorkspace):
     def __init__(self, stack):
-        super().__init__(stack, WS_FILES, icon=getIcon('folder-open.png'),
+        super().__init__(stack, WS_FILES,
+                         icon=getIcon('folder-open-orange.png'),
                          description='Files')
 
         self.btClient = None

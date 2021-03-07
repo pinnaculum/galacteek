@@ -70,7 +70,7 @@ class IPFSObjectMetadataDatabase:
         containerPath, metaPath, exists = self.path(rscPath)
         if metaPath and not exists:
             await asyncio.sleep(0)
-            with await self._lock:
+            async with self._lock:
                 if not os.path.isdir(containerPath):
                     os.mkdir(containerPath)
                 try:
@@ -88,7 +88,7 @@ class IPFSObjectMetadataDatabase:
             if not isinstance(metadata, dict):
                 return
 
-            with await self._lock:
+            async with self._lock:
                 for key, value in data.items():
                     if key not in metadata:
                         metadata[key] = value
@@ -101,7 +101,7 @@ class IPFSObjectMetadataDatabase:
         containerPath, metaPath, exists = self.path(rscPath)
         if metaPath and exists:
             await asyncio.sleep(0)
-            with await self._lock:
+            async with self._lock:
                 try:
                     async with aiofiles.open(metaPath, 'rt') as fd:
                         data = await fd.read()

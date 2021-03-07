@@ -21,3 +21,6 @@ envs:
       # Tasks settings
       tasks:
         cancelTimeout: 0.2
+
+    locations:
+      downloadsPath: null
