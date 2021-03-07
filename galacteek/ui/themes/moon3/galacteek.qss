@@ -245,17 +245,16 @@ QMenu::icon
 QMenu::item
 {
     /* padding: 2px 30px 2px 30px; */
-    padding: 5px 30px 5px 30px;
+    padding: 5px 20px 5px 20px;
     margin-left: 2px;
     border: 1px solid transparent; /* reserve space for selection border */
 }
 
 QMenu::item:selected
 {
-    /* color: #000000; */
-
+    padding: 5px 25px 5px 20px;
+    font-weight: bold;
     color: black;
-    font-size: 15pt;
 }
 
 QMenu::separator {

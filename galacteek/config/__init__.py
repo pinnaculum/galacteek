@@ -302,6 +302,13 @@ def cSet(attr: str, value, mod=None,
                 cEntry['timer'].start(2000)
 
 
+def cSetDefault(attr: str, value, mod):
+    val = cGet(attr, mod=mod)
+
+    if not val:
+        cSet(attr, value, mod, noCallbacks=True)
+
+
 def cParentSet(attr: str, value, merge=False):
     mod = callerMod()
     parentMod = '.'.join(mod.split('.')[:-1])

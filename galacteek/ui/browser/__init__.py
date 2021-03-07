@@ -966,7 +966,7 @@ class CurrentObjectController(PopupToolButton):
         self.menu.addAction(self.hashmarkObjectAction)
         self.menu.addSeparator()
 
-        self.setIconSize(QSize(48, 48))
+        self.setIconSize(QSize(32, 32))
 
     def onQaLink(self):
         if self.currentPath and self.currentPath.valid:
@@ -1167,7 +1167,6 @@ class BrowserTab(GalacteekTab):
 
         self.ipfsControlMenu = QMenu(self)
         self.webProfilesMenu = QMenu('Web profile', self.ipfsControlMenu)
-        self.ipfsControlMenu.addMenu(self.pageOpsButton.menu)
 
         self.webProfilesGroup = QActionGroup(self.webProfilesMenu)
         self.webProfilesGroup.setExclusive(True)
@@ -1217,8 +1216,6 @@ class BrowserTab(GalacteekTab):
                                        iJsConsole(), self,
                                        shortcut=QKeySequence('Ctrl+j'),
                                        triggered=self.onJsConsoleToggle)
-        # self.jsConsoleAction.setCheckable(True)
-        # self.jsConsoleAction.toggled.connect(self.onJsConsoleToggle)
 
         self.mapPathAction = QAction(
             getIconIpfsIce(),
@@ -1238,6 +1235,9 @@ class BrowserTab(GalacteekTab):
         self.ipfsControlMenu.addAction(self.browserHelpAction)
         self.ipfsControlMenu.addSeparator()
         self.ipfsControlMenu.addMenu(self.webProfilesMenu)
+        self.ipfsControlMenu.addSeparator()
+
+        self.ipfsControlMenu.addMenu(self.pageOpsButton.menu)
         self.ipfsControlMenu.addSeparator()
 
         self.ipfsControlMenu.addAction(self.jsConsoleAction)
@@ -1283,7 +1283,7 @@ class BrowserTab(GalacteekTab):
 
         self.pinToolButton = PinObjectButton(
             mode=QToolButton.InstantPopup)
-        self.ui.hLayoutCtrl.insertWidget(0, self.pinToolButton)
+        self.ui.hLayoutCtrl.insertWidget(1, self.pinToolButton)
 
         self.ui.zoomInButton.clicked.connect(self.onZoomIn)
         self.ui.zoomOutButton.clicked.connect(self.onZoomOut)
@@ -1635,15 +1635,7 @@ class BrowserTab(GalacteekTab):
         )
 
     def searchCallback(self, found):
-        if not found:
-            self.ui.searchInPage.setStyleSheet(
-                'QLineEdit { color: red; }'
-            )
-        else:
-            # self.ui.searchInPage.setStyleSheet(
-            #     'QLineEdit { color: black; }'
-            # )
-            pass
+        pass
 
     def onSearchInPageNext(self):
         self.searchInPage()

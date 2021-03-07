@@ -9,6 +9,10 @@ import aioipfs
 from galacteek import log
 from galacteek import ensure
 from galacteek import database
+
+from galacteek.config import Configurable
+from galacteek.config import cObjectGet
+
 from galacteek.ipfs.wrappers import ipfsOp
 
 
@@ -16,22 +20,44 @@ class Cancelled(Exception):
     pass
 
 
-class PinningMaster(object):
-    """ Pins objects on request through an async queue """
+class PinningMaster(Configurable):
+    """
+    The Local pinning orchestrator
+
+    Pins objects on request through an async queue
+    """
 
     def __init__(self, ctx, checkPinned=False, statusFilePath=None):
+        super().__init__()
+
         self.lock = asyncio.Lock()
         self.sflock = asyncio.Lock()
-        self._ordersQueue = asyncio.Queue()
+        self._ordersQueue = asyncio.Queue(maxsize=self.cQueueSize)
+
         self._ctx = ctx
         self._pinStatus = {}
         self._processTask = None
         self._statusFilePath = statusFilePath
         self._checkPinned = checkPinned
         self._sCleanupLast = None
-        self._maxStalledMessages = 24
 
         database.HashmarkAdded.connectTo(self.onMarkAdded)
+
+    @property
+    def config(self):
+        return cObjectGet('lpOrchestrator')
+
+    @property
+    def cMaxStalled(self):
+        return self.config.maxStalledMessages
+
+    @property
+    def cQueueSize(self):
+        return self.config.queue.size
+
+    @property
+    def cPinnedExpires(self):
+        return self.config.pinnedExpires
 
     @property
     def ordersQueue(self):
@@ -48,6 +74,9 @@ class PinningMaster(object):
     @property
     def queuesNames(self):
         return list(self.pinStatus.keys())
+
+    def configApply(self, cfg):
+        pass
 
     async def onMarkAdded(self, hashmark):
         if hashmark.pin == hashmark.PIN_SINGLE:
@@ -95,7 +124,7 @@ class PinningMaster(object):
 
         return count
 
-    async def cleanupStatus(self, pinnedExpires=60 * 2):
+    async def cleanupStatus(self):
         now = int(time.time())
 
         if isinstance(self._sCleanupLast, int):
@@ -110,8 +139,8 @@ class PinningMaster(object):
                         if pinData['pinned'] is False:
                             continue
 
-                        if pinData['ts_pinned'] > 0 and \
-                                now - pinData['ts_pinned'] > pinnedExpires:
+                        ts = pinData['ts_pinned']
+                        if ts > 0 and (now - ts) > self.cPinnedExpires:
                             toDelete.append(path)
         except BaseException:
             self.debug('Cleanup status error')
@@ -212,7 +241,7 @@ class PinningMaster(object):
                     # Never received any progress status yet
                     stalledCn += 1
 
-                if stalledCn >= self._maxStalledMessages:
+                if stalledCn >= self.cMaxStalled:
                     self.debug('{0}: stalled (removing)'.format(path))
                     await self.pathDelete(path)
                     return (path, 2, 'Stalled')
