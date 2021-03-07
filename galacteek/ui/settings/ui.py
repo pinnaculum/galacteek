@@ -1,23 +1,15 @@
 
 from galacteek.config import cGet
 
-from . import SettingsBaseController
+from . import SettingsFormController
 
 from ..themes import themesList
 
 
-class SettingsController(SettingsBaseController):
+class SettingsController(SettingsFormController):
     configModuleName = 'galacteek.ui'
 
-    def __init__(self, sWidget, parent=None):
-        super().__init__(sWidget, parent=parent)
-
-    async def event_g_services_app(self, key, message):
-        pass
-
     async def settingsInit(self):
-        # self.cApply()
-
         langCodeCurrent = cGet(
             'language',
             mod='galacteek.application'
@@ -43,20 +35,11 @@ class SettingsController(SettingsBaseController):
                 self.ui.language.setCurrentIndex(idx)
 
         # Theme
-
         self.ui.themeCombo.clear()
 
         for themeName, tPath in themesList():
             self.ui.themeCombo.addItem(themeName)
 
-        curTheme = cGet('theme', mod='galacteek.ui')
-        if curTheme:
-            self.ui.themeCombo.setCurrentText(curTheme)
-
-        # Default web profile combo box
-
-        currentDefault = cGet('defaultWebProfile',
-                              mod='galacteek.browser.webprofiles')
         pNameList = self.app.availableWebProfilesNames()
 
         for pName in pNameList:
@@ -64,14 +47,35 @@ class SettingsController(SettingsBaseController):
                 self.ui.comboDefaultWebProfile.count(),
                 pName
             )
+        self.cfgWatch(
+            self.ui.language,
+            'language',
+            'galacteek.application'
+        )
+        self.cfgWatch(
+            self.ui.comboDefaultWebProfile,
+            'defaultWebProfile',
+            'galacteek.browser.webprofiles'
+        )
+        self.cfgWatch(
+            self.ui.webEngineDefaultZoom,
+            'zoom.default',
+            'galacteek.ui.browser'
+        )
+        self.cfgWatch(
+            self.ui.themeCombo,
+            'theme',
+            'galacteek.ui'
+        )
+        self.cfgWatch(
+            self.ui.urlHistoryEnable,
+            'enabled',
+            'galacteek.ui.history'
+        )
 
-        if currentDefault and currentDefault in pNameList:
-            self.ui.comboDefaultWebProfile.setCurrentText(currentDefault)
+        self.ui.themeCombo.currentTextChanged.connect(
+            self.applyTheme
+        )
 
-        # History
-        self.ui.urlHistoryEnable.setChecked(
-            cGet('enabled', mod='galacteek.ui.history'))
-
-        # UI
-        self.ui.webEngineDefaultZoom.setValue(
-            cGet('zoom.default', mod='galacteek.ui.browser'))
+    def applyTheme(self, themeName: str):
+        self.app.themes.change(themeName)

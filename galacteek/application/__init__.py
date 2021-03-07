@@ -52,6 +52,7 @@ from galacteek import asyncSigWait
 
 from galacteek.config import cSetSavePath
 from galacteek.config import cGet
+from galacteek.config import cSetDefault
 
 from galacteek.core.asynclib import asyncify
 from galacteek.core.asynclib import cancelAllTasks
@@ -412,8 +413,27 @@ class GalacteekApplication(QApplication):
         self._loop = newLoop
 
     @property
+    def py3Version(self):
+        return sys.version_info.minor
+
+    @property
+    def py37(self):
+        return self.py3Version == 7
+
+    @property
+    def py38(self):
+        return self.py3Version == 8
+
+    @property
+    def py39(self):
+        return self.py3Version == 9
+
+    @property
     def allTasks(self):
-        return asyncio.Task.all_tasks(loop=self.loop)
+        if self.py37 or self.py38:
+            return asyncio.Task.all_tasks(loop=self.loop)
+        elif self.py39:
+            return asyncio.all_tasks(loop=self.loop)
 
     @property
     def pendingTasks(self):
@@ -1201,6 +1221,10 @@ class GalacteekApplication(QApplication):
 
         # Init new config system
         initFromTable()
+
+        cSetDefault('locations.downloadsPath',
+                    self.defaultDownloadsLocation,
+                    'galacteek.application')
 
     async def ipfsDaemonInitDialog(self, dlg):
         await runDialogAsync(dlg)

@@ -91,7 +91,7 @@ class AtomFeedsDatabase(QObject):
         return self._handled_by_id.get(feedId)
 
     async def unfollow(self, feedId):
-        with await self.lock:
+        async with self.lock:
             feed = await self.getFromId(feedId)
 
             if feed:

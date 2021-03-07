@@ -893,7 +893,12 @@ class PubsubMaster(QObject):
         return self._services
 
     def reg(self, service):
-        self._services[service.topic] = service
+        self._services[service.topic()] = service
+
+    def unreg(self, service):
+        topic = service.topic()
+        if topic in self._services:
+            self._services.pop(topic)
 
     def byTopic(self, topic):
         return self._services.get(topic)
@@ -906,6 +911,9 @@ class PubsubMaster(QObject):
             await self.services[topic].send(str(message))
 
     async def stop(self):
+        pass
+
+    async def stopOld(self):
         tsks = [service.stop() for topic, service in self.services.items()]
         return await asyncio.gather(*tsks)
 

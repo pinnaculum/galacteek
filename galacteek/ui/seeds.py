@@ -27,6 +27,7 @@ from galacteek import log
 from galacteek import ensureLater
 from galacteek import partialEnsure
 from galacteek import AsyncSignal
+from galacteek.config import cGet
 from galacteek.database import *
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import *
@@ -243,9 +244,9 @@ class SeedObjectTreeItem(QTreeWidgetItem):
 
 
 class SeedTreeItem(QTreeWidgetItem):
-    def __init__(self, seed, *args, type=seedItemType):
+    def __init__(self, seedDag, *args, type=seedItemType):
         super().__init__(*args, type)
-        self.seedDag = seed
+        self.seedDag = seedDag
 
     def objItems(self):
         for cidx in range(self.childCount()):
@@ -463,7 +464,10 @@ class SeedingObjectTreeItem(SeedObjectTreeItem):
         await self.runDownload(objConfig)
 
     def baseDownloadDir(self):
-        dlPath = Path(self.app.settingsMgr.downloadsPath)
+        dlPath = Path(
+            cGet('locations.downloadsPath',
+                 'galacteek.application')
+        )
 
         seedsDir = dlPath.joinpath('seeds')
         baseDir = seedsDir.joinpath(self.seed.name)
@@ -754,6 +758,10 @@ class SeedsTrackerTab(GalacteekTab):
 
         self.ui.treeMySeeds.setMouseTracking(True)
 
+    @property
+    def root(self):
+        return self.ui.treeMySeeds.invisibleRootItem()
+
     def qDateToDatetime(self, _date):
         return datetime.fromtimestamp(
             _date.dateTime().toSecsSinceEpoch(),
@@ -782,13 +790,12 @@ class SeedsTrackerTab(GalacteekTab):
             await seedsDag._clear()
 
     async def onSeedAdded(self, seed):
-        root = self.ui.treeMySeeds.invisibleRootItem()
         item = SeedingTreeItem(
             seed, [seed.name]
         )
         ensure(item.lazyLoad())
 
-        root.addChild(item)
+        self.root.addChild(item)
 
     async def onSeedReconfigured(self, seed):
         model = self.ui.treeMySeeds.model()
@@ -876,6 +883,24 @@ class SeedsTrackerTab(GalacteekTab):
             self.runSearch(self.ui.seedsSearch.text()))
 
     @ipfsOp
+    async def findSeed(self, ipfsop, seedsDag, seedItem, cid):
+        seed = await ipfsop.waitFor(
+            seedsDag.getSeed(cid),
+            timeout=5
+        )
+        if seed:
+            seedItem.seedDag = seed
+            seedItem.setDisabled(False)
+
+            await seedItem.lazyLoad()
+            self.root.addChild(seedItem)
+
+            selected = self.ui.treeAllSeeds.selectedItems()
+            if len(selected) == 0:
+                self.ui.treeAllSeeds.setCurrentItem(item)
+                self.selectedSeed = item
+
+    @ipfsOp
     async def runSearch(self, ipfsop, text):
         try:
             sRegexp = re.compile(text, re.IGNORECASE)
@@ -910,28 +935,18 @@ class SeedsTrackerTab(GalacteekTab):
                 except Exception:
                     dthuman = 'No date'
 
-                seed = await ipfsop.waitFor(
-                    seedsDag.getSeed(dCid),
-                    5
-                )
-
-                if not seed:
-                    continue
-
                 item = SeedTreeItem(
-                    seed,
+                    None,
                     [name, f'{dthuman}', '']
                 )
+
+                item.setDisabled(True)
                 item.setFont(0, bfont)
                 item.setFont(1, nfont)
                 item.setFont(2, nfont)
 
                 root.addChild(item)
-
-                selected = self.ui.treeAllSeeds.selectedItems()
-                if len(selected) == 0:
-                    self.ui.treeAllSeeds.setCurrentItem(item)
-                    self.selectedSeed = item
+                ensure(self.findSeed(seedsDag, item, dCid))
 
                 self.ui.seedsSearch.setEnabled(True)
                 await ipfsop.sleep(0.1)

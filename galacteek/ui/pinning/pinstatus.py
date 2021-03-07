@@ -58,6 +58,9 @@ def iNodesProcessed():
     return QCoreApplication.translate('PinStatusWidget', 'Nodes')
 
 
+PinObjectPathRole = Qt.UserRole + 1
+
+
 class PinStatusWidget(GalacteekTab):
     COL_TS = 0
     COL_QUEUE = 1
@@ -129,7 +132,7 @@ class PinStatusWidget(GalacteekTab):
     def getIndexFromPath(self, path):
         idxList = self.model.match(
             self.model.index(0, self.COL_PATH),
-            Qt.DisplayRole,
+            PinObjectPathRole,
             path,
             1,
             Qt.MatchFixedString | Qt.MatchWrap
@@ -247,9 +250,14 @@ class PinStatusWidget(GalacteekTab):
                 partialEnsure(self.onCancel, qname, path))
             btnCancel.setFixedWidth(140)
 
+            displayPath = path
+            if len(displayPath) > 96:
+                displayPath = displayPath[0:96] + ' ..'
+
             itemTs = UneditableItem(str(statusInfo['ts_queued']))
             itemQ = UneditableItem(qname)
-            itemP = UneditableItem(path)
+            itemP = UneditableItem(displayPath)
+            itemP.setData(path, PinObjectPathRole)
             itemP.setToolTip(path)
             itemP.lastProgressUpdate = time.time()
 

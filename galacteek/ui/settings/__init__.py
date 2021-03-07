@@ -1,8 +1,14 @@
 import importlib
+from pathlib import Path
 
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QListWidgetItem
 from PyQt5.QtWidgets import QWidget
+
+from PyQt5.QtWidgets import QComboBox
+from PyQt5.QtWidgets import QCheckBox
+from PyQt5.QtWidgets import QSpinBox
+from PyQt5.QtWidgets import QLineEdit
 
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import Qt
@@ -349,6 +355,8 @@ class SettingsCenterTab(GalacteekTab):
 
         self.load(iPinningSettings(), 'pinning')
         self.load('UI', 'ui')
+        self.load('General', 'general')
+        self.load('Files', 'files')
 
         self.addToLayout(widget)
 
@@ -361,16 +369,28 @@ class SettingsCenterTab(GalacteekTab):
             self.ui.stack.setCurrentWidget(widget)
 
     def load(self, displayName: str, modname: str):
+        from galacteek.qml import quickWidgetFromFile
+        from galacteek.core import pkgResourcesRscFilename
+
+        qmlPath = Path(pkgResourcesRscFilename(
+            'galacteek.ui.settings',
+            f'{modname}.qml'
+        ))
         try:
             ctrlMod = importlib.import_module(
                 f'galacteek.ui.settings.{modname}')
-            mod = importlib.import_module(
-                f'galacteek.ui.forms.ui_settings_{modname}')
-            form = mod.Ui_SettingsForm()
+            if qmlPath.is_file():
+                path = str(qmlPath)
+                view = quickWidgetFromFile(path)
+                widget = view
+            else:
+                mod = importlib.import_module(
+                    f'galacteek.ui.forms.ui_settings_{modname}')
+                form = mod.Ui_SettingsForm()
 
-            widget = QWidget()
-            widget.ui = form
-            form.setupUi(widget)
+                widget = QWidget()
+                widget.ui = form
+                form.setupUi(widget)
 
             controller = ctrlMod.SettingsController(widget)
             ensure(controller.settingsInit())
@@ -391,6 +411,37 @@ class SettingsCenterTab(GalacteekTab):
 
 
 class SettingsBaseController(QObject, Configurable, KeyListener):
+    def cfgWatch(self, widget, cAttr, cMod):
+        def valueChanged(value, attr, mod):
+            cSet(attr, value, mod=mod)
+
+        val = cGet(cAttr, mod=cMod)
+
+        if isinstance(widget, QComboBox):
+            widget.currentTextChanged.connect(
+                lambda text: valueChanged(text, cAttr, cMod)
+            )
+            widget.setCurrentText(val)
+
+        elif isinstance(widget, QSpinBox):
+            widget.valueChanged.connect(
+                lambda value: valueChanged(value, cAttr, cMod)
+            )
+            widget.setValue(val)
+        elif isinstance(widget, QCheckBox):
+            widget.stateChanged.connect(
+                lambda state: valueChanged(
+                    state == Qt.Checked, cAttr, cMod)
+            )
+            widget.setChecked(val)
+        elif isinstance(widget, QLineEdit):
+            widget.textChanged.connect(
+                lambda text: valueChanged(text, cAttr, cMod)
+            )
+            widget.setText(val)
+
+
+class SettingsFormController(SettingsBaseController):
     def __init__(self, sWidget, parent=None):
         super().__init__(sWidget)
 

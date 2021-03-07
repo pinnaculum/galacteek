@@ -280,7 +280,8 @@ setup(
             '*.yaml',
             '*.qss',
             '*.css',
-            '*.qrc'
+            '*.qrc',
+            '*.qml'
         ],
         'galacteek': [
             'docs/manual/en/html/*.html',
@@ -318,7 +319,9 @@ setup(
         'Topic :: System :: Filesystems',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7'
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9'
     ],
     keywords=[
         'asyncio',

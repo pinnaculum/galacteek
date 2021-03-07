@@ -121,7 +121,7 @@ class MutableIPFSJson(QObject):
 
     @ipfsOp
     async def ipfsSave(self, op):
-        with await self.lock:
+        async with self.lock:
             resp = await op.filesWriteJsonObject(self.mfsFilePath, self.root)
             await op.client.files.flush(self.mfsFilePath)
 
@@ -173,7 +173,7 @@ class CipheredIPFSJson(MutableIPFSJson):
 
     @ipfsOp
     async def ipfsSave(self, op):
-        with await self.lock:
+        async with self.lock:
             serialized = json.dumps(self.root).encode()
             resp = await self.rsaHelper.encryptToMfs(serialized,
                                                      self.mfsFilePath)

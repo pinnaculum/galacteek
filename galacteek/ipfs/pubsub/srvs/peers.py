@@ -63,7 +63,7 @@ class PSPeersService(JSONPubsubService):
 
     @asyncify
     async def userInfoChanged(self):
-        with await self.lock:
+        async with self.lock:
             await self.sendIdent(self.curProfile)
 
     @ipfsOp
@@ -194,6 +194,6 @@ class PSPeersService(JSONPubsubService):
         while True:
             await asyncio.sleep(self.identEvery)
 
-            with await self.lock:
+            async with self.lock:
                 if self.curProfile:
                     await self.sendIdent(self.curProfile)

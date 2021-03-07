@@ -20,13 +20,9 @@ from galacteek.ipfs import ipfsOp
 class PSDAGExchangeService(RSAEncryptedJSONPubsubService):
     hubPublish = False
 
-    def __init__(self, ipfsCtx, client, **kw):
-        super().__init__(ipfsCtx, client, TOPIC_DAGEXCH,
+    def __init__(self, ipfsCtx, **kw):
+        super().__init__(ipfsCtx, TOPIC_DAGEXCH,
                          runPeriodic=True,
-                         minMsgTsDiff=60,
-                         thrRateLimit=8,
-                         thrPeriod=20,
-                         thrRetry=4,
                          filterSelfMessages=False, **kw)
 
         self.__authenticatedDags = collections.deque([], 128)

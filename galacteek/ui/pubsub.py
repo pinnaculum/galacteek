@@ -16,6 +16,8 @@ from PyQt5.QtGui import QBrush
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt
 
+from galacteek import log
+
 from galacteek.core import datetimeIsoH
 
 from galacteek.core.ps import keyPsJson
@@ -51,6 +53,12 @@ class PubsubSnifferWidget(GalacteekTab):
         subscriber.add_async_listener(keyPsEncJson, self.onJsonMessage)
 
     async def onJsonMessage(self, key, message):
+        try:
+            await self.processMessage(key, message)
+        except Exception as err:
+            log.warning(f'Unable to process pubsub message: {err}')
+
+    async def processMessage(self, key, message):
         sender, topic, jsonMsg = message
 
         dItem = QTableWidgetItem(datetimeIsoH())

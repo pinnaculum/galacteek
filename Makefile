@@ -30,3 +30,7 @@ themes:
 
 ui:
 	@python setup.py build_ui
+
+flatpak:
+	flatpak-builder --force-clean --repo=flatpak-repo build-dir \
+		packaging/linux/flatpak/org.flatpak.galacteek.Galacteek.yaml
