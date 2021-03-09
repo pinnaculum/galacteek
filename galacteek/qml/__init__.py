@@ -3,8 +3,11 @@ from PyQt5.QtQuick import QQuickView
 from PyQt5.QtQuickWidgets import QQuickWidget
 
 
-def quickWidget(url: str, parent=None):
-    return QQuickWidget(QUrl(url), parent)
+def quickWidget(url, parent=None):
+    if isinstance(url, QUrl):
+        return QQuickWidget(url, parent)
+    elif isinstance(url, str):
+        return QQuickWidget(QUrl(url), parent)
 
 
 def quickWidgetFromFile(fp: str, parent=None):

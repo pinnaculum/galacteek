@@ -725,10 +725,6 @@ class UserProfile(QObject):
         await self.dagSeedsAll.load()
         await self.dagSeedsAll.associate(self.dagSeedsMain)
 
-        # Allow these EDAGs to be signed
-        # self.ctx.p2p.dagExchService.allowEDag(self.dagSeedsMain)
-        # self.ctx.p2p.dagExchService.allowEDag(self.dagSeedsAll)
-
         self.dagUser.dagCidChanged.connect(self.onDagChange)
         ensure(self.publishDag(allowOffline=True, reschedule=True))
 

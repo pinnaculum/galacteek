@@ -30,13 +30,7 @@ servicesRootPath = Path(os.path.dirname(__file__))
 class GService(Service, KeyListener):
     name: str = 'gservice'
     ident: str = None
-
-    # dotPath: str = None
-
     configModuleName: str = None
-
-    pubsubServices: list = []
-
     byDotName: dict = {}
 
     def __init__(self, dataPath: Path = None, runtimeConfig=None,
@@ -44,7 +38,8 @@ class GService(Service, KeyListener):
                  app=None,
                  config=None,
                  parent=None):
-        super(GService, self).__init__()
+        Service.__init__(self)
+        KeyListener.__init__(self)
 
         self.app = app if app else runningApp()
         self.rtCfg = runtimeConfig
@@ -105,15 +100,13 @@ class GService(Service, KeyListener):
             'event': event
         })
 
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(0.05)
 
     async def ldPublish(self, event,
                         contextName='services/GenericServiceMessage'):
         """
-        Publish a service event message on the pubsub hub, to the
-        service's PS key
-
-        TODO: Use JSON-LD for all service messages
+        Publish a JSON-LD service event message on the
+        pubsub hub, to the service's PS key
         """
 
         hubPublish(self.psKey, {
@@ -122,7 +115,7 @@ class GService(Service, KeyListener):
             'event': event
         })
 
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(0.05)
 
     async def declareIpfsComponents(self):
         pass
@@ -149,8 +142,9 @@ class GService(Service, KeyListener):
         await self.declareIpfsComponents()
         await self.declareSystem()
 
-        if self.serviceConfigForIdent:
-
+        if self.serviceConfigForIdent and 0:
+            # Enable this when we want to have PS listen keys
+            # definitions in the config
             self.psListenFromConfig(self.serviceConfigForIdent)
 
     async def walkServices(self, dot: str, add=False):
@@ -171,15 +165,15 @@ class GService(Service, KeyListener):
         try:
             regConfigFromPyPkg(rootName)
             config = configForModule(rootName)
-            # print(self.dotPath, config)
 
             mod = importlib.import_module(modName)
             service = mod.serviceCreate(
                 srvDotPath, config, parent)
 
             GService.byDotName[srvDotPath] = service
-        except Exception as err:
-            log.debug(f'registerService ({srvDotPath}): Error {err}')
+        except Exception:
+            # log.debug(f'registerService ({srvDotPath}): Error {err}')
+            pass
         else:
             if add:
                 await self.add_runtime_dependency(service)

@@ -150,8 +150,8 @@ class ThemesManager:
             if exTheme.styleModName and exTheme.styleModName in sys.modules:
                 del sys.modules[exTheme.styleModName]
 
-        libFontsPath = pkgResourcesRscFilename(
-            'galacteek.ui.themes', 'fonts.qss'
+        libCommonPath = pkgResourcesRscFilename(
+            'galacteek.ui.themes', 'common.qss'
         )
 
         themeDir = pkgResourcesRscFilename('galacteek.ui.themes', themeName)
@@ -185,7 +185,7 @@ class ThemesManager:
         qssPlatformPath = \
             f":/galacteek/ui/themes/{themeName}/galacteek_{sysName}.qss"
 
-        fontsQss = self.app.readQSSFile(libFontsPath)
+        fontsQss = self.app.readQSSFile(libCommonPath)
 
         mainQss = self.app.readQSSFile(qssPath)
         pQss = self.app.readQSSFile(qssPlatformPath)

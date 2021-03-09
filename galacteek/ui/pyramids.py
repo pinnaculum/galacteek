@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtWidgets import QToolBar
 from PyQt5.QtWidgets import QSizePolicy
+from PyQt5.QtWidgets import QWidgetAction
 
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import pyqtSignal
@@ -218,6 +219,7 @@ class PyramidsDropButton(PopupToolButton):
         )
         self.menu.setTitle(iPyramidDropObject())
         self.menu.setIcon(getIcon('pyramid-blue.png'))
+
         self.setIconSize(QSize(32, 32))
         self.setToolTip(iPyramidDropper())
 
@@ -237,11 +239,11 @@ class MultihashPyramidsToolBar(QToolBar):
         self.app.marksLocal.pyramidAddedMark.connect(self.onPyramidNewMark)
 
         self.setObjectName('toolbarPyramids')
-        self.setToolTip('Hashmark pyramids toolbar')
+        self.setObjectName('pyramidsToolBar')
+        self.setToolTip('Pyramids toolbar')
         self.setContextMenuPolicy(Qt.PreventContextMenu)
         self.setFloatable(False)
-        # self.setMovable(False)
-        self.setMovable(True)
+        self.setMovable(False)
         self.setAcceptDrops(True)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
@@ -255,6 +257,7 @@ class MultihashPyramidsToolBar(QToolBar):
             icon=pyrIcon,
             mode=QToolButton.InstantPopup
         )
+        self.pyramidsControlButton.setIconSize(QSize(48, 48))
         self.pyramidsControlButton.setObjectName('pyramidsController')
 
         # Basic pyramid (manual drag-and-drop)
@@ -290,7 +293,33 @@ class MultihashPyramidsToolBar(QToolBar):
         self.addSeparator()
 
         self.pyramids = {}
+
         self.setIconSize(QSize(32, 32))
+
+    def sizeHint(self):
+        # Calculate the optimal toolbar height using the number
+        # of pyramids registered
+
+        height = 0
+        try:
+            for action in self.actions():
+                w = self.widgetForAction(action)
+                if not w:
+                    continue
+
+                height += w.height()
+
+            height += self.pyramidsControlButton.height()
+        except Exception:
+            # Uuh
+            actionsCount = len(self.actions())
+            height = (actionsCount + 1) * self.iconSize().height()
+
+        # Now there's a lot of potential for .. aggressive expansion
+        return QSize(
+            self.iconSize().width(),
+            height
+        )
 
     def contextMenuEvent(self, event):
         pass
@@ -461,6 +490,14 @@ class MultihashPyramidsToolBar(QToolBar):
                               MultihashPyramid.TYPE_WEBSITE_MKDOCS,
                               title='New website (mkdocs)',
                               parent=self))
+
+
+class MultihashPyramidsToolBarAction(QWidgetAction):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.toolbar = MultihashPyramidsToolBar(parent)
+        self.setDefaultWidget(self.toolbar)
 
 
 class MultihashPyramidToolButton(PopupToolButton):
@@ -728,6 +765,9 @@ class MultihashPyramidToolButton(PopupToolButton):
         QToolTip.showText(self.mapToGlobal(QPoint(0, 0)), message)
 
     def updateToolTip(self):
+        if not self.pyramid:
+            return
+
         self._pyrToolTip = '''
             <p>
                 <img width='64' height='64'

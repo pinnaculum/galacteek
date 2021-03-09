@@ -100,7 +100,7 @@ class AddContactDialog(BaseDialog):
 
     def accept(self):
         if self.fullname:
-            self.done(0)
+            self.done(1)
         else:
             messageBox('Fullname is empty')
 
@@ -119,7 +119,7 @@ async def addContact(bmAddress):
     dialog = AddContactDialog(bmAddress)
     await runDialogAsync(dialog)
 
-    if dialog.result() == 0:
+    if dialog.result() == 1:
         options = dialog.options()
 
         await database.bmContactAdd(
@@ -710,20 +710,21 @@ class MessengerWidget(QWidget):
         dlg = CreateMailBoxDialog()
         await runDialogAsync(dlg)
 
-        opts = dlg.options()
+        if dlg.result():
+            opts = dlg.options()
 
-        if not opts['label']:
-            await messageBoxAsync('Please set a label')
-            return
+            if not opts['label']:
+                await messageBoxAsync('Please set a label')
+                return
 
-        await self.createMailBox(
-            label=opts['label'],
-            select=True,
-            iconCid=opts['iconCid'],
-            default=opts['default']
-        )
+            await self.createMailBox(
+                label=opts['label'],
+                select=True,
+                iconCid=opts['iconCid'],
+                default=opts['default']
+            )
 
-        await self.updateMailBoxList()
+            await self.updateMailBoxList()
 
     async def selectMailBox(self, bmAddress: str):
         # self.ui.curMailboxCombo.setCurrentText(bmAddress)

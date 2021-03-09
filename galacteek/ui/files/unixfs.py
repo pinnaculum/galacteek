@@ -56,6 +56,10 @@ from ..widgets import GalacteekTab
 from ..widgets import IPFSUrlLabel
 from ..widgets import IPFSPathClipboardButton
 from ..widgets import HashmarkThisButton
+from ..widgets import GMediumToolButton
+
+from ..widgets.pinwidgets import PinObjectButton
+from ..widgets.pinwidgets import PinObjectAction
 
 import aioipfs
 
@@ -340,6 +344,8 @@ class IPFSHashExplorerWidget(QWidget):
         self.loadingCube.clip.setScaledSize(QSize(24, 24))
         self.loadingCube.hide()
 
+        self.pinButton = PinObjectButton()
+
         self.model = UnixFSDirectoryModel(self)
 
         self.gitEnabled = showGit
@@ -454,6 +460,9 @@ class IPFSHashExplorerWidget(QWidget):
             self.rootHash = cid
             self.rootPath = IPFSPath(self.rootHash, autoCidConv=True)
             self.cid = cidhelpers.getCID(self.rootHash)
+
+            self.pinButton.changeObject(self.rootPath)
+
             self.initModel()
 
     def goToParent(self):
@@ -474,7 +483,7 @@ class IPFSHashExplorerWidget(QWidget):
         self.getProgress.setMaximum(100)
         self.getProgress.hide()
 
-        self.searchButton = QToolButton()
+        self.searchButton = GMediumToolButton()
         self.searchButton.setIcon(getIcon('search-engine.png'))
         self.searchButton.setCheckable(True)
         self.searchButton.setShortcut(QKeySequence('Ctrl+s'))
@@ -488,11 +497,9 @@ class IPFSHashExplorerWidget(QWidget):
         self.markButton = QPushButton(getIcon('hashmarks.png'), iHashmark())
         self.markButton.clicked.connect(self.onHashmark)
 
-        self.pinButton = QPushButton(iPinDirectory())
-        self.pinButton.clicked.connect(self.onPin)
-
-        self.hLayoutCtrl.addWidget(self.getButton)
         self.hLayoutCtrl.addWidget(self.pinButton)
+        self.hLayoutCtrl.addWidget(self.getButton)
+
         self.hLayoutCtrl.addWidget(self.markButton)
         self.hLayoutCtrl.addWidget(self.searchButton)
         self.hLayoutCtrl.addWidget(self.searchRegLine)
@@ -686,14 +693,15 @@ class IPFSHashExplorerWidget(QWidget):
         item = self.model.getUnixFSEntryInfoFromIdx(rows.pop())
         menu = QMenu(self)
 
-        def pinRecursive():
-            self.app.task(
-                self.app.ipfsCtx.pinner.queue, item.getFullPath(), True, None)
+        pinAction = PinObjectAction(item.ipfsPath, parent=menu)
 
         def download():
             dirSel = directorySelect()
             self.app.task(self.getResource, item.getFullPath(),
                           dirSel)
+
+        menu.addAction(pinAction)
+        menu.addSeparator()
 
         menu.addAction(getIcon('clipboard.png'),
                        iCopyCIDToClipboard(),
@@ -724,8 +732,6 @@ class IPFSHashExplorerWidget(QWidget):
         )
         menu.addSeparator()
 
-        menu.addAction(getIcon('pin.png'), iPinRecursive(),
-                       pinRecursive)
         menu.addAction(iDownload(), download)
 
         menu.exec(self.dirListView.mapToGlobal(point))

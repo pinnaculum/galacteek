@@ -63,6 +63,7 @@ keySnakeDagExchange = makeKey('g', 'dagexchange', 'snake')
 keyTokensIdent = makeKey('g', 'tokens', 'ident')
 
 keyServices = makeKey('g', 'services')
+keyServicesAll = makeKey('g', 'services', '*')
 keySmartContracts = makeKey('g', 'smartcontracts', '*')
 
 # The answer to everything
@@ -77,7 +78,7 @@ def hubPublish(key, message):
     gHub.publish(key, message)
 
 
-class KeyListener:
+class KeyListener(object):
     # Default PS keys we'll listen to
     psListenKeysDefault = [
         makeKeyService('app'),
@@ -88,17 +89,29 @@ class KeyListener:
     psListenKeys = []
 
     def __init__(self):
+        # self.subscriberR = psSubscriber(uid4())
+
         self.psListenL(self.psListenKeysDefault)
         self.psListenL(self.psListenKeys)
 
     def psListen(self, key, receiver=None):
         rcv = receiver if receiver else self
         try:
-            varName = '_'.join([c for c in key if c != '*'])
+            def tr(comp):
+                if comp == '*':
+                    return 'all'
+
+                return comp
+
+            varName = '_'.join([tr(c) for c in key])
+
             coro = getattr(rcv, f'event_{varName}')
             log.debug(f'KeyListener for key {key}: binding to {coro}')
 
+            # We use the global subscriber by default
             mSubscriber.add_async_listener(key, coro)
+        except AttributeError:
+            pass
         except Exception as err:
             log.debug(f'KeyListener: could not connect key {key}: {err}')
 

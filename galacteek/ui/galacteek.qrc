@@ -156,6 +156,7 @@
     <file>../../share/icons/orbitdb.png</file>
     <file>../../share/icons/folder-open-black.png</file>
     <file>../../share/icons/folder-open-orange.png</file>
+    <file>../../share/icons/folder-open-yelight.png</file>
     <file>../../share/icons/ipld-logo.png</file>
     <file>../../share/icons/window.png</file>
     <file>../../share/icons/ipld.png</file>
@@ -179,6 +180,9 @@
     <file>../../share/icons/folder-documents.png</file>
     <file>../../share/icons/file-manager.png</file>
     <file>../../share/icons/mediaplayer.png</file>
+    <file>../../share/icons/mplayer/play.png</file>
+    <file>../../share/icons/mplayer/pause.png</file>
+    <file>../../share/icons/mplayer/stop.png</file>
     <file>../../share/icons/playlist.png</file>
     <file>../../share/icons/clear-all.png</file>
     <file>../../share/icons/go-next.png</file>
@@ -233,7 +237,7 @@
   </qresource>
 
   <qresource>
-    <file>../../galacteek/ui/themes/fonts.qss</file>
+    <file>../../galacteek/ui/themes/common.qss</file>
     <file>../../galacteek/ui/themes/moon3/galacteek.qss</file>
     <file>../../galacteek/ui/themes/chloride/galacteek.qss</file>
   </qresource>

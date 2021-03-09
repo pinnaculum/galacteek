@@ -645,7 +645,7 @@ class FileManager(QWidget):
         self.mfsTree.setSortingEnabled(True)
         self.mfsTree.setIconSize(self.mfsIconSize)
 
-        self.iconFolder = getIcon('folder-open.png')
+        self.iconFolder = getIcon('folder-open-yelight.png')
         self.iconFile = getIcon('file.png')
 
         # Configure drag-and-drop

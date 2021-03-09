@@ -10,13 +10,13 @@ from galacteek.config.cmods import pinning as cfgpinning
 from galacteek.ipfs import ipfsOp
 from galacteek import ensure
 from galacteek import partialEnsure
-from galacteek import database
 from galacteek.core import runningApp
 from galacteek.core.ps import KeyListener
 from galacteek.config import Configurable
 from galacteek.ui.dialogs.pinning import PinningServiceAddDialog
 from galacteek.ui.helpers import runDialogAsync
 from galacteek.ui.helpers import messageBoxAsync
+from galacteek.ui.widgets import LabelWithURLOpener
 from galacteek.ui.widgets import IconSelector
 
 
@@ -29,6 +29,15 @@ class SettingsController(QObject, Configurable, KeyListener):
         self.app = runningApp()
         self.currentServiceItem = None
         self.sWidget = sWidget
+
+        self.sWidget.ui.vLayout.insertWidget(
+            0,
+            LabelWithURLOpener(
+                '<a href="manual:/pinning.html#remote">'
+                'Remote pinning manual'
+                '</a>'
+            )
+        )
 
         self.sWidget.ui.removeService.setEnabled(False)
         self.sWidget.ui.rServiceConfigGroup.setEnabled(False)
@@ -74,18 +83,6 @@ class SettingsController(QObject, Configurable, KeyListener):
     async def settingsInit(self):
         self.cApply()
 
-    async def refreshServicesOld(self):
-        services = await database.remotePinningServicesList()
-        for service in services:
-            found = self.sListView.findItems(
-                service.name,
-                Qt.MatchExactly
-            )
-            if len(found):
-                continue
-
-            self.sListView.addItem(QListWidgetItem(service.name))
-
     async def refreshServices(self, services):
         for service in services:
             found = self.sListView.findItems(
@@ -110,7 +107,12 @@ class SettingsController(QObject, Configurable, KeyListener):
             await ipfsop.pinRemoteServiceRemove(
                 service.serviceName)
 
+            # Remove from the config
+            cfgpinning.rpsConfigRemove(sDisplayName)
+
         self.sListRemoveSelected()
+
+        self.sListUpdate()
 
     def onCurrentServiceChanged(self, current, previous):
         if not current:
@@ -146,6 +148,12 @@ class SettingsController(QObject, Configurable, KeyListener):
 
         cfgpinning.configSave()
 
+    def sListUpdate(self):
+        if self.sListView.count() == 0:
+            self.ui.removeService.setEnabled(False)
+            self.sWidget.ui.rServiceConfigGroup.setEnabled(False)
+            self.sWidget.ui.rServiceConfigGroup.setTitle('Off')
+
     def sListRemoveSelected(self):
         # Remove the currently selected item in the services view
 
@@ -164,10 +172,11 @@ class SettingsController(QObject, Configurable, KeyListener):
         if dialog.result() != 1:
             return
 
-        options = dialog.options()
-
-        if not options:
-            return await messageBoxAsync('Invalid')
+        try:
+            options = dialog.options()
+        except Exception as err:
+            return await messageBoxAsync(
+                f'Invalid options: {err}')
 
         try:
             assert options['name'] is not None

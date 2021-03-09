@@ -121,6 +121,7 @@ for more information).
   (Verifiable Credentials with RSA-PSS)
 - Browsing sessions with automatic pinning (pins every page you browse)
 - Distributed chat with pubsub (chat channels syncronized with CRDT+DAG)
+- Support for remote pinning services
 - File manager with drag-and-drop support and timeframes (per-day view
   of files in the MFS)
 - File sharing
@@ -232,6 +233,7 @@ This software incudes icons made by the following FlatIcon authors:
 - `Kiranshastry <https://www.flaticon.com/authors/Kiranshastry>`_
 - `Smashicons <https://smashicons.com>`_
 - `Pause08 <https://www.flaticon.com/authors/pause08>`_
+- `DinosoftLabs <https://www.flaticon.com/authors/DinosoftLabs>`_
 
 Some of the beautiful artwork (under the Creative Commons CC-BY-SA license)
 from the ipfs-logo_ project's repository is included, unchanged.

@@ -223,3 +223,11 @@ def iClearHistory():
 
 def iAtomFeeds():
     return QCoreApplication.translate('GalacteekWindow', 'Atom feeds')
+
+
+def iUnavailShortUpper():
+    return QCoreApplication.translate('GalacteekWindow', 'UNAVAIL')
+
+
+def iOK():
+    return QCoreApplication.translate('GalacteekWindow', 'OK')
