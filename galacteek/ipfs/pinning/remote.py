@@ -20,7 +20,7 @@ class RemotePinServicesManager(KeyListener):
         if event['type'] in reactTo:
             # IPFS connection change. Scan remote pin services
 
-            log.debug('Performing RPS ascan')
+            log.debug('Performing RPS scan')
             await self.remoteServicesScan()
 
     @ipfsOp
@@ -29,6 +29,30 @@ class RemotePinServicesManager(KeyListener):
             listing = await ipfsop.waitFor(
                 ipfsop.pinRemoteServiceList(stat=True),
                 timeout=30
+            )
+        except Exception as err:
+            log.debug(str(err))
+        else:
+            return listing
+
+    @ipfsOp
+    async def pinsForRps(self, ipfsop, serviceName: str):
+        """
+        Returns the list of objects managed by the remote
+        pinning service with this service name
+        """
+        try:
+            listing = await ipfsop.waitFor(
+                ipfsop.pinRemoteList(
+                    serviceName,
+                    status=[
+                        'pinned',
+                        'queued',
+                        'failed',
+                        'pinning'
+                    ]
+                ),
+                timeout=90
             )
         except Exception as err:
             log.debug(str(err))

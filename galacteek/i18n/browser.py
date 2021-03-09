@@ -168,7 +168,8 @@ def iInvalidCID(text):
 def iNotAnIpfsResource():
     return QCoreApplication.translate(
         'BrowserTabForm',
-        'Not an IPFS resource')
+        'This is not an valid IPFS object'
+    )
 
 
 def iWebProfileMinimal():

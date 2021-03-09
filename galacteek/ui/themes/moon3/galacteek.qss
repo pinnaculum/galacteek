@@ -686,7 +686,7 @@ QComboBox:on
 
 QComboBox QAbstractItemView
 {
-    background-color: #2e546a;
+    background-color: #6d8593;
 
     border-radius: 2px;
     border: 1px solid #76797C;
@@ -1090,6 +1090,7 @@ QToolButton:checked, QToolButton:pressed,
         QToolButton::menu-button:pressed {
     color: black;
     background-color: #D1DBCB;
+
     border: 0px solid #D1DBCB;
     padding: 2px;
 }
@@ -1336,21 +1337,18 @@ QTextBrowser {
 
 
 QToolButton::pressed {
-    background-color: #eec146;
+    background-color: #5f8e8c;
 }
 
 QToolButton::hover {
-    background-color: #eec146;
+    background-color: #cccccc;
 }
 
 QToolButton::checked {
-    background-color: #eec146;
+    background-color: #9ecdbe;
+    border: 3px solid black;
 }
 
-QToolBar#mainToolBar QToolButton {
-    min-width: 32px;
-    min-height: 32px;
-}
 
 /* Progressbar */
 
@@ -1413,7 +1411,7 @@ QTextEdit#logsTextWidget {
 }
 
 QMenu::item:selected {
-    background-color: #4a9ea1;
+    background-color: #66a56e;
 }
 
 QMenu {
@@ -1424,7 +1422,22 @@ QToolButton#qaToolButton::hover {
     background-color: #C3D7DF;
 }
 
+QComboBox#seedActionsCombo {
+    background-color: #f4c078;
+    border-style: solid;
+    border: 2px solid #8d2b18;
+    border-radius: 5px;
+    padding: 10px;
+    min-width: 75px;
+    color: black;
 
+    font: 14pt "Inter UI";
+}
+
+QComboBox#seedActionsCombo QAbstractItemView
+{
+    background-color: #f4c078;
+}
 
 QDialog#profileEditDialog {
     background-color: #DBDBDB;
@@ -1460,7 +1473,7 @@ QToolBar QToolButton::hover {
 }
 
 QToolBar QToolButton::pressed {
-    background-color: #ed8f1c;
+    background-color: #66a56e;
     border: 1px solid black;
     padding: 5px;
 }

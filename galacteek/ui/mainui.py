@@ -70,12 +70,13 @@ from .iprofile import ProfileEditDialog
 from .iprofile import ProfileButton
 from .peers import PeersServiceSearchDock
 from .pubsub import PubsubSnifferWidget
-from .pyramids import MultihashPyramidsToolBar
-from .quickaccess import QuickAccessToolBar
+from .pyramids import MultihashPyramidsToolBarAction
+from .quickaccess import QuickAccessToolBarAction
 from .daemonstats import BandwidthGraphView
 from .daemonstats import PeersCountGraphView
 from .camera import CameraController
 from .helpers import *
+from .pinning.pinstatus import RPSStatusButton
 from .widgets import AtomFeedsToolbarButton
 from .widgets import PopupToolButton
 from .widgets import HashmarkMgrButton
@@ -798,8 +799,9 @@ class MainWindow(QMainWindow):
         # Toolbars
         self.toolbarMain = MainToolBar(self)
         self.toolbarDepot = DwebDepotToolBar(self)
-        self.toolbarPyramids = MultihashPyramidsToolBar(self.toolbarDepot)
-        self.toolbarDepot.addWidget(self.toolbarPyramids)
+
+        self.toolbarPyramidsAction = MultihashPyramidsToolBarAction(self)
+
         self.toolbarWs = WorkspacesToolBar()
 
         self.toolbarMain.orientationChanged.connect(self.onMainToolbarMoved)
@@ -807,8 +809,7 @@ class MainWindow(QMainWindow):
         self.toolbarTools.setOrientation(self.toolbarMain.orientation())
 
         # Apps/shortcuts toolbar
-        self.qaToolbar = QuickAccessToolBar(self)
-        self.qaToolbar.setOrientation(self.toolbarDepot.orientation())
+        self.qaToolbarAction = QuickAccessToolBarAction(self)
 
         # Main actions and browse button setup
         self.quitAction = QAction(getIcon('quit.png'),
@@ -1021,12 +1022,13 @@ class MainWindow(QMainWindow):
 
         self.toolbarMain.addSeparator()
         self.toolbarMain.addWidget(self.cameraController)
-        self.toolbarMain.addSeparator()
 
         self.hashmarkMgrButton.hashmarkClicked.connect(self.onHashmarkClicked)
         self.hashmarksSearcher.hashmarkClicked.connect(self.onHashmarkClicked)
 
-        self.toolbarDepot.addWidget(self.qaToolbar)
+        # Add the QA toolbar in the depot toolbar
+        self.toolbarDepot.addAction(self.qaToolbarAction)
+        self.toolbarDepot.addAction(self.toolbarPyramidsAction)
 
         self.toolbarMain.actionStatuses = self.toolbarMain.addAction(
             trTodo('Statuses'))
@@ -1080,6 +1082,9 @@ class MainWindow(QMainWindow):
         self.pubsubStatusButton = QPushButton(self)
         self.pubsubStatusButton.setIcon(getIcon('network-offline.png'))
 
+        self.rpsStatusButton = RPSStatusButton()
+        self.rpsStatusButton.setIcon(getIcon('pin/pin-diago-red.png'))
+
         self.ipfsStatusCube = AnimatedLabel(
             RotatingCubeRedFlash140d(speed=10),
             parent=self
@@ -1124,6 +1129,7 @@ class MainWindow(QMainWindow):
         self.statusbar.addPermanentWidget(self.ethereumStatusBtn)
 
         self.statusbar.addPermanentWidget(self.pinningStatusButton)
+        self.statusbar.addPermanentWidget(self.rpsStatusButton)
         self.statusbar.addPermanentWidget(self.pubsubStatusButton)
         self.statusbar.addPermanentWidget(self.userLogsButton)
         self.statusbar.addPermanentWidget(SpacingHWidget(width=30))
@@ -1275,19 +1281,13 @@ class MainWindow(QMainWindow):
         self.toolbarMain.lastPos = self.toolbarMain.pos()
 
         self.toolbarTools.setOrientation(orientation)
-        self.qaToolbar.setOrientation(orientation)
+        # self.qaToolbar.setOrientation(orientation)
         self.toolbarWs.setOrientation(orientation)
 
         if self.toolbarMain.vertical:
             self.toolbarMain.emptySpace.setSizePolicy(
                 QSizePolicy.Minimum, QSizePolicy.Expanding)
-            self.qaToolbar.setMinimumHeight(
-                self.toolbarMain.height() / 3)
-            self.qaToolbar.setMinimumWidth(32)
         elif self.toolbarMain.horizontal:
-            self.qaToolbar.setMinimumWidth(
-                self.width() / 3)
-            self.qaToolbar.setMinimumHeight(32)
             self.toolbarMain.emptySpace.setSizePolicy(QSizePolicy.Expanding,
                                                       QSizePolicy.Minimum)
 
@@ -1378,7 +1378,6 @@ class MainWindow(QMainWindow):
         await self.app.sqliteDb.feeds.start()
         await self.hashmarkMgrButton.updateMenu()
         await self.hashmarkMgrButton.updateIcons()
-        await self.qaToolbar.init()
 
         with self.stack.workspaceCtx(WS_PEERS, show=False) as ws:
             await ws.chatJoinDefault()
@@ -1774,5 +1773,5 @@ class MainWindow(QMainWindow):
         self.pSearchDock.searchMode()
 
     def getPyrDropButtonFor(self, ipfsPath, origin=None):
-        return self.toolbarPyramids.getPyrDropButtonFor(
+        return self.toolbarPyramidsAction.toolbar.getPyrDropButtonFor(
             ipfsPath, origin=origin)

@@ -67,13 +67,18 @@ class RemotePinningOps(object):
                             cid: list = [],
                             status: list = ['pinned']):
         try:
-            return await self.client.pin.remote.ls(
+            listing = []
+            async for entry in self.client.pin.remote.ls(
                 serviceName, name=name,
                 cid=cid, status=status
-            )
+            ):
+                listing.append(entry)
+
+            return listing
         except APIError as err:
             self.debug(f'Error listing remote pins: {err.message}')
-            return False
+        except Exception as err:
+            self.debug(f'Error listing remote pins: {err}')
 
     async def pinRemoteRemove(self,
                               serviceName: str,

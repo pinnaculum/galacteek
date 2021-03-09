@@ -52,6 +52,7 @@ SCHEME_FS = 'fs'
 SCHEME_IPFS = 'ipfs'
 SCHEME_IPNS = 'ipns'
 SCHEME_IPID = 'ipid'
+SCHEME_QDAPP = 'qdapp'
 
 # ENS-related schemes (ensr is redirect-on-resolve ENS scheme)
 SCHEME_ENS = 'ens'

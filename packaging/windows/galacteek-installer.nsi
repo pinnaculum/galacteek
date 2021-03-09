@@ -13,8 +13,8 @@ RequestExecutionLevel admin
 !define /date NOW "%Y%m%d"
 
 !define VERSIONMAJOR 0
-!define VERSIONMINOR 4
-!define VERSIONBUILD 42
+!define VERSIONMINOR 5
+!define VERSIONBUILD 0
 
 Name "${APPNAME}"
 Icon "share/icons/galacteek.ico"
@@ -187,9 +187,9 @@ Section G
     ExecWait 'netsh advfirewall firewall add rule name=g_ipfs_out dir=out action=allow program="$GFILESDIR\ipfs.exe" enable=yes profile=public,private'
 
     # fw rules (notbit)
-    ExecWait 'netsh advfirewall firewall add rule name=g_notbit_in dir=in action=allow program="$GFILESDIR\bin\notbit.exe" enable=yes profile=public,private'
-    ExecWait 'netsh advfirewall firewall add rule name=g_notbit_out dir=out action=allow program="$GFILESDIR\bin\notbit.exe" enable=yes profile=public,private'
-    ExecWait 'netsh advfirewall firewall add rule name=g_notbit_send_out dir=out action=allow program="$GFILESDIR\bin\notbit-sendmail.exe" enable=yes profile=public,private'
+    # ExecWait 'netsh advfirewall firewall add rule name=g_notbit_in dir=in action=allow program="$GFILESDIR\bin\notbit.exe" enable=yes profile=public,private'
+    # ExecWait 'netsh advfirewall firewall add rule name=g_notbit_out dir=out action=allow program="$GFILESDIR\bin\notbit.exe" enable=yes profile=public,private'
+    # ExecWait 'netsh advfirewall firewall add rule name=g_notbit_send_out dir=out action=allow program="$GFILESDIR\bin\notbit-sendmail.exe" enable=yes profile=public,private'
 
     # Registry
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayName" "${APPNAME}"

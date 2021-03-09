@@ -8,7 +8,6 @@ from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QHBoxLayout
 from PyQt5.QtWidgets import QListView
 from PyQt5.QtWidgets import QToolButton
-from PyQt5.QtWidgets import QStyle
 from PyQt5.QtWidgets import QSlider
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtWidgets import QSizePolicy
@@ -23,6 +22,7 @@ from PyQt5.QtMultimediaWidgets import QVideoWidget
 
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import Qt
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import QAbstractItemModel
 from PyQt5.QtCore import QModelIndex
 from PyQt5.QtCore import QTime
@@ -32,6 +32,7 @@ from PyQt5.QtCore import QItemSelectionModel
 from galacteek import partialEnsure
 
 from galacteek.core.jsono import *
+from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import qurlPercentDecode
 from galacteek.ipfs.ipfsops import *
@@ -41,6 +42,7 @@ from .forms import ui_mediaplaylist
 
 from .clipboard import iClipboardEmpty
 from .widgets import *
+from .widgets.pinwidgets import *
 from .helpers import *
 
 
@@ -182,6 +184,8 @@ class JSONPlaylistV1(QJSONObj):
 
 
 class MPlayerVideoWidget(QVideoWidget):
+    pauseRequested = pyqtSignal()
+
     def __init__(self, player, parent=None):
         super(MPlayerVideoWidget, self).__init__(parent)
         self.player = player
@@ -192,7 +196,8 @@ class MPlayerVideoWidget(QVideoWidget):
 
         if event.key() == Qt.Key_Escape:
             self.viewFullScreen(False)
-
+        if event.key() in [Qt.Key_Space, Qt.Key_P]:
+            self.pauseRequested.emit()
         if event.key() == Qt.Key_Right:
             self.player.setPosition(pos + mSecMove)
         if event.key() == Qt.Key_Left:
@@ -322,6 +327,10 @@ class MediaPlayerTab(GalacteekTab):
         self.videoWidget.setSizePolicy(
             QSizePolicy.Expanding, QSizePolicy.Expanding)
 
+        self.videoWidget.pauseRequested.connect(
+            self.onPauseClicked
+        )
+
         self.player.setVideoOutput(self.videoWidget)
 
         self.player.error.connect(self.onError)
@@ -347,26 +356,24 @@ class MediaPlayerTab(GalacteekTab):
         self.clipboardMediaItem = None
         self.clipboardButton.setEnabled(False)
 
-        self.pinButton = GMediumToolButton(
-            parent=self, clicked=self.onPinMediaClicked)
-        self.pinButton.setIcon(getIcon('pin.png'))
+        self.pinButton = PinObjectButton()
+        self.pinButton.setEnabled(False)
 
         # self.processClipboardItem(self.app.clipTracker.current, force=True)
         self.app.clipTracker.currentItemChanged.connect(self.onClipItemChange)
 
         self.playButton = GMediumToolButton(
             parent=self, clicked=self.onPlayClicked)
-        self.playButton.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+        self.playButton.setIcon(getIcon('mplayer/play.png'))
 
         self.pauseButton = GMediumToolButton(
             parent=self, clicked=self.onPauseClicked)
-        self.pauseButton.setIcon(self.style().standardIcon(
-            QStyle.SP_MediaPause))
+        self.pauseButton.setIcon(getIcon('mplayer/pause.png'))
         self.pauseButton.setEnabled(False)
 
         self.stopButton = GMediumToolButton(
             parent=self, clicked=self.onStopClicked)
-        self.stopButton.setIcon(self.style().standardIcon(QStyle.SP_MediaStop))
+        self.stopButton.setIcon(getIcon('mplayer/stop.png'))
         self.stopButton.setEnabled(False)
 
         self.fullscreenButton = GMediumToolButton(
@@ -694,7 +701,17 @@ class MediaPlayerTab(GalacteekTab):
         self.pListWidget.setVisible(show)
 
     def onError(self, error):
-        messageBox(iPlayerError(error))
+        if error == QMediaPlayer.ResourceError:
+            msg = iMediaPlayerResourceError()
+        elif error == QMediaPlayer.FormatError:
+            msg = iMediaPlayerUnsupportedFormatError()
+        elif error == QMediaPlayer.NetworkError:
+            msg = iMediaPlayerNetworkError()
+        else:
+            msg = None
+
+        if msg:
+            messageBox(msg)
 
     def onStateChanged(self, state):
         self.playerState = state
@@ -707,6 +724,11 @@ class MediaPlayerTab(GalacteekTab):
             self.playButton.setEnabled(True)
             self.seekSlider.setEnabled(False)
             self.duration = None
+        elif self.isPaused:
+            self.stopButton.setEnabled(True)
+            self.pauseButton.setEnabled(False)
+            self.playButton.setEnabled(True)
+            self.seekSlider.setEnabled(False)
         elif self.isPlaying:
             self.seekSlider.setRange(0, self.player.duration() / 1000)
             self.seekSlider.setEnabled(True)
@@ -773,12 +795,24 @@ class MediaPlayerTab(GalacteekTab):
         self.pListView.selectionModel().reset()
 
     def playlistMediaChanged(self, media):
+        media = self.playlist.currentMedia()
+        if media.isNull():
+            return
+
+        url = media.canonicalUrl()
+        iPath = IPFSPath(url.toString())
+
+        self.pinButton.setEnabled(iPath.valid)
+        if iPath.valid:
+            self.pinButton.changeObject(iPath)
+
         selModel = self.pListView.selectionModel()
 
         self.deselectPlaylistItems()
 
         self.model.modelReset.emit()
         idx = self.model.index(self.playlist.currentIndex(), 0)
+
         if idx.isValid():
             selModel.select(idx, QItemSelectionModel.Select)
 
