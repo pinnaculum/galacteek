@@ -224,11 +224,11 @@ class DAGViewer(GalacteekTab):
                                              parent=self)
                     button.setIconSize(QSize(64, 64))
                     actionView = QAction(getIcon('ipld.png'),
-                                         "View link's node", self,
+                                         iFollowIpldLink(), self,
                                          triggered=functools.partial(
                                          self.onFollowDAGLink,
                                          linkValue
-                    ))
+                                         ))
                     actionOpen = QAction(getIcon('open.png'),
                                          "Open object", self,
                                          triggered=lambda: ensure(

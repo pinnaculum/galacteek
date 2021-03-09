@@ -75,6 +75,11 @@ class LogRecordStyler:
         'galacteek.services.tor.process': {
             'basecolor': 'darkred'
         },
+        'galacteek.services': {
+            'basecolor': 'blue',
+            'blue': -0.4,
+            'green': 0.3
+        },
 
         # crypto modules
         'galacteek.crypto': {

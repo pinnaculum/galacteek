@@ -34,7 +34,6 @@ from galacteek.core.ps import keyPsJson
 from galacteek.core.ps import keyPsEncJson
 from galacteek.core.ps import psSubscriber
 from galacteek.core.ps import gHub
-from galacteek.core.ps import makeKeyService
 
 from galacteek.database.psmanager import psManagerForTopic
 
@@ -133,8 +132,6 @@ class PubsubService(Configurable, GService):
         self.addMessageFilter(self.filterMessageSize)
         self.addMessageFilter(self.filterPeerActivity)
 
-        self.psListen(makeKeyService('app'))
-
         configModRegCallback(self.onConfigChanged,
                              mod='galacteek.ipfs.pubsub')
 
@@ -218,12 +215,9 @@ class PubsubService(Configurable, GService):
         if event['type'] == 'IpfsOperatorChange':
             await self.stopListening()
 
-            await asyncio.sleep(0.3)
+            await asyncio.sleep(0.9)
 
             await self.startListening()
-
-    async def event_g_services(self, key, message):
-        pass
 
     @ipfsOp
     async def startListening(self, ipfsop):
@@ -258,7 +252,7 @@ class PubsubService(Configurable, GService):
                 continue
 
             try:
-                await tsk.close()
+                await tsk.close(timeout=1.0)
             except asyncio.TimeoutError as tErr:
                 self.debug(
                     'timeout while closing {task}: shutdown ERR: {err}'.format(

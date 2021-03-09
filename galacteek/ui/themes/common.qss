@@ -32,3 +32,31 @@ QTreeView::item:selected, QListView::item:selected, QTreeWidget::item:selected, 
 {
     font-size: 16pt;
 }
+
+/* Common toolbar config */
+
+QToolBar#mainToolBar QToolButton {
+    min-width: 32px;
+    min-height: 32px;
+}
+
+QToolBar#qaToolBar {
+    border: 2px solid #446474;
+    background-color: #4b1e1e;
+}
+
+QToolBar#pyramidsToolBar {
+    border: 2px solid #446474;
+    background-color: #4f4f4f;
+}
+
+QToolBar#qaToolBar QToolButton {
+    margin: 0;
+    padding: 2px;
+}
+
+QToolBar#qaToolBar QToolButton::hover {
+    padding: 10px;
+    min-width: 64px;
+    min-height: 64px;
+}

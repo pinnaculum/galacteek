@@ -31,12 +31,11 @@ from .helpers import getIcon
 from .widgets import GalacteekTab
 
 
-subscriber = psSubscriber('pubsub_sniffer')
-
-
 class PubsubSnifferWidget(GalacteekTab):
     def __init__(self, gWindow):
         super(PubsubSnifferWidget, self).__init__(gWindow)
+
+        self.subscriber = psSubscriber('pubsub_sniffer')
 
         self.tableWidget = QTableWidget(self)
         self.tableWidget.setHorizontalHeaderLabels(
@@ -49,8 +48,8 @@ class PubsubSnifferWidget(GalacteekTab):
         horizHeader.setSectionResizeMode(QHeaderView.ResizeToContents)
         self.vLayout.addWidget(self.tableWidget)
 
-        subscriber.add_async_listener(keyPsJson, self.onJsonMessage)
-        subscriber.add_async_listener(keyPsEncJson, self.onJsonMessage)
+        self.subscriber.add_async_listener(keyPsJson, self.onJsonMessage)
+        self.subscriber.add_async_listener(keyPsEncJson, self.onJsonMessage)
 
     async def onJsonMessage(self, key, message):
         try:
@@ -63,8 +62,9 @@ class PubsubSnifferWidget(GalacteekTab):
 
         dItem = QTableWidgetItem(datetimeIsoH())
 
-        if len(topic) > 32:
-            tItem = QTableWidgetItem(topic[0:32] + '...')
+        maxLen = 24
+        if len(topic) > maxLen:
+            tItem = QTableWidgetItem(topic[0:maxLen] + '...')
             tItem.setToolTip(topic)
         else:
             tItem = QTableWidgetItem(topic)

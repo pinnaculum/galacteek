@@ -1,6 +1,9 @@
 import validators
 
 from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QRegExp
+
+from PyQt5.QtGui import QRegExpValidator
 
 from galacteek.ui.dialogs import BaseDialog
 
@@ -23,6 +26,10 @@ class PinningServiceAddDialog(BaseDialog):
         self.infoLabel = LabelWithURLOpener('')
         self.ui.hLayoutInfo.addWidget(self.infoLabel, 0, Qt.AlignCenter)
 
+        self.ui.name.setValidator(
+            QRegExpValidator(QRegExp(r"[\w\-\_]{1,32}"))
+        )
+
         self.ui.provider.currentTextChanged.connect(
             self.onProviderChanged)
         self.providerReact(self.ui.provider.currentText())
@@ -41,24 +48,31 @@ class PinningServiceAddDialog(BaseDialog):
             self.ui.endpointCustom.setChecked(True)
             self.ui.endpoint.setText('')
 
-    def options(self):
-        try:
-            name = self.ui.name.text()
-            endpoint = self.ui.endpoint.text()
-            key = self.ui.secret.toPlainText().strip()
+    def getKey(self, inputKey: str):
+        st = inputKey.strip().split('\n')
 
-            if not validators.url(endpoint):
-                raise ValueError('Invalid endpoint URL')
-
-            if not key:
-                raise ValueError('Invalid key')
-
-            return {
-                'name': name,
-                'provider': self.ui.provider.currentText(),
-                'endpoint': endpoint,
-                'secret': key
-            }
-
-        except Exception:
+        if not st:
             return None
+
+        for item in st:
+            if item != '':
+                return item
+
+    def options(self):
+        name = self.ui.name.text()
+        endpoint = self.ui.endpoint.text()
+
+        key = self.getKey(self.ui.secret.toPlainText())
+
+        if not validators.url(endpoint):
+            raise ValueError('Invalid endpoint URL')
+
+        if not key:
+            raise ValueError('Invalid key')
+
+        return {
+            'name': name,
+            'provider': self.ui.provider.currentText(),
+            'endpoint': endpoint,
+            'secret': key
+        }

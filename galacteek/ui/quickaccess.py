@@ -1,7 +1,11 @@
 import asyncio
 
 from PyQt5.QtWidgets import QToolBar
+from PyQt5.QtWidgets import QWidgetAction
+
 from PyQt5.QtCore import QCoreApplication
+from PyQt5.QtCore import QSize
+from PyQt5.QtCore import Qt
 from PyQt5.Qt import QSizePolicy
 
 from galacteek import ensure
@@ -11,6 +15,7 @@ from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs import kilobytes
 from galacteek.ipfs.cidhelpers import IPFSPath
+from galacteek.core.ps import KeyListener
 
 from .helpers import getIcon
 from .helpers import getMimeIcon
@@ -35,22 +40,28 @@ def iQuickAccess():
         ''')
 
 
-class QuickAccessToolBar(QToolBar, URLDragAndDropProcessor):
+class QuickAccessToolBar(QToolBar, URLDragAndDropProcessor,
+                         KeyListener):
     """
     Quick Access toolbar, child of the main toolbar
     """
 
     def __init__(self, parent):
-        super(QuickAccessToolBar, self).__init__(parent=parent)
+        QToolBar.__init__(self, parent)
+        URLDragAndDropProcessor.__init__(self)
+        KeyListener.__init__(self)
 
         self.setEnabled(False)
 
         self.app = QCoreApplication.instance()
         self.lock = asyncio.Lock(loop=self.app.loop)
-        self.setObjectName('toolbarQa')
+        self.setObjectName('qaToolBar')
         self.setToolTip(iQuickAccess())
-        self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
         self.setAcceptDrops(True)
+        self.setIconSize(QSize(32, 32))
         self.analyzer = self.app.rscAnalyzer
 
         database.QATagItemConfigured.connectTo(self.qaTagItemConfigured)
@@ -222,12 +233,29 @@ class QuickAccessToolBar(QToolBar, URLDragAndDropProcessor):
             await hashmark._fetch_all()
             ensure(self.registerHashmark(hashmark, button=button))
 
+    async def event_g_services_app(self, key, message):
+        event = message['event']
+
+        if event['type'] == 'IpfsRepositoryReady':
+            await self.init()
+
     async def init(self):
         """
         Add some apps and links to the quickaccess bar
         """
 
+        self.clear()
+
         await self.registerDefaults()
         await self.load()
 
         self.setEnabled(True)
+
+
+class QuickAccessToolBarAction(QWidgetAction):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.toolbar = QuickAccessToolBar(parent)
+        self.toolbar.setOrientation(Qt.Vertical)
+        self.setDefaultWidget(self.toolbar)

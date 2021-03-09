@@ -165,7 +165,7 @@ async def fetchFsMigrateWrapper(app, timeout=60 * 10):
     try:
         await asyncio.wait_for(fetchIpfsSoft(
             app, 'fs-repo-migrations', 'fs-repo-migrations',
-            '1.5.1'), timeout)
+            '1.7.1'), timeout)
     except asyncio.TimeoutError:
         app.mainWindow.statusMessage(iGoIpfsFetchTimeout())
         return None
@@ -651,6 +651,12 @@ class GalacteekApplication(QApplication):
         async with asyncSigWait(self.s.sServiceStarted):
             await self.s.start()
 
+        log.debug('Application service is started now')
+
+        await self.s.ldPublish({
+            'type': 'ApplicationServiceReady'
+        })
+
     async def importCommonResources(self):
         self.ipfsCtx.resources['ipfs-logo-ice'] = await self.importQtResource(
             '/share/icons/ipfs-logo-128-ice.png')
@@ -680,7 +686,7 @@ class GalacteekApplication(QApplication):
         self.ipfsCtx._ipfsRepositoryReady.emit()
 
         await self.s.psPublish({
-            'type': 'RepositoryReady'
+            'type': 'IpfsRepositoryReady'
         })
 
         #
@@ -835,6 +841,8 @@ class GalacteekApplication(QApplication):
                                  nsCache=self.nsCache)
 
     async def updateIpfsClient(self, client=None):
+        changed = False
+
         if not client:
             connParams = self.getIpfsConnectionParams()
             log.debug(f'updateIpfsClient: host {connParams.host}, '
@@ -842,18 +850,24 @@ class GalacteekApplication(QApplication):
             client = aioipfs.AsyncIPFS(host=connParams.host,
                                        port=connParams.apiPort, loop=self.loop)
 
+        if self.ipfsClient is not client:
+            changed = True
+
         self.ipfsClient = client
         self.ipfsCtx.ipfsClient = client
+
         self.ipfsOpMain = self.getIpfsOperator()
         self.ipfsOpMain.ipidManager = self.ipidManager
 
         IPFSOpRegistry.regDefault(self.ipfsOpMain)
 
-        # Publish an event for services that need a notification
-        # when the IPFS operator is changed
-        await self.s.psPublish({
-            'type': 'IpfsOperatorChange'
-        })
+        if changed:
+            # Publish an event for services that need a notification
+            # when the IPFS operator is changed
+
+            await self.s.psPublish({
+                'type': 'IpfsOperatorChange'
+            })
 
     async def stopIpfsServices(self):
         try:
@@ -1392,7 +1406,7 @@ class GalacteekApplication(QApplication):
                 pDialog.log('Ready to roll')
                 pDialog.showProgress(False)
 
-            await ipfsop.sleep(0.5)
+            await ipfsop.sleep(0.2)
 
             ws.clear('profile')
 
@@ -1576,10 +1590,7 @@ class GalacteekApplication(QApplication):
 
     def onExit(self):
         if self.ipfsd and not self.settingsMgr.changed and self.ipfsd.detached:
-            keepRun = questionBox(
-                'ipfsd',
-                iIpfsDaemonKeepRunningAsk()
-            )
+            keepRun = True
         else:
             keepRun = False
 

@@ -13,12 +13,16 @@ from PyQt5.QtWidgets import QLineEdit
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QUrl
+from PyQt5.QtCore import QItemSelectionModel
 
 from galacteek.config import cGet
 from galacteek.config import cSet
 from galacteek.config import Configurable
 from galacteek.core import runningApp
 from galacteek.core.ps import KeyListener
+
+from galacteek.qml import quickWidgetFromFile
+from galacteek.core import pkgResourcesRscFilename
 
 from galacteek import ensure
 from galacteek.appsettings import *
@@ -353,10 +357,11 @@ class SettingsCenterTab(GalacteekTab):
 
         self.ui.sModules.itemClicked.connect(self.onModuleClicked)
 
-        self.load(iPinningSettings(), 'pinning')
-        self.load('UI', 'ui')
         self.load('General', 'general')
+        self.load('IPFS', 'ipfs')
+        self.load('UI', 'ui')
         self.load('Files', 'files')
+        self.load(iPinningSettings(), 'pinning')
 
         self.addToLayout(widget)
 
@@ -369,9 +374,6 @@ class SettingsCenterTab(GalacteekTab):
             self.ui.stack.setCurrentWidget(widget)
 
     def load(self, displayName: str, modname: str):
-        from galacteek.qml import quickWidgetFromFile
-        from galacteek.core import pkgResourcesRscFilename
-
         qmlPath = Path(pkgResourcesRscFilename(
             'galacteek.ui.settings',
             f'{modname}.qml'
@@ -380,9 +382,7 @@ class SettingsCenterTab(GalacteekTab):
             ctrlMod = importlib.import_module(
                 f'galacteek.ui.settings.{modname}')
             if qmlPath.is_file():
-                path = str(qmlPath)
-                view = quickWidgetFromFile(path)
-                widget = view
+                widget = quickWidgetFromFile(str(qmlPath))
             else:
                 mod = importlib.import_module(
                     f'galacteek.ui.forms.ui_settings_{modname}')
@@ -393,12 +393,13 @@ class SettingsCenterTab(GalacteekTab):
                 form.setupUi(widget)
 
             controller = ctrlMod.SettingsController(widget)
+
+            # settingsInit() ought to be a regular function really..
             ensure(controller.settingsInit())
-        except Exception as err:
-            print(str(err))
+        except Exception:
+            return
         else:
             self.ui.stack.addWidget(widget)
-            self.ui.stack.setCurrentWidget(widget)
 
             item = QListWidgetItem(displayName)
             item.setData(SettingsModWidgetRole, widget)
@@ -408,6 +409,13 @@ class SettingsCenterTab(GalacteekTab):
 
             self.ui.sModules.addItem(item)
             self.modules[modname] = item
+
+            if not self.ui.sModules.currentItem():
+                self.ui.sModules.setCurrentItem(
+                    item,
+                    QItemSelectionModel.SelectCurrent
+                )
+                self.ui.stack.setCurrentWidget(widget)
 
 
 class SettingsBaseController(QObject, Configurable, KeyListener):

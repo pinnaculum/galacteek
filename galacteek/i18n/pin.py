@@ -35,6 +35,10 @@ def iPinning():
     return QCoreApplication.translate('GalacteekWindow', 'Pinning')
 
 
+def iPinningOptions():
+    return QCoreApplication.translate('GalacteekWindow', 'Pinning options')
+
+
 def iPinningProgress(nodes, secsSinceUpdate):
     return QCoreApplication.translate(
         'GalacteekWindow',
@@ -65,6 +69,10 @@ def iUnpin():
     return QCoreApplication.translate('GalacteekWindow', 'Unpin')
 
 
+def iUnpinOk():
+    return QCoreApplication.translate('GalacteekWindow', 'Unpin OK')
+
+
 def iPinSingle():
     return QCoreApplication.translate('GalacteekWindow', 'Pin (single)')
 
@@ -93,6 +101,13 @@ def iDoNotPin():
 def iGlobalAutoPinning():
     return QCoreApplication.translate('GalacteekWindow',
                                       'Global automatic pinning')
+
+
+def iPinningFury():
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Pinning Fury (go wild)'
+    )
 
 
 def iPinataInstructions():
@@ -133,6 +148,22 @@ def iPinToRpsToolTip(serviceName):
     ).format(serviceName)
 
 
+def iPinToRpsSuccess(serviceName, path):
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        '<b>{}</b>: Your content was successfully queued for '
+        'pinning on the remote pinning service'
+    ).format(serviceName)
+
+
+def iPinToRpsError(serviceName, path):
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        '<b>{}</b>: An error ocurred with the remote '
+        'pinning service'
+    ).format(serviceName)
+
+
 def iPinToAllRps():
     return QCoreApplication.translate(
         'GalacteekWindow',
@@ -145,4 +176,50 @@ def iPinToAllRpsToolTip():
         'GalacteekWindow',
         'Pin this content to all remote pinning '
         'services configured'
+    )
+
+
+def iRpsStatusSummary(service, status, pinned, pinning, queued, failed):
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        f'''
+        <div>
+        <p>Remote pinning service<b>{service}</b></p>
+        <p>{status}</p>
+        <ul>
+            <li><b>PIND: {pinned} objects</b></li>
+            <li><b>PINNING: {pinning} objects</b></li>
+            <li><b>INQUEUE: {queued} objects</b></li>
+            <li><b>FAIL: {failed} objects</b></li>
+        </ul>
+        </div>
+        '''
+    ).format(service, status, pinned, pinning, queued, failed)
+
+
+def iRpsStatusOk():
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Remote Pinning Service active'
+    )
+
+
+def iRpsStatusPinning():
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Remote Pinning Service: Pinning in progress'
+    )
+
+
+def iRpsStatusPinnedObjCount(count):
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Remote Pinning Service: Have pinned: {}'
+    ).format(count)
+
+
+def iRpsStatusSomeFail():
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Remote Pinning Service: Some failures'
     )

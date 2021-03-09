@@ -77,6 +77,13 @@ def iProvidedByPeers(count):
     ).format(count)
 
 
+def iProvidedByPeersShort(count):
+    return QCoreApplication.translate(
+        'Galacteek',
+        'PINNED: {}P'
+    ).format(count)
+
+
 def iProvidedByAtLeastPeers(count):
     return QCoreApplication.translate(
         'Galacteek',
@@ -138,3 +145,10 @@ def iResourceCannotOpen(path):
         'ResourceOpener',
         '{}: unable to determine resource type'
     ).format(path)
+
+
+def iFollowIpldLink():
+    return QCoreApplication.translate(
+        'ResourceOpener',
+        'Follow IPLD link'
+    )

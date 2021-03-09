@@ -212,3 +212,23 @@ def debugTrace():
 
     pyqtRemoveInputHook()
     set_trace()
+
+
+def secondsToTimeAgo(seconds: int) -> str:
+    # There must be a better name ..
+
+    h = seconds // 3600
+    d = int(h / 24)
+    m = seconds % 3600 // 60
+    s = seconds % 3600 % 60
+
+    if d > 0:
+        return '{:02d} day(s) ago'.format(d)
+    elif h > 0:
+        return '{:02d} hour(s) ago'.format(h)
+    elif m > 0:
+        return '{:02d} minute(s) ago'.format(m)
+    elif s > 0:
+        return '{:02d} second(s) ago'.format(s)
+    else:
+        return 'some time ago'  # how dare you

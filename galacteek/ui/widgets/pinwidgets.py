@@ -1,19 +1,23 @@
 from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QMenu
+from PyQt5.QtWidgets import QWidgetAction
 
 from PyQt5.QtCore import QSize
 from PyQt5.QtCore import QObject
+from PyQt5.QtCore import Qt
 
 from galacteek import AsyncSignal
 from galacteek import partialEnsure
 from galacteek import log
 from galacteek import ensure
+from galacteek import cached_property
 from galacteek.config.cmods import pinning as cfgpinning
 
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ui.helpers import getIcon
 from galacteek.ui.helpers import messageBox
+from galacteek.ui.helpers import messageBoxAsync
 from galacteek.ui.i18n import *
 
 from . import PopupToolButton
@@ -44,6 +48,14 @@ class PinActions(QObject):
             qname='browser'
         )
 
+    @ipfsOp
+    async def unpinPath(self, ipfsop, path):
+        log.debug(f'UnPinning object {path}')
+
+        result = await ipfsop.unpin(str(path))
+        if result:
+            messageBox(iUnpinOk())
+
     def onPinSingle(self):
         if not self.ipfsPath:
             return messageBox(iNotAnIpfsResource())
@@ -67,6 +79,12 @@ class PinActions(QObject):
         else:
             self.pinPath(self.ipfsPath.objPath, recursive=True)
 
+    def onUnpin(self):
+        if not self.ipfsPath:
+            return messageBox(iNotAnIpfsResource())
+
+        ensure(self.unpinPath(self.ipfsPath))
+
     def onPinPageLinks(self):
         if not self.ipfsPath:
             return messageBox(iNotAnIpfsResource())
@@ -85,14 +103,37 @@ class PinActions(QObject):
         if self.ipfsPath.basename:
             name = self.ipfsPath.basename
 
-        await self.rpsPin(service, name=name)
+        if await self.rpsPin(service, name=name):
+            await messageBoxAsync(
+                iPinToRpsSuccess(service.serviceName,
+                                 str(self.ipfsPath))
+            )
+        else:
+            await messageBoxAsync(
+                iPinToRpsError(service.serviceName,
+                               str(self.ipfsPath))
+            )
 
     @ipfsOp
     async def rpsPin(self, ipfsop, service, name=None,
                      background=True):
+        path = self.ipfsPath.objPath
+
+        if self.ipfsPath.isIpns:
+            """
+            It's an IPNS path, no worries but resolve it first
+            """
+
+            resolved = await ipfsop.nameResolveStreamFirst(
+                self.ipfsPath.objPath)
+            if resolved:
+                path = resolved['Path']
+
+        log.debug(f'RPS pinning object: {path}')
+
         return await ipfsop.pinRemoteAdd(
             service.serviceName,
-            self.ipfsPath.objPath,
+            path,
             background=background,
             name=name
         )
@@ -144,13 +185,16 @@ class PinObjectButton(PopupToolButton, PinActions):
         else:
             self.ipfsPath = ipfsPath
             self.enableActions(True)
+            self.setToolTip(str(ipfsPath))
 
     def enableActions(self, enable):
         for action in self.menu.actions():
             action.setEnabled(enable)
 
     def setupButton(self):
+        self.setToolButtonStyle(Qt.ToolButtonIconOnly)
         self.setIconSize(QSize(48, 48))
+        self.setText(iPinningOptions())
 
         iconPin = self.iconPinBlue
 
@@ -172,6 +216,14 @@ class PinObjectButton(PopupToolButton, PinActions):
             self,
             triggered=self.onPinRecursiveParent
         )
+        self.actionUnpin = QAction(
+            getIcon('cancel.png'),
+            iUnpin(),
+            self,
+            triggered=self.onUnpin
+        )
+
+        self.enableActions(False)
 
     async def populateMenuAsync(self, pinMenu):
         # Populate the RPS first
@@ -183,11 +235,13 @@ class PinObjectButton(PopupToolButton, PinActions):
 
         pinMenu.addAction(self.actionPinRParent)
         pinMenu.addSeparator()
+        pinMenu.addAction(self.actionUnpin)
+        pinMenu.addSeparator()
 
         self.setIcon(self.iconPinBlue)
-        self.enableActions(False)
 
     async def populateRpsQuick(self, menu):
+        srvCount = 0
         actionPinRpsAll = QAction(
             self.iconPinRed,
             iPinToAllRps(),
@@ -232,5 +286,23 @@ class PinObjectButton(PopupToolButton, PinActions):
             menu.addAction(actionPinC)
             menu.addSeparator()
 
-        menu.addAction(actionPinRpsAll)
-        menu.addSeparator()
+            srvCount += 1
+
+        if srvCount > 0:
+            menu.addAction(actionPinRpsAll)
+            menu.addSeparator()
+
+
+class PinObjectAction(QWidgetAction):
+    def __init__(self, ipfsPath, parent=None):
+        super().__init__(parent)
+        self.button.changeObject(ipfsPath)
+
+    @cached_property
+    def button(self):
+        button = PinObjectButton(parent=self.parent())
+        # button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        return button
+
+    def createWidget(self, parent):
+        return self.button

@@ -1,10 +1,12 @@
 from galacteek.config import cGet
 from galacteek.config import cSet
 from galacteek.config import configSavePackage
+from galacteek.config import merge
 
 
 cmod = 'galacteek.ipfs.pinning'
 rSrvsKey = 'remotePinning.services'
+defCfgKey = 'remotePinning.defaultServiceConfig'
 
 
 def remoteServices():
@@ -13,6 +15,10 @@ def remoteServices():
 
 def rpsList():
     return remoteServices()
+
+
+def rpsCount():
+    return len(rpsList())
 
 
 def remoteServiceExistsByName(name: str):
@@ -46,8 +52,37 @@ def configSave():
     configSavePackage(cmod)
 
 
-def rpsConfigRemove(serviceName: str):
-    pass
+def rpsConfigGetByServiceName(serviceName: str):
+    default = cGet(defCfgKey, mod=cmod)
+
+    for srv in remoteServices():
+        if srv.serviceName == serviceName:
+            return merge(default, srv)
+
+
+def rpsConfigRemove(displayName: str):
+    """
+    Remove a RPS from the config, filtering by display name
+
+    There must be a better way of doing this ..
+    """
+
+    services = list(remoteServices().copy())
+    removed = False
+
+    for idx, srv in enumerate(services):
+        if srv.displayName == displayName:
+            # pop him off
+            services.pop(idx)
+            removed = True
+
+            # Can't have two with the same display name normally
+            break
+
+    if removed:
+        cSet(rSrvsKey, services, mod=cmod)
+
+    return removed
 
 
 def rpsConfigRegister(rService: dict, peerId: str):
@@ -60,22 +95,29 @@ def rpsConfigRegister(rService: dict, peerId: str):
     peerID is the peer ID of the node that has this service
     """
 
+    from galacteek.config import merge
+
     name = rService['Service']
     services = remoteServices()
 
     if rpsExists(rService, services=services):
         return False
 
+    default = cGet(defCfgKey, mod=cmod)
+
     # Append
-    services.append({
+    cfg = {
         'displayName': name,
         'serviceName': name,
         'endpoint': rService['ApiEndpoint'],
         'peerId': peerId,
-        'priority': 100,
+        'priority': 0,
         'pinQueueName': name,
         'iconCid': None
-    })
+    }
+
+    merged = merge(default, cfg)
+    services.append(merged)
 
     # Patch
     cSet(rSrvsKey, services, mod=cmod)

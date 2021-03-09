@@ -95,13 +95,11 @@ class AppService(GService):
         log.debug('Starting main application service')
 
         # Dependencies
-
-        log.debug('Adding runtime dependencies')
-
         await self.add_runtime_dependency(self.bmService)
         await self.add_runtime_dependency(self.torService)
         await self.add_runtime_dependency(self.ethService)
 
+        # Walk the line
         await self.walkServices('core', add=True)
         await self.walkServices('dweb', add=True)
 

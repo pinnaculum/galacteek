@@ -84,6 +84,8 @@ class BaseProfile(QWebEngineProfile, KeyListener):
         event = message['event']
 
         if event['type'] == InterceptorMessageTypes.Ready:
+            log.debug('Interceptor ready')
+
             self.setUrlRequestInterceptor(event['interceptor'])
 
     def installHandler(self, scheme, handler):

@@ -15,13 +15,27 @@
     font-weight: normal;
     font-style: normal;
 }
+@font-face {
+    font-family: 'Montserrat';
+    font-style: normal;
+    font-weight: 400;
+    src: url('../../../../share/static/fonts/Montserrat-Regular.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Inter UI';
+    font-style:  normal;
+    font-weight: 400;
+    src: url('../../../../share/static/fonts/Inter-UI-Medium.woff2') format('woff2');
+}
  
 /* -- page layout ----------------------------------------------------------- */
  
 body {
-    font: 12pt "Segoe UI";
-    background-color: #fff;
-    color: #555;
+    font: 14 "Montserrat";
+    background-color: #a4bfbb;
+    color: #4d657c;
+    color: #5f8e8c;
     margin: 0;
     padding: 0;
 }
@@ -41,17 +55,22 @@ hr {
  
 div.document {
     background-color: #eee;
+    background-color: #323232;
 }
  
 div.body {
-    background-color: #ffffff;
+    background-color: #a4bfbb;
+    background-color: #323232;
+
     color: #3E4349;
+    color: black;
+
     padding: 0 30px 30px 30px;
     font-size: 0.9em;
 }
  
 div.footer {
-    color: #555;
+    color: #4d657c;
     width: 100%;
     padding: 13px 0;
     text-align: center;
@@ -59,7 +78,7 @@ div.footer {
 }
  
 div.footer a {
-    color: #444;
+    color: #4d657c;
     text-decoration: underline;
 }
  
@@ -67,7 +86,7 @@ div.related {
     background-color: #4a9ea1;
     line-height: 32px;
     color: #fff;
-    text-shadow: 0px 1px 0 #444;
+    text-shadow: 0px 1px 0 #4d657c;
     font-size: 0.9em;
     border-top: 1px solid grey;
     border-bottom: 2px solid grey;
@@ -103,7 +122,7 @@ div.sphinxsidebar h4{
 }
  
 div.sphinxsidebar h3 a {
-    color: #444;
+    color: #4d657c;
 }
  
  
@@ -122,7 +141,7 @@ div.sphinxsidebar ul {
 }
  
 div.sphinxsidebar a {
-    color: #444;
+    color: #4d657c;
 }
  
 div.sphinxsidebar input {
@@ -140,12 +159,16 @@ div.sphinxsidebar .searchformwrapper {
  
 a {
     color: #005B81;
+    color: #446474;
+    font-size: 125%;
     text-decoration: none;
 }
  
 a:hover {
-    color: #E32E00;
+    color: #365fda;
+    color: #446474;
     text-decoration: underline;
+    background-color: #fca409;
 }
  
 div.body h1,

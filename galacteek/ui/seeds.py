@@ -14,6 +14,7 @@ from PyQt5.QtWidgets import QSpacerItem
 from PyQt5.QtWidgets import QToolBar
 from PyQt5.QtWidgets import QProgressBar
 from PyQt5.QtWidgets import QComboBox
+from PyQt5.QtWidgets import QHeaderView
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QDate
@@ -27,6 +28,7 @@ from galacteek import log
 from galacteek import ensureLater
 from galacteek import partialEnsure
 from galacteek import AsyncSignal
+from galacteek import cached_property
 from galacteek.config import cGet
 from galacteek.database import *
 from galacteek.ipfs.wrappers import ipfsOp
@@ -36,6 +38,8 @@ from galacteek.ipfs.dag import *
 from galacteek.ipfs.stat import StatInfo
 from galacteek.core.modelhelpers import *
 from galacteek.core import validMimeType
+from galacteek.core import utcDatetime
+from galacteek.core import secondsToTimeAgo
 from galacteek.database.models.seeds import *
 
 
@@ -194,7 +198,7 @@ class SeedObjectTreeItem(QTreeWidgetItem):
         self.setData(self.COL_STATUS, Qt.DisplayRole, text)
         self.setToolTip(self.COL_STATUS, text)
 
-    def fileStatus(self, text):
+    def fileDetails(self, text):
         self.setData(self.COL_FILEINFO, Qt.DisplayRole, text)
         self.setToolTip(self.COL_FILEINFO, text)
 
@@ -212,18 +216,16 @@ class SeedObjectTreeItem(QTreeWidgetItem):
             sInfo = StatInfo(self.objdescr['stat'])
 
             if sInfo.valid:
-                self.fileStatus(sizeFormat(sInfo.totalSize))
+                self.fileDetails(sizeFormat(sInfo.totalSize))
                 self.setToolTip(self.COL_NAME, sInfo.cid)
             else:
-                self.fileStatus('Unknown')
+                self.fileDetails('Unknown')
 
             mType = self.objdescr.get('mimetype')
             if validMimeType(mType):
                 mIcon = getMimeIcon(mType)
                 if mIcon:
                     self.setIcon(self.COL_NAME, mIcon)
-
-            self.status(iSearchingProviders())
 
             whoHasC = len(
                 await ipfsop.whoProvides(
@@ -234,9 +236,9 @@ class SeedObjectTreeItem(QTreeWidgetItem):
             )
 
             if whoHasC == 0:
-                self.status(iNotProvidedByAnyPeers())
+                self.status(iUnavailShortUpper())
             elif whoHasC > 0:
-                self.status(iProvidedByAtLeastPeers(whoHasC))
+                self.status(iProvidedByPeersShort(whoHasC))
         except asyncio.CancelledError:
             pass
         except Exception:
@@ -258,7 +260,7 @@ class SeedTreeItem(QTreeWidgetItem):
 
         self.setToolTip(0, descr if descr else self.seedDag.name)
 
-        iconData = await ipfsop.waitFor(self.seedDag.icon(), 1)
+        iconData = await ipfsop.waitFor(self.seedDag.icon(), 3)
         if iconData:
             icon = getIconFromImageData(iconData)
             if icon:
@@ -273,11 +275,14 @@ class SeedTreeItem(QTreeWidgetItem):
         await self.loadInfos()
 
         async for oidx, obj in self.seedDag.objects():
-            item = SeedObjectTreeItem(
-                self.seedDag, oidx, obj['name'], obj)
+            try:
+                item = SeedObjectTreeItem(
+                    self.seedDag, oidx, obj['name'], obj)
 
-            self.addChild(item)
-            item.startUpdate()
+                self.addChild(item)
+                item.startUpdate()
+            except Exception as err:
+                log.debug(f'lazyLoad error: {err}')
 
         self.setExpanded(True)
 
@@ -305,7 +310,7 @@ class SeedingObjectTreeItem(SeedObjectTreeItem):
         self.setData(self.COL_STATUS, Qt.DisplayRole, text)
         self.setToolTip(self.COL_STATUS, text)
 
-    def fileStatus(self, text):
+    def fileDetails(self, text):
         self.setData(self.COL_FILEINFO, Qt.DisplayRole, text)
         self.setToolTip(self.COL_FILEINFO, text)
 
@@ -358,7 +363,7 @@ class SeedingObjectTreeItem(SeedObjectTreeItem):
             return
         else:
             self.stat = stat
-            self.fileStatus(sizeFormat(stat['CumulativeSize']))
+            self.fileDetails(sizeFormat(stat['CumulativeSize']))
 
         objConfig = await seedGetObject(self.seed, self.objidx)
         if not objConfig:
@@ -510,7 +515,7 @@ class SeedingObjectTreeItem(SeedObjectTreeItem):
         pBar.setObjectName('downloadProgressBar')
         pBar.valueChanged.connect(onProgressValue)
 
-        self.treeWidget().setItemWidget(self, 2, pBar)
+        self.treeWidget().setItemWidget(self, self.COL_STATUS, pBar)
 
         baseDir = self.baseDownloadDir()
         chunkSize = objConfig.downloadChunkSize
@@ -532,6 +537,8 @@ class SeedingObjectTreeItem(SeedObjectTreeItem):
 
                 await ipfsop.sleep(0.1)
         except aioipfs.APIError as e:
+            # OK these setItemWidget() calls have got to go, this
+            # is not middle age here. Replace by signals asap.
             self.treeWidget().setItemWidget(self, self.COL_STATUS, None)
             self.status(f'IPFS error: {e.message}')
         except Exception:
@@ -539,6 +546,7 @@ class SeedingObjectTreeItem(SeedObjectTreeItem):
             self.status('Error')
         else:
             pBar.setValue(100)
+
             self.status('Downloaded')
             self.treeWidget().setItemWidget(self, self.COL_STATUS, None)
 
@@ -627,6 +635,7 @@ class SeedActionsWidget(QWidget):
 
         icon = getIcon('pin.png')
         combo = QComboBox()
+        combo.setObjectName('seedActionsCombo')
         combo.addItem(icon, iPin())
         combo.addItem(icon, iPinAndDownload())
         combo.addItem(getIcon('download.png'), iDownloadOnly())
@@ -696,6 +705,9 @@ class TrackerSwitchButton(QToolButton):
 
 
 class SeedsTrackerTab(GalacteekTab):
+    COL_NAME = 0
+    COL_DETAILS = 1
+    COL_STATUS = 2
     COL_ACTIONS = 3
 
     def __init__(self, gWindow):
@@ -753,14 +765,26 @@ class SeedsTrackerTab(GalacteekTab):
 
         self.ui.treeAllSeeds.setMouseTracking(True)
         self.ui.treeAllSeeds.setHeaderHidden(True)
+        self.ui.treeAllSeeds.header().setStretchLastSection(True)
+        self.ui.treeAllSeeds.setIconSize(QSize(32, 32))
+
         self.ui.treeAllSeeds.itemClicked.connect(self.onItemEntered)
         self.ui.treeAllSeeds.currentItemChanged.connect(self.onItemChanged)
 
         self.ui.treeMySeeds.setMouseTracking(True)
+        self.ui.treeMySeeds.setIconSize(QSize(32, 32))
 
     @property
     def root(self):
         return self.ui.treeMySeeds.invisibleRootItem()
+
+    @cached_property
+    def allSeedsHeader(self):
+        return self.ui.treeAllSeeds.header()
+
+    @cached_property
+    def mySeedsHeader(self):
+        return self.ui.treeMySeeds.header()
 
     def qDateToDatetime(self, _date):
         return datetime.fromtimestamp(
@@ -771,15 +795,37 @@ class SeedsTrackerTab(GalacteekTab):
     def resizeEvent(self, event):
         width = event.size().width()
 
-        self.ui.treeAllSeeds.header().setDefaultSectionSize(width / 4)
-        self.ui.treeAllSeeds.header().resizeSection(0, width / 3)
-        self.ui.treeAllSeeds.header().resizeSection(1, width / 4)
-        self.ui.treeAllSeeds.header().resizeSection(2, width / 4)
+        self.allSeedsHeader.setDefaultSectionSize(width / 8)
+        self.allSeedsHeader.setDefaultSectionSize(64)
 
-        self.ui.treeMySeeds.header().setDefaultSectionSize(width / 4)
-        self.ui.treeMySeeds.header().resizeSection(0, width / 4)
-        self.ui.treeMySeeds.header().resizeSection(1, width / 6)
-        self.ui.treeMySeeds.header().resizeSection(2, width / 4)
+        self.allSeedsHeader.resizeSection(
+            self.COL_NAME, width / 3)
+
+        if 0:
+            self.allSeedsHeader.resizeSection(
+                self.COL_DETAILS, width / 4)
+
+        self.allSeedsHeader.setSectionResizeMode(
+            self.COL_DETAILS,
+            QHeaderView.ResizeToContents
+        )
+
+        self.allSeedsHeader.setSectionResizeMode(
+            self.COL_STATUS,
+            QHeaderView.ResizeToContents
+        )
+
+        self.allSeedsHeader.resizeSection(
+            self.COL_ACTIONS,
+            width / 3
+        )
+
+        self.allSeedsHeader.setStretchLastSection(False)
+
+        self.mySeedsHeader.setDefaultSectionSize(width / 4)
+        self.mySeedsHeader.resizeSection(0, width / 4)
+        self.mySeedsHeader.resizeSection(1, width / 6)
+        self.mySeedsHeader.resizeSection(2, width / 4)
 
     @ipfsOp
     async def onSeedsDagReset(self, ipfsop, *a):
@@ -827,8 +873,10 @@ class SeedsTrackerTab(GalacteekTab):
             if item.childCount() == 0:
                 ensure(item.lazyLoad())
 
+            item.setText(self.COL_DETAILS, '')
+
             self.ui.treeAllSeeds.setItemWidget(
-                item, self.COL_ACTIONS, sController)
+                item, self.COL_DETAILS, sController)
 
     def destroySaWidget(self, item):
         w = self.ui.treeAllSeeds.itemWidget(item, self.COL_ACTIONS)
@@ -837,12 +885,19 @@ class SeedsTrackerTab(GalacteekTab):
             self.ui.treeAllSeeds.setItemWidget(item, self.COL_ACTIONS, None)
 
     def onItemChanged(self, cur, prev):
-        if cur and isinstance(cur, SeedTreeItem):
+        if not cur:
+            return
+
+        if isinstance(cur, SeedTreeItem):
             if self.selectedSeed is not cur:
                 self.destroySaWidget(self.selectedSeed)
 
             self.selectedSeed = cur
             self.changeItem(cur)
+        elif isinstance(cur, SeedObjectTreeItem):
+            parent = cur.parent()
+            if parent:
+                self.changeItem(parent)
 
     def onItemEntered(self, item, col):
         if col == self.COL_ACTIONS:
@@ -897,8 +952,8 @@ class SeedsTrackerTab(GalacteekTab):
 
             selected = self.ui.treeAllSeeds.selectedItems()
             if len(selected) == 0:
-                self.ui.treeAllSeeds.setCurrentItem(item)
-                self.selectedSeed = item
+                self.ui.treeAllSeeds.setCurrentItem(seedItem)
+                self.selectedSeed = seedItem
 
     @ipfsOp
     async def runSearch(self, ipfsop, text):
@@ -922,6 +977,8 @@ class SeedsTrackerTab(GalacteekTab):
         bfont.setBold(True)
         nfont = QFont('Montserrat', 12)
 
+        now = utcDatetime()
+
         try:
             self.ui.treeAllSeeds.setHeaderHidden(False)
 
@@ -930,9 +987,14 @@ class SeedsTrackerTab(GalacteekTab):
                 section, name, date, dCid = result
 
                 try:
-                    dthuman = dateparser.parse(date).isoformat(
-                        sep=' ', timespec='seconds')
-                except Exception:
+                    seedDate = dateparser.parse(date)
+                    delta = now - seedDate
+                    seconds = delta.total_seconds()
+
+                    humanDelta = secondsToTimeAgo(seconds)
+                    dthuman = f'Published {humanDelta}'
+                except Exception as err:
+                    log.debug(err)
                     dthuman = 'No date'
 
                 item = SeedTreeItem(
@@ -966,5 +1028,6 @@ class SeedsTrackerTab(GalacteekTab):
 
         for seed in storedSeeds:
             dag = await seedsDag.getSeed(seed.dagCid)
+
             await SeedAdded.emit(dag)
             await ipfsop.sleep(0.1)
