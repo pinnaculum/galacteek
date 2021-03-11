@@ -862,6 +862,59 @@ Path: {0}, nodes processed: {1}</source>
     </message>
 </context>
 <context>
+    <name>HashmarksViewForm</name>
+    <message>
+        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="14"/>
+        <source>Path</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="18"/>
+        <source>Title</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="22"/>
+        <source>Shared</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="26"/>
+        <source>Date</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="30"/>
+        <source>Timestamp</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="34"/>
+        <source>Already Hashmarked</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="39"/>
+        <source>Invalid hashmark path</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="44"/>
+        <source>Import hashmark to</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="49"/>
+        <source>Network hashmarks</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="53"/>
+        <source>Feeds</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>IPFSHashExplorer</name>
     <message>
         <location filename="../../galacteek/ui/files/unixfs.py" line="68"/>
@@ -1447,6 +1500,24 @@ Path: {0}, nodes processed: {1}</source>
         &lt;p&gt;Average ping: {6}&lt;/p&gt;
         &lt;/p&gt;
         </source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>PinStatusWidget</name>
+    <message>
+        <location filename="../../galacteek/ui/pinning/pinstatus.py" line="49"/>
+        <source>Queue</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pinning/pinstatus.py" line="53"/>
+        <source>Status</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pinning/pinstatus.py" line="57"/>
+        <source>Nodes</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
