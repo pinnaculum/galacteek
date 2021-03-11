@@ -70,8 +70,8 @@ from .iprofile import ProfileEditDialog
 from .iprofile import ProfileButton
 from .peers import PeersServiceSearchDock
 from .pubsub import PubsubSnifferWidget
-from .pyramids import MultihashPyramidsToolBarAction
-from .quickaccess import QuickAccessToolBarAction
+from .pyramids import MultihashPyramidsToolBar
+from .quickaccess import QuickAccessToolBar
 from .daemonstats import BandwidthGraphView
 from .daemonstats import PeersCountGraphView
 from .camera import CameraController
@@ -83,8 +83,11 @@ from .widgets import HashmarkMgrButton
 from .widgets import HashmarksSearcher
 from .widgets import AnimatedLabel
 from .widgets import URLDragAndDropProcessor
-from .widgets import SpacingHWidget
+
 from .widgets.torcontrol import TorControllerButton
+
+from .docks.appdock import *
+
 from .dialogs import *
 from ..appsettings import *
 from .i18n import *
@@ -378,10 +381,8 @@ class MainToolBar(QToolBar):
         self.setObjectName('mainToolBar')
 
         self.setMovable(False)
+        self.setMovable(True)
         self.setFloatable(False)
-        self.setAllowedAreas(
-            Qt.BottomToolBarArea | Qt.TopToolBarArea
-        )
         self.setContextMenuPolicy(Qt.NoContextMenu)
 
         # Empty widget
@@ -412,6 +413,7 @@ class DwebDepotToolBar(QToolBar):
         self.setObjectName('dwebToolBar')
 
         self.setMovable(True)
+        self.setFloatable(False)
         self.setAllowedAreas(
             Qt.LeftToolBarArea | Qt.RightToolBarArea
         )
@@ -512,6 +514,7 @@ class WorkspaceSwitchButton(QToolButton, URLDragAndDropProcessor):
         self.workspace.wsSwitch(soundNotify=soundNotify)
 
     def styleNotify(self):
+        self.setProperty('wsNotify', True)
         self.setStyleSheet('''
             QToolButton {
                 background-color: #B7CDC2;
@@ -519,6 +522,7 @@ class WorkspaceSwitchButton(QToolButton, URLDragAndDropProcessor):
         ''')
 
     def styleActive(self):
+        self.setProperty('wsActive', True)
         self.setStyleSheet('''
             QToolButton::hover {
                 background-color: #4a9ea1;
@@ -762,6 +766,10 @@ class MainWindow(QMainWindow):
             self.app.desktopGeometry.height() / 2)
         )
 
+        # Prevent context menus on the main window (otherwise
+        # the toolbars get the context menu on right click)
+        self.setContextMenuPolicy(Qt.PreventContextMenu)
+
         # User logs widget
         self.logsPopupWindow = UserLogsWindow()
         self.logsPopupWindow.setObjectName('logsTextWindow')
@@ -798,18 +806,15 @@ class MainWindow(QMainWindow):
 
         # Toolbars
         self.toolbarMain = MainToolBar(self)
-        self.toolbarDepot = DwebDepotToolBar(self)
 
-        self.toolbarPyramidsAction = MultihashPyramidsToolBarAction(self)
+        self.toolbarPyramids = MultihashPyramidsToolBar(self)
 
         self.toolbarWs = WorkspacesToolBar()
 
         self.toolbarMain.orientationChanged.connect(self.onMainToolbarMoved)
-        self.toolbarTools = QToolBar()
-        self.toolbarTools.setOrientation(self.toolbarMain.orientation())
 
         # Apps/shortcuts toolbar
-        self.qaToolbarAction = QuickAccessToolBarAction(self)
+        self.toolbarQa = QuickAccessToolBar(self)
 
         # Main actions and browse button setup
         self.quitAction = QAction(getIcon('quit.png'),
@@ -1026,10 +1031,6 @@ class MainWindow(QMainWindow):
         self.hashmarkMgrButton.hashmarkClicked.connect(self.onHashmarkClicked)
         self.hashmarksSearcher.hashmarkClicked.connect(self.onHashmarkClicked)
 
-        # Add the QA toolbar in the depot toolbar
-        self.toolbarDepot.addAction(self.qaToolbarAction)
-        self.toolbarDepot.addAction(self.toolbarPyramidsAction)
-
         self.toolbarMain.actionStatuses = self.toolbarMain.addAction(
             trTodo('Statuses'))
         self.toolbarMain.actionStatuses.setVisible(False)
@@ -1048,7 +1049,7 @@ class MainWindow(QMainWindow):
         self.toolbarMain.addWidget(self.quitButton)
 
         self.addToolBar(Qt.TopToolBarArea, self.toolbarMain)
-        self.addToolBar(Qt.RightToolBarArea, self.toolbarDepot)
+        self.addToolBar(Qt.LeftToolBarArea, self.toolbarQa)
 
         self.stack = CentralStack(self, self.toolbarWs)
 
@@ -1120,19 +1121,9 @@ class MainWindow(QMainWindow):
 
         self.lastLogTimer = QTimer()
         self.lastLogTimer.timeout.connect(self.onLastLogTimeout)
-        self.statusbar.insertWidget(0, self.lastLogLabel, 1)
-
-        self.statusbar.addPermanentWidget(self.ipfsStatusCube)
-        self.statusbar.addPermanentWidget(self.torControlButton)
 
         self.ethereumStatusBtn = EthereumStatusButton(parent=self)
-        self.statusbar.addPermanentWidget(self.ethereumStatusBtn)
-
-        self.statusbar.addPermanentWidget(self.pinningStatusButton)
-        self.statusbar.addPermanentWidget(self.rpsStatusButton)
-        self.statusbar.addPermanentWidget(self.pubsubStatusButton)
-        self.statusbar.addPermanentWidget(self.userLogsButton)
-        self.statusbar.addPermanentWidget(SpacingHWidget(width=30))
+        self.statusbar.hide()
 
         # Connection status timer
         self.timerStatus = QTimer(self)
@@ -1144,7 +1135,24 @@ class MainWindow(QMainWindow):
         # Docks
         self.pSearchDock = PeersServiceSearchDock(self.app.peersTracker, self)
         self.pSearchDock.setAllowedAreas(Qt.BottomDockWidgetArea)
+
+        # self.dockQa = DwebQADock(self)
+        self.dockCrafting = DwebCraftingDock(
+            self.toolbarPyramids,
+            parent=self
+        )
+
+        self.dockCrafting.addStatusWidget(self.ipfsStatusCube)
+        self.dockCrafting.addStatusWidget(self.torControlButton)
+        self.dockCrafting.addStatusWidget(self.ethereumStatusBtn)
+
+        self.dockCrafting.addStatusWidget(self.pinningStatusButton)
+        self.dockCrafting.addStatusWidget(self.rpsStatusButton)
+        self.dockCrafting.addStatusWidget(self.pubsubStatusButton)
+        self.dockCrafting.addStatusWidget(self.userLogsButton)
+
         self.addDockWidget(Qt.BottomDockWidgetArea, self.pSearchDock)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dockCrafting)
 
         # Connect the IPFS context signals
         self.app.ipfsCtx.ipfsConnectionReady.connectTo(self.onConnReady)
@@ -1280,8 +1288,6 @@ class MainWindow(QMainWindow):
     def onMainToolbarMoved(self, orientation):
         self.toolbarMain.lastPos = self.toolbarMain.pos()
 
-        self.toolbarTools.setOrientation(orientation)
-        # self.qaToolbar.setOrientation(orientation)
         self.toolbarWs.setOrientation(orientation)
 
         if self.toolbarMain.vertical:
@@ -1773,5 +1779,5 @@ class MainWindow(QMainWindow):
         self.pSearchDock.searchMode()
 
     def getPyrDropButtonFor(self, ipfsPath, origin=None):
-        return self.toolbarPyramidsAction.toolbar.getPyrDropButtonFor(
+        return self.toolbarPyramids.getPyrDropButtonFor(
             ipfsPath, origin=origin)

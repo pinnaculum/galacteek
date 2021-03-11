@@ -9,7 +9,6 @@ from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QToolTip
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QToolButton
-from PyQt5.QtWidgets import QToolBar
 from PyQt5.QtWidgets import QSizePolicy
 from PyQt5.QtWidgets import QWidgetAction
 
@@ -61,6 +60,8 @@ from .helpers import qrcFileData
 from .dialogs import AddMultihashPyramidDialog
 from .hashmarks import addHashmarkAsync
 
+from .widgets.toolbar import SmartToolBar
+
 from .i18n import iRemove
 from .i18n import iHelp
 from .i18n import iHashmark
@@ -71,31 +72,79 @@ from .i18n import iEditObject
 def iCreateRawPyramid():
     return QCoreApplication.translate(
         'PyramidMaster',
-        'Create pyramid')
+        'Add: dynamic content')
 
 
 def iCreateGallery():
     return QCoreApplication.translate(
         'PyramidMaster',
-        'Create image gallery')
+        'Create: image gallery')
+
+
+def iCreateGalleryToolTip():
+    return QCoreApplication.translate(
+        'PyramidMaster',
+        '''
+        <p>
+        Create an image gallery!
+
+        Drag-and-drop files from the filemanager to
+        your gallery
+        </p>
+    ''')
 
 
 def iCreateAutoSyncPyramid():
     return QCoreApplication.translate(
         'PyramidMaster',
-        'Create auto-sync pyramid')
+        'Add: filesystem synchronizer'
+    )
+
+
+def iCreateAutoSyncPyramidToolTip():
+    return QCoreApplication.translate(
+        'PyramidMaster',
+        '''
+        <p>
+        Allows you to <b>synchronize</b> files (that exist
+        on your local filesystem) automatically to IPFS.
+        </p>
+
+        <p>
+        Whenever you make changes to these files on your
+        machine, they will <b>automatically</b> be transferred to
+        the IPFS network.
+        </p>
+        '''
+    )
 
 
 def iCreateWebsiteMkdocs():
     return QCoreApplication.translate(
         'PyramidMaster',
-        'Create website (mkdocs)')
+        'Create: website (Markdown)'
+    )
+
+
+def iCreateWebsiteMkdocsToolTip():
+    return QCoreApplication.translate(
+        'PyramidMaster',
+        '''
+        <p>
+        Create a simple website on the dweb.
+
+        You'll have to know Markdown to edit it, but it's pretty
+        simple.
+        </p>
+        '''
+    )
 
 
 def iOpenLatestInPyramid():
     return QCoreApplication.translate(
         'PyramidMaster',
-        'Open latest item in the pyramid')
+        'Open latest content in the pyramid'
+    )
 
 
 def iEmptyPyramid():
@@ -107,7 +156,7 @@ def iEmptyPyramid():
 def iPopItemFromPyramid():
     return QCoreApplication.translate(
         'PyramidMaster',
-        'Pop item off the pyramid')
+        'Pop an item off the pyramid')
 
 
 def iForcePyramidSync():
@@ -224,12 +273,12 @@ class PyramidsDropButton(PopupToolButton):
         self.setToolTip(iPyramidDropper())
 
 
-class MultihashPyramidsToolBar(QToolBar):
+class MultihashPyramidsToolBar(SmartToolBar):
     moved = pyqtSignal(int)
     mfsInit = pyqtSignal(UserProfile)
 
     def __init__(self, parent):
-        super().__init__(parent)
+        super().__init__(parent=parent, autoExpand=False)
 
         self.app = QApplication.instance()
         self.app.marksLocal.pyramidConfigured.connect(self.onPyramidConfigured)
@@ -240,17 +289,19 @@ class MultihashPyramidsToolBar(QToolBar):
 
         self.setObjectName('toolbarPyramids')
         self.setObjectName('pyramidsToolBar')
-        self.setToolTip('Pyramids toolbar')
+        self.setToolTip('Dynamic dweb')
         self.setContextMenuPolicy(Qt.PreventContextMenu)
         self.setFloatable(False)
         self.setMovable(False)
         self.setAcceptDrops(True)
+
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        self.setAllowedAreas(
-            Qt.LeftToolBarArea | Qt.RightToolBarArea
-        )
-        self.setOrientation(Qt.Vertical)
+        # self.setAllowedAreas(
+        #     Qt.LeftToolBarArea | Qt.RightToolBarArea
+        # )
+        self.setAllowedAreas(Qt.BottomToolBarArea)
+        self.setOrientation(Qt.Horizontal)
 
         pyrIcon = getIcon('pyramid-blue.png')
         self.pyramidsControlButton = PopupToolButton(
@@ -267,10 +318,11 @@ class MultihashPyramidsToolBar(QToolBar):
         self.pyramidsControlButton.menu.addSeparator()
 
         # Auto-sync pyramid (automatically syncs files)
-        self.pyramidsControlButton.menu.addAction(
+        ac = self.pyramidsControlButton.menu.addAction(
             getIcon('pyramid-aqua.png'),
             iCreateAutoSyncPyramid(),
             self.onAddPyramidAutoSync)
+        ac.setToolTip(iCreateAutoSyncPyramidToolTip())
         self.pyramidsControlButton.menu.addSeparator()
 
         self.pyramidsControlButton.menu.addAction(
@@ -278,11 +330,12 @@ class MultihashPyramidsToolBar(QToolBar):
             iCreateGallery(), self.onAddGallery)
         self.pyramidsControlButton.menu.addSeparator()
 
-        self.pyramidsControlButton.menu.addAction(
+        ac = self.pyramidsControlButton.menu.addAction(
             getMimeIcon('text/html'),
             iCreateWebsiteMkdocs(),
             self.onAddPyramidWebsiteMkdocs
         )
+        ac.setToolTip(iCreateWebsiteMkdocsToolTip())
         self.pyramidsControlButton.menu.addSeparator()
 
         self.pyramidsControlButton.menu.addSeparator()
@@ -294,40 +347,47 @@ class MultihashPyramidsToolBar(QToolBar):
 
         self.pyramids = {}
 
-        self.setIconSize(QSize(32, 32))
+    def idealShrunkSize(self, maxPerRow):
+        return QSize(
+            self.width(),
+            self.iconSize().height()
+        )
 
-    def sizeHint(self):
+    def idealExpandedSize(self, maxPerRow):
         # Calculate the optimal toolbar height using the number
         # of pyramids registered
 
-        height = 0
+        count = 0
+        height = self.iconSize().height()
+        width, widthB = 0, 0
         try:
             for action in self.actions():
                 w = self.widgetForAction(action)
                 if not w:
                     continue
 
-                height += w.height()
+                width += w.width()
 
-            height += self.pyramidsControlButton.height()
+                if divmod(count, maxPerRow)[1] == 0:
+                    height += w.height()
+                    if not widthB:
+                        widthB = width
+
+                count += 1
+
+            width += self.pyramidsControlButton.height()
         except Exception:
-            # Uuh
             actionsCount = len(self.actions())
-            height = (actionsCount + 1) * self.iconSize().height()
+            width = (actionsCount + 1) * self.iconSize().width()
 
         # Now there's a lot of potential for .. aggressive expansion
         return QSize(
-            self.iconSize().width(),
+            widthB if widthB else width,
             height
         )
 
     def contextMenuEvent(self, event):
         pass
-
-    def setLargerIcons(self):
-        current = self.iconSize()
-        newSize = QSize(current.width() * 2, current.height() * 2)
-        self.setIconSize(newSize)
 
     async def removePyramidAsk(self, pyramidButton, action):
         reply = await questionBoxAsync(
@@ -656,7 +716,7 @@ class MultihashPyramidToolButton(PopupToolButton):
             self._publishInProgress = value
 
             if value is True:
-                self.chBgColor('#B7CDC2')
+                self.chBgColor('#627a95')
             else:
                 self.app.loop.call_later(1, self.resetStyleSheet)
 
@@ -748,7 +808,7 @@ class MultihashPyramidToolButton(PopupToolButton):
         if not self.publishInProgress:
             self.resetStyleSheet()
         else:
-            self.chBgColor('#B7CDC2')
+            self.chBgColor('#627a95')
 
     def resetStyleSheet(self):
         self.setStyleSheet('''
@@ -795,6 +855,7 @@ class MultihashPyramidToolButton(PopupToolButton):
             latest=self.pyramid.latest if self.pyramid.latest else
             iEmptyPyramid()
         )
+
         self.setToolTip(self.pyrToolTip)
 
     def onDeletePyramid(self):

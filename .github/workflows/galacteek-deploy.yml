@@ -17,8 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        # os: [ubuntu-18.04, macos-latest, windows-latest]
+        os: [ubuntu-18.04, macos-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -205,6 +204,7 @@ jobs:
         pip install wheel
         pip install -r requirements-dev.txt
         pip install -r requirements.txt
+        pip install -e '.[ui-pyqt]'
 
         # Build UI and docs, install and build sdist and bwheel
         python setup.py build build_docs install
@@ -217,6 +217,8 @@ jobs:
         pip install wheel
         pip install "sphinx==1.8.5"
         pip install -r requirements.txt
+        pip install -e '.[ui-pyqt]'
+
         python setup.py build build_docs install
         python setup.py sdist bdist_wheel
 
@@ -237,7 +239,7 @@ jobs:
     - name: Build Flatpak
       if: contains(toJson(github.event.commits), '[deploy-flatpak]') == true
       run: |
-        flatpak-builder --force-clean --repo=flatpak-repo flatpak-build packaging/linux/flatpak/io.github.galacteek.Galacteek.yaml
+        flatpak-builder --force-clean --repo=flatpak-repo flatpak-build packaging/linux/flatpak/org.flatpak.galacteek.Galacteek.yaml
 
     - name: Build DMG
       if: startsWith(matrix.os, 'macOS')

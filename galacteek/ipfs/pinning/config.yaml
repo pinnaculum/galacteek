@@ -1,6 +1,20 @@
 envs:
   default:
     remotePinning:
+      defaultServiceConfig:
+        limits:
+          maxQueuedItems: 0
+          maxPinningItems: 0
+          maxPinnedItems: 0
+
+          storageLimit: False
+          storageMax: 0
+
+        notify:
+          alertOnFailed: False
+          alertOnPinning: True
+          alertOnPinned: True
+
       # Remote Pinning Service list (scanned from the daemon)
       services: []
 
