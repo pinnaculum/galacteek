@@ -13,6 +13,12 @@
 **galacteek** is a multi-platform Qt5-based browser/toolbox
 for the IPFS_ peer-to-peer network.
 
+Community
+=========
+
+Join in on Aether_ in the
+`/b/Galacteek <aether://board/aa66bce9ed11dcf40720e2670167d3d0b3bd1481cb1bf97b7765cac6a44abd37>`_ community.
+
 Installation
 ============
 
@@ -264,3 +270,4 @@ from the ipfs-logo_ project's repository is included, unchanged.
 .. _wasmer: https://wasmer.io/
 .. _cyber: https://cybercongress.ai
 .. _Bitmessage: https://wiki.bitmessage.org/
+.. _Aether: https://getaether.net/
