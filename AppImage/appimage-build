@@ -84,7 +84,7 @@ $APPIPIP install $WHEEL
 $APPIPIP install $WHEEL'[markdown-extensions]'
 
 # Pyqt dependencies
-$APPIPIP install $WHEEL'[ui-pyqt]'
+$APPIPIP install $WHEEL'[ui-pyqt-5.15]'
 
 cp ../{LICENSE,LICENSE.go-ipfs,LICENSE.Qt.GPLv3} \
 	$APPDIR/usr/share/licenses/galacteek

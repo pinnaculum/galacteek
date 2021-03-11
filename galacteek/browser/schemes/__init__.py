@@ -44,6 +44,8 @@ from galacteek.config import cGet
 
 from galacteek.ipdapps import dappsRegisterSchemes
 
+from galacteek.qt.webengine import webEngine515
+
 
 # Core schemes (the URL schemes your children will soon teach you how to use)
 SCHEME_DWEB = 'dweb'
@@ -76,9 +78,14 @@ SCHEME_CHROMIUM = 'chromium'
 
 
 # Default flags used by declareUrlScheme()
-defaultSchemeFlags = QWebEngineUrlScheme.SecureScheme | \
-    QWebEngineUrlScheme.ViewSourceAllowed | \
-    QWebEngineUrlScheme.CorsEnabled
+
+if webEngine515() is True:
+    defaultSchemeFlags = QWebEngineUrlScheme.SecureScheme | \
+        QWebEngineUrlScheme.ViewSourceAllowed | \
+        QWebEngineUrlScheme.CorsEnabled
+else:
+    defaultSchemeFlags = QWebEngineUrlScheme.SecureScheme | \
+        QWebEngineUrlScheme.ViewSourceAllowed
 
 
 defaultLocalSchemeFlags = defaultSchemeFlags | QWebEngineUrlScheme.LocalScheme
