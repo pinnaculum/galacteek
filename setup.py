@@ -251,7 +251,9 @@ def reqs_parse(path):
 install_reqs = reqs_parse('requirements.txt')
 install_reqs_extra_markdown = reqs_parse('requirements-extra-markdown.txt')
 install_reqs_docs = reqs_parse('requirements-docs.txt')
-install_reqs_ui_pyqt = reqs_parse('requirements-ui-pyqt.txt')
+install_reqs_ui_pyqt_513 = reqs_parse('requirements-ui-pyqt-5.13.txt')
+install_reqs_ui_pyqt_515 = reqs_parse('requirements-ui-pyqt-5.15.txt')
+
 
 found_packages = find_packages(exclude=['tests', 'tests.*'])
 
@@ -275,7 +277,8 @@ setup(
     install_requires=install_reqs,
     extras_require={
         'markdown-extensions': install_reqs_extra_markdown,
-        'ui-pyqt': install_reqs_ui_pyqt,
+        'ui-pyqt-5.13': install_reqs_ui_pyqt_513,
+        'ui-pyqt-5.15': install_reqs_ui_pyqt_515,
         'docs': install_reqs_docs,
     },
     dependency_links=deps_links,

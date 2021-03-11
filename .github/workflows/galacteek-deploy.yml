@@ -204,7 +204,7 @@ jobs:
         pip install wheel
         pip install -r requirements-dev.txt
         pip install -r requirements.txt
-        pip install -e '.[ui-pyqt]'
+        pip install -e '.[ui-pyqt-5.15]'
 
         # Build UI and docs, install and build sdist and bwheel
         python setup.py build build_docs install
@@ -217,7 +217,7 @@ jobs:
         pip install wheel
         pip install "sphinx==1.8.5"
         pip install -r requirements.txt
-        pip install -e '.[ui-pyqt]'
+        pip install -e '.[ui-pyqt-5.13]'
 
         python setup.py build build_docs install
         python setup.py sdist bdist_wheel
