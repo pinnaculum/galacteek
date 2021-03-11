@@ -3,10 +3,10 @@ import os.path
 import re
 import sys
 import subprocess
-import glob
 import shutil
 import codecs
 import json
+from pathlib import Path
 
 from setuptools import setup
 from setuptools import Command
@@ -134,10 +134,10 @@ class build_ui(Command):
         # Forms where we don't want to have automatic slots
         # connection with connectSlotsByName()
         self.uiforms_noSlotConnect = [
-            'galacteek/ui/forms/browsertab.ui',
-            'galacteek/ui/forms/dagview.ui',
-            'galacteek/ui/forms/files.ui',
-            'galacteek/ui/forms/qschemecreatemapping.ui'
+            Path('galacteek/ui/forms/browsertab.ui'),
+            Path('galacteek/ui/forms/dagview.ui'),
+            Path('galacteek/ui/forms/files.ui'),
+            Path('galacteek/ui/forms/qschemecreatemapping.ui')
         ]
 
     def finalize_options(self):
@@ -166,35 +166,37 @@ class build_ui(Command):
         from galacteek.ui.themes import themesCompileAll
 
         uifiles = []
-        uidir = 'galacteek/ui'
-        formsdir = 'galacteek/ui/forms'
+        uidir = Path('galacteek/ui')
+        formsdir = Path('galacteek/ui/forms')
 
         tasks = self.tasks.split(',')
 
         if self.uiforms:
-            uifiles = [os.path.join(formsdir, '{0}.ui'.format(form)) for form
+            uifiles = [formsdir.joinpath(f'{form}.ui') for form
                        in self.uiforms.split(',')]
         else:
-            uifiles = glob.glob(f'{formsdir}/*.ui')
+            uifiles = formsdir.glob('*.ui')
 
         if 'forms' in tasks:
             for uifile in uifiles:
                 print('* Building UI form:', uifile)
 
-                base = uifile.replace(formsdir, '').replace(
-                    '.ui', '').lstrip('/')
-                out = 'ui_{}.py'.format(base)
-                fp_out = os.path.join(formsdir, out)
+                fp_out = formsdir.joinpath(
+                    'ui_{}'.format(
+                        uifile.name.replace('.ui', '.py'))
+                )
 
-                run(['pyuic5', '--from-imports',
-                     uifile,
-                     '-o', fp_out])
+                run(['pyuic5',
+                     '--from-imports',
+                     str(uifile),
+                     '-o',
+                     str(fp_out)])
 
                 self.filterUic(uifile, fp_out)
 
             run(['pylupdate5', '-verbose', 'galacteek.pro'])
 
-            trdir = './share/translations'
+            trdir = Path('./share/translations')
             lrelease = shutil.which('lrelease-qt5')
 
             if not lrelease:
@@ -203,15 +205,18 @@ class build_ui(Command):
             for lang in ['en', 'es', 'fr']:
                 if lrelease:
                     run([lrelease,
-                         os.path.join(trdir, 'galacteek_{}.ts'.format(lang)),
+                         str(trdir.joinpath(f'galacteek_{lang}.ts')),
                          '-qm',
-                         os.path.join(trdir, 'galacteek_{}.qm'.format(lang))])
+                         str(trdir.joinpath(f'galacteek_{lang}.qm'))])
                 else:
                     print('lrelease was not found'
                           ', cannot build translation files')
 
-            run(['pyrcc5', os.path.join(uidir, 'galacteek.qrc'), '-o',
-                 os.path.join(formsdir, 'galacteek_rc.py')])
+            qrcPath = uidir.joinpath('galacteek.qrc')
+            qrcCPath = formsdir.joinpath('galacteek_rc.py')
+
+            run(['pyrcc5', str(qrcPath), '-o',
+                 str(qrcCPath)])
 
         if 'themes' in tasks:
             themesCompileAll()

@@ -11,7 +11,7 @@ SOURCES = galacteek/application/__init__.py \
 	galacteek/ui/downloads.py \
 	galacteek/ui/feeds.py \
 	galacteek/ui/files/__init__.py \
-	galacteek/ui/hashmarks.py \
+	galacteek/ui/hashmarks/__init__.py \
 	galacteek/ui/helpers.py \
 	galacteek/ui/history/__init__.py \
 	galacteek/ui/i18n.py \
@@ -22,7 +22,7 @@ SOURCES = galacteek/application/__init__.py \
 	galacteek/ui/mainui.py \
 	galacteek/ui/mediaplayer.py \
 	galacteek/ui/peers.py \
-	galacteek/ui/pin/pinstatus.py \
+	galacteek/ui/pinning/pinstatus.py \
 	galacteek/ui/pyramids.py \
 	galacteek/ui/quickaccess.py \
 	galacteek/ui/resource.py \

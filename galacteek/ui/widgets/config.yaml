@@ -20,8 +20,8 @@ envs:
           iconSize: 32
 
           # Unused for now
-          maxActionsPerRow: 8
+          maxActionsPerRow: 12
 
         toolbarAppStatus:
           visible: True
-          iconSize: 32
+          iconSize: 24
