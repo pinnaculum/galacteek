@@ -148,7 +148,7 @@ class build_ui(Command):
             print('* {ui}: Removing automatic slots connection'.format(
                 ui=uifile))
 
-            with open(uicpath, 'rt') as fd:
+            with open(str(uicpath), 'rt') as fd:
                 code = fd.read()
 
             nCode = re.sub(
@@ -157,7 +157,7 @@ class build_ui(Command):
                 flags=re.MULTILINE
             )
 
-            with open(uicpath, 'wt') as fd:
+            with open(str(uicpath), 'wt') as fd:
                 print('* {ui}: Rewriting {path}'.format(
                     ui=uifile, path=uicpath))
                 fd.write(nCode)

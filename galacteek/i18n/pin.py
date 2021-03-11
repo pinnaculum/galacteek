@@ -57,6 +57,14 @@ def iPin():
     return QCoreApplication.translate('GalacteekWindow', 'Pin')
 
 
+def iPinHere():
+    return QCoreApplication.translate('GalacteekWindow', 'Pin (here)')
+
+
+def iPinThisPage():
+    return QCoreApplication.translate('BrowserTabForm', 'Pin (this page)')
+
+
 def iPinAndDownload():
     return QCoreApplication.translate('GalacteekWindow', 'Pin and download')
 
@@ -69,12 +77,21 @@ def iUnpin():
     return QCoreApplication.translate('GalacteekWindow', 'Unpin')
 
 
+def iUnpinHere():
+    return QCoreApplication.translate('GalacteekWindow', 'Unpin')
+
+
 def iUnpinOk():
     return QCoreApplication.translate('GalacteekWindow', 'Unpin OK')
 
 
 def iPinSingle():
     return QCoreApplication.translate('GalacteekWindow', 'Pin (single)')
+
+
+def iPinHereRecursive():
+    return QCoreApplication.translate(
+        'GalacteekWindow', 'Pin (here, recursive)')
 
 
 def iPinRecursive():
@@ -84,6 +101,11 @@ def iPinRecursive():
 def iPinRecursiveParent():
     return QCoreApplication.translate('GalacteekWindow',
                                       'Pin parent (recursive)')
+
+
+def iPinHereRecursiveParent():
+    return QCoreApplication.translate('GalacteekWindow',
+                                      'Pin parent (here, recursive)')
 
 
 def iPinPageLinks():

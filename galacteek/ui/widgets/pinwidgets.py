@@ -2,7 +2,6 @@ from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtWidgets import QWidgetAction
 
-from PyQt5.QtCore import QSize
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import Qt
 
@@ -45,7 +44,7 @@ class PinActions(QObject):
 
         await ipfsop.ctx.pinner.queue(
             path, recursive, onSuccess,
-            qname='browser'
+            qname=self.pinQueueName
         )
 
     @ipfsOp
@@ -170,6 +169,7 @@ class PinActions(QObject):
 
 class PinObjectButton(PopupToolButton, PinActions):
     ipfsPath: IPFSPath = None
+    pinQueueName = 'default'
 
     @property
     def iconPinRed(self):
@@ -182,48 +182,60 @@ class PinObjectButton(PopupToolButton, PinActions):
     def changeObject(self, ipfsPath: IPFSPath):
         if not ipfsPath or not ipfsPath.valid:
             self.enableActions(False)
+            self.setText(iInvalidObjectPath())
         else:
             self.ipfsPath = ipfsPath
             self.enableActions(True)
             self.setToolTip(str(ipfsPath))
 
+            self.setText(self.ipfsPath.objPathShort)
+            self.setEnabled(True)
+
     def enableActions(self, enable):
         for action in self.menu.actions():
             action.setEnabled(enable)
 
-    def setupButton(self):
+    def styleIconOnly(self):
         self.setToolButtonStyle(Qt.ToolButtonIconOnly)
-        self.setIconSize(QSize(48, 48))
-        self.setText(iPinningOptions())
+
+    def styleIconAndText(self):
+        self.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+
+    def setupButton(self):
+        self.setObjectName('pinObjectButton')
+        self.styleIconOnly()
+
+        # self.setText(iPinningOptions())
 
         iconPin = self.iconPinBlue
 
         self.actionPinS = QAction(
             iconPin,
-            iPinThisPage(),
+            iPinHere(),
             self,
             triggered=self.onPinSingle
         )
         self.actionPinR = QAction(
             iconPin,
-            iPinRecursive(),
+            iPinHereRecursive(),
             self,
             triggered=self.onPinRecursive
         )
         self.actionPinRParent = QAction(
             iconPin,
-            iPinRecursiveParent(),
+            iPinHereRecursiveParent(),
             self,
             triggered=self.onPinRecursiveParent
         )
         self.actionUnpin = QAction(
             getIcon('cancel.png'),
-            iUnpin(),
+            iUnpinHere(),
             self,
             triggered=self.onUnpin
         )
 
         self.enableActions(False)
+        self.setEnabled(False)
 
     async def populateMenuAsync(self, pinMenu):
         # Populate the RPS first
@@ -294,15 +306,25 @@ class PinObjectButton(PopupToolButton, PinActions):
 
 
 class PinObjectAction(QWidgetAction):
-    def __init__(self, ipfsPath, parent=None):
+    def __init__(self,
+                 ipfsPath: IPFSPath = None,
+                 pinQueueName='default',
+                 buttonStyle='icon',
+                 parent=None):
         super().__init__(parent)
-        self.button.changeObject(ipfsPath)
+
+        self.setDefaultWidget(self.button)
+
+        self.button.pinQueueName = pinQueueName
+
+        if buttonStyle == 'iconAndText':
+            self.button.styleIconAndText()
+        elif buttonStyle == 'icon':
+            self.button.styleIconOnly()
+
+        if ipfsPath:
+            self.button.changeObject(ipfsPath)
 
     @cached_property
     def button(self):
-        button = PinObjectButton(parent=self.parent())
-        # button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        return button
-
-    def createWidget(self, parent):
-        return self.button
+        return PinObjectButton(parent=self.parent())

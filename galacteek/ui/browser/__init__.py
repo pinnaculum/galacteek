@@ -1284,6 +1284,7 @@ class BrowserTab(GalacteekTab):
 
         self.pinToolButton = PinObjectButton(
             mode=QToolButton.InstantPopup)
+        self.pinToolButton.pinQueueName = 'browser'
         self.ui.hLayoutCtrl.insertWidget(1, self.pinToolButton)
 
         self.ui.zoomInButton.clicked.connect(self.onZoomIn)

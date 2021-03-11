@@ -345,6 +345,7 @@ class IPFSHashExplorerWidget(QWidget):
         self.loadingCube.hide()
 
         self.pinButton = PinObjectButton()
+        self.pinButton.pinQueueName = 'unixfs'
 
         self.model = UnixFSDirectoryModel(self)
 
@@ -693,7 +694,9 @@ class IPFSHashExplorerWidget(QWidget):
         item = self.model.getUnixFSEntryInfoFromIdx(rows.pop())
         menu = QMenu(self)
 
-        pinAction = PinObjectAction(item.ipfsPath, parent=menu)
+        pinAction = PinObjectAction(item.ipfsPath, parent=menu,
+                                    pinQueueName='unixfs',
+                                    buttonStyle='iconAndText')
 
         def download():
             dirSel = directorySelect()

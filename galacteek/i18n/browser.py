@@ -52,18 +52,6 @@ def iJsConsole():
     return QCoreApplication.translate('BrowserTabForm', 'Javascript console')
 
 
-def iPin():
-    return QCoreApplication.translate('BrowserTabForm', 'PIN')
-
-
-def iPinThisPage():
-    return QCoreApplication.translate('BrowserTabForm', 'PIN (this page)')
-
-
-def iPinRecursive():
-    return QCoreApplication.translate('BrowserTabForm', 'PIN (recursive)')
-
-
 def iSaveSelectedText():
     return QCoreApplication.translate(
         'BrowserTabForm', 'Save selected text to IPFS')
