@@ -76,6 +76,16 @@ QToolBar#qaToolBar QToolButton::hover {
     padding: 5px;
 }
 
+QToolButton#pinObjectButton {
+    qproperty-iconSize: 48px;
+}
+
+QToolButton#pinObjectButton::hover {
+    qproperty-iconSize: 64px;
+    min-width: 64px;
+    min-height: 64px;
+}
+
 QDockWidget#dockCrafting {
     padding: 0;
     margin: 0;
