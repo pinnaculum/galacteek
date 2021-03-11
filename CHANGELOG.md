@@ -11,11 +11,14 @@ the changes in the CHANGELOG formatting.
 ## [0.5.0] - 2021-02-28
 
 ### Added
+- Support for remote pinning services
+- Add a workspace action to view the application's graph
 - GService: add methods to load services automatically from the
   filesystem tree
-- Add a workspace action to view the application's graph
 
 ### Changed
+- QA toolbar: modernize, should now support large number of items
+- Use a dock instead of a status bar
 - MFS: recursive collapse when double-clicking an already-expanded
   directory
 - Pubsub services are now part of the services tree

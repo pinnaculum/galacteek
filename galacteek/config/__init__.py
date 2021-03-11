@@ -22,32 +22,6 @@ from .util import empty
 from .util import dictDotLeaves
 
 
-class Configurable(object):
-    configModuleName = None
-
-    def __init__(self, parent=None, applyNow=False):
-        super(Configurable, self).__init__()
-        self.parent = parent
-
-        if applyNow:
-            self.cApply()
-
-    def cApply(self):
-        self.configApply(self.config())
-
-    def config(self):
-        if self.configModuleName:
-            return configForModule(self.configModuleName)
-
-        return None
-
-    def onConfigChanged(self):
-        self.configApply(self.config())
-
-    def configApply(self, config):
-        pass
-
-
 class NestedNamespace(SimpleNamespace):
     def __init__(self, dictionary, **kwargs):
         super().__init__(**kwargs)
@@ -240,22 +214,6 @@ def cGet(attr: str, mod=None):
         return cAttr(mod, cEntry['configAll'], attr)
 
 
-def cWidgetGet(widget: str, mod=None):
-    return cGet(f'widgets.{widget}', mod=mod if mod else callerMod())
-
-
-def cObjectGet(object: str, mod=None):
-    return cGet(f'objects.{object}', mod if mod else callerMod())
-
-
-def cQtClassConfigGet(qtClass: str):
-    return cGet(f'qtClasses.{qtClass}', mod=callerMod())
-
-
-def cClassConfigGet(cls: str):
-    return cGet(f'classes.{cls}', mod=callerMod())
-
-
 def cParentGet(attr: str):
     mod = callerMod()
     parentMod = '.'.join(mod.split('.')[:-1])
@@ -268,14 +226,14 @@ def cParentGet(attr: str):
 def cSet(attr: str, value, mod=None,
          merge=False,
          noCallbacks=False):
+    cbDelay = 700
+
     if not mod:
         mod = callerMod()
 
     cEntry = regConfigFromPyPkg(mod)
     if cEntry:
         cAttr(mod, cEntry['configAll'], attr, value, merge=merge)
-
-        # log.debug(f'cSet ({mod}): {attr} => {value}')
 
         def onTimeout(timer, cfgEntry):
             timer.stop()
@@ -286,8 +244,10 @@ def cSet(attr: str, value, mod=None,
                         ensure(callback())
                     else:
                         callback()
-                except Exception as err:
-                    log.debug(f'Cannot call {callback}: {err}')
+                except Exception:
+                    cfgEntry['callbacks'].remove(callback)
+
+                    # log.debug(f'{mod}: purged dead callback')
                     continue
 
         if not noCallbacks:
@@ -295,11 +255,11 @@ def cSet(attr: str, value, mod=None,
                 timer = QTimer()
                 timer.timeout.connect(
                     functools.partial(onTimeout, timer, cEntry))
-                timer.start(2000)
+                timer.start(cbDelay)
                 cEntry['timer'] = timer
             else:
                 cEntry['timer'].stop()
-                cEntry['timer'].start(2000)
+                cEntry['timer'].start(cbDelay)
 
 
 def cSetDefault(attr: str, value, mod):
@@ -314,6 +274,27 @@ def cParentSet(attr: str, value, merge=False):
     parentMod = '.'.join(mod.split('.')[:-1])
 
     return cSet(attr, value, mod=parentMod, merge=merge)
+
+
+def cWidgetGet(widget: str, mod=None):
+    return cGet(f'widgets.{widget}', mod=mod if mod else callerMod())
+
+
+def cWidgetSetAttr(widget: str, attr, value, mod=None):
+    cSet(f'widgets.{widget}.{attr}',
+         value, mod=mod if mod else callerMod())
+
+
+def cObjectGet(object: str, mod=None):
+    return cGet(f'objects.{object}', mod if mod else callerMod())
+
+
+def cQtClassConfigGet(qtClass: str):
+    return cGet(f'qtClasses.{qtClass}', mod=callerMod())
+
+
+def cClassConfigGet(cls: str):
+    return cGet(f'classes.{cls}', mod=callerMod())
 
 
 def cModuleSave():
@@ -360,3 +341,35 @@ def initFromTable():
             continue
 
     return True
+
+
+class Configurable(object):
+    configModuleName = None
+
+    def __init__(self, parent=None, applyNow=False):
+        super(Configurable, self).__init__()
+        self.parent = parent
+
+        if applyNow:
+            self.cApply()
+
+        if self.configModuleName:
+            configModRegCallback(
+                self.onConfigChanged,
+                mod=self.configModuleName
+            )
+
+    def cApply(self):
+        self.configApply(self.config())
+
+    def config(self):
+        if self.configModuleName:
+            return configForModule(self.configModuleName)
+
+        return None
+
+    def onConfigChanged(self):
+        self.configApply(self.config())
+
+    def configApply(self, config):
+        pass

@@ -83,6 +83,9 @@ echo "Installing wheel: $WHEEL"
 $APPIPIP install $WHEEL
 $APPIPIP install $WHEEL'[markdown-extensions]'
 
+# Pyqt dependencies
+$APPIPIP install $WHEEL'[ui-pyqt]'
+
 cp ../{LICENSE,LICENSE.go-ipfs,LICENSE.Qt.GPLv3} \
 	$APPDIR/usr/share/licenses/galacteek
 cp ../galacteek.desktop $APPDIR/usr/share/applications

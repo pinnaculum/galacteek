@@ -14,6 +14,7 @@
     <file>rc/close-hover.png</file>
     <file>rc/close-pressed.png</file>
     <file>rc/down_arrow.png</file>
+    <file>rc/Hmovetoolbar.png</file>
     <file>rc/Vmovetoolbar.png</file>
     <file>rc/left_arrow.png</file>
     <file>rc/stylesheet-branch-more.png</file>
@@ -23,6 +24,7 @@
     <file>rc/Hsepartoolbar.png</file>
     <file>rc/branch_open.png</file>
     <file>rc/Vsepartoolbar.png</file>
+    <file>rc/Exttoolbar.png</file>
     <file>rc/down_arrow_disabled.png</file>
     <file>rc/undock.png</file>
     <file>rc/checkbox_checked_disabled.png</file>
