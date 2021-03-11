@@ -19,7 +19,6 @@ You can easily access this manual by typing
    :name: mastertoc
 
     Settings <settings>
-    Toolbars <toolbars>
     Workspaces <workspaces>
     Using the clipboard <clipboard>
     Decentralized Identity <did>

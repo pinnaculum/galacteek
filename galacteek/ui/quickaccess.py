@@ -1,6 +1,5 @@
 import asyncio
 
-from PyQt5.QtWidgets import QToolBar
 from PyQt5.QtWidgets import QWidgetAction
 
 from PyQt5.QtCore import QCoreApplication
@@ -27,6 +26,8 @@ from .widgets import HashmarkToolButton
 from .widgets import QAObjTagItemToolButton
 from .widgets import URLDragAndDropProcessor
 
+from .widgets.toolbar import SmartToolBar
+
 from .i18n import iUnknown
 from .i18n import iHashmarkInfoToolTipShort
 
@@ -40,33 +41,54 @@ def iQuickAccess():
         ''')
 
 
-class QuickAccessToolBar(QToolBar, URLDragAndDropProcessor,
+class QuickAccessToolBar(SmartToolBar,
+                         URLDragAndDropProcessor,
                          KeyListener):
     """
     Quick Access toolbar, child of the main toolbar
     """
 
     def __init__(self, parent):
-        QToolBar.__init__(self, parent)
+        SmartToolBar.__init__(self, parent)
         URLDragAndDropProcessor.__init__(self)
         KeyListener.__init__(self)
 
-        self.setEnabled(False)
-
         self.app = QCoreApplication.instance()
+        self.analyzer = self.app.rscAnalyzer
         self.lock = asyncio.Lock(loop=self.app.loop)
+
+        self.setMovable(True)
         self.setObjectName('qaToolBar')
         self.setToolTip(iQuickAccess())
 
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
         self.setAcceptDrops(True)
-        self.setIconSize(QSize(32, 32))
-        self.analyzer = self.app.rscAnalyzer
+
+        self.setOrientation(Qt.Vertical)
 
         database.QATagItemConfigured.connectTo(self.qaTagItemConfigured)
 
         self.ipfsObjectDropped.connect(self.onIpfsDrop)
+
+    @property
+    def smallIcons(self):
+        return QSize(32, 32)
+
+    @property
+    def largeIcons(self):
+        return QSize(64, 64)
+
+    def sizeHintUnused(self):
+        try:
+            actionsCount = len(self.actions())
+            pages = actionsCount / 12
+        except Exception:
+            pass
+
+        return QSize(
+            max(3, pages) * (self.iconSize().width()),
+            self.height()
+        )
 
     async def save(self):
         pass

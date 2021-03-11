@@ -60,6 +60,7 @@ pip install wheel
 pip install -r "$OLD_CWD"/requirements.txt
 pip install $WHEEL
 pip install $WHEEL'[markdown-extensions]'
+pip install $WHEEL'[ui-pyqt]'
 
 # leave conda env
 source deactivate

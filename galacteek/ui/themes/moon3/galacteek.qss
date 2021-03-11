@@ -591,20 +591,84 @@ QToolBar {
     font-weight: bold;
 }
 
+QToolBar::handle {
+    qproperty-iconSize: 32px;
+}
+
 QToolBar::handle:horizontal {
     image: url(:/theme_icons/rc/Hmovetoolbar.png);
 }
+
 QToolBar::handle:vertical {
     image: url(:/theme_icons/rc/Vmovetoolbar.png);
 }
+
 QToolBar::separator:horizontal {
     image: url(:/theme_icons/rc/Hsepartoolbar.png);
 }
 QToolBar::separator:vertical {
     image: url(:/theme_icons/rc/Vsepartoolbar.png);
 }
-QToolButton#qt_toolbar_ext_button {
-    background: #58595a
+
+/* Galacteek toolbars */
+
+QToolBar#pyramidsToolBar {
+    padding: 0;
+    margin: 0;
+    border: 2px solid #446474;
+    background-color: #4f4f4f;
+}
+
+QToolBar#pyramidsToolBar QMenu {
+    font: 15pt "Segoe UI";
+}
+
+QToolBar#qaToolBar {
+    border: 2px solid #446474;
+    background-color: #4b1e1e;
+}
+
+QToolBar#qaToolBar[hovering=true] {
+    background-color: #2e3f57;
+    border: 2px solid black;
+}
+
+QToolBar#qaToolBar[hovering=false] {
+    border: 2px solid #446474;
+    background-color: #4b1e1e
+}
+
+QToolBar#qaToolBar[dropping=true] {
+    background-color: #d9742a;
+}
+
+QToolBar#qaToolBar[dropping=false] {
+    background-color: #4b1e1e;
+}
+
+QToolBar#qaToolBarOld[dropping=true] QToolButton {
+    qproperty-iconSize: 64px;
+    background-color: #d9742a;
+}
+
+QToolBar#qaToolBarOld[dropping=false] QToolButton {
+    qproperty-iconSize: 32px;
+    background-color: #4b1e1e;
+}
+
+
+QToolButton#qt_toolbar_ext_button_disabled {
+    background: #58595a;
+    border: 4px solid black;
+    background: url(:/theme_icons/rc/Exttoolbar.png) top center no-repeat;
+    min-width: 128px;
+    min-height: 128px;
+}
+
+QToolBarExtension {
+    qproperty-icon: url(:/theme_icons/rc/Exttoolbar.png);
+    min-width: 128px;
+    min-height: 128px;
 }
 
 QPushButton
@@ -1337,7 +1401,8 @@ QTextBrowser {
 
 
 QToolButton::pressed {
-    background-color: #5f8e8c;
+    background-color: #396256;
+    border: 2px solid black;
 }
 
 QToolButton::hover {
@@ -1345,8 +1410,9 @@ QToolButton::hover {
 }
 
 QToolButton::checked {
-    background-color: #9ecdbe;
-    border: 3px solid black;
+    background-color: #ccbea6;
+    border: 1px solid black;
+    padding: 2px;
 }
 
 

@@ -264,6 +264,7 @@ class GToolButton(QToolButton, Configurable):
 
     def __init__(self, parent=None, **kw):
         super(GToolButton, self).__init__(parent=parent, **kw)
+        self.app = QApplication.instance()
         self.setObjectName(self.gObjName)
         self.cApply()
 
@@ -275,6 +276,16 @@ class GToolButton(QToolButton, Configurable):
 
     def config(self):
         return cWidgetGet(self.objectName(), mod=self.configModuleName)
+
+    def enterEvent(self, event):
+        self.setProperty('hovering', True)
+        # self.app.repolishWidget(self)
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self.setProperty('hovering', False)
+        # self.app.repolishWidget(self)
+        super().leaveEvent(event)
 
 
 class GMediumToolButton(GToolButton):
@@ -530,7 +541,7 @@ class IPFSObjectToolButton(QToolButton):
         super().mousePressEvent(event)
 
 
-class QAObjTagItemToolButton(QToolButton):
+class QAObjTagItemToolButton(GMediumToolButton):
     """
     Used in the quickaccess toolbar
     """
@@ -539,6 +550,7 @@ class QAObjTagItemToolButton(QToolButton):
     def __init__(self, item, icon=None, parent=None):
         super(QAObjTagItemToolButton, self).__init__(parent=parent)
         self.app = QApplication.instance()
+        self.setObjectName('qaToolButton')
         if icon:
             self.setIcon(icon)
 
@@ -594,7 +606,7 @@ class HashmarkThisButton(GMediumToolButton):
         ensure(addHashmarkAsync(str(self.ipfsPath)))
 
 
-class HashmarkToolButton(QToolButton):
+class HashmarkToolButton(GMediumToolButton):
     """
     Used in the quickaccess toolbar
     """

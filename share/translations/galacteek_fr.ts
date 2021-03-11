@@ -829,13 +829,13 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="99"/>
+        <location filename="../../galacteek/ui/mainui.py" line="102"/>
         <source>
 Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="108"/>
+        <location filename="../../galacteek/ui/mainui.py" line="111"/>
         <source>
         &lt;p&gt;
         &lt;b&gt;galacteek&lt;/b&gt; is a multi-platform Qt5-based browser
@@ -1496,113 +1496,153 @@ Path: {0}, nodes processed: {1}</source>
 <context>
     <name>PyramidMaster</name>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="72"/>
-        <source>Create pyramid</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="78"/>
-        <source>Create image gallery</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="84"/>
-        <source>Create auto-sync pyramid</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="90"/>
-        <source>Create website (mkdocs)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="96"/>
-        <source>Open latest item in the pyramid</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="102"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="151"/>
         <source>Pyramid is empty</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="108"/>
-        <source>Pop item off the pyramid</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="114"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="163"/>
         <source>Force sync</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="120"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="169"/>
         <source>Rewind DAG</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="126"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="175"/>
         <source>Publish on my DID</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="132"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="181"/>
         <source>Register this pyramid as a service in the list of IP services on your DID (Decentralized Identifier)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="139"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="188"/>
         <source>Rewinding the DAG cancels the latest operation/transformation in the DAG&apos;s history</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="146"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="195"/>
         <source>Copy IPNS address to clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="152"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="201"/>
         <source>Copy IPNS gateway address to clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="158"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="207"/>
         <source>Add current clipboard item to the pyramid</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="165"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="214"/>
         <source>Generate pyramid&apos;s QR code</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="172"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="221"/>
         <source>Generate index&apos;s QR code</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="179"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="228"/>
         <source>Choose a pyramid to publish this object to</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="186"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="235"/>
         <source>Drop object to a pyramid</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="193"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="242"/>
         <source>Browse image gallery</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="200"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="249"/>
         <source>Browse image gallery (IPNS)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="207"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="256"/>
         <source>Change image gallery&apos;s title</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="73"/>
+        <source>Add: dynamic content</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="79"/>
+        <source>Create: image gallery</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="85"/>
+        <source>
+        &lt;p&gt;
+        Create an image gallery!
+
+        Drag-and-drop files from the filemanager to
+        your gallery
+        &lt;/p&gt;
+    </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="98"/>
+        <source>Add: filesystem synchronizer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="105"/>
+        <source>
+        &lt;p&gt;
+        Allows you to &lt;b&gt;synchronize&lt;/b&gt; files (that exist
+        on your local filesystem) automatically to IPFS.
+        &lt;/p&gt;
+
+        &lt;p&gt;
+        Whenever you make changes to these files on your
+        machine, they will &lt;b&gt;automatically&lt;/b&gt; be transferred to
+        the IPFS network.
+        &lt;/p&gt;
+        </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="123"/>
+        <source>Create: website (Markdown)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="130"/>
+        <source>
+        &lt;p&gt;
+        Create a simple website on the dweb.
+
+        You&apos;ll have to know Markdown to edit it, but it&apos;s pretty
+        simple.
+        &lt;/p&gt;
+        </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="144"/>
+        <source>Open latest content in the pyramid</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="157"/>
+        <source>Pop an item off the pyramid</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1979,7 +2019,7 @@ Path: {0}, nodes processed: {1}</source>
 <context>
     <name>toolbarQa</name>
     <message>
-        <location filename="../../galacteek/ui/quickaccess.py" line="35"/>
+        <location filename="../../galacteek/ui/quickaccess.py" line="36"/>
         <source>&lt;p&gt;&lt;b&gt;Quick Access&lt;/b&gt; toolbar&lt;/p&gt;
            &lt;p&gt;Drag and drop hashmarks and IPFS objects that
            you want to have easy access to&lt;/p&gt;

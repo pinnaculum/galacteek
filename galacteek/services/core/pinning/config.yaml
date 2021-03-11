@@ -1,0 +1,4 @@
+envs:
+  default:
+    rpsObserver:
+      statEvery: 60
