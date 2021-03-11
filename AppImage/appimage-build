@@ -92,6 +92,7 @@ cp ../galacteek.desktop $APPDIR/usr/share/applications
 cp ../galacteek.desktop $APPDIR
 cp ../galacteek.appdata.xml $APPDIR/usr/share/metainfo
 cp ../share/icons/galacteek.png $APPDIR
+cp ../share/icons/galacteek.png $APPDIR/org.flatpak.galacteek.Galacteek.png
 cp ../share/icons/galacteek.png $APPDIR/usr/share/icons/hicolor/512x512/apps
 
 find /usr/lib -iname 'libzbar.so*' -exec cp -av {} $APPDIR/usr/lib \;
