@@ -60,6 +60,7 @@ from .helpers import inputText
 from .helpers import inputTextLong
 from .widgets import PopupToolButton
 from .widgets import DownloadProgressButton
+from .widgets.pinwidgets import PinObjectAction
 from .dialogs import ChooseProgramDialog
 
 from . import dag
@@ -559,11 +560,9 @@ class ClipboardItemButton(PopupToolButton):
             iClipItemSubscribeToFeed(), self,
             triggered=self.onFollowFeed)
 
-        self.pinAction = QAction(
-            getIcon('pin.png'),
-            iClipboardEmpty(), self,
-            shortcut=QKeySequence('Ctrl+p'),
-            triggered=self.onPin)
+        self.pinAction = PinObjectAction(parent=self,
+                                         pinQueueName='clipboard',
+                                         buttonStyle='iconAndText')
 
         self.copyPathToCbAction = QAction(
             getIcon('clipboard.png'),
@@ -673,6 +672,8 @@ class ClipboardItemButton(PopupToolButton):
             log.debug('Empty path')
             return
 
+        self.pinAction.button.changeObject(self.item.ipfsPath)
+
         shortened = shortPathRepr(self.item.path)
 
         self.menu.clear()
@@ -693,6 +694,7 @@ class ClipboardItemButton(PopupToolButton):
         self.menu.addAction(self.ipldExplorerAction)
         self.menu.addSeparator()
         self.menu.addAction(self.pinAction)
+        self.menu.addSeparator()
 
         self.exploreHashAction.setText(iClipItemExplore())
         self.openAction.setText(iClipItemOpen())
@@ -701,7 +703,6 @@ class ClipboardItemButton(PopupToolButton):
         self.downloadAction.setText(iClipItemDownload())
         self.ipldExplorerAction.setText(iClipItemIpldExplorer())
         self.editObjectAction.setText(iEditObject())
-        self.pinAction.setText(iClipItemPin())
         self.copyPathToCbAction.setText(iCopyPathToClipboard())
         self.copyGwPathToCbAction.setText(iCopyPubGwUrlToClipboard())
 
@@ -920,7 +921,8 @@ class ClipboardItemButton(PopupToolButton):
                 openingFrom='clipboardmgr'
             ))
 
-    def onPin(self):
+    def onPinOld(self):
+        # Unused now, we use PinObjectAction
         if self.item:
             ensure(self.app.ipfsCtx.pin(self.item.path, True, None,
                                         qname='clipboard'))
