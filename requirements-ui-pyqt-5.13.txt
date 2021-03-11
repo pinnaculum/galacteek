@@ -1,0 +1,3 @@
+pyqt5==5.13.2
+pyqtchart==5.13.1
+pyqtwebengine==5.13.2
