@@ -16,7 +16,7 @@ envs:
       #
       dockCraftingZone:
         toolbarPyramids:
-          visible: True
+          visible: False
           iconSize: 32
 
           # Unused for now

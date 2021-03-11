@@ -178,6 +178,11 @@ class SettingsController(QObject, Configurable, KeyListener):
             return await messageBoxAsync(
                 f'Invalid options: {err}')
 
+        if cfgpinning.rpsByServiceName(options['name']) or \
+           cfgpinning.rpsByDisplayName(options['name']):
+            return await messageBoxAsync(
+                'A service with this name already exists')
+
         try:
             assert options['name'] is not None
             assert options['endpoint'] is not None

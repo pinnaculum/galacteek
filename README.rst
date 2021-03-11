@@ -16,8 +16,7 @@ for the IPFS_ peer-to-peer network.
 Community
 =========
 
-Join in on Aether_ in the
-`/b/Galacteek <aether://board/aa66bce9ed11dcf40720e2670167d3d0b3bd1481cb1bf97b7765cac6a44abd37>`_ community.
+Join in on the Aether_ network (search for the *Galacteek* community).
 
 Installation
 ============

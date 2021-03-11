@@ -31,6 +31,12 @@ def remoteServiceExistsByName(name: str):
 
 def rpsByDisplayName(name: str):
     for srv in remoteServices():
+        if srv.displayName == name:
+            return srv
+
+
+def rpsByServiceName(name: str):
+    for srv in remoteServices():
         if srv.serviceName == name:
             return srv
 
