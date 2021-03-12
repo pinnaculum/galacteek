@@ -80,6 +80,23 @@ QToolButton#pinObjectButton {
     qproperty-iconSize: 48px;
 }
 
+/*
+QToolButton#pinObjectButton QMenu::icon {
+    width: 64px;
+    height: 64px;
+}
+
+QToolButton#pinObjectButton QMenu {
+    icon-size: 64px;
+}
+
+
+QToolButton#pinObjectButton QMenu::item {
+    icon-size: 64px;
+    background: transparent;
+}
+*/
+
 QToolButton#pinObjectButton::hover {
     qproperty-iconSize: 64px;
     min-width: 64px;
@@ -89,4 +106,8 @@ QToolButton#pinObjectButton::hover {
 QDockWidget#dockCrafting {
     padding: 0;
     margin: 0;
+}
+
+QMenu#hashmarksMgrMenu {
+    font: 14pt "Segoe UI";
 }

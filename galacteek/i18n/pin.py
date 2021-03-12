@@ -78,11 +78,35 @@ def iUnpin():
 
 
 def iUnpinHere():
-    return QCoreApplication.translate('GalacteekWindow', 'Unpin')
+    return QCoreApplication.translate('GalacteekWindow', 'Unpin (here)')
 
 
-def iUnpinOk():
-    return QCoreApplication.translate('GalacteekWindow', 'Unpin OK')
+def iUnpinHereOk():
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        '''
+        <p>
+        The content was <b>unpinned</b> from your node..
+        It will disappear from your repository after
+        the next garbage-collection.
+        </p>
+        '''
+    )
+
+
+def iUnpinFromRpsOk():
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        '''
+        <p>
+        The content was <b>unpinned</b> by the remote service.
+        </p>
+        '''
+    )
+
+
+def iUnpinError():
+    return QCoreApplication.translate('GalacteekWindow', 'Unpin error')
 
 
 def iPinSingle():
@@ -152,6 +176,20 @@ def iPinToRps(serviceName):
     return QCoreApplication.translate(
         'GalacteekWindow',
         'Pin to remote service: {}'
+    ).format(serviceName)
+
+
+def iUnpinFromRps(serviceName):
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Unpin from remote service: {}'
+    ).format(serviceName)
+
+
+def iUnpinFromRpsToolTip(serviceName):
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Unpin from remote service: {}'
     ).format(serviceName)
 
 

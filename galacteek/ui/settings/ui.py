@@ -1,4 +1,3 @@
-
 from galacteek.config import cGet
 
 from . import SettingsFormController
@@ -71,6 +70,11 @@ class SettingsController(SettingsFormController):
             self.ui.urlHistoryEnable,
             'enabled',
             'galacteek.ui.history'
+        )
+        self.cfgWatch(
+            self.ui.toolbarsIconSize,
+            'styles.galacteek.desktopGeneric.metrics.toolBarIconSize',
+            'galacteek.ui'
         )
 
         self.ui.themeCombo.currentTextChanged.connect(

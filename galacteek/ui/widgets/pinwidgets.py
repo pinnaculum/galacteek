@@ -12,8 +12,11 @@ from galacteek import ensure
 from galacteek import cached_property
 from galacteek.config.cmods import pinning as cfgpinning
 
+from galacteek.core import runningApp
+
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
+from galacteek.ipfs.cidhelpers import stripIpfs
 from galacteek.ui.helpers import getIcon
 from galacteek.ui.helpers import messageBox
 from galacteek.ui.helpers import messageBoxAsync
@@ -25,7 +28,7 @@ from . import PopupToolButton
 class PinActions(QObject):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.spinPageLinksRequested = AsyncSignal(str)
+        self.sPinPageLinksRequested = AsyncSignal(str)
 
     def pinPath(self, path, recursive=True, notify=True):
         if isinstance(path, str):
@@ -53,7 +56,7 @@ class PinActions(QObject):
 
         result = await ipfsop.unpin(str(path))
         if result:
-            messageBox(iUnpinOk())
+            await messageBoxAsync(iUnpinHereOk())
 
     def onPinSingle(self):
         if not self.ipfsPath:
@@ -88,7 +91,37 @@ class PinActions(QObject):
         if not self.ipfsPath:
             return messageBox(iNotAnIpfsResource())
 
-        ensure(self.spinPageLinksRequested.emit(self.ipfsPath))
+        ensure(self.sPinPageLinksRequested.emit(self.ipfsPath))
+
+    async def onUnpinFromRps(self, service, *args):
+        if not self.ipfsPath or not self.ipfsPath.valid:
+            return
+
+        result = await self.rpsUnpin(
+            service,
+            self.ipfsPath
+        )
+
+        if result:
+            await messageBoxAsync(iUnpinFromRpsOk())
+        else:
+            await messageBoxAsync(iUnpinError())
+
+    @ipfsOp
+    async def rpsUnpin(self, ipfsop, service, ipfsPath: IPFSPath):
+        resolved = await ipfsop.resolve(
+            ipfsPath.objPath, recursive=True
+        )
+
+        if not resolved:
+            return False
+
+        cid = stripIpfs(resolved)
+
+        return await ipfsop.pinRemoteRemove(
+            service.serviceName,
+            cid=[cid]
+        )
 
     @ipfsOp
     async def onPinToRpsWithName(self, ipfsop, service, *args):
@@ -155,21 +188,27 @@ class PinActions(QObject):
                 return
 
             if code == 0:
-                self.app.systemTrayMessage('PIN', iPinSuccess(str(path)),
-                                           timeout=2000)
+                runningApp().systemTrayMessage(
+                    'PIN', iPinSuccess(str(path)),
+                    timeout=2000)
             elif code == 1:
-                self.app.systemTrayMessage('PIN', iPinError(str(path), msg),
-                                           timeout=3000)
+                runningApp().systemTrayMessage(
+                    'PIN', iPinError(str(path), msg),
+                    timeout=3000)
             elif code == 2:
                 # Cancelled, no need to notify here
                 pass
             else:
                 log.debug('Unknown status code for pinning result')
 
+    def onHelp(self):
+        runningApp().manuals.browseManualPage('pinning.html')
+
 
 class PinObjectButton(PopupToolButton, PinActions):
     ipfsPath: IPFSPath = None
     pinQueueName = 'default'
+    mode = 'object'
 
     @property
     def iconPinRed(self):
@@ -178,6 +217,14 @@ class PinObjectButton(PopupToolButton, PinActions):
     @property
     def iconPinBlue(self):
         return getIcon('pin/pin-diago-blue.png')
+
+    @property
+    def iconPillRed(self):
+        return getIcon('pin/pill-red.png')
+
+    @property
+    def iconPillBlue(self):
+        return getIcon('pin/pill-blue.png')
 
     def changeObject(self, ipfsPath: IPFSPath):
         if not ipfsPath or not ipfsPath.valid:
@@ -205,8 +252,6 @@ class PinObjectButton(PopupToolButton, PinActions):
         self.setObjectName('pinObjectButton')
         self.styleIconOnly()
 
-        # self.setText(iPinningOptions())
-
         iconPin = self.iconPinBlue
 
         self.actionPinS = QAction(
@@ -227,6 +272,21 @@ class PinObjectButton(PopupToolButton, PinActions):
             self,
             triggered=self.onPinRecursiveParent
         )
+
+        self.actionPinPageLinks = QAction(
+            iconPin,
+            iPinPageLinks(),
+            self,
+            triggered=self.onPinPageLinks
+        )
+
+        self.actionHelp = QAction(
+            getIcon('help.png'),
+            iHelp(),
+            self,
+            triggered=self.onHelp
+        )
+
         self.actionUnpin = QAction(
             getIcon('cancel.png'),
             iUnpinHere(),
@@ -245,10 +305,15 @@ class PinObjectButton(PopupToolButton, PinActions):
         pinMenu.addAction(self.actionPinR)
         pinMenu.addSeparator()
 
+        if self.mode == 'web':
+            pinMenu.addAction(self.actionPinPageLinks)
+            pinMenu.addSeparator()
+
         pinMenu.addAction(self.actionPinRParent)
         pinMenu.addSeparator()
         pinMenu.addAction(self.actionUnpin)
         pinMenu.addSeparator()
+        pinMenu.addAction(self.actionHelp)
 
         self.setIcon(self.iconPinBlue)
 
@@ -278,6 +343,18 @@ class PinObjectButton(PopupToolButton, PinActions):
                 partialEnsure(self.onPinToRps, srv)
             )
 
+            actionUnpin = QAction(
+                getIcon('cancel.png'),
+                iUnpinFromRps(srv.displayName),
+                self
+            )
+            actionUnpin.setToolTip(
+                iUnpinFromRpsToolTip(srv.displayName))
+
+            actionUnpin.triggered.connect(
+                partialEnsure(self.onUnpinFromRps, srv)
+            )
+
             actionPinC = QAction(
                 self.iconPinRed,
                 iPinToRpsWithName(srv.displayName),
@@ -295,8 +372,11 @@ class PinObjectButton(PopupToolButton, PinActions):
 
             menu.addAction(actionPinS)
             menu.addSeparator()
-            menu.addAction(actionPinC)
+            menu.addAction(actionUnpin)
+
             menu.addSeparator()
+            # menu.addAction(actionPinC)
+            # menu.addSeparator()
 
             srvCount += 1
 

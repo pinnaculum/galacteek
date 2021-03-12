@@ -67,8 +67,8 @@ def iIdentityInfo(vPlanet, ipHandle, did):
     return QCoreApplication.translate(
         'GalacteekWindow',
         '''<p>
-             <img src=':/share/icons/planets/{0}.png'
-               width='32' height='32'/>
+             <img src=':/share/icons/helmet.png'
+                width="32" height="32" />
            </p>
            <p>
             IP handle: <b>{1}</b>

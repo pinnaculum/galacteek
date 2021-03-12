@@ -2,6 +2,8 @@ import asyncio
 import shutil
 import os.path
 import importlib
+import pkgutil
+
 from pathlib import Path
 
 from mode import Service
@@ -11,8 +13,6 @@ from galacteek import log
 from galacteek import AsyncSignal
 
 from galacteek.core import runningApp
-from galacteek.core import pkgResourcesDirEntries
-from galacteek.core import pkgResourcesRscFilename
 from galacteek.core.ps import KeyListener
 from galacteek.core.ps import hubPublish
 from galacteek.core.ps import makeKeyService
@@ -166,13 +166,14 @@ class GService(Service, KeyListener):
             regConfigFromPyPkg(rootName)
             config = configForModule(rootName)
 
-            mod = importlib.import_module(modName)
-            service = mod.serviceCreate(
+            rootPkg = importlib.import_module(rootName)
+
+            srvMod = importlib.import_module(modName)
+            service = srvMod.serviceCreate(
                 srvDotPath, config, parent)
 
             GService.byDotName[srvDotPath] = service
         except Exception:
-            # log.debug(f'registerService ({srvDotPath}): Error {err}')
             pass
         else:
             if add:
@@ -181,11 +182,15 @@ class GService(Service, KeyListener):
             log.debug(f'registerService ({srvDotPath}): OK')
 
         s = parent if parent else self
-        for dotName in pkgResourcesDirEntries(rootName):
-            csDotPath = f'{srvDotPath}.{dotName}'
 
-            path = Path(pkgResourcesRscFilename(rootName, dotName))
-            if path.is_dir():
+        if rootPkg:
+            for imp, modname, isPkg in pkgutil.iter_modules(
+                    rootPkg.__path__):
+                if modname.startswith('_') or not isPkg:
+                    continue
+
+                csDotPath = f'{srvDotPath}.{modname}'
+
                 await s.registerService(csDotPath,
                                         parent=service,
                                         add=add)
