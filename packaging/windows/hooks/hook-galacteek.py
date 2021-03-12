@@ -23,6 +23,16 @@ hiddenimports = [
     'galacteek.docs.manual',
     'galacteek.docs.manual.en',
     'galacteek.docs.manual.en.html',
+
+    # Settings forms (they are dynamically loaded)
+    'galacteek.ui.forms.ui_settings_center',
+    'galacteek.ui.forms.ui_settings_files',
+    'galacteek.ui.forms.ui_settings_general',
+    'galacteek.ui.forms.ui_settings_ipfs',
+    'galacteek.ui.forms.ui_settings_pinning',
+    'galacteek.ui.forms.ui_settings',
+    'galacteek.ui.forms.ui_settings_ui',
+
     'markdown.extensions',
     'markdown.extensions.attr_list',
     'random_username',

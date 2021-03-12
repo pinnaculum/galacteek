@@ -25,8 +25,8 @@ class ThemeColors:
     webEngineBackground: str = '#323232'
     webEngineBackgroundActive: str = '#FFFAF0'
 
-    paletteLink: str = '#99C7FF'
-    paletteLinkVisited: str = '#BBEBFF'
+    paletteLink: str = '#1976d2'
+    paletteLinkVisited: str = '#2a5a89'
 
 
 @attr.s(auto_attribs=True)

@@ -21,7 +21,7 @@ class RemotePinServicesMaster(GService):
 
     @property
     def observeEvery(self):
-        self.serviceConfig.rpsObserver.statEvery
+        return self.serviceConfig.rpsObserver.statEvery
 
     async def declareSystem(self):
         self.manager = remote.RemotePinServicesManager()

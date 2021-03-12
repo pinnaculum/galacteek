@@ -1504,9 +1504,11 @@ class MainWindow(QMainWindow):
 
     def statusMessage(self, msg):
         self.userLogsButton.setToolTip(msg)
-        QToolTip.showText(
-            self.userLogsButton.mapToGlobal(QPoint(0, 0)), msg,
-            None, QRect(0, 0, 0, 0), 2400)
+
+        if self.userLogsButton.isVisible():
+            QToolTip.showText(
+                self.userLogsButton.mapToGlobal(QPoint(0, 0)), msg,
+                None, QRect(0, 0, 0, 0), 2400)
 
     def registerTab(self, tab, name, icon=None, current=True,
                     tooltip=None, workspace=None,
