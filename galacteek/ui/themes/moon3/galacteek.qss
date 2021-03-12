@@ -623,7 +623,8 @@ QToolBar#pyramidsToolBar QMenu {
     font: 15pt "Segoe UI";
 }
 
-QToolBar#qaToolBar {
+QToolBar#qaToolBar,
+QToolBar#qaToolBar[dropping=false] {
     border: 2px solid #446474;
     background-color: #4b1e1e;
 }
@@ -638,13 +639,16 @@ QToolBar#qaToolBar[hovering=false] {
     background-color: #4b1e1e
 }
 
+
 QToolBar#qaToolBar[dropping=true] {
     background-color: #d9742a;
 }
 
+/*
 QToolBar#qaToolBar[dropping=false] {
     background-color: #4b1e1e;
 }
+*/
 
 QToolBar#qaToolBarOld[dropping=true] QToolButton {
     qproperty-iconSize: 64px;

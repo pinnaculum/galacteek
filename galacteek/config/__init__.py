@@ -328,6 +328,17 @@ def configModRegCallback(callback, mod=None):
         eConf['callbacks'].append(callback)
 
 
+def configModRmCallback(callback, mod=None):
+    global cCache
+
+    eConf = cCache.get(mod if mod else callerMod())
+    if eConf:
+        try:
+            eConf['callbacks'].remove(callback)
+        except Exception:
+            pass
+
+
 def initFromTable():
     from galacteek.config.table import cfgInitTable
 
@@ -373,3 +384,10 @@ class Configurable(object):
 
     def configApply(self, config):
         pass
+
+    def __del__(self):
+        if self.configModuleName:
+            configModRmCallback(
+                self.onConfigChanged,
+                mod=self.configModuleName
+            )

@@ -531,14 +531,14 @@ class GalacteekApplication(QApplication):
 
     def initSystemTray(self):
         self.systemTray = QSystemTrayIcon(self)
-        self.systemTray.setIcon(getIcon('galacteek-incandescent.png'))
+        self.systemTray.setIcon(getIcon('galacteek.png'))
         self.systemTray.show()
         self.systemTray.activated.connect(self.onSystemTrayIconClicked)
 
         systemTrayMenu = QMenu(self.mainWindow)
 
         actionShow = systemTrayMenu.addAction('Show')
-        actionShow.setIcon(getIcon('galacteek-incandescent.png'))
+        actionShow.setIcon(getIcon('galacteek.png'))
         actionShow.triggered.connect(self.onShowWindow)
 
         systemTrayMenu.addSeparator()

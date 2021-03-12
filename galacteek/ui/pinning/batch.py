@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QHeaderView
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QAbstractItemView
 
+from galacteek import ensure
 from galacteek.ipfs import ipfsOp
 
 from ..widgets import GalacteekTab

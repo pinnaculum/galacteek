@@ -103,6 +103,7 @@ from ..widgets import *
 
 from galacteek.ui.pinning.pinstatus import PinBatchWidget, PinBatchTab
 from galacteek.ui.widgets.pinwidgets import PinObjectButton
+from galacteek.ui.widgets.pinwidgets import PinObjectAction
 from galacteek.appsettings import *
 
 
@@ -481,6 +482,7 @@ class WebView(IPFSWebView):
             mediaIpfsPath = None
 
         if ipfsPath.valid:
+
             menu = QMenu(self)
             menu.addAction(getIcon('clipboard.png'),
                            iCopyPathToClipboard(),
@@ -503,16 +505,23 @@ class WebView(IPFSWebView):
                            iHashmark(),
                            functools.partial(self.hashmarkPath, str(ipfsPath)))
             menu.addSeparator()
-            menu.addAction(getIcon('pin.png'), iPin(),
-                           functools.partial(self.browserTab.pinPath,
-                                             ipfsPath.objPath))
-            menu.addAction(
-                getIcon('pin.png'),
-                iPinRecursive(),
-                functools.partial(
-                    self.browserTab.pinPath,
-                    ipfsPath.objPath,
-                    True))
+
+            if 0:
+                menu.addAction(getIcon('pin.png'), iPin(),
+                               functools.partial(self.browserTab.pinPath,
+                                                 ipfsPath.objPath))
+                menu.addAction(
+                    getIcon('pin.png'),
+                    iPinRecursive(),
+                    functools.partial(
+                        self.browserTab.pinPath,
+                        ipfsPath.objPath,
+                        True))
+
+            pinObjectAction = PinObjectAction(ipfsPath, parent=menu)
+
+            menu.addSeparator()
+            menu.addAction(pinObjectAction)
 
             def rscAnalyzed(fut, path, iMenu):
                 try:
@@ -1275,21 +1284,27 @@ class BrowserTab(GalacteekTab):
         # PIN tool button
         iconPin = getIcon('pin.png')
 
-        pinMenu = QMenu(self)
-        pinMenu.addAction(iconPin, iPinThisPage(), self.onPinSingle)
-        pinMenu.addAction(iconPin, iPinRecursive(), self.onPinRecursive)
-        pinMenu.addSeparator()
-        pinMenu.addAction(iconPin, iPinRecursiveParent(),
-                          self.onPinRecursiveParent)
-        pinMenu.addSeparator()
-        pinMenu.addAction(iconPin, iPinPageLinks(), self.onPinPageLinks)
-        pinMenu.addSeparator()
-        pinMenu.addAction(getIcon('help.png'), iHelp(), functools.partial(
-            self.app.manuals.browseManualPage, 'pinning.html'))
+        if 0:
+            # Unused now
+            pinMenu = QMenu(self)
+            pinMenu.addAction(iconPin, iPinThisPage(), self.onPinSingle)
+            pinMenu.addAction(iconPin, iPinRecursive(), self.onPinRecursive)
+            pinMenu.addSeparator()
+            pinMenu.addAction(iconPin, iPinRecursiveParent(),
+                              self.onPinRecursiveParent)
+            pinMenu.addSeparator()
+            pinMenu.addAction(iconPin, iPinPageLinks(), self.onPinPageLinks)
+            pinMenu.addSeparator()
+            pinMenu.addAction(getIcon('help.png'), iHelp(), functools.partial(
+                self.app.manuals.browseManualPage, 'pinning.html'))
 
         self.pinToolButton = PinObjectButton(
             mode=QToolButton.InstantPopup)
         self.pinToolButton.pinQueueName = 'browser'
+        self.pinToolButton.mode = 'web'
+        self.pinToolButton.sPinPageLinksRequested.connectTo(
+            self.onPinPageLinks)
+
         self.ui.hLayoutCtrl.insertWidget(1, self.pinToolButton)
 
         self.ui.zoomInButton.clicked.connect(self.onZoomIn)
@@ -1797,32 +1812,7 @@ class BrowserTab(GalacteekTab):
             currentPage = self.webEngineView.page()
             currentPage.toHtml(htmlRendered)
 
-    def onPinSingle(self):
-        if not self.currentIpfsObject:
-            return messageBox(iNotAnIpfsResource())
-
-        self.pinPath(self.currentIpfsObject.objPath, recursive=False)
-
-    def onPinRecursive(self):
-        if not self.currentIpfsObject:
-            return messageBox(iNotAnIpfsResource())
-
-        self.pinPath(self.currentIpfsObject.objPath, recursive=True)
-
-    def onPinRecursiveParent(self):
-        if not self.currentIpfsObject:
-            return messageBox(iNotAnIpfsResource())
-
-        if self.currentUrlHasFileName:
-            parent = self.currentIpfsObject.parent()
-            self.pinPath(parent.objPath, recursive=True)
-        else:
-            self.pinPath(self.currentIpfsObject.objPath, recursive=True)
-
-    def onPinPageLinks(self):
-        if not self.currentIpfsObject:
-            return messageBox(iNotAnIpfsResource())
-
+    async def onPinPageLinks(self, ipfsPath: IPFSPath):
         def htmlReady(htmlCode):
             ensure(self.pinIpfsLinksInPage(htmlCode))
 

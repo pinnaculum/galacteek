@@ -11,8 +11,9 @@ filemanager).
 Files workspace
 ---------------
 
-This workspace contains the filemanager. Anything opened by the
-filemanager will appear on this workspace.
+This workspace hosts the filemanager. Anything opened by the
+filemanager will appear on this workspace. Also, directories
+which do not contain web pages will be opened here.
 
 Planet-bound workspaces
 -----------------------
@@ -32,7 +33,7 @@ always be opened on the workspace of Mars.
 Search workspace
 ----------------
 
-This workspace is dedicated to IPFS searching.
+This workspace is dedicated to searching content on the dweb.
 
 Edition workspace
 -----------------
@@ -49,4 +50,4 @@ can open the Atom feeds reader and connect to chat rooms.
 Multimedia workspace
 --------------------
 
-This workspace is dedicated to the mediaplayer.
+This workspace hosts the mediaplayer.

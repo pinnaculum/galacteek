@@ -103,9 +103,15 @@
 
         ENS_
 
+    garbage collector
+
+        The job of the IPFS garbage collector is to
+        routinely purge unneeded/obsolete objects from
+        the IPFS objects repository.
+
     galacteek
 
-        Browser for the distributed web
+        Browser and content crafter for the distributed web
 
     go-ipfs
 
@@ -183,6 +189,24 @@
             <hash-func-type><digest-length><digest-value>
 
         multiformats_
+
+    Node
+
+        Your IPFS node (an agent/node in the IPFS Peer-to-Peer
+        network)
+
+    pinning
+
+        The act (and choice/duty) of pinning some content,
+        refers to the 
+
+    RPS
+
+        Remote Pinning Service
+
+        A Remote Pinning Service is an IPFS service that pins
+        content on demand, through a specific API. go-ipfs
+        supports remote pinning since the 0.8.0 version.
 
     UnixFS
 

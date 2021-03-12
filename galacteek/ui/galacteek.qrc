@@ -9,6 +9,7 @@
     <file>../../share/icons/printer.png</file>
     <file>../../share/icons/blocks-cluster.png</file>
     <file>../../share/icons/helmet.png</file>
+    <file>../../share/icons/helmets/ipfs-cosmon-1d3351-2.png</file>
     <file>../../share/icons/ipservice.png</file>
     <file>../../share/icons/logs.png</file>
     <file>../../share/icons/tor.png</file>
@@ -201,6 +202,8 @@
     <file>../../share/icons/pin/pin-diago-blue.png</file>
     <file>../../share/icons/pin/pin-diago-red.png</file>
     <file>../../share/icons/pin/pin-circle-red.png</file>
+    <file>../../share/icons/pin/pill-blue.png</file>
+    <file>../../share/icons/pin/pill-red.png</file>
     <file>../../share/icons/lock-and-key.png</file>
     <file>../../share/icons/left-arrow.png</file>
     <file>../../share/icons/kgpg.png</file>
