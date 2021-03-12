@@ -1150,7 +1150,12 @@ class BrowserTab(GalacteekTab):
 
         self.ui.backButton.setEnabled(False)
         self.ui.forwardButton.setEnabled(False)
+        self.ui.backButton.setVisible(False)
+        self.ui.forwardButton.setVisible(False)
+
         self.ui.stopButton.setEnabled(False)
+        self.ui.reloadPageButton.hide()
+        self.ui.stopButton.hide()
 
         # Page ops button
         self.createPageOpsButton()
@@ -2013,6 +2018,9 @@ class BrowserTab(GalacteekTab):
 
         if currentPage:
             history = currentPage.history()
+
+            self.ui.backButton.setVisible(history.canGoBack())
+            self.ui.forwardButton.setVisible(history.canGoForward())
             self.ui.backButton.setEnabled(history.canGoBack())
             self.ui.forwardButton.setEnabled(history.canGoForward())
 
@@ -2069,11 +2077,15 @@ class BrowserTab(GalacteekTab):
                 '''QProgressBar::chunk#pBarBrowser {
                     background-color: transparent;
                 }''')
+            self.ui.stopButton.hide()
+            self.ui.reloadPageButton.show()
         else:
             self.ui.pBarBrowser.setStyleSheet(
                 '''QProgressBar::chunk#pBarBrowser {
                     background-color: #4b9fa2;
                 }''')
+            self.ui.reloadPageButton.hide()
+            self.ui.stopButton.show()
 
     def browseFsPath(self, path, schemePreferred='ipfs'):
         def _handle(iPath):
