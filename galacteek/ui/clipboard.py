@@ -977,12 +977,19 @@ class ClipboardItemsStack(QStackedWidget):
 
         self.app = QApplication.instance()
         self.app.clipTracker.itemRemoved.connect(self.onItemRemoved)
-        self.setObjectName('currentClipItem')
+        self.setObjectName('clipboardStack')
         self.rscOpener = self.app.resourceOpener
         self.addItemButton()
 
         self.setMinimumSize(QSize(64, 64))
         self.setMaximumSize(QSize(64, 64))
+
+    def updateProperties(self):
+        self.setProperty(
+            'haveActiveItem',
+            self.count() > 0
+        )
+        self.app.repolishWidget(self)
 
     def onItemRemoved(self, item):
         for idx in range(0, self.count() + 1):
