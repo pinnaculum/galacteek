@@ -64,7 +64,7 @@ from .files import unixfs
 from .dids import DIDExplorer
 from .clips import RotatingCubeClipSimple
 from .clips import RotatingCubeRedFlash140d
-from .eth import EthereumStatusButton
+# from .eth import EthereumStatusButton
 from .textedit import TextEditorTab
 from .iprofile import ProfileEditDialog
 from .iprofile import ProfileButton
@@ -1084,7 +1084,7 @@ class MainWindow(QMainWindow):
         self.pubsubStatusButton.setIcon(getIcon('network-offline.png'))
 
         self.rpsStatusButton = RPSStatusButton()
-        self.rpsStatusButton.setIcon(getIcon('pin/pin-diago-red.png'))
+        self.rpsStatusButton.setIcon(getIcon('pin/pin-circle-red.png'))
 
         self.ipfsStatusCube = AnimatedLabel(
             RotatingCubeRedFlash140d(speed=10),
@@ -1122,7 +1122,6 @@ class MainWindow(QMainWindow):
         self.lastLogTimer = QTimer()
         self.lastLogTimer.timeout.connect(self.onLastLogTimeout)
 
-        self.ethereumStatusBtn = EthereumStatusButton(parent=self)
         self.statusbar.hide()
 
         # Connection status timer
@@ -1142,9 +1141,10 @@ class MainWindow(QMainWindow):
             parent=self
         )
 
+        # self.ethereumStatusBtn = EthereumStatusButton(parent=self)
         self.dockCrafting.addStatusWidget(self.ipfsStatusCube)
         self.dockCrafting.addStatusWidget(self.torControlButton)
-        self.dockCrafting.addStatusWidget(self.ethereumStatusBtn)
+        # self.dockCrafting.addStatusWidget(self.ethereumStatusBtn)
 
         self.dockCrafting.addStatusWidget(self.pinningStatusButton)
         self.dockCrafting.addStatusWidget(self.rpsStatusButton)
