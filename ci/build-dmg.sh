@@ -123,9 +123,20 @@ chmod a+x galacteek.app/Contents/MacOS/galacteek
 pushd galacteek.app/Contents/Resources
 rm -rf pkgs
 find . -type d -iname '__pycache__' -print0 | xargs -0 rm -r
+
 rm -rf lib/python3.7/site-packages/Cryptodome/SelfTest/*
-rm -rf lib/python3.7/site-packages/PyQt5/Qt/plugins/geoservices
-rm -rf lib/python3.7/site-packages/PyQt5/Qt/plugins/sceneparsers
+rm -rf lib/python3.7/site-packages/PyQt5/Qt5/plugins/geoservices
+rm -rf lib/python3.7/site-packages/PyQt5/Qt5/plugins/sceneparsers
+rm -rf lib/python3.7/site-packages/PyQt5/Qt5/plugins/assetimporters
+
+TSL_PATH=./lib/python3.7/site-packages/PyQt5/Qt5/translations
+find $TSL_PATH -type f -not -iname "*en*" -a -not -iname "*es*" \
+	-a -not -iname "*fr*" -exec rm {} \;
+
+QTWEB_TS_PATH=./lib/python3.7/site-packages/PyQt5/Qt5/translations/qtwebengine_locales
+find $QTWEB_TS_PATH -type f -not -iname "*en*" -a -not -iname "*es*" \
+	-a -not -iname "*fr*" -exec rm {} \;
+
 rm -rf lib/cmake/
 rm -f bin/sqlite3*
 rm -rf include/

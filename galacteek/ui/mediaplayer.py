@@ -357,6 +357,7 @@ class MediaPlayerTab(GalacteekTab):
         self.clipboardButton.setEnabled(False)
 
         self.pinButton = PinObjectButton()
+        self.pinButton.pinQueueName = 'mplayer'
         self.pinButton.setEnabled(False)
 
         # self.processClipboardItem(self.app.clipTracker.current, force=True)
