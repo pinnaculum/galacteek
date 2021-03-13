@@ -2,7 +2,6 @@ import asyncio
 import shutil
 import os.path
 import importlib
-import pkgutil
 
 from pathlib import Path
 
@@ -17,12 +16,13 @@ from galacteek.core.ps import KeyListener
 from galacteek.core.ps import hubPublish
 from galacteek.core.ps import makeKeyService
 
+from galacteek.core.pkglister import pkgListPackages
+
 from galacteek.config import configModRegCallback
 from galacteek.config import configForModule
 from galacteek.config import regConfigFromPyPkg
 
 from galacteek.ld import ipsContextUri
-
 
 servicesRootPath = Path(os.path.dirname(__file__))
 
@@ -166,8 +166,6 @@ class GService(Service, KeyListener):
             regConfigFromPyPkg(rootName)
             config = configForModule(rootName)
 
-            rootPkg = importlib.import_module(rootName)
-
             srvMod = importlib.import_module(modName)
             service = srvMod.serviceCreate(
                 srvDotPath, config, parent)
@@ -183,16 +181,11 @@ class GService(Service, KeyListener):
 
         s = parent if parent else self
 
-        if rootPkg:
-            for imp, modname, isPkg in pkgutil.iter_modules(
-                    rootPkg.__path__):
-                if modname.startswith('_') or not isPkg:
-                    continue
+        for pkgName, fullName in pkgListPackages(rootName):
+            csDotPath = f'{srvDotPath}.{pkgName}'
 
-                csDotPath = f'{srvDotPath}.{modname}'
-
-                await s.registerService(csDotPath,
-                                        parent=service,
-                                        add=add)
+            await s.registerService(csDotPath,
+                                    parent=service,
+                                    add=add)
 
         return service
