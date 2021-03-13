@@ -33,6 +33,16 @@ hiddenimports = [
     'galacteek.ui.forms.ui_settings',
     'galacteek.ui.forms.ui_settings_ui',
 
+    # Services
+    'galacteek.services.net.bitmessage',
+    'galacteek.services.net.tor',
+    'galacteek.services.dweb.inter',
+    'galacteek.services.core.pinning',
+    'galacteek.services.core.peers.didauth',
+    'galacteek.services.core.peers.chat',
+    'galacteek.services.core.peers.dagexchange',
+    'galacteek.services.core.peers.ident',
+
     'markdown.extensions',
     'markdown.extensions.attr_list',
     'random_username',

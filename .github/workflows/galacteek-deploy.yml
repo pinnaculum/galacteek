@@ -97,6 +97,8 @@ jobs:
         echo "IPFS_DIST_OS=linux" >> $GITHUB_ENV
         echo "BUNDLE_FILENAME=${BUNDLE_ROOT}-x86_64.AppImage" >> $GITHUB_ENV
         echo "BUNDLE_PATH=${GLK_ASSETS}/${BUNDLE_ROOT}-x86_64.AppImage" >> $GITHUB_ENV
+        echo "BUNDLE_FLATPAK_FILENAME=${BUNDLE_ROOT}-x86_64.flatpak" >> $GITHUB_ENV
+        echo "BUNDLE_FLATPAK_PATH=${GLK_ASSETS}/${BUNDLE_ROOT}-x86_64.flatpak" >> $GITHUB_ENV
 
     - name: OS-specific vars (macOS)
       if: startsWith(matrix.os, 'macOS')
@@ -237,9 +239,10 @@ jobs:
         cd ..
 
     - name: Build Flatpak
-      if: contains(toJson(github.event.commits), '[deploy-flatpak]') == true
+      if: startsWith(matrix.os, 'ubuntu') && contains(toJson(github.event.commits), '[flatpak]') == true
       run: |
-        flatpak-builder --force-clean --repo=flatpak-repo flatpak-build packaging/linux/flatpak/org.flatpak.galacteek.Galacteek.yaml
+        flatpak-builder --force-clean --repo=gflat-repo flatpak-build packaging/linux/flatpak/org.flatpak.galacteek.Galacteek.yaml
+        flatpak build-bundle gflat-repo ${BUNDLE_FLATPAK_FILENAME} org.flatpak.galacteek.Galacteek
 
     - name: Build DMG
       if: startsWith(matrix.os, 'macOS')
@@ -261,6 +264,17 @@ jobs:
         upload_url: ${{ needs.create_release.outputs.upload_url }}
         asset_name: ${{ env.BUNDLE_FILENAME }}
         asset_path: ${{ env.BUNDLE_PATH }}
+        asset_content_type: application/octet-stream
+
+    - name: Release flatpak asset
+      if: startsWith(matrix.os, 'ubuntu') && contains(toJson(github.event.commits), '[flatpak]') == true
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.CI_TOKEN }}
+      with:
+        upload_url: ${{ needs.create_release.outputs.upload_url }}
+        asset_name: ${{ env.BUNDLE_FLATPAK_FILENAME }}
+        asset_path: ${{ env.BUNDLE_FLATPAK_PATH }}
         asset_content_type: application/octet-stream
 
   create_release:
