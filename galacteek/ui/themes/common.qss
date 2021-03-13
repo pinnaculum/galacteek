@@ -111,3 +111,16 @@ QDockWidget#dockCrafting {
 QMenu#hashmarksMgrMenu {
     font: 14pt "Segoe UI";
 }
+
+QLineEdit#urlZone {
+    margin-left: 8px;
+    padding: 5px;
+    font: 14pt "Segoe UI";
+    min-height: 48x;
+    max-height: 96px;
+    background-color: black;
+}
+
+QLineEdit#urlZone::hover {
+    border: 1px solid #508cac;
+}

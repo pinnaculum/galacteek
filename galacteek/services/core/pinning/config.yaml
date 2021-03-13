@@ -1,4 +1,4 @@
 envs:
   default:
     rpsObserver:
-      statEvery: 60
+      statEvery: 90

@@ -1567,97 +1567,87 @@ Path: {0}, nodes processed: {1}</source>
 <context>
     <name>PyramidMaster</name>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="151"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="152"/>
         <source>Pyramid is empty</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="163"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="164"/>
         <source>Force sync</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="169"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="170"/>
         <source>Rewind DAG</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="175"/>
-        <source>Publish on my DID</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="181"/>
-        <source>Register this pyramid as a service in the list of IP services on your DID (Decentralized Identifier)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="188"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="197"/>
         <source>Rewinding the DAG cancels the latest operation/transformation in the DAG&apos;s history</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="195"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="204"/>
         <source>Copy IPNS address to clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="201"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="210"/>
         <source>Copy IPNS gateway address to clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="207"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="216"/>
         <source>Add current clipboard item to the pyramid</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="214"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="223"/>
         <source>Generate pyramid&apos;s QR code</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="221"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="230"/>
         <source>Generate index&apos;s QR code</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="228"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="237"/>
         <source>Choose a pyramid to publish this object to</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="235"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="244"/>
         <source>Drop object to a pyramid</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="242"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="251"/>
         <source>Browse image gallery</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="249"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="258"/>
         <source>Browse image gallery (IPNS)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="256"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="265"/>
         <source>Change image gallery&apos;s title</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="73"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="74"/>
         <source>Add: dynamic content</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="79"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="80"/>
         <source>Create: image gallery</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="85"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="86"/>
         <source>
         &lt;p&gt;
         Create an image gallery!
@@ -1669,12 +1659,12 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="98"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="99"/>
         <source>Add: filesystem synchronizer</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="105"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="106"/>
         <source>
         &lt;p&gt;
         Allows you to &lt;b&gt;synchronize&lt;/b&gt; files (that exist
@@ -1690,12 +1680,7 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="123"/>
-        <source>Create: website (Markdown)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="130"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="131"/>
         <source>
         &lt;p&gt;
         Create a simple website on the dweb.
@@ -1707,13 +1692,33 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="144"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="145"/>
         <source>Open latest content in the pyramid</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="157"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="158"/>
         <source>Pop an item off the pyramid</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="124"/>
+        <source>Create: dwebsite (Markdown)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="176"/>
+        <source>Publish</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="183"/>
+        <source>Unpublish</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="190"/>
+        <source>Register this content as a service in the list of IP services on your DID (Decentralized Identity)</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
