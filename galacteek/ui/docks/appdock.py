@@ -105,6 +105,11 @@ class DwebCraftingWidget(QWidget, Configurable):
                        mod='galacteek.ui.widgets')
         self.adjust()
 
+    def resizeEvent(self, event):
+        self.adjust()
+
+        super().resizeEvent(event)
+
     def adjust(self, checked=None):
         if self.toolbarPyramids.isVisible():
             self.spacerAdjust(QSizePolicy.Maximum)

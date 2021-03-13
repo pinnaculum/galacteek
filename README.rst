@@ -181,7 +181,7 @@ Contributions
 
 Contributions that can help:
 
-- Write DID services (a chat service using JSON-LD for example)
+- Write DID services
 - UI translations (French, Spanish)
 - Manual translations (French, Spanish)
 
@@ -193,12 +193,13 @@ Platforms supported
   Raspberry_ page.
 - Any BSD operating system (with manual build)
 - MacOS
-- Windows
 
-The following features are not yet available for windows:
+**Unofficially** supported:
 
-- Bitmessage client (receiving messages works, but a cygwin IPC bug
-  prevents sending messages)
+- *Windows*: although an installer is provided, no special effort
+  will be put in maintaining support for this platform. Not all
+  features will work. By all means use Linux and you'll enjoy the
+  full experience.
 
 Because of the nature of the software's stack (asyncio/Quamash),
 support for any other platform is unlikely.
@@ -248,7 +249,7 @@ from the ipfs-logo_ project's repository is included, unchanged.
 .. _aiomonitor: https://github.com/aio-libs/aiomonitor
 .. _asyncqt: https://github.com/gmarull/asyncqt
 .. _sponsor: https://github.com/pinnaculum/galacteek/blob/master/SPONSOR.rst
-.. _raspberry: https://github.com/pinnaculum/galacteek/RASPBERRY.rst
+.. _raspberry: https://github.com/pinnaculum/galacteek/blob/master/RASPBERRY.rst
 .. _quamash: https://github.com/harvimt/quamash
 .. _go-ipfs: https://github.com/ipfs/go-ipfs
 .. _dist.ipfs.io: https://dist.ipfs.io

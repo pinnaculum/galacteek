@@ -1,5 +1,4 @@
 import importlib
-from pathlib import Path
 
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QListWidgetItem
@@ -21,11 +20,17 @@ from galacteek.config import Configurable
 from galacteek.core import runningApp
 from galacteek.core.ps import KeyListener
 
-from galacteek.qml import quickWidgetFromFile
-from galacteek.core import pkgResourcesRscFilename
-
 from galacteek import ensure
 from galacteek.appsettings import *
+
+from galacteek.ui.forms import ui_settings_ui
+from galacteek.ui.forms import ui_settings_files
+from galacteek.ui.forms import ui_settings_general
+from galacteek.ui.forms import ui_settings_pinning
+from galacteek.ui.forms import ui_settings_ipfs
+from galacteek.ui.forms import ui_settings_center
+
+from . import *
 
 from ..widgets import GalacteekTab
 from ..forms import ui_settings
@@ -347,8 +352,6 @@ SettingsModControllerRole = Qt.UserRole + 3
 
 class SettingsCenterTab(GalacteekTab):
     def tabSetup(self):
-        from galacteek.ui.forms import ui_settings_center
-
         widget = QWidget()
 
         self.modules = {}
@@ -357,11 +360,16 @@ class SettingsCenterTab(GalacteekTab):
 
         self.ui.sModules.itemClicked.connect(self.onModuleClicked)
 
-        self.load('General', 'general')
-        self.load('IPFS', 'ipfs')
-        self.load('UI', 'ui')
-        self.load('Files', 'files')
-        self.load(iPinningSettings(), 'pinning')
+        self.load('General',
+                  'general', ui_settings_general)
+        self.load('IPFS',
+                  'ipfs', ui_settings_ipfs)
+        self.load('User Interface',
+                  'ui', ui_settings_ui)
+        self.load('Files',
+                  'files', ui_settings_files)
+        self.load(iPinningSettings(),
+                  'pinning', ui_settings_pinning)
 
         self.addToLayout(widget)
 
@@ -373,24 +381,16 @@ class SettingsCenterTab(GalacteekTab):
         if widget:
             self.ui.stack.setCurrentWidget(widget)
 
-    def load(self, displayName: str, modname: str):
-        qmlPath = Path(pkgResourcesRscFilename(
-            'galacteek.ui.settings',
-            f'{modname}.qml'
-        ))
+    def load(self, displayName: str, modname: str, uimod):
         try:
             ctrlMod = importlib.import_module(
                 f'galacteek.ui.settings.{modname}')
-            if qmlPath.is_file():
-                widget = quickWidgetFromFile(str(qmlPath))
-            else:
-                mod = importlib.import_module(
-                    f'galacteek.ui.forms.ui_settings_{modname}')
-                form = mod.Ui_SettingsForm()
 
-                widget = QWidget()
-                widget.ui = form
-                form.setupUi(widget)
+            form = uimod.Ui_SettingsForm()
+
+            widget = QWidget()
+            widget.ui = form
+            form.setupUi(widget)
 
             controller = ctrlMod.SettingsController(widget)
 

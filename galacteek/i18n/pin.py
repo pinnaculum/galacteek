@@ -244,7 +244,7 @@ def iRpsStatusSummary(service, status, pinned, pinning, queued, failed):
         'GalacteekWindow',
         f'''
         <div>
-        <p>Remote pinning service<b>{service}</b></p>
+        <p>Remote pinning service: <b>{service}</b></p>
         <p>{status}</p>
         <ul>
             <li><b>PIND: {pinned} objects</b></li>

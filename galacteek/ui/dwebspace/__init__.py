@@ -1,5 +1,6 @@
 import rule_engine
 import weakref
+import shutil
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QSizePolicy
@@ -826,10 +827,12 @@ class WorkspaceMisc(TabbedWorkspace):
             iConfigurationEditor(), self.openConfigEditor
         )
 
-        self.actionAppGraph = self.wsAddCustomAction(
-            'app-graph', getIcon('ipld.png'),
-            'Application graph', partialEnsure(self.openAppGraph)
-        )
+        if shutil.which('dot'):
+            # Only if we have graphviz's dot
+            self.wsAddCustomAction(
+                'app-graph', getIcon('ipld.png'),
+                'Application graph', partialEnsure(self.openAppGraph)
+            )
 
     @ipfsOp
     async def openAppGraph(self, ipfsop, *args):

@@ -8,15 +8,34 @@ the changes in the CHANGELOG formatting.
 
 ## [Unreleased]
 
-## [0.5.0] - 2021-02-28
+## [0.5.0] - 2021-03-12
+
+This release introduces support for *remote pinning*.
+
+All IPFS services (pubsub, p2p) are now part of the
+application's services graph (the application is now designed
+as a graph of services, you can view the graph in the *Settings*
+workspace).
 
 ### Added
-- Support for remote pinning services
-- Add a workspace action to view the application's graph
-- GService: add methods to load services automatically from the
-  filesystem tree
+- Use *go-ipfs* version: *0.8.0*
+- Use *PyQt* version: *5.15.2*
+- Use *PyQtWebengine* version: *5.15.2*
+- Support for remote pinning services (yay!)
+  - Configure your RPS from the settings (tested with *Pinata*)
+  - From the PIN object buttons (blue pin) you can choose to
+    pin with a remote service or to your IPFS node
+  - Add a status icon for remote pinning (basic for now)
+- Add a workspace action to view the application's services graph
+  (you need graphviz installed for this to work)
+- Add coroutines to load services dynamically from the
+  *services* Python package
 
 ### Changed
+- Support for mkdocs themes (bootswatch) for your dwebsites
+  (*darkly* is the default)
+- Easier to publish/unpublish websites, dynamic content .. on your DID
+- Easier to create and publish a markdown website
 - QA toolbar: modernize, should now support large number of items
 - Use a dock instead of a status bar
 - MFS: recursive collapse when double-clicking an already-expanded
@@ -24,6 +43,9 @@ the changes in the CHANGELOG formatting.
 - Pubsub services are now part of the services tree
 - P2P services (like the DIDauth service) are now part of the
   services tree
+
+### Fixed
+- Fix mkdocs website creation on non-Linux platforms
 
 ## [0.4.42] - 2020-12-12
 

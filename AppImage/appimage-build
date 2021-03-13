@@ -71,6 +71,7 @@ export PATH="$PATH:$APPDIR/usr/bin"
 # Install necessary conda packages
 conda install -y -c conda-forge libxkbcommon pip
 conda install -y --no-deps libxcb libjpeg-turbo
+conda install -c anaconda graphviz
 
 conda remove -y icu
 
