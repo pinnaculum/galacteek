@@ -15,6 +15,7 @@ try:
     datas += copy_metadata('galacteek.docs.manual.en.html')
     datas += copy_metadata('random_username')
     datas += copy_metadata('random_username.data')
+    datas += copy_metadata('mkdocs-bootswatch')
 except Exception:
     pass
 
@@ -46,7 +47,9 @@ hiddenimports = [
     'tortoise.backends.sqlite',
     'tortoise.backends.base',
     'aiohttp',
-    'aioipfs'
+    'aioipfs',
+    'mkdocs',
+    'mkdocs-bootswatch'
 ]
 
 # We have to manually list multiaddr.codecs modules
@@ -72,6 +75,8 @@ hiddenimports += collect_submodules('galacteek.services.core')
 hiddenimports += collect_submodules('galacteek.services.dweb')
 hiddenimports += collect_submodules('galacteek.ui.forms')
 hiddenimports += collect_submodules('galacteek.ui.settings')
+
+hiddenimports += collect_submodules('mkdocs')
 
 for imp in hiddenimports:
     print(f'Hidden import: {imp}')

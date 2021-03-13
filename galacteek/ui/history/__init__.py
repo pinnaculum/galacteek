@@ -98,7 +98,7 @@ class HistoryMatchesWidget(QTreeView):
 
     async def showMatches(self, marks, hMatches):
         self.hModel.clear()
-        brush = QBrush(QColor('lightgray'))
+        brush = QBrush(QColor('#508cac'))
 
         mItem = ResultCategoryItem(iHashmarks())
         mItem.setFont(self.fontCategory)
