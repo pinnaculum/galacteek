@@ -123,9 +123,12 @@ chmod a+x galacteek.app/Contents/MacOS/galacteek
 pushd galacteek.app/Contents/Resources
 rm -rf pkgs
 find . -type d -iname '__pycache__' -print0 | xargs -0 rm -r
+
 rm -rf lib/python3.7/site-packages/Cryptodome/SelfTest/*
-rm -rf lib/python3.7/site-packages/PyQt5/Qt/plugins/geoservices
-rm -rf lib/python3.7/site-packages/PyQt5/Qt/plugins/sceneparsers
+rm -rf lib/python3.7/site-packages/PyQt5/Qt5/plugins/geoservices
+rm -rf lib/python3.7/site-packages/PyQt5/Qt5/plugins/sceneparsers
+rm -rf lib/python3.7/site-packages/PyQt5/Qt5/plugins/assetimporters
+
 rm -rf lib/cmake/
 rm -f bin/sqlite3*
 rm -rf include/

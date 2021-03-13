@@ -115,6 +115,7 @@ modules:
       - pip install -r requirements-docs.txt
       - pip install -r requirements.txt
       - pip install -r requirements-extra-markdown.txt
+      - pip install -r requirements-ui-pyqt-5.15.txt
       - python3 setup.py build build_docs install
     build-options:
       build-args:
