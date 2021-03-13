@@ -8,18 +8,14 @@ Pyramids
     :height: 64
 
 Pyramids are a way to give a unique address on the
-network to content that you are regularly updating. It could be a
-website you're working on, a blog, a code repository, a distributed
-web app that you want to share with the world without the hassle of
-distributing the new cryptographic identifiers of your work
-every time you're making some changes.
+network to content that you are regularly updating.
 
-To ensure that the :term:`IPNS` records are maintained you can leave the
-application running (closing the main window will minimize the app
-to the system tray).
+It could be a website you're working on, a blog,
+a code repository, a distributed web app that you want
+to share with the world.
 
 Basic pyramid
--------------
+=============
 
 The basic pyramid can be seen as a simple stack of IPFS objects,
 with the top of the pyramid automatically associated with the
@@ -30,10 +26,10 @@ This pyramid type has no DAG associated to it (it just keeps
 a history of what you throw at it).
 
 Usage
-^^^^^
+-----
 
-From the right toolbar, click on the blue pyramid button
-and then select *Create pyramid (basic)*. After entering the
+From the pyramids toolbar (at the bottom), click on the blue pyramid button
+and then select *Add: dynamic content*. After entering the
 different parameters and validating the dialog, you will
 see your new pyramid appear in the right toolbar.
 
@@ -51,8 +47,8 @@ objects to a pyramid.
 From the pyramid's menu you can also copy the IPNS address of the pyramid,
 as well as create a QR code image for the IPNS key.
 
-Auto-sync pyramid
------------------
+Filesystem synchronizer
+=======================
 
 This type of pyramid will automatically synchronize to IPFS a file or
 directory that you choose when you create the pyramid. Whenever
@@ -60,10 +56,10 @@ the contents of that file/directory changes, it will be
 reimported to IPFS and associated with the IPNS key.
 
 Usage
-^^^^^
+-----
 
 From the right toolbar, click on the blue pyramid button
-and then select *Create auto-sync pyramid*. Select the file
+and then select *Create filesystem synchronizer*. Select the file
 or directory that you want to automatically sync.
 You can choose if you want to import *hidden* files, and
 select the delay (in seconds) after which the autosync
@@ -84,41 +80,100 @@ your process can monitor simultaneously. On Linux you can modify
 the maximum number of *inotify user watches* with the command
 **sysctl fs.inotify.max_user_watches=<num>**
 
-MKDocs website
---------------
+Dwebsite
+========
 
-MKDocs_ is a fast, simple and downright gorgeous static site
-generator that's geared towards building project documentation.
-Documentation source files are written in Markdown, and configured
-with a single YAML configuration file.
-
-Although it's geared towards documentation projects, you can use MKDocs
-to build any type of website (including blogs) thanks to its plugin
-system and the power of Markdown.
+If you want to build a simple website that you can
+easily edit with a text editor, click on the *blue pyramid*
+and select *Create: dwebsite*.
 
 Usage
-^^^^^
+-----
 
-After creating an MKDocs pyramid the default website will be generated.
-To edit the website, just click on the pyramid and select *Edit input*,
+After creating a *dwebsite* the default website will be generated.
+Click on its icon and select *Open* to view it.
+
+To edit the website, just click on the pyramid and select *Edit*,
 which will open the text editor, from which you can modify the
-structure of the MKDocs project. Once you have made changes to the
-project and want to update your website, use the pyramid drop button
-in the editor to push the new version, and the website will be
-automatically regenerated.
+structure of your website.
+
+Your web pages are in the *docs* folder (the default *page*
+is called *index*), and they have an *.md* file suffix (they are
+formatted in *Markdown*). To edit a page from the editor,
+just *double-click* in the filesystem tree on the page you wish
+to edit. After you made your changes, click on the *Save* icon.
+Note that this only writes the contents of the page, but does
+not update your website.
+
+Updating your website
+^^^^^^^^^^^^^^^^^^^^^
+
+After saving, above the text editor zone, you will see a
+new entry appear in the *editing history*. To **update** your
+*dwebsite*, click on the *blue pyramid icon* and then select
+your website from the list (there should only be one).
 
 For more information on how to use MKDocs please consult the
 `MKDocs user guide <https://www.mkdocs.org/user-guide/writing-your-docs/>`_
 
+Publishing
+^^^^^^^^^^
+
+Selecting *Publish* from the pyramid menu will publish
+your *dwebsite* and attach it to your *identity* (DID).
+Others will see your website in the services list.
+
+Configuration
+-------------
+
+The configuration of your *dwebsite* is done with the
+*mkdocs.yml* file, which is in the *YAML* format.
+
+Website name
+^^^^^^^^^^^^
+
+Change the name of your website using the **site_name**
+configuration variable.
+
+Theme
+^^^^^
+
+Change the theme using the **theme** configuration variable.
+You can use any of the following themes::
+
+    cerulean
+    cosmo
+    cyborg
+    darkly
+    flatly
+    journal
+    litera
+    lumen
+    lux
+    materia
+    minty
+    pulse
+    sandstone
+    simplex
+    slate
+    solar
+    spacelab
+    superhero
+    united
+    yeti
+
+Check `this page <https://mkdocs.github.io/mkdocs-bootswatch/>`_
+to see screenshots of the themes.
+
 DAG building pyramids
----------------------
+=====================
 
 These types of pyramids have a :term:`DAG` associated to them.
 The pyramid's :term:`IPNS` key is always matching the latest
 version of the DAG.
 
 Image gallery
-^^^^^^^^^^^^^
+-------------
 
 This is a simple application to demonstrate the power and
 simplicity of the DAG API in IPFS.
@@ -134,6 +189,13 @@ or rewind the DAG. Rewinding the DAG cancels the latest
 DAG operation (for example if you've added an image that
 you now want to remove, just rewind the DAG once, and
 the DAG will be restored to the previous object in the history).
+
+IPNS records
+============
+
+To ensure that the :term:`IPNS` records are maintained
+you can leave the application running (closing the main window
+will minimize the app to the system tray).
 
 
 .. _MKDocs: https://www.mkdocs.org/

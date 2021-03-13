@@ -279,6 +279,8 @@ class PeerServiceTreeItem(PeerBaseItem):
 
         if self.service.type == IPService.SRV_TYPE_DWEBBLOG:
             return getIcon('blog.png')
+        elif self.service.type == IPService.SRV_TYPE_DWEBSITE_GENERIC:
+            return getMimeIcon('text/html')
         elif self.service.type == IPService.SRV_TYPE_ATOMFEED:
             return getIcon('atom-feed.png')
         elif self.service.type == IPService.SRV_TYPE_COLLECTION:

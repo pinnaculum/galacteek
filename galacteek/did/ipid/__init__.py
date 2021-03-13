@@ -94,6 +94,7 @@ class IPService(metaclass=IPServiceRegistry):
     # Service constants
 
     SRV_TYPE_DWEBBLOG = 'DwebBlogService'
+    SRV_TYPE_DWEBSITE_GENERIC = 'GenericDwebSiteService'
     SRV_TYPE_GALLERY = 'DwebGalleryService'
     SRV_TYPE_ATOMFEED = 'DwebAtomFeedService'
     SRV_TYPE_AVATAR = 'DwebAvatarService'
@@ -221,6 +222,7 @@ class IPGenericService(IPService):
     forTypes = [
         IPService.SRV_TYPE_ATOMFEED,
         IPService.SRV_TYPE_DWEBBLOG,
+        IPService.SRV_TYPE_DWEBSITE_GENERIC,
         IPService.SRV_TYPE_GALLERY,
         IPService.SRV_TYPE_GENERICPYRAMID,
         IPService.SRV_TYPE_AVATAR
@@ -698,7 +700,7 @@ class IPIdentifier(DAGOperations):
         staleValue = cGet('resolve.staleAfterDelay')
         last = self._lastResolve
 
-        if not last or (loopTime() - last) > staleValue:
+        if self.local or not last or (loopTime() - last) > staleValue:
             self.message('Reloading')
 
             return await self.load()

@@ -576,7 +576,7 @@ class TextEditorWidget(QWidget):
         self.saveButton.setEnabled(False)
         self.saveButton.setShortcut(QKeySequence('Ctrl+s'))
 
-        self.strokeIcon = getIcon('stroke-cube.png')
+        self.blueCubeIcon = getIcon('cube-blue.png')
 
         self.editButton.setText(iEdit())
 
@@ -750,23 +750,23 @@ class TextEditorWidget(QWidget):
 
         if not _path.exists() or _path.is_dir():
             menu.addAction(
-                self.strokeIcon,
+                self.blueCubeIcon,
                 iAddNewFile(), functools.partial(
                     self.fsAddFile, fullPath))
             menu.addSeparator()
             menu.addAction(
-                self.strokeIcon,
+                self.blueCubeIcon,
                 iAddNewDir(), functools.partial(
                     self.fsAddDirectory, fullPath))
             menu.addSeparator()
 
             menu.addAction(
-                self.strokeIcon,
+                self.blueCubeIcon,
                 iImportFile(), functools.partial(
                     self.fsImportFile, fullPath))
             menu.addSeparator()
             menu.addAction(
-                self.strokeIcon,
+                self.blueCubeIcon,
                 iImportDir(), functools.partial(
                     self.fsImportDirectory, fullPath))
             menu.addSeparator()

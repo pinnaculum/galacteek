@@ -56,6 +56,7 @@ from .helpers import questionBoxAsync
 from .helpers import getImageFromIpfs
 from .helpers import inputTextLong
 from .helpers import messageBox
+from .helpers import messageBoxAsync
 from .helpers import qrcFileData
 from .dialogs import AddMultihashPyramidDialog
 from .hashmarks import addHashmarkAsync
@@ -122,7 +123,7 @@ def iCreateAutoSyncPyramidToolTip():
 def iCreateWebsiteMkdocs():
     return QCoreApplication.translate(
         'PyramidMaster',
-        'Create: website (Markdown)'
+        'Create: dwebsite (Markdown)'
     )
 
 
@@ -174,14 +175,22 @@ def iRewindDAG():
 def iProfilePublishToDID():
     return QCoreApplication.translate(
         'PyramidMaster',
-        'Publish on my DID')
+        'Publish'
+    )
+
+
+def iProfileUnpublishFromDID():
+    return QCoreApplication.translate(
+        'PyramidMaster',
+        'Unpublish'
+    )
 
 
 def iProfilePublishToDIDToolTip():
     return QCoreApplication.translate(
         'PyramidMaster',
-        'Register this pyramid as a service in the list '
-        'of IP services on your DID (Decentralized Identifier)')
+        'Register this content as a service in the list '
+        'of IP services on your DID (Decentralized Identity)')
 
 
 def iRewindDAGToolTip():
@@ -561,6 +570,9 @@ class MultihashPyramidsToolBarAction(QWidgetAction):
 
 
 class MultihashPyramidToolButton(PopupToolButton):
+    didServicesSection = 'pyramids'
+    didServiceType = IPService.SRV_TYPE_GENERICPYRAMID
+
     deleteRequest = pyqtSignal()
     changed = pyqtSignal()
     emptyNow = pyqtSignal()
@@ -662,6 +674,12 @@ class MultihashPyramidToolButton(PopupToolButton):
             triggered=lambda *args: ensure(self.onPublishToDID()))
 
         self.didPublishAction.setToolTip(iProfilePublishToDIDToolTip())
+
+        self.didUnpublishAction = QAction(
+            getIcon('ipservice.png'),
+            iProfileUnpublishFromDID(),
+            self,
+            triggered=lambda *args: ensure(self.onUnpublishFromDID()))
 
         self.hashmarkAction = QAction(getIcon('hashmarks.png'),
                                       iHashmark(),
@@ -771,11 +789,12 @@ class MultihashPyramidToolButton(PopupToolButton):
             self.openLatestAction,
             self.editAction,
             self.publishCurrentClipAction,
+            self.didPublishAction,
+            self.didUnublishAction,
             self.copyIpnsAction,
             self.copyIpnsGwAction,
             self.popItemAction,
             self.generateQrAction,
-            self.didPublishAction,
             self.hashmarkAction,
             self.deleteAction
         ])
@@ -870,6 +889,10 @@ class MultihashPyramidToolButton(PopupToolButton):
     async def onPublishToDID(self):
         if await questionBoxAsync('Publish', 'Publish to your DID ?'):
             await self.didPublishService()
+
+    async def onUnpublishFromDID(self):
+        if await questionBoxAsync('Unpublish', 'Unpublish from your DID ?'):
+            await self.didUnpublishService()
 
     def onPyrChange(self):
         self.updateToolTip()
@@ -1052,11 +1075,15 @@ class MultihashPyramidToolButton(PopupToolButton):
                     count=self._publishFailedCount))
                 return False
 
-    def didPyramidUrl(self, ipid):
+    def didPyramidUrl(self,
+                      ipid,
+                      section=None,
+                      name=None):
+        name = name if name else self.pyramid.name
+        section = section if section else self.didServicesSection
+
         return ipid.didUrl(
-            path='/pyramids/{}'.format(
-                self.pyramid.name
-            )
+            path=f'/{section}/{name}'
         )
 
     @ipfsOp
@@ -1068,22 +1095,26 @@ class MultihashPyramidToolButton(PopupToolButton):
             await ipid.removeServiceById(self.didPyramidUrl(ipid))
 
     @ipfsOp
-    async def didPublishService(self, ipfsop):
+    async def didPublishService(self, ipfsop, url=None):
         profile = ipfsop.ctx.currentProfile
 
         ipid = await profile.userInfo.ipIdentifier()
 
         try:
+            descr = self.pyramid.description
+
             await ipid.addServiceRaw({
-                'id': self.didPyramidUrl(ipid),
-                'type': IPService.SRV_TYPE_GENERICPYRAMID,
-                'description': 'Generic pyramid: {}'.format(
-                    self.pyramid.name
-                ),
+                'id': url if url else self.didPyramidUrl(ipid),
+                'type': self.didServiceType,
+                'description': descr if descr else 'No description',
                 'serviceEndpoint': self.ipnsKeyPath.ipfsUrl
             })
         except IPIDServiceException as err:
-            messageBox('IP Service error: {}'.format(str(err)))
+            await messageBoxAsync(
+                f'IP Service error: {err}'
+            )
+        else:
+            await ipid.refresh()
 
     async def pyramidNeedsPublish(self, mark, notify):
         """
@@ -1197,10 +1228,11 @@ class AutoSyncPyramidButton(MultihashPyramidToolButton):
             self.openAction,
             self.openLatestAction,
             self.forceSyncAction,
+            self.didPublishAction,
+            self.didUnublishAction,
             self.copyIpnsAction,
             self.copyIpnsGwAction,
             self.generateQrAction,
-            self.didPublishAction,
             self.hashmarkAction,
             self.deleteAction
         ])
@@ -1358,18 +1390,28 @@ class WebsiteMkdocsPyramidButton(ContinuousPyramid):
     website in HTML generated by MKDocs.
     """
 
+    didServicesSection = 'dwebsites'
+    didServiceType = IPService.SRV_TYPE_DWEBSITE_GENERIC
+
     def buildMenu(self):
         self.buildMenuWithActions([
             self.openAction,
             self.openLatestAction,
             self.inputEditAction,
+            self.didPublishAction,
+            self.didUnpublishAction,
             self.copyIpnsAction,
             self.copyIpnsGwAction,
             self.generateQrAction,
-            self.didPublishAction,
             self.hashmarkAction,
             self.deleteAction
         ])
+
+        self.menu.addAction(
+            getIcon('pyramid-blue.png'),
+            iHelp(),
+            self.dwebSiteHelpMessage
+        )
 
     async def onObjectDropped(self, ipfsPath):
         await self.cancelPublishJob()
@@ -1397,42 +1439,83 @@ class WebsiteMkdocsPyramidButton(ContinuousPyramid):
     @ipfsOp
     async def mkdocsProcessInput(self, ipfsop, dIpfsPath):
         self.chBgColor('orange')
-        tmpdir = self.app.tempDirCreate(self.app.tempDir.path())
 
-        async with ipfsop.getContexted(dIpfsPath, tmpdir) as get:
-            code, stdout = await self.mkdocsRun(
-                ['build', '-q'], cwd=str(get.finaldir))
+        try:
+            from mkdocs.commands import build
+            from mkdocs.config import load_config
 
-            self.resetStyleSheet()
+            tmpdir = self.app.tempDirCreate(self.app.tempDir.path())
 
-            if code == 0:
+            async with ipfsop.getContexted(dIpfsPath, tmpdir) as get:
+                cfgPath = get.finaldir.joinpath('mkdocs.yml')
                 outputdir = get.finaldir.joinpath('site')
+
+                config = load_config(str(cfgPath))
+                build.build(config)
+
+                self.resetStyleSheet()
+
                 await self.pyramidOutputNew(str(outputdir))
+        except Exception as err:
+            await messageBoxAsync(
+                f'Error updating website: {err}')
 
     @ipfsOp
     async def mkdocsNew(self, ipfsop):
-        tmpdir = self.app.tempDirCreate(self.app.tempDir.path())
-        tmpdirp = Path(tmpdir)
+        try:
+            tmp = self.app.tempDirCreate(
+                self.app.tempDir.path())
+            tmpdir = Path(tmp)
 
-        code, stdout = await self.mkdocsRun(['new', '-q', tmpdir])
-        if code == 0:
-            favicon = qrcFileData(':/share/icons/ipfs-favicon.ico')
+            docsp = tmpdir.joinpath('docs')
+            imgp = docsp.joinpath('img')
+            indexPath = docsp.joinpath('index.md')
+            configPath = tmpdir.joinpath('mkdocs.yml')
 
-            imgpath = tmpdirp.joinpath('docs/img')
-            imgpath.mkdir(parents=True, exist_ok=True)
-            faviconPath = imgpath.joinpath('favicon.ico')
-            configPath = tmpdirp.joinpath('mkdocs.yml')
+            docsp.mkdir(parents=True, exist_ok=True)
+            imgp.mkdir(parents=True, exist_ok=True)
+
+            favicon = qrcFileData(
+                ':/share/icons/ipfs-favicon.ico')
+
+            faviconPath = imgp.joinpath('favicon.ico')
 
             if favicon:
                 await asyncWriteFile(str(faviconPath), bytes(favicon))
 
+            defaultConfig = [
+                'site_name: My dwebsite',
+                'theme: darkly'
+            ]
+
             await asyncWriteFile(
                 str(configPath),
-                'site_name: My dwebsite',
+                '\n'.join(defaultConfig),
                 mode='w+t'
             )
 
-            await self.pyramidInputNew(tmpdir)
+            index = [
+                '# My dwebsite',
+                '',
+                'To edit this website, click on the website icon ',
+                'in the statusbar, and select **Edit**',
+                '',
+                'Edit your page in the *docs* directory.',
+                '',
+                'After saving your page, click on the pyramid ',
+                'in the edit history and select your website'
+            ]
+
+            await asyncWriteFile(
+                str(indexPath),
+                '\n'.join(index),
+                mode='w+t'
+            )
+
+            await self.pyramidInputNew(str(tmpdir))
+        except BaseException as err:
+            await messageBoxAsync(
+                f'Error creating website: {err}')
 
     async def initialize(self):
         await super().initialize()
@@ -1470,6 +1553,10 @@ class WebsiteMkdocsPyramidButton(ContinuousPyramid):
             iEmptyPyramid()
         )
         self.setToolTip(self.pyrToolTip)
+
+    def dwebSiteHelpMessage(self):
+        self.app.manuals.browseManualPage(
+            'pyramids.html', fragment='dwebsite')
 
 
 class EDAGBuildingPyramidController(MultihashPyramidToolButton):
@@ -1587,6 +1674,9 @@ class GalleryDAG(EvolvingDAG):
 
 
 class GalleryPyramidController(EDAGBuildingPyramidController):
+    didServicesSection = 'image-galleries'
+    didServiceType = IPService.SRV_TYPE_GALLERY
+
     edagClass = GalleryDAG
 
     def __init__(self, *args, **kw):
@@ -1640,11 +1730,12 @@ class GalleryPyramidController(EDAGBuildingPyramidController):
             self.copyIpnsAction,
             self.copyIpnsGwAction,
             self.changeTitleAction,
+            self.didPublishAction,
+            self.didUnpublishAction,
             self.generateIndexQrAction,
             self.generateQrAction,
             self.rewindDagAction,
             self.deleteAction,
-            self.didPublishAction,
             self.hashmarkAction
         ])
 
@@ -1654,23 +1745,19 @@ class GalleryPyramidController(EDAGBuildingPyramidController):
         self.menu.setToolTipsVisible(True)
 
     @ipfsOp
-    async def didPublishService(self, ipfsop):
+    async def didPublishServiceUnused(self, ipfsop, url=None):
         profile = ipfsop.ctx.currentProfile
 
         ipid = await profile.userInfo.ipIdentifier()
 
         try:
             await ipid.addServiceRaw({
-                'id': ipid.didUrl(
-                    path='/galleries/{name}'.format(
-                        name=self.pyramid.name
-                    )
-                ),
+                'id': url if url else self.didPyramidUrl(ipid),
                 'type': IPService.SRV_TYPE_GALLERY,
                 'serviceEndpoint': self.indexIpnsPath.ipfsUrl
             })
         except IPIDServiceException as err:
-            messageBox('IP Service error: {}'.format(str(err)))
+            await messageBoxAsync(f'IP Service error: {err}')
 
     def onChangeTitle(self):
         curTitle = self.edag.root['metadata']['title']

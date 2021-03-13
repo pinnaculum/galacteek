@@ -631,7 +631,7 @@ class AddMultihashPyramidDialog(QDialog):
         self.customCategory = 'general'
         self.autoSyncPath = None
 
-        label = QLabel('Pyramid name')
+        label = QLabel('Name')
         restrictRegexp = QRegExp("[0-9A-Za-z-_]+")  # noqa
         restrictRegexp2 = QRegExp("[0-9A-Za-z-_/]+")  # noqa
 
