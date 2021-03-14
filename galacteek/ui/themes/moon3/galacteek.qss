@@ -1460,13 +1460,16 @@ QLabel#statusProgressLabel {
 }
 
 QLineEdit#urlZone {
-    font: 13pt "Inter UI";
-    margin-left: 4px;
-    padding: 2px;
+    margin-left: 8px;
+    padding: 5px;
+    font: 14pt "Segoe UI";
+    min-height: 40x;
+    max-height: 64px;
+    background-color: black;
 }
 
 QLineEdit#urlZone::hover {
-    border: 1px solid #4a9ea1;
+    border: 1px solid #508cac;
 }
 
 QWidget#logsTextWindow {

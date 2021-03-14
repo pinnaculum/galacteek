@@ -15,6 +15,7 @@ try:
     datas += copy_metadata('galacteek.docs.manual.en.html')
     datas += copy_metadata('random_username')
     datas += copy_metadata('random_username.data')
+    datas += copy_metadata('mkdocs')
     datas += copy_metadata('mkdocs-bootswatch')
 except Exception:
     pass

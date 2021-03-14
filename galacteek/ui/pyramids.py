@@ -5,6 +5,10 @@ import random
 from datetime import datetime
 from pathlib import Path
 
+from mkdocs import *  # noqa
+from mkdocs.commands import build as mkdocs_build
+from mkdocs.config import load_config
+
 from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QToolTip
 from PyQt5.QtWidgets import QApplication
@@ -1441,8 +1445,6 @@ class WebsiteMkdocsPyramidButton(ContinuousPyramid):
         self.chBgColor('orange')
 
         try:
-            from mkdocs.commands import build
-            from mkdocs.config import load_config
 
             tmpdir = self.app.tempDirCreate(self.app.tempDir.path())
 
@@ -1451,7 +1453,7 @@ class WebsiteMkdocsPyramidButton(ContinuousPyramid):
                 outputdir = get.finaldir.joinpath('site')
 
                 config = load_config(str(cfgPath))
-                build.build(config)
+                mkdocs_build.build(config)
 
                 self.resetStyleSheet()
 
