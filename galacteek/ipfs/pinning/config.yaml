@@ -8,12 +8,13 @@ envs:
           maxPinnedItems: 0
 
           storageLimit: False
-          storageMax: 0
+          storageMaxMb: 0
 
         notify:
           alertOnFailed: False
           alertOnPinning: True
           alertOnPinned: True
+          alertOnQueued: False
 
       # Remote Pinning Service list (scanned from the daemon)
       services: []

@@ -119,6 +119,7 @@ def rpsConfigRegister(rService: dict, peerId: str):
         'peerId': peerId,
         'priority': 0,
         'pinQueueName': name,
+        'default': False,
         'iconCid': None
     }
 

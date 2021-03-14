@@ -194,13 +194,12 @@ class SettingsController(QObject, Configurable, KeyListener):
                 options['endpoint'],
                 options['secret']
             )
-        except Exception:
-            return await messageBoxAsync('ERR')
+        except Exception as err:
+            return await messageBoxAsync(
+                f'Could not register the RPS: {err}')
         else:
             await asyncio.sleep(0.2)
 
             await self.app.s.ldPublish({
                 'type': 'RPSAdded'
             })
-
-            await messageBoxAsync('OK')
