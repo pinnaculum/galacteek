@@ -38,7 +38,6 @@ from galacteek.core.ps import keyChatChanList
 from galacteek.core.ps import psSubscriber
 from galacteek.core.ps import keyChatChanUserList
 from galacteek.core.ps import makeKeyPubChatTokens
-from galacteek.core.ps import mSubscriber
 from galacteek.core.ps import gHub
 from galacteek.core.chattokens import PubChatTokensManager
 from galacteek.core.chattokens import ChatToken
@@ -492,9 +491,10 @@ class ChatRoomWidget(GalacteekTab):
         self.lock = aiorwlock.RWLock()
         self.chans = ChatChannels()
 
-        mSubscriber.add_async_listener(
+        self.pSub = psSubscriber(f'chatroom.{channel}')
+        self.pSub.add_async_listener(
             keyChatChanUserList, self.onChatChanUserList)
-        mSubscriber.add_async_listener(
+        self.pSub.add_async_listener(
             makeKeyPubChatTokens(channel), self.onChatTokenMessage)
 
         self.participantsModel = ParticipantsModel(self)

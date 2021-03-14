@@ -22,7 +22,8 @@ from galacteek.core.ps import keyChatChannels
 from galacteek.core.ps import keyChatChanList
 from galacteek.core.ps import keyChatChanUserList
 from galacteek.core.ps import makeKeyPubChatTokens
-from galacteek.core.ps import mSubscriber
+from galacteek.core.ps import psSubscriber
+
 from galacteek.core.chattokens import PubChatTokensManager
 from galacteek.core.chattokens import verifyTokenPayload
 
@@ -33,7 +34,8 @@ class PSChatService(JSONPubsubService):
             ipfsCtx, topic=TOPIC_CHAT,
             runPeriodic=True,
             **kw)
-        mSubscriber.add_async_listener(
+        self.pSubscriber = psSubscriber('ps-chat')
+        self.pSubscriber.add_async_listener(
             keyChatChanList, self.onUserChannelList)
 
         self.chanUsers = {}
@@ -304,7 +306,8 @@ class PSEncryptedChatChannelService(Curve25519JSONPubsubService):
 
         self.mChatService = ipfsCtx.pubsub.byTopic(TOPIC_CHAT)
 
-        mSubscriber.add_sync_listener(
+        self.pSubscriber = psSubscriber(topic)
+        self.pSubscriber.add_sync_listener(
             keyChatChanUserList, self.onChatChanUserList)
 
     def onChatChanUserList(self, key, message):
