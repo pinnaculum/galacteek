@@ -27,11 +27,11 @@
           <item>
            <widget class="QToolButton" name="rPinServiceAddButton">
             <property name="text">
-             <string>Add remote pinning service</string>
+             <string>Register a remote pinning service</string>
             </property>
             <property name="icon">
              <iconset resource="../galacteek.qrc">
-              <normaloff>:/share/icons/pin/pin-diago-blue.png</normaloff>:/share/icons/pin/pin-diago-blue.png</iconset>
+              <normaloff>:/share/icons/pin/pin-diago-red.png</normaloff>:/share/icons/pin/pin-diago-red.png</iconset>
             </property>
             <property name="toolButtonStyle">
              <enum>Qt::ToolButtonTextBesideIcon</enum>

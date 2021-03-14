@@ -165,8 +165,8 @@ def iPinataInstructions():
             sign up for an account at Pinata</a>.
         </p>
         <p>
-            Once registered, paste the pinning API key in the
-            form field named <i>Key</i>.
+            Once registered, paste the API key in the
+            form field below named <i>Key</i>.
         </p>
         '''
     )

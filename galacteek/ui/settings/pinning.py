@@ -30,14 +30,15 @@ class SettingsController(QObject, Configurable, KeyListener):
         self.currentServiceItem = None
         self.sWidget = sWidget
 
-        self.sWidget.ui.vLayout.insertWidget(
-            0,
-            LabelWithURLOpener(
-                '<a href="manual:/pinning.html#remote">'
-                'Remote pinning manual'
-                '</a>'
+        if 0:
+            self.sWidget.ui.vLayout.insertWidget(
+                0,
+                LabelWithURLOpener(
+                    '<a href="manual:/pinning.html#remote">'
+                    'Remote pinning manual'
+                    '</a>'
+                )
             )
-        )
 
         self.sWidget.ui.removeService.setEnabled(False)
         self.sWidget.ui.rServiceConfigGroup.setEnabled(False)

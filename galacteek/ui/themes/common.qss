@@ -118,3 +118,8 @@ QLineEdit#urlZone {
     font: 14pt "Segoe UI";
     min-height: 40x;
 }
+
+QLabel#rpsPinataInstructions {
+    margin: 10px;
+    font: 16pt "Segoe UI";
+}
