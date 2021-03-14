@@ -169,9 +169,7 @@ class PinActions(QObject):
 
     async def onPinToRpsAll(self, *args):
         for srv in cfgpinning.rpsList():
-            log.debug(f'Pin to RPS all: pinning to {srv}')
-
-            await self.rpsPin(srv, name=name)
+            await self.rpsPin(srv)
 
     def onPinResult(self, f):
         try:

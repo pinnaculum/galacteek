@@ -630,7 +630,7 @@ QToolBar#qaToolBar[dropping=false] {
 }
 
 QToolBar#qaToolBar[hovering=true] {
-    background-color: #fccc7e;
+    background-color: #2e3f57;
     border: 2px solid black;
 }
 

@@ -79,7 +79,8 @@ Remote (there)
 The red pin means: to pin **on a remote service**.
 
 *These options will only be visible once you have configured
-a remote pinning service. You can do that in the settings*
+a remote pinning service. You can do that in the settings.
+Please check the Remote section below*
 
 Pinning IPFS links in a webpage
 -------------------------------
@@ -112,3 +113,39 @@ Pinning status
 In the status bar (at the bottom of the window), the pinning status
 icon gives information about the status of the pinning queues.
 Clicking on it gives a list of the objects being pinned.
+
+Remote
+======
+
+Sign up
+-------
+
+First you'll have to sign up for an account with
+a service provider. This is a (short) list of services that
+you can use at the moment:
+
+- Pinata_: `sign up for an account here <https://pinata.cloud/signup>`_
+
+What you will need to register the service in *galacteek*
+is the API *token* (the *JWT*, which is encoded).
+
+Register a service
+------------------
+
+Once you have signed up, you should have your API token (*JWT*).
+
+To register a *remote pinning service*, go to the settings
+panel, then head to the *Pinning settings* section and
+select *Register a remote pinning service*.
+
+Enter an adequate *name* for the service. Then copy/paste your
+Pinata API *token* (long, encoded string) in the form in the
+*Key* field. Select *Ok* and your service should appear in the
+list.
+
+Your service will now appear in the list of *remote* services
+when clicking on the blue *Pin* buttons in the browser, and you
+can start *pinning* and sharing content !
+
+
+.. _Pinata: https://pinata.cloud/
