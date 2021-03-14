@@ -323,7 +323,11 @@ class RPSStatusButton(GMediumToolButton, KeyListener):
 
     async def rpsStatusProcess(self, status):
         service = status['Service']
-        pinCount = status['Stat']['PinCount']
+        pinCount = status['Stat'].get('PinCount')
+
+        if not pinCount:
+            return
+
         items = status.get('Items')
 
         itemsSummary = None
