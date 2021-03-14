@@ -49,7 +49,8 @@ This can be done, at the moment, in two different ways:
   machines that have high-availability on the network and
   can serve the content to many peers.
 
- At any moment you can decide to unpin
+
+At any moment you can decide to unpin
 something, by visiting this content, and selecting *Unpin*.
 
 Pinning in the browser
@@ -101,12 +102,13 @@ automatically pinned to your IPFS node.
 Global Automatic pinning
 ------------------------
 
-In the application's toolbar, next to the clipboard manager,
+In the application's main toolbar, next to the clipboard manager,
 another switch button activates application-wide automatic pinning.
+When this is enabled, all the content you visit will be pinned locally.
 
 Pinning status
 --------------
 
 In the status bar (at the bottom of the window), the pinning status
 icon gives information about the status of the pinning queues.
-Clicking on it gives a view of the objects being pinned.
+Clicking on it gives a list of the objects being pinned.

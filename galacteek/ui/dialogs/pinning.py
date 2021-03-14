@@ -24,6 +24,8 @@ class PinningServiceAddDialog(BaseDialog):
             lambda checked: self.ui.endpoint.setEnabled(checked))
 
         self.infoLabel = LabelWithURLOpener('')
+        self.infoLabel.setObjectName('rpsPinataInstructions')
+
         self.ui.hLayoutInfo.addWidget(self.infoLabel, 0, Qt.AlignCenter)
 
         self.ui.name.setValidator(
