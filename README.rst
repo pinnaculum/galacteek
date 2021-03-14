@@ -24,9 +24,9 @@ Installation
 Stable release
 --------------
 
-* **AppImage (Linux)**: `Galacteek-0.4.42-x86_64.AppImage <https://github.com/pinnaculum/galacteek/releases/download/v0.4.42/Galacteek-0.4.42-x86_64.AppImage>`_
-* **DMG (MacOS)**: `Galacteek-0.4.42-x86_64.dmg <https://github.com/pinnaculum/galacteek/releases/download/v0.4.42/Galacteek-0.4.42-x86_64.dmg>`_
-* **Windows**: `Galacteek-0.4.42-installer-x86_64.exe <https://github.com/pinnaculum/galacteek/releases/download/v0.4.42/Galacteek-0.4.42-installer-x86_64.exe>`_
+* **AppImage (Linux)**: `Galacteek-0.5.0-x86_64.AppImage <https://github.com/pinnaculum/galacteek/releases/download/v0.5.0/Galacteek-0.5.0-x86_64.AppImage>`_
+* **DMG (MacOS)**: `Galacteek-0.5.0-x86_64.dmg <https://github.com/pinnaculum/galacteek/releases/download/v0.5.0/Galacteek-0.5.0-x86_64.dmg>`_
+* **Windows**: `Galacteek-0.5.0-installer-x86_64.exe <https://github.com/pinnaculum/galacteek/releases/download/v0.5.0/Galacteek-0.5.0-installer-x86_64.exe>`_
 
 *On Linux*: Be sure to install all the **gstreamer** packages on your
 system to be able to use the mediaplayer. Problem with the AppImage ?
