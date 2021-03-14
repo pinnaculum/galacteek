@@ -42,9 +42,6 @@ class PinActions(QObject):
             f'Pinning object {path} (recursive: {recursive})')
         onSuccess = None
 
-        # if notify is True:
-        #    onSuccess = self.onPinResult
-
         await ipfsop.ctx.pinner.queue(
             path, recursive, onSuccess,
             qname=self.pinQueueName
