@@ -20,7 +20,7 @@ workspace).
 ### Added
 - Use *go-ipfs* version: *0.8.0*
 - Use *PyQt* version: *5.15.2*
-- Use *PyQtWebengine* version: *5.15.2*
+- Use *PyQtWebEngine* version: *5.15.2*
 - Support for remote pinning services (yay!)
   - Configure your RPS from the settings (tested with *Pinata*)
   - From the PIN object buttons (blue pin) you can choose to
@@ -46,6 +46,7 @@ workspace).
 
 ### Fixed
 - Fix mkdocs website creation on non-Linux platforms
+- Focus bug in the markdown editor
 
 ## [0.4.42] - 2020-12-12
 

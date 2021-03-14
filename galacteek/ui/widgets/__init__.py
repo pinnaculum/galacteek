@@ -1636,6 +1636,9 @@ class MarkdownInputWidget(QWidget):
 
         self.updateTimer.stop()
 
+        # Refocus
+        self.textEditUser.setFocus(Qt.OtherFocusReason)
+
 
 class AtomFeedsToolbarButton(QToolButton):
     subscribeResult = pyqtSignal(str, int)
