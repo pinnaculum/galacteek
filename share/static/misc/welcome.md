@@ -2,10 +2,10 @@
 Welcome to the dweb
 ===================
 
-[![bafkreick5f6rcyowd4b7n3rseg3dfki2m7kul2alhs4te4wbbvkwfvya2y](ipfs://bafkreick5f6rcyowd4b7n3rseg3dfki2m7kul2alhs4te4wbbvkwfvya2y){: style="width:128px; height:128px" }](ipfs://bafkreick5f6rcyowd4b7n3rseg3dfki2m7kul2alhs4te4wbbvkwfvya2y)
+[![bafkreibv5sdto5ickedlfojmlipmj35xfiqyzpkexg2tfaxmuhspu4kr3e](ipfs://bafkreibv5sdto5ickedlfojmlipmj35xfiqyzpkexg2tfaxmuhspu4kr3e){: style="width:128px; height:128px" }](ipfs://bafkreibv5sdto5ickedlfojmlipmj35xfiqyzpkexg2tfaxmuhspu4kr3e)
 
 **galacteek** is a browser for the distributed web (AKA the
-dweb). It works with the [IPFS](ipns://ipfs.io) protocol,
+*dweb*). It works with the [IPFS](ipns://ipfs.io) protocol,
 which uses the concept of content-addressing to distribute
 information more efficiently.
 
@@ -29,8 +29,10 @@ the sponsor page. Thanks!
 How to use
 ----------
 
-The toolbar at the top has the main controls,
-while the right toolbar is for dynamic content (pyramids).
+The toolbar at the top has the main controls.
+In the statusbar at the bottom, clicking on the
+*pyramid* icon will open a toolbar that can be used
+to create dynamic content.
 
 **galacteek** uses different workspaces:
 
