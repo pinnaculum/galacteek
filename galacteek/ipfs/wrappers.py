@@ -10,7 +10,12 @@ from galacteek.ipfs.ipfsops import IPFSOpRegistry
 
 
 def _getOp():
-    return IPFSOpRegistry.getDefault()
+    loop = asyncio.get_event_loop()
+    try:
+        # Could be attached to a different loop
+        return getattr(loop, '_attachedIpfsOperator')
+    except Exception:
+        return IPFSOpRegistry.getDefault()
 
 
 def appTask(fn, *args, **kw):
@@ -21,7 +26,7 @@ def appTask(fn, *args, **kw):
 def ipfsOpFn(func):
     @functools.wraps(func)
     async def wrapper(*args, **kw):
-        op = IPFSOpRegistry.getDefault()
+        op = _getOp()
         if op:
             return await func(op, *args, **kw)
         log.debug('ipfsopfn: op is null')
@@ -64,7 +69,7 @@ class ipfsOp(ipfsClassW):
 
     def __get__(self, inst, owner):
         async def wrapper(*args, **kw):
-            op = IPFSOpRegistry.getDefault()
+            op = _getOp()
             if op:
                 return await self._operation(inst, op, *args, **kw)
 
@@ -76,7 +81,8 @@ class ipfsOp(ipfsClassW):
 class ipfsStatOp(ipfsClassW):
     def __get__(self, inst, owner):
         async def wrapper(*args, **kw):
-            op = IPFSOpRegistry.getDefault()
+            op = _getOp()
+            # op = IPFSOpRegistry.getDefault()
             if op is None:
                 return
 

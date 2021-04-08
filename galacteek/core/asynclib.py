@@ -28,6 +28,7 @@ class AsyncSigSpy(object):
     Async context, waits for an async signal to be fired.
     Raise an error if it's not fired before the timeout.
     """
+
     def __init__(self, signal, timeout=5.0):
         self.asignal = signal
         self.emitted = False
@@ -436,6 +437,7 @@ class GThrottler:
     """
     Same as asyncio_throttle but uses loop time instead of clock time
     """
+
     def __init__(self, rate_limit: int, period=1.0, retry_interval=0.01,
                  name='generic-throttler'):
         self.rate_limit = rate_limit
@@ -484,20 +486,20 @@ class GThrottler:
         pass
 
 
-def coroInThread(coro, *args):
+def coroInThread(_loop, coro, *args):
     app = QApplication.instance()
-    loop = asyncio.new_event_loop()
+    loop = _loop if _loop else asyncio.SelectorEventLoop()
     return loop.run_until_complete(coro(app, loop, *args))
 
 
-def threadedCoro(coro, *args):
+def threadedCoro(loop, coro, *args):
     """
     Runs a coroutine in a new event loop (using a dedicated thread)
     """
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        future = executor.submit(coroInThread, coro, *args)
         try:
+            future = executor.submit(coroInThread, loop, coro, *args)
             return future.result()
-        except Exception as err:
-            print(str(err))
+        except Exception:
+            traceback.print_exc()

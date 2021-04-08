@@ -1,3 +1,6 @@
+from pathlib import Path
+import os
+
 from PyQt5.QtCore import QFileSystemWatcher
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import pyqtSignal
@@ -23,6 +26,15 @@ class FileWatcher(QObject):
 
     def watch(self, path):
         self._watcher.addPath(path)
+
+    def watchWalk(self, path: Path):
+        try:
+            for root, dirs, files in os.walk(str(path)):
+                for dir in dirs:
+                    r = Path(root).joinpath(dir)
+                    self._watcher.addPath(str(r))
+        except Exception:
+            pass
 
     def onChanged(self, path):
         self.pathChanged.emit(path)

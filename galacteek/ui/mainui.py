@@ -1233,7 +1233,7 @@ class MainWindow(QMainWindow):
 
     def changeEvent(self, event):
         if event.type() == QEvent.LanguageChange:
-            messageBox(iLanguageChanged())
+            log.debug(iLanguageChanged())
 
         super().changeEvent(event)
 

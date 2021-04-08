@@ -1567,8 +1567,78 @@ Path: {0}, nodes processed: {1}</source>
 <context>
     <name>PyramidMaster</name>
     <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="78"/>
+        <source>Add: dynamic content</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="84"/>
+        <source>Create: image gallery</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="90"/>
+        <source>
+        &lt;p&gt;
+        Create an image gallery!
+
+        Drag-and-drop files from the filemanager to
+        your gallery
+        &lt;/p&gt;
+    </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="103"/>
+        <source>Add: filesystem synchronizer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="110"/>
+        <source>
+        &lt;p&gt;
+        Allows you to &lt;b&gt;synchronize&lt;/b&gt; files (that exist
+        on your local filesystem) automatically to IPFS.
+        &lt;/p&gt;
+
+        &lt;p&gt;
+        Whenever you make changes to these files on your
+        machine, they will &lt;b&gt;automatically&lt;/b&gt; be transferred to
+        the IPFS network.
+        &lt;/p&gt;
+        </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="128"/>
+        <source>Create: dwebsite (Markdown)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="135"/>
+        <source>
+        &lt;p&gt;
+        Create a simple website on the dweb.
+
+        You&apos;ll have to know Markdown to edit it, but it&apos;s pretty
+        simple.
+        &lt;/p&gt;
+        </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="149"/>
+        <source>Open latest content in the pyramid</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../../galacteek/ui/pyramids.py" line="156"/>
         <source>Pyramid is empty</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="162"/>
+        <source>Pop an item off the pyramid</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1579,6 +1649,21 @@ Path: {0}, nodes processed: {1}</source>
     <message>
         <location filename="../../galacteek/ui/pyramids.py" line="174"/>
         <source>Rewind DAG</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="180"/>
+        <source>Publish</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="187"/>
+        <source>Unpublish</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="194"/>
+        <source>Register this content as a service in the list of IP services on your DID (Decentralized Identity)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1634,91 +1719,6 @@ Path: {0}, nodes processed: {1}</source>
     <message>
         <location filename="../../galacteek/ui/pyramids.py" line="269"/>
         <source>Change image gallery&apos;s title</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="78"/>
-        <source>Add: dynamic content</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="84"/>
-        <source>Create: image gallery</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="90"/>
-        <source>
-        &lt;p&gt;
-        Create an image gallery!
-
-        Drag-and-drop files from the filemanager to
-        your gallery
-        &lt;/p&gt;
-    </source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="103"/>
-        <source>Add: filesystem synchronizer</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="110"/>
-        <source>
-        &lt;p&gt;
-        Allows you to &lt;b&gt;synchronize&lt;/b&gt; files (that exist
-        on your local filesystem) automatically to IPFS.
-        &lt;/p&gt;
-
-        &lt;p&gt;
-        Whenever you make changes to these files on your
-        machine, they will &lt;b&gt;automatically&lt;/b&gt; be transferred to
-        the IPFS network.
-        &lt;/p&gt;
-        </source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="135"/>
-        <source>
-        &lt;p&gt;
-        Create a simple website on the dweb.
-
-        You&apos;ll have to know Markdown to edit it, but it&apos;s pretty
-        simple.
-        &lt;/p&gt;
-        </source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="149"/>
-        <source>Open latest content in the pyramid</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="162"/>
-        <source>Pop an item off the pyramid</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="128"/>
-        <source>Create: dwebsite (Markdown)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="180"/>
-        <source>Publish</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="187"/>
-        <source>Unpublish</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="194"/>
-        <source>Register this content as a service in the list of IP services on your DID (Decentralized Identity)</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

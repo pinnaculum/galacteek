@@ -54,8 +54,15 @@ pyzbar>=0.1.8
 qrcode==6.1
 qtawesome>=0.7.2
 random-username>=1.0.2
+rdfextras>=0.4
+rdflib-pyld-compat>=0.1.0
+rdflib-sqlalchemy>=0.4.0
+rdflib-sqlite>=0.1
+rdflib-jsonld>=0.5.0
 rule-engine>=2.1.0
+sparql-burger==1.0.1
 strict-rfc3339>=0.7
 tortoise-orm>=0.16.21
 validators>=0.18.1
 yarl==1.5.1
+rdflib @ git+https://github.com/pinnaculum/rdflib.git@ipfs#egg=rdflib

@@ -3,6 +3,10 @@ import asyncio
 
 from galacteek import log
 
+from galacteek.core.ps import makeKeyService
+
+from galacteek.ipfs.cidhelpers import IPFSPath
+
 from galacteek.services import GService
 from galacteek.services import cached_property
 from galacteek.services.net.bitmessage.service import BitMessageClientService
@@ -102,13 +106,21 @@ class AppService(GService):
         # Walk the line
         await self.walkServices('core', add=True)
         await self.walkServices('dweb', add=True)
+        await self.walkServices('ld', add=True)
 
+        # Blast
         await self.sServiceStarted.emit()
 
     async def on_stop(self) -> None:
         await super().on_stop()
 
         log.debug('Stopping main application service')
+
+    async def rdfStore(self, ipfsPath: IPFSPath):
+        await self.ldPublish({
+            'type': 'DagRdfStorageRequest',
+            'ipfsPath': str(ipfsPath)
+        }, key=makeKeyService('ld'))
 
     @GService.task
     async def mProfileTask(self):

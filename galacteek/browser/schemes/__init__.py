@@ -54,6 +54,7 @@ SCHEME_FS = 'fs'
 SCHEME_IPFS = 'ipfs'
 SCHEME_IPNS = 'ipns'
 SCHEME_IPID = 'ipid'
+SCHEME_I = 'i'
 SCHEME_QDAPP = 'qdapp'
 
 # ENS-related schemes (ensr is redirect-on-resolve ENS scheme)
@@ -209,6 +210,12 @@ def initializeSchemes():
         syntax=QWebEngineUrlScheme.Syntax.Host,
         flags=defaultSchemeFlags |
         QWebEngineUrlScheme.ContentSecurityPolicyIgnored
+    )
+
+    declareUrlScheme(
+        SCHEME_I,
+        syntax=QWebEngineUrlScheme.Syntax.Path,
+        flags=defaultSchemeFlags
     )
 
     declareUrlScheme(
