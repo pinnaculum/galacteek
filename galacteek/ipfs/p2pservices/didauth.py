@@ -107,7 +107,7 @@ class DIDAuthSiteHandler:
                 'type': 'RsaSignature2018',
                 'created': normedUtcDate(),
                 'proofPurpose': 'authentication',
-                'verificationMethod': '{}#keys-1'.format(did),
+                'verificationMethod': f'{did}#keys-1',
                 'challenge': nonce,
                 'nonce': nonce,
                 'proofValue': signature

@@ -2,16 +2,21 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWebEngineWidgets import QWebEngineProfile
 from PyQt5.QtWebEngineWidgets import QWebEngineSettings
 
+from PyQt5.QtWebEngine import QQuickWebEngineProfile
+
 from galacteek.dweb.webscripts import ethereumClientScripts
+from galacteek.dweb.webscripts import scriptFromQFile
 
 from galacteek.browser.schemes import SCHEME_DWEB
 from galacteek.browser.schemes import SCHEME_ENS
 from galacteek.browser.schemes import SCHEME_ENSR
 from galacteek.browser.schemes import SCHEME_FS
+from galacteek.browser.schemes import SCHEME_I
 from galacteek.browser.schemes import SCHEME_IPFS
 from galacteek.browser.schemes import SCHEME_IPNS
 from galacteek.browser.schemes import SCHEME_IPID
 from galacteek.browser.schemes import SCHEME_Q
+from galacteek.browser.schemes import SCHEME_MANUAL
 
 from galacteek import log
 from galacteek.core import runningApp
@@ -99,11 +104,23 @@ class BaseProfile(QWebEngineProfile, KeyListener):
             return
 
         for script in scriptsList:
-            if script.get('type') == 'builtin':
+            _type = script.get('type')
+
+            if _type == 'builtin':
                 if script.get('name') == 'js-ipfs-client':
                     self.installIpfsClientScript()
                 elif script.get('name') == 'ethereum-web3':
                     self.installIpfsClientScript()
+            elif _type == 'qrc':
+                _name = script.get('name')
+                _path = script.get('path')
+
+                if not _name or not _path:
+                    continue
+
+                script = scriptFromQFile(_name, _path)
+                if script:
+                    self.webScripts.insert(script)
 
     def installIpfsClientScript(self):
         exSc = self.webScripts.findScript('ipfs-http-client')
@@ -130,7 +147,7 @@ class BaseProfile(QWebEngineProfile, KeyListener):
         self.installHandler(SCHEME_ENSR, self.app.ensSchemeHandler)
         self.installHandler(SCHEME_Q, self.app.qSchemeHandler)
         self.installHandler(SCHEME_IPID, self.app.ipidSchemeHandler)
-        # self.installHandler(SCHEME_GALACTEEK, self.app.gSchemeHandler)
+        self.installHandler(SCHEME_I, self.app.iSchemeHandler)
 
     def profileSetting2(self, defaults, name, default=False):
         return self.config.settings.get(
@@ -259,6 +276,27 @@ class BaseProfile(QWebEngineProfile, KeyListener):
             QWebEngineSettings.JavascriptCanAccessClipboard,
             profileJsSetting('canAccessClipboard')
         )
+
+    def quickClone(self):
+        # Clone the profile for usage in QML
+        # (QML uses a special QQuickWebEngineProfile)
+
+        profile = QQuickWebEngineProfile(self)
+        profile.installUrlSchemeHandler(
+            SCHEME_I.encode(), self.app.iSchemeHandler)
+
+        for scheme in [SCHEME_IPFS, SCHEME_IPNS]:
+            profile.installUrlSchemeHandler(
+                scheme.encode(),
+                self.app.nativeIpfsSchemeHandler)
+
+        m = SCHEME_MANUAL.encode()
+        manualHandler = self.urlSchemeHandler(m)
+
+        if manualHandler:
+            profile.installUrlSchemeHandler(m, manualHandler)
+
+        return profile
 
 
 def onProfilesChanged():

@@ -5,4 +5,4 @@ from galacteek.core.asynclib import threadedCoro
 
 class AsyncChanObject(QObject):
     def tc(self, coro, *args):
-        return threadedCoro(coro, args)
+        return threadedCoro(coro, *args)

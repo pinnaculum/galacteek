@@ -11,14 +11,14 @@ def quickWidget(url, parent=None):
 
 
 def quickWidgetFromFile(fp: str, parent=None):
-    qWidget = QQuickWidget()
+    qWidget = QQuickWidget(parent)
     qWidget.setSource(QUrl.fromLocalFile(fp))
     qWidget.show()
     return qWidget
 
 
-def quickView(url: str):
-    view = QQuickView()
+def quickView(url: str, parent=None):
+    view = QQuickView(parent)
     view.setResizeMode(QQuickView.SizeRootObjectToView)
 
     view.setSource(QUrl(url))

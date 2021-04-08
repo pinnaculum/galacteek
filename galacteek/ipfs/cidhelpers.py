@@ -482,6 +482,9 @@ class IPFSPath:
     def asQtUrl(self):
         return QUrl(self.ipfsUrl)
 
+    def gwUrlForConnParams(self, params):
+        return f'http://{params.host}:{params.gatewayPort}{self.fullPath}'
+
     def __analyze(self):
         """
         Analyze the path and returns a boolean (valid or not)

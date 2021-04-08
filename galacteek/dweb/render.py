@@ -24,6 +24,10 @@ from galacteek.did import didExplode
 from galacteek.dweb.markdown import markitdown
 
 
+class TemplateNotFoundError(Exception):
+    pass
+
+
 def tstodate(ts):
     try:
         date = datetime.fromtimestamp(ts)
@@ -124,9 +128,10 @@ async def renderTemplate(tmplname, loop=None, env=None,
         return templatesCache[key]
     except KeyError:
         env = env if env else defaultJinjaEnv()
-        tmpl = env.get_template(tmplname)
-        if not tmpl:
-            raise Exception('template not found')
+        try:
+            tmpl = env.get_template(tmplname)
+        except jinja2.exceptions.TemplateNotFound:
+            raise TemplateNotFoundError('template not found')
 
         data = await tmpl.render_async(**kw)
         templatesCache[key] = data

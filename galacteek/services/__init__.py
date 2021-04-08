@@ -38,9 +38,6 @@ class GService(Service, KeyListener):
                  app=None,
                  config=None,
                  parent=None):
-        Service.__init__(self)
-        KeyListener.__init__(self)
-
         self.app = app if app else runningApp()
         self.rtCfg = runtimeConfig
         self.dotPath = dotPath
@@ -56,6 +53,9 @@ class GService(Service, KeyListener):
         else:
             self.rootPath = self.app.dataPathForService(
                 self.dotPath if self.dotPath else 'tmp')
+
+        Service.__init__(self)
+        KeyListener.__init__(self)
 
         self.pubsubServices = []
 
@@ -87,7 +87,7 @@ class GService(Service, KeyListener):
     def which(self, prog):
         return shutil.which(prog)
 
-    async def psPublish(self, event):
+    async def psPublish(self, event, key=None):
         """
         Publish a service event message on the pubsub hub, to the
         service's PS key
@@ -95,7 +95,7 @@ class GService(Service, KeyListener):
         TODO: Use JSON-LD for all service messages
         """
 
-        hubPublish(self.psKey, {
+        hubPublish(key if key else self.psKey, {
             'serviceIdent': self.ident,
             'event': event
         })
@@ -103,13 +103,14 @@ class GService(Service, KeyListener):
         await asyncio.sleep(0.05)
 
     async def ldPublish(self, event,
-                        contextName='services/GenericServiceMessage'):
+                        contextName='services/GenericServiceMessage',
+                        key=None):
         """
         Publish a JSON-LD service event message on the
         pubsub hub, to the service's PS key
         """
 
-        hubPublish(self.psKey, {
+        hubPublish(key if key else self.psKey, {
             '@context': ipsContextUri(contextName),
             'serviceIdent': self.ident,
             'event': event
@@ -189,3 +190,7 @@ class GService(Service, KeyListener):
                                     add=add)
 
         return service
+
+
+def getByDotName(name):
+    return GService.byDotName.get(name, None)

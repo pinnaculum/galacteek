@@ -8,6 +8,12 @@ the changes in the CHANGELOG formatting.
 
 ## [Unreleased]
 
+## [0.5.1] - 2021-03-21
+
+### Added
+- Support for IPFS URL schemes from QML
+- i:/ URL scheme
+
 ## [0.5.0] - 2021-03-12
 
 This release introduces support for *remote pinning*.

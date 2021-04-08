@@ -386,7 +386,7 @@ class IPIdentifier(DAGOperations):
     def contextUrl(self, path, fragment=None):
         return str(
             URL.build(
-                host='galacteek.ld.contexts',
+                host='galacteek.ld',
                 scheme='ipschema',
                 path='/' + path,
                 fragment=fragment
