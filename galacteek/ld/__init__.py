@@ -1,10 +1,21 @@
+from yarl import URL
+
 from galacteek.core import pkgResourcesRscFilename
 
-ldBaseUri = 'ips://galacteek.ld/'
+gLdBaseUri = 'ips://galacteek.ld/'
 
 
 def ipsContextUri(contextName):
     return f'ips://galacteek.ld/{contextName}'
+
+
+def uriTermExtract(uri):
+    try:
+        u = URL(uri)
+        assert u.scheme in ['ips', 'ipschema']
+        return u.path.lstrip('/')
+    except Exception:
+        return None
 
 
 def ldContextsRootPath():

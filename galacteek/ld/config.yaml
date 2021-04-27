@@ -1,0 +1,5 @@
+envs:
+  default:
+    schemaSources:
+      - type: 'pkgresources'
+        name: 'galacteek-ld-web4'

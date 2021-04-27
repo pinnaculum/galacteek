@@ -881,13 +881,8 @@ class UserProfile(QObject):
                     path = IPFSPath(entry['Hash'])
                     await ipid.avatarSet(path.objPath)
 
-            if 0:
-                try:
-                    await ipid.addServiceRendezVous()
-                except Exception:
-                    pass
-
             pwd = self.initOptions.get('ipidRsaPassphrase', None)
+
             # Unlock
             if not await ipid.unlock(rsaPassphrase=pwd):
                 for att in range(0, 8):
@@ -905,13 +900,12 @@ class UserProfile(QObject):
                             'Regenerate a DID if you cannot find your password'
                             ' as you won\'t be able to decrypt/sign messages')
                         break
-
-            return True
         else:
             ipid = await self.createIpIdentifierInitial()
-            return True
 
-        return False
+        await ipid.upgrade()
+
+        return True
 
     def ipIdentifierKeyName(self, idx: int):
         return 'galacteek.{0}.dids.{1}'.format(self.name, idx)
