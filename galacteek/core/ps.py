@@ -2,6 +2,7 @@ import aiopubsub
 import functools
 
 from galacteek import log
+from galacteek.core import runningApp
 
 gHub = aiopubsub.Hub()
 
@@ -75,7 +76,9 @@ mSubscriber = psSubscriber('main')
 def hubPublish(key, message):
     log.debug(f'hubPublish ({key}) : {message}')
 
-    gHub.publish(key, message)
+    # Hub publishing should now always happen in the main loop
+    app = runningApp()
+    app.loop.call_soon_threadsafe(gHub.publish, key, message)
 
 
 class KeyListener(object):

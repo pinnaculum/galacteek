@@ -25,6 +25,7 @@ from galacteek.ipfs.cidhelpers import joinIpns
 from galacteek.ipfs.cidhelpers import stripIpfs
 from galacteek.ipfs.cidhelpers import cidConvertBase32
 from galacteek.ipfs.cidhelpers import IPFSPath
+
 from galacteek.ipfs.multi import multiAddrTcp4
 from galacteek.ipfs.stat import StatInfo
 
@@ -33,12 +34,10 @@ from galacteek.config import cGet
 from galacteek.core.asynccache import amlrucache
 from galacteek.core.asynccache import cachedcoromethod
 from galacteek.core.asynclib import async_enterable
-from galacteek.core.asynclib import asyncReadFile
 from galacteek.core.jtraverse import traverseParser
-from galacteek.core import pkgResourcesRscFilename
+
 from galacteek.core.tmpf import TmpFile
 from galacteek.core.asynclib import asyncRmTree
-from galacteek.ld.ldloader import aioipfs_document_loader
 from galacteek.ld import asyncjsonld as jsonld
 
 from galacteek import log
@@ -50,6 +49,7 @@ import aioipfs
 from .nscache import IPNSCache
 from .pinops import RemotePinningOps
 from .pinops import RemotePinningServiceOps
+from .ldops import LinkedDataOps
 
 
 GFILES_ROOT_PATH = '/galacteek/'
@@ -207,9 +207,36 @@ class LDOpsContext(object):
 
             if isinstance(expanded, list) and len(expanded) > 0:
                 return expanded[0]
+        except jsonld.SyntaxError as serr:
+            self.operator.debug(f'JSON-LD syntax error: {serr}')
+            raise serr
         except Exception as err:
             self.operator.debug('Error expanding document: {}'.format(
                 str(err)))
+
+    async def dagExpandAggressive(self, ipfsPath: IPFSPath):
+        """
+        Aggressive expansion
+        """
+        try:
+            dag = await self.operator.dagGet(str(ipfsPath))
+
+            expanded = await jsonld.expand(
+                await self.operator.ldInline(dag), {
+                    'documentLoader': self.ldLoader
+                }
+            )
+
+            if not isinstance(expanded, list):
+                raise Exception('Empty expand')
+        except Exception as err:
+            self.operator.debug(f'Error expanding : {err}')
+            raise err
+        except aioipfs.APIError as err:
+            self.operator.debug(f'IPFS error expanding : {err.message}')
+            raise err
+        else:
+            return expanded
 
     async def __aexit__(self, *args):
         pass
@@ -231,10 +258,12 @@ class APIErrorDecoder:
 
 
 # Stream-resolve cache
-sResolveCache = TTLCache(512, 30)
+sResolveCache = TTLCache(512, 15)
 
 
-class IPFSOperator(RemotePinningOps, RemotePinningServiceOps):
+class IPFSOperator(RemotePinningOps,
+                   RemotePinningServiceOps,
+                   LinkedDataOps):
     """
     IPFS operator, for your daily operations!
     """
@@ -657,8 +686,8 @@ class IPFSOperator(RemotePinningOps, RemotePinningServiceOps):
         if isDict(kList):
             return kList.get('Keys', [])
 
-    async def keyFind(self, name):
-        keys = await self.keys()
+    async def keyFind(self, name, k=None):
+        keys = k if k else await self.keys()
         for key in keys:
             if key['Name'] == name:
                 return key
@@ -1491,76 +1520,6 @@ class IPFSOperator(RemotePinningOps, RemotePinningServiceOps):
             self.debug(err.message)
             return None
 
-    async def ldInline(self, dagData):
-        # In-line the JSON-LD contexts for JSON-LD usage
-
-        async def process(data):
-            if isinstance(data, dict):
-                for objKey, objValue in data.copy().items():
-                    if objKey == '@context' and isinstance(objValue, dict):
-                        link = objValue.get('/')
-                        if not link:
-                            continue
-
-                        try:
-                            ctx = await self.client.cat(link)
-                            if ctx:
-                                data.update(orjson.loads(ctx.decode()))
-                        except Exception as err:
-                            self.debug('ldInline error: {}'.format(
-                                str(err)))
-                    else:
-                        await process(objValue)
-            elif isinstance(data, list):
-                for node in data:
-                    await process(node)
-
-            return data
-
-        return await process(dagData)
-
-    def ldContextsRootPath(self):
-        return pkgResourcesRscFilename('galacteek.ld', 'contexts')
-
-    async def ldContext(self, cName: str, source=None,
-                        key=None):
-        specPath = os.path.join(
-            self.ldContextsRootPath(),
-            '{context}'.format(
-                context=cName
-            )
-        )
-
-        if not os.path.isfile(specPath):
-            return None
-
-        try:
-            with open(specPath, 'r') as fd:
-                data = fd.read()
-
-            entry = await self.addString(data)
-        except Exception as err:
-            self.debug(str(err))
-        else:
-            return self.ipld(entry)
-
-    async def ldContextJson(self, cName: str):
-        specPath = os.path.join(
-            self.ldContextsRootPath(),
-            '{context}'.format(
-                context=cName
-            )
-        )
-
-        if not os.path.isfile(specPath):
-            return None
-
-        try:
-            data = await asyncReadFile(specPath, mode='rt')
-            return orjson.loads(data)
-        except Exception as err:
-            self.debug(str(err))
-
     def ipld(self, cid):
         if isinstance(cid, str):
             return {"/": cid}
@@ -1613,11 +1572,14 @@ class IPFSOperator(RemotePinningOps, RemotePinningServiceOps):
 
     async def listObject(self, path, timeout=None):
         cfg = self.opConfig('listObject')
-        return await self.waitFor(
-            self.client.core.ls(
-                await self.objectPathMapper(path)
-            ), timeout if timeout else cfg.timeout
-        )
+        try:
+            return await self.waitFor(
+                self.client.core.ls(
+                    await self.objectPathMapper(path)
+                ), timeout if timeout else cfg.timeout
+            )
+        except (aioipfs.APIError, aioipfs.UnknownAPIError):
+            pass
 
     async def walk(self, path):
         """
@@ -1973,16 +1935,6 @@ class IPFSOperator(RemotePinningOps, RemotePinningServiceOps):
 
     async def hasP2PCommand(self):
         return await self.hasCommand('p2p')
-
-    @async_enterable
-    async def ldOps(self):
-        if not self._ldDocLoader:
-            self._ldDocLoader = await aioipfs_document_loader(self.client)
-
-        return LDOpsContext(
-            self,
-            self._ldDocLoader
-        )
 
     async def _p2pDialerStart(self, peer, proto, address):
         """

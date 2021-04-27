@@ -110,6 +110,7 @@ class PubsubService(Configurable, GService):
         self.peered = peered
         self.scheduler = scheduler
 
+        self._filterSelfLegacy = filterSelfMessages
         self._receivedCount = 0
         self._errorsCount = 0
         self._runPeriodic = runPeriodic
@@ -185,7 +186,7 @@ class PubsubService(Configurable, GService):
         else:
             self._maxMessageSize = 0
 
-        if cfg.filters.filterSelf.enabled:
+        if cfg.filters.filterSelf.enabled and self._filterSelfLegacy:
             self.addMessageFilter(self.filterSelf)
 
     def debug(self, msg):

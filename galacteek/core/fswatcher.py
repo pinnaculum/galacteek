@@ -9,8 +9,8 @@ from PyQt5.QtCore import pyqtSignal
 class FileWatcher(QObject):
     pathChanged = pyqtSignal(str)
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
         self._watcher = QFileSystemWatcher(self)
         self._watcher.directoryChanged.connect(self.onChanged)

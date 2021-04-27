@@ -182,8 +182,12 @@ def ensure(coro, **kw):
 
     callback = kw.pop('futcallback', ensureGenericCallback)
 
-    if app and hasattr(app, 'loop'):
-        kw.update(loop=app.loop)
+    #
+    # Since we now have parallel loops running in threads, we let
+    # ensure_future determine which loop to use
+    #
+    # if app and hasattr(app, 'loop'):
+    #     kw.update(loop=app.loop)
 
     future = asyncio.ensure_future(coro, **kw)
 
