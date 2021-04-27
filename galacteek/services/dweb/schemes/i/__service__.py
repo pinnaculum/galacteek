@@ -1,6 +1,9 @@
 from aiohttp import web
 
 from galacteek import services
+from galacteek.ld import uriTermExtract
+from galacteek.ld.sparql import uri_objtype
+from rdflib.plugins.sparql import prepareQuery
 
 
 class RootView(web.View):
@@ -13,15 +16,27 @@ class RootView(web.View):
         minfo = self.request.match_info
         path = minfo.get('obj', None)
 
+        rscUri = f'i:/{path}'
+
+        try:
+            results = list(await self.stores.gQuery(
+                uri_objtype(rscUri).get_text()))
+            otype = uriTermExtract(results[0]['type'])
+        except Exception:
+            return web.Response(
+                text=f'Unknown object: {rscUri}'
+            )
+
         # TODO: check object type, fixed for test
         t = app.jinjaEnv.get_template(
-            'ld/components/Article/render.jinja2'
+            f'ld/components/{otype}/render.jinja2'
         )
 
         return web.Response(
             text=await t.render_async(
                 graph=self.stores.graphG,
-                rscUri=f'i:/{path}'
+                prepareQuery=prepareQuery,
+                rscUri=rscUri
             ))
 
 
@@ -34,16 +49,18 @@ class GraphsView(web.View):
         minfo = self.request.match_info
 
         gname = minfo.get('g', 'g')
-        # fmt = minfo.get('fmt', 'xml')
+        fmt = minfo.get('fmt', 'xml')
 
         graph = self.stores._graphs.get(gname, None)
 
-        if graph:
+        if fmt == 'xml':
             data = await graph.xmlize()
-            return web.Response(
-                content_type='application/rdf+xml',
-                text=data.decode()
-            )
+        elif fmt == 'ttl':
+            data = await graph.ttlize()
+        return web.Response(
+            content_type='application/rdf+xml',
+            text=data.decode()
+        )
 
 
 class IService(services.GService):

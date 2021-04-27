@@ -2,8 +2,6 @@ import os.path
 import orjson
 import aioipfs
 
-from rdflib import Graph, URIRef
-
 from galacteek import log
 
 from galacteek.core import runningApp
@@ -15,6 +13,8 @@ from galacteek.ld.ldloader import aioipfs_document_loader
 
 from galacteek.ld import asyncjsonld as jsonld
 from galacteek.ld import ldContextsRootPath
+from galacteek.ld import gLdBaseUri
+from galacteek.ld.rdf import BaseGraph
 
 
 class LDOpsContext(object):
@@ -76,7 +76,7 @@ class LDOpsContext(object):
                     del dag['previous']
 
             options = {
-                'base': 'ips://galacteek.ld/',
+                'base': gLdBaseUri,
                 'documentLoader': self.ldLoader
             }
 
@@ -89,14 +89,13 @@ class LDOpsContext(object):
                 ldType = dag.get('@type', None)
                 if ldType:
                     options['expandContext'] = {
-                        '@context': f'ips://galacteek.ld/{ldType}'
+                        '@context': f'{gLdBaseUri}/{ldType}'
                     }
 
             expanded = await jsonld.expand(
                 await self.operator.ldInline(dag),
                 options
             )
-            # print(json.dumps(expanded, indent=2))
 
             if not isinstance(expanded, list):
                 raise Exception('Empty expand')
@@ -119,18 +118,16 @@ class LDOpsContext(object):
             assert dag is not None
 
             # Build the RDF graph from the expanded JSON-LD
-            graph = Graph().parse(
+            graph = BaseGraph()
+
+            graph.parse(
                 data=orjson.dumps(dag).decode(),
                 format='json-ld'
             )
+
             if not graph:
                 raise Exception('Graph is empty')
 
-            # Bind some very useful things in the NS manager
-            graph.namespace_manager.bind(
-                'gs',
-                URIRef('ips://galacteek.ld/')
-            )
             return graph
         except Exception as err:
             log.debug(f'DAG to RDF error for {ipfsPath}: {err}')
@@ -141,12 +138,16 @@ class LDOpsContext(object):
         Compact a DAG
         """
         try:
+            # Note: we still do the schemas inlining (when
+            # a @context is referenced with IPLD) to
+            # support DAGs which weren't upgraded yet
             dag = await self.operator.ldInline(
                 await self.operator.dagGet(str(ipfsPath))
             )
             assert dag is not None
 
             if not context:
+                # Get the @context we'll compact with
                 context = await self.operator.dagGet(
                     str(ipfsPath.child('@context'))
                 )
@@ -154,7 +155,7 @@ class LDOpsContext(object):
             compacted = await jsonld.compact(
                 dag, context,
                 {
-                    'base': 'ips://galacteek.ld/',
+                    'base': gLdBaseUri,
                     'documentLoader': self.ldLoader,
                     'compactArrays': True
                 }

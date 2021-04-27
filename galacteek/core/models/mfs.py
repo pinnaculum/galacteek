@@ -10,6 +10,7 @@ from PyQt5.QtGui import QStandardItemModel
 from PyQt5.QtCore import QUrl
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtCore import QMimeData
 from PyQt5.QtCore import QDir
 from PyQt5.QtCore import QFile
@@ -303,9 +304,12 @@ class MFSItemModel(QStandardItemModel):
     needExpand = pyqtSignal(QModelIndex)
 
     # Specific roles
-    CidRole = 0x0108
-    TimeFrameRole = 0x0109
-    FileNameRole = 0x010a
+    CidRole = Qt.UserRole + 1
+    TimeFrameRole = Qt.UserRole + 2
+    FileNameRole = Qt.UserRole + 3
+    IpfsPathRole = Qt.UserRole + 4
+    IpfsUrlRole = Qt.UserRole + 5
+    MimeTypeRole = Qt.UserRole + 6
 
     def __init__(self):
         QStandardItemModel.__init__(self)
@@ -511,10 +515,49 @@ class MFSItemModel(QStandardItemModel):
             return item.cidString
         elif role == self.TimeFrameRole and isinstance(item, MFSTimeFrameItem):
             return item.text()
-        elif role == self.FileNameRole and isinstance(item, MFSNameItem):
+        elif role == self.FileNameRole and (isinstance(
+                item, MFSNameItem) or isinstance(item, MFSRootItem)):
             return item.text()
+        elif role == self.MimeTypeRole and isinstance(item, MFSNameItem):
+            if item.mimeType:
+                return item.mimeType.name()
+        elif role == self.IpfsPathRole and isinstance(item, MFSNameItem):
+            return item.fullPath
+        elif role == self.IpfsUrlRole and isinstance(item, MFSNameItem):
+            return item.ipfsPath.ipfsUrl
         else:
             return super().data(index, role)
+
+    def roleNames(self):
+        return {
+            self.FileNameRole: 'name'.encode(),
+            self.IpfsPathRole: 'ipfsPath'.encode(),
+            self.IpfsUrlRole: 'ipfsUrl'.encode(),
+            self.CidRole: 'cid'.encode(),
+            self.MimeTypeRole: 'mimeType'.encode()
+        }
+
+    # Called from QML
+
+    @pyqtSlot(result=int)
+    def cidRoleValue(self):
+        return self.CidRole
+
+    @pyqtSlot(result=int)
+    def mimeTypeRoleValue(self):
+        return self.MimeTypeRole
+
+    @pyqtSlot(result=int)
+    def fileNameRoleValue(self):
+        return self.FileNameRole
+
+    @pyqtSlot(result=int)
+    def ipfsPathRoleValue(self):
+        return self.IpfsPathRole
+
+    @pyqtSlot(result=int)
+    def ipfsUrlRoleValue(self):
+        return self.IpfsUrlRole
 
 
 def createMFSModel():
