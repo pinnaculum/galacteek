@@ -43,6 +43,15 @@ def uri_regex(ureg):
     )
 
 
+def uri_objtype(uri):
+    return select(
+        vars=['?type'],
+        w=where([
+            T(subject=f'<{uri}>', predicate="a", object="?type")
+        ])
+    )
+
+
 def uri_search(uri):
     return select(
         vars=['?p', '?o'],
