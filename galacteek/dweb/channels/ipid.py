@@ -2,6 +2,8 @@
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtCore import QVariant
 
+from galacteek.core import mergeDicts
+
 from . import AsyncChanObject
 
 
@@ -16,8 +18,8 @@ class IPIDInterface(object):
 
         if ipid:
             return ipid.did
-
-        return ''
+        else:
+            return ''
 
     async def a_serviceEndpointCompact(self, app, loop, path):
         ipfsop = app.ipfsOperatorForLoop(loop)
@@ -37,16 +39,23 @@ class IPIDInterface(object):
         ipfsop = app.ipfsOperatorForLoop(loop)
 
         ipid = await self._ipid(ipfsop.ctx)
+        if not ipid:
+            return False
+
         service = await ipid.searchServiceById(
             ipid.didUrl(path=path)
         )
-        if service:
+
+        if service and isinstance(obj, dict):
             async with ipid.editService(ipid.didUrl(path=path)) as editor:
-                editor.service['serviceEndpoint'].update(obj)
+                merged = mergeDicts(
+                    editor.service['serviceEndpoint'],
+                    obj
+                )
+                editor.service['serviceEndpoint'] = merged
 
-                return True
+            return True
 
-            print(service._srv)
         return False
 
     async def a_ipidCompact(self, app, loop):
@@ -54,7 +63,6 @@ class IPIDInterface(object):
         ipid = await self._ipid(ipfsop.ctx)
 
         compact = await ipid.compact()
-
         return QVariant(compact)
 
 
@@ -72,10 +80,19 @@ class IPIDHandler(AsyncChanObject, IPIDInterface):
         return self.tc(self.a_serviceEndpointCompact, path)
 
     @pyqtSlot(str, QVariant, result=bool)
-    def serviceEndpointPatch(self, path, obj):
+    def serviceEndpointPatch(self, path, value):
+        """
+        Patch a DID service endpoint with an object (dictionary)
+        """
+
+        try:
+            obj = dict(value.toVariant())
+        except Exception:
+            return False
+
         return self.tc(
             self.a_serviceEndpointPatch,
-            path, obj.toVariant()
+            path, obj
         )
 
     @pyqtSlot(result=QVariant)

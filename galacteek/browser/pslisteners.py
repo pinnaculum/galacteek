@@ -7,7 +7,7 @@ class ServicesListener(KeyListener):
     listenTo = [keyServices]
 
     async def event_g_services(self, key, message):
-        from galacteek.dweb.chanobjects.eth import EthSmartContractHandler
+        from galacteek.dweb.channels.eth import EthSmartContractHandler
 
         app = runningApp()
         event = message['event']
