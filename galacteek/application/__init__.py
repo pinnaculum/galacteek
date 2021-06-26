@@ -18,6 +18,7 @@ import signal
 import psutil
 from pathlib import Path
 from filelock import FileLock
+from cachetools import cached, LRUCache
 
 from distutils.version import StrictVersion
 
@@ -49,6 +50,8 @@ from galacteek import ensure
 from galacteek import AsyncSignal
 from galacteek import pypicheck, GALACTEEK_NAME
 from galacteek import asyncSigWait
+
+from galacteek.core.fswatcher import FileWatcher
 
 from galacteek.config import cSetSavePath
 from galacteek.config import cGet
@@ -87,6 +90,7 @@ from galacteek.browser.schemes import NativeIPFSSchemeHandler
 from galacteek.browser.schemes import ObjectProxySchemeHandler
 from galacteek.browser.schemes import MultiObjectHostSchemeHandler
 from galacteek.browser.schemes.ipid import IPIDSchemeHandler
+from galacteek.browser.schemes.i import ISchemeHandler
 
 from galacteek.browser import BrowserRuntimeObjects
 from galacteek.browser import browserSetup
@@ -107,6 +111,9 @@ from galacteek.ipfs import ipfsVersionsGenerator
 from galacteek.did.ipid import IPIDManager
 
 from galacteek.ipdapps.loader import DappsRegistry
+
+from galacteek.ld import ldRenderersRootPath
+from galacteek.ld.manager import LDSchemasImporter
 
 from galacteek.dweb.webscripts import ipfsClientScripts
 from galacteek.dweb.render import defaultJinjaEnv
@@ -268,6 +275,10 @@ class GalacteekApplication(QApplication):
         self._shuttingDown = False
         self._freshInstall = False
         self._process = psutil.Process(os.getpid())
+        self._ldSchemasImporter = LDSchemasImporter()
+        self._fsWatcherContexts = FileWatcher()
+        self._fsWatcherContexts.pathChanged.connect(
+            self.onLdContextsChanged)
 
         self._icons = {}
         self._ipfsIconsCache = {}
@@ -318,6 +329,10 @@ class GalacteekApplication(QApplication):
             lpath.touch()
 
         return FileLock(lpath, timeout=2)
+
+    @property
+    def ldSchemas(self):
+        return self._ldSchemasImporter
 
     @property
     def theme(self):
@@ -553,6 +568,9 @@ class GalacteekApplication(QApplication):
         # Start with no proxy
         self.networkProxySet(NullProxy())
 
+        # Discover/preload LD schemas
+        self._ldSchemasImporter.discover()
+
         self.multihashDb = IPFSObjectMetadataDatabase(
             str(self._mHashDbLocation), loop=self.loop)
 
@@ -676,7 +694,9 @@ class GalacteekApplication(QApplication):
         self.ipfsCtx.resources['videocall'] = await op.addPath(vPath)
 
         await self.qSchemeHandler.start()
-        await self.importLdContexts()
+
+        # Trigger LD schemas update
+        await self._ldSchemasImporter.update(op)
 
         self.feedFollower = FeedFollower(self)
         self.feedFollowerTask = await self.scheduler.spawn(
@@ -745,36 +765,24 @@ class GalacteekApplication(QApplication):
             log.debug('App replication: success ({result})'.format(
                 result=replResult))
 
+    def onLdContextsChanged(self, path):
+        pass
+
     @ipfsOp
-    async def importLdContexts(self, ipfsop):
-        """
-        Import the JSON-LD contexts and associate the
-        directory entry with the 'galacteek.ld.contexts' key
-        """
+    async def importLdRenderers(self, ipfsop):
+        rdrsPath = ldRenderersRootPath()
 
-        contextsPath = ipfsop.ldContextsRootPath()
-
-        if not os.path.isdir(contextsPath):
-            log.debug('LD contexts not found')
+        if not os.path.isdir(rdrsPath):
             return
 
+        # TTL renderers
         entry = await ipfsop.addPath(
-            contextsPath, recursive=True,
+            rdrsPath, recursive=True,
             hidden=False
         )
+
         if entry:
-            ldKeyName = 'galacteek.ld.contexts'
-            log.debug('LD contexts sitting at: {}'.format(
-                entry.get('Hash')))
-            await ipfsop.keyGen(
-                ldKeyName,
-                checkExisting=True
-            )
-            ensure(ipfsop.publish(
-                entry['Hash'],
-                key=ldKeyName,
-                allow_offline=True
-            ))
+            ipfsop.ctx.resources['ld-renderers'] = entry
 
     @ipfsOp
     async def importQtResource(self, op, path):
@@ -834,13 +842,24 @@ class GalacteekApplication(QApplication):
         return aioipfs.AsyncIPFS(host=connParams.host,
                                  port=connParams.apiPort, loop=loop)
 
+    @cached(LRUCache(256))
     def ipfsOperatorForLoop(self, loop):
-        return GalacteekOperator(self.ipfsClientForLoop(loop),
-                                 ctx=self.ipfsCtx,
-                                 debug=self.debugEnabled,
-                                 nsCache=self.nsCache)
+        op = GalacteekOperator(self.ipfsClientForLoop(loop),
+                               ctx=self.ipfsCtx,
+                               debug=self.debugEnabled,
+                               nsCache=self.nsCache)
+
+        # We share the manager but attach to the loop.. Threadsafe ? no
+        # TODO: make the IPID manager thread-safe
+        op.ipidManager = self.ipidManager
+
+        # Attach
+        loop._attachedIpfsOperator = op
+        return op
 
     async def updateIpfsClient(self, client=None):
+        from rdflib.plugins.sources.ipfs import ipfs_client_set_maddr
+
         changed = False
 
         if not client:
@@ -862,6 +881,11 @@ class GalacteekApplication(QApplication):
         IPFSOpRegistry.regDefault(self.ipfsOpMain)
 
         if changed:
+            # rdflib client setup
+            ipfs_client_set_maddr(
+                f'/dns/{client.host}/tcp/{client.port}/http'
+            )
+
             # Publish an event for services that need a notification
             # when the IPFS operator is changed
 
@@ -1416,8 +1440,12 @@ class GalacteekApplication(QApplication):
             await messageBoxAsync(
                 f'IPFS connection error: {err}')
             await self.setupIpfsConnection(reconfigure=True)
+        except RecursionError as err:
+            print(str(err))
         except Exception:
-            await self.setupIpfsConnection(reconfigure=True)
+            import traceback
+            traceback.print_exc()
+            # await self.setupIpfsConnection(reconfigure=True)
         else:
             await self.ipfsCtx.ipfsConnectionReady.emit()
 
@@ -1545,6 +1573,7 @@ class GalacteekApplication(QApplication):
         )
         self.qSchemeHandler = MultiObjectHostSchemeHandler(self)
         self.ipidSchemeHandler = IPIDSchemeHandler(self)
+        self.iSchemeHandler = ISchemeHandler(self)
 
         # self.gSchemeHandler = GalacteekSchemeHandler(self)
 
@@ -1607,6 +1636,9 @@ class GalacteekApplication(QApplication):
 
                 with async_timeout.timeout(cfg.closeTimeout):
                     await self.scheduler.close()
+            except RecursionError:
+                log.warning('shutdownScheduler: recursion error')
+                break
             except asyncio.TimeoutError:
                 log.warning(
                     'Timeout shutting down the scheduler (not fooled)')
@@ -1627,8 +1659,9 @@ class GalacteekApplication(QApplication):
         # Shutdown the core service
         await self.s.stop()
 
-        self.mainWindow.stopTimers()
-        await self.mainWindow.stack.shutdown()
+        if self.mainWindow:
+            self.mainWindow.stopTimers()
+            await self.mainWindow.stack.shutdown()
 
         if 0:
             try:

@@ -91,11 +91,8 @@ class DIDAuthSiteHandler:
         as we only use RSA and one key
         """
 
-        # Load the context first
-        vcResponse = await ipfsop.ldContextJson('VerifiableCredential')
-
-        # Complete with the VC
-        vcResponse.update({
+        return web.json_response({
+            '@context': 'ips://galacteek.ld/VerifiableCredential',
             'type': 'VerifiableCredential',
             'issuer': did,
             'issued': normedUtcDate(),
@@ -113,7 +110,6 @@ class DIDAuthSiteHandler:
                 'proofValue': signature
             }
         })
-        return web.json_response(vcResponse)
 
     @ipfsOp
     async def authPss(self, ipfsop, request):

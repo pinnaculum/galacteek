@@ -1,4 +1,6 @@
+
 import functools
+import traceback
 
 from logbook import Handler
 
@@ -43,6 +45,8 @@ from galacteek.core.glogger import loggerMain
 from galacteek.core.glogger import loggerUser
 from galacteek.core.glogger import LogRecordStyler
 from galacteek.core.asynclib import asyncify
+from galacteek.core.ps import KeyListener
+from galacteek.core.ps import makeKeyService
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.cidhelpers import IPFSPath
@@ -256,7 +260,6 @@ class MainWindowLogHandler(Handler):
             if self.doc.lineCount() > 2048:
                 self.doc.clear()
         except Exception:
-            import traceback
             traceback.print_exc()
 
 
@@ -425,6 +428,7 @@ class WorkspacesToolBar(QToolBar):
         super().__init__(parent)
 
         self.wsButtons = {}
+        self.sepFirst = self.addSeparator()
         self.wsPlanetsToolBar = QToolBar()
         self.wsPlanetsToolBarAdded = False
         self.setAcceptDrops(True)
@@ -444,6 +448,8 @@ class WorkspacesToolBar(QToolBar):
                 self.wsPlanetsToolBarAdded = True
 
             self.wsButtons[btn] = self.wsPlanetsToolBar.addWidget(btn)
+        elif dst == 'qapps':
+            self.wsButtons[btn] = self.insertWidget(self.sepFirst, btn)
 
     def buttonForWorkspace(self, workspace):
         for wsButton in self.wsButtons.keys():
@@ -534,7 +540,8 @@ class WorkspaceSwitchButton(QToolButton, URLDragAndDropProcessor):
         ''')
 
 
-class CentralStack(QStackedWidget):
+class CentralStack(QStackedWidget,
+                   KeyListener):
     """
     Stacked widget holding the workspaces
     """
@@ -549,6 +556,8 @@ class CentralStack(QStackedWidget):
         self.layout().setSpacing(0)
         self.setContentsMargins(0, 0, 0, 0)
         self.setMouseTracking(True)
+
+        self.psListen(makeKeyService('core', 'qmlapps'))
 
         self.__wsDormant = []
 
@@ -607,11 +616,15 @@ class CentralStack(QStackedWidget):
 
         self.toolBarWs.wsSwitched(wspace)
 
-    def __addWorkspace(self, workspace):
+    def __addWorkspace(self, workspace, position=-1):
         if not workspace.wsAttached:
             switchButton = self.wsSwitchButton(workspace)
 
-            self.addWidget(workspace)
+            if position >= 0:
+                self.insertWidget(position, workspace)
+            else:
+                self.addWidget(workspace)
+
             workspace.wsAttached = True
             workspace.wsSwitchButton = switchButton
 
@@ -624,11 +637,12 @@ class CentralStack(QStackedWidget):
 
             workspace.setupWorkspace()
 
-    def addWorkspace(self, workspace, section='default', dormant=False):
+    def addWorkspace(self, workspace, section='default', dormant=False,
+                     position=-1):
         workspace.wsSection = section
 
         if not dormant:
-            self.__addWorkspace(workspace)
+            self.__addWorkspace(workspace, position=position)
         else:
             self.__wsDormant.append(workspace)
 
@@ -686,6 +700,22 @@ class CentralStack(QStackedWidget):
     async def shutdown(self):
         for idx, w in self.workspaces():
             await w.workspaceShutDown()
+
+    async def event_g_services_core_qmlapps(self, key, message):
+        event = message['event']
+
+        if event['type'] == 'QmlApplicationLoaded':
+            workspace = QMLDappWorkspace(
+                self,
+                event['appName'],
+                event['components'],
+                event['qmlEntryPoint'],
+                icon=getIcon('galacteek.png')
+            )
+            await workspace.loadComponents()
+            self.addWorkspace(workspace, section='qapps')
+
+            workspace.wsSwitch()
 
 
 class BrowseButton(PopupToolButton):
@@ -1244,8 +1274,9 @@ class MainWindow(QMainWindow):
 
         if modifiers & Qt.ControlModifier:
             if event.key() == Qt.Key_W and curWorkspace:
-                idx = curWorkspace.tabWidget.currentIndex()
-                ensure(curWorkspace.onTabCloseRequest(idx))
+                if isinstance(curWorkspace, TabbedWorkspace):
+                    idx = curWorkspace.tabWidget.currentIndex()
+                    ensure(curWorkspace.onTabCloseRequest(idx))
 
         super(MainWindow, self).keyPressEvent(event)
 
@@ -1691,8 +1722,6 @@ class MainWindow(QMainWindow):
 
         if not wspace or not issubclass(wspace.__class__, TabbedWorkspace):
             wspace = self.stack.defaultWorkspace
-            print('Not a tabbed wspace, using def')
-            # return
 
         self.addBrowserTab(pinBrowsed=pinBrowsed, urlFocus=True)
 

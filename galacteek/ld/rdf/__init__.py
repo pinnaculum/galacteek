@@ -10,6 +10,7 @@ from rdflib.namespace import NamespaceManager
 
 from galacteek import log
 from galacteek import AsyncSignal
+from galacteek.core import runningApp
 from galacteek.core.asynclib import asyncWriteFile
 
 
@@ -43,9 +44,8 @@ def purgeBlank(graph: Graph):
 
 class BaseGraph(Graph):
     def __init__(self, *args, **kw):
-        super(BaseGraph, self).__init__(*args, **kw)
-
-        self.iNsBind()
+        super().__init__(*args, **kw)
+        self.loop = asyncio.get_event_loop()
 
     def iNsBind(self):
         self.iNs = NamespaceManager(self)
@@ -61,12 +61,33 @@ class BaseGraph(Graph):
     def nameSpaces(self):
         return [n for n in self.iNs.namespaces()]
 
+    def _serial(self, fmt):
+        buff = io.BytesIO()
+        self.serialize(buff, format=fmt)
+        buff.seek(0, 0)
+        return buff.getvalue()
+
+    async def ttlize(self):
+        return await self.loop.run_in_executor(
+            None, self._serial, 'ttl')
+
+    async def xmlize(self):
+        return await self.loop.run_in_executor(
+            None, self._serial, 'pretty-xml')
+
+    async def queryAsync(self, query, initBindings=None):
+        def runQuery(q, bindings):
+            return self.query(q, initBindings=bindings)
+
+        return await self.loop.run_in_executor(
+            runningApp().executor,
+            runQuery, query, initBindings
+        )
+
 
 class IGraph(BaseGraph):
     def __init__(self, name, rPath: Path, store, **kw):
         super(IGraph, self).__init__(store, **kw)
-
-        self.loop = asyncio.get_event_loop()
 
         self.name = name
         self.rPath = rPath
@@ -74,11 +95,7 @@ class IGraph(BaseGraph):
         self.exportsPath.mkdir(parents=True, exist_ok=True)
         self.xmlExportPath = self.exportsPath.joinpath('graph.xml')
 
-        self.trailPath = self.rPath.joinpath('trail.json')
-
-        # self.dbPath = str(self.rPath.joinpath('rdf_g.db'))
-        self.dbPath = str(self.rPath.joinpath('rdf_bsddb'))
-
+        self.dbPath = str(self.rPath.joinpath('g_rdf.db'))
         self.dbUri = Literal(f"sqlite:///{self.dbPath}")
         self.cid = None
 
@@ -99,21 +116,6 @@ class IGraph(BaseGraph):
             str(self.exportsPath.joinpath('export.ttl')),
             await self.xmlize()
         )
-        # self.serialize(str(self.xmlExportPath), format='xml')
-
-    def _serial(self, fmt):
-        buff = io.BytesIO()
-        self.serialize(buff, format=fmt)
-        buff.seek(0, 0)
-        return buff.getvalue()
-
-    async def ttlize(self):
-        return await self.loop.run_in_executor(
-            None, self._serial, 'ttl')
-
-    async def xmlize(self):
-        return await self.loop.run_in_executor(
-            None, self._serial, 'pretty-xml')
 
     async def ipfsFlush(self, ipfsop, format='xml'):
         export = await self.loop.run_in_executor(

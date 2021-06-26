@@ -1,0 +1,208 @@
+#!/bin/bash
+#
+# AppImage builder with Miniconda3
+#
+# You need to run "make dists" before running the script
+#
+
+MINICONDA_DIST="Miniconda3-py37_4.8.3-Linux-x86_64.sh"
+
+if [[ $CI_COMMIT_REF_NAME =~ ^v([0-9].[0-9].[0-9]{1,2}) ]] ; then
+    echo "Using tag: $CI_COMMIT_REF_NAME"
+    EVERSION=${BASH_REMATCH[1]}
+    APPIMAGE_FILENAME="Galacteek-${EVERSION}-x86_64.AppImage"
+else
+    if [ "$CI_COMMIT_REF_NAME" != "master" ]; then
+        echo "Short commit ID: ${COMMIT_SHORT}"
+        APPIMAGE_FILENAME="Galacteek-${COMMIT_SHORT}-x86_64.AppImage"
+    else
+        APPIMAGE_FILENAME="Galacteek-${G_VERSION}-x86_64.AppImage"
+    fi
+fi
+
+# export APPIMAGE_PATH="${APPIMAGE_FILENAME}"
+# export BUNDLE_PATH="${ASSETS_ROOT}/${APPIMAGE_FILENAME}"
+
+echo "Building AppImage for version: ${G_VERSION}"
+echo "AppImage destination: $BUNDLE_PATH"
+
+if ! [ -e $MINICONDA_DIST ]; then
+    wget "https://repo.anaconda.com/miniconda/${MINICONDA_DIST}"
+    md5=$(md5sum ${MINICONDA_DIST}|awk '{print $1}')
+
+    if [ "$md5" != "751786b92c00b1aeae3f017b781018df" ]; then
+        echo "${MINICONDA_DIST}: invalid checksum"
+        exit 1
+    else
+        echo "${MINICONDA_DIST}: checksum is valid"
+    fi
+fi
+
+APPDIR="galacteek.AppDir.${G_VERSION}"
+APPIPIP=$APPDIR/usr/bin/pip
+WHEEL=../dist/galacteek-$G_VERSION-py3-none-any.whl
+
+if ! [ -e $WHEEL ]; then
+    echo "Wheel for version $G_VERSION does not exist, run make dists"
+    exit 1
+fi
+
+if [ -e $APPDIR ]; then
+    echo "$APPDIR already exists"
+else
+    mkdir -p $APPDIR
+    mkdir -p $APPDIR/usr/share/applications
+    mkdir -p $APPDIR/usr/share/licenses/galacteek
+    mkdir -p $APPDIR/usr/share/metainfo
+    mkdir -p $APPDIR/usr/share/icons/hicolor/512x512/apps
+fi
+
+if ! [ -e $APPIPIP ]; then
+    echo "Installing miniconda"
+    bash $MINICONDA_DIST -b -p "$APPDIR"/usr -f
+else
+    echo "Miniconda found, continuing"
+fi
+
+export PATH="$PATH:$APPDIR/usr/bin"
+
+# Enter the venv
+. "$APPDIR"/usr/bin/activate
+
+# Install necessary conda packages
+conda install -y -c conda-forge libxkbcommon pip
+conda install -y --no-deps libxcb libjpeg-turbo
+conda install -c anaconda graphviz
+
+conda remove -y icu
+
+$APPIPIP install --upgrade pip
+$APPIPIP install wheel
+
+# Install the wheel from local dists
+
+echo "Installing wheel: $WHEEL"
+$APPIPIP install $WHEEL
+$APPIPIP install $WHEEL'[markdown-extensions]'
+
+# Pyqt dependencies
+$APPIPIP install $WHEEL'[ui-pyqt-5.15]'
+
+cp ../{LICENSE,LICENSE.go-ipfs,LICENSE.Qt.GPLv3} \
+	$APPDIR/usr/share/licenses/galacteek
+cp ../galacteek.desktop $APPDIR/usr/share/applications
+cp ../galacteek.desktop $APPDIR
+cp ../galacteek.appdata.xml $APPDIR/usr/share/metainfo
+cp ../share/icons/galacteek.png $APPDIR
+cp ../share/icons/galacteek.png $APPDIR/org.flatpak.galacteek.Galacteek.png
+cp ../share/icons/galacteek.png $APPDIR/usr/share/icons/hicolor/512x512/apps
+
+find /usr/lib -iname 'libzbar.so*' -exec cp -av {} $APPDIR/usr/lib \;
+find /usr/lib -iname 'libjpeg.so*' -exec cp -av {} $APPDIR/usr/lib \;
+
+# Copy go-ipfs and fs-repo-migrations
+cp go-ipfs/ipfs-${GO_IPFS_VERSION} $APPDIR/usr/bin
+cp fs-repo-migrations/fs-repo-migrations $APPDIR/usr/bin
+
+# Copy tor and dependencies
+cp /usr/bin/tor $APPDIR/usr/bin
+find /usr/lib -iname 'libevent-2.1.so*' -exec cp -av {} $APPDIR/usr/lib \;
+find /usr/lib -iname 'libcrypto.so*' -exec cp -av {} $APPDIR/usr/lib \;
+find /lib -iname 'libsystemd.so*' -exec cp -av {} $APPDIR/usr/lib \;
+find /usr/lib -iname 'libssl.so*' -exec cp -av {} $APPDIR/usr/lib \;
+find /usr/lib -iname 'liblzma.so*' -exec cp -av {} $APPDIR/usr/lib \;
+find /usr/lib -iname 'libzstd.so*' -exec cp -av {} $APPDIR/usr/lib \;
+
+# Copy notbit
+# cp notbit/src/notbit $APPDIR/usr/bin
+
+pushd "$APPDIR"/usr/bin
+ln -s ipfs-${GO_IPFS_VERSION} ipfs
+ln -s notbit notbit-keygen
+ln -s notbit notbit-sendmail
+popd
+
+# Remove unnecessary stuff
+pushd "$APPDIR"/usr
+
+rm -rf pkgs
+find -type d -iname '__pycache__' -print0 | xargs -0 rm -r
+
+# Strip everything but the Pillow shared libs
+find . -type f -not \( -path ./lib/python3.7/site-packages/PIL -prune \) -o \
+	-name '*.so*' -print -exec strip '{}' \;
+find -type f -iname '*.a' -print -delete
+
+rm -rf lib/cmake/
+rm -rf include/
+rm -rf share/{gtk-,}doc
+rm -rf bin/tcl*
+rm -rf bin/lz*
+rm -rf bin/xz*
+rm -rf lib/libtcl*
+rm -rf lib/libtk*
+rm -rf lib/tk*
+rm -rf lib/tcl*
+rm -rf lib/python3.7/site-packages/Cryptodome/SelfTest/*
+rm -rf lib/python3.7/site-packages/PyQt5/Qt/plugins/geoservices
+rm -rf lib/python3.7/site-packages/PyQt5/Qt/plugins/sceneparsers
+rm -rf lib/python3.7/site-packages/pyzbar/tests
+rm -rf lib/python3.7/turtledemo/
+rm -rf lib/python3.7/tkinter/
+rm -rf lib/python3.7/lib2to3/
+rm -rf lib/python3.7/idlelib
+rm -rf lib/python3.7/site-packages/git/test
+rm -rf lib/python3.7/site-packages/conda_package_handling
+rm -rf lib/python3.7/ensurepip
+rm -rf lib/python3.7/site-packages/{setuptools,pip}
+rm -rf share/man
+rm -rf share/readline
+rm -rf share/terminfo
+rm -rf share/info
+rm -rf ssl/man
+rm -f lib/libstdc++*
+
+# Remove xcb libs according to the excludelist
+rm -f lib/libxcb-dri2.so*
+rm -f lib/libxcb-dri3.so*
+rm -f lib/libxcb.so*
+
+# QT
+TSL_PATH=./lib/python3.7/site-packages/PyQt5/Qt5/translations
+find $TSL_PATH -type f -not -iname "*en*" -a -not -iname "*es*" \
+	-a -not -iname "*fr*" -exec rm {} \;
+
+QTWEB_TS_PATH=./lib/python3.7/site-packages/PyQt5/Qt5/translations/qtwebengine_locales
+find $QTWEB_TS_PATH -type f -not -iname "*en*" -a -not -iname "*es*" \
+	-a -not -iname "*fr*" -exec rm {} \;
+
+rm -rf lib/python3.7/site-packages/PyQt5/Qt5/plugins/sqldrivers
+rm -rf lib/python3.7/site-packages/PyQt5/Qt5/plugins/geoservices
+rm -rf lib/python3.7/site-packages/PyQt5/Qt5/plugins/assetimporters
+
+rm -rf lib/python3.7/site-packages/PyQt5/Qt5/lib/libQt5XmlPatterns*
+rm -rf lib/python3.7/site-packages/PyQt5/Qt5/lib/libQt5Designer*
+find lib/python3.7/site-packages/PyQt5/Qt5/qml/ -name *.qml -exec rm {} \;
+find lib/python3.7/site-packages/PyQt5/Qt5/qml/ -name *.qmlc -exec rm {} \;
+find lib/python3.7/site-packages/PyQt5/Qt5/qml/QtQuick -exec rm {} \;
+rm -rf lib/python3.7/site-packages/PyQt5/Qt5/qml/QtCharts/designer/images
+rm -rf lib/python3.7/site-packages/PyQt5/Qt5/qml/Qt/labs
+rm -rf lib/python3.7/site-packages/PyQt5/Qt5/qml/QtQuick3D/
+
+python3 -m compileall lib/python3.7/site-packages/galacteek
+
+popd
+
+# Copy the AppRun
+
+cp AppRun $APPDIR/AppRun
+chmod 755 $APPDIR/AppRun
+
+sed -i -e 's/#\!\/.*$/#!\/usr\/bin\/python3/' $APPDIR/usr/bin/galacteek
+sed -i -e 's/#\!\/.*$/#!\/usr\/bin\/python3/' $APPDIR/usr/bin/mkdocs
+
+wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+chmod +x appimagetool*.AppImage
+
+echo "AppDir successfully created, running appimagetool: $BUNDLE_PATH"
+ARCH=x86_64 ./appimagetool-x86_64.AppImage -n $APPDIR $BUNDLE_PATH

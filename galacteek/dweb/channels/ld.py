@@ -39,6 +39,10 @@ class LDInterface(object):
             ipid = await curProfile.userInfo.ipIdentifier()
             assert ipid is not None
 
+            passport = await ipid.searchServiceById(
+                ipid.didUrl(path='/passport')
+            )
+
             rsaAgent = await ipid.rsaAgentGet(ipfsop)
             privKey = await rsaAgent._privateKey()
 
@@ -53,6 +57,13 @@ class LDInterface(object):
             }
 
             dag.update(dict(obj))
+
+            if passport:
+                # Author
+                dag['author'] = {
+                    '@type': 'Person',
+                    '@id': passport.endpoint['me'].get('@id')
+                }
 
             # Dates
             if 'dateCreated' not in dag:

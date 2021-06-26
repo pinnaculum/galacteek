@@ -35,6 +35,7 @@
     <file>../../share/icons/blockchain2.png</file>
     <file>../../share/js/web3.min.js</file>
     <file>../../share/js/rxjs.umd.min.js</file>
+    <file>../../share/js/jquery-3.6.0.min.js</file>
     <file>../../share/static/docs/markdown-reference.html</file>
     <file>../../share/icons/blog.png</file>
     <file>../../share/icons/mimetypes/application-atom+xml.png</file>
@@ -250,4 +251,7 @@
     <file>../../share/crypto/btc/btc-donate-001.png</file>
   </qresource>
 
+  <qresource prefix="/">
+    <file>../../qtquickcontrols2.conf</file>
+  </qresource>
 </RCC>

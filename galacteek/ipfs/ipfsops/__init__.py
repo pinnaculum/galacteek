@@ -1986,7 +1986,11 @@ class IPFSOperator(RemotePinningOps,
     @async_enterable
     async def p2pDialerFromAddr(self, p2pEndpointAddr,
                                 address=None, addressAuto=True):
+        from galacteek.core import unusedTcpPort
         from galacteek.ipfs.p2pservices import p2pEndpointAddrExplode
+
+        if addressAuto is True and not address:
+            address = '/ip4/127.0.0.1/tcp/{}'.format(unusedTcpPort())
 
         exploded = p2pEndpointAddrExplode(p2pEndpointAddr)
 
