@@ -6,6 +6,7 @@ aioipfs>=0.5.5
 aiojobs>=0.2.2
 aiopubsub==2.1.5
 aiorwlock>=0.6.0
+aiosparql>=0.12.0
 aiosqlite<0.17.0,>=0.16.0
 async-generator>=1.10
 async-timeout>=3.0.1
@@ -23,6 +24,7 @@ feedgen==0.9.0
 feedparser>=5.2.0
 filelock>=3.0.1
 gitpython>=2.1.11
+ipfshttpclient>=0.7.0
 jinja2>=2.10.1
 json-traverse>=0.4
 jsonschema>=3.0.0,<4.0.0
@@ -65,4 +67,5 @@ strict-rfc3339>=0.7
 tortoise-orm>=0.16.21
 validators>=0.18.1
 yarl==1.5.1
-rdflib @ git+https://github.com/pinnaculum/rdflib.git@ipfs#egg=rdflib
+rdflib @ git+https://gitlab.com/galacteek/rdflib.git@ipfs#egg=rdflib
+galacteek-ld-web4 @ git+https://gitlab.com/galacteek/galacteek-ld-web4.git@master

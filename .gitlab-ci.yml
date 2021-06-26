@@ -1,0 +1,143 @@
+image: "python:3.7"
+
+variables:
+  DEBIAN_FRONTEND: noninteractive
+
+  GALACTEEK_VERSION: $(cat galacteek/VERSION)
+  GO_IPFS_VERSION: 0.9.0
+  FS_MIGRATE_VERSION: 2.0.1
+  IPFS_DIST_OS: linux
+
+  GALACTEEK_ENV_FILE: $CI_PROJECT_DIR/galacteek-gitlab-env.sh
+  ARTIFACT_RELEASE: $CI_PROJECT_DIR/galacteek-gitlab-release-env.sh
+
+  ARTIFACT_RELEASE_URL: $PACKAGE_REGISTRY_URL/release-env.sh
+
+  ASSETS_ROOT: $CI_PROJECT_DIR/assets
+  IPFS_BINPATH: $CI_PROJECT_DIR/ipfs-bin
+
+.sysupdate_script_template:
+  before_script:
+    - apt-get update
+    - apt-get -o Dpkg::Options::="--force-confold" -o Dpkg::Options::="--force-confdef" -q -y --force-yes install libgl1 xinit x11-xserver-utils x11-utils libxcb-xkb1 libxkbcommon-x11-0 libzbar0 tor libsystemd0 autoconf automake gcc flatpak flatpak-builder wget curl
+    - python --version
+    - python -m pip install --upgrade pip
+
+.ipfs_script_template:
+  before_script:
+    - mkdir -p $IPFS_BINPATH
+    - wget https://dist.ipfs.io/go-ipfs/v${GO_IPFS_VERSION}/go-ipfs_v${GO_IPFS_VERSION}_${IPFS_DIST_OS}-amd64.tar.gz
+
+    - tar -xzvf go-ipfs_v${GO_IPFS_VERSION}_${IPFS_DIST_OS}-amd64.tar.gz
+    - chmod 755 go-ipfs/ipfs
+    - cp go-ipfs/ipfs /usr/bin
+    - cp go-ipfs/ipfs .
+
+    - ipfs version
+    - ipfs init
+    - nohup ipfs daemon &
+    - sleep 3
+
+    - ipfs pin remote service add origin $IPFS_RPS_ENDPOINT $IPFS_RPS_TOKEN
+
+stages:
+  - prepare
+  - build
+  - upload
+  - deploy
+
+prepare:
+  stage: prepare
+  script:
+    - echo "export G_VERSION=$(cat galacteek/VERSION)" > $GALACTEEK_ENV_FILE
+    - echo "export COMMIT_SHORT=$CI_COMMIT_SHA" >> $GALACTEEK_ENV_FILE
+    - echo "export GIT_BRANCH=$CI_COMMIT_BRANCH" >> $GALACTEEK_ENV_FILE
+
+    - echo "export APPIMAGE_FILENAME=Galacteek-${GALACTEEK_VERSION}-x86_64.AppImage"
+    - echo "export BUNDLE_PATH=${ASSETS_ROOT}/Galacteek-${GALACTEEK_VERSION}-x86_64.AppImage"
+  artifacts:
+    paths:
+      - $GALACTEEK_ENV_FILE
+
+build:
+  extends:
+    - .ipfs_script_template
+  stage: build
+  script:
+    - apt-get update
+    - apt-get -o Dpkg::Options::="--force-confold" -o Dpkg::Options::="--force-confdef" -q -y --force-yes install libgl1 xinit x11-xserver-utils x11-utils libxcb-xkb1 libxkbcommon-x11-0 libzbar0 tor libsystemd0 autoconf automake gcc flatpak flatpak-builder wget curl
+    - python --version
+    - python -m pip install --upgrade pip
+
+    - source $GALACTEEK_ENV_FILE
+    - mkdir -p $ASSETS_ROOT
+
+    - python -m venv venvg
+    - source venvg/bin/activate
+
+    - pip install wheel
+    - pip install -r requirements-dev.txt
+    - pip install -r requirements.txt
+    - pip install -e '.[ui-pyqt-5.15]'
+
+    - python setup.py build build_docs install
+    - python setup.py sdist bdist_wheel
+
+    - cd AppImage; ./appimage-build-gitlab
+
+    - export CID=$(ipfs add -rQ --cid-version 1 "$ASSETS_ROOT" | tail -1)
+
+    - echo "export APPIMAGE_ASSET_PATH=$BUNDLE_PATH" > $ARTIFACT_RELEASE
+    - echo "export APPIMAGE_CID=$CID" >> $ARTIFACT_RELEASE
+
+  artifacts:
+    paths:
+      - $ARTIFACT_RELEASE
+
+upload:
+  extends:
+    - .ipfs_script_template
+  stage: upload
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^master$/
+      when: always
+    - if: $CI_COMMIT_MESSAGE =~ /\[appimage-deploy\]/
+      when: always
+    - if: $CI_COMMIT_MESSAGE =~ /\[deploy\]/
+      when: always
+  script:
+    - source $ARTIFACT_RELEASE
+
+    # pin remote: force-remove and add
+    - ipfs pin remote rm --service=origin --name="galacteek-$G_VERSION" --force
+    - ipfs pin remote add --service=origin --name="galacteek-$G_VERSION" $APPIMAGE_CID
+
+
+deploy:
+  image: registry.gitlab.com/gitlab-org/release-cli
+  extends:
+    - .ipfs_script_template
+  stage: deploy
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^master$/
+      when: always
+    - if: $CI_COMMIT_MESSAGE =~ /\[appimage-deploy\]/
+      when: always
+    - if: $CI_COMMIT_MESSAGE =~ /\[deploy\]/
+      when: always
+  script:
+    - source $ARTIFACT_RELEASE
+
+    # - git config --global user.email "galacteek@protonmail.com"
+    # - git config --global user.name "cipres"
+    # - git remote add api-origin https://oauth2:${OAUTH2_TOKEN}@gitlab.com/galacteek/galacteek
+
+    - >
+      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}"
+      --upload-file ${ARTIFACT_RELEASE} ${ARTIFACT_RELEASE_URL}
+
+    - >
+      release-cli create --name release-branch-$CI_JOB_ID --description release-branch-$CI_COMMIT_REF_NAME-$CI_JOB_ID
+      --tag-name job-$CI_JOB_ID --ref $CI_COMMIT_SHA
+      --assets-link '{"name":"release","url":"${ARTIFACT_RELEASE_URL}"}'
+      --milestone "v${G_VERSION}"

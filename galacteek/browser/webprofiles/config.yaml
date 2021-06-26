@@ -80,6 +80,11 @@ envs:
             canAccessClipboard: False
             allowWindowActivation: False
 
+        scripts:
+          - type: 'qrc'
+            path: ':/share/js/jquery-3.6.0.js'
+            name: 'jquery'
+
         fonts:
           standard: 'Inter UI'
           fixed: 'Inter UI'

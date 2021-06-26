@@ -66,15 +66,13 @@ def p2pEndpointAddrExplode(addr: str):
         return None
 
 
-def p2pEndpointMake(peerId: str, serviceName: str, protocolVersion='1.0.0'):
-    # return f'/p2p/{self.ctx.node.id}/x/{serviceName}/{protocolVersion}'
-    return posixIpfsPath.join(
-        '/p2p',
-        peerId,
-        'x',  # default
-        serviceName.lstrip('/'),
-        protocolVersion
-    )
+def p2pEndpointMake(peerId: str, serviceName: str, protocolVersion=None):
+    args = ['/p2p', peerId, 'x', serviceName.lstrip('/')]
+
+    if protocolVersion:
+        args.append(protocolVersion)
+
+    return posixIpfsPath.join(*args)
 
 
 class P2PService(GService):
@@ -137,7 +135,7 @@ class P2PService(GService):
         pName = '/x/{0}'.format(self.protocolName)
 
         if self._protocolVersion:
-            pName += '/{self._protocolVersion}'
+            pName += f'/{self._protocolVersion}'
 
         return pName
 
@@ -174,13 +172,24 @@ class P2PService(GService):
         if self.listener:
             await self.listener.close()
 
+    def endpointAddr(self):
+        try:
+            # Really bad to access the ipfs ctx from here
+            nodeId = self.app.ipfsCtx.node.id
+            return p2pEndpointMake(
+                nodeId, self.protocolName,
+                self._protocolVersion
+            )
+        except Exception:
+            pass
+
     @ipfsOp
     async def createListener(self, ipfsop):
         if self._listenerClass:
             self._listener = self._listenerClass(
                 self,
                 ipfsop.client,
-                self.protocolName,
+                self.protocolNameFull,
                 self.listenRange,
                 None,
                 loop=ipfsop.ctx.loop
@@ -203,10 +212,4 @@ class P2PService(GService):
             return [s for s in streams if s['RemotePeer'] == peerId]
 
     async def didServiceInstall(self, ipid):
-        pass
-
-
-class P2PServiceAutoEndpoint:
-    def __init__(self, p2pEndpointAddr):
-
         pass

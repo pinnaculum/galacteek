@@ -9,7 +9,7 @@ from rdflib.plugins.sparql import prepareQuery
 class RootView(web.View):
     @property
     def stores(self):
-        return services.getByDotName('ld.rdf.stores')
+        return services.getByDotName('ld.rdf.graphs')
 
     async def get(self):
         app = self.request.app.gApp
@@ -43,7 +43,7 @@ class RootView(web.View):
 class GraphsView(web.View):
     @property
     def stores(self):
-        return services.getByDotName('ld.rdf.stores')
+        return services.getByDotName('ld.rdf.graphs')
 
     async def get(self):
         minfo = self.request.match_info

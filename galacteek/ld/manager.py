@@ -40,6 +40,7 @@ class LDSchemasImporter:
             return self._nsMappings[ns]
 
     def discover(self):
+        # TODO: move to config.yaml
         pkgList = [
             'galacteek-ld-web4'
         ]
@@ -81,11 +82,9 @@ class LDSchemasImporter:
         )
         if entry:
             ldKeyName = distName
+            ldCid = entry.get('Hash')
 
-            log.debug('LD contexts sitting at: {}'.format(
-                entry.get('Hash')))
-            print('LD contexts sitting at: {}'.format(
-                entry.get('Hash')))
+            log.debug(f'LD contexts ({ldKeyName})sitting at: {ldCid}')
 
             ke = await ipfsop.keyFind(ldKeyName)
             if not ke:
@@ -100,17 +99,10 @@ class LDSchemasImporter:
                 allow_offline=True
             ))
 
-            if 0:
-                await ipfsop.publish(
-                    entry['Hash'],
-                    key=ldKeyName,
-                    allow_offline=True
-                )
-
             self._fsWatcherContexts.clear()
             self._fsWatcherContexts.watch(str(contextsPath))
 
-            await ipfsop.sleep(0.5)
+            await ipfsop.sleep(0.1)
 
             return entry['Hash']
 

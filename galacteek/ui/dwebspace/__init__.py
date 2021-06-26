@@ -56,6 +56,8 @@ from galacteek.ui.settings import SettingsCenterTab
 from galacteek.ui.messenger import MessengerWidget
 
 from galacteek.ui.feeds import AtomFeedsViewTab
+from galacteek.ui.qmlapp import QMLApplicationWidget
+
 from galacteek.ui.i18n import *
 
 
@@ -901,3 +903,24 @@ class WorkspaceMessenger(SingleWidgetWorkspace, KeyListener):
                 message['recipient'],
                 subject=message['subject']
             )
+
+
+class QMLDappWorkspace(SingleWidgetWorkspace, KeyListener):
+    def __init__(self, stack,
+                 name,
+                 appComponents,
+                 entryPoint,
+                 **kwargs):
+        super().__init__(stack, name, **kwargs)
+
+        self.components = appComponents
+        self.qmlEntryPoint = entryPoint
+        self.appWidget = QMLApplicationWidget(self.qmlEntryPoint)
+        self.wLayout.addWidget(self.appWidget)
+
+    async def loadComponents(self):
+        for comp in self.components:
+            qPath = comp['fsPath'] + '/qml'
+            self.appWidget.importComponent(qPath)
+
+        self.appWidget.load()

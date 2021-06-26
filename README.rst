@@ -2,16 +2,12 @@
 .. image:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/share/icons/galacteek-128.png
     :align: center
 
-:info: A multi-platform browser for the distributed web
+:info: A multi-platform browser and semantic agent for the distributed web
 
-.. image:: https://github.com/pinnaculum/galacteek/workflows/galacteek/badge.svg
-    :target: https://github.com/pinnaculum/galacteek/actions
-
-.. image:: https://badges.gitter.im/galacteek/community.svg
-    :target: https://gitter.im/galacteek/galacteek?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge
+.. image:: https://gitlab.com/galacteek/galacteek/badges/master/pipeline.svg
 
 **galacteek** is a multi-platform Qt5-based browser and
-content crafter for the distributed web.
+semantic agent for the distributed web
 
 Community
 =========
@@ -122,6 +118,7 @@ should enable pubsub and p2p streams, or some features won't be available
 for more information).
 
 - Decentralized Identifiers (DID) support with IPID_
+- Semantic dweb agent (distributed RDF graph)
 - Browser-to-browser DID authentication over libp2p streams
   (Verifiable Credentials with RSA-PSS)
 - Browsing sessions with automatic pinning (pins every page you browse)
