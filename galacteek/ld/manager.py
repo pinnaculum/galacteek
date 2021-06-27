@@ -49,15 +49,19 @@ class LDSchemasImporter:
             pName = p.replace('-', '_')
             ctxModPath = f'{pName}.contexts'
 
-            for ename in pkgResourcesListDir(ctxModPath, ''):
-                if ename.startswith('_'):
-                    continue
+            try:
+                for ename in pkgResourcesListDir(ctxModPath, ''):
+                    if ename.startswith('_'):
+                        continue
 
-                epath = pkgResourcesRscFilename(ctxModPath, ename)
-                if not epath:
-                    continue
+                    epath = pkgResourcesRscFilename(ctxModPath, ename)
+                    if not epath:
+                        continue
 
-                self._fallbackNs[ename] = Path(epath)
+                    self._fallbackNs[ename] = Path(epath)
+            except Exception as err:
+                log.debug(f'Could not discover for package: {p}: {err}')
+                continue
 
     async def update(self, ipfsop):
         await self.nsToIpfs('galacteek.ld')

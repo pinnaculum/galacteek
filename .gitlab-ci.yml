@@ -3,22 +3,25 @@ image: "registry.gitlab.com/galacteek/galacteek-docker-debian-base:latest"
 variables:
   DEBIAN_FRONTEND: noninteractive
 
-  GALACTEEK_VERSION: 5.0.1
+  ASSETS_ROOT: "${CI_PROJECT_DIR}/assets"
+  IPFS_BINPATH: "${CI_PROJECT_DIR}/ipfs-bin"
+
+  GALACTEEK_VERSION: 0.5.1
   GO_IPFS_VERSION: 0.9.0
   FS_MIGRATE_VERSION: 2.0.1
   IPFS_DIST_OS: linux
 
   GALACTEEK_ENV_FILE: "${CI_PROJECT_DIR}/galacteek-gitlab-env.sh"
 
+  RELEASE_DESCRIPTION: "${CI_PROJECT_DIR}/release-description.md"
+
   ARTIFACT_RELEASE: "${CI_PROJECT_DIR}/galacteek-gitlab-release-env.sh"
   ARTIFACT_RELEASE_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/galacteek-gitlab-release-env.sh"
 
   APPIMAGE_FILENAME: "Galacteek-${GALACTEEK_VERSION}-x86_64.AppImage"
+  APPIMAGE_PATH: "${CI_PROJECT_DIR}/assets/Galacteek-${GALACTEEK_VERSION}-x86_64.AppImage"
 
   APPIMAGE_ASSET_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/Galacteek-${GALACTEEK_VERSION}-x86_64.AppImage"
-
-  ASSETS_ROOT: "${CI_PROJECT_DIR}/assets"
-  IPFS_BINPATH: "${CI_PROJECT_DIR}/ipfs-bin"
 
 .ipfs_script_template:
   before_script:
@@ -42,29 +45,35 @@ prepare:
     - echo "export COMMIT_SHORT=$CI_COMMIT_SHA" >> $GALACTEEK_ENV_FILE
     - echo "export GIT_BRANCH=$CI_COMMIT_BRANCH" >> $GALACTEEK_ENV_FILE
 
-    - echo "export BUNDLE_PATH=${ASSETS_ROOT}/Galacteek-${GALACTEEK_VERSION}-x86_64.AppImage" >> $GALACTEEK_ENV_FILE
+    - >
+      cat .gitlab/RELEASE.md.tmpl | sed -e "s/@@G_VERSION@@/${GALACTEEK_VERSION}/g" > $RELEASE_DESCRIPTION
 
     - export
 
   artifacts:
     paths:
       - $GALACTEEK_ENV_FILE
+      - $RELEASE_DESCRIPTION
 
 build:
   extends:
     - .ipfs_script_template
   stage: build
+  dependencies:
+    - prepare
   script:
+    # - source /galacteek/venv/bin/activate
+    # - source /galacteek/appdir/usr/bin/activate
+
     - source $GALACTEEK_ENV_FILE
     - mkdir -p $ASSETS_ROOT
 
-    - python -m venv venvg
-    - source venvg/bin/activate
-
-    - pip install wheel
-    - pip install -r requirements-dev.txt
-    - pip install -r requirements.txt
-    - pip install -e '.[ui-pyqt-5.15]'
+    # - python -m venv venvg
+    # - source venvg/bin/activate
+    # - pip install -r requirements-dev.txt
+    # - pip install -r requirements.txt
+    # - pip install -e '.[ui-pyqt-5.15]'
+    # - pip install --upgrade pip
 
     - python setup.py build build_docs install
     - python setup.py sdist bdist_wheel
@@ -73,11 +82,12 @@ build:
 
     - export CID=$(ipfs add -rQ --cid-version 1 "$ASSETS_ROOT" | tail -1)
 
-    - echo "export APPIMAGE_ASSET_PATH=$BUNDLE_PATH" > $ARTIFACT_RELEASE
+    - echo "export APPIMAGE_ASSET_PATH=$APPIMAGE_PATH" > $ARTIFACT_RELEASE
     - echo "export APPIMAGE_CID=$CID" >> $ARTIFACT_RELEASE
 
   artifacts:
     paths:
+      - $APPIMAGE_PATH
       - $ARTIFACT_RELEASE
 
 upload:
@@ -95,19 +105,13 @@ upload:
     - source $GALACTEEK_ENV_FILE
     - source $ARTIFACT_RELEASE
 
-    - apt-get -o Dpkg::Options::="--force-confold" -o Dpkg::Options::="--force-confdef" -q -y --force-yes install wget curl
-
     # pin remote: force-remove and add
     - ipfs pin remote rm --service=origin --name="galacteek-$G_VERSION" --force
     # - ipfs pin remote add --service=origin --name="galacteek-$G_VERSION" $APPIMAGE_CID
 
-    - |
-      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file ${APPIMAGE_ASSET_PATH} ${APPIMAGE_ASSET_URL}
-
     - >
       curl --header "JOB-TOKEN: $CI_JOB_TOKEN"
-      --upload-file ${APPIMAGE_ASSET_PATH}
-      ${ARTIFACT_ASSET_URL}
+      --upload-file ${APPIMAGE_PATH} ${APPIMAGE_ASSET_URL}
  
 
 release:
@@ -133,11 +137,18 @@ release:
       ${ARTIFACT_RELEASE}
       ${ARTIFACT_RELEASE_URL}
 
+    # Delete release
+    # - >
+    #   curl
+    #   --request DELETE
+    #   "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases/"
+
     # Create release
     - >
       release-cli create
-      --name release-branch-$CI_JOB_ID
-      --description release-branch-$CI_COMMIT_REF_NAME-$CI_JOB_ID
+      --name v$G_VERSION
+      --description $RELEASE_DESCRIPTION
       --tag-name job-$CI_JOB_ID
       --ref $CI_COMMIT_SHA
-      --assets-link '{"name":"$APPIMAGE_FILENAME","url":"${APPIMAGE_ASSET_URL}"}'
+      --assets-link
+      "{\"name\" :\"$APPIMAGE_FILENAME\", \"url\": \"${APPIMAGE_ASSET_URL}\"}"

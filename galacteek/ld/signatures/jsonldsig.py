@@ -2,7 +2,7 @@ from copy import deepcopy
 from datetime import datetime
 
 import pytz
-from Crypto.Hash import SHA256
+from Cryptodome.Hash import SHA256
 from pyld import jsonld
 
 from .jws import sign_jws, verify_jws

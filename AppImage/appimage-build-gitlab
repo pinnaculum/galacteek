@@ -5,40 +5,11 @@
 # You need to run "make dists" before running the script
 #
 
-MINICONDA_DIST="Miniconda3-py37_4.8.3-Linux-x86_64.sh"
-
-if [[ $CI_COMMIT_REF_NAME =~ ^v([0-9].[0-9].[0-9]{1,2}) ]] ; then
-    echo "Using tag: $CI_COMMIT_REF_NAME"
-    EVERSION=${BASH_REMATCH[1]}
-    APPIMAGE_FILENAME="Galacteek-${EVERSION}-x86_64.AppImage"
-else
-    if [ "$CI_COMMIT_REF_NAME" != "master" ]; then
-        echo "Short commit ID: ${COMMIT_SHORT}"
-        APPIMAGE_FILENAME="Galacteek-${COMMIT_SHORT}-x86_64.AppImage"
-    else
-        APPIMAGE_FILENAME="Galacteek-${G_VERSION}-x86_64.AppImage"
-    fi
-fi
-
-# export APPIMAGE_PATH="${APPIMAGE_FILENAME}"
-# export BUNDLE_PATH="${ASSETS_ROOT}/${APPIMAGE_FILENAME}"
-
 echo "Building AppImage for version: ${G_VERSION}"
-echo "AppImage destination: $BUNDLE_PATH"
+echo "AppImage destination: $APPIMAGE_PATH"
 
-if ! [ -e $MINICONDA_DIST ]; then
-    wget "https://repo.anaconda.com/miniconda/${MINICONDA_DIST}"
-    md5=$(md5sum ${MINICONDA_DIST}|awk '{print $1}')
-
-    if [ "$md5" != "751786b92c00b1aeae3f017b781018df" ]; then
-        echo "${MINICONDA_DIST}: invalid checksum"
-        exit 1
-    else
-        echo "${MINICONDA_DIST}: checksum is valid"
-    fi
-fi
-
-APPDIR="galacteek.AppDir.${G_VERSION}"
+# APPDIR="galacteek.AppDir.${G_VERSION}"
+APPDIR=/galacteek/appdir
 APPIPIP=$APPDIR/usr/bin/pip
 WHEEL=../dist/galacteek-$G_VERSION-py3-none-any.whl
 
@@ -57,24 +28,10 @@ else
     mkdir -p $APPDIR/usr/share/icons/hicolor/512x512/apps
 fi
 
-if ! [ -e $APPIPIP ]; then
-    echo "Installing miniconda"
-    bash $MINICONDA_DIST -b -p "$APPDIR"/usr -f
-else
-    echo "Miniconda found, continuing"
-fi
-
 export PATH="$PATH:$APPDIR/usr/bin"
 
 # Enter the venv
 . "$APPDIR"/usr/bin/activate
-
-# Install necessary conda packages
-conda install -y -c conda-forge libxkbcommon pip
-conda install -y --no-deps libxcb libjpeg-turbo
-conda install -c anaconda graphviz
-
-conda remove -y icu
 
 $APPIPIP install --upgrade pip
 $APPIPIP install wheel
@@ -101,8 +58,8 @@ find /usr/lib -iname 'libzbar.so*' -exec cp -av {} $APPDIR/usr/lib \;
 find /usr/lib -iname 'libjpeg.so*' -exec cp -av {} $APPDIR/usr/lib \;
 
 # Copy go-ipfs and fs-repo-migrations
-cp go-ipfs/ipfs-${GO_IPFS_VERSION} $APPDIR/usr/bin
-cp fs-repo-migrations/fs-repo-migrations $APPDIR/usr/bin
+# cp go-ipfs/ipfs-${GO_IPFS_VERSION} $APPDIR/usr/bin
+# cp fs-repo-migrations/fs-repo-migrations $APPDIR/usr/bin
 
 # Copy tor and dependencies
 cp /usr/bin/tor $APPDIR/usr/bin
@@ -204,5 +161,5 @@ sed -i -e 's/#\!\/.*$/#!\/usr\/bin\/python3/' $APPDIR/usr/bin/mkdocs
 wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
 chmod +x appimagetool*.AppImage
 
-echo "AppDir successfully created, running appimagetool: $BUNDLE_PATH"
-ARCH=x86_64 ./appimagetool-x86_64.AppImage -n $APPDIR $BUNDLE_PATH
+echo "AppDir successfully created, running appimagetool: $APPIMAGE_PATH"
+ARCH=x86_64 ./appimagetool-x86_64.AppImage -n $APPDIR $APPIMAGE_PATH

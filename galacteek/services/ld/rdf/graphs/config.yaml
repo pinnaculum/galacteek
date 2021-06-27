@@ -1,0 +1,17 @@
+envs:
+  default:
+    graphs:
+      # Graphs definitions
+      # ig = interplanetary graph, g is for galacteek
+
+      - name: c0
+        uri: 'urn:ig:g:c0'
+
+      - name: c1
+        uri: 'urn:ig:g:c1'
+
+      - name: c2
+        uri: 'urn:ig:g:c2'
+
+      - name: h0
+        uri: 'urn:ig:g:h0'
