@@ -1,0 +1,27 @@
+{% include "ld/lib/objects.jinja2" %}
+
+<html>
+  <head>
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+
+    <meta charset="UTF-8">
+    <title>G</title>
+
+    <script type="text/javascript">
+      new QWebChannel(qt.webChannelTransport, function (channel) {
+        window.ld = channel.objects.ld;
+        console.log('Acquired LD interface: ' + window.ld)
+      })
+    </script>
+
+  </head>
+  <body>
+    <header>
+    </header>
+
+    <div class="page">
+      {% block body %}
+      {% endblock %}
+    </div>
+  </body>
+</html>
