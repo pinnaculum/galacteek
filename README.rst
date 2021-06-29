@@ -1,5 +1,4 @@
-
-.. image:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/share/icons/galacteek-128.png
+.. image:: https://gitlab.com/galacteek/galacteek/-/raw/master/share/icons/galacteek-128.png
     :align: center
 
 :info: A multi-platform browser and semantic agent for the distributed web
@@ -9,49 +8,47 @@
 **galacteek** is a multi-platform Qt5-based browser and
 semantic agent for the distributed web
 
-Community
-=========
+Where
+=====
 
-Join in on the Aether_ network (search for the *Galacteek* community).
+**galacteek** is developed `on GitLab <https://gitlab.com/galacteek/galacteek>`_
+(`official website here <https://galacteek.gitlab.com>`_).
+
+Join in `on the Telegram channel <https://t.me/Galacteek>`_
+(there's also a channel on the Aether_ network, search for the *Galacteek*
+community there).
 
 Installation
 ============
 
-Stable release
---------------
-
-* **AppImage (Linux)**: `Galacteek-0.5.0-x86_64.AppImage <https://github.com/pinnaculum/galacteek/releases/download/v0.5.0/Galacteek-0.5.0-x86_64.AppImage>`_
-* **DMG (MacOS)**: `Galacteek-0.5.0-x86_64.dmg <https://github.com/pinnaculum/galacteek/releases/download/v0.5.0/Galacteek-0.5.0-x86_64.dmg>`_
-* **Windows**: `Galacteek-0.5.0-installer-x86_64.exe <https://github.com/pinnaculum/galacteek/releases/download/v0.5.0/Galacteek-0.5.0-installer-x86_64.exe>`_
+Please go to `the download section on the website <https://galacteek.gitlab.io/#download>`_
 
 *On Linux*: Be sure to install all the **gstreamer** packages on your
 system to be able to use the mediaplayer. Problem with the AppImage ?
-`Check the wiki <https://github.com/pinnaculum/galacteek/wiki/AppImage#troubleshooting>`_
-or `file an issue <https://github.com/pinnaculum/galacteek/issues/new?assignees=&labels=appimage&template=appimage-issue.md&title=Cannot+run+the+AppImage>`_
+`Check the wiki <https://gitlab.com/galacteek/galacteek/-/wikis/AppImage#troubleshooting>`_
+or `file an issue <https://gitlab.com/galacteek/galacteek/-/issues/new>`_
 
 *On MacOS*: After opening/mounting the DMG image, hold Control and click on the
 **galacteek** icon, and select **Open** and accept. You probably need to
 allow the system to install applications *from anywhere* in the security
-settings. `Create an issue <https://github.com/pinnaculum/galacteek/issues/new?assignees=&labels=dmg&template=dmg-issue.md&title=Cannot+run+the+DMG+image>`_ if you
-have problems running the DMG image.
+settings. `Create an issue <https://gitlab.com/galacteek/galacteek/-/issues/new>`_ if you have problems running the DMG image.
 
 *On Windows*: GIT is not packaged in the installer. `Install it  here <https://github.com/git-for-windows/git/releases/download/v2.29.2.windows.2/Git-2.29.2.2-64-bit.exe>`_.
-If you run into an issue with the installer, `please create an issue here <https://github.com/pinnaculum/galacteek/issues/new?assignees=&labels=windows-installer&template=windows-installer-issue.md>`_ .
+If you run into an issue with the installer, `please create an issue here <https://gitlab.com/galacteek/galacteek/-/issues/new>`_ .
 
 You'll need to have *git* installed to sync hashmarks repositories.
-See the releases_ page for all releases.
 
 Sponsor this project
 ====================
 
 See the sponsor_ page for all the possible ways to donate to this project.
 
-.. image:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/share/icons/github-mark.png
+.. image:: https://gitlab.com/galacteek/galacteek/-/raw/master/share/icons/github-mark.png
     :target: https://github.com/sponsors/pinnaculum
     :alt: Sponsor with Github Sponsors
     :align: left
 
-.. image:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/share/icons/liberapay.png
+.. image:: https://gitlab.com/galacteek/galacteek/-/raw/master/share/icons/liberapay.png
     :target: https://liberapay.com/galacteek/donate
     :alt: Sponsor with Liberapay
     :align: left
@@ -71,36 +68,13 @@ composer with my BitMessage address.
 Screencasts
 ===========
 
-.. figure:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/share/screencasts/browsing-ipfsio.gif
-    :align: center
-
-    Browsing ipns://ipfs.io
-
-.. figure:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/share/screencasts/filemanager-dirimport.gif
-    :align: center
-
-    Filemanager drag-and-drop
-
-.. figure:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/share/screencasts/filesharing.gif
-    :align: center
-
-    File sharing
-
-.. figure:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/share/screencasts/pyramid-drop1.gif
-    :align: center
-
-    Publish a directory to a pyramid
-
-.. figure:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/share/screencasts/bwstats.gif
-    :align: center
-
-    Live bandwidth stats
+See `the screencasts section on the website <https://galacteek.gitlab.io/#screncasts>`_
 
 Screenshots
 ===========
 
-.. figure:: https://raw.githubusercontent.com/pinnaculum/galacteek/master/screenshots/browse-wikipedia-small.png
-    :target: https://raw.githubusercontent.com/pinnaculum/galacteek/master/screenshots/browse-wikipedia.png
+.. figure:: https://gitlab.com/galacteek/galacteek/-/raw/master/screenshots/browse-wikipedia-small.png
+    :target: https://gitlab.com/galacteek/galacteek/-/raw/master/screenshots/browse-wikipedia-small.png
     :align: center
     :alt: Browsing the Wikipedia mirror over IPFS
 
@@ -114,7 +88,7 @@ connect to an existing IPFS daemon. By default it will try to run a daemon. You
 can change the IPFS connection settings by clicking on the settings icon in the
 toolbar and restart the application afterwards. If using a custom daemon, you
 should enable pubsub and p2p streams, or some features won't be available
-(`Check this page <https://github.com/pinnaculum/galacteek/wiki/Setup-your-daemon>`_
+(`Check this page <https://gitlab.com/galacteek/galacteek/-/wikis/Configure-your-daemon>`_
 for more information).
 
 - Decentralized Identifiers (DID) support with IPID_
@@ -205,7 +179,7 @@ Requirements
 ============
 
 - python3 >= 3.7 (Works with python *3.7*, *3.8*, *3.9*)
-- go-ipfs_ >= 0.5.0
+- go-ipfs_ >= 0.5.0 (the installers include go-ipfs version 0.9.0)
 - PyQt5 >= 5.13.2
 - PyQtWebengine >= 5.13.2
 - gstreamer (on Linux) for media player support
@@ -254,7 +228,6 @@ from the ipfs-logo_ project's repository is included, unchanged.
 .. _ipfs-logo: https://github.com/ipfs/logo
 .. _ipfs-search: https://ipfs-search.com
 .. _ipfs-css: https://github.com/ipfs-shipyard/ipfs-css
-.. _releases: https://github.com/pinnaculum/galacteek/releases
 .. _pyzbar: https://github.com/NaturalHistoryMuseum/pyzbar/
 .. _shortcuts: https://github.com/pinnaculum/galacteek/blob/master/galacteek/docs/manual/en/shortcuts.rst
 .. _urlschemes: https://github.com/pinnaculum/galacteek/blob/master/galacteek/docs/manual/en/browsing.rst#supported-url-formats

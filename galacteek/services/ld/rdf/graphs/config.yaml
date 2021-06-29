@@ -1,5 +1,7 @@
-envs:
-  default:
+graphEnvs:
+  disabled:
+    # Default config
+
     graphs:
       # Graphs definitions
       # ig = interplanetary graph, g is for galacteek
@@ -13,5 +15,6 @@ envs:
       - name: c2
         uri: 'urn:ig:g:c2'
 
+      # History
       - name: h0
         uri: 'urn:ig:g:h0'

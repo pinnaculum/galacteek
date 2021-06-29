@@ -17,7 +17,8 @@ from rdflib import plugin
 from rdflib import URIRef
 from rdflib.store import Store
 
-# from .trail import GraphingTrail
+
+disabled = True
 
 
 class RDFStoresService(GService):
@@ -98,6 +99,9 @@ class RDFStoresService(GService):
     @ipfsOp
     async def event_g_services_ld(self, ipfsop, key, message):
         event = message['event']
+
+        if self.disabled:
+            return
 
         if event['type'] == 'DagRdfStorageRequest':
             path = IPFSPath(event['ipfsPath'])

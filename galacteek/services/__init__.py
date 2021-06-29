@@ -27,11 +27,21 @@ from galacteek.ld import ipsContextUri
 servicesRootPath = Path(os.path.dirname(__file__))
 
 
+class DisabledServiceException(Exception):
+    pass
+
+
+class DisabledServiceRecursiveException(Exception):
+    pass
+
+
 class GService(Service, KeyListener):
     name: str = 'gservice'
     ident: str = None
     configModuleName: str = None
     byDotName: dict = {}
+
+    disabled: bool = False
 
     def __init__(self, dataPath: Path = None, runtimeConfig=None,
                  dotPath=None,
@@ -168,10 +178,23 @@ class GService(Service, KeyListener):
             config = configForModule(rootName)
 
             srvMod = importlib.import_module(modName)
+
+            if hasattr(srvMod, 'disabled'):
+                disabled = getattr(srvMod, 'disabled')
+                if disabled is True:
+                    raise DisabledServiceException(
+                          'Disabled service: {srvDotPath}')
+
             service = srvMod.serviceCreate(
                 srvDotPath, config, parent)
 
+            if service.disabled is True:
+                raise DisabledServiceException(
+                      'Disabled service: {srvDotPath}')
+
             GService.byDotName[srvDotPath] = service
+        except DisabledServiceException:
+            log.debug(f'registerService ({srvDotPath}): service is disabled')
         except Exception:
             pass
         else:

@@ -13,15 +13,10 @@ variables:
 
   GALACTEEK_ENV_FILE: "${CI_PROJECT_DIR}/galacteek-gitlab-env.sh"
 
-  RELEASE_DESCRIPTION: "${CI_PROJECT_DIR}/release-description.md"
+  RELEASE_DESCRIPTION: "release-description.md"
 
   ARTIFACT_RELEASE: "${CI_PROJECT_DIR}/galacteek-gitlab-release-env.sh"
   ARTIFACT_RELEASE_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/galacteek-gitlab-release-env.sh"
-
-  APPIMAGE_FILENAME: "Galacteek-${GALACTEEK_VERSION}-x86_64.AppImage"
-  APPIMAGE_PATH: "${CI_PROJECT_DIR}/assets/Galacteek-${GALACTEEK_VERSION}-x86_64.AppImage"
-
-  APPIMAGE_ASSET_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/Galacteek-${GALACTEEK_VERSION}-x86_64.AppImage"
 
 .ipfs_script_template:
   before_script:
@@ -30,23 +25,47 @@ variables:
     - nohup ipfs daemon &
     - sleep 3
 
+    - echo "Adding remote pin service with endpoint => $IPFS_RPS_ENDPOINT"
+
     - ipfs pin remote service add origin $IPFS_RPS_ENDPOINT $IPFS_RPS_TOKEN
 
 stages:
   - prepare
   - build
-  - upload
   - release
 
 prepare:
+  image: alpine:3.14
   stage: prepare
   script:
     - echo "export G_VERSION=$(cat galacteek/VERSION)" > $GALACTEEK_ENV_FILE
-    - echo "export COMMIT_SHORT=$CI_COMMIT_SHA" >> $GALACTEEK_ENV_FILE
+    - echo "export COMMIT_SHORT=$CI_COMMIT_SHORT_SHA" >> $GALACTEEK_ENV_FILE
     - echo "export GIT_BRANCH=$CI_COMMIT_BRANCH" >> $GALACTEEK_ENV_FILE
 
-    - >
-      cat .gitlab/RELEASE.md.tmpl | sed -e "s/@@G_VERSION@@/${GALACTEEK_VERSION}/g" > $RELEASE_DESCRIPTION
+    - |-
+      if [[ $CI_COMMIT_BRANCH =~ '^master$' ]]; then
+        echo "Building from master"
+        BUNDLE_IDENT="${GALACTEEK_VERSION}"
+        echo "export RELEASE_TAG=v${GALACTEEK_VERSION}" >> $GALACTEEK_ENV_FILE
+        echo "export APPIMAGE_PIN_NAME=galacteek-appimage-v$G_VERSION" >> $GALACTEEK_ENV_FILE
+        echo "export FLATPAK_PIN_NAME=galacteek-flatpak-v$G_VERSION" >> $GALACTEEK_ENV_FILE
+      else
+        echo "Building from branch ${CI_COMMIT_BRANCH}"
+        BUNDLE_IDENT="${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA}"
+        echo "export RELEASE_TAG=continuous-${CI_COMMIT_BRANCH}" >> $GALACTEEK_ENV_FILE
+        echo "export APPIMAGE_PIN_NAME=galacteek-appimage-branch-${CI_COMMIT_BRANCH}" >> $GALACTEEK_ENV_FILE
+        echo "export FLATPAK_PIN_NAME=galacteek-flatpak-branch-${CI_COMMIT_BRANCH}" >> $GALACTEEK_ENV_FILE
+      fi
+
+      echo "export APPIMAGE_FILENAME=Galacteek-${BUNDLE_IDENT}-x86_64.AppImage" >> $GALACTEEK_ENV_FILE
+      echo "export APPIMAGE_IPFS_FILENAME=Galacteek-${BUNDLE_IDENT}-x86_64.ipfs.AppImage" >> $GALACTEEK_ENV_FILE
+      echo "export APPIMAGE_PATH=${ASSETS_ROOT}/Galacteek-${BUNDLE_IDENT}-x86_64.AppImage" >> $GALACTEEK_ENV_FILE
+
+      echo "export FLATPAK_FILENAME=Galacteek-${BUNDLE_IDENT}-x86_64.flatpak" >> $GALACTEEK_ENV_FILE
+      echo "export FLATPAK_PATH=${ASSETS_ROOT}/Galacteek-${BUNDLE_IDENT}-x86_64.flatpak" >> $GALACTEEK_ENV_FILE
+
+      echo "export APPIMAGE_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/Galacteek-${BUNDLE_IDENT}-x86_64.AppImage" >> $GALACTEEK_ENV_FILE
+      echo "export FLATPAK_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/Galacteek-${BUNDLE_IDENT}-x86_64.flatpak" >> $GALACTEEK_ENV_FILE
 
     - export
 
@@ -62,60 +81,78 @@ build:
   dependencies:
     - prepare
   script:
-    # - source /galacteek/venv/bin/activate
-    # - source /galacteek/appdir/usr/bin/activate
-
     - source $GALACTEEK_ENV_FILE
     - mkdir -p $ASSETS_ROOT
-
-    # - python -m venv venvg
-    # - source venvg/bin/activate
-    # - pip install -r requirements-dev.txt
-    # - pip install -r requirements.txt
-    # - pip install -e '.[ui-pyqt-5.15]'
-    # - pip install --upgrade pip
 
     - python setup.py build build_docs install
     - python setup.py sdist bdist_wheel
 
-    - cd AppImage; ./appimage-build-gitlab
+    - |-
+      if [[ $CI_COMMIT_MESSAGE =~ '[appimage]' ]]; then
+        echo "Building AppImage to ${APPIMAGE_PATH}"
+        cd AppImage; ./appimage-build-gitlab; cd ..
 
-    - export CID=$(ipfs add -rQ --cid-version 1 "$ASSETS_ROOT" | tail -1)
+        CID=$(ipfs add -wQ --cid-version 1 "$APPIMAGE_PATH" | tail -1)
 
-    - echo "export APPIMAGE_ASSET_PATH=$APPIMAGE_PATH" > $ARTIFACT_RELEASE
-    - echo "export APPIMAGE_CID=$CID" >> $ARTIFACT_RELEASE
+        echo "export APPIMAGE_DIR_CID=$CID" >> $ARTIFACT_RELEASE
+        echo "export APPIMAGE_IPFS_URL=https://gateway.pinata.cloud/ipfs/${CID}/${APPIMAGE_FILENAME}" >> $ARTIFACT_RELEASE
+      fi
 
-  artifacts:
-    paths:
-      - $APPIMAGE_PATH
-      - $ARTIFACT_RELEASE
+    - |-
+      if [[ $CI_COMMIT_MESSAGE =~ '[flatpak]' ]]; then
+        echo "Building flatpak as ${FLATPAK_FILENAME}"
 
-upload:
-  extends:
-    - .ipfs_script_template
-  stage: upload
-  rules:
-    - if: $CI_COMMIT_BRANCH =~ /^master$/
-      when: always
-    - if: $CI_COMMIT_MESSAGE =~ /\[appimage-deploy\]/
-      when: always
-    - if: $CI_COMMIT_MESSAGE =~ /\[deploy\]/
-      when: always
-  script:
-    - source $GALACTEEK_ENV_FILE
+        # Build to flatpak repo
+        flatpak-builder --force-clean --install-deps-from=flathub \
+          --repo=gflat-repo flatpak-build \
+          packaging/linux/flatpak/io.gitlab.galacteek.Galacteek.yaml
+
+        # Create bundle
+        flatpak build-bundle gflat-repo \
+          ${FLATPAK_PATH} io.gitlab.galacteek.Galacteek
+
+        CID=$(ipfs add -wQ --cid-version 1 "$FLATPAK_PATH" | tail -1)
+        echo "export FLATPAK_DIR_CID=$CID" >> $ARTIFACT_RELEASE
+      fi
+
+    - echo "export APPIMAGE_ASSET_PATH=$APPIMAGE_PATH" >> $ARTIFACT_RELEASE
+
     - source $ARTIFACT_RELEASE
 
-    # pin remote: force-remove and add
-    - ipfs pin remote rm --service=origin --name="galacteek-$G_VERSION" --force
-    # - ipfs pin remote add --service=origin --name="galacteek-$G_VERSION" $APPIMAGE_CID
+    - |-
+      if [ ! -z "${FLATPAK_DIR_CID}" ]; then
+        echo "Uploading flatpak ${FLATPAK_PATH}"
+        curl --progress-bar --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+          --upload-file ${FLATPAK_PATH} ${FLATPAK_ASSET_URL}
+      fi
 
-    - >
-      curl --header "JOB-TOKEN: $CI_JOB_TOKEN"
-      --upload-file ${APPIMAGE_PATH} ${APPIMAGE_ASSET_URL}
- 
+      if [[ $CI_COMMIT_MESSAGE =~ '[appimage]' ]] && [[ $CI_COMMIT_MESSAGE =~ '[deploy]' ]]; then
+
+        echo "Uploading AppImage ${APPIMAGE_PATH} to ${APPIMAGE_ASSET_URL}"
+        curl --progress-bar --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+          --upload-file ${APPIMAGE_PATH} ${APPIMAGE_ASSET_URL}
+
+        if [[ $CI_COMMIT_MESSAGE =~ '[pin]' ]] && [ ! -z "${APPIMAGE_DIR_CID}" ]; then
+          echo "Pinning AppImage with CID ${APPIMAGE_DIR_CID} to RPS"
+          echo "Pin name is ${APPIMAGE_PIN_NAME}"
+
+          # pin remote: force-remove and add
+          ipfs pin remote rm --service=origin \
+            --name="${APPIMAGE_PIN_NAME}" --force
+          ipfs pin remote add --service=origin \
+            --name="${APPIMAGE_PIN_NAME}" $APPIMAGE_DIR_CID
+        fi
+      fi
+
+  artifacts:
+    expire_in: 'never'
+    paths:
+      - assets/*x86_64.AppImage
+      - assets/*x86_64.flatpak
+      - $ARTIFACT_RELEASE
 
 release:
-  image: registry.gitlab.com/gitlab-org/release-cli
+  image: registry.gitlab.com/galacteek/release-cli-extra
   stage: release
   rules:
     - if: $CI_COMMIT_BRANCH =~ /^master$/
@@ -128,7 +165,7 @@ release:
     - source $GALACTEEK_ENV_FILE
     - source $ARTIFACT_RELEASE
 
-    - apk add bash grep git curl wget
+    # - apk add bash grep git curl wget python3 py3-pip
 
     # Upload the artifact
     - >
@@ -138,17 +175,37 @@ release:
       ${ARTIFACT_RELEASE_URL}
 
     # Delete release
-    # - >
-    #   curl
-    #   --request DELETE
-    #   "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases/"
+    - >
+      curl
+      --request DELETE
+      --header "JOB-TOKEN: $CI_JOB_TOKEN"
+      --header "PRIVATE-TOKEN: ${GITLAB_PRIVATE_TOKEN}"
+      "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases/${RELEASE_TAG}"
+
+    - pip3 install keepachangelog
+    - export CHANGELOG=$(.gitlab/changelog-extract-raw.py ${GALACTEEK_VERSION})
+    - python3 .gitlab/release-md-write.py > $RELEASE_DESCRIPTION
 
     # Create release
-    - >
-      release-cli create
-      --name v$G_VERSION
-      --description $RELEASE_DESCRIPTION
-      --tag-name job-$CI_JOB_ID
-      --ref $CI_COMMIT_SHA
-      --assets-link
-      "{\"name\" :\"$APPIMAGE_FILENAME\", \"url\": \"${APPIMAGE_ASSET_URL}\"}"
+    - |-
+      if [[ "$CI_COMMIT_MESSAGE" =~ '[pin]' ]] && [ ! -z "${APPIMAGE_IPFS_URL}" ]; then
+        echo "Creating release with IPFS url"
+        release-cli create \
+          --name "Galacteek v$G_VERSION" \
+          --description $RELEASE_DESCRIPTION \
+          --tag-name $RELEASE_TAG \
+          --ref $CI_COMMIT_SHA \
+          --assets-link \
+          "{\"name\" :\"$APPIMAGE_IPFS_FILENAME\", \"url\": \"${APPIMAGE_IPFS_URL}\"}" \
+          --assets-link \
+          "{\"name\" :\"$APPIMAGE_FILENAME\", \"url\": \"${APPIMAGE_ASSET_URL}\"}"
+      else
+        echo "Creating release with artifact url"
+        release-cli create \
+          --name "Galacteek v$G_VERSION" \
+          --description $RELEASE_DESCRIPTION \
+          --tag-name $RELEASE_TAG \
+          --ref $CI_COMMIT_SHA \
+          --assets-link \
+          "{\"name\" :\"$APPIMAGE_FILENAME\", \"url\": \"${APPIMAGE_ASSET_URL}\"}"
+      fi

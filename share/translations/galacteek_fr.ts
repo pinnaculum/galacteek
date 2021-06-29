@@ -829,13 +829,13 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="102"/>
+        <location filename="../../galacteek/ui/mainui.py" line="105"/>
         <source>
 Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="111"/>
+        <location filename="../../galacteek/ui/mainui.py" line="114"/>
         <source>
         &lt;p&gt;
         &lt;b&gt;galacteek&lt;/b&gt; is a multi-platform Qt5-based browser
@@ -843,15 +843,15 @@ Path: {0}, nodes processed: {1}</source>
         &lt;/p&gt;
         &lt;br/&gt;
 
-        &lt;p&gt;GitHub:
-        &lt;a href=&quot;https://github.com/pinnaculum/galacteek&quot;&gt;
-            https://github.com/pinnaculum/galacteek
+        &lt;p&gt;GitLab:
+        &lt;a href=&quot;https://gitlab.com/galacteek/galacteek&quot;&gt;
+            https://gitlab.com/galacteek/galacteek
         &lt;/a&gt;
         &lt;/p&gt;
         &lt;p&gt;
         Author:
         &lt;a href=&quot;mailto: BM-87dtCqLxqnpwzUyjzL8etxGK8MQQrhnxnt1@bitmessage&quot;&gt;
-        cipres
+        cipres (David Cipres)
         &lt;/a&gt;
         &lt;/p&gt;
 

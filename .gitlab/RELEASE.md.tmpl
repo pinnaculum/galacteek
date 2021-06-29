@@ -1,16 +1,24 @@
-# Galacteek @@G_VERSION@@ **prerelease**
+# Galacteek @@GALACTEEK_VERSION@@ **prerelease**
+
+@@PRELUDE@@
+
+## Release changelog
+
+@@CHANGELOG@@
 
 # Using the AppImage
 
 After downloading the AppImage, make it executable and then run it:
 
-> chmod +x Galacteek-@@G_VERSION@@-x86_64.AppImage
-./Galacteek-@@G_VERSION@@-x86_64.AppImage
+```
+chmod +x @@APPIMAGE_FILENAME@@
+./@@APPIMAGE_FILENAME@@
+```
 
 The AppImage does **not** bundle libstdc++. If you use a Linux system with an old libstdc++ and cannot run the AppImage, please open an issue.
 
 Be sure to install all the **gstreamer** packages to be able to use the mediaplayer.
 
-# Using the DMG image
-
-After opening/mounting the DMG image, hold Control and click on the **galacteek** icon, select **Open** and then accept. You probably need to allow the system to install applications *from anywhere* in the security settings.
+If you have problems running the AppImage, be sure to visit
+[this wiki page](https://gitlab.com/galacteek/galacteek/-/wikis/AppImage)
+before opening an issue.

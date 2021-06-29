@@ -8,11 +8,21 @@ the changes in the CHANGELOG formatting.
 
 ## [Unreleased]
 
-## [0.5.1] - 2021-03-21
+## [0.5.1] - 2021-06-29
 
 ### Added
-- Support for IPFS URL schemes from QML
+- 1st iteration of a semantic dweb engine
+  - Support translation of IPFS objects (mainly DAGs) to RDF graphs
+  - Support querying the RDF graphs via SparQL from QML dapps
+  - P2P SparQL services and exchange of objects over IPFS-P2P tunnels
+- Enable the use of the new experimental *AcceleratedDHTClient*
+  go-ipfs setting (this activates an alternative, faster DHT client)
+- Support for IPFS URL browsing from QML (QtWebEngine QML integration)
 - i:/ URL scheme
+
+### Changed
+- Use go-ipfs version *0.9.0*
+- Use fs-repo-migrations version *2.0.1*
 
 ## [0.5.0] - 2021-03-12
 

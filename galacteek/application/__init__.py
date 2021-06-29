@@ -624,7 +624,7 @@ class GalacteekApplication(QApplication):
 
         await database.hashmarkSourceAdd(
             type=models.HashmarkSource.TYPE_GITREPOS,
-            url='https://github.com/galacteek/hashmarks-dwebland'
+            url='https://gitlab.com/galacteek/hashmarks-dwebland'
         )
 
         await self.scheduler.spawn(self.hmSynchronizer.syncTask())
@@ -1320,6 +1320,8 @@ class GalacteekApplication(QApplication):
                 fileStore=sManager.isTrue(section, CFG_KEY_FILESTORE),
                 nice=sManager.getInt(section, CFG_KEY_NICE),
                 detached=sManager.isTrue(section, CFG_KEY_IPFSD_DETACHED),
+                acceleratedDht=sManager.isTrue(section,
+                                               CFG_KEY_ACCELERATED_DHT_CLIENT),
                 pubsubEnable=pubsubEnabled, corsEnable=corsEnabled,
                 migrateRepo=migrateRepo,
                 debug=self.cmdArgs.goipfsdebug,

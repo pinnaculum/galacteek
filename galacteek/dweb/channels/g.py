@@ -6,6 +6,10 @@ from . import AsyncChanObject
 
 
 class GHandler(AsyncChanObject):
+    @pyqtSlot(result=int)
+    def apiVersion(self):
+        return 1
+
     @pyqtSlot(str, result=str)
     def mdToHtml(self, mdText: str):
         try:

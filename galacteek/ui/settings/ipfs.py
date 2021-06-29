@@ -39,6 +39,7 @@ class SettingsController(SettingsFormController):
                 self.ui.checkBoxQuic,
                 self.ui.keepDaemonRunning,
                 self.ui.writableHttpGw,
+                self.ui.acceleratedDht,
                 self.ui.namesysPubsub,
                 self.ui.fileStore]:
 
@@ -102,6 +103,9 @@ class SettingsController(SettingsFormController):
                         self.sManager.isTrue(section, CFG_KEY_SWARM_QUIC))
         self.setChecked(self.ui.keepDaemonRunning,
                         self.sManager.isTrue(section, CFG_KEY_IPFSD_DETACHED))
+        self.setChecked(self.ui.acceleratedDht,
+                        self.sManager.isTrue(
+                            section, CFG_KEY_ACCELERATED_DHT_CLIENT))
 
         self.ui.ipfsdApiPort.setValue(
             self.getS(section, CFG_KEY_APIPORT, int))
@@ -134,7 +138,6 @@ class SettingsController(SettingsFormController):
             self.getS(section, CFG_KEY_HTTPGWPORT, int))
 
     def onSaveIpfsSettings(self, *args):
-        print('SAVE')
         section = CFG_SECTION_IPFSD
 
         if self.ui.groupBoxDaemon.isChecked():
@@ -167,6 +170,8 @@ class SettingsController(SettingsFormController):
                                   self.isChecked(self.ui.fileStore))
         self.sManager.setBoolFrom(section, CFG_KEY_IPFSD_DETACHED,
                                   self.isChecked(self.ui.keepDaemonRunning))
+        self.sManager.setBoolFrom(section, CFG_KEY_ACCELERATED_DHT_CLIENT,
+                                  self.isChecked(self.ui.acceleratedDht))
 
         section = CFG_SECTION_IPFSCONN1
         self.setS(section, CFG_KEY_HOST, self.ui.customIpfsHost.text())

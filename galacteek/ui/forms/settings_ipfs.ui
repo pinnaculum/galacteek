@@ -31,7 +31,7 @@
         <bool>true</bool>
        </property>
        <layout class="QGridLayout" name="gridLayout_6">
-        <item row="9" column="2">
+        <item row="10" column="2">
          <widget class="QLabel" name="label_11">
           <property name="text">
            <string/>
@@ -196,7 +196,7 @@
           </property>
          </widget>
         </item>
-        <item row="9" column="0">
+        <item row="10" column="0">
          <widget class="QCheckBox" name="keepDaemonRunning">
           <property name="toolTip">
            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Always keep the IPFS daemon running.&lt;/p&gt;&lt;p&gt;This ensures that your files are still accessible even when galacteek is not running.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -267,6 +267,16 @@
           </property>
           <property name="maximum">
            <number>32768</number>
+          </property>
+         </widget>
+        </item>
+        <item row="9" column="0">
+         <widget class="QCheckBox" name="acceleratedDht">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a name=&quot;🕸-experimental-dht-client-and-provider-system&quot;/&gt;&lt;span style=&quot; font-size:16pt; font-weight:600;&quot;&gt;E&lt;/span&gt;&lt;span style=&quot; font-size:16pt; font-weight:600;&quot;&gt;xperimental DHT Client and Provider System&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:14pt; font-weight:600;&quot;&gt;Warning: Enabling this setting will make go-ipfs use more resources&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:14pt;&quot;&gt;DHT queries will not be usable (i.e. finding which peers have some data, finding where a particular peer is, etc.) for the first 5-10 minutes of operation depending on your network conditions&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="text">
+           <string>Enable Accelerated DHT client</string>
           </property>
          </widget>
         </item>

@@ -211,6 +211,7 @@ class AsyncIPFSDaemon(object):
                  pubsubEnable=False, noBootstrap=False, corsEnable=True,
                  pubsubRouter='floodsub', namesysPubsub=False,
                  pubsubSigning=False, offline=False,
+                 acceleratedDht=False,
                  fileStore=False,
                  profiles=[],
                  dataStore=None,
@@ -228,6 +229,7 @@ class AsyncIPFSDaemon(object):
         self.repoVersionPath = self.repoPath.joinpath('version')
         self.statusPath = statusPath
         self.detached = detached
+        self.acceleratedDht = acceleratedDht
         self.autoRestart = autoRestart
         self.goIpfsPath = goIpfsPath
         self.apiport = apiport
@@ -438,7 +440,11 @@ class AsyncIPFSDaemon(object):
             # P2P streams
             goIpfsC.Experimental.Libp2pStreamMounting = self.p2pStreams
 
+            # Filestore
             goIpfsC.Experimental.FilestoreEnabled = self.fileStore
+
+            # Accelerated DHT client
+            goIpfsC.Experimental.AcceleratedDHTClient = self.acceleratedDht
 
             # CORS
             if self.corsEnable:

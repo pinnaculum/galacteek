@@ -1,5 +1,6 @@
 aiomonitor
 flake8
+keepachangelog
 pytest
 pytest-asyncio
 pytest-qt

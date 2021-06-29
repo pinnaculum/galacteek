@@ -411,7 +411,7 @@ font-weight: bold;</string>
                    </size>
                   </property>
                   <property name="text">
-                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Make sure you have the following features enabled on the daemon (Check &lt;a href=&quot;https://github.com/pinnaculum/galacteek/wiki/Setup-your-daemon&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;this page&lt;/span&gt;&lt;/a&gt; for more information)&lt;/p&gt;&lt;p&gt;- &lt;span style=&quot; font-weight:600;&quot;&gt;Pubsub&lt;/span&gt;&lt;/p&gt;&lt;p&gt;- &lt;span style=&quot; font-weight:600;&quot;&gt;P2P streams&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Make sure you have the following features enabled on the daemon (Check &lt;a href=&quot;https://gitlab.com/galacteek/galacteek/wiki/Configure-your-daemon&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;this page&lt;/span&gt;&lt;/a&gt; for more information)&lt;/p&gt;&lt;p&gt;- &lt;span style=&quot; font-weight:600;&quot;&gt;Pubsub&lt;/span&gt;&lt;/p&gt;&lt;p&gt;- &lt;span style=&quot; font-weight:600;&quot;&gt;P2P streams&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                   </property>
                   <property name="wordWrap">
                    <bool>true</bool>

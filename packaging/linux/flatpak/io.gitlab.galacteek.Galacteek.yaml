@@ -1,0 +1,164 @@
+app-id: io.gitlab.galacteek.Galacteek
+runtime: org.freedesktop.Platform
+runtime-version: '20.08'
+sdk: org.freedesktop.Sdk
+command: galacteek
+finish-args:
+  - --share=ipc
+  - --socket=pulseaudio
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --share=network
+  - --device=all
+  - --filesystem=home
+
+modules:
+  # Install miniconda 4.8.3, and some required conda-forge packages
+  - name: conda
+    buildsystem: simple
+    build-commands:
+      - bash Miniconda3-py37_4.9.2-Linux-x86_64.sh -b -p ${FLATPAK_DEST} -f
+      - conda install -y -c conda-forge libxkbcommon pip libjpeg-turbo zbar
+      - conda install -y --no-deps libxcb
+    build-options:
+      build-args:
+        - --share=network
+    sources:
+      - type: file
+        url: "https://repo.anaconda.com/miniconda/Miniconda3-py37_4.9.2-Linux-x86_64.sh"
+        sha256: "79510c6e7bd9e012856e25dcb21b3e093aa4ac8113d9aa7e82a86987eabe1c31"
+
+  - name: libevent
+    build-options:
+      build-args:
+        - --share=network
+    sources:
+      - type: archive
+        url: "https://github.com/libevent/libevent/releases/download/release-2.1.12-stable/libevent-2.1.12-stable.tar.gz"
+        sha256: "92e6de1be9ec176428fd2367677e61ceffc2ee1cb119035037a27d346b0403bb"
+
+  # Tor
+  - name: tor
+    build-options:
+      build-args:
+        - --share=network
+    sources:
+      - type: archive
+        url: "https://dist.torproject.org/tor-0.4.5.6.tar.gz"
+        sha256: "22cba3794fedd5fa87afc1e512c6ce2c21bc20b4e1c6f8079d832dc1e545e733"
+
+  # Fetch and extract go-ipfs 0.9.0
+  - name: fetch-go-ipfs
+    buildsystem: simple
+    build-commands:
+      - tar -xvf go-ipfs_v0.9.0_linux-amd64.tar.gz
+      - cp go-ipfs/ipfs ${FLATPAK_DEST}/bin
+    build-options:
+      build-args:
+        - --share=network
+    sources:
+      - type: file
+        url: "https://dist.ipfs.io/go-ipfs/v0.9.0/go-ipfs_v0.9.0_linux-amd64.tar.gz"
+        sha256: "e737fd6ccbd1917d302fcdc9e8d29d58fa456dd6a8f92835be29f060c6ddc967"
+
+  # Fetch and extract fs-repo-migrations 2.0.1
+  - name: fetch-fs-repo-migrations
+    buildsystem: simple
+    build-commands:
+      - tar -xvf fs-repo-migrations_v2.0.1_linux-amd64.tar.gz
+      - cp fs-repo-migrations/fs-repo-migrations ${FLATPAK_DEST}/bin
+    build-options:
+      build-args:
+        - --share=network
+    sources:
+      - type: file
+        url: "https://dist.ipfs.io/fs-repo-migrations/v2.0.1/fs-repo-migrations_v2.0.1_linux-amd64.tar.gz"
+        sha256: "1dbdab90a4fe81fa6384ce3b9f8fd9f15db7be3430525367cdfeb2e19cca4a42"
+
+  # Fetch and extract notbit
+  - name: fetch-notbit
+    buildsystem: simple
+    build-commands:
+      - tar -C ${FLATPAK_DEST} -xvf notbit.tar.gz
+    build-options:
+      build-args:
+        - --share=network
+    sources:
+      - type: file
+        url: "https://github.com/pinnaculum/notbit/releases/download/continuous-master/notbit.tar.gz"
+        sha256: "de6ee5bc619890c53e458603d119c258e0298d844cac498e6ae2f62a15a046b1"
+
+  # Install galacteek
+  - name: galacteek
+    buildsystem: simple
+    build-commands:
+      # Create directories for license, metainfo, icons
+      - mkdir -p ${FLATPAK_DEST}/share/licenses/galacteek
+      - mkdir -p ${FLATPAK_DEST}/share/applications
+      - mkdir -p ${FLATPAK_DEST}/share/metainfo
+      - mkdir -p ${FLATPAK_DEST}/share/icons/hicolor/512x512/apps
+
+      # Copy appdata, .desktop, licenses and icon
+      - cp galacteek.appdata.xml
+          ${FLATPAK_DEST}/share/metainfo/io.gitlab.galacteek.Galacteek.xml
+      - cp {LICENSE,LICENSE.go-ipfs,LICENSE.Qt.GPLv3}
+          ${FLATPAK_DEST}/share/licenses/galacteek
+      - cp galacteek.desktop
+          ${FLATPAK_DEST}/share/applications/io.gitlab.galacteek.Galacteek.desktop
+      - cp share/icons/galacteek.png
+          ${FLATPAK_DEST}/share/icons/hicolor/512x512/apps/io.gitlab.galacteek.Galacteek.png
+
+      # Activate the conda venv
+      - source ${FLATPAK_DEST}/bin/activate
+
+      # Install requirements; build and install via setup.py
+      - pip install -r requirements-docs.txt
+      - pip install -r requirements.txt
+      - pip install -r requirements-extra-markdown.txt
+      - pip install -r requirements-ui-pyqt-5.15.txt
+      - python3 setup.py build build_docs install
+    build-options:
+      build-args:
+        - --share=network
+    sources:
+      - type: git
+        url: https://gitlab.com/galacteek/galacteek.git
+
+cleanup:
+  - '/pkgs'
+  - '/lib/cmake'
+  - '/include'
+  - '/share/{gtk-,}doc'
+  - '/bin/tcl*'
+  - '/bin/lz*'
+  - '/bin/xz*'
+  - '/lib/libtcl*'
+  - '/lib/libtk*'
+  - '/lib/tk*'
+  - '/lib/tcl*'
+  - '/lib/debug'
+  - '/lib/python3.7/site-packages/Cryptodome/SelfTest/*'
+  - '/lib/python3.7/site-packages/pyzbar/tests'
+  - '/lib/python3.7/turtledemo'
+  - '/lib/python3.7/tkinter'
+  - '/lib/python3.7/lib2to3'
+  - '/lib/python3.7/idlelib'
+  - '/lib/python3.7/site-packages/git/test'
+  - '/lib/python3.7/site-packages/conda_package_handling'
+  - '/lib/python3.7/ensurepip'
+  - '/lib/python3.7/site-packages/{setuptools,pip}'
+  - '/lib/python3.7/site-packages/PyQt5/Qt5/plugins/geoservices'
+  - '/lib/python3.7/site-packages/PyQt5/Qt5/plugins/sceneparsers'
+  - '/lib/python3.7/site-packages/PyQt5/Qt5/plugins/sqldrivers'
+  - '/lib/python3.7/site-packages/PyQt5/Qt5/lib/libQt5XmlPatterns*'
+  - '/lib/python3.7/site-packages/PyQt5/Qt5/lib/libQt5Designer*'
+  - '/lib/python3.7/site-packages/PyQt5/Qt5/qml/QtCharts/designer/images'
+  - '/lib/python3.7/site-packages/PyQt5/Qt5/qml/Qt/labs'
+  - '/share/doc'
+  - '/share/gtk-doc'
+  - '/share/man'
+  - '/share/readline'
+  - '/share/terminfo'
+  - '/share/info'
+  - '/ssl/man'
+  - '/lib/libstdc++*'

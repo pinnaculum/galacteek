@@ -1,6 +1,7 @@
 import rule_engine
 import weakref
 import shutil
+from pathlib import Path
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QSizePolicy
@@ -920,7 +921,8 @@ class QMLDappWorkspace(SingleWidgetWorkspace, KeyListener):
 
     async def loadComponents(self):
         for comp in self.components:
-            qPath = comp['fsPath'] + '/qml'
-            self.appWidget.importComponent(qPath)
+            qPath = Path(comp['fsPath']).joinpath('src/qml')
+
+            self.appWidget.importComponent(str(qPath))
 
         self.appWidget.load()

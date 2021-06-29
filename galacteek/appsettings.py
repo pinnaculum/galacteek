@@ -41,6 +41,7 @@ CFG_KEY_IPFSD_DETACHED = 'detached'
 CFG_KEY_IPFSD_DETACHED_DONTASK = 'detached_dontask'
 CFG_KEY_IPFSD_AUTORESTART = 'autorestart'
 CFG_KEY_IPFSD_PROFILES = 'daemonprofiles'
+CFG_KEY_ACCELERATED_DHT_CLIENT = 'accelerated_dht_client'
 
 # Browser
 CFG_KEY_HOMEURL = 'homeurl'
@@ -127,6 +128,7 @@ def setDefaultSettings(gApp):
     sManager.setDefaultTrue(section, CFG_KEY_HTTPGWWRITABLE)
     sManager.setDefaultFalse(section, CFG_KEY_FILESTORE)
     sManager.setDefaultTrue(section, CFG_KEY_SWARM_QUIC)
+    sManager.setDefaultFalse(section, CFG_KEY_ACCELERATED_DHT_CLIENT)
 
     section = CFG_SECTION_BROWSER
     sManager.setDefaultSetting(section, CFG_KEY_HOMEURL, HOME_DEFAULT)

@@ -2,7 +2,7 @@
 Type=Application
 Name=Galacteek
 Comment=IPFS Browser
-Icon=org.flatpak.galacteek.Galacteek
+Icon=io.gitlab.galacteek.Galacteek
 Exec=galacteek
 Terminal=false
 Categories=Network;P2P;WebBrowser;Qt;

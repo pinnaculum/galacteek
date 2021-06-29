@@ -119,15 +119,15 @@ def iAboutGalacteek():
         </p>
         <br/>
 
-        <p>GitHub:
-        <a href="https://github.com/pinnaculum/galacteek">
-            https://github.com/pinnaculum/galacteek
+        <p>GitLab:
+        <a href="https://gitlab.com/galacteek/galacteek">
+            https://gitlab.com/galacteek/galacteek
         </a>
         </p>
         <p>
         Author:
         <a href="mailto: BM-87dtCqLxqnpwzUyjzL8etxGK8MQQrhnxnt1@bitmessage">
-        cipres
+        cipres (David Cipres)
         </a>
         </p>
 

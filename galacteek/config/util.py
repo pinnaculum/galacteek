@@ -24,6 +24,8 @@ def environment():
     return {
         'env': os.environ.get(
             'GALACTEEK_ENV', 'mainnet'),
+        'rdfgraphenv': os.environ.get(
+            'GALACTEEK_RDFGRAPH_ENV', 'beta'),
         'ethenv': os.environ.get(
             'GALACTEEK_ETHNETWORK_ENV', 'rinkeby'),
     }
@@ -36,11 +38,13 @@ def empty():
 def load(configPath: Path, envConf: dict = None) -> dictconfig.DictConfig:
     # global genvs, ethEnvs
     genvs = 'envs'
-    ethEnvs = 'ethEnvs'
+    ethEnvsKey = 'ethEnvs'
+    graphEnvsKey = 'graphEnvs'
 
     envConf = envConf if envConf else environment()
     env = envConf['env']
     ethEnv = envConf['ethenv']
+    graphEnv = envConf['rdfgraphenv']
 
     try:
         base = empty()
@@ -58,7 +62,8 @@ def load(configPath: Path, envConf: dict = None) -> dictconfig.DictConfig:
             else:
                 base = merge(base, envs.get(env))
 
-        genvs = config.get(ethEnvs, None)
+        # Eth
+        genvs = config.get(ethEnvsKey, None)
         if genvs:
             default = genvs.get('default', None)
             if default:
@@ -66,6 +71,16 @@ def load(configPath: Path, envConf: dict = None) -> dictconfig.DictConfig:
 
             if ethEnv in genvs:
                 base = merge(base, genvs.get(ethEnv))
+
+        # RDF graphs
+        graphenvs = config.get(graphEnvsKey, None)
+        if graphenvs:
+            default = graphenvs.get('default', None)
+            if default:
+                base = merge(base, default)
+
+            if graphEnv in graphenvs:
+                base = merge(base, graphenvs.get(graphEnv))
     except Exception as err:
         print(f'Error parsing config file {configPath}: {err}',
               file=sys.stderr)

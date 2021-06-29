@@ -1,8 +1,6 @@
 import hashlib
 import orjson
 import asyncio
-import json
-from aiosparql.client import SPARQLClient
 
 from galacteek import log
 from galacteek.services import GService
@@ -19,6 +17,9 @@ from galacteek.ipfs.pubsub.messages.ld import SparQLHeartbeatMessage
 from galacteek.ld import asyncjsonld as jsonld
 from galacteek.ld.rdf import BaseGraph
 from galacteek.ld.sparql.aioclient import Sparkie
+
+
+disabled = True
 
 
 class GraphHistorySynchronizer:
