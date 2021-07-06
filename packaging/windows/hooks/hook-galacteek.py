@@ -99,6 +99,8 @@ datas += [('galacteek/ui/themes', f'{pkgrDest}/galacteek/ui/themes')]
 datas += [('galacteek/hashmarks', f'{pkgrDest}/galacteek/hashmarks')]
 datas += [('galacteek/docs/manual', f'{pkgrDest}/galacteek/docs/manual')]
 # datas += [('galacteek/ld/contexts', f'{pkgrDest}/galacteek/ld/contexts')]
+datas += [('galacteek-ld-web4/galacteek_ld_web4',
+           f'{pkgrDest}/galacteek_ld_web4')]
 datas += [('packaging/windows/random_username', 'random_username')]
 datas += [('magic.mgc', '.')]
 

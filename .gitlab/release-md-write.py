@@ -38,6 +38,10 @@ ipfs pin add -r @@APPIMAGE_DIR_CID@@
 ```
 '''
 
+prelude_no_ipfs_download = '''
+The AppImage for this release is only distributed via GitLab packages.
+'''
+
 
 def replace(msg):
     for var in vars:
@@ -57,5 +61,7 @@ with open('.gitlab/RELEASE.md.tmpl', 'rt') as fd:
     if appimage_url:
         os.environ['PRELUDE'] = replace(prelude_ipfs_download.format(
             url=appimage_url))
+    else:
+        os.environ['PRELUDE'] = replace(prelude_no_ipfs_download)
 
     print(replace(md), file=sys.stdout)
