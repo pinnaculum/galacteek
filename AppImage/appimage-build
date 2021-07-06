@@ -88,13 +88,13 @@ $APPIPIP install $WHEEL'[markdown-extensions]'
 # Pyqt dependencies
 $APPIPIP install $WHEEL'[ui-pyqt-5.15]'
 
-cp ../{LICENSE,LICENSE.go-ipfs,LICENSE.Qt.GPLv3} \
+cp ../{COPYING,LICENSE,LICENSE.go-ipfs,LICENSE.Qt.GPLv3} \
 	$APPDIR/usr/share/licenses/galacteek
 cp ../galacteek.desktop $APPDIR/usr/share/applications
 cp ../galacteek.desktop $APPDIR
 cp ../galacteek.appdata.xml $APPDIR/usr/share/metainfo
 cp ../share/icons/galacteek.png $APPDIR
-cp ../share/icons/galacteek.png $APPDIR/org.flatpak.galacteek.Galacteek.png
+cp ../share/icons/galacteek.png $APPDIR/io.gitlab.galacteek.Galacteek.png
 cp ../share/icons/galacteek.png $APPDIR/usr/share/icons/hicolor/512x512/apps
 
 find /usr/lib -iname 'libzbar.so*' -exec cp -av {} $APPDIR/usr/lib \;

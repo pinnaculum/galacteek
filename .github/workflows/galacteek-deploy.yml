@@ -113,7 +113,7 @@ jobs:
 
         # Set PKG_CONFIG_PATH to point to brew's openssl libcrypto, for notbit
         # compilation
-        echo "PKG_CONFIG_PATH=/usr/local/Cellar/openssl@1.1/1.1.1j/lib/pkgconfig:/usr/local/Cellar/openssl/1.1.1j/lib/pkgconfig" >> $GITHUB_ENV
+        echo "PKG_CONFIG_PATH=/usr/local/Cellar/openssl@1.1/1.1.1k/lib/pkgconfig:/usr/local/Cellar/openssl/1.1.1k/lib/pkgconfig" >> $GITHUB_ENV
 
     - name: OS-specific vars (win)
       if: startsWith(matrix.os, 'windows')
