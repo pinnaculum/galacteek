@@ -12,7 +12,7 @@ Where
 =====
 
 **galacteek** is developed `on GitLab <https://gitlab.com/galacteek/galacteek>`_
-(`official website here <https://galacteek.gitlab.com>`_).
+(`official website here <https://galacteek.gitlab.io>`_).
 
 Join in `on the Telegram channel <https://t.me/Galacteek>`_
 (there's also a channel on the Aether_ network, search for the *Galacteek*
@@ -219,8 +219,8 @@ from the ipfs-logo_ project's repository is included, unchanged.
 .. _aioipfs: https://gitlab.com/cipres/aioipfs
 .. _aiomonitor: https://github.com/aio-libs/aiomonitor
 .. _asyncqt: https://github.com/gmarull/asyncqt
-.. _sponsor: https://github.com/pinnaculum/galacteek/blob/master/SPONSOR.rst
-.. _raspberry: https://github.com/pinnaculum/galacteek/blob/master/RASPBERRY.rst
+.. _sponsor: https://gitlab.com/galacteek/galacteek/-/blob/master/SPONSOR.rst
+.. _raspberry: https://gitlab.com/galacteek/galacteek/-/blob/master/RASPBERRY.rst
 .. _quamash: https://github.com/harvimt/quamash
 .. _go-ipfs: https://github.com/ipfs/go-ipfs
 .. _dist.ipfs.io: https://dist.ipfs.io
@@ -229,10 +229,10 @@ from the ipfs-logo_ project's repository is included, unchanged.
 .. _ipfs-search: https://ipfs-search.com
 .. _ipfs-css: https://github.com/ipfs-shipyard/ipfs-css
 .. _pyzbar: https://github.com/NaturalHistoryMuseum/pyzbar/
-.. _shortcuts: https://github.com/pinnaculum/galacteek/blob/master/galacteek/docs/manual/en/shortcuts.rst
-.. _urlschemes: https://github.com/pinnaculum/galacteek/blob/master/galacteek/docs/manual/en/browsing.rst#supported-url-formats
+.. _shortcuts: https://gitlab.com/galacteek/galacteek/-/blob/master/galacteek/docs/manual/en/shortcuts.rst
+.. _urlschemes: https://gitlab.com/galacteek/galacteek/-/blob/master/galacteek/docs/manual/en/browsing.rst
 .. _releases: https://github.com/pinnaculum/galacteek/releases
-.. _BUILDING: https://github.com/pinnaculum/galacteek/blob/master/BUILDING.rst
+.. _BUILDING: https://gitlab.com/galacteek/galacteek/-/blob/master/BUILDING.rst
 .. _ENS: https://ens.domains/
 .. _in-web-browsers: https://github.com/ipfs/in-web-browsers
 .. _AppImage: https://appimage.org/

@@ -7,7 +7,7 @@ export PYTHONPATH=$GITHUB_WORKSPACE
 
 unset VIRTUAL_ENV
 
-pip install "pyinstaller==4.3"
+pip install "pyinstaller==4.2"
 pip install pywin32
 
 # Patch pyimod03_importers.py (to include source code with inspect)
