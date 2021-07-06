@@ -1,0 +1,55 @@
+{% extends "ld/layout.jinja2" %}
+{% block body %}
+
+{% set headline = graph.value(
+  rscUri, 'ips://galacteek.ld/headline') %}
+
+{% set body = graph.value(
+  rscUri, 'ips://galacteek.ld/articleBody') %}
+
+{% set descr = graph.value(
+  rscUri, 'ips://galacteek.ld/description') %}
+
+{% set dateCreated = graph.value(
+  rscUri, 'ips://galacteek.ld/dateCreated') %}
+
+{% set comments = graph.query("""
+  SELECT ?uri ?body ?rsc
+  WHERE {                                                                       
+    ?uri a gs:Comment ;
+      gs:text ?body ;
+      gs:about ?rsc .
+  }
+""") %}
+
+{% set cq = prepareQuery("""
+  PREFIX gs: <ips://galacteek.ld/>
+
+  SELECT ?uri ?body
+  WHERE {                                                                       
+    ?uri a gs:Comment ;
+      gs:text ?body ;
+      gs:about ?rsc .
+  }
+""") %}
+
+{% set comments = graph.query(cq, initBindings={'rsc': rscUri}) %}
+
+
+<p align="center">
+<h1><b>{{ headline }}</b></h1>
+</p>
+
+<p>
+{{ body|markdown }}
+</p>
+
+{{ comments }}
+
+<div id="comments">
+{% for com in comments %}
+{{ com }}
+{% endfor %}
+</div>
+
+{% endblock %}

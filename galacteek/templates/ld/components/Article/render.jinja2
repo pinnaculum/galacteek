@@ -1,0 +1,24 @@
+{% extends "ld/layout.jinja2" %}
+{% block body %}
+
+{% set headline = graph.value(
+  rscUri, 'ips://galacteek.ld/headline') %}
+
+{% set body = graph.value(
+  rscUri, 'ips://galacteek.ld/articleMarkdownBody') %}
+
+{% set descr = graph.value(
+  rscUri, 'ips://galacteek.ld/description') %}
+
+{% set dateCreated = graph.value(
+  rscUri, 'ips://galacteek.ld/dateCreated') %}
+
+<p align="center">
+<h1><b>{{ headline }}</b></h1>
+</p>
+
+<p>
+{{ body|markdown }}
+</p>
+
+{% endblock %}
