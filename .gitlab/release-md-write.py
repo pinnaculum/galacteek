@@ -25,16 +25,25 @@ vars = [
 prelude_ipfs_download = '''
 ## AppImage IPFS binary download
 
-This release is distributed on the IPFS network !
+This release is distributed on the IPFS network ! You can [download it from a gateway here]({url})
 
-You can [download it here]({url})
+The AppImage directory CID is:
+
+```
+@@APPIMAGE_DIR_CID@@
+```
+
+If you want to download the AppImage directly from IPFS; run:
+
+```
+ipfs get /ipfs/@@APPIMAGE_DIR_CID@@/@@APPIMAGE_FILENAME@@
+```
 
 If you run an IPFS node and want to help distributing this software, you
-can do so by run the following command:
+can do so by running the following command:
 
 ```
 ipfs pin add -r @@APPIMAGE_DIR_CID@@
-./@@APPIMAGE_FILENAME@@
 ```
 '''
 

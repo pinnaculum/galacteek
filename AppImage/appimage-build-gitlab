@@ -18,15 +18,10 @@ if ! [ -e $WHEEL ]; then
     exit 1
 fi
 
-if [ -e $APPDIR ]; then
-    echo "$APPDIR already exists"
-else
-    mkdir -p $APPDIR
-    mkdir -p $APPDIR/usr/share/applications
-    mkdir -p $APPDIR/usr/share/licenses/galacteek
-    mkdir -p $APPDIR/usr/share/metainfo
-    mkdir -p $APPDIR/usr/share/icons/hicolor/512x512/apps
-fi
+mkdir -p $APPDIR/usr/share/applications
+mkdir -p $APPDIR/usr/share/licenses/galacteek
+mkdir -p $APPDIR/usr/share/metainfo
+mkdir -p $APPDIR/usr/share/icons/hicolor/512x512/apps
 
 export PATH="$PATH:$APPDIR/usr/bin"
 

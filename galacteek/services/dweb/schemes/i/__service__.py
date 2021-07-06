@@ -5,6 +5,8 @@ from galacteek.ld import uriTermExtract
 from galacteek.ld.sparql import uri_objtype
 from rdflib.plugins.sparql import prepareQuery
 
+disabled = True
+
 
 class RootView(web.View):
     @property
