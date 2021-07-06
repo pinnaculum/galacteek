@@ -979,9 +979,9 @@ class CurrentObjectController(PopupToolButton):
 
     def onQaLink(self):
         if self.currentPath and self.currentPath.valid:
-            action = self.app.mainWindow.qaToolbarAction
+            toolbar = self.app.mainWindow.toolbarQa
 
-            action.toolbar.ipfsObjectDropped.emit(self.currentPath)
+            toolbar.ipfsObjectDropped.emit(self.currentPath)
 
     def onExploreDirectory(self):
         if self.currentPath and self.currentPath.valid:

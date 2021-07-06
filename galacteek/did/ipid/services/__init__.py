@@ -207,9 +207,10 @@ class CollectionService(IPService):
         if not endpoint:
             return
 
-        for obj in endpoint.get(self.ipid.contextUrl(
-                self.endpointName, fragment='objects')):
-            try:
+        try:
+            for obj in endpoint.get(self.ipid.contextUrl(
+                    self.endpointName, fragment='objects')):
+
                 yield {
                     'id': obj['@id'],
                     'path': obj.get(
@@ -221,8 +222,8 @@ class CollectionService(IPService):
                             'IpfsObject', fragment='name')
                     )[0]['@value']
                 }
-            except Exception:
-                continue
+        except Exception as err:
+            log.debug(f'Contained objects listing error: {err}')
 
     @ipfsOp
     async def add(self, ipfsop, objPath, name=None,

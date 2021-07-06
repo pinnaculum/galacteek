@@ -173,6 +173,7 @@ class ZbarIPFSQrDecoder(ImageReader):
             urls = []
             for obj in objects:
                 if not isinstance(obj.data, bytes):
+                    log.debug('pyzbar decode: invalid type')
                     continue
 
                 try:

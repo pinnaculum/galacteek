@@ -24,6 +24,9 @@ the changes in the CHANGELOG formatting.
 - Use go-ipfs version *0.9.0*
 - Use fs-repo-migrations version *2.0.1*
 
+### Fixed
+- Bug fix: "link to QA toolbar action"
+
 ## [0.5.0] - 2021-03-12
 
 This release introduces support for *remote pinning*.

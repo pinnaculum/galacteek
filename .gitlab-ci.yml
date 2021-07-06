@@ -165,8 +165,6 @@ release:
     - source $GALACTEEK_ENV_FILE
     - source $ARTIFACT_RELEASE
 
-    # - apk add bash grep git curl wget python3 py3-pip
-
     # Upload the artifact
     - >
       curl --header "JOB-TOKEN: $CI_JOB_TOKEN"
