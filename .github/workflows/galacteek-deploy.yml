@@ -32,10 +32,8 @@ jobs:
         path: notbit
 
     - name: Checkout galacteek-ld-web4
-      uses: actions/checkout@v2
-      with:
-        repository: https://gitlab.com/galacteek/galacteek-ld-web4
-        path: galacteek-ld-web4
+      run: |
+        git clone https://gitlab.com/galacteek/galacteek-ld-web4
 
     - name: Set up Python 3.7
       uses: actions/setup-python@v2
