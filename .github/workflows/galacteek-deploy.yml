@@ -12,7 +12,7 @@ env:
 
 jobs:
   build:
-    if: contains(toJson(github.event.commits), '[skip ci]') == false
+    # if: contains(toJson(github.event.commits), '[skip ci]') == false
     needs: create_release
     strategy:
       fail-fast: false
@@ -278,7 +278,7 @@ jobs:
         asset_content_type: application/octet-stream
 
   create_release:
-    if: contains(toJson(github.event.commits), '[skip ci]') == false
+    # if: contains(toJson(github.event.commits), '[skip ci]') == false
     name: Create release
     runs-on: ubuntu-latest
     outputs:
