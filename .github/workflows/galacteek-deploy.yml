@@ -18,7 +18,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-18.04, macos-latest, windows-latest]
+        # os: [ubuntu-18.04, macos-latest, windows-latest]
+        os: [macos-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -29,6 +30,10 @@ jobs:
       with:
         repository: pinnaculum/notbit
         path: notbit
+
+    - name: Checkout galacteek-ld-web4
+      run: |
+        git clone https://gitlab.com/galacteek/galacteek-ld-web4
 
     - name: Set up Python 3.7
       uses: actions/setup-python@v2

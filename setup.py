@@ -263,7 +263,7 @@ setup(
     license='GPL3',
     author='cipres',
     author_email='BM-87dtCqLxqnpwzUyjzL8etxGK8MQQrhnxnt1@bitmessage',
-    url='https://github.com/pinnaculum/galacteek',
+    url='https://gitlab.com/galacteek/galacteek',
     description='Browser for the distributed web',
     long_description=long_description,
     include_package_data=True,

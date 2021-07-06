@@ -23,5 +23,5 @@ Workflow:
 
   7. Make a pull request from the github page of your clone against the master branch
 
-.. _repo: https://github.com/pinnaculum/galacteek
-.. _dev: https://github.com/pinnaculum/galacteek#development
+.. _repo: https://gitlab.com/galacteek/galacteek
+.. _dev: https://gitlab.com/galacteek/galacteek/-/blob/master/BUILDING.rst

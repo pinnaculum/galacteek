@@ -15,6 +15,7 @@ try:
     datas += copy_metadata('galacteek.docs.manual.en.html')
     datas += copy_metadata('random_username')
     datas += copy_metadata('random_username.data')
+    datas += copy_metadata('frozendict')
     datas += copy_metadata('mkdocs')
     datas += copy_metadata('mkdocs-bootswatch')
 except Exception:
@@ -42,6 +43,7 @@ hiddenimports = [
     'random_username.data',
     'PyQt5',
     'galacteek',
+    'galacteek_ld_web4',
     'tortoise',
     'tortoise.fields',
     'tortoise.backends',
@@ -49,6 +51,7 @@ hiddenimports = [
     'tortoise.backends.base',
     'aiohttp',
     'aioipfs',
+    'frozendict',
     'mkdocs',
     'mkdocs-bootswatch'
 ]
@@ -99,6 +102,8 @@ datas += [('galacteek/ui/themes', f'{pkgrDest}/galacteek/ui/themes')]
 datas += [('galacteek/hashmarks', f'{pkgrDest}/galacteek/hashmarks')]
 datas += [('galacteek/docs/manual', f'{pkgrDest}/galacteek/docs/manual')]
 # datas += [('galacteek/ld/contexts', f'{pkgrDest}/galacteek/ld/contexts')]
+datas += [('galacteek-ld-web4/galacteek_ld_web4',
+           f'{pkgrDest}/galacteek_ld_web4')]
 datas += [('packaging/windows/random_username', 'random_username')]
 datas += [('magic.mgc', '.')]
 
