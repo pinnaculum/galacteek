@@ -14,6 +14,7 @@ jobs:
   build:
     # if: contains(toJson(github.event.commits), '[skip ci]') == false
     needs: create_release
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
