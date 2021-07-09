@@ -671,15 +671,20 @@ class IPFSOperator(RemotePinningOps,
         return [key['Name'] for key in keys]
 
     async def keyGen(self, keyName, type='rsa', keySize=2048,
-                     checkExisting=False):
+                     checkExisting=False, timeout=90):
         if checkExisting is True:
             if keyName in await self.keysNames():
                 return
 
-        return await self.waitFor(
-            self.client.key.gen(keyName,
-                                type=type, size=keySize), 30
-        )
+        try:
+            return await self.waitFor(
+                self.client.key.gen(keyName, type=type, size=keySize), timeout
+            )
+        except (aioipfs.APIError, aioipfs.UnknownAPIError) as err:
+            self.debug(f'Error creating key {keyName}: {err.message}')
+            return False
+        else:
+            return True
 
     async def keys(self):
         kList = await self.client.key.list(long=True)

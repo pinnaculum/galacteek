@@ -88,14 +88,20 @@ class LDSchemasImporter:
             ldKeyName = distName
             ldCid = entry.get('Hash')
 
-            log.debug(f'LD contexts ({ldKeyName})sitting at: {ldCid}')
+            log.debug(f'LD contexts ({ldKeyName}) sitting at: {ldCid}')
 
             ke = await ipfsop.keyFind(ldKeyName)
             if not ke:
-                await ipfsop.keyGen(
+                result = await ipfsop.keyGen(
                     ldKeyName,
                     checkExisting=False
                 )
+
+                if result is False:
+                    log.debug(f'{ldKeyName}: key creation failed')
+                    return None
+                else:
+                    log.debug(f'{ldKeyName}: key creation was successfull')
 
             ensure(ipfsop.publish(
                 entry['Hash'],
