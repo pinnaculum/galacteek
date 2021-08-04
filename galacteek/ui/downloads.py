@@ -55,6 +55,7 @@ class DownloadsManager(QObject):
             return
 
         downPath = downItem.path()
+        downUrl = downItem.url()
 
         if downPath.startswith(self.app.tempDirWeb):
             downItem.finished.connect(
@@ -62,16 +63,20 @@ class DownloadsManager(QObject):
             downItem.accept()
             return
 
-        iPath = IPFSPath(qurlPercentDecode(downItem.url()), autoCidConv=True)
+        iPath = IPFSPath(qurlPercentDecode(downUrl), autoCidConv=True)
         dialogPrechoice = 'download'
+        allowOpen = False
 
         if iPath.valid:
+            allowOpen = True
             if iPath.basename and self.shouldAutoOpen(iPath):
                 dialogPrechoice = 'open'
 
-        return runDialog(DownloadOpenObjectDialog, iPath,
+        return runDialog(DownloadOpenObjectDialog,
+                         iPath.ipfsUrl if iPath.valid else downUrl.toString(),
                          downItem,
                          dialogPrechoice,
+                         allowOpen,
                          accepted=self.onDialogAccepted)
 
     def onDownloadProgress(self, received, total):
@@ -100,7 +105,10 @@ class DownloadsManager(QObject):
             downItem.accept()
         elif choice == 1:
             downItem.cancel()
-            ensure(self.app.resourceOpener.open(dialog.objectPath))
+
+            iPath = IPFSPath(dialog.objectUrl)
+            if iPath.valid:
+                ensure(self.app.resourceOpener.open(iPath))
 
     def pageSaved(self, downItem):
         saveFormat = downItem.savePageFormat()

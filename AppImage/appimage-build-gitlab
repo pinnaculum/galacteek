@@ -34,6 +34,7 @@ $APPIPIP install wheel
 # Install the wheel from local dists
 
 echo "Installing wheel: $WHEEL"
+$APPIPIP install -r ../requirements.txt
 $APPIPIP install $WHEEL
 $APPIPIP install $WHEEL'[markdown-extensions]'
 

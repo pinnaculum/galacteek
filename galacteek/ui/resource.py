@@ -128,7 +128,7 @@ class IPFSResourceOpener(QObject):
 
             ipfsPath = IPFSPath(pathRef, autoCidConv=True)
         else:
-            raise ValueError('Invalid input value')
+            raise ValueError(f'Invalid input value: {pathRef}')
 
         if not ipfsPath.valid:
             return False

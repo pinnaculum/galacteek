@@ -102,6 +102,7 @@ for more information).
   of files in the MFS)
 - File sharing
 - BitTorrent to IPFS bridge
+- Gemini_ support
 - Tor support
 - Simple messenger based on the Bitmessage_ protocol
 - Search content with the ipfs-search_ search engine as well as with cyber_
@@ -241,3 +242,4 @@ from the ipfs-logo_ project's repository is included, unchanged.
 .. _cyber: https://cybercongress.ai
 .. _Bitmessage: https://wiki.bitmessage.org/
 .. _Aether: https://getaether.net/
+.. _Gemini: https://gemini.circumlunar.space/

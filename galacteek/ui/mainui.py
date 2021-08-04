@@ -1008,9 +1008,8 @@ class MainWindow(QMainWindow):
                        self.onIpfsKeysClicked)
         menu.addSeparator()
 
-        if self.app.debugEnabled:
-            menu.addAction(self.psniffAction)
-            menu.addSeparator()
+        menu.addAction(self.psniffAction)
+        menu.addSeparator()
 
         menu.addAction(iClearHistory(), self.onClearHistory)
 

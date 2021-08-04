@@ -56,6 +56,7 @@ SCHEME_IPNS = 'ipns'
 SCHEME_IPID = 'ipid'
 SCHEME_I = 'i'
 SCHEME_QDAPP = 'qdapp'
+SCHEME_GEMINI = 'gemini'
 
 # ENS-related schemes (ensr is redirect-on-resolve ENS scheme)
 SCHEME_ENS = 'ens'
@@ -229,6 +230,12 @@ def initializeSchemes():
         syntax=QWebEngineUrlScheme.Syntax.Host
     )
 
+    declareUrlScheme(
+        SCHEME_GEMINI,
+        syntax=QWebEngineUrlScheme.Syntax.Host,
+        flags=defaultSchemeFlags
+    )
+
     dappsRegisterSchemes()
 
     registerMiscSchemes()
@@ -253,6 +260,11 @@ def isEnsUrl(url):
 def isHttpUrl(url):
     if url.isValid():
         return url.scheme() in [SCHEME_HTTP, SCHEME_HTTPS]
+
+
+def isGeminiUrl(url):
+    if url.isValid():
+        return url.scheme() == SCHEME_GEMINI
 
 
 class BaseURLSchemeHandler(QWebEngineUrlSchemeHandler):
@@ -343,6 +355,36 @@ class BaseURLSchemeHandler(QWebEngineUrlSchemeHandler):
                 'text/html',
                 tmpl.encode()
             )
+
+    def serveContent(self, uid, request, ctype, data):
+        if uid not in self.requests:
+            # Destroyed ?
+            return
+
+        mutex = self.requests[uid]['mutex']
+
+        if mutex and not self.noMutexes:
+            mutex.lock()
+
+        try:
+            buf = self.requests[uid]['iodev']
+            buf.open(QIODevice.WriteOnly)
+            buf.write(data)
+            buf.close()
+
+            request.reply(ctype.encode('ascii'), buf)
+
+            # Should disabled based on config for the scheme
+            # self.objectServed.emit(ipfsPath, ctype, time.time())
+
+            if mutex and not self.noMutexes:
+                mutex.unlock()
+        except Exception:
+            if mutex and not self.noMutexes:
+                mutex.unlock()
+
+            log.debug('Error buffering request data')
+            request.fail(QWebEngineUrlRequestJob.RequestFailed)
 
 
 class IPFSObjectProxyScheme:
@@ -536,36 +578,6 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
 
     def debug(self, msg):
         log.debug('Native scheme handler: {}'.format(msg))
-
-    def serveContent(self, uid, request, ctype, data):
-        if uid not in self.requests:
-            # Destroyed ?
-            return
-
-        mutex = self.requests[uid]['mutex']
-
-        if mutex and not self.noMutexes:
-            mutex.lock()
-
-        try:
-            buf = self.requests[uid]['iodev']
-            buf.open(QIODevice.WriteOnly)
-            buf.write(data)
-            buf.close()
-
-            request.reply(ctype.encode('ascii'), buf)
-
-            # Should disabled based on config for the scheme
-            # self.objectServed.emit(ipfsPath, ctype, time.time())
-
-            if mutex and not self.noMutexes:
-                mutex.unlock()
-        except Exception:
-            if mutex and not self.noMutexes:
-                mutex.unlock()
-
-            log.debug('Error buffering request data')
-            request.fail(QWebEngineUrlRequestJob.RequestFailed)
 
     async def directoryListing(self, request, ipfsop, path):
         currentIpfsPath = IPFSPath(path)

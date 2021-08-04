@@ -17,6 +17,7 @@ from galacteek.browser.schemes import SCHEME_IPNS
 from galacteek.browser.schemes import SCHEME_IPID
 from galacteek.browser.schemes import SCHEME_Q
 from galacteek.browser.schemes import SCHEME_MANUAL
+from galacteek.browser.schemes import SCHEME_GEMINI
 
 from galacteek import log
 from galacteek.core import runningApp
@@ -149,6 +150,8 @@ class BaseProfile(QWebEngineProfile, KeyListener):
         self.installHandler(SCHEME_IPID, self.app.ipidSchemeHandler)
         self.installHandler(SCHEME_I, self.app.iSchemeHandler)
 
+        self.installHandler(SCHEME_GEMINI, self.app.geminiSchemeHandler)
+
     def profileSetting2(self, defaults, name, default=False):
         return self.config.settings.get(
             name,
@@ -188,6 +191,11 @@ class BaseProfile(QWebEngineProfile, KeyListener):
         self.webSettings.setAttribute(
             QWebEngineSettings.PluginsEnabled,
             profileSetting('plugins')
+        )
+
+        self.webSettings.setAttribute(
+            QWebEngineSettings.PdfViewerEnabled,
+            profileSetting('pdfViewerInternal')
         )
 
         self.webSettings.setAttribute(

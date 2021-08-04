@@ -204,7 +204,7 @@ async def hashmarkAdd(path: str,
     else:
         url = QUrl(path)
         if url.isValid() and url.scheme() in [
-                'ens', 'ensr', 'http', 'https', 'ftp']:
+                'gemini', 'ens', 'ensr', 'http', 'https', 'ftp']:
             extra['url'] = url.toString()
 
     if isinstance(icon, str):

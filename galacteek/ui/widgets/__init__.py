@@ -885,7 +885,7 @@ class HashmarkMgrButton(PopupToolButton, _HashmarksCommon):
                         return action
 
             for hashmark in marks:
-                if exists(hashmark.path):
+                if hashmark.path and exists(hashmark.path):
                     continue
 
                 await hashmark._fetch_all()

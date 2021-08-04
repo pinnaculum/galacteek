@@ -70,3 +70,4 @@ validators>=0.18.1
 yarl==1.5.1
 rdflib @ git+https://gitlab.com/galacteek/rdflib.git@ipfs#egg=rdflib
 galacteek-ld-web4 @ git+https://gitlab.com/galacteek/galacteek-ld-web4.git@master
+ignition-gemini @ git+https://gitlab.com/cipres/ignition.git@galacteek

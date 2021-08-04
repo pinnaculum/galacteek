@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>{{ title }} </title>
+    <style>
+      body {
+        background-color: #323232;
+        font: 12pt "Montserrat";
+        margin: 5px;
+        color: white;
+      }
+
+      a {
+        color: #fe921f;
+        text-decoration: underline;
+        font-size: 14pt;
+      }
+
+      a:hover {
+        color: #ffffff;
+      }
+
+      h1 {
+        color: #4a9ea1;
+      }
+      h2 {
+        color: #4a9fa1;
+      }
+      h3 {
+        color: #4a9ba1;
+      }
+
+      p {
+        color: #A3E658;
+      }
+
+      pre {
+        white-space: pre-wrap;
+        white-space: -moz-pre-wrap;
+        white-space: -pre-wrap;
+        white-space: -o-pre-wrap;
+        word-wrap: break-word;
+      }
+    </style>
+
+  </head>
+  <body>
+    {% block body %}
+      {{ gembody }}
+    {% endblock %}
+  </body>
+</html>

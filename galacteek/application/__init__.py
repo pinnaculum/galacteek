@@ -91,6 +91,7 @@ from galacteek.browser.schemes import ObjectProxySchemeHandler
 from galacteek.browser.schemes import MultiObjectHostSchemeHandler
 from galacteek.browser.schemes.ipid import IPIDSchemeHandler
 from galacteek.browser.schemes.i import ISchemeHandler
+from galacteek.browser.schemes.gemini import GeminiSchemeHandler
 
 from galacteek.browser import BrowserRuntimeObjects
 from galacteek.browser import browserSetup
@@ -1576,6 +1577,7 @@ class GalacteekApplication(QApplication):
         self.qSchemeHandler = MultiObjectHostSchemeHandler(self)
         self.ipidSchemeHandler = IPIDSchemeHandler(self)
         self.iSchemeHandler = ISchemeHandler(self)
+        self.geminiSchemeHandler = GeminiSchemeHandler(self)
 
         # self.gSchemeHandler = GalacteekSchemeHandler(self)
 

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>{{ title }} </title>
+    <style>
+      body {
+        padding: 10px;
+        background-color: #323232;
+        font: 14pt "Arial";
+        margin: 10px;
+        color: white;
+      }
+      a {
+        color: #fe921f;
+      }
+
+      b {
+        font-size: 150%;
+      }
+
+      form {
+        padding: 10px;
+        margin: 5px;
+      }
+      input {
+        padding: 5px;
+        margin: 10px;
+      }
+
+      input[type=text] {
+        font-size: 120%;
+      }
+
+      input[type=button] {
+        font-size: 120%;
+      }
+
+      div#reqinput {
+        background-color: #4b9fa2;
+        border: 2px solid black;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="text/javascript">
+      function submitForm() {
+        const ele = document.getElementById('itext')
+
+        window.location = '{{ posturl }}?' + encodeURIComponent(ele.value)
+      }
+
+    </script>
+
+    <div align="center">
+      <p>
+      The gemini capsule at <a href='{{ gemurl }}'/>{{ gemurl }}</a> sent an
+      input request.
+      </p>
+    </div>
+
+    <div id='reqinput' align="center">
+      <b>{{ geminput }}</b>
+
+      <form id='form' onsubmit='event.preventDefault(); submitForm()'>
+        <input width='50%' type='text' id='itext' />
+        <br/>
+        <input type='button' value='Send' onclick='event.preventDefault(); submitForm()' />
+      </form>
+    </div>
+  </body>
+</html>

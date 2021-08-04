@@ -60,6 +60,7 @@ from galacteek import AsyncSignal
 
 from galacteek.browser.schemes import isEnsUrl
 from galacteek.browser.schemes import isHttpUrl
+from galacteek.browser.schemes import isGeminiUrl
 
 from galacteek.ipfs import cidhelpers
 from galacteek.ipfs.ipfsops import *
@@ -212,7 +213,7 @@ class AddHashmarkDialog(QDialog):
             # Handle HTTP/ENS URLs
 
             url = QUrl(self.ipfsResource)
-            if isHttpUrl(url) or isEnsUrl(url):
+            if isHttpUrl(url) or isEnsUrl(url) or isGeminiUrl(url):
                 self.ui.pinCombo.setEnabled(False)
 
             if isHttpUrl(url):
@@ -1229,23 +1230,31 @@ class HashmarkIPTagsDialog(IPTagsSelectDialog):
 
 
 class DownloadOpenObjectDialog(QDialog):
-    def __init__(self, ipfsPath, downItem, prechoice, parent=None):
+    def __init__(self,
+                 downloadUrl: str,
+                 downItem,
+                 prechoice,
+                 allowOpen: bool,
+                 parent=None):
         super().__init__(parent)
 
         self.setWindowTitle(iDownloadOpenDialog())
         self.app = QApplication.instance()
         self.downloadItem = downItem
-        self.objectPath = ipfsPath
+        self.objectUrl = downloadUrl
 
         self.choiceCombo = QComboBox(self)
         self.choiceCombo.addItem(iDownload())
-        self.choiceCombo.addItem(iOpen())
+
+        if allowOpen:
+            self.choiceCombo.addItem(iOpen())
+
         self.choiceCombo.currentIndexChanged.connect(self.onChoiceChange)
 
         if prechoice == 'open':
             self.choiceCombo.setCurrentIndex(1)
 
-        label = QLabel(ipfsPath.ipfsUrl)
+        label = QLabel(downloadUrl)
         label.setMaximumWidth(self.app.desktopGeometry.width() / 2)
         label.setWordWrap(True)
         label.setStyleSheet(boldLabelStyle())

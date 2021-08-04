@@ -310,7 +310,6 @@ class ImageView(QScrollArea):
                 self.clip.setFileName(fp)
                 self.labelImage.setMovie(self.clip)
                 self.clip.frameChanged.connect(self.onMovieFrameChanged)
-                self.clip.error.connect(self.onMovieError)
                 self.clip.start()
                 self.labelImage.adjustSize()
             else:
@@ -344,4 +343,5 @@ class ImageView(QScrollArea):
             self.clipFirstPixmap = self.clipCurrentPixmap
 
     def onMovieError(self, err):
-        messageBox(self.clip.lastErrorString())
+        logUser.info(
+            f'{self.clip.fileName()}: {self.clip.lastErrorString()}')

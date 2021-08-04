@@ -8,6 +8,25 @@ the changes in the CHANGELOG formatting.
 
 ## [Unreleased]
 
+## [0.5.2] - 2021-08-04
+
+This release brings support for the gemini protocol.
+
+Updating is recommended, as the go-ipfs upgrade fixes potential
+performance issues ocurring with go-ipfs *0.9.0*.
+
+### Added
+- Support for the great gemini protocol via the *gemini://* scheme
+  - Gemini capsule browsing
+  - Support for gemini's input system
+  (try [gemini://geminispace.info/search](gemini://geminispace.info/search))
+  - Support for raw files download via *gemini://* (tested with PDF files)
+
+### Changed
+- Use go-ipfs version *0.9.1* (see the
+[release notes](https://github.com/ipfs/go-ipfs/releases/tag/v0.9.1)
+for more details)
+
 ## [0.5.1] - 2021-06-29
 
 ### Added
