@@ -119,6 +119,12 @@ def iAboutGalacteek():
         </p>
         <br/>
 
+        <p>Website:
+        <a href="https://galacteek.gitlab.io">
+            https://galacteek.gitlab.io
+        </a>
+        </p>
+
         <p>GitLab:
         <a href="https://gitlab.com/galacteek/galacteek">
             https://gitlab.com/galacteek/galacteek

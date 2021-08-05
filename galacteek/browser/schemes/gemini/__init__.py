@@ -21,6 +21,14 @@ class GeminiSchemeHandler(BaseURLSchemeHandler):
     Requests are made using the ignition library.
     """
 
+    def __init__(self, parent=None, noMutexes=False):
+        super().__init__(parent=parent, noMutexes=noMutexes)
+
+        # Set the default gemini known hosts file location
+        ignition.set_default_hosts_file(
+            str(self.app.geminiHostsLocation)
+        )
+
     def geminiRequest(self, url: str):
         # Run in the thread executor
         try:

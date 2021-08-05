@@ -1176,6 +1176,8 @@ class GalacteekApplication(QApplication):
             'torrent_state.pickle')
         self._bitMessageDataLocation = self.dataLocation.joinpath(
             'bitmessage')
+        self.geminiHostsLocation = self.dataLocation.joinpath(
+            'gemini_known_hosts')
 
         qtConfigLocation = Path(QStandardPaths.writableLocation(
             QStandardPaths.ConfigLocation))
