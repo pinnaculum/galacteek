@@ -44,6 +44,10 @@ cp packaging/windows/galacteek-installer.nsi .
 echo "Running makensis"
 makensis -V2 galacteek-installer.nsi
 
+echo "Signing installer"
+/c/Program\ Files\ \(x86\)/Windows\ Kits/10/bin/10.0.17763.0/x86/signtool.exe \
+    sign /f packaging/windows/galacteek.pfx /p "galacteek" Galacteek-Installer.exe
+
 echo "Success, moving installer"
 
 mv Galacteek-Installer.exe $BUNDLE_PATH
