@@ -46,10 +46,11 @@ makensis -V2 galacteek-installer.nsi
 
 echo "Signing installer"
 
-certutil -f -p galacteek -importpfx packaging/windows/galacteek.pfx
+certutil -f -p ${PFX_CERT_PASSWORD} -importpfx packaging/windows/galacteek.pfx
 
 /c/Program\ Files\ \(x86\)/Windows\ Kits/10/bin/10.0.17763.0/x86/signtool.exe \
-    sign /debug /f packaging/windows/galacteek.pfx /p "galacteek" Galacteek-Installer.exe
+    sign -debug -f packaging/windows/galacteek.pfx \
+    -p ${PFX_CERT_PASSWORD} Galacteek-Installer.exe
 
 echo "Success, moving installer"
 
