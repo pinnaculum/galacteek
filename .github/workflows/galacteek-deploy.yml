@@ -257,6 +257,8 @@ jobs:
 
     - name: Build installer (windows, NSIS)
       if: startsWith(matrix.os, 'windows')
+      env:
+        PFX_CERT_PASSWORD: ${{ secrets.PFX_CERT_PASSWORD }}
       run: |
         rm -rf dist
         ./ci/build-pyinstaller-nsi.sh ${{ env.G_WHEEL_PATH }}
