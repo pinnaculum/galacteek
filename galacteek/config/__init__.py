@@ -142,12 +142,18 @@ def configForModule(mod: str):
 
     environ = environment()
     env = environ['env']
+    graphenv = environ['rdfgraphenv']
 
     eConf = cCache.get(mod, None)
     if not eConf:
         return
 
-    return eConf['configAll']['envs'].get(env, None)
+    cfAll = eConf['configAll']
+
+    return merge(
+        cfAll.get('envs', {}).get(env, {}),
+        cfAll.get('graphEnvs', {}).get(graphenv, {})
+    )
 
 
 def configModLeafAttributes(pkgName: str):

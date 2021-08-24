@@ -12,7 +12,7 @@ from . import AsyncChanObject
 class SparQLInterface(object):
     @property
     def rdfService(self):
-        return services.getByDotName('ld.rdf.graphs')
+        return services.getByDotName('ld.pronto.graphs')
 
     async def a_sparqlQuery(self, app, loop,
                             query: str,

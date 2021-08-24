@@ -14,6 +14,9 @@ from galacteek.dweb.channels import AsyncChanObject
 rdfPreRoleNames = [
     'articleBody',
     'authorDid',
+    'authorNickName',
+    'authorFirstName',
+    'authorLastName',
     'body',
     'contentUrl',
     'dateCreated',
@@ -52,7 +55,7 @@ for idx, role in enumerate(rdfPreRoleNames):
 class SparQLBase(AsyncChanObject):
     @cached_property
     def rdf(self):
-        return services.getByDotName('ld.rdf.graphs')
+        return services.getByDotName('ld.pronto.graphs')
 
     @property
     def roles(self):

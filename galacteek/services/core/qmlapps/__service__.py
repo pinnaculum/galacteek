@@ -8,9 +8,6 @@ from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
 
 
-disabled = True
-
-
 class QMLComponentsLoaderService(GService):
     """
     Service that loads QML apps from IPFS and notifies
@@ -67,8 +64,10 @@ class QMLComponentsLoaderService(GService):
     async def dappDeploymentsParse(self, uri, depls):
         try:
             rel = depls.releases[depls.latest]
-            ipfsPath = IPFSPath(rel['ipfsPath'])
+            ipfsPath = IPFSPath(rel['manifestIpfsPath'])
             assert ipfsPath.valid is True
+
+            log.debug(f'Loading dapp from manifestt: {ipfsPath}')
 
             await self.loadDappFromManifest(uri, ipfsPath)
         except Exception as err:
@@ -118,7 +117,8 @@ class QMLComponentsLoaderService(GService):
                 fspath = Path(comp.get('fsPath'))
 
                 if ep and not qmlEntryPoint:
-                    qmlEntryPoint = str(fspath.joinpath('qml').joinpath(ep))
+                    qmlEntryPoint = str(
+                        fspath.joinpath('src/qml').joinpath(ep))
 
                 if fspath:
                     cloaded.append({
@@ -172,6 +172,7 @@ class QMLComponentsLoaderService(GService):
             'type': 'QmlApplicationLoaded',
             'appName': appdef.get('name', 'Unknown'),
             'appUri': appdef.get('uri'),
+            'appIconCid': appdef.get('icon', {}).get('cid', None),
             'qmlEntryPoint': qmlEntryPoint,
             'components': comps
         })

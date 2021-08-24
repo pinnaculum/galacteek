@@ -40,6 +40,8 @@ from galacteek.core.asynclib import async_enterable
 from galacteek.core.asynccache import amlrucache
 from galacteek.crypto.rsa import RSAExecutor
 
+from galacteek.ld.signatures import jsonldsig
+
 from galacteek.did.ipid.services import IPService
 from galacteek.did.ipid.services import IPServiceRegistry
 from galacteek.did.ipid.services import IPServiceEditor
@@ -449,6 +451,20 @@ class IPIdentifier(DAGOperations):
     async def rdfPush(self):
         # Push that to the RDF store
         await runningApp().s.rdfStore(IPFSPath(self.docCid))
+
+    @ipfsOp
+    async def jsonLdSign(self, ipfsop, document: dict):
+        """
+        Create a JSON-LD signature for an object, signed with
+        the DID's key
+        """
+        try:
+            rsaAgent = await self.rsaAgentGet(ipfsop)
+            privKey = await rsaAgent._privateKey()
+
+            return jsonldsig.sign(document, privKey.exportKey())
+        except Exception as err:
+            self.message(f'Failed to create JSON-LD signature: {err}')
 
     @ipfsOp
     async def resolve(self, ipfsop, resolveTimeout=None):

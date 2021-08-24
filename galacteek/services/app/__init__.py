@@ -6,7 +6,9 @@ from galacteek import log
 from galacteek.core.ps import makeKeyService
 
 from galacteek.ipfs.cidhelpers import IPFSPath
+from galacteek.ipfs import ipfsOp
 
+from galacteek.ld import gLdDefaultContext
 from galacteek.services import GService
 from galacteek.services import cached_property
 from galacteek.services.net.bitmessage.service import BitMessageClientService
@@ -116,11 +118,23 @@ class AppService(GService):
 
         log.debug('Stopping main application service')
 
-    async def rdfStore(self, ipfsPath: IPFSPath):
+    async def rdfStore(self, ipfsPath: IPFSPath, iri: str = 'urn:ipg:g:c0'):
         await self.ldPublish({
             'type': 'DagRdfStorageRequest',
+            'outputGraphIri': iri,
             'ipfsPath': str(ipfsPath)
         }, key=makeKeyService('ld'))
+
+    @ipfsOp
+    async def rdfStoreObject(self, ipfsop, obj: dict, iri: str):
+        if '@context' not in obj:
+            obj['@context'] = gLdDefaultContext
+
+        path = IPFSPath(
+            await ipfsop.dagPut(obj)
+        )
+        if path.valid:
+            await self.rdfStore(path, iri)
 
     @GService.task
     async def mProfileTask(self):

@@ -154,6 +154,7 @@ class AddHashmarkDialog(QDialog):
         self.app = QApplication.instance()
 
         self.ipfsResource = resource
+        self.ipfsPath = IPFSPath(self.ipfsResource)
         self.iconCid = None
         self.schemePreferred = schemePreferred
 
@@ -164,7 +165,6 @@ class AddHashmarkDialog(QDialog):
         self.ui.resourceLabel.setToolTip(self.ipfsResource)
         self.ui.newCategory.textChanged.connect(self.onNewCatChanged)
         self.ui.title.setText(title)
-        self.ui.share.hide()
 
         pix = QPixmap.fromImage(QImage(':/share/icons/hashmarks.png'))
         pix = pix.scaledToWidth(32)
@@ -328,6 +328,19 @@ class AddHashmarkDialog(QDialog):
             HashmarkIPTagsDialog,
             hashmark=hashmark
         )
+
+        if share is True and 0:
+            # Store as RDF
+            await self.app.s.rdfStoreObject({
+                '@type': 'Hashmark',
+                '@id': self.ipfsPath.ipfsUrl,
+                'ipfsPath': str(self.ipfsPath),
+                'ipfsUrl': self.ipfsPath.ipfsUrl,
+                'description': description,
+                'comment': self.ui.comment.text(),
+                'iconCid': self.iconCid,
+                'category': category
+            }, 'urn:ipg:g:hashmarks:main')
 
 
 class AddFeedDialog(QDialog):

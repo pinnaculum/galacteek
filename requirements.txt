@@ -2,6 +2,7 @@ aiodns>=2.0.0
 aiofiles>=0.4.0
 aiohttp>=3.7.4
 aiohttp-socks>=0.5.5
+aiohttp-basicauth>=0.2.0
 aioipfs>=0.5.5
 aiojobs>=0.2.2
 aiopubsub==2.1.5
@@ -62,13 +63,13 @@ rdfextras>=0.4
 rdflib-pyld-compat>=0.1.0
 rdflib-sqlalchemy>=0.4.0
 rdflib-sqlite>=0.1
-rdflib-jsonld>=0.5.0
 rule-engine>=2.1.0
-sparql-burger==1.0.1
 strict-rfc3339>=0.7
 tortoise-orm>=0.16.21
 validators>=0.18.1
 yarl==1.5.1
 rdflib @ git+https://gitlab.com/galacteek/rdflib.git@ipfs#egg=rdflib
+rdflib-jsonld @ git+https://gitlab.com/galacteek/rdflib-jsonld.git@galacteek#egg=rdflib-jsonld
 galacteek-ld-web4 @ git+https://gitlab.com/galacteek/galacteek-ld-web4.git@master
 ignition-gemini @ git+https://gitlab.com/cipres/ignition.git@galacteek
+SPARQL-Burger @ git+https://gitlab.com/galacteek/SPARQL-Burger.git@master#egg=SPARQL-Burger

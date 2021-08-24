@@ -1,12 +1,17 @@
+from rdflib import URIRef
 from yarl import URL
 
 from galacteek.core import pkgResourcesRscFilename
 
 gLdBaseUri = 'ips://galacteek.ld/'
+gLdDefaultContext = {
+    '@vocab': 'ips://galacteek.ld/',
+    '@base': 'ips://galacteek.ld/'
+}
 
 
-def ipsContextUri(contextName):
-    return f'ips://galacteek.ld/{contextName}'
+def ipsContextUri(contextName: str, ips='galacteek.ld'):
+    return URIRef(f'ips://{ips}/{contextName}')
 
 
 def uriTermExtract(uri):

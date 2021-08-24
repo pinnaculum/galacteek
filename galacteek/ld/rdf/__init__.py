@@ -1,17 +1,24 @@
+import attr
+import orjson
 import asyncio
 import io
+import re
 from pathlib import Path
 
 from rdflib import Graph
+from rdflib import ConjunctiveGraph
 from rdflib import Literal
 from rdflib import BNode
 from rdflib import Namespace
 from rdflib.namespace import NamespaceManager
 
 from galacteek import log
+from galacteek import cached_property
 from galacteek import AsyncSignal
 from galacteek.core import runningApp
 from galacteek.core.asynclib import asyncWriteFile
+from galacteek.ld import asyncjsonld as jsonld
+from galacteek.ld import gLdDefaultContext
 
 
 # Default NS bindings used by BaseGraph
@@ -42,10 +49,25 @@ def purgeBlank(graph: Graph):
     return cn
 
 
-class BaseGraph(Graph):
+@attr.s(auto_attribs=True)
+class TriplesUpgradeRule:
+    subject: str = ''
+    predicate: str = ''
+    object: str = ''
+    action: str = 'upgrade'
+
+    @cached_property
+    def reSub(self):
+        return re.compile(self.subject)
+
+
+class Common(object):
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
         self.loop = asyncio.get_event_loop()
+
+        self.synchronizer = None
+        self.tUpRules = []
 
     def iNsBind(self):
         self.iNs = NamespaceManager(self)
@@ -67,6 +89,9 @@ class BaseGraph(Graph):
         buff.seek(0, 0)
         return buff.getvalue()
 
+    async def rexec(self, fn, *args):
+        return await (runningApp()).rexec(fn, self, *args)
+
     async def ttlize(self):
         return await self.loop.run_in_executor(
             None, self._serial, 'ttl')
@@ -74,6 +99,12 @@ class BaseGraph(Graph):
     async def xmlize(self):
         return await self.loop.run_in_executor(
             None, self._serial, 'pretty-xml')
+
+
+class BaseGraph(Graph, Common):
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
+        self.loop = asyncio.get_event_loop()
 
     async def queryAsync(self, query, initBindings=None):
         def runQuery(q, bindings):
@@ -83,6 +114,25 @@ class BaseGraph(Graph):
             runningApp().executor,
             runQuery, query, initBindings
         )
+
+    async def pullObject(self, doc: dict):
+        try:
+            if '@context' not in doc:
+                doc.update(gLdDefaultContext)
+
+            ex = await jsonld.expand(doc)
+
+            graph = BaseGraph()
+
+            graph.parse(
+                data=orjson.dumps(ex).decode(),
+                format='json-ld'
+            )
+
+            # Could be optimized using another rdflib method
+            self.parse(await graph.ttlize())
+        except Exception as err:
+            log.debug(f'Error pulling object {doc}: {err}')
 
 
 class IGraph(BaseGraph):
@@ -138,3 +188,7 @@ class IGraph(BaseGraph):
             log.debug(str(err))
         else:
             self.parse(obj, format=format)
+
+
+class IConjunctiveGraph(Common, ConjunctiveGraph):
+    pass

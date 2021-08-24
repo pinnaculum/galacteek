@@ -1529,6 +1529,13 @@ class GalacteekApplication(QApplication):
             await self.startIpfsDaemon(
                 failedReason=iIpfsDaemonInitProblem())
 
+    async def rexec(self, fn, *args):
+        return await self.loop.run_in_executor(
+            self.executor,
+            fn,
+            *args
+        )
+
     def normalCursor(self):
         cursor = QCursor(Qt.ArrowCursor)
         QApplication.setOverrideCursor(cursor)

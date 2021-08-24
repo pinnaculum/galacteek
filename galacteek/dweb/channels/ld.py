@@ -17,7 +17,7 @@ from . import AsyncChanObject
 class LDInterface(object):
     @property
     def rdfService(self):
-        return services.getByDotName('ld.rdf.graphs')
+        return services.getByDotName('ld.pronto.graphs')
 
     async def ipfsToRdf(self, app, loop, ipfsPath):
         ipfsop = app.ipfsOperatorForLoop(loop)

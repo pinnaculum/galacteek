@@ -121,7 +121,7 @@ class GService(Service, KeyListener):
         """
 
         hubPublish(key if key else self.psKey, {
-            '@context': ipsContextUri(contextName),
+            '@context': str(ipsContextUri(contextName)),
             'serviceIdent': self.ident,
             'event': event
         })

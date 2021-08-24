@@ -2,6 +2,8 @@ import io
 import orjson
 from aiosparql.client import SPARQLClient
 from rdflib.query import Result
+
+from galacteek import log
 from galacteek.ld.rdf import BaseGraph
 
 
@@ -25,6 +27,17 @@ class Sparkie(SPARQLClient):
         ) as resp:
             await self._raise_for_status(resp)
             return await resp.json()
+
+    async def qBindings(self, query: str, *args,
+                        **keywords) -> dict:
+        try:
+            reply = await self.query(query, *args, **keywords)
+            assert reply is not None
+
+            for res in reply['results']['bindings']:
+                yield res
+        except Exception as err:
+            log.debug(f'qBindings error: {err}')
 
     async def queryGraph(self, query: str, *args,
                          **keywords) -> dict:

@@ -5,13 +5,11 @@ from galacteek.ld import uriTermExtract
 from galacteek.ld.sparql import uri_objtype
 from rdflib.plugins.sparql import prepareQuery
 
-disabled = True
-
 
 class RootView(web.View):
     @property
     def stores(self):
-        return services.getByDotName('ld.rdf.graphs')
+        return services.getByDotName('ld.pronto.graphs')
 
     async def get(self):
         app = self.request.app.gApp
@@ -45,7 +43,7 @@ class RootView(web.View):
 class GraphsView(web.View):
     @property
     def stores(self):
-        return services.getByDotName('ld.rdf.graphs')
+        return services.getByDotName('ld.pronto.graphs')
 
     async def get(self):
         minfo = self.request.match_info

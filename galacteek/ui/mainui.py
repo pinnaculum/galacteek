@@ -1,4 +1,3 @@
-
 import functools
 import traceback
 
@@ -707,16 +706,22 @@ class CentralStack(QStackedWidget,
         for idx, w in self.workspaces():
             await w.workspaceShutDown()
 
-    async def event_g_services_core_qmlapps(self, key, message):
+    @ipfsOp
+    async def event_g_services_core_qmlapps(self, ipfsop, key, message):
         event = message['event']
 
         if event['type'] == 'QmlApplicationLoaded':
+            iconPath = IPFSPath(event.get('appIconCid'))
+
+            icon = await getIconFromIpfs(ipfsop, str(iconPath)) if \
+                iconPath.valid else getIcon('galacteek.png')
+
             workspace = QMLDappWorkspace(
                 self,
                 event['appName'],
                 event['components'],
                 event['qmlEntryPoint'],
-                icon=getIcon('galacteek.png')
+                icon=icon
             )
             await workspace.loadComponents()
             self.addWorkspace(workspace, section='qapps')

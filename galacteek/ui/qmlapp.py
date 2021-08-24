@@ -97,7 +97,7 @@ class QMLApplicationWidget(QWidget):
         ipfsCtx = self.app.ipfsCtx
         filesModel = ipfsCtx.currentProfile.filesModel
 
-        # stores = services.getByDotName('ld.rdf.graphs')
+        # stores = services.getByDotName('ld.pronto.graphs')
 
         self.engine = QQmlEngine(self)
         ctx = self.engine.rootContext()
@@ -138,7 +138,7 @@ class QMLApplicationWidget(QWidget):
         self.fsw.watchWalk(Path(path))
 
     def load(self):
-        # stores = services.getByDotName('ld.rdf.graphs')
+        # stores = services.getByDotName('ld.pronto.graphs')
         qcomp = quickEnginedWidget(
             self.engine,
             QUrl.fromLocalFile(self.epFileUrl),
@@ -155,3 +155,9 @@ class QMLApplicationWidget(QWidget):
         qcomp.setFocus(Qt.OtherFocusReason)
 
         self.currentComponent = qcomp
+
+        self.iInterface.size = self.size()
+        self.iInterface.sizeChanged.emit(
+            self.size().width(),
+            self.size().height()
+        )
