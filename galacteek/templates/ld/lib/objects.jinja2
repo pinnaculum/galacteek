@@ -1,0 +1,17 @@
+<script type="text/javascript">
+  function iObjectCreate(id, obj) {
+    window.ipfs.dag.put({
+      "@context": {
+        "@vocab": "ips://galacteek.ld/",
+        "@base": "ips://galacteek.ld/"
+      },
+
+      "@graph": [ obj ]
+    }).then(function(cid) {
+      window.ld.rdfMe(cid.toString()).then(function(result) {
+        console.log('Created: ' + id)
+        window.location = id
+      })
+    })
+  }
+</script>
