@@ -34,7 +34,7 @@ $APPIPIP install wheel
 # Install the wheel from local dists
 
 echo "Installing wheel: $WHEEL"
-$APPIPIP install -r ../requirements.txt
+$APPIPIP install --force-reinstall -r ../requirements.txt
 $APPIPIP install $WHEEL
 $APPIPIP install $WHEEL'[markdown-extensions]'
 
@@ -135,12 +135,12 @@ rm -rf lib/python3.7/site-packages/PyQt5/Qt5/plugins/assetimporters
 
 rm -rf lib/python3.7/site-packages/PyQt5/Qt5/lib/libQt5XmlPatterns*
 rm -rf lib/python3.7/site-packages/PyQt5/Qt5/lib/libQt5Designer*
-find lib/python3.7/site-packages/PyQt5/Qt5/qml/ -name *.qml -exec rm {} \;
-find lib/python3.7/site-packages/PyQt5/Qt5/qml/ -name *.qmlc -exec rm {} \;
-find lib/python3.7/site-packages/PyQt5/Qt5/qml/QtQuick -exec rm {} \;
+# find lib/python3.7/site-packages/PyQt5/Qt5/qml/ -name *.qml -exec rm {} \;
+# find lib/python3.7/site-packages/PyQt5/Qt5/qml/ -name *.qmlc -exec rm {} \;
+# find lib/python3.7/site-packages/PyQt5/Qt5/qml/QtQuick -exec rm {} \;
 rm -rf lib/python3.7/site-packages/PyQt5/Qt5/qml/QtCharts/designer/images
-rm -rf lib/python3.7/site-packages/PyQt5/Qt5/qml/Qt/labs
-rm -rf lib/python3.7/site-packages/PyQt5/Qt5/qml/QtQuick3D/
+# rm -rf lib/python3.7/site-packages/PyQt5/Qt5/qml/Qt/labs
+# rm -rf lib/python3.7/site-packages/PyQt5/Qt5/qml/QtQuick3D/
 
 python3 -m compileall lib/python3.7/site-packages/galacteek
 

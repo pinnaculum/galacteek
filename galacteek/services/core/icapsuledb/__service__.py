@@ -48,7 +48,7 @@ class ICapsuleRegistryLoaderService(GService):
     @GService.task
     async def registryTask(self):
         while not self.should_stop:
-            await asyncio.sleep(300)
+            await asyncio.sleep(180)
 
             await self.loadCapsulesFromSources()
 

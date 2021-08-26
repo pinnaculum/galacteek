@@ -270,62 +270,71 @@ class GraphSemChainSynchronizer:
         tracker = hGraph.resource(trackerUri)
         predCurObj = tUriSemObjCurrent
 
-        w = where([
-            T(subject='?uri', predicate="a",
-              object="gs:OntoloChainRecord"),
-            T(subject='?uri', predicate="gs:ontoloChain",
-              object=f'<{chainUri}>')
-        ])
+        for cn in range(0, 16):
+            objCount = 0
 
-        curObject = tracker.value(p=predCurObj)
+            w = where([
+                T(subject='?uri', predicate="a",
+                  object="gs:OntoloChainRecord"),
+                T(subject='?uri', predicate="gs:ontoloChain",
+                  object=f'<{chainUri}>')
+            ])
 
-        if curObject:
-            oIri = f'<{curObject.identifier}>'
-        else:
-            oIri = '<urn:ontolorecord:0>'
+            curObject = tracker.value(p=predCurObj)
 
-        log.debug(f'syncOntoloChain ({chainUri}): current is {oIri}')
-
-        w.add_triples(
-            triples=[
-                T(subject='?uri', predicate="gs:ontoloBlockPrevious",
-                  object=oIri)
-            ]
-        )
-
-        req = select(
-            vars=['?uri'],
-            w=w
-        )
-
-        async for res in smartql.spql.qBindings(str(req)):
-            uri = URIRef(res['uri']['value'])
-
-            # ex = hGraph.resource(str(uri))
-            ex = hGraph.value(subject=uri, predicate=RDF.type)
-            if not ex:
-                # Fetch the object record
-                gttl = await smartql.resource(
-                    str(uri),
-                    context=str(tUriOntoloChainRecord)
-                )
-
-                if await self.processObject(uri, gttl):
-                    # Eat
-                    hGraph.parse(data=gttl, format='ttl')
+            if curObject:
+                oIri = f'<{curObject.identifier}>'
             else:
-                log.debug(f'{uri}: Already in hgraph')
+                oIri = '<urn:ontolorecord:0>'
 
-            try:
-                tracker.remove(
-                    p=predCurObj
-                )
-                tracker.add(
-                    p=predCurObj,
-                    o=uri
-                )
-            except Exception as err:
-                print(err)
+            log.debug(f'syncOntoloChain ({chainUri}): current is {oIri}')
+
+            w.add_triples(
+                triples=[
+                    T(subject='?uri', predicate="gs:ontoloBlockPrevious",
+                      object=oIri)
+                ]
+            )
+
+            req = select(
+                vars=['?uri'],
+                w=w
+            )
+
+            async for res in smartql.spql.qBindings(str(req)):
+                objCount += 1
+
+                uri = URIRef(res['uri']['value'])
+
+                # ex = hGraph.resource(str(uri))
+                ex = hGraph.value(subject=uri, predicate=RDF.type)
+                if not ex:
+                    # Fetch the object record
+                    gttl = await smartql.resource(
+                        str(uri),
+                        context=str(tUriOntoloChainRecord)
+                    )
+
+                    if await self.processObject(uri, gttl):
+                        # Eat
+                        hGraph.parse(data=gttl, format='ttl')
+                else:
+                    log.debug(f'{uri}: Already in hgraph')
+
+                try:
+                    tracker.remove(
+                        p=predCurObj
+                    )
+                    tracker.add(
+                        p=predCurObj,
+                        o=uri
+                    )
+                except Exception as err:
+                    print(err)
+
+            if objCount == 0:
+                log.debug(f'{chainUri}: synced')
+                break
 
     async def processObject(self, uri: URIRef, oTtl: str):
         app = runningApp()
@@ -338,7 +347,7 @@ class GraphSemChainSynchronizer:
 
             await app.s.rdfStore(IPFSPath(path))
         except Exception as err:
-            print(err)
+            log.debug(f'process {uri}: ERROR: {err}')
         else:
-            log.debug(f'{uri}: SUCCESS')
+            log.debug(f'process {uri}: SUCCESS')
             return True

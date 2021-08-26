@@ -340,8 +340,9 @@ class RDFStoresService(GService):
     @GService.task
     async def heartbeatTask(self):
         from galacteek.ipfs.pubsub.messages.ld import SparQLHeartbeatMessage
+
         while not self.should_stop:
-            await asyncio.sleep(10)
+            await asyncio.sleep(60)
 
             msg = SparQLHeartbeatMessage.make()
 
@@ -368,9 +369,8 @@ class RDFStoresService(GService):
             return
 
         while not self.should_stop:
-            await asyncio.sleep(20)
+            await asyncio.sleep(60 * 5)
 
-            await self.graphG.exportTtl()
             await self.graphHistory.exportTtl()
 
 
