@@ -288,7 +288,8 @@ setup(
             '*.qss',
             '*.css',
             '*.qrc',
-            '*.qml'
+            '*.qml',
+            '*.jinja2'
         ],
         'galacteek': [
             'docs/manual/en/html/*.html',
@@ -300,6 +301,9 @@ setup(
             'templates/*.html',
             'templates/ipid/*.html',
             'templates/layouts/*',
+            'templates/ld/*.jinja2',
+            'templates/ld/components/*/*.jinja2',
+            'templates/ld/lib/*.jinja2',
             'templates/usersite/*.html',
             'templates/usersite/assets/*',
             'templates/usersite/assets/css/*',

@@ -259,7 +259,7 @@ class ICapsuleRegistryLoaderService(GService):
                     await ipfsop.client.core.get(
                         str(iPath), dstdir=str(rcpath))
                 except Exception as err:
-                    log.dedbug(f'Could not fetch component: {iPath}: {err}')
+                    log.debug(f'Could not fetch component: {iPath}: {err}')
                     continue
                 else:
                     await ipfsop.pin(str(iPath))
