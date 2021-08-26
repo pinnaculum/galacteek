@@ -1030,6 +1030,8 @@ class UserProfile(QObject):
             defAvatar = IPFSPath(entry['Hash'])
             await ipid.avatarSet(defAvatar.objPath)
 
+        await ipid.upgrade()
+
     @ipfsOp
     async def rsaEncryptSelf(self, op, data, offline=False):
         return await self.rsaAgent.storeSelf(data, offline=offline)
