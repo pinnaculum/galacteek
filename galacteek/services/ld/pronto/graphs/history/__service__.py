@@ -112,7 +112,7 @@ class GraphingHistoryService(GService):
     @ipfsOp
     async def trace(self, ipfsop,
                     iPath: IPFSPath,
-                    graphs: list):
+                    graph: str):
         """
         Main history API (trace an object in the history graph)
         """
@@ -213,7 +213,7 @@ class GraphingHistoryService(GService):
 
             'dateCreated': utcDatetimeIso(),
             'ipfsPath': str(iPath),
-            'outputGraphs': graphs
+            'outputGraph': graph
         })
 
         await self.hGraph.pullObject(doc)

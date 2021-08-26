@@ -250,7 +250,7 @@ class RDFStoresService(GService):
 
                 if result is True:
                     await self.historyService.trace(
-                        path, [graphIri]
+                        path, graphIri
                     )
             else:
                 log.debug(f'{path}: invalid')

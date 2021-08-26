@@ -271,7 +271,8 @@ class GraphSemChainSynchronizer:
         predCurObj = tUriSemObjCurrent
 
         w = where([
-            T(subject='?uri', predicate="a", object="gs:OntoloChainRecord"),
+            T(subject='?uri', predicate="a",
+              object="gs:OntoloChainRecord"),
             T(subject='?uri', predicate="gs:ontoloChain",
               object=f'<{chainUri}>')
         ])
