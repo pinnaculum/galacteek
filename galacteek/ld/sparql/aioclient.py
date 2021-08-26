@@ -1,6 +1,7 @@
 import io
 import orjson
 from aiosparql.client import SPARQLClient
+from aiosparql.client import SPARQLRequestFailed
 from rdflib.query import Result
 
 from galacteek import log
@@ -22,11 +23,16 @@ class Sparkie(SPARQLClient):
                 "=" * 40,
             )
 
-        async with self.session.post(
-            self.endpoint, data={"query": full_query}, headers=headers
-        ) as resp:
-            await self._raise_for_status(resp)
-            return await resp.json()
+        try:
+            async with self.session.post(
+                self.endpoint, data={"query": full_query}, headers=headers
+            ) as resp:
+                await self._raise_for_status(resp)
+                return await resp.json()
+        except SPARQLRequestFailed as rerr:
+            log.debug(f'{self.endpoint}: Request failed: {rerr}')
+        except Exception as err:
+            log.debug(f'{self.endpoint}: unknown error: {err}')
 
     async def qBindings(self, query: str, *args,
                         **keywords) -> dict:

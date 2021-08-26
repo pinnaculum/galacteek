@@ -230,11 +230,20 @@ class SmartQLAuthMiddleware(BasicAuthMiddleware):
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
 
-        self._sPassword = secrets.token_hex(8)
+        self._sUser = 'smartql'
+        self._sPassword = secrets.token_hex(16)
+
+    @property
+    def smartqlUser(self):
+        return self._sUser
+
+    @property
+    def smartqlPassword(self):
+        return self._sPassword
 
     async def check_credentials(self, username, password, request):
-        # return username == 'smartql' and password == 'password'
-        return username == 'smartql' and password == 'password'
+        return username == self.smartqlUser and \
+            password == self.smartqlPassword
 
 
 class P2PSparQLService(P2PService):

@@ -76,8 +76,6 @@ class SmartQLClient:
                     else:
                         gdata = data.decode()
 
-                    print('resource data is', gdata)
-
                     graph.parse(data=gdata, format=params['fmt'])
         except Exception as err:
             print(str(err))
@@ -91,7 +89,8 @@ class GraphExportSynchronizer:
         self.config = config if config else GraphExportSyncConfig()
 
     @ipfsOp
-    async def syncFromRemote(self, ipfsop, iri: str, p2pEndpoint: str):
+    async def syncFromRemote(self, ipfsop, iri: str, p2pEndpoint: str,
+                             graphDescr=None):
         async with ipfsop.p2pDialerFromAddr(p2pEndpoint) as dial:
             if dial.failed:
                 return False
@@ -124,7 +123,6 @@ class GraphExportSynchronizer:
                     else:
                         gdata = data.decode()
 
-                    print(gdata)
                     graph.parse(data=gdata, format=params['fmt'])
         except Exception as err:
             print(str(err))
@@ -137,7 +135,8 @@ class GraphSparQLSynchronizer:
         self.config = config if config else GraphSparQLSyncConfig()
 
     @ipfsOp
-    async def syncFromRemote(self, ipfsop, iri: str, p2pEndpoint: str):
+    async def syncFromRemote(self, ipfsop, iri: str, p2pEndpoint: str,
+                             graphDescr=None):
         async with ipfsop.p2pDialerFromAddr(p2pEndpoint) as dial:
             if dial.failed:
                 return False
@@ -158,12 +157,14 @@ class GraphSemChainSynchronizer:
         self.config = config if config else GraphSemChainSyncConfig()
 
     @ipfsOp
-    async def syncFromRemote(self, ipfsop, iri: str, p2pEndpoint: str):
+    async def syncFromRemote(self, ipfsop, iri: str, p2pEndpoint: str,
+                             graphDescr=None):
         async with ipfsop.p2pDialerFromAddr(p2pEndpoint) as dial:
             if dial.failed:
                 return False
 
-            return await self.syncFromExport(ipfsop, iri, dial)
+            return await self._sync(ipfsop, iri, dial,
+                                    graphDescr=graphDescr)
 
     def ontoloChainsList(self, hGraph):
         return list(hGraph.subjects(
@@ -171,7 +172,7 @@ class GraphSemChainSynchronizer:
             object=str(tUriOntoloChain)
         ))
 
-    async def syncFromExport(self, ipfsop, iri, dial):
+    async def _sync(self, ipfsop, iri, dial, graphDescr=None):
         curProfile = ipfsop.ctx.currentProfile
         ipid = await curProfile.userInfo.ipIdentifier()
         rdfService = GService.byDotName.get('ld.pronto.graphs')
@@ -181,8 +182,20 @@ class GraphSemChainSynchronizer:
         if graph is None or not ipid:
             return
 
+        creds = None
+        if graphDescr:
+            creds = graphDescr.get('smartqlCredentials')
+
+        if creds:
+            auth = aiohttp.BasicAuth(
+                creds.get('user', 'smartql'),
+                creds.get('password', '')
+            )
+        else:
+            auth = aiohttp.BasicAuth('smartql', 'password')
+
         smartql = SmartQLClient(
-            dial, auth=aiohttp.BasicAuth('smartql', 'password')
+            dial, auth=auth
         )
 
         chains = await hGraph.rexec(self.ontoloChainsList)
@@ -295,7 +308,6 @@ class GraphSemChainSynchronizer:
                     str(uri),
                     context=str(tUriOntoloChainRecord)
                 )
-                print(gttl)
 
                 if await self.processObject(uri, gttl):
                     # Eat

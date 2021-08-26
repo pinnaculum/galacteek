@@ -1,0 +1,6 @@
+envs:
+  default:
+    registries:
+      icapsule-registry-gitlab:
+        url: https://gitlab.com/api/v4/projects/29133437/packages/generic/icapsule-registry/continuous/icapsule-registry.tar.gz
+        enabled: True

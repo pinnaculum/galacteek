@@ -40,6 +40,7 @@ from galacteek import ensure
 from galacteek import partialEnsure
 from galacteek import log
 from galacteek import database
+from galacteek.core import runningApp
 from galacteek.core.glogger import loggerMain
 from galacteek.core.glogger import loggerUser
 from galacteek.core.glogger import LogRecordStyler
@@ -562,7 +563,7 @@ class CentralStack(QStackedWidget,
         self.setContentsMargins(0, 0, 0, 0)
         self.setMouseTracking(True)
 
-        self.psListen(makeKeyService('core', 'qmlapps'))
+        self.psListen(makeKeyService('core', 'icapsuledb'))
 
         self.__wsDormant = []
 
@@ -707,10 +708,11 @@ class CentralStack(QStackedWidget,
             await w.workspaceShutDown()
 
     @ipfsOp
-    async def event_g_services_core_qmlapps(self, ipfsop, key, message):
+    async def event_g_services_core_icapsuledb(self, ipfsop, key, message):
+        app = runningApp()
         event = message['event']
 
-        if event['type'] == 'QmlApplicationLoaded':
+        if event['type'] == 'QmlApplicationLoadRequest':
             iconPath = IPFSPath(event.get('appIconCid'))
 
             icon = await getIconFromIpfs(ipfsop, str(iconPath)) if \
@@ -719,14 +721,21 @@ class CentralStack(QStackedWidget,
             workspace = QMLDappWorkspace(
                 self,
                 event['appName'],
+                event['appUri'],
                 event['components'],
                 event['qmlEntryPoint'],
                 icon=icon
             )
-            await workspace.loadComponents()
-            self.addWorkspace(workspace, section='qapps')
 
-            workspace.wsSwitch()
+            if await workspace.loadComponents():
+                self.addWorkspace(workspace, section='qapps')
+
+                await app.s.ldPublish({
+                    'type': 'QmlApplicationLoaded',
+                    'appUri': event['appUri']
+                })
+
+                workspace.wsSwitch()
 
 
 class BrowseButton(PopupToolButton):

@@ -39,7 +39,7 @@ graphEnvs:
             exportsAllow: true
 
           sync:
-            use: 'urn:ipgsync:semchain1'
+            use: 'urn:ipg:sync:semchain1'
 
       # Hashmarks (conjunctive)
       urn:ipg:g:hashmarks:

@@ -909,6 +909,7 @@ class WorkspaceMessenger(SingleWidgetWorkspace, KeyListener):
 class QMLDappWorkspace(SingleWidgetWorkspace, KeyListener):
     def __init__(self, stack,
                  name,
+                 appUri,
                  appComponents,
                  entryPoint,
                  **kwargs):
@@ -917,12 +918,19 @@ class QMLDappWorkspace(SingleWidgetWorkspace, KeyListener):
         self.components = appComponents
         self.qmlEntryPoint = entryPoint
         self.appWidget = QMLApplicationWidget(self.qmlEntryPoint)
+        self.appUri = appUri
         self.wLayout.addWidget(self.appWidget)
 
     async def loadComponents(self):
-        for comp in self.components:
-            qPath = Path(comp['fsPath']).joinpath('src/qml')
+        try:
+            for comp in self.components:
+                qPath = Path(comp['fsPath']).joinpath('src/qml')
 
-            self.appWidget.importComponent(str(qPath))
+                self.appWidget.importComponent(str(qPath))
 
-        self.appWidget.load()
+            self.appWidget.load()
+        except Exception as err:
+            log.debug(f'{self.appUri}: failed to load components: {err}')
+            return False
+        else:
+            return True

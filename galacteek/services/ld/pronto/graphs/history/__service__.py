@@ -11,7 +11,6 @@ from galacteek.core import runningApp
 from galacteek.ipfs.cidhelpers import IPFSPath
 
 from galacteek.ipfs import ipfsOp
-from galacteek.ipfs.p2pservices import smartql as p2psmartql
 from galacteek.ipfs.pubsub.messages.ld import SparQLHeartbeatMessage
 
 from galacteek.ld import gLdDefaultContext
@@ -56,7 +55,6 @@ class GraphHistorySynchronizer:
                 async with session.get(url) as resp:
                     data = await resp.read()
                     assert data is not None
-                    print(data.decode())
 
                     graph.parse(data=data.decode(), format='xml')
         except Exception as err:
@@ -110,10 +108,6 @@ class GraphingHistoryService(GService):
     async def on_start(self):
         await super().on_start()
         self.synchro = GraphHistorySynchronizer(self.hGraph)
-
-    async def declareIpfsComponents(self):
-        self.sqlService = p2psmartql.P2PSparQLService(self.hGraph)
-        await self.ipfsP2PService(self.sqlService)
 
     @ipfsOp
     async def trace(self, ipfsop,
@@ -232,7 +226,7 @@ class GraphingHistoryService(GService):
             msg = SparQLHeartbeatMessage.make()
             msg.graphs.append({
                 'graphIri': self.hGraph.identifier,
-                'sparqlEndpointAddr': self.sqlService.endpointAddr()
+                'smartqlEndpointAddr': self.sqlService.endpointAddr()
             })
 
             await self.rdfService.psService.send(msg)

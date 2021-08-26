@@ -206,7 +206,7 @@ class RDFStoresService(GService):
 
     async def onSparqlHeartBeat(self, message: SparQLHeartbeatMessage):
         for graphdef in message.graphs:
-            p2pEndpointRaw = graphdef['sparqlEndpointAddr']
+            p2pEndpointRaw = graphdef['smartqlEndpointAddr']
             iri = graphdef['graphIri']
 
             graph = self.graphByUri(iri)
@@ -214,7 +214,10 @@ class RDFStoresService(GService):
             if graph is None or not graph.synchronizer:
                 continue
 
-            await graph.synchronizer.syncFromRemote(iri, p2pEndpointRaw)
+            await graph.synchronizer.syncFromRemote(
+                iri, p2pEndpointRaw,
+                graphDescr=graphdef
+            )
 
     async def on_stop(self):
         log.debug('RDF stores: closing')
@@ -350,7 +353,11 @@ class RDFStoresService(GService):
 
                 msg.graphs.append({
                     'graphIri': graph.identifier,
-                    'sparqlEndpointAddr': service.endpointAddr()
+                    'smartqlEndpointAddr': service.endpointAddr(),
+                    'smartqlCredentials': {
+                        'user': service.mwAuth.smartqlUser,
+                        'password': service.mwAuth.smartqlPassword
+                    }
                 })
 
             await self.psService.send(msg)

@@ -95,14 +95,27 @@ exchSchema = {
                         "type": "string",
                         "pattern": r"\w{2,512}"
                     },
-                    "sparqlEndpointAddr": {
+                    "smartqlEndpointAddr": {
                         "type": "string",
                         "pattern": r"\w{2,512}"
+                    },
+                    "smartqlCredentials": {
+                        "type": "object",
+                        "properties": {
+                            "user": {
+                                "type": "string",
+                                "pattern": r"\w{1,64}"
+                            },
+                            "password": {
+                                "type": "string",
+                                "pattern": r"\w{1,256}"
+                            }
+                        }
                     }
                 },
                 "required": [
                     "graphIri",
-                    "sparqlEndpointAddr"
+                    "smartqlEndpointAddr"
                 ]
             }
         }
