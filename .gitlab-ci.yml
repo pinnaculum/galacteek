@@ -2,6 +2,7 @@ image: "registry.gitlab.com/galacteek/galacteek-docker-debian-base:latest"
 
 variables:
   DEBIAN_FRONTEND: noninteractive
+  DOCKER_REPOSITORY: "${CI_REGISTRY}/galacteek/${CI_PROJECT_NAME}"
 
   ASSETS_ROOT: "${CI_PROJECT_DIR}/assets"
   IPFS_BINPATH: "${CI_PROJECT_DIR}/ipfs-bin"
@@ -32,6 +33,7 @@ variables:
 stages:
   - prepare
   - build
+  - docker_x11vnc
   - release
 
 prepare:
@@ -207,3 +209,19 @@ release:
           --assets-link \
           "{\"name\" :\"$APPIMAGE_FILENAME\", \"url\": \"${APPIMAGE_ASSET_URL}\"}"
       fi
+
+docker_x11vnc:
+  image: docker:latest
+  stage: docker_x11vnc
+  services:
+    - docker:dind
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^master$/
+      when: always
+    - if: $CI_COMMIT_MESSAGE =~ /\[docker-x11\]/
+      when: always
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker build -f Dockerfile.x11vnc -t $DOCKER_REPOSITORY:latest-x11vnc .
+    - docker push $DOCKER_REPOSITORY:latest-x11vnc

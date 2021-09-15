@@ -1,0 +1,56 @@
+FROM python:3.7
+
+EXPOSE 5900 6099
+
+ENV X11VNC_PASSWORD "galacteek"
+ENV DEBIAN_FRONTEND "noninteractive"
+ENV QT_DEBUG_PLUGINS=1
+ENV QT_QPA_PLATFORM=xcb
+ENV DISPLAY=:1
+ENV XVFB_WHD=1024x768x16
+ENV QTWEBENGINE_DISABLE_SANDBOX=1
+
+RUN apt-get update
+RUN apt-get install -y libgl1-mesa-glx libnss3 libxtst6 libxext6 \
+	libasound2 libegl1-mesa libpulse-mainloop-glib0 libpulse0 \
+	qtchooser libzbar0
+RUN apt-get install -q -y --force-yes xvfb xorg dbus-x11 \
+	xfonts-100dpi xfonts-75dpi xfonts-cyrillic x11vnc fluxbox \
+	libxkbcommon-x11-0 libxkbcommon0 libgl1 xinit x11-xserver-utils \
+	x11-utils libxcb-xkb1 libxcb-icccm4 libxcb-composite0 \
+	libxcb-image0 libxcb-keysyms1 libxcb-render-util0 \
+	libxcb-xinerama0
+
+WORKDIR /usr/local
+
+# Install dependencies.
+ADD requirements.txt /usr/local
+RUN cd /usr/local && \
+    pip install -r requirements.txt
+
+# Get ipfs binary
+RUN wget http://dist.ipfs.io/go-ipfs/v0.9.1/go-ipfs_v0.9.1_linux-amd64.tar.gz
+RUN tar -xvf go-ipfs_v0.9.1_linux-amd64.tar.gz
+RUN cp go-ipfs/ipfs /usr/local/bin
+
+# Add source code.
+COPY README.rst COPYING LICENSE LICENSE.go-ipfs /usr/local/galacteek/
+COPY requirements*.txt setup.py galacteek.pro \
+	/usr/local/galacteek/
+COPY share /usr/local/galacteek/share
+COPY galacteek/ /usr/local/galacteek/galacteek
+
+COPY requirements.txt .
+COPY requirements-extra-markdown.txt .
+COPY requirements-ui-pyqt-5.15.txt .
+
+RUN pip install -r requirements.txt
+RUN pip install -r requirements-extra-markdown.txt
+RUN pip install -r requirements-ui-pyqt-5.15.txt
+
+RUN cd /usr/local/galacteek && \
+	python setup.py build install
+
+COPY .docker/x11vnc_start.sh /
+RUN chmod +x /x11vnc_start.sh
+CMD ["/x11vnc_start.sh", "galacteek"]
