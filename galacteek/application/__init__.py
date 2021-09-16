@@ -92,6 +92,7 @@ from galacteek.browser.schemes import MultiObjectHostSchemeHandler
 from galacteek.browser.schemes.ipid import IPIDSchemeHandler
 from galacteek.browser.schemes.i import ISchemeHandler
 from galacteek.browser.schemes.gemini import GeminiSchemeHandler
+from galacteek.browser.schemes.pronto import ProntoGraphsSchemeHandler
 
 from galacteek.browser import BrowserRuntimeObjects
 from galacteek.browser import browserSetup
@@ -1268,6 +1269,9 @@ class GalacteekApplication(QApplication):
                     'galacteek.application')
 
     async def ipfsDaemonInitDialog(self, dlg):
+        if self.cmdArgs.configAuto:
+            return dlg.options()
+
         await runDialogAsync(dlg)
 
         if dlg.result() == dlg.EXIT_QUIT:
@@ -1383,13 +1387,16 @@ class GalacteekApplication(QApplication):
 
             if not defaultExists:
                 while True:
-                    dlg = UserProfileInitDialog()
-                    await runDialogAsync(dlg)
+                    dlg = UserProfileInitDialog(
+                        automatic=self.cmdArgs.configAuto)
 
-                    if not dlg.result() == 1:
-                        await messageBoxAsync(
-                            'You need to create a profile')
-                        continue
+                    if not self.cmdArgs.configAuto:
+                        await runDialogAsync(dlg)
+
+                        if not dlg.result() == 1:
+                            await messageBoxAsync(
+                                'You need to create an identity')
+                            continue
 
                     idx, pDialog = ws.pushProgress('profile')
                     pDialog.spin()
@@ -1587,8 +1594,7 @@ class GalacteekApplication(QApplication):
         self.ipidSchemeHandler = IPIDSchemeHandler(self)
         self.iSchemeHandler = ISchemeHandler(self)
         self.geminiSchemeHandler = GeminiSchemeHandler(self)
-
-        # self.gSchemeHandler = GalacteekSchemeHandler(self)
+        self.prontoGSchemeHandler = ProntoGraphsSchemeHandler(self)
 
     def subUrl(self, path):
         """ Joins the gatewayUrl and path to form a new URL """

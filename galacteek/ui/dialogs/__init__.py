@@ -1910,7 +1910,7 @@ class IPFSDaemonInitDialog(QDialog):
 
 
 class UserProfileInitDialog(QDialog):
-    def __init__(self, showCancel=False, parent=None):
+    def __init__(self, showCancel=False, automatic=False, parent=None):
         super().__init__(parent=parent)
 
         self.app = QApplication.instance()
@@ -1943,6 +1943,9 @@ class UserProfileInitDialog(QDialog):
 
         if showCancel is False:
             self.ui.cancelButton.hide()
+
+        if automatic is True:
+            self.genRandomIdentity()
 
         self.ui.groupBox.setProperty('niceBox', True)
         self.app.repolishWidget(self.ui.groupBox)
@@ -1979,6 +1982,9 @@ class UserProfileInitDialog(QDialog):
                 'background-color: red')
 
     def onGenerateRandomUser(self):
+        self.genRandomIdentity()
+
+    def genRandomIdentity(self):
         from random_username.generate import generate_username
 
         try:

@@ -1,14 +1,16 @@
 FROM python:3.7
 
 EXPOSE 5900 6099
+EXPOSE 5001
+EXPOSE 8080
 
 ENV X11VNC_PASSWORD "galacteek"
 ENV DEBIAN_FRONTEND "noninteractive"
-ENV QT_DEBUG_PLUGINS=1
 ENV QT_QPA_PLATFORM=xcb
 ENV DISPLAY=:1
-ENV XVFB_WHD=1024x768x16
+ENV XVFB_WHD=1024x768x24
 ENV QTWEBENGINE_DISABLE_SANDBOX=1
+# ENV QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu-compositing"
 
 RUN apt-get update
 RUN apt-get install -y libgl1-mesa-glx libnss3 libxtst6 libxext6 \
@@ -51,6 +53,9 @@ RUN pip install -r requirements-ui-pyqt-5.15.txt
 RUN cd /usr/local/galacteek && \
 	python setup.py build install
 
+RUN useradd -m -u 1000 galacteek
+
 COPY .docker/x11vnc_start.sh /
 RUN chmod +x /x11vnc_start.sh
-CMD ["/x11vnc_start.sh", "galacteek"]
+USER galacteek
+CMD ["/x11vnc_start.sh", "galacteek", "--config-ipfs-auto", "-d"]

@@ -3,9 +3,7 @@ import secrets
 
 from galacteek import AsyncSignal
 
-from galacteek.core import uid4
-
-from galacteek.ipfs.pubsub import TOPIC_RDFBAZAAR
+from galacteek.ipfs.pubsub import TOPIC_LD_PRONTO
 from galacteek.ipfs.pubsub.service import JSONPubsubService
 from galacteek.ipfs.pubsub.messages.ld import *
 
@@ -14,12 +12,11 @@ class RDFBazaarService(JSONPubsubService):
     def __init__(self, ipfsCtx, **kw):
         self._igraphs = kw.pop('igraphs', {})
 
-        super().__init__(ipfsCtx, TOPIC_RDFBAZAAR,
-                         runPeriodic=True,
+        super().__init__(ipfsCtx, TOPIC_LD_PRONTO,
+                         runPeriodic=False,
                          filterSelfMessages=True, **kw)
 
         self.__serviceToken = secrets.token_hex(64)
-        self.curRevUid = uid4()
 
         self.sExch = AsyncSignal(RDFGraphsExchangeMessage)
         self.sSparql = AsyncSignal(SparQLHeartbeatMessage)
@@ -28,7 +25,7 @@ class RDFBazaarService(JSONPubsubService):
         msgType = msg.get('msgtype', None)
 
         peerCtx = self.ipfsCtx.peers.getByPeerId(sender)
-        if not peerCtx and 0:
+        if not peerCtx:
             self.debug('Message from unauthenticated peer: {}'.format(
                 sender))
             return

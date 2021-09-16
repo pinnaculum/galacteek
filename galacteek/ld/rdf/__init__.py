@@ -65,6 +65,7 @@ class Common(object):
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
         self.loop = asyncio.get_event_loop()
+        self.lock = asyncio.Lock()
 
         self.synchronizer = None
         self.tUpRules = []

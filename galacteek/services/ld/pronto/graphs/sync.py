@@ -78,9 +78,9 @@ class SmartQLClient:
 
                     graph.parse(data=gdata, format=params['fmt'])
         except Exception as err:
-            print(str(err))
+            log.debug(f'resource graph pull error for {iri}: {err}')
         else:
-            print(f'Graph with IRI {iri}: retrieved')
+            log.debug(f'resource graph pull for {iri}: success')
             return gdata
 
 
@@ -125,9 +125,7 @@ class GraphExportSynchronizer:
 
                     graph.parse(data=gdata, format=params['fmt'])
         except Exception as err:
-            print(str(err))
-        else:
-            print(f'Graph with IRI {iri}: synced from export')
+            log.debug(f'Graph export sync error for {iri}: {err}')
 
 
 class GraphSparQLSynchronizer:
@@ -194,9 +192,7 @@ class GraphSemChainSynchronizer:
         else:
             auth = aiohttp.BasicAuth('smartql', 'password')
 
-        smartql = SmartQLClient(
-            dial, auth=auth
-        )
+        smartql = SmartQLClient(dial, auth=auth)
 
         chains = await hGraph.rexec(self.ontoloChainsList)
 
@@ -217,6 +213,9 @@ class GraphSemChainSynchronizer:
         reply = await smartql.spql.query(str(q))
 
         try:
+            if not reply:
+                raise Exception(f'Chains listing {iri}: empty reply')
+
             for res in reply['results']['bindings']:
                 uri = URIRef(res['uri']['value'])
 
@@ -249,11 +248,12 @@ class GraphSemChainSynchronizer:
                     })
                     chains.append(uri)
         except Exception as err:
-            print(str(err))
-            pass
+            log.debug(f'OntoloSync: {iri}: error: {err}')
 
         for curi in chains:
+            log.debug(f'OntoloSync: {iri}: synchronizing chain {curi}')
             tsubj = f'urn:ontolochain:status:{curi}'
+
             await self.syncChain(
                 hGraph,
                 smartql,
@@ -268,6 +268,10 @@ class GraphSemChainSynchronizer:
                         chainUri: URIRef,
                         trackerUri):
         tracker = hGraph.resource(trackerUri)
+
+        if not tracker:
+            return
+
         predCurObj = tUriSemObjCurrent
 
         for cn in range(0, 16):
@@ -306,7 +310,6 @@ class GraphSemChainSynchronizer:
 
                 uri = URIRef(res['uri']['value'])
 
-                # ex = hGraph.resource(str(uri))
                 ex = hGraph.value(subject=uri, predicate=RDF.type)
                 if not ex:
                     # Fetch the object record
@@ -318,19 +321,26 @@ class GraphSemChainSynchronizer:
                     if await self.processObject(uri, gttl):
                         # Eat
                         hGraph.parse(data=gttl, format='ttl')
+                    else:
+                        log.debug(f'{uri}: failed to process ?!')
                 else:
                     log.debug(f'{uri}: Already in hgraph')
 
                 try:
-                    tracker.remove(
-                        p=predCurObj
-                    )
-                    tracker.add(
-                        p=predCurObj,
-                        o=uri
-                    )
+                    async with hGraph.lock:
+                        tracker.remove(
+                            p=predCurObj
+                        )
+                        tracker.add(
+                            p=predCurObj,
+                            o=uri
+                        )
                 except Exception as err:
-                    print(err)
+                    log.debug(
+                        f'{chainUri}: update to {uri} error: {err}')
+                else:
+                    log.debug(
+                        f'{chainUri}: advanced to {uri}')
 
             if objCount == 0:
                 log.debug(f'{chainUri}: synced')

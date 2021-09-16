@@ -246,19 +246,19 @@ class SmartQLAuthMiddleware(BasicAuthMiddleware):
             password == self.smartqlPassword
 
 
-class P2PSparQLService(P2PService):
+class P2PSmartQLService(P2PService):
     """
     SparQL IPFS P2P service
 
     The P2P service name is in the following form:
 
-        /x/smartql/{graph-iri}/{proto-version}
+        /x/smartql/{chain-env}/{graph-iri}/{proto-version}
 
-    e.g "/x/smartql/urn:ig:graph0/1.0"
+    e.g "/x/smartql/beta/urn:ig:graph0/1.1"
 
     """
 
-    def __init__(self, graph, config=None):
+    def __init__(self, chainEnv, graph, config=None):
         self.graph = graph
         self.config = config if config else SparQLServiceConfig()
 
@@ -268,8 +268,8 @@ class P2PSparQLService(P2PService):
             'smartql',
             listenerClass=SparQLListener,
             description='SmartQL service',
-            protocolName=f'smartql/{graph.identifier}',
-            protocolVersion='1.0',
+            protocolName=f'smartql/{chainEnv}/{graph.identifier}',
+            protocolVersion='1.1',
             listenRange=('127.0.0.1', range(49462, 49482)),
         )
 

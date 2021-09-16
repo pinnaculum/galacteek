@@ -3,7 +3,6 @@ import otsrdflib
 import io
 
 from galacteek import log
-from galacteek.config.util import environment as cfgEnvironment
 from galacteek.services import GService
 
 from galacteek.ipfs import ipfsOp
@@ -46,6 +45,10 @@ class RDFStoresService(GService):
     def historyService(self):
         return GService.byDotName.get('ld.pronto.graphs.history')
 
+    @property
+    def chainEnv(self):
+        return self.app.cmdArgs.prontoChainEnv
+
     def on_init(self):
         self._graphs = {}
         self._synchros = {}
@@ -68,10 +71,8 @@ class RDFStoresService(GService):
     async def on_start(self):
         await super().on_start()
 
-        env = cfgEnvironment()
-
         self.storesPath = self.rootPath.joinpath('stores').joinpath(
-            env['rdfgraphenv'])
+            self.chainEnv)
         self.storesPath.mkdir(parents=True, exist_ok=True)
 
         await self.initializeGraphs()
@@ -154,7 +155,8 @@ class RDFStoresService(GService):
                 except Exception:
                     spconfig = p2psmartql.SparQLServiceConfig()
 
-                srv = p2psmartql.P2PSparQLService(graph, config=spconfig)
+                srv = p2psmartql.P2PSmartQLService(
+                    self.chainEnv, graph, config=spconfig)
                 await self.ipfsP2PService(srv)
             elif srvtype == 'sync':
                 use = cfg.get('use', None)
@@ -205,6 +207,10 @@ class RDFStoresService(GService):
         await self.ipfsPubsubService(self.psService)
 
     async def onSparqlHeartBeat(self, message: SparQLHeartbeatMessage):
+        if message.prontoChainEnv != self.chainEnv:
+            log.debug(f'{message.prontoChainEnv}: pronto chain mismatch')
+            return
+
         for graphdef in message.graphs:
             p2pEndpointRaw = graphdef['smartqlEndpointAddr']
             iri = graphdef['graphIri']
@@ -275,9 +281,6 @@ class RDFStoresService(GService):
             if not objGraph:
                 return False
 
-            # Purge blank nodes
-            # purgeBlank(graph)
-
             ttl = io.BytesIO()
             objGraph.serialize(ttl, 'ttl')
             ttl.seek(0, 0)
@@ -344,10 +347,10 @@ class RDFStoresService(GService):
         while not self.should_stop:
             await asyncio.sleep(60)
 
-            msg = SparQLHeartbeatMessage.make()
+            msg = SparQLHeartbeatMessage.make(self.chainEnv)
 
             for service in reversed(self._children):
-                if not isinstance(service, p2psmartql.P2PSparQLService):
+                if not isinstance(service, p2psmartql.P2PSmartQLService):
                     continue
 
                 graph = service.graph

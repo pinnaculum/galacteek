@@ -25,7 +25,7 @@ def environment():
         'env': os.environ.get(
             'GALACTEEK_ENV', 'mainnet'),
         'rdfgraphenv': os.environ.get(
-            'GALACTEEK_RDFGRAPH_ENV', 'beta'),
+            'GALACTEEK_PRONTO_CHAINENV', 'beta'),
         'ethenv': os.environ.get(
             'GALACTEEK_ETHNETWORK_ENV', 'rinkeby'),
     }

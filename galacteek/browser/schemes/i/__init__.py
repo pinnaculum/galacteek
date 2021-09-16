@@ -15,7 +15,6 @@ class ISchemeHandler(NativeIPFSSchemeHandler):
 
     @cached_property
     def connector(self):
-        # print(f'Using socket {self.iService.socketPath}')
         return aiohttp.UnixConnector(
             path=self.iService.socketPath
         )

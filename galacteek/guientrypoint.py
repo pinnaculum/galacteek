@@ -189,6 +189,17 @@ def buildArgsParser(fromParser=None):
         dest='configDefault',
         help="Start with default configuration")
     parser.add_argument(
+        '--config-ipfs-auto',
+        action='store_true',
+        default=False,
+        dest='configAuto',
+        help="Configure IPFS and IPID automatically (no dialogs)")
+    parser.add_argument(
+        '--pronto-chain',
+        default='beta',
+        dest='prontoChainEnv',
+        help="Pronto chain name")
+    parser.add_argument(
         '--enable-orbital',
         action='store_true',
         dest='enableorbital',
@@ -253,6 +264,14 @@ def gArgsParse():
 
     os.environ['GALACTEEK_ETHNETWORK_ENV'] = args.ethnet
     os.environ['GALACTEEK_ENV'] = args.env
+
+    ename = 'GALACTEEK_PRONTO_CHAINENV'
+    val = os.environ.get(ename)
+
+    if val:
+        args.prontoChainEnv = val
+    else:
+        os.environ[ename] = args.prontoChainEnv
 
     if args.forceFusion and 'QT_STYLE_OVERRIDE' not in os.environ:
         os.environ['QT_STYLE_OVERRIDE'] = 'Fusion'

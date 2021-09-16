@@ -121,6 +121,10 @@ class GraphingHistoryService(GService):
         profile = ipfsCtx.currentProfile
         ipid = await profile.userInfo.ipIdentifier()
 
+        if not ipid:
+            log.debug('No IPID found')
+            return
+
         h = hashlib.sha1()
         h.update(iPath.ipfsUrl.encode())
         nodeId = f'urn:ontolorecord:{h.hexdigest()}'

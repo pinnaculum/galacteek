@@ -163,6 +163,8 @@ release:
       when: always
     - if: $CI_COMMIT_MESSAGE =~ /\[deploy\]/
       when: always
+    - if: $CI_COMMIT_MESSAGE =~ /\[all\]/
+      when: always
   script:
     - source $GALACTEEK_ENV_FILE
     - source $ARTIFACT_RELEASE
@@ -216,12 +218,14 @@ docker_x11vnc:
   services:
     - docker:dind
   rules:
-    - if: $CI_COMMIT_BRANCH =~ /^master$/
-      when: always
     - if: $CI_COMMIT_MESSAGE =~ /\[docker-x11\]/
+      when: always
+    - if: $CI_COMMIT_MESSAGE =~ /\[all\]/
       when: always
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
-    - docker build -f Dockerfile.x11vnc -t $DOCKER_REPOSITORY:latest-x11vnc .
-    - docker push $DOCKER_REPOSITORY:latest-x11vnc
+    - DOCKER_TAG="${CI_COMMIT_BRANCH}-latest-x11vnc"
+
+    - docker build -f Dockerfile.x11vnc -t $DOCKER_REPOSITORY:$DOCKER_TAG .
+    - docker push $DOCKER_REPOSITORY:$DOCKER_TAG

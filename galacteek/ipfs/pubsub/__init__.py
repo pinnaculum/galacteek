@@ -5,6 +5,7 @@ TOPIC_CHAT = 'galacteek.chat'
 TOPIC_HASHMARKS = 'galacteek.hashmarks'
 TOPIC_DAGEXCH = 'galacteek.dagexchange'
 TOPIC_RDFBAZAAR = 'galacteek.ld.bazaar'
+TOPIC_LD_PRONTO = 'galacteek.ld.pronto'
 
 TOPIC_ENC_CHAT_RSAAES = 'galacteek.rsaenc.pubchat'
 TOPIC_ENC_CHAT_CURVE = 'galacteek.c25.pubchat'

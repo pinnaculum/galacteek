@@ -76,6 +76,10 @@ SCHEME_DISTRIBUTED = 'd'
 SCHEME_PALACE = 'palace'
 SCHEME_MANUAL = 'manual'
 
+# Pronto schemes
+SCHEME_PRONTO = 'pronto'
+SCHEME_PRONTO_GRAPHS = 'prontog'
+
 SCHEME_CHROMIUM = 'chromium'
 
 
@@ -234,6 +238,11 @@ def initializeSchemes():
         SCHEME_GEMINI,
         syntax=QWebEngineUrlScheme.Syntax.Host,
         flags=defaultSchemeFlags
+    )
+
+    declareUrlScheme(
+        SCHEME_PRONTO_GRAPHS,
+        syntax=QWebEngineUrlScheme.Syntax.Path
     )
 
     dappsRegisterSchemes()

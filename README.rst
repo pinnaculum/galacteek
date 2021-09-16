@@ -1,4 +1,4 @@
-.. image:: https://gitlab.com/galacteek/galacteek/-/raw/master/share/icons/galacteek-128.png
+.. image:: https://gitlab.com/galacteek/galacteek/-/raw/master/share/icons/galacteek-incandescent-128.png
     :align: center
 
 :info: A multi-platform browser and semantic agent for the distributed web
@@ -38,6 +38,32 @@ If you run into an issue with the installer, `please create an issue here <https
 
 You'll need to have *git* installed to sync hashmarks repositories.
 
+Docker
+======
+
+Docker images are available. They run the full GUI inside a virtual
+Xorg server (using *Xvfb*). A *VNC* server runs on TCP port **5900** of
+the container, just use a regular *VNC* client to access the interface.
+The password to access the *VNC* service is printed to the console when
+starting the container.
+
+Pull the image and run it with::
+
+    docker pull registry.gitlab.com/galacteek/galacteek:pimp-my-dweb-latest-x11vnc
+    docker run -p 5900:5900 -t registry.gitlab.com/galacteek/galacteek:pimp-my-dweb-latest-x11vnc
+
+If you want to persist the container's *galacteek* data on your system,
+use the following::
+
+    mkdir /usr/local/galacteek-docker
+    docker run -p 5900:5900 -v /usr/local/galacteek-docker:/home/galacteek -t registry.gitlab.com/galacteek/galacteek:pimp-my-dweb-latest-x11vnc
+
+Open your *VNC* client using the container's IP address (port *5900*)
+using the password issued on the container's console.
+
+You can view all the available docker images
+`here in the container registry <https://gitlab.com/galacteek/galacteek/container_registry/2285145>`_.
+
 Sponsor this project
 ====================
 
@@ -64,11 +90,6 @@ Alternatively, from the *galacteek* main window, go to the *Information* menu
 on the top right and select *About*. Just click on the *Author*
 link (**cipres**) and it will automatically start the BitMessage_
 composer with my BitMessage address.
-
-Screencasts
-===========
-
-See `the screencasts section on the website <https://galacteek.gitlab.io/#screncasts>`_
 
 Screenshots
 ===========

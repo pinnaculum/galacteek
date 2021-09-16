@@ -86,6 +86,11 @@ exchSchema = {
         "date": {"type": "string"},
         "rev": {"type": "string"},
 
+        "prontoChainEnv": {
+            "type": "string",
+            "pattern": r"[a-z]{3,12}"
+        },
+
         "graphs": {
             "type": "array",
             "items": {
@@ -120,7 +125,7 @@ exchSchema = {
             }
         }
     },
-    "required": ["msgtype", "graphs"]
+    "required": ["msgtype", "graphs", "prontoChainEnv"]
 }
 
 
@@ -134,11 +139,12 @@ class SparQLHeartbeatMessage(PubsubMessage):
     schema = exchSchema
 
     @staticmethod
-    def make():
+    def make(prontoEnv):
         msg = SparQLHeartbeatMessage({
             'msgtype': SparQLHeartbeatMessage.TYPE,
             'version': 1,
             'date': utcDatetimeIso(),
+            'prontoChainEnv': prontoEnv,
             'graphs': []
         })
 
@@ -147,6 +153,10 @@ class SparQLHeartbeatMessage(PubsubMessage):
     @property
     def revision(self):
         return self.jsonAttr('rev')
+
+    @property
+    def prontoChainEnv(self):
+        return self.jsonAttr('prontoChainEnv')
 
     @property
     def graphs(self):
