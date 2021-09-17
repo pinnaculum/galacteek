@@ -1,5 +1,5 @@
+from galacteek import services
 from galacteek.did.ipid.services import IPService
-from galacteek.ld.iri import *
 
 
 class DwebPassportService(IPService):
@@ -11,8 +11,10 @@ class DwebPassportService(IPService):
 
 
 async def create(ipid):
-    iriPassport = objectRandomIri('DwebPassport')
-    iriPerson = objectRandomIri('Person')
+    iService = services.getByDotName('dweb.schemes.i')
+
+    iriPassport = iService.iriGenObject('DwebPassport')
+    iriPerson = iService.iriGenObject('Person')
 
     return await ipid.addServiceContexted({
         'id': ipid.didUrl(path='/passport'),

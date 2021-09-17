@@ -8,4 +8,4 @@ add your nickname or name and GitHub profile URL.
 Core
 ----
 
-- `cipres <https://github.com/pinnaculum>`_
+- `cipres <https://gitlab.com/cipres>`_

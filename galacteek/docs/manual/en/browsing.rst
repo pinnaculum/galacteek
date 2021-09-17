@@ -159,6 +159,17 @@ path, use the *ensr* scheme.
 Go to `ens://blog.almonit.eth <ens://blog.almonit.eth>`_ to find a list
 of some ENS+IPFS websites.
 
+gemini://
+^^^^^^^^^
+
+You can browse Gemini_ capsules using the *gemini* URL scheme.
+
+prontog:/
+^^^^^^^^^
+
+The *prontog* URL scheme gives you access to the *pronto* RDF
+graph exports (in *turtle* (ttl) or *XML* formats).
+
 manual:/
 ^^^^^^^^
 
@@ -226,3 +237,4 @@ a *Web3* instance (from the *web3.js* JS library) available as
 
 .. _ENS: https://ens.domains/
 .. _DuckDuckGo: https://duckduckgo.com
+.. _Gemini: https://gemini.circumlunar.space/

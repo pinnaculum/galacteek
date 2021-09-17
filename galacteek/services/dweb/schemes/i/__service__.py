@@ -1,6 +1,7 @@
 from aiohttp import web
 
 from galacteek import services
+from galacteek.core import uid4
 from galacteek.ld import uriTermExtract
 from galacteek.ld.sparql import uri_objtype
 from rdflib.plugins.sparql import prepareQuery
@@ -66,8 +67,15 @@ class GraphsView(web.View):
 class IService(services.GService):
     name = 'i'
 
+    @property
+    def prontoService(self):
+        return services.getByDotName('ld.pronto.graphs')
+
     def on_init(self):
         self.socketPath = self.rootPath.joinpath('i.sock')
+
+    def iriGenObject(self, oclass):
+        return f'i:/{self.prontoService.chainEnv}/rsc/{oclass}/{uid4()}'
 
     async def on_start(self):
         await super().on_start()

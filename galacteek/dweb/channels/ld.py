@@ -19,6 +19,10 @@ class LDInterface(object):
     def rdfService(self):
         return services.getByDotName('ld.pronto.graphs')
 
+    @property
+    def iService(self):
+        return services.getByDotName('dweb.schemes.i')
+
     async def ipfsToRdf(self, app, loop, ipfsPath):
         ipfsop = app.ipfsOperatorForLoop(loop)
 
@@ -92,13 +96,17 @@ class LDHandler(AsyncChanObject, LDInterface):
     Linked Data channel interface
     """
 
+    @property
+    def iService(self):
+        return services.getByDotName('dweb.schemes.i')
+
     @pyqtSlot(str, result=bool)
     def rdfMe(self, ipfsObjPath: str):
         return self.tc(self.ipfsToRdf, IPFSPath(ipfsObjPath))
 
     @pyqtSlot(str, result=str)
     def iObjectUriGen(self, oclass):
-        return objectRandomIri(oclass)
+        return self.iService.iriGenObject(oclass)
 
     @pyqtSlot(str, QVariant, result=str)
     def iObjectCreate(self, oid, obj):

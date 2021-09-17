@@ -1,6 +1,8 @@
 import zlib
 import attr
 import aiohttp
+from cachetools import cached
+from cachetools import TTLCache
 
 from rdflib import RDF
 from rdflib import URIRef
@@ -164,6 +166,7 @@ class GraphSemChainSynchronizer:
             return await self._sync(ipfsop, iri, dial,
                                     graphDescr=graphDescr)
 
+    @cached(TTLCache(3, 90))
     def ontoloChainsList(self, hGraph):
         return list(hGraph.subjects(
             predicate=RDF.type,
