@@ -19,7 +19,7 @@ class RDFBazaarService(JSONPubsubService):
         self.__serviceToken = secrets.token_hex(64)
 
         self.sExch = AsyncSignal(RDFGraphsExchangeMessage)
-        self.sSparql = AsyncSignal(SparQLHeartbeatMessage)
+        self.sSparql = AsyncSignal(str, SparQLHeartbeatMessage)
 
     async def processJsonMessage(self, sender, msg, msgDbRecord=None):
         msgType = msg.get('msgtype', None)
@@ -37,7 +37,7 @@ class RDFBazaarService(JSONPubsubService):
         sMsg = SparQLHeartbeatMessage(msg)
 
         if sMsg.valid():
-            await self.sSparql.emit(sMsg)
+            await self.sSparql.emit(sender, sMsg)
 
     async def handleExchangeMessage(self, sender, msg, msgDbRecord):
         eMsg = RDFGraphsExchangeMessage(msg)

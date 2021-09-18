@@ -1,11 +1,15 @@
 import zlib
 import attr
 import aiohttp
+import async_timeout
+
 from cachetools import cached
 from cachetools import TTLCache
 
 from rdflib import RDF
 from rdflib import URIRef
+from rdflib import Literal
+from rdflib.namespace import XSD
 
 from galacteek import log
 from galacteek.services import GService
@@ -14,6 +18,8 @@ from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
 
 from galacteek.core import runningApp
+from galacteek.core import utcDatetimeIso
+from galacteek.core import utcDatetime
 from galacteek.ld import gLdDefaultContext
 from galacteek.ld.rdf import BaseGraph
 from galacteek.ld.rdf.terms import *
@@ -36,7 +42,10 @@ class GraphSparQLSyncConfig:
 
 @attr.s(auto_attribs=True)
 class GraphSemChainSyncConfig:
-    type: str = 'semchain'
+    type: str = 'ontolochain'
+    recordsPerSync: int = 256
+    recordFetchTimeout: int = 30
+    syncIntervalMin: int = 60
 
 
 class SmartQLClient:
@@ -46,7 +55,7 @@ class SmartQLClient:
         self.auth = auth if auth else aiohttp.BasicAuth('smartql', 'default')
         self.spql = Sparkie(self.dial.httpUrl('/sparql'), auth=self.auth)
 
-    async def resource(self, iri, context=None):
+    async def resource(self, iri, context=None, timeout=60):
         rdfService = GService.byDotName.get('ld.pronto.graphs')
         graph = rdfService.graphByUri(iri)
 
@@ -65,20 +74,21 @@ class SmartQLClient:
         }
 
         try:
-            async with aiohttp.ClientSession(headers=headers,
-                                             auth=self.auth) as session:
-                async with session.get(url, params=params) as resp:
-                    data = await resp.read()
-                    assert data is not None
+            with async_timeout.timeout(timeout):
+                async with aiohttp.ClientSession(headers=headers,
+                                                 auth=self.auth) as session:
+                    async with session.get(url, params=params) as resp:
+                        data = await resp.read()
+                        assert data is not None
 
-                    ctype = resp.headers.get('Content-Type')
+                        ctype = resp.headers.get('Content-Type')
 
-                    if ctype == 'application/gzip':
-                        gdata = zlib.decompress(data).decode()
-                    else:
-                        gdata = data.decode()
+                        if ctype == 'application/gzip':
+                            gdata = zlib.decompress(data).decode()
+                        else:
+                            gdata = data.decode()
 
-                    graph.parse(data=gdata, format=params['fmt'])
+                        graph.parse(data=gdata, format=params['fmt'])
         except Exception as err:
             log.debug(f'resource graph pull error for {iri}: {err}')
         else:
@@ -91,7 +101,9 @@ class GraphExportSynchronizer:
         self.config = config if config else GraphExportSyncConfig()
 
     @ipfsOp
-    async def syncFromRemote(self, ipfsop, iri: str, p2pEndpoint: str,
+    async def syncFromRemote(self, ipfsop,
+                             peerId: str,
+                             iri: str, p2pEndpoint: str,
                              graphDescr=None):
         async with ipfsop.p2pDialerFromAddr(p2pEndpoint) as dial:
             if dial.failed:
@@ -135,7 +147,10 @@ class GraphSparQLSynchronizer:
         self.config = config if config else GraphSparQLSyncConfig()
 
     @ipfsOp
-    async def syncFromRemote(self, ipfsop, iri: str, p2pEndpoint: str,
+    async def syncFromRemote(self, ipfsop,
+                             peerId: str,
+                             iri: str,
+                             p2pEndpoint: str,
                              graphDescr=None):
         async with ipfsop.p2pDialerFromAddr(p2pEndpoint) as dial:
             if dial.failed:
@@ -155,15 +170,19 @@ class GraphSemChainSynchronizer:
     def __init__(self, config=None):
         super().__init__()
         self.config = config if config else GraphSemChainSyncConfig()
+        self._chainSync = {}
 
     @ipfsOp
-    async def syncFromRemote(self, ipfsop, iri: str, p2pEndpoint: str,
+    async def syncFromRemote(self, ipfsop,
+                             peerId: str,
+                             iri: str,
+                             p2pEndpoint: str,
                              graphDescr=None):
         async with ipfsop.p2pDialerFromAddr(p2pEndpoint) as dial:
             if dial.failed:
                 return False
 
-            return await self._sync(ipfsop, iri, dial,
+            return await self._sync(ipfsop, peerId, iri, dial,
                                     graphDescr=graphDescr)
 
     @cached(TTLCache(3, 90))
@@ -173,7 +192,7 @@ class GraphSemChainSynchronizer:
             object=str(tUriOntoloChain)
         ))
 
-    async def _sync(self, ipfsop, iri, dial, graphDescr=None):
+    async def _sync(self, ipfsop, peerId, iri, dial, graphDescr=None):
         curProfile = ipfsop.ctx.currentProfile
         ipid = await curProfile.userInfo.ipIdentifier()
         rdfService = GService.byDotName.get('ld.pronto.graphs')
@@ -254,15 +273,23 @@ class GraphSemChainSynchronizer:
             log.debug(f'OntoloSync: {iri}: error: {err}')
 
         for curi in chains:
-            log.debug(f'OntoloSync: {iri}: synchronizing chain {curi}')
             tsubj = f'urn:ontolochain:status:{curi}'
 
-            await self.syncChain(
-                hGraph,
-                smartql,
-                curi,
-                tsubj
-            )
+            syncing = self._chainSync.get(curi, False)
+
+            if not syncing:
+                log.debug(f'OntoloSync: {iri}: synchronizing chain {curi}')
+
+                self._chainSync[curi] = True
+                await self.syncChain(
+                    hGraph,
+                    smartql,
+                    curi,
+                    tsubj
+                )
+                self._chainSync[curi] = False
+            else:
+                log.debug(f'OntoloSync: {iri}: already syncing {curi}')
 
         await smartql.spql.close()
 
@@ -270,14 +297,34 @@ class GraphSemChainSynchronizer:
                         smartql,
                         chainUri: URIRef,
                         trackerUri):
+        """
+        Sync the ontolochain represented by chainUri
+        """
+
+        now = utcDatetime()
         tracker = hGraph.resource(trackerUri)
 
         if not tracker:
-            return
+            return False
 
         predCurObj = tUriSemObjCurrent
 
-        for cn in range(0, 16):
+        dLast, lastSynced = None, tracker.value(p=tUriOntoloChainDateSynced)
+        try:
+            dLast = lastSynced.toPython()
+        except Exception:
+            pass
+        else:
+            log.debug(f'ontoloSync({chainUri}): date last synced: {dLast}')
+
+        if dLast:
+            # Calculate delta
+            # TODO: prevent oversync here
+            delta = now - dLast
+            log.debug(
+                f'ontoloSync({chainUri}): sync delta: {delta.seconds} secs')
+
+        for cn in range(0, self.config.recordsPerSync):
             objCount = 0
 
             w = where([
@@ -294,7 +341,7 @@ class GraphSemChainSynchronizer:
             else:
                 oIri = '<urn:ontolorecord:0>'
 
-            log.debug(f'syncOntoloChain ({chainUri}): current is {oIri}')
+            log.debug(f'ontoloSync({chainUri}): current is {curObject}')
 
             w.add_triples(
                 triples=[
@@ -318,19 +365,32 @@ class GraphSemChainSynchronizer:
                     # Fetch the object record
                     gttl = await smartql.resource(
                         str(uri),
-                        context=str(tUriOntoloChainRecord)
+                        context=str(tUriOntoloChainRecord),
+                        timeout=self.config.recordFetchTimeout
                     )
+
+                    if not gttl:
+                        # Can't fetch the record's graph ..
+                        log.debug(
+                            f'ontoloSync({chainUri}): '
+                            f'{uri} record: failed to fetch!')
+                        raise Exception(
+                            f'{uri}: failed to pull graph from peer')
 
                     if await self.processObject(uri, gttl):
                         # Eat
-                        hGraph.parse(data=gttl, format='ttl')
+                        async with hGraph.lock:
+                            hGraph.parse(data=gttl, format='ttl')
                     else:
+                        # Should be fatal here ?
                         log.debug(f'{uri}: failed to process ?!')
+                        break
                 else:
                     log.debug(f'{uri}: Already in hgraph')
 
                 try:
                     async with hGraph.lock:
+                        # Store URI of new record
                         tracker.remove(
                             p=predCurObj
                         )
@@ -338,16 +398,27 @@ class GraphSemChainSynchronizer:
                             p=predCurObj,
                             o=uri
                         )
+
+                        # Store sync date
+                        tracker.remove(
+                            p=tUriOntoloChainDateSynced
+                        )
+                        tracker.add(
+                            p=tUriOntoloChainDateSynced,
+                            o=Literal(utcDatetimeIso(), datatype=XSD.dateTime)
+                        )
                 except Exception as err:
                     log.debug(
                         f'{chainUri}: update to {uri} error: {err}')
                 else:
                     log.debug(
-                        f'{chainUri}: advanced to {uri}')
+                        f'{chainUri}: advanced record to {uri}')
 
             if objCount == 0:
-                log.debug(f'{chainUri}: synced')
+                log.debug(f'{chainUri}: sync finished')
                 break
+
+        return True
 
     async def processObject(self, uri: URIRef, oTtl: str):
         app = runningApp()
@@ -361,6 +432,7 @@ class GraphSemChainSynchronizer:
             await app.s.rdfStore(IPFSPath(path))
         except Exception as err:
             log.debug(f'process {uri}: ERROR: {err}')
+            return False
         else:
             log.debug(f'process {uri}: SUCCESS')
             return True

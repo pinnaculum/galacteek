@@ -1,3 +1,9 @@
+import pydotplus
+from io import StringIO
+from io import BytesIO
+from rdflib.tools.rdf2dot import rdf2dot
+
+from galacteek import log
 from galacteek.ipfs import ipfsOp
 
 from galacteek.browser.schemes import BaseURLSchemeHandler
@@ -9,9 +15,10 @@ from PyQt5.QtCore import QUrlQuery
 
 class ProntoGraphsSchemeHandler(BaseURLSchemeHandler):
     """
-    Renders pronto graphs in the browser (in ttl or xml)
+    Renders pronto graphs in the browser (in ttl, xml or via pydot)
 
     prontog:/urn:ipg:g:c0?format=xml
+    prontog:/urn:ipg:g:c0?format=dot
     prontog:/urn:ipg:g:h0
     """
     @property
@@ -28,6 +35,7 @@ class ProntoGraphsSchemeHandler(BaseURLSchemeHandler):
         comps = path.lstrip('/').split('/')
 
         try:
+            # Graph's URI is the first component of the path
             graphUri = comps.pop(0)
             graph = self.prontoService.graphByUri(graphUri)
 
@@ -40,6 +48,30 @@ class ProntoGraphsSchemeHandler(BaseURLSchemeHandler):
                     'text/plain',
                     await graph.ttlize()
                 )
+            elif fmt in ['dot', 'image']:
+                # Render with pydotplus
+
+                def dotRender():
+                    png = BytesIO()
+                    stream = StringIO()
+                    rdf2dot(graph, stream)
+                    dg = pydotplus.graph_from_dot_data(stream.getvalue())
+
+                    dg.set_size('1024,768!')
+
+                    dg.write(png, format='png')
+                    png.seek(0, 0)
+
+                    return png
+
+                png = await self.app.rexec(dotRender)
+                if png:
+                    return self.serveContent(
+                        request.reqUid,
+                        request,
+                        'image/png',
+                        png.getvalue()
+                    )
             else:
                 return self.serveContent(
                     request.reqUid,
@@ -47,5 +79,6 @@ class ProntoGraphsSchemeHandler(BaseURLSchemeHandler):
                     'application/xml',
                     await graph.xmlize()
                 )
-        except Exception:
+        except Exception as err:
+            log.debug(f'{path}: error rendering graph: {err}')
             return self.reqFailed(request)

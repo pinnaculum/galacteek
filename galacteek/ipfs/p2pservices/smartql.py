@@ -43,8 +43,8 @@ class SparQLSiteHandler:
 
     def __init__(self, service):
         self.throttler = Throttler(
-            rate_limit=30,
-            period=5.0,
+            rate_limit=500.0,
+            period=30.0,
             retry_interval=2.0
         )
         self.service = service
@@ -284,10 +284,11 @@ class SparQLListener(P2PListener):
                     middlewares=[self.service.mwAuth]
                 )
 
-                # Support GET and POST
+                # SparQL endpoint: Support GET and POST
                 self.webapp.router.add_get('/sparql', self.handler.sparql)
                 self.webapp.router.add_post('/sparql', self.handler.sparql)
 
+                # SmartQL endpoints
                 self.webapp.router.add_route(
                     '*',
                     r'/resource/{rsc}/graph',
@@ -299,7 +300,7 @@ class SparQLListener(P2PListener):
                 server = await self.loop.create_server(
                     self.webapp.make_handler(debug=True), host, port)
 
-                log.debug('SparQL service (port: {port}): started'.format(
+                log.debug('SmartQL service (port: {port}): started'.format(
                     port=port))
                 self._server = server
                 return (host, port)

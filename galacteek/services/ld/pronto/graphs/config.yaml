@@ -2,6 +2,12 @@ graphEnvs:
   # Graphs definitions
   # ipg = interplanetary graph, g = galacteek
   beta:
+    # Pubsub service config
+    pubsub:
+      heartbeat:
+        intervalMin: 60
+        intervalMax: 150
+
     # Graph synchronizers definitions
     synchronizers:
       urn:ipg:sync:xmlgzexport:
@@ -17,8 +23,8 @@ graphEnvs:
       urn:ipg:sync:sparql1:
         type: sparql
 
-      urn:ipg:sync:semchain1:
-        type: semchain
+      urn:ipg:sync:ontolochain1:
+        type: ontolochain
 
     graphs:
       # Main graphs
@@ -39,7 +45,7 @@ graphEnvs:
             exportsAllow: true
 
           sync:
-            use: 'urn:ipg:sync:semchain1'
+            use: 'urn:ipg:sync:ontolochain1'
 
       # Hashmarks (conjunctive)
       urn:ipg:g:hashmarks:

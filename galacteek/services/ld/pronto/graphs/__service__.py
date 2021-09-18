@@ -1,6 +1,7 @@
 import asyncio
 import otsrdflib
 import io
+import random
 
 from galacteek import log
 from galacteek.services import GService
@@ -179,10 +180,10 @@ class RDFStoresService(GService):
                     cfg = GraphExportSyncConfig()
 
                 self._synchros[uri] = GraphExportSynchronizer(cfg)
-            elif stype in ['sparkie']:
+            elif stype in ['sparkie', 'sparql']:
                 cfg = GraphSparQLSyncConfig(**cfg)
                 self._synchros[uri] = GraphSparQLSynchronizer(cfg)
-            elif stype in ['semchain', 'semobjectchain']:
+            elif stype == 'ontolochain':
                 synccfg = GraphSemChainSyncConfig(**cfg)
                 self._synchros[uri] = GraphSemChainSynchronizer(synccfg)
 
@@ -206,7 +207,8 @@ class RDFStoresService(GService):
 
         await self.ipfsPubsubService(self.psService)
 
-    async def onSparqlHeartBeat(self, message: SparQLHeartbeatMessage):
+    async def onSparqlHeartBeat(self, sender: str,
+                                message: SparQLHeartbeatMessage):
         if message.prontoChainEnv != self.chainEnv:
             log.debug(f'{message.prontoChainEnv}: pronto chain mismatch')
             return
@@ -221,6 +223,7 @@ class RDFStoresService(GService):
                 continue
 
             await graph.synchronizer.syncFromRemote(
+                sender,
                 iri, p2pEndpointRaw,
                 graphDescr=graphdef
             )
@@ -342,10 +345,14 @@ class RDFStoresService(GService):
 
     @GService.task
     async def heartbeatTask(self):
-        from galacteek.ipfs.pubsub.messages.ld import SparQLHeartbeatMessage
+        r = random.Random()
 
         while not self.should_stop:
-            await asyncio.sleep(60)
+            t = r.randint(
+                self.serviceConfig.pubsub.heartbeat.intervalMin,
+                self.serviceConfig.pubsub.heartbeat.intervalMax
+            )
+            await asyncio.sleep(t)
 
             msg = SparQLHeartbeatMessage.make(self.chainEnv)
 
@@ -353,10 +360,8 @@ class RDFStoresService(GService):
                 if not isinstance(service, p2psmartql.P2PSmartQLService):
                     continue
 
-                graph = service.graph
-
                 msg.graphs.append({
-                    'graphIri': graph.identifier,
+                    'graphIri': service.graph.identifier,
                     'smartqlEndpointAddr': service.endpointAddr(),
                     'smartqlCredentials': {
                         'user': service.mwAuth.smartqlUser,
@@ -372,7 +377,7 @@ class RDFStoresService(GService):
             return
 
         while not self.should_stop:
-            await asyncio.sleep(60 * 5)
+            await asyncio.sleep(60 * 10)
 
             await self.graphHistory.exportTtl()
 

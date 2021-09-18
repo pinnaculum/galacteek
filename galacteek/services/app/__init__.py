@@ -163,7 +163,7 @@ class AppService(GService):
         :rtype: io.BytesIO
         """
         try:
-            import pydot
+            import pydotplus
         except ImportError:
             return
 
@@ -171,12 +171,12 @@ class AppService(GService):
             out = io.StringIO()
             beacon = self.beacon.root or self.beacon
             beacon.as_graph().to_dot(out)
-            graph, = pydot.graph_from_dot_data(out.getvalue())
+            graph = pydotplus.graph_from_dot_data(out.getvalue())
         except Exception as err:
             log.debug(str(err))
             return None
         else:
-            return io.BytesIO(graph.create_png())
+            return io.BytesIO(graph.create(format='png'))
 
     async def getGraphImagePil(self) -> None:
         from PIL import Image
