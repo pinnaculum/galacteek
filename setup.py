@@ -295,6 +295,7 @@ setup(
             'docs/manual/en/html/*.html',
             'docs/manual/en/html/_images/*',
             'docs/manual/en/html/_static/*',
+            'ipfs/p2pservices/gemini/gem-localhost*',
             'ld/contexts/*',
             'ld/contexts/messages/*',
             'ld/contexts/services/*',
