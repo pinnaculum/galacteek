@@ -7,10 +7,10 @@ from galacteek.ipfs.tunnel import P2PListener
 from galacteek.ipfs.p2pservices import P2PService
 from galacteek import log
 
-from aiogemini.security import TOFUContext
-from aiogemini.server import Server
-from aiogemini.server.fileserver import create_fileserver
-from aiogemini.server.unixfsserver import create_unixfs_server
+from aiogeminipfs.security import TOFUContext
+from aiogeminipfs.server import Server
+from aiogeminipfs.server.fileserver import create_fileserver
+from aiogeminipfs.server.unixfsserver import create_unixfs_server
 
 here = os.path.dirname(__file__)
 

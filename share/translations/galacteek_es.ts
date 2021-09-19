@@ -1573,17 +1573,17 @@ Path: {0}, nodes processed: {1}</source>
 <context>
     <name>PyramidMaster</name>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="78"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="80"/>
         <source>Add: dynamic content</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="84"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="86"/>
         <source>Create: image gallery</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="90"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="92"/>
         <source>
         &lt;p&gt;
         Create an image gallery!
@@ -1595,12 +1595,12 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="103"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="105"/>
         <source>Add: filesystem synchronizer</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="110"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="112"/>
         <source>
         &lt;p&gt;
         Allows you to &lt;b&gt;synchronize&lt;/b&gt; files (that exist
@@ -1616,12 +1616,12 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="128"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="130"/>
         <source>Create: dwebsite (Markdown)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="142"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="144"/>
         <source>
         &lt;p&gt;
         Create a simple website on the dweb.
@@ -1633,103 +1633,108 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="156"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="165"/>
         <source>Open latest content in the pyramid</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="163"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="172"/>
         <source>Pyramid is empty</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="169"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="178"/>
         <source>Pop an item off the pyramid</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="175"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="184"/>
         <source>Force sync</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="181"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="190"/>
         <source>Rewind DAG</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="187"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="196"/>
         <source>Publish</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="194"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="203"/>
         <source>Unpublish</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="201"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="210"/>
         <source>Register this content as a service in the list of IP services on your DID (Decentralized Identity)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="208"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="217"/>
         <source>Rewinding the DAG cancels the latest operation/transformation in the DAG&apos;s history</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="215"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="224"/>
         <source>Copy IPNS address to clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="221"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="230"/>
         <source>Copy IPNS gateway address to clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="227"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="236"/>
         <source>Add current clipboard item to the pyramid</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="234"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="243"/>
         <source>Generate pyramid&apos;s QR code</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="241"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="250"/>
         <source>Generate index&apos;s QR code</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="248"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="257"/>
         <source>Choose a pyramid to publish this object to</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="255"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="264"/>
         <source>Drop object to a pyramid</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="262"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="271"/>
         <source>Browse image gallery</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="269"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="278"/>
         <source>Browse image gallery (IPNS)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="276"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="285"/>
         <source>Change image gallery&apos;s title</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pyramids.py" line="135"/>
+        <location filename="../../galacteek/ui/pyramids.py" line="137"/>
         <source>Create: gem (gemini ipfs capsule)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/pyramids.py" line="158"/>
+        <source>Access Gemini capsule</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -2005,67 +2010,67 @@ Path: {0}, nodes processed: {1}</source>
 <context>
     <name>TextEditor</name>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="87"/>
+        <location filename="../../galacteek/ui/textedit.py" line="88"/>
         <source>Save</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="92"/>
+        <location filename="../../galacteek/ui/textedit.py" line="93"/>
         <source>Create new file</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="97"/>
+        <location filename="../../galacteek/ui/textedit.py" line="98"/>
         <source>Import file</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="102"/>
+        <location filename="../../galacteek/ui/textedit.py" line="103"/>
         <source>Import error</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="107"/>
+        <location filename="../../galacteek/ui/textedit.py" line="108"/>
         <source>Import directory</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="112"/>
+        <location filename="../../galacteek/ui/textedit.py" line="113"/>
         <source>Create new directory</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="117"/>
+        <location filename="../../galacteek/ui/textedit.py" line="118"/>
         <source>Edit</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="122"/>
+        <location filename="../../galacteek/ui/textedit.py" line="123"/>
         <source>Filesystem view</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="127"/>
+        <location filename="../../galacteek/ui/textedit.py" line="128"/>
         <source>Editor view</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="132"/>
+        <location filename="../../galacteek/ui/textedit.py" line="133"/>
         <source>Preview</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="137"/>
+        <location filename="../../galacteek/ui/textedit.py" line="138"/>
         <source>Object diff</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="142"/>
+        <location filename="../../galacteek/ui/textedit.py" line="143"/>
         <source>Automatic markdown to HTML saving</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="149"/>
+        <location filename="../../galacteek/ui/textedit.py" line="150"/>
         <source>Offline mode (announce your content manually later)</source>
         <translation type="unfinished"></translation>
     </message>

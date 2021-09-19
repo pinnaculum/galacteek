@@ -86,7 +86,9 @@ build:
     - source $GALACTEEK_ENV_FILE
     - mkdir -p $ASSETS_ROOT
 
-    - python setup.py build build_docs install
+    - pip install -U pip
+
+    - python setup.py build build_docs
     - python setup.py sdist bdist_wheel
 
     - |-
