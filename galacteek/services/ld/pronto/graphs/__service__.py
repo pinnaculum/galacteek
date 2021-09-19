@@ -14,6 +14,7 @@ from galacteek.ipfs.pubsub.srvs import graphs as pubsub_graphs
 from galacteek.ipfs.pubsub.messages.ld import RDFGraphsExchangeMessage
 from galacteek.ipfs.pubsub.messages.ld import SparQLHeartbeatMessage
 from galacteek.ipfs.p2pservices import smartql as p2psmartql
+
 from galacteek.ld.rdf import IGraph
 from galacteek.ld.rdf import IConjunctiveGraph
 from galacteek.ld.rdf import TriplesUpgradeRule

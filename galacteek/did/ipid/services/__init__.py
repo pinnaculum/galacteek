@@ -3,6 +3,7 @@ from yarl import URL
 
 from galacteek import AsyncSignal
 from galacteek import log
+from galacteek.core import runningApp
 
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.wrappers import ipfsOp
@@ -70,6 +71,8 @@ class IPService(metaclass=IPServiceRegistry):
     SRV_TYPE_LIVEPEER_STREAMING = 'P2PLivePeerStreamingService'
 
     SRV_TYPE_COLLECTION = 'ObjectsCollectionService'
+
+    SRV_TYPE_GEMINI_CAPSULE = 'GeminiIpfsCapsuleService'
 
     forTypes = []
     container = False
@@ -158,6 +161,10 @@ class IPService(metaclass=IPServiceRegistry):
 
     async def serviceStart(self):
         pass
+
+    async def p2pServiceRegister(self, service):
+        app = runningApp()
+        await app.s.ipfsP2PService(service)
 
     def __repr__(self):
         return self.id

@@ -31,6 +31,8 @@ from galacteek import log
 from galacteek import logUser
 from galacteek import AsyncSignal
 
+from galacteek.browser.schemes import SCHEME_GEM
+
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import joinIpns
 from galacteek.ipfs.cidhelpers import ipnsKeyCidV1
@@ -131,6 +133,13 @@ def iCreateWebsiteMkdocs():
     )
 
 
+def iCreateGem():
+    return QCoreApplication.translate(
+        'PyramidMaster',
+        'Create: gem (gemini ipfs capsule)'
+    )
+
+
 def iCreateWebsiteMkdocsToolTip():
     return QCoreApplication.translate(
         'PyramidMaster',
@@ -142,6 +151,13 @@ def iCreateWebsiteMkdocsToolTip():
         simple.
         </p>
         '''
+    )
+
+
+def iAccessGemCapsule():
+    return QCoreApplication.translate(
+        'PyramidMaster',
+        'Access Gemini capsule'
     )
 
 
@@ -351,6 +367,13 @@ class MultihashPyramidsToolBar(SmartToolBar):
         ac.setToolTip(iCreateWebsiteMkdocsToolTip())
         self.pyramidsControlButton.menu.addSeparator()
 
+        ac = self.pyramidsControlButton.menu.addAction(
+            getMimeIcon('text/gemini'),
+            iCreateGem(),
+            self.onAddPyramidGem
+        )
+        ac.setToolTip(iCreateWebsiteMkdocsToolTip())
+
         self.pyramidsControlButton.menu.addSeparator()
 
         self.pyramidsControlButton.menu.addAction(
@@ -464,6 +487,8 @@ class MultihashPyramidsToolBar(SmartToolBar):
             button = AutoSyncPyramidButton(pyramid, parent=self)
         elif pyramid.type == MultihashPyramid.TYPE_WEBSITE_MKDOCS:
             button = WebsiteMkdocsPyramidButton(pyramid, parent=self)
+        elif pyramid.type == MultihashPyramid.TYPE_GEMINI:
+            button = GemPyramidButton(pyramid, parent=self)
         else:
             # TODO
             return
@@ -562,6 +587,13 @@ class MultihashPyramidsToolBar(SmartToolBar):
         ensure(runDialogAsync(AddMultihashPyramidDialog, self.app.marksLocal,
                               MultihashPyramid.TYPE_WEBSITE_MKDOCS,
                               title='New website (mkdocs)',
+                              parent=self))
+
+    def onAddPyramidGem(self):
+        ensure(runDialogAsync(AddMultihashPyramidDialog, self.app.marksLocal,
+                              MultihashPyramid.TYPE_GEMINI,
+                              category='gems',
+                              title='New gem (gemini capsule)',
                               parent=self))
 
 
@@ -1384,6 +1416,171 @@ class ContinuousPyramid(MultihashPyramidToolButton):
             self.app.marksLocal.pyramidAdd(
                 self.pyramid.path, str(path), unique=True,
                 type='mark')
+
+
+class GemPyramidButton(ContinuousPyramid):
+    """
+    Gemini-IPFS capsules
+    """
+
+    didServicesSection = 'gems'
+    didServiceType = IPService.SRV_TYPE_GEMINI_CAPSULE
+
+    @property
+    def accessUrl(self):
+        return f'{SCHEME_GEM}:/{self.app.ipfsCtx.node.id}/{self.pyramid.name}/'
+
+    async def initialize(self):
+        await super().initialize()
+
+        if not self.pyramidion:
+            await self.gemNew()
+
+    def gemsHelpMessage(self):
+        self.app.manuals.browseManualPage(
+            'pyramids.html', fragment='gems')
+
+    def gemOpenCapsule(self):
+        ensure(self.app.resourceOpener.open(self.accessUrl))
+
+    def buildMenu(self):
+        self.gemAccessAction = self.menu.addAction(
+            getIcon('gemini.png'),
+            iAccessGemCapsule(),
+            self.gemOpenCapsule
+        )
+
+        self.buildMenuWithActions([
+            self.gemAccessAction,
+            self.openAction,
+            self.openLatestAction,
+            self.inputEditAction,
+            self.didPublishAction,
+            self.didUnpublishAction,
+            self.generateQrAction,
+            self.deleteAction
+        ])
+
+        self.menu.addAction(
+            getIcon('pyramid-blue.png'),
+            iHelp(),
+            self.gemsHelpMessage
+        )
+
+    async def onMarkAdded(self, mark, mtype):
+        if mtype == 'inputmark':
+            await self.gemProcessInput(mark.path)
+
+    @ipfsOp
+    async def didPublishService(self, ipfsop, url=None):
+        profile = ipfsop.ctx.currentProfile
+        ipid = await profile.userInfo.ipIdentifier()
+
+        try:
+            descr = self.pyramid.description
+
+            await ipid.addServiceRaw({
+                'id': url if url else self.didPyramidUrl(ipid),
+                'type': self.didServiceType,
+                'description': descr if descr else 'No description',
+                'serviceEndpoint': {
+                    '@type': 'GeminiIpfsCapsuleServiceEndpoint',
+                    '@id': self.accessUrl,
+
+                    'accessUrl': self.accessUrl,
+                    'capsuleName': self.pyramid.name,
+                    'capsuleIpfsPath': str(self.ipnsKeyPath)
+                }
+            })
+        except IPIDServiceException as err:
+            await messageBoxAsync(
+                f'IP Service error: {err}'
+            )
+        else:
+            await ipid.refresh()
+
+    @ipfsOp
+    async def gemProcessInput(self, ipfsop, dIpfsPath):
+        self.chBgColor('orange')
+
+        try:
+            tmpdir = self.app.tempDirCreate(self.app.tempDir.path())
+
+            async with ipfsop.getContexted(dIpfsPath, tmpdir) as get:
+                outputdir = get.finaldir
+                self.resetStyleSheet()
+                await self.pyramidOutputNew(str(outputdir))
+        except Exception as err:
+            await messageBoxAsync(
+                f'Error updating gem: {err}')
+
+    @ipfsOp
+    async def gemNew(self, ipfsop):
+        try:
+            tmp = self.app.tempDirCreate(self.app.tempDir.path())
+            tmpdir = Path(tmp)
+
+            imgp = tmpdir.joinpath('img')
+            indexPath = tmpdir.joinpath('index.gmi')
+            imgp.mkdir(parents=True, exist_ok=True)
+
+            index = [
+                '# Hello gemini'
+                '',
+                'To edit this gemini capsule, click on the website icon',
+                'in the pyramids toolbar, and select Edit.',
+                '',
+                '## BE SURE TO PUBLISH YOUR CAPSULE!',
+                'Your capsule is visible to others only after publishing.',
+                '',
+                '# Gemini documentation',
+                '=> gemini://gemini.circumlunar.space/docs/gemtext.gmi',
+                '',
+                '# Galacteek gems documentation',
+                '=> manual:/pyramids.html#gems'
+            ]
+
+            await asyncWriteFile(
+                str(indexPath),
+                '\n'.join(index),
+                mode='w+t'
+            )
+
+            await self.pyramidInputNew(str(tmpdir))
+        except BaseException as err:
+            await messageBoxAsync(
+                f'Error creating gem: {err}')
+
+    def updateToolTip(self):
+        self._pyrToolTip = '''
+            <p>
+                <img width='64' height='64'
+                    src=':/share/icons/mimetypes/text-gemini.png'/>
+            </p>
+            <p>
+                Gemini capsule: <b>{path}</b>
+                ({itemscount} item(s) in the stack)
+            </p>
+
+            <p>Description: {descr}</p>
+            <p>IPNS key: <b>{ipns}</b></p>
+            <p>IPNS key (CIDv1): <b>{ipnsv1}</b></p>
+
+            <p>
+                <img width='16' height='16'
+                    src=':/share/icons/pyramid-stack.png'/>
+                Latest (pyramidion): <b>{latest}</b>
+            </p>
+        '''.format(
+            path=self.pyramid.path,
+            descr=self.pyramid.description,
+            ipns=self.pyramid.ipnsKey,
+            ipnsv1=ipnsKeyCidV1(self.pyramid.ipnsKey),
+            itemscount=self.pyramid.marksCount,
+            latest=self.pyramid.latest if self.pyramid.latest else
+            iEmptyPyramid()
+        )
+        self.setToolTip(self.pyrToolTip)
 
 
 class WebsiteMkdocsPyramidButton(ContinuousPyramid):

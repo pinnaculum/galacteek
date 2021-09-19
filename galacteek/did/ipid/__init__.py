@@ -46,7 +46,8 @@ from galacteek.did.ipid.services import IPService
 from galacteek.did.ipid.services import IPServiceRegistry
 from galacteek.did.ipid.services import IPServiceEditor
 from galacteek.did.ipid.services import IPIDServiceException
-from galacteek.did.ipid.services import passport
+from galacteek.did.ipid.services import passport  # noqa
+from galacteek.did.ipid.services import gem  # noqa
 
 
 def ipidFormatValid(did):
@@ -321,6 +322,14 @@ class IPIdentifier(DAGOperations):
 
         await self.sServiceAvailable.emit(self, service)
 
+    async def localServicesScan(self):
+        if self.local:
+            self.message('Scanning local DID services')
+
+            # Local IPID: propagate did services
+            async for service in self.discoverServices():
+                await self.sServiceAvailable.emit(self, service)
+
     async def addServiceRaw(self, service: dict, publish=True):
         sid = service.get('id')
         assert isinstance(sid, str)
@@ -336,7 +345,10 @@ class IPIdentifier(DAGOperations):
         await self.updateDocument(self.doc, publish=publish)
         await self.sServicesChanged.emit()
 
-        return self._serviceInst(service)
+        sInst = self._serviceInst(service)
+        await self.servicePropagate(sInst)
+
+        return sInst
 
     @ipfsOp
     async def addServiceContexted(self, ipfsop, service: dict,
@@ -541,10 +553,7 @@ class IPIdentifier(DAGOperations):
             self.docCid = dagCid
             await self.sChanged.emit(dagCid)
 
-            if self.local:
-                # Local IPID: propagate did services
-                async for service in self.discoverServices():
-                    await self.sServiceAvailable.emit(self, service)
+            await self.localServicesScan()
 
             # Graph it
             await self.rdfPush()
@@ -796,6 +805,8 @@ class IPIDManager:
                     await ipid._stop()
 
     async def onLocalIpidServiceAvailable(self, ipid, ipService):
+        log.debug(f'{ipid.did}: Starting IPID service: {ipService}')
+
         await ipService.serviceStart()
 
     async def track(self, ipid: IPIdentifier):

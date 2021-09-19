@@ -634,7 +634,7 @@ class AddAtomFeedDialog(QInputDialog):
 
 
 class AddMultihashPyramidDialog(QDialog):
-    def __init__(self, marks, pyramidType, parent=None):
+    def __init__(self, marks, pyramidType, parent=None, category=None):
         super().__init__(parent)
 
         self.app = QApplication.instance()
@@ -642,7 +642,7 @@ class AddMultihashPyramidDialog(QDialog):
         self.marks = marks
         self.pyramidType = pyramidType
         self.iconCid = None
-        self.customCategory = 'general'
+        self.customCategory = category if category else 'general'
         self.autoSyncPath = None
 
         label = QLabel('Name')

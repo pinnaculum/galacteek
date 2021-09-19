@@ -68,6 +68,7 @@ strict-rfc3339>=0.7
 tortoise-orm>=0.16.21
 validators>=0.18.1
 yarl==1.5.1
+aiogemini @ git+https://gitlab.com/galacteek/aiogemini.git@ipfs#egg=aiogemini
 rdflib @ git+https://gitlab.com/galacteek/rdflib.git@ipfs#egg=rdflib
 rdflib-jsonld @ git+https://gitlab.com/galacteek/rdflib-jsonld.git@galacteek#egg=rdflib-jsonld
 galacteek-ld-web4 @ git+https://gitlab.com/galacteek/galacteek-ld-web4.git@master

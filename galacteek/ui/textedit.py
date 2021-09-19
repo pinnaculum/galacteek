@@ -40,6 +40,7 @@ from PyQt5.QtCore import QUrl
 from PyQt5.QtCore import QTimer
 from PyQt5.QtCore import QModelIndex
 from PyQt5.QtCore import QItemSelectionModel
+from PyQt5.QtCore import QSize
 
 from PyQt5.QtGui import QMouseEvent
 from PyQt5.QtGui import QTextDocument
@@ -571,6 +572,7 @@ class TextEditorWidget(QWidget):
 
         self.saveButton = GMediumToolButton(self)
         self.saveButton.setIcon(getIcon('save-file.png'))
+        self.saveButton.setIconSize(QSize(32, 32))
         self.saveButton.clicked.connect(self.onSave)
         self.saveButton.setToolTip(iSave())
         self.saveButton.setEnabled(False)
@@ -1322,6 +1324,7 @@ class TextEditorWidget(QWidget):
             pyrDropButton = self.app.mainWindow.getPyrDropButtonFor(
                 path, origin=self.pyramidOrigin
             )
+            pyrDropButton.setIconSize(QSize(48, 48))
 
             now = QDateTime.currentDateTime()
             date = QLabel()

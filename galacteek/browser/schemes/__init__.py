@@ -57,6 +57,8 @@ SCHEME_IPID = 'ipid'
 SCHEME_I = 'i'
 SCHEME_QDAPP = 'qdapp'
 SCHEME_GEMINI = 'gemini'
+SCHEME_GEMIPFS = 'gemipfs'
+SCHEME_GEM = 'gem'
 
 # ENS-related schemes (ensr is redirect-on-resolve ENS scheme)
 SCHEME_ENS = 'ens'
@@ -237,6 +239,18 @@ def initializeSchemes():
     declareUrlScheme(
         SCHEME_GEMINI,
         syntax=QWebEngineUrlScheme.Syntax.Host,
+        flags=defaultSchemeFlags
+    )
+
+    declareUrlScheme(
+        SCHEME_GEMIPFS,
+        syntax=QWebEngineUrlScheme.Syntax.Path,
+        flags=defaultSchemeFlags
+    )
+
+    declareUrlScheme(
+        SCHEME_GEM,
+        syntax=QWebEngineUrlScheme.Syntax.Path,
         flags=defaultSchemeFlags
     )
 

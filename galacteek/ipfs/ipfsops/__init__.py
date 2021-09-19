@@ -29,6 +29,7 @@ from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.multi import multiAddrTcp4
 from galacteek.ipfs.stat import StatInfo
 
+
 from galacteek.config import cGet
 
 from galacteek.core.asynccache import amlrucache
@@ -1941,11 +1942,36 @@ class IPFSOperator(RemotePinningOps,
     async def hasP2PCommand(self):
         return await self.hasCommand('p2p')
 
-    async def _p2pDialerStart(self, peer, proto, address):
+    async def _p2pDialerStart(self, peer, proto, address,
+                              allowLoopback=False):
         """
         Start the P2P dial and return a TunnelDialerContext
         """
+        from galacteek.ipfs.tunnel import P2PTunnelsManager
+
         log.debug('Stream dial {0} {1}'.format(peer, proto))
+
+        if allowLoopback is True:
+            #
+            # P2P loopback allowed
+            #
+            # This handles the cases where we want to be able to dial
+            # local P2P services (IPFS correctly prevents this ...).
+            # This is only used for now by the gemini-ipfs bridge
+            #
+
+            mgr = P2PTunnelsManager()
+
+            nid = await self.nodeId()
+            streams = await mgr.streamsForProtocol(proto)
+
+            if nid == peer and streams and len(streams) == 1:
+                # The PeerId matches and we found the stream
+
+                taddr = streams.pop()['TargetAddress']
+                log.debug(f'P2P loopback allowed for proto {proto}:'
+                          f' maddr is {taddr}')
+                return TunnelDialerContext(self, peer, proto, taddr)
         try:
             peerAddr = joinIpfs(peer) if not peer.startswith('/ipfs/') else \
                 peer
@@ -1990,7 +2016,8 @@ class IPFSOperator(RemotePinningOps,
 
     @async_enterable
     async def p2pDialerFromAddr(self, p2pEndpointAddr,
-                                address=None, addressAuto=True):
+                                address=None, addressAuto=True,
+                                allowLoopback=False):
         from galacteek.core import unusedTcpPort
         from galacteek.ipfs.p2pservices import p2pEndpointAddrExplode
 
@@ -2003,7 +2030,9 @@ class IPFSOperator(RemotePinningOps,
             peerId, protoFull, pVersion = exploded
 
             return await self._p2pDialerStart(
-                peerId, protoFull, address)
+                peerId, protoFull, address,
+                allowLoopback=allowLoopback
+            )
         else:
             raise ValueError(f'Invalid P2P service address: {p2pEndpointAddr}')
 

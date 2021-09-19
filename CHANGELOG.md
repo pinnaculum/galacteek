@@ -8,6 +8,20 @@ the changes in the CHANGELOG formatting.
 
 ## [Unreleased]
 
+## [0.5.3] - 2021-09-18
+
+### Added
+- Introduce the **gem** protocol (P2P gemini capsules)
+- Add a new type of pyramid (*gems*, gemini IPFS capsules)
+- Add a DID service to serve *gems* over IPFS streams (accessible
+via the *gem:/* URL scheme)
+- New python dependency: custom [aiogemini](https://gitlab.com/galacteek/aiogemini)
+
+### Changed
+- Changes in the *pronto* ontolochain system
+  - Store the sync date after each chain upgrade
+  - Send pronto pubsub messages at random intervals
+
 ## [0.5.2] - 2021-08-04
 
 This release brings support for the gemini protocol.

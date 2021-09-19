@@ -204,6 +204,7 @@ class MultihashPyramid(collections.UserDict):
     TYPE_AUTOSYNC = 2
 
     TYPE_WEBSITE_MKDOCS = 3
+    TYPE_GEMINI = 4
 
     # Flags
     FLAG_MODIFIABLE_BYUSER = 0x01

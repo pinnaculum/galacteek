@@ -165,6 +165,48 @@ You can use any of the following themes::
 Check `this page <https://mkdocs.github.io/mkdocs-bootswatch/>`_
 to see screenshots of the themes.
 
+Gems
+====
+
+You can easily create Gemini_ websites (*capsules*) in galacteek.
+
+Click on the *blue pyramid* and select *Create: gem*. This will create
+an empty Gemini_ capsule in IPFS.
+
+Now in the pyramids toolbar click on your newly created capsule and
+select *Edit*. From the editor you will be able to edit and create new
+gemini pages (gemini files use the *.gmi* suffix). The default index file is
+called *index.gmi*.
+
+Make your changes and save. Once saved, click on the blue pyramid in the
+editor and send the changes to your pyramid. This will upgrade the capsule
+to the new version. You can also create files and directories in the editor
+by right-clicking in the folder view.
+
+**Until you publish your capsule to your DID, you won't be able to
+access it from the browser. Once you're ready click on the capsule
+and hit Publish.**
+
+**Once published, click on the capsule and select Access Gemini Capsule**
+
+**You can also go to the Peers workspace and double-click on your DID.
+The capsule will appear in the gems section**
+
+Gemini IPFS capsules in *galacteek* are accessed via a specific URL
+scheme called **gem**, URLS use this format (*PeerID* and *capsule name*)::
+
+    gem:/12D3KooWQWcGx8jrWNPFRPpmd1ywXu612ShBkFGvmr7UBexzKTSk/mygem
+
+Syntax
+------
+
+Gemini_ uses a very lightweight markup language called *gemtext*.
+
+Links are created by using the **=>** markup on a single line.
+
+Checkout the gemtext_ page and `the gemtext cheatsheet <https://gemini.circumlunar.space/docs/cheatsheet.gmi>`_ as well to understand how to easily write
+content in your gemini capsules.
+
 DAG building pyramids
 =====================
 
@@ -199,3 +241,5 @@ will minimize the app to the system tray).
 
 
 .. _MKDocs: https://www.mkdocs.org/
+.. _Gemini: https://gemini.circumlunar.space/
+.. _gemtext: https://gemini.circumlunar.space/docs/gemtext.gmi

@@ -13,6 +13,7 @@
     <file>../../share/icons/helmets/ipfs-cosmo-1d3351-2.png</file>
     <file>../../share/icons/ipservice.png</file>
     <file>../../share/icons/logs.png</file>
+    <file>../../share/icons/gemini.png</file>
     <file>../../share/icons/tor.png</file>
     <file>../../share/icons/markdown.png</file>
     <file>../../share/icons/planets/mercury.png</file>
@@ -81,6 +82,7 @@
     <file>../../share/icons/mimetypes/text-css.png</file>
     <file>../../share/icons/mimetypes/text-csv.png</file>
     <file>../../share/icons/mimetypes/text-html.png</file>
+    <file>../../share/icons/mimetypes/text-gemini.png</file>
     <file>../../share/icons/terminal.png</file>
     <file>../../share/icons/torrent.png</file>
     <file>../../share/icons/magnet.png</file>

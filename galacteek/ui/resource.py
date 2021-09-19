@@ -467,6 +467,11 @@ class IPFSResourceOpener(QObject):
             vc = VideoCallInitiator(pService)
             await vc.start()
 
+        elif pService.type == IPService.SRV_TYPE_GEMINI_CAPSULE:
+            url = endpoint.get('accessUrl')
+            if url:
+                await self.open(url)
+
         elif isinstance(endpoint, str):
             path = IPFSPath(endpoint, autoCidConv=True)
             await self.open(path)
