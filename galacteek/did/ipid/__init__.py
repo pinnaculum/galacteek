@@ -556,7 +556,7 @@ class IPIdentifier(DAGOperations):
             await self.localServicesScan()
 
             # Graph it
-            await self.rdfPush()
+            # await self.rdfPush()
 
             return True
 

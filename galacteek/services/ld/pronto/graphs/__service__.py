@@ -17,7 +17,7 @@ from galacteek.ipfs.p2pservices import smartql as p2psmartql
 
 from galacteek.ld.rdf import IGraph
 from galacteek.ld.rdf import IConjunctiveGraph
-from galacteek.ld.rdf import TriplesUpgradeRule
+from galacteek.ld.rdf.guardian import GraphGuardian
 
 from rdflib import plugin
 from rdflib import URIRef
@@ -54,6 +54,7 @@ class RDFStoresService(GService):
     def on_init(self):
         self._graphs = {}
         self._synchros = {}
+        self._guardians = {}
         self._cgraphs = []
         self._cgMain = None
 
@@ -139,16 +140,12 @@ class RDFStoresService(GService):
 
     async def graphRegServices(self, cfg, graph):
         services = cfg.get('services', {})
-        uprules = cfg.get('triplesRules', [])
+        guardianUri = cfg.get('guardian', None)
 
-        # Triples upgrade rules
-        for rdef in uprules:
-            try:
-                rule = TriplesUpgradeRule(**rdef)
-            except Exception:
-                continue
-            else:
-                graph.tUpRules.append(rule)
+        if guardianUri:
+            guardian = self._guardians.get(guardianUri)
+            if guardian:
+                graph.setGuardian(guardian)
 
         for srvtype, cfg in services.items():
             if srvtype == 'sparql':
@@ -187,6 +184,12 @@ class RDFStoresService(GService):
             elif stype == 'ontolochain':
                 synccfg = GraphSemChainSyncConfig(**cfg)
                 self._synchros[uri] = GraphSemChainSynchronizer(synccfg)
+
+        guardians = self.serviceConfig.get('guardians', {})
+        for uri, cfg in guardians.items():
+            g = GraphGuardian(uri, cfg)
+            if g.configure():
+                self._guardians[uri] = g
 
         graphs = self.serviceConfig.get('graphs', {})
         for uri, cfg in graphs.items():
@@ -295,19 +298,10 @@ class RDFStoresService(GService):
                 if destGraph is None:
                     continue
 
-                for s, p, o in objGraph:
-                    if supgrade(destGraph, s):
-                        destGraph.remove((s, p, None))
+                guardian = destGraph.guardian
 
-                    destGraph.add((s, p, o))
-
-                if 0:
-                    # Old way
-                    try:
-                        destGraph.parse(ttl)
-                        raise Exception('HEY')
-                    except Exception:
-                        continue
+                if guardian:
+                    await guardian.merge(objGraph, destGraph)
 
         return True
 

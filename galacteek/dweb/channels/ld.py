@@ -1,5 +1,5 @@
 from PyQt5.QtCore import pyqtSlot
-from PyQt5.QtCore import QVariant
+from PyQt5.QtCore import QJsonValue
 
 from galacteek import services
 from galacteek.ipfs.cidhelpers import IPFSPath
@@ -108,6 +108,19 @@ class LDHandler(AsyncChanObject, LDInterface):
     def iObjectUriGen(self, oclass):
         return self.iService.iriGenObject(oclass)
 
-    @pyqtSlot(str, QVariant, result=str)
+    @pyqtSlot(str, QJsonValue, result=str)
     def iObjectCreate(self, oid, obj):
-        return self.tc(self.a_iObjectCreate, oid, obj.toVariant())
+        return self.tc(self.a_iObjectCreate, oid, self._dict(obj))
+
+    @pyqtSlot(QJsonValue, result=str)
+    def iObjectCreateAuto(self, data):
+        obj = self._dict(data)
+        if obj:
+            _type = obj.get('@type')
+            if not _type:
+                return
+
+            oid = self.iService.iriGenObject(_type)
+            obj['@id'] = oid
+
+            return self.tc(self.a_iObjectCreate, oid, obj)

@@ -1,0 +1,121 @@
+{% extends "ld/layout.jinja2" %}
+{% block body %}
+
+{% set passport = ipid.searchServiceById(ipid.didUrl(path='/passport')) %}
+{% set endpoint = passport.compact().serviceEndpoint %}
+
+{% set nick = graph.value(
+  rscUri, 'ips://galacteek.ld/nickName') %}
+
+{% set firstName = graph.value(
+  rscUri, 'ips://galacteek.ld/firstName') %}
+
+{% set lastName = graph.value(
+  rscUri, 'ips://galacteek.ld/lastName') %}
+
+{% set dateCreated = graph.value(
+  rscUri, 'ips://galacteek.ld/dateCreated') %}
+
+{% set cq = prepareQuery("""
+  PREFIX gs: <ips://galacteek.ld/>
+
+  SELECT ?passuri
+  WHERE {                                                                       
+    ?passuri a gs:DwebPassport ;
+      gs:me ?person .
+  }
+  ORDER BY DESC(?date)
+""") %}
+
+{% set passports = graph.query(cq, initBindings={'person': rscUri}) %}
+
+{% set cq = prepareQuery("""
+  PREFIX gs: <ips://galacteek.ld/>
+
+  SELECT ?follower
+  WHERE {                                                                       
+    ?follower a gs:Person ;
+      gs:follows ?followed .
+  }
+  ORDER BY DESC(?date)
+""") %}
+
+{% set following = graph.queryAsync(
+    cq, initBindings={'followed': rscUri, 'follower': endpoint.me['@id'] }) %}
+
+{% set cq = prepareQuery("""
+  PREFIX gs: <ips://galacteek.ld/>
+
+  SELECT ?uri ?rscType
+  WHERE {                                                                       
+    ?uri a ?rscType ;
+      gs:author ?author .
+    FILTER(?rscType IN (gs:Article, gs:DwebSocialPost))
+  }
+  ORDER BY DESC(?date)
+  LIMIT 15
+""") %}
+
+{% set recent = graph.queryAsync(
+    cq, initBindings={'author': rscUri }) %}
+
+<p align="center">
+<h1><b>{{ headline }}</b></h1>
+</p>
+
+<div>
+<p>
+Nickname: <b>{{ nick }}</b>
+</p>
+
+{% if firstName %}
+<p>
+First name: <b>{{ firstName }}</b>
+</p>
+{% endif %}
+
+{% if lastName %}
+<p>
+Last name: <b>{{ lastName }}</b>
+</p>
+{% endif %}
+
+</p>
+</div>
+
+<script>
+  function follow(type, person) {
+    window.ld.iObjectCreateAuto({
+      '@type': type,
+
+      'agent': {
+        '@type': 'Person',
+        '@id': window.passport.me['@id']
+      },
+      'followee': {
+        '@type': 'Person',
+        '@id': person
+      },
+      }).then(function(res) {
+        location.reload()
+      })
+  }
+</script>
+
+{% if following|length > 0 %}
+<p>You're following {{ nick }}</p>
+<button onclick="follow('UnfollowAction', '{{ rscUri }}')">Unfollow</button>
+{% else %}
+<button onclick="follow('FollowAction', '{{ rscUri }}')">Follow</button>
+{% endif %}
+
+<div>
+<p>Recent activity</p>
+<ul>
+{% for entry in recent %}
+<li><a target="_blank" href="{{ entry.uri }}">{{ entry.uri }}</a></li>
+</ul>
+{% endfor %}
+</div>
+
+{% endblock %}

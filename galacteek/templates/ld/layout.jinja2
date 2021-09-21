@@ -3,6 +3,8 @@
 <html>
   <head>
     <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+    <script src="qrc:///share/js/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="qrc:///share/static/css/water.css">
 
     <style>
       body {
@@ -43,15 +45,27 @@
         white-space: -o-pre-wrap;
         word-wrap: break-word;
       }
+      textarea {
+        width: 50%;
+        min-width: 300px;
+        min-height: 100px;
+      }
     </style>
 
     <meta charset="UTF-8">
-    <title>I</title>
+    <title>{{ rscUri }}</title>
 
     <script type="text/javascript">
       new QWebChannel(qt.webChannelTransport, function (channel) {
         window.ld = channel.objects.ld;
+        window.ipid = channel.objects.ipid;
+        window.sparql = channel.objects.sparql;
+
         console.log('Acquired LD interface: ' + window.ld)
+
+        window.ipid.serviceEndpointCompact('/passport').then(function(pass) {
+          window.passport = pass
+        })
       })
     </script>
 
@@ -61,6 +75,8 @@
     </header>
 
     <div class="page">
+      <p align="center"><b>{{ rscUri }}</b></p>
+
       {% block body %}
       {% endblock %}
     </div>

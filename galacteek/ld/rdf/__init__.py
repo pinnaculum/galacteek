@@ -1,8 +1,6 @@
-import attr
 import orjson
 import asyncio
 import io
-import re
 from pathlib import Path
 
 from rdflib import Graph
@@ -13,7 +11,6 @@ from rdflib import Namespace
 from rdflib.namespace import NamespaceManager
 
 from galacteek import log
-from galacteek import cached_property
 from galacteek import AsyncSignal
 from galacteek.core import runningApp
 from galacteek.core.asynclib import asyncWriteFile
@@ -49,18 +46,6 @@ def purgeBlank(graph: Graph):
     return cn
 
 
-@attr.s(auto_attribs=True)
-class TriplesUpgradeRule:
-    subject: str = ''
-    predicate: str = ''
-    object: str = ''
-    action: str = 'upgrade'
-
-    @cached_property
-    def reSub(self):
-        return re.compile(self.subject)
-
-
 class Common(object):
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
@@ -68,7 +53,14 @@ class Common(object):
         self.lock = asyncio.Lock()
 
         self.synchronizer = None
-        self.tUpRules = []
+        self._guardian = kw.pop('guardian', None)
+
+    @property
+    def guardian(self):
+        return self._guardian
+
+    def setGuardian(self, g):
+        self._guardian = g
 
     def iNsBind(self):
         self.iNs = NamespaceManager(self)

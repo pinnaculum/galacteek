@@ -1,6 +1,7 @@
 from aiohttp import web
 
 from galacteek import services
+from galacteek.ipfs import ipfsOp
 from galacteek.core import uid4
 from galacteek.ld import uriTermExtract
 from galacteek.ld.sparql import uri_objtype
@@ -12,7 +13,11 @@ class RootView(web.View):
     def stores(self):
         return services.getByDotName('ld.pronto.graphs')
 
-    async def get(self):
+    @ipfsOp
+    async def get(self, ipfsop):
+        curProfile = ipfsop.ctx.currentProfile
+        ipid = await curProfile.userInfo.ipIdentifier()
+
         app = self.request.app.gApp
         minfo = self.request.match_info
         path = minfo.get('obj', None)
@@ -37,6 +42,7 @@ class RootView(web.View):
             text=await t.render_async(
                 graph=self.stores.graphG,
                 prepareQuery=prepareQuery,
+                ipid=ipid,
                 rscUri=rscUri
             ))
 

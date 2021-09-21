@@ -2,6 +2,7 @@ from rdflib.plugins.sparql import prepareQuery
 
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtCore import QVariant
+from PyQt5.QtCore import QJsonValue
 
 from galacteek import services
 from galacteek import log
@@ -49,16 +50,11 @@ class SparQLHandler(AsyncChanObject, SparQLInterface):
     SparQL interface
     """
 
-    @pyqtSlot(str, str, QVariant, result=QVariant)
+    @pyqtSlot(str, str, QJsonValue, result=QVariant)
     def query(self, query, graphIri, bindings):
         try:
-            bds = bindings.toVariant()
-        except Exception:
-            bds = None
-
-        try:
             return self.tc(
-                self.a_sparqlQuery, query, graphIri, bds)
+                self.a_sparqlQuery, query, graphIri, self._dict(bindings))
         except Exception as err:
             log.debug(f'SparQL query error for {query}: {err}')
             return QVariant([])

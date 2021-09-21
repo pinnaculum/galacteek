@@ -8,6 +8,32 @@ graphEnvs:
         intervalMin: 60
         intervalMax: 150
 
+    # Graph guardians
+    guardians:
+      # Goliath (default)
+      urn:ipg:guardians:goliath:
+        rules:
+          - subject: '^did:ipid:.*'
+            action:
+              do: 'upgrade'
+          - subject: '^i:/.*Person/'
+            action:
+              do: 'upgrade'
+
+          - subject: '^.*$'
+            predicate: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
+            object: 'ips://galacteek.ld/FollowAction'
+            action:
+              do: 'trigger'
+              call: 'followSubject'
+
+          - subject: '^.*$'
+            predicate: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
+            object: 'ips://galacteek.ld/UnfollowAction'
+            action:
+              do: 'trigger'
+              call: 'unfollowSubject'
+
     # Graph synchronizers definitions
     synchronizers:
       urn:ipg:sync:xmlgzexport:
@@ -30,13 +56,11 @@ graphEnvs:
       # Main graphs
       urn:ipg:g:c0:
         name: c0
-
-        triplesRules:
-          - subject: '^did:ipid:.*'
-          - subject: '^i:/Person/'
+        guardian: urn:ipg:guardians:goliath
 
       urn:ipg:g:c1:
         name: c1
+        guardian: urn:ipg:guardians:goliath
       urn:ipg:g:h0:
         name: h0
 

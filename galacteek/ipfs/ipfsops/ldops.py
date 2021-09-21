@@ -108,7 +108,7 @@ class LDOpsContext(object):
         else:
             return expanded
 
-    async def dagAsRdf(self, ipfsPath: IPFSPath):
+    async def dagAsRdf(self, ipfsPath: IPFSPath, debug=False):
         """
         IPFS DAG to RDF, via the rdflib-jsonld plugin
         """
@@ -127,6 +127,9 @@ class LDOpsContext(object):
 
             if not graph:
                 raise Exception('Graph is empty')
+
+            if debug:
+                print((await graph.ttlize()).decode())
 
             return graph
         except Exception as err:
