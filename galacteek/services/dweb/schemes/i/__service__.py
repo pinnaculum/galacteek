@@ -1,3 +1,5 @@
+from rdflib import URIRef
+
 from aiohttp import web
 
 from galacteek import services
@@ -34,17 +36,19 @@ class RootView(web.View):
             )
 
         # TODO: check object type, fixed for test
-        t = app.jinjaEnv.get_template(
+        tmpl = app.jinjaEnv.get_template(
             f'ld/components/{otype}/render.jinja2'
         )
 
-        return web.Response(
-            text=await t.render_async(
-                graph=self.stores.graphG,
-                prepareQuery=prepareQuery,
-                ipid=ipid,
-                rscUri=rscUri
-            ))
+        if tmpl:
+            return web.Response(
+                text=await tmpl.render_async(
+                    graph=self.stores.graphG,
+                    prepareQuery=prepareQuery,
+                    ipid=ipid,
+                    rscUri=rscUri,
+                    URIRef=URIRef
+                ))
 
 
 class GraphsView(web.View):
@@ -97,7 +101,7 @@ class IService(services.GService):
         app.gApp = self.app
 
         app.router.add_routes([
-            web.view('/graphs/{g:.*}/{fmt:.*}', GraphsView),
+            # web.view('/graphs/{g:.*}/{fmt:.*}', GraphsView),
             web.view('/{obj:.*}', RootView)
         ])
 

@@ -1,5 +1,12 @@
 {% extends "ld/layout.jinja2" %}
-{% block body %}
+{% import "ld/lib/passport.jinja2" as pass with context %}
+{% import "ld/lib/sparql_main.jinja2" as spql with context %}
+
+{% set agent_likes = graph.queryAsync(
+  spql.q_rsc_likes,
+  initBindings={'agent': pass.dwebPass.me["@id"], 'rsc': rscUri}) | length
+%}
+{% set likes = graph.queryAsync(spql.q_rsc_likes, initBindings={'rsc': rscUri}) %}
 
 {% set headline = graph.value(
   rscUri, 'ips://galacteek.ld/headline') %}
@@ -13,9 +20,20 @@
 {% set dateCreated = graph.value(
   rscUri, 'ips://galacteek.ld/dateCreated') %}
 
+{% block body %}
 
-<p align="center">
-<a href="{{ rscUri }}">{{ rscUri }}</a>
+<p align="right">
+{{ likes|length }}
+
+{% if agent_likes == 0 %}
+<button onclick="rsc_like('{{ pass.dwebPass.me["@id"] }}', '{{ rscUri }}')">
+  <img width="16" src="qrc:/share/icons/social/like.png"/>
+</button>
+{% else %}
+<img width="16" src="qrc:/share/icons/social/like.png"/>
+{% endif %}
+
+</button>
 </p>
 
 <p align="center">
@@ -25,5 +43,6 @@
 <p>
 {{ body|markdown }}
 </p>
+
 
 {% endblock %}

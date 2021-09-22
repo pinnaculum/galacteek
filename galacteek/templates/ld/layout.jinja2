@@ -1,4 +1,4 @@
-{% include "ld/lib/objects.jinja2" %}
+{% include "ld/lib/actions.jinja2" %}
 
 <html>
   <head>
@@ -10,32 +10,21 @@
       body {
         background-color: #323232;
         font: 14pt "Montserrat";
-        margin: 5px;
         color: white;
       }
 
       a {
         color: #fe921f;
         text-decoration: underline;
-        font-size: 14pt;
+        font-size: 16pt;
       }
 
       a:hover {
         color: #ffffff;
       }
 
-      h1 {
-        color: #4a9ea1;
-      }
-      h2 {
-        color: #4a9fa1;
-      }
-      h3 {
-        color: #4a9ba1;
-      }
-
-      p {
-        color: #A3E658;
+      h1, h2, h3 {
+        color: lightsteelblue;
       }
 
       pre {
@@ -50,6 +39,37 @@
         min-width: 300px;
         min-height: 100px;
       }
+
+      .bubble1 {
+        background-color:#e3f7fc;
+        color:#555;
+        border: 1px solid;
+        border-color: #8ed9f6;
+        border-color: darkorange;
+        border-radius:5px;
+        font-size:1.1em;
+        padding:2px 2px 2px 2px;
+        margin:20px;
+        cursor: default;
+      }
+      .bubble-yellow { background: #fff8c4; border-color: #f7deae; }
+      .alignleft {
+        float: left;
+      }
+      .alignright {
+        float: right;
+      }
+
+      .msger {
+        display: flex;
+        flex-flow: column wrap;
+        justify-content: space-between;
+        width: 100%;
+        height: 100%;
+        background: var(--msger-bg);
+        box-shadow: 0 15px 15px -5px rgba(0, 0, 0, 0.2);
+      }
+
     </style>
 
     <meta charset="UTF-8">
@@ -61,11 +81,11 @@
         window.ipid = channel.objects.ipid;
         window.sparql = channel.objects.sparql;
 
-        console.log('Acquired LD interface: ' + window.ld)
-
+        /*
         window.ipid.serviceEndpointCompact('/passport').then(function(pass) {
           window.passport = pass
         })
+        */
       })
     </script>
 
@@ -75,8 +95,6 @@
     </header>
 
     <div class="page">
-      <p align="center"><b>{{ rscUri }}</b></p>
-
       {% block body %}
       {% endblock %}
     </div>

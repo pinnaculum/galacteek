@@ -1,0 +1,53 @@
+{# replies about a given resource #}
+
+{% set q_rsc_replies = prepareQuery("""
+  PREFIX gs: <ips://galacteek.ld/>
+
+  SELECT ?rscType ?uri ?body ?dateCreated ?author ?authorNick
+  WHERE {
+    ?uri a ?rscType ;
+      gs:author ?author ;
+      gs:author/gs:nickName ?authorNick ;
+      gs:articleBody ?body ;
+      gs:dateCreated ?dateCreated ;
+      gs:about ?rsc .
+  }
+  ORDER BY DESC(?date)
+""") %}
+
+{# LikeAction on a resource #}
+
+{% set q_rsc_likes = prepareQuery("""
+  PREFIX gs: <ips://galacteek.ld/>
+
+  SELECT ?uri ?agent
+  WHERE {
+    ?uri a gs:LikeAction ;
+      gs:agent ?agent ;
+      gs:object ?rsc .
+  }
+""") %}
+
+{# get a DwebSocialPost #}
+
+{% set q_social_post = prepareQuery("""
+  PREFIX gs: <ips://galacteek.ld/>
+  SELECT *
+  WHERE {
+    ?uri a gs:DwebSocialPost ;
+      gs:author ?author ;
+      gs:author/gs:nickName ?authorNick ;
+      gs:articleBody ?body ;
+      gs:dateCreated ?dateCreated .
+  }
+""") %}
+
+{% set q_rsc_attachments = prepareQuery("""
+  PREFIX gs: <ips://galacteek.ld/>
+  SELECT ?url ?rscType
+  WHERE {                                                                       
+    ?rsc a ?type ;
+      gs:sharedContent/a ?rscType ;
+      gs:sharedContent/gs:url ?url .
+  }
+""") %}

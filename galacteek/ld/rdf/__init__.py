@@ -8,7 +8,6 @@ from rdflib import ConjunctiveGraph
 from rdflib import Literal
 from rdflib import BNode
 from rdflib import Namespace
-from rdflib.namespace import NamespaceManager
 
 from galacteek import log
 from galacteek import AsyncSignal
@@ -63,14 +62,14 @@ class Common(object):
         self._guardian = g
 
     def iNsBind(self):
-        self.iNs = NamespaceManager(self)
-
         # Bind some useful things in the NS manager
         for ns, uri in nsBindings.items():
             if isinstance(uri, list):
-                [self.iNs.bind(ns, Namespace(u)) for u in uri]
+                [self.namespace_manager.bind(
+                    ns, Namespace(u), override=True) for u in uri]
             else:
-                self.iNs.bind(ns, Namespace(uri))
+                self.namespace_manager.bind(
+                    ns, Namespace(uri), override=True)
 
     @property
     def nameSpaces(self):

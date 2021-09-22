@@ -242,6 +242,9 @@
     <file>../../share/translations/galacteek_es.qm</file>
     <file>../../share/translations/galacteek_en.qm</file>
   </qresource>
+  <qresource>
+    <file>../../share/icons/social/like.png</file>
+  </qresource>
 
   <qresource>
     <file>../../galacteek/ui/themes/common.qss</file>

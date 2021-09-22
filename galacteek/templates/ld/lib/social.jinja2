@@ -1,0 +1,62 @@
+{% import "ld/lib/passport.jinja2" as pass with context %}
+
+{% macro social_post_render(post) %}
+{% set uri = post.uri|string %}
+
+{% set agent_likes = graph.queryAsync(
+  spql.q_rsc_likes,
+  initBindings={'agent': pass.dwebPass.me["@id"], 'rsc': post.uri}) | length
+%}
+
+{% set likes = graph.queryAsync(
+  spql.q_rsc_likes, initBindings={'rsc': post.uri}) %}
+
+{% set attachments = graph.queryAsync(
+  spql.q_rsc_attachments, initBindings={'rsc': post.uri}) %}
+
+<div class="bubble1">
+
+<p class="alignleft"><a href="{{ post.uri }}" target="_blank">Open</a></p>
+<p class="alignright">
+<a target="_blank" href="{{ post.author }}"> @{{ post.authorNick }}</a>
+({{ post.dateCreated|dtclean }})
+</p>
+
+<div style="clear: both;"></div>
+
+<p align="left">
+{% if post.headline %}
+<h1><b>{{ post.headline }}</b></h1>
+{% endif %}
+</p>
+
+<p align="left">
+{{ post.body|markdown }}
+
+{% if attachments|count > 0 %}
+<ul>
+{% for att in attachments %}
+<li><a target="_blank" href="{{ att.url|string }}">{{ att.url }}</a></li>
+
+{% endfor %}
+</ul>
+{% endif %}
+</p>
+
+<p align="right">
+{{ likes|length }}
+
+{% if agent_likes == 0 %}
+<button onclick="rsc_like('{{ pass.dwebPass.me["@id"] }}', '{{ post.uri }}')">
+  <img width="16" src="qrc:/share/icons/social/like.png"/>
+</button>
+{% else %}
+<img width="16" src="qrc:/share/icons/social/like.png"/>
+{% endif %}
+
+</button>
+</p>
+
+</div>
+
+{% endmacro %}

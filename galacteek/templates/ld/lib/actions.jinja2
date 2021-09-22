@@ -1,0 +1,16 @@
+<script>
+  function rsc_like(agent, rsc) {
+    window.ld.iObjectCreateAuto({
+      '@type': 'LikeAction',
+      'agent': {
+        '@type': 'Person',
+        '@id': agent
+      },
+      'object': {
+        '@id': rsc
+      }
+    }).then(function(res) {
+      location.reload()
+    })
+  }
+</script>

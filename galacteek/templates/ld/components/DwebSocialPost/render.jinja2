@@ -1,63 +1,25 @@
 {% extends "ld/layout.jinja2" %}
+{% import "ld/lib/sparql_main.jinja2" as spql with context %}
+{% import "ld/lib/social.jinja2" as social with context %}
+
 {% block body %}
 
-{% set headline = graph.value(
-  rscUri, 'ips://galacteek.ld/headline') %}
+{% set post = graph.queryAsync(
+  spql.q_social_post, initBindings={'uri': rscUri}) | first %}
 
-{% set body = graph.value(
-  rscUri, 'ips://galacteek.ld/articleBody') %}
+{% set replies = graph.queryAsync(spql.q_rsc_replies, initBindings={'rsc': rscUri}) %}
+{% set likes = graph.queryAsync(spql.q_rsc_likes, initBindings={'rsc': rscUri}) %}
 
-{% set descr = graph.value(
-  rscUri, 'ips://galacteek.ld/description') %}
-
-{% set dateCreated = graph.value(
-  rscUri, 'ips://galacteek.ld/dateCreated') %}
-
-{% set cq = prepareQuery("""
-  PREFIX gs: <ips://galacteek.ld/>
-
-  SELECT ?rscType ?uri ?body ?date ?author ?authNick
-  WHERE {                                                                       
-    ?uri a ?rscType ;
-      gs:author ?author ;
-      gs:author/gs:nickName ?authNick ;
-      gs:articleBody ?body ;
-      gs:dateCreated ?date ;
-      gs:about ?rsc .
-  }
-  ORDER BY DESC(?date)
-""") %}
-
-{% set replies = graph.query(cq, initBindings={'rsc': rscUri}) %}
-
-<p align="center">
-{% if headline %}
-<h1><b>{{ headline }}</b></h1>
-{% endif %}
-</p>
-
-<p>
-{{ body|markdown }}
-</p>
+{{ social.social_post_render(post) }}
 
 <form width="100%">
   <textarea maxlength="1024" id="comment" name="textarea" width="800" rows="5"></textarea>
-  <p><button class="p-button" onclick="reply('{{ rscUri }}')">Reply</button></p>
+  <p align="center"><button class="p-button" onclick="reply('{{ rscUri }}')">Reply</button></p>
 </form>
 
-<div id="comments">
-{% for com in replies %}
-<div>
-  <a target="_blank"
-     href="{{ com.uri }}">{{ com.rscType }}</a> by
-   <a target="_blank" href="{{ com.author }}">@{{ com.authNick }}</a>
-  {{ com.authorPass }}
-  <blockquote class="p-pull-quote">
-  <p class="p-pull-quote__quote">
-  {{ com.body|markdown }}
-  </p>
-</blockquote>
-</div>
+<div id="replies">
+{% for post in replies|reverse %}
+{{ social.social_post_render(post) }}
 {% endfor %}
 </div>
 

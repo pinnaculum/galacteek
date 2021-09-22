@@ -1,0 +1,3 @@
+
+{% set service = ipid.searchServiceById(ipid.didUrl(path='/passport')) %}
+{% set dwebPass = service.compact().serviceEndpoint %}
