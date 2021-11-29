@@ -1,6 +1,6 @@
 <script>
   function rsc_like(agent, rsc) {
-    window.ld.iObjectCreateAuto({
+    window.g_pronto.ontoloCreateObjectAuto({
       '@type': 'LikeAction',
       'agent': {
         '@type': 'Person',
@@ -9,7 +9,7 @@
       'object': {
         '@id': rsc
       }
-    }).then(function(res) {
+    }, {}).then(function(res) {
       location.reload()
     })
   }

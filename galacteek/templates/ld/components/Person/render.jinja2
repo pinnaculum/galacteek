@@ -7,6 +7,9 @@
 {% set nick = graph.value(
   rscUri, 'ips://galacteek.ld/nickName') %}
 
+{% set avatar = graph.value(
+  rscUri, 'ips://galacteek.ld/image') %}
+
 {% set firstName = graph.value(
   rscUri, 'ips://galacteek.ld/firstName') %}
 
@@ -63,6 +66,10 @@
 <h1><b>{{ headline }}</b></h1>
 </p>
 
+{% if avatar %}
+<p><img src="{{ avatar }}"></img></p>
+{% endif %}
+
 <div>
 <p>
 Nickname: <b>{{ nick }}</b>
@@ -85,7 +92,7 @@ Last name: <b>{{ lastName }}</b>
 
 <script>
   function follow(type, person) {
-    window.ld.iObjectCreateAuto({
+    window.g_pronto.ontoloCreateObjectAuto({
       '@type': type,
 
       'agent': {
@@ -96,7 +103,7 @@ Last name: <b>{{ lastName }}</b>
         '@type': 'Person',
         '@id': person
       },
-      }).then(function(res) {
+      }, {}).then(function(res) {
         location.reload()
       })
   }

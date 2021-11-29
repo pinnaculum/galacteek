@@ -1,3 +1,4 @@
+import traceback
 import asyncio
 import concurrent.futures
 import functools
@@ -7,6 +8,7 @@ import hashlib
 from cachetools import TTLCache
 
 from jwcrypto import jws
+from jwcrypto import jwk
 
 from io import BytesIO
 
@@ -288,3 +290,19 @@ class RSAExecutor(object):
                 log.debug(f'Cannot verify JWS: {err}')
 
         return await self._exec(_verify, signature, key)
+
+    async def jwsVerifyFromPem(self, signature, pem: str):
+        def _verify(sig, pem):
+            try:
+                key = jwk.JWK()
+                key.import_from_pem(pem.encode())
+
+                token = jws.JWS()
+                token.deserialize(sig, alg='RS256')
+                token.verify(key, alg='RS256')
+                return token.payload
+            except Exception as err:
+                traceback.print_exc()
+                log.debug(f'Cannot verify JWS: {err}')
+
+        return await self._exec(_verify, signature, pem)

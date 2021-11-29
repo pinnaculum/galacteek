@@ -21,10 +21,9 @@ from galacteek.ld.rdf.guardian import GraphGuardian
 
 from rdflib import plugin
 from rdflib import URIRef
-from rdflib.graph import Graph
 from rdflib.store import Store
 
-from galacteek.services.ld.pronto.graphs.sync import *
+from galacteek.services.ld.pronto.sync import *
 
 
 class RDFStoresService(GService):
@@ -37,15 +36,15 @@ class RDFStoresService(GService):
 
     @property
     def graphG(self):
-        return self.graphByUri('urn:ipg:g:c0')
+        return self.graphByUri('urn:ipg:i')
 
     @property
     def graphHistory(self):
-        return self.graphByUri('urn:ipg:g:h0')
+        return self.graphByUri('urn:ipg:h0')
 
     @property
     def historyService(self):
-        return GService.byDotName.get('ld.pronto.graphs.history')
+        return GService.byDotName.get('ld.pronto.history')
 
     @property
     def chainEnv(self):
@@ -85,10 +84,13 @@ class RDFStoresService(GService):
             identifier=self.rdfIdent
         )
 
+        rootPath = self.storesPath.joinpath(f'igraph_{cfg.name}')
+        rootPath.mkdir(parents=True, exist_ok=True)
+
         graph = IGraph(
-            cfg.name,
-            self.storesPath.joinpath(f'igraph_{cfg.name}'),
             self.store,
+            rootPath,
+            name=cfg.name,
             identifier=uri
         )
         graph.open(graph.dbUri, create=True)
@@ -107,11 +109,7 @@ class RDFStoresService(GService):
             identifier=uri
         )
 
-        dbPath = str(
-            self.storesPath.joinpath(
-                f'ipcgraph_{cfg.name}.db')
-        )
-        rootPath = self.storesPath.joinpath(f'ipcg_{uri}')
+        rootPath = self.storesPath.joinpath(f'ipcg_{cfg.name}')
         rootPath.mkdir(parents=True, exist_ok=True)
         dbPath = rootPath.joinpath('g_rdf.db')
 
@@ -122,30 +120,30 @@ class RDFStoresService(GService):
         subgraphs = cfg.get('subgraphs', {})
 
         for guri, gcfg in subgraphs.items():
-            graph = Graph(store=store, identifier=URIRef(guri))
-            if 0:
-                graph = IGraph(
-                    gcfg.name,
-                    self.storesPath.joinpath(f'igraph_{gcfg.name}'),
-                    store,
-                    identifier=guri
-                )
-                graph.iNsBind()
+            graph = IGraph(
+                store,
+                dbPath,
+                name=gcfg.name,
+                identifier=guri
+            )
+            graph.iNsBind()
+
+            await self.graphRegServices(gcfg, graph)
+            self._graphs[gcfg.name] = graph
 
         await self.graphRegServices(cfg, cgraph)
 
-        self._cgraphs.append(cgraph)
+        self._graphs[cfg.name] = cgraph
 
         return cgraph
 
     async def graphRegServices(self, cfg, graph):
         services = cfg.get('services', {})
-        guardianUri = cfg.get('guardian', None)
+        guardianUri = cfg.get('guardian', 'urn:ipg:guardians:goliath')
 
-        if guardianUri:
-            guardian = self._guardians.get(guardianUri)
-            if guardian:
-                graph.setGuardian(guardian)
+        guardian = self._guardians.get(guardianUri)
+        if guardian:
+            graph.setGuardian(guardian)
 
         for srvtype, cfg in services.items():
             if srvtype == 'sparql':
@@ -250,40 +248,41 @@ class RDFStoresService(GService):
 
         if event['type'] == 'DagRdfStorageRequest':
             path = IPFSPath(event['ipfsPath'])
+            recordType = event['recordType']
+            historyTrace = event['historyTrace']
+            chainUri = event.get('chainUri')
             graphIri = event.get(
                 'outputGraphIri',
-                'urn:ipg:g:c0'
+                'urn:ipg:i:i0'
             )
 
             if path.valid:
                 result = await self.storeObject(
-                    ipfsop, path,
+                    ipfsop,
+                    path,
                     graphs=[graphIri]
                 )
 
-                if result is True:
+                if result is True and historyTrace:
                     await self.historyService.trace(
-                        path, graphIri
+                        path, graphIri,
+                        recordType=recordType,
+                        chainUri=chainUri
                     )
             else:
                 log.debug(f'{path}: invalid')
 
-    async def storeObject(self, ipfsop, path: IPFSPath,
+    async def storeObject(self, ipfsop,
+                          obj,
+                          # path: IPFSPath,
                           graphs=None):
-        def supgrade(graph, subject: URIRef):
-            for rule in graph.tUpRules:
-                if rule.reSub.match(str(subject)):
-                    return True
-
-            return False
-
         if isinstance(graphs, list):
             dst = graphs
         else:
             dst = [self.graphG.identifier]
 
         async with ipfsop.ldOps() as ld:
-            objGraph = await ld.dagAsRdf(path)
+            objGraph = await ld.rdfify(obj)
 
             if not objGraph:
                 return False
@@ -298,10 +297,18 @@ class RDFStoresService(GService):
                 if destGraph is None:
                     continue
 
-                guardian = destGraph.guardian
+                if not destGraph.guardian:
+                    continue
 
-                if guardian:
-                    await guardian.merge(objGraph, destGraph)
+                result = await destGraph.guardian.merge(
+                    objGraph, destGraph)
+
+                for so in result:
+                    result = await self.storeObject(
+                        ipfsop,
+                        so,
+                        graphs=graphs
+                    )
 
         return True
 

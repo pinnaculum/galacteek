@@ -7,16 +7,17 @@ from galacteek.ipfs import ipfsOp
 from galacteek.core import uid4
 from galacteek.ld import uriTermExtract
 from galacteek.ld.sparql import uri_objtype
-from rdflib.plugins.sparql import prepareQuery
 
 
 class RootView(web.View):
     @property
     def stores(self):
-        return services.getByDotName('ld.pronto.graphs')
+        return services.getByDotName('ld.pronto')
 
     @ipfsOp
     async def get(self, ipfsop):
+        from rdflib.plugins.sparql import prepareQuery
+
         curProfile = ipfsop.ctx.currentProfile
         ipid = await curProfile.userInfo.ipIdentifier()
 
@@ -54,7 +55,7 @@ class RootView(web.View):
 class GraphsView(web.View):
     @property
     def stores(self):
-        return services.getByDotName('ld.pronto.graphs')
+        return services.getByDotName('ld.pronto')
 
     async def get(self):
         minfo = self.request.match_info
@@ -79,7 +80,7 @@ class IService(services.GService):
 
     @property
     def prontoService(self):
-        return services.getByDotName('ld.pronto.graphs')
+        return services.getByDotName('ld.pronto')
 
     def on_init(self):
         self.socketPath = self.rootPath.joinpath('i.sock')

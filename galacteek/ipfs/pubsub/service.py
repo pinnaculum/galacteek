@@ -98,6 +98,8 @@ class PubsubService(Configurable, GService):
                  maxMsgTsDiff=None, minMsgTsDiff=None,
                  maxMessageSize=32768,
                  scheduler=None,
+                 serveLifetime=0,
+                 metrics=True,
                  peered=False,
                  **kw):
         self.throttler = None
@@ -116,6 +118,9 @@ class PubsubService(Configurable, GService):
         self._runPeriodic = runPeriodic
         self._filters = []
         self._peerActivity = {}
+        self._ltServeStart = 0
+        self._serveLifetime = serveLifetime  # in seconds
+        self._metrics = metrics
 
         GService.__init__(self, **kw)
         Configurable.__init__(self, applyNow=True)
@@ -219,6 +224,10 @@ class PubsubService(Configurable, GService):
             await asyncio.sleep(0.9)
 
             await self.startListening()
+        elif event['type'] == 'PubsubChannelForceStart':
+            if event.get('topic') == self.topic():
+                if not self.tskServe:
+                    await self.startListening()
 
     @ipfsOp
     async def startListening(self, ipfsop):
@@ -345,6 +354,8 @@ class PubsubService(Configurable, GService):
         # We're only in the bytopic list when listening
         self.ipfsCtx.pubsub.reg(self)
 
+        self._ltServeStart = loopTime()
+
         try:
             async for message in ipfsop.client.pubsub.sub(topic):
                 if await self.filtered(message):
@@ -358,6 +369,13 @@ class PubsubService(Configurable, GService):
 
                 self._receivedCount += 1
                 await asyncio.sleep(0)
+
+                # Check channel lifetime limits
+                runtime = loopTime() - self._ltServeStart
+
+                if self._serveLifetime > 0 and runtime > self._serveLifetime:
+                    self.debug('Channel lifetime expired, byebye')
+                    break
         except asyncio.CancelledError:
             self.ipfsCtx.pubsub.unreg(self)
             self.debug('Cancelled, queue size was {0}'.format(
@@ -367,12 +385,16 @@ class PubsubService(Configurable, GService):
             traceback.print_exc()
 
             # Unregister
-            self.ipfsCtx.pubsub.reg(self)
+            self.ipfsCtx.pubsub.unreg(self)
 
             self.debug(
                 f'Serve interrupted by unknown exception {err}')
 
             ensureLater(5, self.serve, ipfsop)
+
+        await self.stopListening()
+
+        self.ipfsCtx.pubsub.unreg(self)
 
     @ipfsOp
     async def send(self, ipfsop, msg, topic=None):
@@ -483,11 +505,14 @@ class JSONPubsubService(PubsubService):
                             gHub.publish(
                                 self.hubKey, (sender, self.topic(), msg))
 
-                        rec = await self.psDbManager.recordMessage(
-                            sender,
-                            len(data['data']),
-                            seqNo=data['seqno']
-                        )
+                        if self._metrics:
+                            rec = await self.psDbManager.recordMessage(
+                                sender,
+                                len(data['data']),
+                                seqNo=data['seqno']
+                            )
+                        else:
+                            rec = None
 
                         await self.processJsonMessage(
                             sender, msg,

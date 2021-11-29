@@ -22,7 +22,7 @@ from cachetools import cached, LRUCache
 
 from distutils.version import StrictVersion
 
-from asyncqt import QEventLoop
+from qasync import QEventLoop
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QDesktopWidget
@@ -846,11 +846,21 @@ class GalacteekApplication(QApplication):
                                  port=connParams.apiPort, loop=loop)
 
     @cached(LRUCache(256))
-    def ipfsOperatorForLoop(self, loop):
+    def ipfsOperatorForLoop(self, loop=None):
+        if not loop:
+            loop = asyncio.get_event_loop()
+
         op = GalacteekOperator(self.ipfsClientForLoop(loop),
                                ctx=self.ipfsCtx,
                                debug=self.debugEnabled,
                                nsCache=self.nsCache)
+
+        if self.ipfsOpMain:
+            # Use crypto agents from the main operator
+            if self.ipfsOpMain.rsaAgent:
+                op.setRsaAgent(self.ipfsOpMain.rsaAgent)
+            if self.ipfsOpMain.curve25519Agent:
+                op.setCurve25519Agent(self.ipfsOpMain.curve25519Agent)
 
         # We share the manager but attach to the loop.. Threadsafe ? no
         # TODO: make the IPID manager thread-safe

@@ -139,6 +139,11 @@ def datetimeIsoH(timespec='seconds'):
     return datetimeNow().isoformat(sep=' ', timespec=timespec)
 
 
+def normalizedUtcDate():
+    return datetime.now(timezone.utc).isoformat(
+        timespec='seconds').replace('+00:00', 'Z')
+
+
 def parseDate(date):
     if isinstance(date, str):
         try:
@@ -247,7 +252,7 @@ def mergeDicts(dict1, dict2):
             dict2_node = dict2.setdefault(key, {})
             mergeDicts(val, dict2_node)
         else:
-            if key not in dict2:
+            if dict2 is not None and key not in dict2:
                 dict2[key] = val
 
     return dict2

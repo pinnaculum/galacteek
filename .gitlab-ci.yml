@@ -87,6 +87,7 @@ build:
     - mkdir -p $ASSETS_ROOT
 
     - pip install -U pip
+    - pip install -r requirements.txt
 
     - python setup.py build build_docs
     - python setup.py sdist bdist_wheel

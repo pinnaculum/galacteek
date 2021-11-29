@@ -11,6 +11,7 @@ from rdflib import Namespace
 
 from galacteek import log
 from galacteek import AsyncSignal
+from galacteek.ipfs import ipfsOp
 from galacteek.core import runningApp
 from galacteek.core.asynclib import asyncWriteFile
 from galacteek.ld import asyncjsonld as jsonld
@@ -92,12 +93,6 @@ class Common(object):
         return await self.loop.run_in_executor(
             None, self._serial, 'pretty-xml')
 
-
-class BaseGraph(Graph, Common):
-    def __init__(self, *args, **kw):
-        super().__init__(*args, **kw)
-        self.loop = asyncio.get_event_loop()
-
     async def queryAsync(self, query, initBindings=None):
         def runQuery(q, bindings):
             return self.query(q, initBindings=bindings)
@@ -107,7 +102,26 @@ class BaseGraph(Graph, Common):
             runQuery, query, initBindings
         )
 
-    async def pullObject(self, doc: dict):
+
+class BaseGraph(Graph, Common):
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
+
+    @ipfsOp
+    async def pullObject(self, ipfsop, doc: dict):
+        try:
+            if '@context' not in doc:
+                doc.update(gLdDefaultContext)
+
+            async with ipfsop.ldOps() as ld:
+                graph = await ld.rdfify(doc)
+
+            # Could be optimized using another rdflib method
+            self.parse(await graph.ttlize())
+        except Exception as err:
+            log.debug(f'Error pulling object {doc}: {err}')
+
+    async def pullObjectOld(self, doc: dict):
         try:
             if '@context' not in doc:
                 doc.update(gLdDefaultContext)
@@ -128,13 +142,15 @@ class BaseGraph(Graph, Common):
 
 
 class IGraph(BaseGraph):
-    def __init__(self, name, rPath: Path, store, **kw):
+    def __init__(self, store,
+                 rPath: Path,
+                 name: str = None,
+                 **kw):
         super(IGraph, self).__init__(store, **kw)
 
         self.name = name
         self.rPath = rPath
         self.exportsPath = self.rPath.joinpath('exports')
-        self.exportsPath.mkdir(parents=True, exist_ok=True)
         self.xmlExportPath = self.exportsPath.joinpath('graph.xml')
 
         self.dbPath = str(self.rPath.joinpath('g_rdf.db'))
@@ -148,12 +164,14 @@ class IGraph(BaseGraph):
         return f'file:///{self.xmlExportPath}'
 
     async def exportTtl(self):
+        self.exportsPath.mkdir(parents=True, exist_ok=True)
         await asyncWriteFile(
             str(self.exportsPath.joinpath('export.ttl')),
             await self.ttlize()
         )
 
     async def exportXml(self):
+        self.exportsPath.mkdir(parents=True, exist_ok=True)
         await asyncWriteFile(
             str(self.exportsPath.joinpath('export.ttl')),
             await self.xmlize()

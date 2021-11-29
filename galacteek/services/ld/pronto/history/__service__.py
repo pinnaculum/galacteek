@@ -14,6 +14,7 @@ from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.pubsub.messages.ld import SparQLHeartbeatMessage
 
 from galacteek.ld import gLdDefaultContext
+from galacteek.ld import ontolochain
 from galacteek.ld.sparql.aioclient import Sparkie
 
 
@@ -43,7 +44,7 @@ class GraphHistorySynchronizer:
         return q
 
     async def syncFromExport(self, ipfsop, iri, dial):
-        rdfService = GService.byDotName.get('ld.pronto.graphs')
+        rdfService = GService.byDotName.get('ld.pronto')
         graph = rdfService.graphByUri(iri)
         if graph is None:
             return
@@ -96,11 +97,15 @@ class GraphingHistoryService(GService):
 
     @property
     def rdfService(self):
-        return GService.byDotName.get('ld.pronto.graphs')
+        return GService.byDotName.get('ld.pronto')
 
     @property
     def hGraph(self):
-        return self.rdfService.graphByUri('urn:ipg:g:h0')
+        return self.rdfService.graphByUri('urn:ipg:h0')
+
+    @property
+    def mainGraph(self):
+        return self.rdfService.graphG
 
     def on_init(self):
         self.trail = None
@@ -109,10 +114,41 @@ class GraphingHistoryService(GService):
         await super().on_start()
         self.synchro = GraphHistorySynchronizer(self.hGraph)
 
+    async def ontoloChainCreate(self, ipid, chainId, peerId):
+        log.debug(f'Creating ontolochain: {chainId}')
+
+        doc = await ipid.jsonLdSign({
+            '@context': gLdDefaultContext,
+            '@type': 'OntoloChain',
+            '@id': chainId,
+            'peerId': peerId,
+            'dateCreated': utcDatetimeIso()
+        })
+        await self.hGraph.pullObject(doc)
+
+    async def trustTokenForDid(self, did: str):
+        tokens = list(await self.mainGraph.queryAsync(
+            '''
+            PREFIX gs: <ips://galacteek.ld/>
+            PREFIX trustToken: <ips://galacteek.ld/OntoloTrustToken#>
+            SELECT ?uri
+            WHERE {
+                ?uri a gs:OntoloTrustToken ;
+                  trustToken:holder ?did .
+            }
+            LIMIT 1
+            ''',
+            initBindings={'did': did}
+        ))
+        if tokens:
+            return tokens.pop(0)[0]
+
     @ipfsOp
     async def trace(self, ipfsop,
                     iPath: IPFSPath,
-                    graph: str):
+                    graphUri: str,
+                    recordType='OntoloChainRecord',
+                    chainUri=None):
         """
         Main history API (trace an object in the history graph)
         """
@@ -121,43 +157,38 @@ class GraphingHistoryService(GService):
         profile = ipfsCtx.currentProfile
         ipid = await profile.userInfo.ipIdentifier()
 
+        # Graph where we store the ontolorecord
+        # dstGraph = self.rdfService.graphByUri(graphUri)
+        dstGraph = self.rdfService.graphHistory
+
+        if dstGraph is None:
+            log.debug(f'trace: graph with URI {graphUri} was not found')
+            return
+
         if not ipid:
             log.debug('No IPID found')
             return
 
         h = hashlib.sha1()
         h.update(iPath.ipfsUrl.encode())
-        nodeId = f'urn:ontolorecord:{h.hexdigest()}'
 
-        chainId = f'urn:ontolochain:{ipfsCtx.node.id}'
+        if recordType == 'OntoloChainRecord':
+            nodeId = f'urn:ontolorecord:{h.hexdigest()}'
+        elif recordType == 'OntoloChainVCRecord':
+            nodeId = f'urn:ontolovcrecord:{h.hexdigest()}'
+        else:
+            log.debug(f'Invalid record type {recordType}')
+            return
 
-        chains = list(await self.hGraph.queryAsync(
-            '''
-            PREFIX gs: <ips://galacteek.ld/>
-            SELECT ?chainUri
-            WHERE {
-                ?chainUri a gs:OntoloChain ;
-                  gs:peerId ?peerId .
-            }
-            ''',
-            initBindings={
-                'chainUri': chainId,
-                'peerId': ipfsCtx.node.id
-            }
-        ))
+        chainId = chainUri if chainUri else ontolochain.didMainChainUri(ipid)
 
-        if not chains:
-            log.debug(f'Creating ontolochain: {chainId}')
-            doc = await ipid.jsonLdSign({
-                '@context': gLdDefaultContext,
-                '@type': 'OntoloChain',
-                '@id': chainId,
-                'peerId': ipfsCtx.node.id,
-                'dateCreated': utcDatetimeIso()
-            })
-            await self.hGraph.pullObject(doc)
+        chains = await ontolochain.selectByUri(dstGraph, chainId)
 
-        lastObjs = list(await self.hGraph.queryAsync(
+        if len(chains) == 0:
+            await self.ontoloChainCreate(
+                ipid, chainId, ipfsCtx.node.id)
+
+        lastObjs = list(await dstGraph.queryAsync(
             '''
             PREFIX gs: <ips://galacteek.ld/>
             SELECT ?uri ?date ?objNum
@@ -191,14 +222,14 @@ class GraphingHistoryService(GService):
                 '@id': str(row['uri'])
             }
 
-        result = list(self.hGraph.predicate_objects(nodeId))
+        result = list(dstGraph.predicate_objects(nodeId))
 
         if result:
             return
 
         doc = await ipid.jsonLdSign({
             '@context': gLdDefaultContext,
-            '@type': 'OntoloChainRecord',
+            '@type': recordType,
             '@id': nodeId,
 
             'didCreator': {
@@ -217,10 +248,42 @@ class GraphingHistoryService(GService):
 
             'dateCreated': utcDatetimeIso(),
             'ipfsPath': str(iPath),
-            'outputGraph': graph
+            'outputGraph': graphUri,
+
+            'verificationMethod': f'{ipid.did}#keys-1'
         })
 
-        await self.hGraph.pullObject(doc)
+        await dstGraph.pullObject(doc)
+
+        trustToken = await self.trustTokenForDid(ipid.did)
+
+        if trustToken:
+            commitId = f'{nodeId}:commit'
+
+            commit = await ipid.jsonLdSign({
+                '@context': gLdDefaultContext,
+                '@type': 'OntoloChainCommit',
+
+                '@id': commitId,
+
+                'ontoloBlock': {
+                    '@type': 'OntoloChainRecord',
+                    '@id': nodeId
+                },
+
+                'ontoloChain': {
+                    '@type': 'OntoloChain',
+                    '@id': chainId
+                },
+
+                'ontoloTrustToken': {
+                    '@id': str(trustToken)
+                },
+
+                'dateCreated': utcDatetimeIso()
+            })
+
+            await dstGraph.pullObject(commit)
 
     # @GService.task
     async def watch(self):

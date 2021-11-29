@@ -1,5 +1,6 @@
 from pathlib import Path
 from omegaconf import OmegaConf
+import attr
 import asyncio
 import aiohttp
 import tarfile
@@ -13,6 +14,16 @@ from galacteek.core.asynclib import asyncReadFile
 from galacteek.services import GService
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
+
+
+@attr.s(auto_attribs=True)
+class CapsuleContext:
+    uri: str = ''
+    type: str = ''
+    qdef: dict = {}
+    depends: list = []
+    components: list = []
+    qmlEntryPoint: str = ''
 
 
 class ICapsuleRegistryLoaderService(GService):
@@ -29,7 +40,11 @@ class ICapsuleRegistryLoaderService(GService):
         self.dappsStoragePath.mkdir(exist_ok=True, parents=True)
         self._qc = {}
         self._byUri = {}
+        self._dappLoadedByUri = {}
         self._processing = False
+
+    def capsuleCtx(self, uri: str):
+        return self._byUri.get(uri)
 
     async def on_start(self):
         pass
@@ -43,7 +58,7 @@ class ICapsuleRegistryLoaderService(GService):
         elif event['type'] == 'QmlApplicationLoaded':
             uri = event.get('appUri')
 
-            self._byUri[uri] = True
+            self._dappLoadedByUri[uri] = True
 
     @GService.task
     async def registryTask(self):
@@ -87,13 +102,12 @@ class ICapsuleRegistryLoaderService(GService):
             for uri, cfg in obj.icapsules.items():
                 depls = cfg.get('deployments')
                 dUrl = cfg.get('deploymentsUrl')
-                mtype = cfg.get('type')
 
-                if uri in self._byUri:
-                    continue
+                # if uri in self._byUri or uri in self._dappLoadedByUri:
+                #     continue
 
-                if not mtype or mtype not in ['dapp-qml', 'dapp']:
-                    continue
+                # if not mtype or mtype not in ['dapp-qml', 'dapp', 'lib-qml']:
+                #     continue
 
                 if not depls:
                     continue
@@ -104,22 +118,37 @@ class ICapsuleRegistryLoaderService(GService):
                 # print(dUrl)
                 # depls = await self.configFromUrl(dUrl)
 
-                if mtype == 'dapp-qml':
-                    await self.dappDeploymentsParse(uri, depls)
+                ctx = await self.capsuleDeploymentsParse(uri, depls)
+                if ctx:
+                    self._byUri[uri] = ctx
+
+            # Load dapps
+            for uri, ctx in self._byUri.items():
+                if uri in self._dappLoadedByUri:
+                    continue
+
+                if ctx.type not in ['dapp-qml', 'dapp']:
+                    continue
+
+                if len(ctx.components) > 0 and ctx.qmlEntryPoint:
+                    await self.dappLoadRequest(ctx)
+
             return True
 
         except Exception:
             return False
 
-    async def dappDeploymentsParse(self, uri, depls):
+    async def capsuleDeploymentsParse(self, uri, depls):
         try:
-            rel = depls.releases[depls.latest]
+            version = depls.latest
+            rel = depls.releases[version]
             ipfsPath = IPFSPath(rel['manifestIpfsPath'])
             assert ipfsPath.valid is True
 
-            log.debug(f'Loading dapp from manifest: {ipfsPath}')
+            log.debug(f'Loading capsule from manifest: {ipfsPath}')
 
-            await self.loadDappFromManifest(uri, ipfsPath)
+            return await self.loadCapsuleFromManifest(
+                uri, version, ipfsPath)
         except Exception as err:
             log.debug(f'{uri}: error parsing manifest {ipfsPath}: {err}')
 
@@ -199,19 +228,24 @@ class ICapsuleRegistryLoaderService(GService):
             return cfg
 
     @ipfsOp
-    async def loadDappFromManifest(self, ipfsop,
-                                   uri: str,
-                                   manifestPath: IPFSPath):
+    async def loadCapsuleFromManifest(self, ipfsop,
+                                      uri: str,
+                                      version: str,
+                                      manifestPath: IPFSPath):
         try:
             yaml = await ipfsop.catObject(str(manifestPath))
             qdef = OmegaConf.create(yaml.decode())
         except Exception as err:
-            log.debug(f'loadDappFromManifest: ERR {err}')
+            log.debug(f'loadCapsuleFromManifest: ERR {err}')
             return
 
         cloaded = []
         qmlEntryPoint = None
         compdefs = qdef.get('components')
+        depends = qdef.get('depends')
+        mtype = qdef.get('type', 'dapp-qml')
+
+        log.debug(f'{uri}: depends {depends}')
 
         for cn, comp in compdefs.items():
             active = comp.get('enabled', True)
@@ -237,7 +271,7 @@ class ICapsuleRegistryLoaderService(GService):
                 iPath = IPFSPath(comp.cid)
 
                 rpath = self.dappsStoragePath.joinpath(uri)
-                rcpath = rpath.joinpath(cn)
+                rcpath = rpath.joinpath(cn).joinpath(version)
                 cpath = rcpath.joinpath(comp.cid)
                 rcpath.mkdir(parents=True, exist_ok=True)
 
@@ -268,21 +302,23 @@ class ICapsuleRegistryLoaderService(GService):
                         'fsPath': str(cpath)
                     })
 
-        if len(cloaded) > 0 and qmlEntryPoint:
-            await self.appNotify(
-                qdef,
-                cloaded,
-                qmlEntryPoint
-            )
+        return CapsuleContext(
+            type=mtype,
+            qdef=qdef,
+            uri=uri, depends=depends,
+            components=cloaded,
+            qmlEntryPoint=qmlEntryPoint
+        )
 
-    async def appNotify(self, appdef, comps: list, qmlEntryPoint):
+    async def dappLoadRequest(self, ctx):
         await self.ldPublish({
             'type': 'QmlApplicationLoadRequest',
-            'appName': appdef.get('name', 'Unknown'),
-            'appUri': appdef.get('uri'),
-            'appIconCid': appdef.get('icon', {}).get('cid', None),
-            'qmlEntryPoint': qmlEntryPoint,
-            'components': comps
+            'appName': ctx.qdef.get('name', 'Unknown'),
+            'appUri': ctx.qdef.get('uri'),
+            'appIconCid': ctx.qdef.get('icon', {}).get('cid', None),
+            'qmlEntryPoint': ctx.qmlEntryPoint,
+            'components': ctx.components,
+            'depends': ctx.depends
         })
 
 

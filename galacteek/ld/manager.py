@@ -117,4 +117,4 @@ class LDSchemasImporter:
             return entry['Hash']
 
     def onLdContextsChanged(self, path):
-        ensure(self.update())
+        pass

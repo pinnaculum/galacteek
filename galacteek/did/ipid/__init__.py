@@ -743,11 +743,11 @@ class IPIdentifier(DAGOperations):
                 'description': 'User Avatar'
             }, publish=True)
         else:
-            async with self.editService(avatarServiceId) as editor:
+            async with self.editServiceById(avatarServiceId) as editor:
                 editor.service['serviceEndpoint'] = str(ipfsPath)
 
     @async_enterable
-    async def editService(self, _id: str, sync=True):
+    async def editServiceById(self, _id: str, sync=True):
         """
         Edit the IP service with the given ID
 
@@ -806,6 +806,13 @@ class IPIDManager:
 
     async def onLocalIpidServiceAvailable(self, ipid, ipService):
         log.debug(f'{ipid.did}: Starting IPID service: {ipService}')
+
+        try:
+            periodic = getattr(ipService, 'periodicTask')
+            if asyncio.iscoroutinefunction(periodic):
+                ensure(periodic())
+        except Exception:
+            pass
 
         await ipService.serviceStart()
 

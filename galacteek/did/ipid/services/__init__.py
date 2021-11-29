@@ -163,8 +163,14 @@ class IPService(metaclass=IPServiceRegistry):
         pass
 
     async def p2pServiceRegister(self, service):
-        app = runningApp()
-        await app.s.ipfsP2PService(service)
+        await (runningApp()).s.ipfsP2PService(service)
+
+    async def pubsubServiceRegister(self, service):
+        await (runningApp()).s.ipfsPubsubService(service)
+        await service.startListening()
+
+    async def request(self, command='PATCH', **kw):
+        raise Exception(f'Unauthorized service request: {command}')
 
     def __repr__(self):
         return self.id
@@ -246,7 +252,7 @@ class CollectionService(IPService):
 
         oId = '{didurl}/{o}'.format(didurl=self.id, o=oName)
         try:
-            async with self.ipid.editService(self.id) as editor:
+            async with self.ipid.editServiceById(self.id) as editor:
                 editor.service['serviceEndpoint']['objects'].append({
                     '@context': await ipfsop.ldContext('IpfsObject'),
                     'id': oId,

@@ -14,7 +14,6 @@ from galacteek.ld.ldloader import aioipfs_document_loader
 from galacteek.ld import asyncjsonld as jsonld
 from galacteek.ld import ldContextsRootPath
 from galacteek.ld import gLdBaseUri
-from galacteek.ld.rdf import BaseGraph
 
 
 class LDOpsContext(object):
@@ -47,7 +46,7 @@ class LDOpsContext(object):
                 str(err)))
 
     async def dagExpandAggressive(self,
-                                  ipfsPath: IPFSPath,
+                                  arg,
                                   expandContext=None,
                                   expandContextFromType=True):
         """
@@ -57,17 +56,20 @@ class LDOpsContext(object):
         Aggressive expansion
         """
         try:
-            dag = await self.operator.dagGet(str(ipfsPath))
-            assert dag is not None
+            if isinstance(arg, IPFSPath):
+                dag = await self.operator.dagGet(str(arg))
+                assert dag is not None
+            elif isinstance(arg, dict):
+                dag = arg
 
             #
             # Before expanding, set some attributes
             # to keep track of the object from RDF
             #
 
-            if isinstance(dag, dict):
+            if isinstance(dag, dict) and isinstance(arg, IPFSPath):
                 # Backlink
-                dag['comesFromIpfs'] = str(ipfsPath)
+                dag['comesFromIpfs'] = str(arg)
 
                 #
                 # Remove reserved keywords
@@ -108,14 +110,21 @@ class LDOpsContext(object):
         else:
             return expanded
 
-    async def dagAsRdf(self, ipfsPath: IPFSPath, debug=False):
+    async def rdfify(self,
+                     obj,
+                     debug=False):
         """
-        IPFS DAG to RDF, via the rdflib-jsonld plugin
+        IPFS DAG (or object) to RDF, via the rdflib-jsonld plugin
         """
+        from galacteek.ld.rdf import BaseGraph
         try:
             # Expand
-            dag = await self.dagExpandAggressive(ipfsPath)
-            assert dag is not None
+
+            if isinstance(obj, IPFSPath) or isinstance(obj, dict):
+                dag = await self.dagExpandAggressive(obj)
+                assert dag is not None
+            else:
+                raise ValueError('Invalid argument for RDF conversion')
 
             # Build the RDF graph from the expanded JSON-LD
             graph = BaseGraph()
@@ -133,7 +142,7 @@ class LDOpsContext(object):
 
             return graph
         except Exception as err:
-            log.debug(f'DAG to RDF error for {ipfsPath}: {err}')
+            log.debug(f'DAG to RDF error for {obj}: {err}')
             return None
 
     async def dagCompact(self, ipfsPath: IPFSPath, context=None):

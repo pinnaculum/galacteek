@@ -8,6 +8,7 @@ import aiofiles
 import asyncio
 import aiohttp
 import re
+import multiaddr
 
 from aiohttp.web_exceptions import HTTPOk
 from yarl import URL
@@ -101,6 +102,7 @@ class IPFSOperatorOfflineContext(object):
 class GetContext(object):
     def __init__(self, operator, path, dstdir, **kwargs):
         self.operator = operator
+        self.success = False
         self.path = IPFSPath(path)
         self.dstdir = Path(dstdir)
         self.finaldir = None
@@ -116,6 +118,7 @@ class GetContext(object):
             self.operator.debug(f'Get error: {self.path}: {err}')
             return self
         else:
+            self.success = True
             self.finaldir = self.dstdir.joinpath(self.path.basename)
             self.operator.debug(
                 f'Get {self.path}: OK, fetched in {self.finaldir}')
@@ -375,6 +378,11 @@ class IPFSOperator(RemotePinningOps,
 
     async def __aexit__(self, *args):
         return
+
+    async def ipid(self):
+        if self.ctx:
+            curProfile = self.ctx.currentProfile
+            return await curProfile.userInfo.ipIdentifier()
 
     async def sleep(self, t=0):
         await asyncio.sleep(t)
@@ -1076,7 +1084,7 @@ class IPFSOperator(RemotePinningOps,
                     pins = pinStatus.get('Pins', None)
                     if pins is None:
                         continue
-                    if isinstance(pins, list) and ppath in pins:
+                    if isinstance(pins, list) and len(pins) > 0:
                         # Ya estamos
                         return True
                 return False
@@ -1878,6 +1886,27 @@ class IPFSOperator(RemotePinningOps,
         except Exception as err:
             self.debug(f'pubsubPeers error: {err}')
             return None
+
+    async def swarmBan(self, peerId: str):
+        """
+        Add a swarm filter for a given peer.
+        """
+        try:
+            pInfo = await self.client.core.id(peerId)
+            maddrs = pInfo['Addresses']
+
+            for addr in maddrs:
+                m = multiaddr.Multiaddr(addr)
+                ip = m.value_for_protocol('ip4')
+
+                if not ip or ip in ['127.0.0.1', '::1']:
+                    continue
+
+                await self.client.swarm.filters_add(
+                    f'/ip4/{ip}/ipcidr/32'
+                )
+        except Exception:
+            pass
 
     async def versionNum(self):
         try:

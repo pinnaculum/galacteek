@@ -1,10 +1,8 @@
-
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtCore import QVariant
+from PyQt5.QtCore import QJsonValue
 
-from galacteek.core import mergeDicts
-
-from . import AsyncChanObject
+from . import GAsyncObject
 
 
 class IPIDInterface(object):
@@ -21,7 +19,7 @@ class IPIDInterface(object):
         else:
             return ''
 
-    async def a_serviceEndpointCompact(self, app, loop, path):
+    async def a_serviceEndpointCompact(self, app, loop, did, path):
         ipfsop = app.ipfsOperatorForLoop(loop)
 
         ipid = await self._ipid(ipfsop.ctx)
@@ -47,12 +45,45 @@ class IPIDInterface(object):
         )
 
         if service and isinstance(obj, dict):
-            async with ipid.editService(ipid.didUrl(path=path)) as editor:
-                merged = mergeDicts(
-                    editor.service['serviceEndpoint'],
-                    obj
-                )
-                editor.service['serviceEndpoint'] = merged
+            # Patch
+
+            await service.request(command='MERGE', body=obj)
+            return True
+
+        return False
+
+    async def a_passportVcAdd(self, app, loop, vc):
+        ipfsop = app.ipfsOperatorForLoop(loop)
+
+        ipid = await self._ipid(ipfsop.ctx)
+        if not ipid:
+            return False
+
+        service = await ipid.searchServiceById(
+            ipid.didUrl(path='/passport')
+        )
+
+        if service and isinstance(vc, dict):
+            vcid = vc.get('@id')
+            await service.request(command='VCADD', vcid=vcid)
+
+            return True
+
+        return False
+
+    async def a_passportVcSetMain(self, app, loop, vc):
+        ipfsop = app.ipfsOperatorForLoop(loop)
+
+        ipid = await self._ipid(ipfsop.ctx)
+        if not ipid:
+            return False
+
+        service = await ipid.searchServiceById(
+            ipid.didUrl(path='/passport')
+        )
+
+        if service and isinstance(vc, dict):
+            await service.request(command='VCSETMAIN', body=vc)
 
             return True
 
@@ -66,7 +97,7 @@ class IPIDInterface(object):
         return QVariant(compact)
 
 
-class IPIDHandler(AsyncChanObject, IPIDInterface):
+class IPIDHandler(GAsyncObject, IPIDInterface):
     """
     IPID channel interface
     """
@@ -75,9 +106,9 @@ class IPIDHandler(AsyncChanObject, IPIDInterface):
     def did(self):
         return self.tc(self.a_didGet)
 
-    @pyqtSlot(str, result=QVariant)
-    def serviceEndpointCompact(self, path):
-        return self.tc(self.a_serviceEndpointCompact, path)
+    @pyqtSlot(str, str, result=QVariant)
+    def serviceEndpointCompact(self, did, path):
+        return self.tc(self.a_serviceEndpointCompact, did, path)
 
     @pyqtSlot(str, QVariant, result=bool)
     def serviceEndpointPatch(self, path, value):
@@ -98,6 +129,14 @@ class IPIDHandler(AsyncChanObject, IPIDInterface):
     @pyqtSlot(result=QVariant)
     def passportGet(self):
         return self.tc(self.a_dwebPassportGetRaw)
+
+    @pyqtSlot(QJsonValue, result=QVariant)
+    def passportVcAdd(self, vc):
+        return self.tc(self.a_passportVcAdd, self._dict(vc))
+
+    @pyqtSlot(QJsonValue, result=QVariant)
+    def passportVcSetMain(self, vc):
+        return self.tc(self.a_passportVcSetMain, self._dict(vc))
 
     @pyqtSlot(result=QVariant)
     def compacted(self):

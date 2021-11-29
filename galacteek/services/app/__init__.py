@@ -118,10 +118,17 @@ class AppService(GService):
 
         log.debug('Stopping main application service')
 
-    async def rdfStore(self, ipfsPath: IPFSPath, iri: str = 'urn:ipg:g:c0'):
+    async def rdfStore(self, ipfsPath: IPFSPath,
+                       outputGraph: str = 'urn:ipg:i:i0',
+                       recordType='OntoloChainRecord',
+                       chainUri=None,
+                       trace=True):
         await self.ldPublish({
             'type': 'DagRdfStorageRequest',
-            'outputGraphIri': iri,
+            'recordType': recordType,
+            'historyTrace': trace,
+            'chainUri': chainUri,
+            'outputGraphIri': outputGraph,
             'ipfsPath': str(ipfsPath)
         }, key=makeKeyService('ld'))
 

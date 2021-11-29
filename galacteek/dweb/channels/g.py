@@ -4,10 +4,10 @@ from galacteek.core import runningApp
 from galacteek.dweb.markdown import markitdown
 from galacteek.ipfs.cidhelpers import IPFSPath
 
-from . import AsyncChanObject
+from . import GAsyncObject
 
 
-class GHandler(AsyncChanObject):
+class GHandler(GAsyncObject):
     @pyqtSlot(result=int)
     def apiVersion(self):
         return 1

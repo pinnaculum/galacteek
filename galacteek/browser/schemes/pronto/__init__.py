@@ -17,13 +17,13 @@ class ProntoGraphsSchemeHandler(BaseURLSchemeHandler):
     """
     Renders pronto graphs in the browser (in ttl, xml or via pydot)
 
-    prontog:/urn:ipg:g:c0?format=xml
-    prontog:/urn:ipg:g:c0?format=dot
+    prontog:/urn:ipg:i:i0?format=xml
+    prontog:/urn:ipg:i:i0?format=dot
     prontog:/urn:ipg:g:h0
     """
     @property
     def prontoService(self):
-        return getByDotName('ld.pronto.graphs')
+        return getByDotName('ld.pronto')
 
     @ipfsOp
     async def handleRequest(self, ipfsop, request, uid):

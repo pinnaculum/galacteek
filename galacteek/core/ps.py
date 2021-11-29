@@ -67,6 +67,8 @@ keyServices = makeKey('g', 'services')
 keyServicesAll = makeKey('g', 'services', '*')
 keySmartContracts = makeKey('g', 'smartcontracts', '*')
 
+keyIpidServExposure = makeKey('g', 'ipid', 'services', 'exposure')
+
 # The answer to everything
 key42 = makeKey('g', '42')
 

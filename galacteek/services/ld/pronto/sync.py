@@ -56,12 +56,7 @@ class SmartQLClient:
         self.spql = Sparkie(self.dial.httpUrl('/sparql'), auth=self.auth)
 
     async def resource(self, iri, context=None, timeout=60):
-        rdfService = GService.byDotName.get('ld.pronto.graphs')
-        graph = rdfService.graphByUri(iri)
-
-        if graph is None:
-            return
-
+        graph = BaseGraph()
         url = self.dial.httpUrl(f'/resource/{iri}/graph')
 
         headers = {
@@ -109,10 +104,11 @@ class GraphExportSynchronizer:
             if dial.failed:
                 return False
 
-            return await self.syncFromExport(ipfsop, iri, dial)
+            return await self.syncFromExport(ipfsop, iri, dial,
+                                             graphDescr=graphDescr)
 
-    async def syncFromExport(self, ipfsop, iri, dial):
-        rdfService = GService.byDotName.get('ld.pronto.graphs')
+    async def syncFromExport(self, ipfsop, iri, dial, graphDescr=None):
+        rdfService = GService.byDotName.get('ld.pronto')
         graph = rdfService.graphByUri(iri)
 
         if graph is None:
@@ -124,8 +120,22 @@ class GraphExportSynchronizer:
             'compression': self.config.compression
         }
 
+        creds = None
+        if graphDescr:
+            creds = graphDescr.get('smartqlCredentials')
+
+        if creds:
+            auth = aiohttp.BasicAuth(
+                creds.get('user', 'smartql'),
+                creds.get('password', '')
+            )
+        else:
+            auth = aiohttp.BasicAuth('smartql', 'password')
+
+        # smartql = SmartQLClient(dial, auth=auth)
+
         try:
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(auth=auth) as session:
                 async with session.get(url, params=params) as resp:
                     data = await resp.read()
                     assert data is not None
@@ -159,7 +169,7 @@ class GraphSparQLSynchronizer:
             return await self.syncFromExport(ipfsop, iri, dial)
 
     async def syncFromExport(self, ipfsop, iri, dial):
-        rdfService = GService.byDotName.get('ld.pronto.graphs')
+        rdfService = GService.byDotName.get('ld.pronto')
         graph = rdfService.graphByUri(iri)
 
         if graph is None:
@@ -195,9 +205,12 @@ class GraphSemChainSynchronizer:
     async def _sync(self, ipfsop, peerId, iri, dial, graphDescr=None):
         curProfile = ipfsop.ctx.currentProfile
         ipid = await curProfile.userInfo.ipIdentifier()
-        rdfService = GService.byDotName.get('ld.pronto.graphs')
+        rdfService = GService.byDotName.get('ld.pronto')
         graph = rdfService.graphByUri(iri)
+
         hGraph = rdfService.graphHistory
+        # XXX
+        # hGraph = graph
 
         if graph is None or not ipid:
             return
@@ -324,6 +337,48 @@ class GraphSemChainSynchronizer:
             log.debug(
                 f'ontoloSync({chainUri}): sync delta: {delta.seconds} secs')
 
+        #
+        #
+        # Process Verifiable Credentials on the chain
+        #
+        #
+        w = where([
+            T(subject='?uri', predicate="a",
+              object="gs:OntoloChainVCRecord"),
+            T(subject='?uri', predicate="gs:ontoloChain",
+              object=f'<{chainUri}>')
+        ])
+
+        req = select(
+            vars=['?uri'],
+            w=w
+        )
+
+        async for res in smartql.spql.qBindings(str(req)):
+            uri = URIRef(res['uri']['value'])
+
+            processedList = list(hGraph.objects(
+                subject=trackerUri,
+                predicate=tUriOntoloChainVcProcessed
+            ))
+
+            if any(e == uri for e in processedList):
+                continue
+
+            gttl = await smartql.resource(
+                str(uri),
+                context=str(tUriOntoloChainVCRecord),
+                timeout=self.config.recordFetchTimeout
+            )
+
+            if await self.processObject(uri, gttl, trace=False):
+                # Eat
+                async with hGraph.lock:
+                    hGraph.parse(data=gttl, format='ttl')
+
+                tracker.add(tUriOntoloChainVcProcessed,
+                            uri)
+
         for cn in range(0, self.config.recordsPerSync):
             objCount = 0
 
@@ -377,7 +432,7 @@ class GraphSemChainSynchronizer:
                         raise Exception(
                             f'{uri}: failed to pull graph from peer')
 
-                    if await self.processObject(uri, gttl):
+                    if await self.processObject(uri, gttl, trace=False):
                         # Eat
                         async with hGraph.lock:
                             hGraph.parse(data=gttl, format='ttl')
@@ -420,16 +475,25 @@ class GraphSemChainSynchronizer:
 
         return True
 
-    async def processObject(self, uri: URIRef, oTtl: str):
+    async def processObject(self, uri: URIRef, oTtl: str,
+                            trace=True):
         app = runningApp()
         try:
             log.debug(f'Processing {uri}')
             g = BaseGraph().parse(data=oTtl)
 
             o = g.resource(uri)
+            outGraphUri = o.value(p=tUriOntoRecordOutputGraph)
             path = o.value(p=tUriIpfsPath)
+            p = IPFSPath(path)
 
-            await app.s.rdfStore(IPFSPath(path))
+            assert p.valid is True
+
+            await app.s.rdfStore(
+                p,
+                trace=trace,
+                outputGraph=outGraphUri
+            )
         except Exception as err:
             log.debug(f'process {uri}: ERROR: {err}')
             return False

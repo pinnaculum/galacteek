@@ -1,8 +1,7 @@
 import re
 from urllib.parse import parse_qs
 
-from datetime import datetime
-from datetime import timezone
+from galacteek.core import normalizedUtcDate
 
 """
 Decentralized Identifiers (DIDs) implementation
@@ -31,8 +30,7 @@ ipidIdentRe = re.compile(
 
 
 def normedUtcDate():
-    return datetime.now(timezone.utc).isoformat(
-        timespec='seconds').replace('+00:00', 'Z')
+    return normalizedUtcDate()
 
 
 def didExplode(did):

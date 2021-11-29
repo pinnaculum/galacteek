@@ -32,14 +32,14 @@
       return
     }
 
-    window.ld.iObjectCreateAuto({
+    window.g_pronto.ontoloCreateObjectAuto({
       '@type': 'DwebSocialPost',
       'about': {
         '@type': 'DwebSocialPost',
         '@id': rsc
       },
       'articleBody': body
-      }).then(function(res) {
+      }, {}).then(function(res) {
         location.reload()
       })
   }

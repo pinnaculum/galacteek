@@ -1823,9 +1823,9 @@ class SpacingHWidget(QWidget):
             QSpacerItem(width, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
 
-class SmartToolBar(QToolBar):
+class AutoHideToolBar(QToolBar):
     moved = pyqtSignal(int)
-    hideTimeout = 5000
+    hideTimeout = 3000
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -1841,6 +1841,10 @@ class SmartToolBar(QToolBar):
     def enterEvent(self, event):
         self.timerStatus.stop()
         super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self.unwanted()
+        super().leaveEvent(event)
 
     def unwanted(self):
         self.timerStatus.stop()

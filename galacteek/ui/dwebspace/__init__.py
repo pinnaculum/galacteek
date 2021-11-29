@@ -36,6 +36,8 @@ from galacteek.core.tmpf import TmpFile
 from galacteek.core.ps import KeyListener
 from galacteek.core.ps import makeKeyService
 
+from galacteek import services
+
 from galacteek.ui import files
 from galacteek.ui import ipfssearch
 from galacteek.ui import textedit
@@ -911,24 +913,55 @@ class QMLDappWorkspace(SingleWidgetWorkspace, KeyListener):
                  name,
                  appUri,
                  appComponents,
+                 depends,
                  entryPoint,
                  **kwargs):
         super().__init__(stack, name, **kwargs)
 
         self.components = appComponents
+        self.depends = depends
         self.qmlEntryPoint = entryPoint
         self.appWidget = QMLApplicationWidget(self.qmlEntryPoint)
         self.appUri = appUri
         self.wLayout.addWidget(self.appWidget)
 
-    async def loadComponents(self):
+    @property
+    def capService(self):
+        return services.getByDotName('core.icapsuledb')
+
+    async def load(self):
+        ctx = self.capService.capsuleCtx(self.appUri)
+        if not ctx:
+            return False
+
+        await self.loadDependencies(ctx)
+        if await self.loadComponents(ctx):
+            self.appWidget.load()
+
+            return True
+
+        return False
+
+    async def loadDependencies(self, ctx):
         try:
-            for comp in self.components:
+            for dep in ctx.depends:
+                depctx = self.capService.capsuleCtx(dep.uri)
+
+                await self.loadComponents(depctx)
+        except Exception as err:
+            log.debug(f'{self.appUri}: failed to load components: {err}')
+            return False
+        else:
+            return True
+
+    async def loadComponents(self, capsuleCtx):
+        try:
+            for comp in capsuleCtx.components:
+                # Always inside 'src/qml'
+
                 qPath = Path(comp['fsPath']).joinpath('src/qml')
 
                 self.appWidget.importComponent(str(qPath))
-
-            self.appWidget.load()
         except Exception as err:
             log.debug(f'{self.appUri}: failed to load components: {err}')
             return False

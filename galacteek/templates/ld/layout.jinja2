@@ -77,15 +77,15 @@
 
     <script type="text/javascript">
       new QWebChannel(qt.webChannelTransport, function (channel) {
-        window.ld = channel.objects.ld;
-        window.ipid = channel.objects.ipid;
-        window.sparql = channel.objects.sparql;
+        window.g_pronto = channel.objects.g_pronto;
+        window.g_ipid = channel.objects.g_ipid;
+        window.g_sparql = channel.objects.g_sparql;
 
-        /*
-        window.ipid.serviceEndpointCompact('/passport').then(function(pass) {
-          window.passport = pass
+        window.g_ipid.did().then(function(did) {
+          window.g_ipid.serviceEndpointCompact(did, '/passport').then(function(pass) {
+            window.passport = pass
+          })
         })
-        */
       })
     </script>
 

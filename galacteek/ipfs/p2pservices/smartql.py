@@ -288,14 +288,14 @@ class SparQLListener(P2PListener):
                 self.webapp.router.add_get('/sparql', self.handler.sparql)
                 self.webapp.router.add_post('/sparql', self.handler.sparql)
 
+                self.webapp.router.add_get('/export', self.handler.export)
+
                 # SmartQL endpoints
                 self.webapp.router.add_route(
                     '*',
                     r'/resource/{rsc}/graph',
                     self.handler.resource
                 )
-
-                self.webapp.router.add_get('/export', self.handler.export)
 
                 server = await self.loop.create_server(
                     self.webapp.make_handler(debug=True), host, port)

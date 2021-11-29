@@ -51,6 +51,7 @@ class GService(Service, KeyListener):
         self.app = app if app else runningApp()
         self.rtCfg = runtimeConfig
         self.dotPath = dotPath
+        self.qtApi = None
         self._config = config
 
         self.sServiceStarted = AsyncSignal()

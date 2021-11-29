@@ -1,11 +1,16 @@
 import attr
 import asyncio
 import re
+import traceback
+import json
 
 from rdflib import Graph
 from rdflib import URIRef
 
+from galacteek import log
 from galacteek import cached_property
+
+from galacteek.ipfs import ipfsOp
 
 
 @attr.s(auto_attribs=True)
@@ -56,6 +61,75 @@ class GuardianTriggerAction:
                 URIRef('ips://galacteek.ld/follows'),
                 followee
             ))
+
+    @ipfsOp
+    async def captchaVcProcess(self, ipfsop, src: Graph, dst: Graph, s, p, o):
+        issuer = src.value(
+            subject=s,
+            predicate=URIRef('ips://galacteek.ld/issuer')
+        )
+
+        beneficiary = src.value(
+            subject=s,
+            predicate=URIRef('ips://galacteek.ld/credentialSubject')
+        )
+
+        proofuri = src.value(
+            subject=s,
+            predicate=URIRef('ips://galacteek.ld/proof')
+        )
+
+        for s, p, o in src:
+            print(s, p, o)
+
+        # print('process vc captcha', issuer, beneficiary)
+        proof = src.resource(proofuri)
+
+        vmethod = proof.value(
+            p=URIRef('ips://galacteek.ld/verificationMethod')
+        )
+
+        jws = str(proof.value(
+            p=URIRef('ips://galacteek.ld/jws')
+        ))
+
+        pem = str(dst.value(
+            subject=vmethod,
+            predicate=URIRef('https://w3id.org/security#publicKeyPem')
+        ))
+
+        rsaAgent = ipfsop.rsaAgent
+
+        key = await rsaAgent.rsaExec.importKey(str(pem))
+        if not key:
+            return
+
+        payload = await rsaAgent.rsaExec.jwsVerifyFromPem(jws, pem)
+        if not payload:
+            raise Exception(f'Invalid captcha VC: {s}')
+
+        obj = json.loads(payload)
+
+        if 0:
+            dst.add((
+                issuer,
+                URIRef('ips://galacteek.ld/didCaptchaTrusts'),
+                beneficiary
+            ))
+
+        dst.remove((
+            beneficiary,
+            URIRef('ips://galacteek.ld/activeTrustToken'),
+            None
+        ))
+
+        dst.add((
+            beneficiary,
+            URIRef('ips://galacteek.ld/activeTrustToken'),
+            URIRef(obj.get('id'))
+        ))
+
+        return obj
 
 
 @attr.s(auto_attribs=True)
@@ -126,6 +200,17 @@ class GraphGuardian:
         return action
 
     async def merge(self, graph: Graph, dst: Graph):
+        """
+        Guardian graph merge
+
+        For each triple, we apply an appropriate action
+        (upgrade, trigger, ..).
+
+        Trigger calls a coroutine.
+        """
+
+        residue = []
+
         for s, p, o in graph:
             action = self.decide(dst, s, p, o)
 
@@ -137,9 +222,24 @@ class GraphGuardian:
                     try:
                         coro = getattr(action, action.call)
                         assert asyncio.iscoroutinefunction(coro)
-                        await coro(graph, dst, s, p, o)
-                    except Exception:
-                        pass
+                        res = await coro(graph, dst, s, p, o)
 
-            # print('===>', s, p, o)
+                        if isinstance(res, dict):
+                            residue.append(res)
+                    except Exception as err:
+                        log.debug(
+                            f'Trigger {action.call} for {s} failed: '
+                            f'Error is {err}')
+                        traceback.print_exc()
+                        continue
+
             dst.add((s, p, o))
+            await asyncio.sleep(0.05)
+
+        return residue
+
+    async def mergeReplace(self, graph: Graph, dst: Graph):
+        for s, p, o in graph:
+            dst.remove((s, p, None))
+            dst.add((s, p, o))
+            await asyncio.sleep(0.05)

@@ -11,6 +11,7 @@ from galacteek.config import merge as configMerge
 from galacteek.core.asynclib import asyncify
 from galacteek.core.asynccache import selfcachedcoromethod
 from galacteek.core.ps import keyTokensIdent
+from galacteek.core.ps import keyIpidServExposure
 
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.pubsub import TOPIC_PEERS
@@ -19,6 +20,7 @@ from galacteek.ipfs.pubsub.messages.core import PeerIdentMessageV4
 from galacteek.ipfs.pubsub.messages.core import PeerLogoutMessage
 from galacteek.ipfs.pubsub.messages.core import PeerIpHandleChosen
 from galacteek.ipfs.pubsub.messages.core import PeerIdentReqMessage
+from galacteek.ipfs.pubsub.messages.ipid import IpidServiceExposureMessage
 
 from galacteek.ipfs.pubsub.service import JSONPubsubService
 
@@ -133,6 +135,11 @@ class PSPeersService(JSONPubsubService):
         elif msgType == PeerIpHandleChosen.TYPE:
             logger.debug('Received iphandle message from {}'.format(sender))
             await self.handleIpHandleMessage(sender, msg)
+
+        elif msgType == IpidServiceExposureMessage.TYPE:
+            eMsg = IpidServiceExposureMessage(msg)
+            if eMsg.valid():
+                await self.gHubPublish(keyIpidServExposure, (sender, eMsg))
 
         await asyncio.sleep(0)
 

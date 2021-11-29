@@ -723,11 +723,12 @@ class CentralStack(QStackedWidget,
                 event['appName'],
                 event['appUri'],
                 event['components'],
+                event['depends'],
                 event['qmlEntryPoint'],
                 icon=icon
             )
 
-            if await workspace.loadComponents():
+            if await workspace.load():
                 self.addWorkspace(workspace, section='qapps')
 
                 await app.s.ldPublish({
@@ -1272,7 +1273,7 @@ class MainWindow(QMainWindow):
         # to be used when we use auto-hiding on one of the main toolbars
         if event.type() == QEvent.MouseMove:
             if obj.objectName().startswith('gMainWindow'):
-                if event.pos().y() < 10:
+                if event.pos().y() < 5:
                     self.toolbarMain.wakeUp()
                 else:
                     if self.toolbarMain.isVisible():

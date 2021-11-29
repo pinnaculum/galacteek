@@ -3,7 +3,7 @@ import random
 
 
 ipHandleRe = re.compile(
-    r'^(?P<username>\w{1,32})' +
+    r'^(?P<username>[\w\-\+\_]{1,32})' +
     r'(#?(?P<rid>[0-9]{1,9}))?' +
     r'@(?P<vplanet>\w{1,64})' +
     r'(@?(?P<peer>(\w{46,59})))?$'

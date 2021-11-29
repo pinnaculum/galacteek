@@ -1,11 +1,11 @@
 from pathlib import Path
 from PyQt5.QtQml import QQmlEngine
+from PyQt5.QtQml import qmlRegisterType
+from PyQt5.QtQml import qmlRegisterSingletonType
 
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QStackedWidget
 from PyQt5.QtWidgets import QVBoxLayout
-
-from PyQt5.QtPrintSupport import *
 
 from PyQt5.QtCore import QUrl
 from PyQt5.QtCore import Qt
@@ -18,6 +18,11 @@ from galacteek.dweb.channels.g import GHandler
 from galacteek.dweb.channels.ld import LDHandler
 from galacteek.dweb.channels.sparql import SparQLHandler
 from galacteek.dweb.channels.ipid import IPIDHandler
+from galacteek.dweb.channels.ipfs import IPFSHandler
+from galacteek.dweb.channels.ontolochain import OntoloChainHandler
+from galacteek.dweb.channels.graphs import *
+
+from galacteek.services import getByDotName
 
 from galacteek.qml import *
 
@@ -27,8 +32,8 @@ from .i18n import *
 from .widgets import *
 
 from galacteek.core import runningApp
-from galacteek.core.models.iquick import *
 from galacteek.core.fswatcher import FileWatcher
+from galacteek.core.ps import keyPsJson
 
 
 class IHandler(QObject):
@@ -69,64 +74,87 @@ class QMLApplicationWidget(QWidget):
         self.ldInterface = LDHandler(self)
         self.sparqlInterface = SparQLHandler(self)
         self.ipidInterface = IPIDHandler(self)
+        self.ipfsInterface = IPFSHandler(self)
+        self.ipfsInterface.psListen(keyPsJson)
 
         self.currentComponent = None
 
         # Clone the IPFS profile
         self.webProfile = self.app.webProfiles['ipfs'].quickClone()
 
-        # TODO: move this in global place
-        self.models = {
-            'Articles': ArticlesModel(),
-            'Channels': MultimediaChannelsModel(),
-            'Shouts': ShoutsModel()
-        }
-        self.setupEngine()
-
-    @property
-    def comp(self):
-        return self.currentComponent
+        self.engine = self.setupEngine()
 
     def onReloadApp(self, chPath):
-        print(chPath, 'changed')
-
-        self.engine.clearComponentCache()
-        self.load()
+        if self.app.debugEnabled:
+            self.engine.clearComponentCache()
+            self.load()
 
     def setupEngine(self):
+        engine = QQmlEngine(self)
         ipfsCtx = self.app.ipfsCtx
         filesModel = ipfsCtx.currentProfile.filesModel
 
-        # stores = services.getByDotName('ld.pronto.graphs')
-
-        self.engine = QQmlEngine(self)
-        ctx = self.engine.rootContext()
+        ctx = engine.rootContext()
 
         # XML graph exports paths
         # ctx.setContextProperty('graphGXmlPath',
         #                        stores.graphG.xmlExportUrl)
 
         ctx.setContextProperty('g', self.gInterface)
-        ctx.setContextProperty('ld', self.ldInterface)
-        ctx.setContextProperty('sparql', self.sparqlInterface)
-        ctx.setContextProperty('iContainer', self.iInterface)
-        ctx.setContextProperty('ipid', self.ipidInterface)
+        ctx.setContextProperty('g_pronto', self.ldInterface)
+        ctx.setContextProperty('g_sparql', self.sparqlInterface)
+        ctx.setContextProperty('g_iContainer', self.iInterface)
+        ctx.setContextProperty('g_ipid', self.ipidInterface)
+        ctx.setContextProperty('g_ipfsop', self.ipfsInterface)
+
+        srv = getByDotName('ld.pronto.rings')
+        ctx.setContextProperty('g_pronto_pairing', srv.qtApi)
 
         # Pass the web profile
         ctx.setContextProperty('ipfsWebProfile', self.webProfile)
 
-        ctx.setContextProperty('modelArticles',
-                               self.models['Articles'])
-        ctx.setContextProperty('modelMultiChannels',
-                               self.models['Channels'])
-        ctx.setContextProperty('modelShouts',
-                               self.models['Shouts'])
         ctx.setContextProperty('modelMfs', filesModel)
+
+        qmlRegisterType(
+            SparQLResultsModel,
+            'Galacteek',
+            1, 0,
+            'SpQLModel'
+        )
+        qmlRegisterType(
+            IPFSHandler,
+            'Galacteek',
+            1, 0,
+            'IpfsOperator'
+        )
+        qmlRegisterType(
+            OntoloChainHandler,
+            'Galacteek',
+            1, 0,
+            'OntologicalSideChain'
+        )
+        qmlRegisterType(
+            RDFGraphHandler,
+            'Galacteek',
+            1, 0,
+            'RDFGraphOperator'
+        )
+
+        if 0:
+            qmlRegisterSingletonType(
+                SparQLSingletonResultsModel,
+                'Galacteek',
+                1, 0,
+                'SpQLSingletonModel',
+                createSparQLSingletonProxy
+            )
+
+        return engine
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
 
-        if self.comp:
+        if self.currentComponent:
             self.iInterface.size = event.size()
             self.iInterface.sizeChanged.emit(
                 event.size().width(),
@@ -138,7 +166,10 @@ class QMLApplicationWidget(QWidget):
         self.fsw.watchWalk(Path(path))
 
     def load(self):
-        # stores = services.getByDotName('ld.pronto.graphs')
+        if self.currentComponent:
+            self.stack.removeWidget(self.currentComponent)
+            self.currentComponent = None
+
         qcomp = quickEnginedWidget(
             self.engine,
             QUrl.fromLocalFile(self.epFileUrl),

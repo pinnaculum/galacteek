@@ -2,7 +2,7 @@ import os.path
 from collections import UserList
 from collections import deque
 from typing import Deque
-from asyncqt import QThreadExecutor
+
 import concurrent.futures
 import threading
 import asyncio
@@ -337,6 +337,8 @@ async def asyncWriteFile(path, data, mode='w+b'):
 
 
 async def threadExec(fn, *args, processor=None):
+    from qasync import QThreadExecutor
+
     loop = asyncio.get_event_loop()
 
     with QThreadExecutor(1) as texec:
@@ -490,17 +492,31 @@ class GThrottler:
         pass
 
 
-def coroInThread(_loop, coro, *args):
+def coroInThreadWithApp(_loop, coro, *args):
     app = QApplication.instance()
     loop = _loop if _loop else asyncio.SelectorEventLoop()
     return loop.run_until_complete(coro(app, loop, *args))
 
 
-def threadedCoro(loop, coro, *args):
+def coroInThread(_loop, coro, *args):
+    loop = _loop if _loop else asyncio.SelectorEventLoop()
+    return loop.run_until_complete(coro(*args))
+
+
+def threadedCoroWithApp(loop, coro, *args):
     """
     Runs a coroutine in a new event loop (using a dedicated thread)
     """
 
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        try:
+            future = executor.submit(coroInThreadWithApp, loop, coro, *args)
+            return future.result()
+        except Exception:
+            traceback.print_exc()
+
+
+def threadedCoro(loop, coro, *args):
     with concurrent.futures.ThreadPoolExecutor() as executor:
         try:
             future = executor.submit(coroInThread, loop, coro, *args)

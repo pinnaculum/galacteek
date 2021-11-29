@@ -34,6 +34,13 @@ graphEnvs:
               do: 'trigger'
               call: 'unfollowSubject'
 
+          - subject: '^urn:vc:captcha3auth'
+            predicate: 'ips://galacteek.ld/issuer'
+            object: 'did:ipid:.*'
+            action:
+              do: 'trigger'
+              call: 'captchaVcProcess'
+
     # Graph synchronizers definitions
     synchronizers:
       urn:ipg:sync:xmlgzexport:
@@ -53,15 +60,54 @@ graphEnvs:
         type: ontolochain
 
     graphs:
-      # Main graphs
-      urn:ipg:g:c0:
-        name: c0
+      # i (conjunctive)
+      urn:ipg:i:
+        name: i
+        type: conjunctive
         guardian: urn:ipg:guardians:goliath
 
-      urn:ipg:g:c1:
-        name: c1
-        guardian: urn:ipg:guardians:goliath
-      urn:ipg:g:h0:
+        namespace: 'urn:ipg:i'
+
+        subgraphs:
+          urn:ipg:i:i0:
+            name: i_i0
+          urn:ipg:i:i1:
+            name: i_i1
+
+          urn:ipg:i:articles:
+            services:
+              sparql: {}
+              # sync:
+              #   use: 'urn:ipg:sync:ontolochain1'
+
+          urn:ipg:i:uni:
+            name: i_uni
+
+          urn:ipg:i:uni:tests:
+            name: i_uni_tests
+
+            services:
+              sparql:
+                exportsAllow: true
+
+              # sync:
+              #   use: 'urn:ipg:sync:ontolochain1'
+
+          urn:ipg:i:uni:mw:ss:earth:rings:
+            name: i_uni_mw_ss_earth_rings
+
+            services:
+              sparql:
+                exportsAllow: true
+
+              sync:
+                use: 'urn:ipg:sync:ttlgzexport'
+
+        services:
+          sparql:
+            exportsAllow: true
+
+      urn:ipg:h0:
         name: h0
 
         services:
@@ -87,4 +133,4 @@ graphEnvs:
             exportsAllow: true
 
           sync:
-            use: 'urn:ipgsync:ttlgzexport'
+            use: 'urn:ipg:sync:ttlgzexport'
