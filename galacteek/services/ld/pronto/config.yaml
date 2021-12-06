@@ -5,8 +5,8 @@ graphEnvs:
     # Pubsub service config
     pubsub:
       heartbeat:
-        intervalMin: 120
-        intervalMax: 280
+        intervalMin: 90
+        intervalMax: 220
 
     mSyncThrottler:
       rateLimit: 12

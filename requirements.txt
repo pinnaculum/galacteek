@@ -55,6 +55,7 @@ python-magic>=0.4.15
 python3-crdt>=1.0.3
 py-multibase>=1.0.3
 pyyaml>=5.3.1
+pyparsing==2.4.7
 pyzbar>=0.1.8
 qrcode==6.1
 qasync==0.22.0

@@ -8,6 +8,7 @@ from cachetools import TTLCache
 
 from rdflib import Literal
 from rdflib import URIRef
+from rdflib.plugins.sparql import prepareQuery
 
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import QAbstractListModel
@@ -234,7 +235,7 @@ class SparQLResultsModel(QAbstractListModel,
         return _caches[_id]
 
     def _prepareQuery(self, name, query):
-        from rdflib.plugins.sparql import prepareQuery
+
         try:
             ns = self._pStdPrefixes.copy()
             ns.update(self._pPrefixes)

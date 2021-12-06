@@ -1,3 +1,5 @@
+from rdflib.plugins.sparql import prepareQuery
+
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtCore import QVariant
 from PyQt5.QtCore import QJsonValue
@@ -18,7 +20,6 @@ class SparQLInterface(object):
                                   query: str,
                                   graphIri: str,
                                   bindings):
-        from rdflib.plugins.sparql import prepareQuery
 
         reply = []
         try:

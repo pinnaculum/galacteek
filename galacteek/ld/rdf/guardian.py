@@ -79,10 +79,6 @@ class GuardianTriggerAction:
             predicate=URIRef('ips://galacteek.ld/proof')
         )
 
-        for s, p, o in src:
-            print(s, p, o)
-
-        # print('process vc captcha', issuer, beneficiary)
         proof = src.resource(proofuri)
 
         vmethod = proof.value(

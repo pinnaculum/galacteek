@@ -1,4 +1,5 @@
 from rdflib import URIRef
+from rdflib.plugins.sparql import prepareQuery
 
 from aiohttp import web
 
@@ -16,8 +17,6 @@ class RootView(web.View):
 
     @ipfsOp
     async def get(self, ipfsop):
-        from rdflib.plugins.sparql import prepareQuery
-
         curProfile = ipfsop.ctx.currentProfile
         ipid = await curProfile.userInfo.ipIdentifier()
 
