@@ -58,6 +58,7 @@ SCHEME_I = 'i'
 SCHEME_QDAPP = 'qdapp'
 SCHEME_GEMINI = 'gemini'
 SCHEME_GEMIPFS = 'gemipfs'
+SCHEME_GEMI = 'gemi'
 SCHEME_GEM = 'gem'
 
 # ENS-related schemes (ensr is redirect-on-resolve ENS scheme)

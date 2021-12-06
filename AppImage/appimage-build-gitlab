@@ -31,6 +31,9 @@ export PATH="$PATH:$APPDIR/usr/bin"
 $APPIPIP install --upgrade pip
 $APPIPIP install wheel
 
+# Conda extra packages
+conda install -y -c conda-forge pycairo
+
 # Install the wheel from local dists
 
 echo "Installing wheel: $WHEEL"
