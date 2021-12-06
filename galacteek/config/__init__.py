@@ -2,6 +2,7 @@ import asyncio
 import attr
 import inspect
 import functools
+import traceback
 from pathlib import Path
 
 from omegaconf import OmegaConf
@@ -163,6 +164,7 @@ def configModLeafAttributes(pkgName: str):
         conf = configForModule(pkgName)
         return dictDotLeaves(OmegaConf.to_container(conf))
     except Exception:
+        traceback.print_exc()
         return []
 
 

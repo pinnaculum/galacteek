@@ -5,8 +5,13 @@ graphEnvs:
     # Pubsub service config
     pubsub:
       heartbeat:
-        intervalMin: 60
-        intervalMax: 150
+        intervalMin: 120
+        intervalMax: 280
+
+    mSyncThrottler:
+      rateLimit: 12
+      period: 60
+      retryInterval: 2.0
 
     # Graph guardians
     guardians:
@@ -77,31 +82,12 @@ graphEnvs:
           urn:ipg:i:articles:
             services:
               sparql: {}
-              # sync:
-              #   use: 'urn:ipg:sync:ontolochain1'
 
           urn:ipg:i:uni:
             name: i_uni
 
-          urn:ipg:i:uni:tests:
-            name: i_uni_tests
-
-            services:
-              sparql:
-                exportsAllow: true
-
-              # sync:
-              #   use: 'urn:ipg:sync:ontolochain1'
-
           urn:ipg:i:uni:mw:ss:earth:rings:
             name: i_uni_mw_ss_earth_rings
-
-            services:
-              sparql:
-                exportsAllow: true
-
-              sync:
-                use: 'urn:ipg:sync:ttlgzexport'
 
         services:
           sparql:
@@ -118,19 +104,16 @@ graphEnvs:
             use: 'urn:ipg:sync:ontolochain1'
 
       # Hashmarks (conjunctive)
-      urn:ipg:g:hashmarks:
+      urn:ipg:hashmarks:
         name: hashmarks
         type: conjunctive
 
-        namespace: 'urn:ipg:g:hashmarks'
+        namespace: 'urn:ipg:hashmarks'
 
         subgraphs:
-          urn:ipg:g:hashmarks:main:
+          urn:ipg:hashmarks:main:
             name: hashmarks_main
 
         services:
           sparql:
             exportsAllow: true
-
-          sync:
-            use: 'urn:ipg:sync:ttlgzexport'

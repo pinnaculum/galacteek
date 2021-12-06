@@ -2,6 +2,7 @@ import json
 import aiofiles
 import asyncio
 import time
+import traceback
 from pathlib import Path
 
 from galacteek import log
@@ -47,14 +48,13 @@ class IPNSCache:
 
     def nsCacheLoad(self):
         try:
-            assert len(self.cache) == 0
-
             with open(str(self.nsCachePath), 'r') as fd:
                 cache = json.load(fd)
 
             if not jsonSchemaValidate(cache, nsCacheSchema):
                 raise Exception('Invalid NS cache schema')
         except Exception as err:
+            traceback.print_exc()
             log.debug(f'Error loading NS cache: {err}')
         else:
             log.warning(f'IPNS cache: loaded from {self.nsCachePath}')

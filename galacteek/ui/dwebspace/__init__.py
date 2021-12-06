@@ -1,6 +1,7 @@
 import rule_engine
 import weakref
 import shutil
+import traceback
 from pathlib import Path
 
 from PyQt5.QtWidgets import QApplication
@@ -935,6 +936,7 @@ class QMLDappWorkspace(SingleWidgetWorkspace, KeyListener):
             return False
 
         await self.loadDependencies(ctx)
+
         if await self.loadComponents(ctx):
             self.appWidget.load()
 
@@ -946,6 +948,8 @@ class QMLDappWorkspace(SingleWidgetWorkspace, KeyListener):
         try:
             for dep in ctx.depends:
                 depctx = self.capService.capsuleCtx(dep.uri)
+                if not depctx:
+                    continue
 
                 await self.loadComponents(depctx)
         except Exception as err:
@@ -963,6 +967,7 @@ class QMLDappWorkspace(SingleWidgetWorkspace, KeyListener):
 
                 self.appWidget.importComponent(str(qPath))
         except Exception as err:
+            traceback.print_exc()
             log.debug(f'{self.appUri}: failed to load components: {err}')
             return False
         else:

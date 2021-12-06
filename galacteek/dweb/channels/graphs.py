@@ -2,12 +2,12 @@ import traceback
 import qasync
 import os
 from pathlib import Path
+from yarl import URL
 
 from cachetools import TTLCache
 
 from rdflib import Literal
 from rdflib import URIRef
-
 
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import QAbstractListModel
@@ -21,7 +21,6 @@ from PyQt5.QtCore import QJsonValue
 from galacteek import log
 from galacteek import services
 from galacteek import cached_property
-from galacteek import ensureSafe
 from galacteek import loopTime
 
 from galacteek.core.asynclib import threadExec
@@ -115,6 +114,7 @@ class SparQLResultsModel(QAbstractListModel,
                          SparQLBase):
     _roles = {}
 
+    noResults = pyqtSignal()
     resultsReady = pyqtSignal(float)
     ready = pyqtSignal()
     bindingsChanged = pyqtSignal()
@@ -128,10 +128,9 @@ class SparQLResultsModel(QAbstractListModel,
         self._rolesNames = {}
 
         self._pCacheSize = 128
-        self._pCacheTtl = 7200
+        self._pCacheTtl = 3600 * 24
         self._pCacheUse = False
         self._pCacheUsePrefill = False
-        # self._cache = TTLCache(self._pCacheSize, self._pCacheTtl)
         self._pQuery = ''
         self._pGraphUri = 'urn:ipg:i'
         self._pPrefixes = {}
@@ -180,8 +179,7 @@ class SparQLResultsModel(QAbstractListModel,
         return self._pCacheSize
 
     def _setCacheSize(self, size: int):
-        if size in range(16, 8192):
-            self._pCacheSize = size
+        self._pCacheSize = size
 
     def _getUseCache(self):
         return self._pCacheUse
@@ -238,7 +236,9 @@ class SparQLResultsModel(QAbstractListModel,
     def _prepareQuery(self, name, query):
         from rdflib.plugins.sparql import prepareQuery
         try:
-            q = prepareQuery(query, initNs=self._pStdPrefixes)
+            ns = self._pStdPrefixes.copy()
+            ns.update(self._pPrefixes)
+            q = prepareQuery(query, initNs=ns)
         except Exception as err:
             traceback.print_exc()
             log.debug(str(err))
@@ -274,10 +274,7 @@ class SparQLResultsModel(QAbstractListModel,
     @qasync.asyncSlot(str, QVariant)
     async def runPreparedQuery(self, queryName, bindings):
         cache = self._cache
-        print('runpquery', queryName, 'cache size is', len(cache))
         if len(cache) > 0:
-            print('cache already got something ..')
-
             self.beginResetModel()
             self._results = []
             self.endResetModel()
@@ -295,22 +292,31 @@ class SparQLResultsModel(QAbstractListModel,
                 q,
                 bindings.toVariant()
             )
-
-            if 0:
-                ensureSafe(self.__rPreparedQuery(
-                    self._pGraphUri, q,
-                    bindings.toVariant())
-                )
         except Exception:
             traceback.print_exc()
             return None
 
     def rowCount(self, parent=None, *args, **kwargs):
         if self._cache and len(self._cache) > 0:
-            print('row count', len(self._cache))
             return len(self._cache)
 
         return len(self._results)
+
+    @pyqtSlot(result=int)
+    def count(self):
+        return self.rowCount()
+
+    @pyqtSlot(int, result=QVariant)
+    def get(self, row: int):
+        r = {}
+        try:
+            for ridx, role in self.roleNames().items():
+                r[role.decode()] = self.data(self.index(row, 0), ridx)
+        except Exception:
+            traceback.print_exc()
+            return QVariant(None)
+        else:
+            return QVariant(r)
 
     def data(self, QModelIndex, role=None):
         global _caches
@@ -322,7 +328,6 @@ class SparQLResultsModel(QAbstractListModel,
         if self._pCacheUse is True:
             ex = self._cache.get(idx)
             if ex:
-                print('got from cache', idx, ex)
                 return QVariant(ex)
         try:
             val = None
@@ -335,14 +340,13 @@ class SparQLResultsModel(QAbstractListModel,
             elif isinstance(cell, URIRef):
                 val = str(cell)
             else:
-                print('Unknown type', type(cell))
                 val = str(cell)
 
             if val:
                 if self._pCacheUse and self._cache is not None:
                     self._cache[idx] = val
 
-                return QVariant(val)
+                return val
         except KeyError:
             traceback.print_exc()
             return ''
@@ -350,7 +354,7 @@ class SparQLResultsModel(QAbstractListModel,
             traceback.print_exc()
             return ''
 
-        return QVariant(None)
+        return None
 
     def roleIdxFromName(self, name):
         for idx, n in self.roleNames():
@@ -374,43 +378,23 @@ class SparQLResultsModel(QAbstractListModel,
     def roles(self):
         return self.roleNames()
 
-    async def __rPreparedQuery(self,
-                               graphUri, query, bindings):
-        ltStart = loopTime()
-        graph = self.rdf.graphByUri(graphUri)
-
-        def _run(g, q, bindings):
-            return g.query(q, initBindings=bindings)
-
-        try:
-            assert graph is not None
-            results = await graph.rexec(_run, query, bindings)
-            aVars = [str(r) for r in results.vars]
-        except Exception as err:
-            traceback.print_exc()
-            log.debug(f'Graph prepared query error: {err}')
-            return None, None
-        else:
-            duration = loopTime() - ltStart
-            if not results:
-                return None, None
-
-            self.beginResetModel()
-            self._results = list(results)
-            self._rolesNames = aVars
-            self.endResetModel()
-
-            self.resultsReady.emit(duration)
-
-            return results, aVars
-
     def __rSyncPreparedQuery(self,
                              graphUri, query, bindings):
         graph = self.rdf.graphByUri(graphUri)
+        _bindings = {}
 
         try:
             assert graph is not None
-            results = graph.query(query, initBindings=bindings)
+
+            # TODO: compute bindings on property setting if possible
+            for k, v in bindings.items():
+                u = URL(v)
+                if u.scheme and u.scheme in ['http', 'ips', 'i']:
+                    _bindings[k] = URIRef(v)
+                else:
+                    _bindings[k] = Literal(v)
+
+            results = graph.query(query, initBindings=_bindings)
             aVars = [str(r) for r in results.vars]
         except Exception as err:
             traceback.print_exc()
@@ -418,15 +402,17 @@ class SparQLResultsModel(QAbstractListModel,
             return None, None
         else:
             duration = 0
-            if not results:
-                return None, None
 
             self.beginResetModel()
             self._results = list(results)
             self._rolesNames = aVars
             self.endResetModel()
 
-            if self._pCacheUse and self._pCacheUsePrefill:
+            if not results:
+                self.noResults.emit()
+                return None, None
+
+            if self._pCacheUse:
                 for cidx in range(0, 1):
                     for eidx, entry in enumerate(results):
                         for ridx, role in self.roleNames().items():
@@ -485,7 +471,6 @@ class RDFGraphHandler(GOntoloObject):
 
                 for fn in os.listdir(dir):
                     fp = Path(dir).joinpath(fn)
-                    print('>>', fn, fp)
 
                     await self.app.rexec(graph.parse, str(fp))
         except Exception:

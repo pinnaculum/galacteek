@@ -1,6 +1,16 @@
 envs:
   default:
     registries:
-      icapsule-registry-gitlab:
-        url: https://gitlab.com/api/v4/projects/29133437/packages/generic/icapsule-registry/continuous/icapsule-registry.tar.gz
+      icapsule-registry-gitlab-continuous:
+        url: https://gitlab.com/api/v4/projects/29133437/packages/generic/icapsule-registry/continuous-${env:ICAPSULE_REGISTRY_BRANCH}/icapsule-registry.tar.gz
         enabled: True
+
+      icapsule-registry-local-dev:
+        url: file:///${env:HOME}/icapsule-registry-dev.yaml
+        enabled: False
+
+    profile:
+      icapsulesByUri:
+        urn:g:dapps:dvoz:
+          install: latest
+          autoload: true

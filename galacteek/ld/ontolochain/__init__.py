@@ -1,9 +1,50 @@
 from rdflib import URIRef
+from rdflib.resource import Resource
 
 from galacteek.ipfs import ipfsOpFn
 from galacteek.core import utcDatetimeIso
 from galacteek.ld import gLdDefaultContext
+from galacteek.ld.sparql import select, where, T
 from galacteek import log
+
+
+class OntoloChain(Resource):
+    def qgenAllGeoEmitters(self):
+        return select(
+            vars=['?uri'],
+            w=where([
+                T(subject='?uri', predicate="a",
+                  object="gs:OntoloChainGeoEmitter"),
+                T(subject='?uri', predicate="gs:ontoloChain",
+                  object=f'<{self.identifier}>')
+            ])
+        )
+
+    def qgenAllGeoTransponders(self):
+        return select(
+            vars=['?uri'],
+            w=where([
+                T(subject='?uri', predicate="a",
+                  object="gs:OntoloChainGeoTransponder"),
+                T(subject='?uri', predicate="gs:ontoloChain",
+                  object=f'<{self.identifier}>')
+            ])
+        )
+
+    def qgenVCRecords(self):
+        return select(
+            vars=['?uri'],
+            w=where([
+                T(subject='?uri', predicate="a",
+                  object="gs:OntoloChainVCRecord"),
+                T(subject='?uri', predicate="gs:ontoloChain",
+                  object=f'<{self.identifier}>')
+            ])
+        )
+
+
+def getChainResource(graph, uri):
+    return OntoloChain(graph, uri)
 
 
 def subDidChainUri(ipid, name: str):

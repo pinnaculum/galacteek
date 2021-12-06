@@ -8,6 +8,8 @@ from galacteek.services import GService
 
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
+
+from galacteek.core.asynclib import GThrottler
 from galacteek.core.ps import makeKeyService
 
 from galacteek.ipfs.pubsub.srvs import graphs as pubsub_graphs
@@ -23,7 +25,7 @@ from rdflib import plugin
 from rdflib import URIRef
 from rdflib.store import Store
 
-from galacteek.services.ld.pronto.sync import *
+from galacteek.ld.rdf.sync import *
 
 
 class RDFStoresService(GService):
@@ -50,13 +52,6 @@ class RDFStoresService(GService):
     def chainEnv(self):
         return self.app.cmdArgs.prontoChainEnv
 
-    def on_init(self):
-        self._graphs = {}
-        self._synchros = {}
-        self._guardians = {}
-        self._cgraphs = []
-        self._cgMain = None
-
     def graphByUri(self, uri: str):
         for n, graph in self._graphs.items():
             if str(graph.identifier) == str(uri):
@@ -70,8 +65,37 @@ class RDFStoresService(GService):
             if subg is not None:
                 return subg
 
+    def on_init(self):
+        self._mThrottler = None
+        self._mQueue = asyncio.Queue(maxsize=196)
+        self._graphs = {}
+        self._synchros = {}
+        self._guardians = {}
+        self._cgraphs = []
+        self._cgMain = None
+
+    def defaultThrottler(self):
+        return GThrottler(
+            rate_limit=10,
+            period=60,
+            retry_interval=1.0,
+            name='pSyncThrottler'
+        )
+
     async def on_start(self):
         await super().on_start()
+
+        tcfg = self.serviceConfig.mSyncThrottler
+
+        try:
+            self._mThrottler = GThrottler(
+                rate_limit=tcfg.rateLimit,
+                period=tcfg.period,
+                retry_interval=tcfg.retryInterval,
+                name='pSyncThrottler'
+            )
+        except Exception:
+            self._mThrottler = self.defaultThrottler()
 
         self.storesPath = self.rootPath.joinpath('stores').joinpath(
             self.chainEnv)
@@ -215,20 +239,7 @@ class RDFStoresService(GService):
             log.debug(f'{message.prontoChainEnv}: pronto chain mismatch')
             return
 
-        for graphdef in message.graphs:
-            p2pEndpointRaw = graphdef['smartqlEndpointAddr']
-            iri = graphdef['graphIri']
-
-            graph = self.graphByUri(iri)
-
-            if graph is None or not graph.synchronizer:
-                continue
-
-            await graph.synchronizer.syncFromRemote(
-                sender,
-                iri, p2pEndpointRaw,
-                graphDescr=graphdef
-            )
+        await self._mQueue.put((sender, message))
 
     async def on_stop(self):
         log.debug('RDF stores: closing')
@@ -344,6 +355,40 @@ class RDFStoresService(GService):
             localG = self.graphByUri(uri)
 
             await localG.mergeFromCid(cid)
+
+    async def heartBeatProcess(self, sender, msg):
+        try:
+            for graphdef in msg.graphs:
+                p2pEndpointRaw = graphdef.get('smartqlEndpointAddr')
+                iri = graphdef.get('graphIri')
+
+                if not p2pEndpointRaw or not iri:
+                    continue
+
+                graph = self.graphByUri(iri)
+
+                if graph is None or not graph.synchronizer:
+                    continue
+
+                await graph.synchronizer.syncFromRemote(
+                    sender,
+                    iri, p2pEndpointRaw,
+                    graphDescr=graphdef
+                )
+        except Exception as err:
+            print(err)
+
+    @GService.task
+    async def mProcessTask(self):
+        if not self._mThrottler:
+            self._mThrottler = self.defaultThrottler()
+
+        while not self.should_stop:
+            async with self._mThrottler:
+                sender, msg = await self._mQueue.get()
+
+                if isinstance(msg, SparQLHeartbeatMessage):
+                    await self.heartBeatProcess(sender, msg)
 
     @GService.task
     async def heartbeatTask(self):

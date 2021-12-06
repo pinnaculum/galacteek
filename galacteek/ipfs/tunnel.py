@@ -154,7 +154,7 @@ class P2PListener(object):
 
                 # if ipAddr == addrSrv[0] and port == addrSrv[1]:
                 if ipAddr and port:
-                    log.debug(f'P2PListener ({protocol}): {lAddr} is valid')
+                    # log.debug(f'P2PListener ({protocol}): {lAddr} is valid')
                     self.listenMultiAddr = lAddr
                     return self.listenMultiAddr
                 else:
@@ -221,7 +221,8 @@ class P2PTunnelsManager:
     async def streamsForListenAddr(self, op, addr):
         allStreams = await self.streams()
         if allStreams:
-            log.debug('streamsForListenAddr: {!r}'.format(allStreams))
+            if 0:
+                log.debug('streamsForListenAddr: {!r}'.format(allStreams))
             return [stream for stream in allStreams if
                     stream['ListenAddress'] == addr]
 

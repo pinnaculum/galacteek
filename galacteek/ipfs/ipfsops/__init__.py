@@ -30,11 +30,11 @@ from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.multi import multiAddrTcp4
 from galacteek.ipfs.stat import StatInfo
 
-
 from galacteek.config import cGet
 
 from galacteek.core.asynccache import amlrucache
 from galacteek.core.asynccache import cachedcoromethod
+from galacteek.core.asynclib import loopTime
 from galacteek.core.asynclib import async_enterable
 from galacteek.core.jtraverse import traverseParser
 
@@ -1095,15 +1095,22 @@ class IPFSOperator(RemotePinningOps,
 
     async def pin2(self, path, recursive=True, timeout=3600):
         try:
+            stcount = 0
+            ltLastProg = None
             async for pinStatus in self.client.pin.add(
                     path, recursive=recursive):
-                # self.debug('Pin status: {0} {1}'.format(
-                #     path, pinStatus))
-
                 pins = pinStatus.get('Pins', None)
                 progress = pinStatus.get('Progress', None)
 
                 yield path, 0, progress
+
+                stcount += 1
+                if progress is not None:
+                    ltLastProg = loopTime()
+
+                if stcount > 32 and ltLastProg is None:
+                    # Stalled ?
+                    raise Exception(f'{path}: pin stalled ?')
 
                 if pins is None:
                     continue
@@ -1111,9 +1118,13 @@ class IPFSOperator(RemotePinningOps,
                 if isinstance(pins, list) and len(pins) > 0:
                     # Ya estamos
                     yield path, 1, progress
+                    break
 
         except aioipfs.APIError as err:
             self.debug('Pin error: {}'.format(err.message))
+            yield path, -1, None
+        except Exception as err:
+            self.debug(f'Unknown pin error: {err}')
             yield path, -1, None
 
     async def unpin(self, obj):

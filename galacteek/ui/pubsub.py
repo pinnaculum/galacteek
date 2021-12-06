@@ -26,6 +26,7 @@ from galacteek.core.ps import psSubscriber
 
 from galacteek.ipfs.pubsub import TOPIC_CHAT
 from galacteek.ipfs.pubsub import TOPIC_PEERS
+from galacteek.ipfs.pubsub import TOPIC_LD_PRONTO
 
 from .helpers import getIcon
 from .widgets import GalacteekTab
@@ -81,6 +82,8 @@ class PubsubSnifferWidget(GalacteekTab):
                 item.setBackground(QBrush(QColor(Qt.darkGreen)))
             elif topic == TOPIC_CHAT:
                 item.setBackground(QBrush(QColor('#2b5278')))
+            elif topic == TOPIC_LD_PRONTO:
+                item.setBackground(QBrush(QColor(Qt.red)))
 
         viewButton = QToolButton(self)
         viewButton.setIcon(getIcon('search-engine.png'))

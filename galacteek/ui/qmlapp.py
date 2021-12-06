@@ -125,7 +125,7 @@ class QMLApplicationWidget(QWidget):
             IPFSHandler,
             'Galacteek',
             1, 0,
-            'IpfsOperator'
+            'GalacteekIpfsOperator'
         )
         qmlRegisterType(
             OntoloChainHandler,

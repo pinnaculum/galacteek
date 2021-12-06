@@ -1436,9 +1436,6 @@ class MainWindow(QMainWindow):
         await self.hashmarkMgrButton.updateMenu()
         await self.hashmarkMgrButton.updateIcons()
 
-        with self.stack.workspaceCtx(WS_PEERS, show=False) as ws:
-            await ws.chatJoinDefault()
-
         with self.stack.workspaceCtx(WS_FILES, show=False) as ws:
             await ws.importWelcome()
             await ws.seedsSetup()

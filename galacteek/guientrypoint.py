@@ -60,6 +60,8 @@ def galacteekGui(args):
 
         os.chdir(str(folder))
 
+    os.environ['ICAPSULE_REGISTRY_BRANCH'] = args.icapRegistryBranch
+
     if args.mallocdebug:
         tracemalloc.start()
 
@@ -120,6 +122,10 @@ def buildArgsParser(fromParser=None):
                         help='Binary name', dest='binaryname')
     parser.add_argument('--binary-path', default=None,
                         help='Binary path', dest='binarypath')
+    parser.add_argument('--icapsule-registry-branch',
+                        default='devel',
+                        help='Icapsule registry branch',
+                        dest='icapRegistryBranch')
     parser.add_argument(
         '--monitor',
         action='store_true',

@@ -94,7 +94,7 @@ class IPFSHandler(GAsyncObject, IPFSInterface, KeyListener):
             pass
 
     @opSlot(str, QJsonValue)
-    async def add(self, ipfsop, path, options):
+    async def add(self, path, options):
         ipfsop = self.app.ipfsOperatorForLoop()
 
         opts = self._dict(options)
@@ -103,7 +103,7 @@ class IPFSHandler(GAsyncObject, IPFSInterface, KeyListener):
         return await self.a_addFromPath(ipfsop, path, opts)
 
     @opSlot(str)
-    async def addStr(self, ipfsop, data):
+    async def addStr(self, data):
         ipfsop = self.app.ipfsOperatorForLoop()
 
         try:
@@ -115,7 +115,7 @@ class IPFSHandler(GAsyncObject, IPFSInterface, KeyListener):
             return entry
 
     @opSlot(QByteArray)
-    async def addBytes(self, ipfsop, data):
+    async def addBytes(self, data):
         ipfsop = self.app.ipfsOperatorForLoop()
 
         try:
@@ -146,7 +146,17 @@ class IPFSHandler(GAsyncObject, IPFSInterface, KeyListener):
         opts = self._dict(options)
         timeout = opts.get('timeout', 60 * 10)
 
-        return await ipfsop.pin(path, timeout=timeout)
+        try:
+            success = False
+            async for status in ipfsop.pin2(path, timeout=timeout):
+                if status[1] == 1:
+                    success = True
+                    break
+        except Exception:
+            traceback.print_exc()
+            return success
+        else:
+            return success
 
     @pyqtSlot(str, QJsonValue, result=bool)
     def psJsonSend(self, topic, message):

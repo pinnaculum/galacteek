@@ -1,10 +1,10 @@
-import zlib
-import attr
+import asyncio
 import aiohttp
-import async_timeout
+import traceback
 
 from cachetools import cached
 from cachetools import TTLCache
+from datetime import timedelta
 
 from rdflib import RDF
 from rdflib import URIRef
@@ -21,159 +21,15 @@ from galacteek.core import runningApp
 from galacteek.core import utcDatetimeIso
 from galacteek.core import utcDatetime
 from galacteek.ld import gLdDefaultContext
+from galacteek.ld import ipsContextUri
 from galacteek.ld.rdf import BaseGraph
+from galacteek.ld import ontolochain
 from galacteek.ld.rdf.terms import *
-from galacteek.ld.sparql.aioclient import Sparkie
 from galacteek.ld.sparql import select, where, T, Filter
 
 
-@attr.s(auto_attribs=True)
-class GraphExportSyncConfig:
-    type: str = 'rdfexport'
-    format: str = 'ttl'
-    compression: str = 'gzip'
-
-
-@attr.s(auto_attribs=True)
-class GraphSparQLSyncConfig:
-    type: str = 'sparkie'
-    run: list = []
-
-
-@attr.s(auto_attribs=True)
-class GraphSemChainSyncConfig:
-    type: str = 'ontolochain'
-    recordsPerSync: int = 256
-    recordFetchTimeout: int = 30
-    syncIntervalMin: int = 60
-
-
-class SmartQLClient:
-    def __init__(self, dialCtx, auth: aiohttp.BasicAuth = None):
-        self.dial = dialCtx
-
-        self.auth = auth if auth else aiohttp.BasicAuth('smartql', 'default')
-        self.spql = Sparkie(self.dial.httpUrl('/sparql'), auth=self.auth)
-
-    async def resource(self, iri, context=None, timeout=60):
-        graph = BaseGraph()
-        url = self.dial.httpUrl(f'/resource/{iri}/graph')
-
-        headers = {
-            'Accept': 'application/x-turtle'
-        }
-
-        params = {
-            'fmt': 'ttl',
-            'context': context
-        }
-
-        try:
-            with async_timeout.timeout(timeout):
-                async with aiohttp.ClientSession(headers=headers,
-                                                 auth=self.auth) as session:
-                    async with session.get(url, params=params) as resp:
-                        data = await resp.read()
-                        assert data is not None
-
-                        ctype = resp.headers.get('Content-Type')
-
-                        if ctype == 'application/gzip':
-                            gdata = zlib.decompress(data).decode()
-                        else:
-                            gdata = data.decode()
-
-                        graph.parse(data=gdata, format=params['fmt'])
-        except Exception as err:
-            log.debug(f'resource graph pull error for {iri}: {err}')
-        else:
-            log.debug(f'resource graph pull for {iri}: success')
-            return gdata
-
-
-class GraphExportSynchronizer:
-    def __init__(self, config=None):
-        self.config = config if config else GraphExportSyncConfig()
-
-    @ipfsOp
-    async def syncFromRemote(self, ipfsop,
-                             peerId: str,
-                             iri: str, p2pEndpoint: str,
-                             graphDescr=None):
-        async with ipfsop.p2pDialerFromAddr(p2pEndpoint) as dial:
-            if dial.failed:
-                return False
-
-            return await self.syncFromExport(ipfsop, iri, dial,
-                                             graphDescr=graphDescr)
-
-    async def syncFromExport(self, ipfsop, iri, dial, graphDescr=None):
-        rdfService = GService.byDotName.get('ld.pronto')
-        graph = rdfService.graphByUri(iri)
-
-        if graph is None:
-            return
-
-        url = dial.httpUrl('/export')
-        params = {
-            'fmt': self.config.format,
-            'compression': self.config.compression
-        }
-
-        creds = None
-        if graphDescr:
-            creds = graphDescr.get('smartqlCredentials')
-
-        if creds:
-            auth = aiohttp.BasicAuth(
-                creds.get('user', 'smartql'),
-                creds.get('password', '')
-            )
-        else:
-            auth = aiohttp.BasicAuth('smartql', 'password')
-
-        # smartql = SmartQLClient(dial, auth=auth)
-
-        try:
-            async with aiohttp.ClientSession(auth=auth) as session:
-                async with session.get(url, params=params) as resp:
-                    data = await resp.read()
-                    assert data is not None
-
-                    ctype = resp.headers.get('Content-Type')
-
-                    if ctype == 'application/gzip':
-                        gdata = zlib.decompress(data).decode()
-                    else:
-                        gdata = data.decode()
-
-                    graph.parse(data=gdata, format=params['fmt'])
-        except Exception as err:
-            log.debug(f'Graph export sync error for {iri}: {err}')
-
-
-class GraphSparQLSynchronizer:
-    def __init__(self, config=None):
-        self.config = config if config else GraphSparQLSyncConfig()
-
-    @ipfsOp
-    async def syncFromRemote(self, ipfsop,
-                             peerId: str,
-                             iri: str,
-                             p2pEndpoint: str,
-                             graphDescr=None):
-        async with ipfsop.p2pDialerFromAddr(p2pEndpoint) as dial:
-            if dial.failed:
-                return False
-
-            return await self.syncFromExport(ipfsop, iri, dial)
-
-    async def syncFromExport(self, ipfsop, iri, dial):
-        rdfService = GService.byDotName.get('ld.pronto')
-        graph = rdfService.graphByUri(iri)
-
-        if graph is None:
-            return
+from ..smartqlclient import SmartQLClient
+from ..cfg import GraphSemChainSyncConfig
 
 
 class GraphSemChainSynchronizer:
@@ -181,6 +37,10 @@ class GraphSemChainSynchronizer:
         super().__init__()
         self.config = config if config else GraphSemChainSyncConfig()
         self._chainSync = {}
+
+    @property
+    def pronto(self):
+        return GService.byDotName.get('ld.pronto')
 
     @ipfsOp
     async def syncFromRemote(self, ipfsop,
@@ -195,22 +55,41 @@ class GraphSemChainSynchronizer:
             return await self._sync(ipfsop, peerId, iri, dial,
                                     graphDescr=graphDescr)
 
-    @cached(TTLCache(3, 90))
+    @cached(TTLCache(4096, 180))
     def ontoloChainsList(self, hGraph):
         return list(hGraph.subjects(
             predicate=RDF.type,
             object=str(tUriOntoloChain)
         ))
 
-    async def _sync(self, ipfsop, peerId, iri, dial, graphDescr=None):
-        curProfile = ipfsop.ctx.currentProfile
-        ipid = await curProfile.userInfo.ipIdentifier()
-        rdfService = GService.byDotName.get('ld.pronto')
-        graph = rdfService.graphByUri(iri)
+    @cached(TTLCache(1024, 90))
+    def ontoloChainsGeoEmittersList(self, hGraph):
+        return list(hGraph.subjects(
+            predicate=RDF.type,
+            object=str(tUriOntoloChainGeoEmitter)
+        ))
 
-        hGraph = rdfService.graphHistory
-        # XXX
-        # hGraph = graph
+    @cached(TTLCache(512, 90))
+    def ontoloChainsGeoTranspondersList(self, hGraph):
+        return list(hGraph.subjects(
+            predicate=RDF.type,
+            object=str(tUriOntoloChainGeoTransponder)
+        ))
+
+    async def _sync(self, ipfsop, peerId, iri, dial, graphDescr=None):
+        ipid = await ipfsop.ipid()
+
+        if not ipid:
+            log.debug(
+                f'Sync with peer {peerId} aborted: no IPID attached')
+            return
+
+        graph = self.pronto.graphByUri(iri)
+        hGraph = self.pronto.graphHistory
+
+        ourChain = ontolochain.getChainResource(
+            hGraph, ontolochain.didMainChainUri(ipid)
+        )
 
         if graph is None or not ipid:
             return
@@ -231,6 +110,21 @@ class GraphSemChainSynchronizer:
 
         chains = await hGraph.rexec(self.ontoloChainsList)
 
+        try:
+            await self.syncGeoEntities(
+                hGraph, smartql,
+                await hGraph.rexec(self.ontoloChainsGeoEmittersList),
+                contextName='OntoloChainGeoEmitter'
+            )
+            await self.syncGeoEntities(
+                hGraph, smartql,
+                await hGraph.rexec(self.ontoloChainsGeoTranspondersList),
+                contextName='OntoloChainGeoTransponder'
+            )
+        except Exception as err:
+            log.debug(
+                f'Sync with {peerId}: failed to fetch geo entities: {err}')
+
         w = where([
             T(subject='?uri', predicate="a", object="gs:OntoloChain")
         ])
@@ -239,6 +133,10 @@ class GraphSemChainSynchronizer:
             w.add_filter(filter=Filter(
                 f'?uri != <{curi}>'
             ))
+
+        w.add_filter(filter=Filter(
+            f'?uri != <{ourChain.identifier}>'
+        ))
 
         q = select(
             vars=['?uri'],
@@ -286,6 +184,9 @@ class GraphSemChainSynchronizer:
             log.debug(f'OntoloSync: {iri}: error: {err}')
 
         for curi in chains:
+            if curi == ourChain.identifier:
+                continue
+
             tsubj = f'urn:ontolochain:status:{curi}'
 
             syncing = self._chainSync.get(curi, False)
@@ -295,6 +196,7 @@ class GraphSemChainSynchronizer:
 
                 self._chainSync[curi] = True
                 await self.syncChain(
+                    ipid,
                     hGraph,
                     smartql,
                     curi,
@@ -306,7 +208,47 @@ class GraphSemChainSynchronizer:
 
         await smartql.spql.close()
 
-    async def syncChain(self, hGraph,
+    async def syncGeoEntities(self, graph, smartql, rings,
+                              contextName='OntoloChainGeoEmitter'):
+        ctxUri = ipsContextUri(contextName)
+
+        w = where([
+            T(subject='?uri', predicate="a",
+              object=f"gs:{contextName}")
+        ])
+
+        for curi in rings:
+            w.add_filter(filter=Filter(
+                f'?uri != <{curi}>'
+            ))
+
+        q = select(
+            vars=['?uri'],
+            w=w
+        )
+
+        reply = await smartql.spql.query(str(q))
+
+        try:
+            for res in reply['results']['bindings']:
+                uri = URIRef(res['uri']['value'])
+
+                gttl = await smartql.resource(
+                    str(uri),
+                    context=str(ctxUri)
+                )
+
+                if not gttl:
+                    continue
+
+                graph.parse(data=gttl, format='ttl')
+        except Exception as err:
+            traceback.print_exc()
+            log.debug(f'Geo rings sync error: {err}')
+
+    async def syncChain(self,
+                        ipid,
+                        hGraph,
                         smartql,
                         chainUri: URIRef,
                         trackerUri):
@@ -331,11 +273,31 @@ class GraphSemChainSynchronizer:
             log.debug(f'ontoloSync({chainUri}): date last synced: {dLast}')
 
         if dLast:
-            # Calculate delta
-            # TODO: prevent oversync here
-            delta = now - dLast
+            if dLast > now:
+                # Force if date is bogus
+                delta = timedelta(
+                    seconds=self.config.chainSyncIntervalMin * 2)
+            else:
+                delta = now - dLast
+
             log.debug(
-                f'ontoloSync({chainUri}): sync delta: {delta.seconds} secs')
+                f'ontoloSync({chainUri}): last synced: {dLast} '
+                f'sync delta: {delta.seconds} secs')
+
+            if delta.seconds < self.config.chainSyncIntervalMin:
+                log.debug(
+                    f'ontoloSync({chainUri}): delaying sync')
+                return
+
+        """
+        ourChain = ontolochain.getChainResource(
+            hGraph, ontolochain.didMainChainUri(ipid)
+        )
+
+        remoteChain = ontolochain.getChainResource(
+            hGraph, chainUri
+        )
+        """
 
         #
         #
@@ -371,6 +333,8 @@ class GraphSemChainSynchronizer:
                 timeout=self.config.recordFetchTimeout
             )
 
+            await asyncio.sleep(0.05)
+
             if await self.processObject(uri, gttl, trace=False):
                 # Eat
                 async with hGraph.lock:
@@ -378,6 +342,9 @@ class GraphSemChainSynchronizer:
 
                 tracker.add(tUriOntoloChainVcProcessed,
                             uri)
+                await asyncio.sleep(0.05)
+
+        # Sync OntoloChainRecords
 
         for cn in range(0, self.config.recordsPerSync):
             objCount = 0
@@ -424,6 +391,8 @@ class GraphSemChainSynchronizer:
                         timeout=self.config.recordFetchTimeout
                     )
 
+                    await asyncio.sleep(0.05)
+
                     if not gttl:
                         # Can't fetch the record's graph ..
                         log.debug(
@@ -436,6 +405,8 @@ class GraphSemChainSynchronizer:
                         # Eat
                         async with hGraph.lock:
                             hGraph.parse(data=gttl, format='ttl')
+
+                        await asyncio.sleep(0.05)
                     else:
                         # Should be fatal here ?
                         log.debug(f'{uri}: failed to process ?!')
@@ -444,6 +415,8 @@ class GraphSemChainSynchronizer:
                     log.debug(f'{uri}: Already in hgraph')
 
                 try:
+                    # Lock the hgraph and advance the chain
+
                     async with hGraph.lock:
                         # Store URI of new record
                         tracker.remove(
@@ -460,7 +433,8 @@ class GraphSemChainSynchronizer:
                         )
                         tracker.add(
                             p=tUriOntoloChainDateSynced,
-                            o=Literal(utcDatetimeIso(), datatype=XSD.dateTime)
+                            o=Literal(utcDatetimeIso(),
+                                      datatype=XSD.dateTime)
                         )
                 except Exception as err:
                     log.debug(
