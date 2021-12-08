@@ -47,7 +47,7 @@ envs:
           cloudfare: true
           textile: true
           pinata: true
-          protocolLabs: true
+          protocolLabs: false
           protocolLabsNft: false
 
         '20211208':

@@ -18,7 +18,7 @@ from galacteek.browser.schemes import SCHEME_IPID
 from galacteek.browser.schemes import SCHEME_Q
 from galacteek.browser.schemes import SCHEME_MANUAL
 from galacteek.browser.schemes import SCHEME_GEMINI
-from galacteek.browser.schemes import SCHEME_GEMIPFS
+from galacteek.browser.schemes import SCHEME_GEMI
 from galacteek.browser.schemes import SCHEME_GEM
 from galacteek.browser.schemes import SCHEME_PRONTO_GRAPHS
 
@@ -154,7 +154,7 @@ class BaseProfile(QWebEngineProfile, KeyListener):
         self.installHandler(SCHEME_I, self.app.iSchemeHandler)
 
         self.installHandler(SCHEME_GEMINI, self.app.geminiSchemeHandler)
-        self.installHandler(SCHEME_GEMIPFS, self.app.gemIpfsSchemeHandler)
+        self.installHandler(SCHEME_GEMI, self.app.gemIpfsSchemeHandler)
         self.installHandler(SCHEME_GEM, self.app.gemIpfsSchemeHandler)
         self.installHandler(SCHEME_PRONTO_GRAPHS,
                             self.app.prontoGSchemeHandler)

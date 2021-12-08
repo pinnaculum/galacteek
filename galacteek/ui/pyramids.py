@@ -32,6 +32,7 @@ from galacteek import logUser
 from galacteek import AsyncSignal
 
 from galacteek.browser.schemes import SCHEME_GEM
+from galacteek.browser.schemes import SCHEME_GEMI
 
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import joinIpns
@@ -1428,13 +1429,29 @@ class GemPyramidButton(ContinuousPyramid):
 
     @property
     def accessUrl(self):
-        return f'{SCHEME_GEM}:/{self.app.ipfsCtx.node.id}/{self.pyramid.name}/'
+        return f'{SCHEME_GEMI}:/{self.app.ipfsCtx.node.id}/{self.pyramid.name}/'  # noqa
+
+    @property
+    def p2pEndpointAddress(self):
+        return f'/p2p/{self.app.ipfsCtx.node.id}/x/gemini/{self.pyramid.name}/1.0'  # noqa
+
+    @property
+    def accessUrlGem(self):
+        gemId = self.pyramid.extra.get('gemId')
+        if gemId:
+            return f'{SCHEME_GEM}://{gemId}/'
+
+        return ''
 
     async def initialize(self):
         await super().initialize()
 
         if not self.pyramidion:
             await self.gemNew()
+
+            await messageBoxAsync(
+                'Do not forget to publish your gemini capsule !'
+            )
 
     def gemsHelpMessage(self):
         self.app.manuals.browseManualPage(
@@ -1485,9 +1502,13 @@ class GemPyramidButton(ContinuousPyramid):
                 'description': descr if descr else 'No description',
                 'serviceEndpoint': {
                     '@type': 'GeminiIpfsCapsuleServiceEndpoint',
-                    '@id': self.accessUrl,
+                    '@id': self.accessUrlGem,
 
                     'accessUrl': self.accessUrl,
+                    'accessUrlGem': self.accessUrlGem,
+
+                    'p2pEndpointAddr': self.p2pEndpointAddress,
+
                     'capsuleName': self.pyramid.name,
                     'capsuleIpfsPath': str(self.ipnsKeyPath)
                 }

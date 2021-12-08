@@ -244,14 +244,14 @@ def initializeSchemes():
     )
 
     declareUrlScheme(
-        SCHEME_GEMIPFS,
+        SCHEME_GEMI,
         syntax=QWebEngineUrlScheme.Syntax.Path,
         flags=defaultSchemeFlags
     )
 
     declareUrlScheme(
         SCHEME_GEM,
-        syntax=QWebEngineUrlScheme.Syntax.Path,
+        syntax=QWebEngineUrlScheme.Syntax.Host,
         flags=defaultSchemeFlags
     )
 

@@ -81,6 +81,7 @@ class IPService(metaclass=IPServiceRegistry):
         self._srv = dagNode
         self._didEx = didExplode(self.id)
         self._ipid = ipid
+        self._p2pServices = []
 
         self.sChanged = AsyncSignal()
         self.sChanged.connectTo(self.onChanged)
@@ -162,8 +163,14 @@ class IPService(metaclass=IPServiceRegistry):
     async def serviceStart(self):
         pass
 
+    async def serviceStop(self):
+        for p2ps in self._p2pServices:
+            await p2ps.stop()
+
     async def p2pServiceRegister(self, service):
         await (runningApp()).s.ipfsP2PService(service)
+
+        self._p2pServices.append(service)
 
     async def pubsubServiceRegister(self, service):
         await (runningApp()).s.ipfsPubsubService(service)

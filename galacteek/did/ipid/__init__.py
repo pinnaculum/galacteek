@@ -723,6 +723,10 @@ class IPIdentifier(DAGOperations):
         try:
             for srv in self._document['service']:
                 if srv['id'] == _id:
+                    sInst = self._serviceInst(srv)
+                    if sInst:
+                        await sInst.serviceStop()
+
                     self._document['service'].remove(srv)
                     await self.flush()
         except Exception as err:

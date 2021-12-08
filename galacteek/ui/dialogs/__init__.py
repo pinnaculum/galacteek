@@ -4,6 +4,7 @@ import aioipfs
 import os.path
 import os
 import math
+import secrets
 
 from pathlib import Path
 
@@ -820,6 +821,8 @@ class AddMultihashPyramidDialog(QDialog):
             extra['dirwrapper'] = self.checkBoxDirWrap.isChecked()
             extra['unpinprevious'] = self.checkBoxUnpinPrev.isChecked()
             extra['startupsync'] = self.checkBoxStartupSync.isChecked()
+        elif self.pyramidType == MultihashPyramid.TYPE_GEMINI:
+            extra['gemId'] = secrets.token_hex(32)
 
         ipnsKeyName = 'galacteek.pyramids.{cat}.{name}'.format(
             cat=category.replace('/', '_'), name=pyramidName)

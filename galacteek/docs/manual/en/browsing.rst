@@ -164,11 +164,23 @@ gemini://
 
 You can browse Gemini_ capsules using the *gemini* URL scheme.
 
+gemi:/
+^^^^^^^^^
+
+You can browse Gemini_ capsules over IPFS streams using the
+*gemi* URL scheme. *gemi* URLs include the peer ID and the
+capsule name::
+
+    gemi:/12D3KooWNLKji99VFXXRns4vXnqvHGNdEN5rBBwSqKVGhDQHfzT1/hello/
+
 prontog:/
 ^^^^^^^^^
 
 The *prontog* URL scheme gives you access to the *pronto* RDF
-graph exports (in *turtle* (ttl) or *XML* formats).
+graph exports (in *turtle* (ttl) or *XML* formats)::
+
+- `prontog:/urn:ipg:i <prontog:/urn:ipg:i>`_
+- `prontog:/urn:ipg:h0 <prontog:/urn:ipg:h0>`_
 
 manual:/
 ^^^^^^^^
