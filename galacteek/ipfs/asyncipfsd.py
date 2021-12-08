@@ -10,9 +10,12 @@ import orjson
 import psutil
 import platform
 import subprocess
+import traceback
 from pathlib import Path
 
 from galacteek import log
+from galacteek.config import cGet
+from galacteek.config.util import ocToContainer
 from galacteek.core import utcDatetimeIso
 from galacteek.core.tmpf import TmpFile
 from galacteek.core.jsono import DotJSON
@@ -29,7 +32,7 @@ async def shell(arg):
 
     stdout, stderr = await p.communicate()
     try:
-        if stderr:
+        if p.returncode != 0:
             return False, None, stderr.decode()
 
         try:
@@ -58,7 +61,6 @@ async def ipfsConfigShow(binPath):
         return False, None
     else:
         try:
-            # cfg = json.loads(out.encode())
             cfg = json.loads(out)
         except Exception as err:
             log.debug(f'ipfsConfigShow error: {err}')
@@ -84,7 +86,7 @@ async def ipfsConfigProfileApply(binPath, profile):
 
 
 async def ipfsConfigJson(binPath, param, value):
-    ok, out, err = await shell("{0} config --json {1} {2}".format(
+    ok, out, err = await shell("{0} config --json '{1}' '{2}'".format(
         binPath, param, json.dumps(value)))
     if err:
         log.warning(
@@ -96,7 +98,15 @@ async def ipfsConfigJson(binPath, param, value):
 
 
 async def ipfsConfigGetJson(binPath, param):
-    return await shell("{0} config --json '{1}'".format(binPath, param))
+    ok, out, err = await shell(
+        "{0} config --json '{1}'".format(binPath, param))
+    if ok is True:
+        try:
+            return orjson.loads(out)
+        except Exception:
+            return None
+
+    return None
 
 
 async def ipfsMigrateRepo():
@@ -652,7 +662,8 @@ class AsyncIPFSDaemon(object):
         return await ipfsConfigGetJson(self.goIpfsPath, param)
 
     async def ipfsConfigPeeringGet(self):
-        return await self.ipfsConfigGetJson('Peering.Peers')
+        pl = await self.ipfsConfigGetJson('Peering.Peers')
+        return pl if pl else []
 
     async def ipfsConfigPeeringAdd(self, peerId, addrs=[]):
         """
@@ -660,7 +671,7 @@ class AsyncIPFSDaemon(object):
         (new peering system in go-ipfs 0.6)
         """
 
-        _peers = await self.ipfsConfigPeeringGet()
+        pList = await self.ipfsConfigPeeringGet()
 
         entry = {
             'ID': peerId,
@@ -668,17 +679,68 @@ class AsyncIPFSDaemon(object):
         }
 
         try:
-            pList = json.loads(_peers)
-
             if not any(e['ID'] == peerId for e in pList):
                 pList.append(entry)
         except Exception:
             pList = [entry]
 
-        return await self.ipfsConfigJson(
-            'Peering.Peers',
-            json.dumps(pList)
-        )
+        await self.ipfsConfigPeeringSet(pList)
+
+    async def ipfsConfigPeeringSet(self, pList: list):
+        try:
+            return await self.ipfsConfigJson(
+                'Peering.Peers',
+                pList
+            )
+        except Exception as err:
+            log.debug(f'Peering config set error: {err}')
+            traceback.print_exc()
+        else:
+            log.debug(f'Peering config set: {len(pList)} entries')
+
+    async def peeringConfigure(self):
+        try:
+            cProvidersDb = cGet('peering.contentProvidersDb',
+                                mod='galacteek.ipfs')
+            default = cProvidersDb.get('defaultSet')
+
+            provUse = cProvidersDb.get('use')
+            cProviders = ocToContainer(cProvidersDb[default])
+        except Exception as err:
+            traceback.print_exc()
+            log.debug(f'peeringConfigure: could not load DB: {err}')
+            return False
+
+        pInit = await self.ipfsConfigPeeringGet()
+
+        if not pInit:
+            pInit = []
+
+        for provName, conns in cProviders.items():
+            use = provUse.get(provName, False)
+
+            if use is not True:
+                # Don't use this provider
+                log.debug(f'peeringConfigure: not using provider: {provName}')
+                continue
+
+            for conn in conns:
+                if not isinstance(conn, dict):
+                    log.debug(f'peeringConfigure: Invalid entry: {conn}')
+                    continue
+
+                if 'ID' not in conn or 'Addrs' not in conn:
+                    log.debug(f'peeringConfigure: Invalid entry: {conn}')
+                    continue
+
+                if not any(e['ID'] == conn['ID'] for e in pInit):
+                    pInit.append(conn)
+
+                    await asyncio.sleep(0)
+
+        await self.ipfsConfigPeeringSet(pInit)
+
+        return True
 
     def getProcNiceness(self, proc=None):
         process = proc if proc else self.process

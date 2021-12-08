@@ -20,6 +20,10 @@ def merge(*cfgs):
         return None
 
 
+def ocToContainer(cfg, resolve=True):
+    return OmegaConf.to_container(cfg, resolve=resolve)
+
+
 def environment():
     return {
         'env': os.environ.get(

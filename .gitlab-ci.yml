@@ -48,12 +48,14 @@ prepare:
       if [[ $CI_COMMIT_BRANCH =~ '^master$' ]]; then
         echo "Building from master"
         BUNDLE_IDENT="${GALACTEEK_VERSION}"
+
         echo "export RELEASE_TAG=v${GALACTEEK_VERSION}" >> $GALACTEEK_ENV_FILE
         echo "export APPIMAGE_PIN_NAME=galacteek-appimage-v${GALACTEEK_VERSION}" >> $GALACTEEK_ENV_FILE
         echo "export FLATPAK_PIN_NAME=galacteek-flatpak-v${GALACTEEK_VERSION}" >> $GALACTEEK_ENV_FILE
       else
         echo "Building from branch ${CI_COMMIT_BRANCH}"
-        BUNDLE_IDENT="${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA}"
+        BUNDLE_IDENT="${CI_COMMIT_SHORT_SHA}"
+
         echo "export RELEASE_TAG=continuous-${CI_COMMIT_BRANCH}" >> $GALACTEEK_ENV_FILE
         echo "export APPIMAGE_PIN_NAME=galacteek-appimage-branch-${CI_COMMIT_BRANCH}" >> $GALACTEEK_ENV_FILE
         echo "export FLATPAK_PIN_NAME=galacteek-flatpak-branch-${CI_COMMIT_BRANCH}" >> $GALACTEEK_ENV_FILE

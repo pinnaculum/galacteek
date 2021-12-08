@@ -11,6 +11,8 @@ the changes in the CHANGELOG formatting.
 ## [0.5.3] - 2021-09-18
 
 ### Added
+- Automatic peering with popular IPFS content providers (provides
+  better/faster content finding)
 - Introduce the **gem** protocol (P2P gemini capsules)
 - Add a new type of pyramid (*gems*, gemini IPFS capsules)
 - Add a DID service to serve *gems* over IPFS streams (accessible

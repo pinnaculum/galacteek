@@ -1486,6 +1486,7 @@ class GalacteekApplication(QApplication):
             self.systemTrayMessage('IPFS', iIpfsDaemonResumed())
 
             await self.updateIpfsClient(client)
+            await ipfsd.peeringConfigure()
             await self.setupProfileAndRepo()
             await self.scheduler.spawn(self.ipfsd.watchProcess())
             await self.ipfsCtx.ipfsDaemonStarted.emit()
@@ -1537,6 +1538,7 @@ class GalacteekApplication(QApplication):
 
         if running is True:
             await self.updateIpfsClient()
+            await self.ipfsd.peeringConfigure()
             await self.ipfsd.writeStatus()
             await self.setupProfileAndRepo()
             await self.scheduler.spawn(self.ipfsd.watchProcess())
