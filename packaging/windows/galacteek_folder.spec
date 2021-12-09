@@ -107,7 +107,11 @@ a = Analysis(['galacteek_win.py'],
     ],
     datas=[
     ('./packaging/windows/cygwin/fstab',
-     'etc')
+     'etc'),
+    ('./packaging/windows/matplotlibrc',
+     '.'),
+    ('./packaging/windows/matplotlibrc',
+     'matplotlib/mpl-data')
     ],
     hiddenimports=[
         'multiaddr',

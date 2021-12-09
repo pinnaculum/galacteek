@@ -87,9 +87,7 @@ class IService(services.GService):
     def iriGenObject(self, oclass):
         return f'i:/{self.prontoService.chainEnv}/rsc/{oclass}/{uid4()}'
 
-    async def on_start(self):
-        await super().on_start()
-
+    async def startWebApp(self):
         self.webapp = self.createApp()
 
         self.webtask = await self.app.scheduler.spawn(

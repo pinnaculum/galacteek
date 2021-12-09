@@ -53,7 +53,8 @@ jobs:
     - name: Install packages (macos)
       if: startsWith(matrix.os, 'mac')
       run: |
-        brew install tor openssl
+        brew install tor
+        brew install 'openssl@1.1'
         brew install pkg-config autoconf automake
 
     - name: Install choco packages (Windows)
@@ -119,7 +120,9 @@ jobs:
 
         # Set PKG_CONFIG_PATH to point to brew's openssl libcrypto, for notbit
         # compilation
-        echo "PKG_CONFIG_PATH=/usr/local/Cellar/openssl@1.1/1.1.1k/lib/pkgconfig:/usr/local/Cellar/openssl/1.1.1k/lib/pkgconfig" >> $GITHUB_ENV
+        ls /usr/local/Cellar/openssl@1.1
+
+        echo "PKG_CONFIG_PATH=/usr/local/Cellar/openssl@1.1/1.1.1l_1/lib/pkgconfig:/usr/local/Cellar/openssl/1.1.1l_1/lib/pkgconfig" >> $GITHUB_ENV
 
     - name: OS-specific vars (win)
       if: startsWith(matrix.os, 'windows')

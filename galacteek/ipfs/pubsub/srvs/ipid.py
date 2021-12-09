@@ -6,7 +6,6 @@ import json
 
 from cachetools import TTLCache
 
-from galacteek.core import captcha3d
 from galacteek.core import uid4
 
 from galacteek.did import normedUtcDate
@@ -15,6 +14,14 @@ from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.pubsub.service import JSONPubsubService
 from galacteek.ipfs.pubsub.messages import PubsubMessage
 from galacteek.ipfs.pubsub.messages.ipid import *
+
+
+try:
+    from galacteek.core import captcha3d
+except Exception:
+    haveCaptcha3d = False
+else:
+    haveCaptcha3d = True
 
 
 class PassportCaptchaPSService(JSONPubsubService):
@@ -32,7 +39,10 @@ class PassportCaptchaPSService(JSONPubsubService):
                 sender))
             return
 
-        print('ipidpassmsg', str(msg))
+        if haveCaptcha3d is False:
+            self.debug('No captcha3d support, ignoring msg')
+            return
+
         m = PubsubMessage(msg)
         request = m.get('msgtype')
         cached = self.__capcache.get(sender)
