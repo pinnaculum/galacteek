@@ -14,7 +14,9 @@
 
 <form width="100%">
   <textarea maxlength="1024" id="comment" name="textarea" width="800" rows="5"></textarea>
-  <p align="center"><button class="p-button" onclick="reply('{{ rscUri }}')">Reply</button></p>
+  <p align="center"><button class="p-button" onclick="reply('{{ rscUri }}')">Reply</button>
+  <button class="p-button" onclick="window.location.reload()">Reload</button>
+  </p>
 </form>
 
 <div id="replies">
@@ -40,7 +42,7 @@
       },
       'articleBody': body
       }, {}).then(function(res) {
-        location.reload()
+        window.location.reload(true)
       })
   }
 </script>
