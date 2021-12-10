@@ -48,7 +48,8 @@ class AsyncSigSpy(object):
 
         if not self.emitted:
             raise SignalNotEmittedError(
-                'Async signal not emitted after {self.timeout} seconds')
+                f'Signal {self.asignal} not emitted'
+                f'after {self.timeout} seconds')
 
 
 def asyncSigWait(asignal, timeout=5.0):

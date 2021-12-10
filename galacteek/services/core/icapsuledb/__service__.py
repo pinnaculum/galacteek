@@ -230,7 +230,7 @@ class ICapsuleRegistryLoaderService(GService):
                 cfg = OmegaConf.create(registry.read().decode())
                 assert cfg is not None
         except Exception as err:
-            log.debug(f'{url}: cannot load registry: {err}')
+            log.info(f'{url}: cannot load registry: {err}')
 
             if savePath.is_file():
                 return self.registryFromArchive(savePath)
@@ -302,20 +302,24 @@ class ICapsuleRegistryLoaderService(GService):
 
                     continue
                 try:
-                    log.debug(f'capsule {uri}: Fetching {iPath} to {rcpath}')
+                    log.info(f'capsule {uri}: Fetching {iPath} to {rcpath}')
 
                     success = False
+                    pPrev = 0
                     async for status in ipfsop.pin2(str(iPath),
                                                     timeout=60 * 10):
                         if status[1] == 1:
+                            log.info(f'capsule {uri}: {iPath}: pin success')
                             success = True
                         elif status[1] == 0:
                             p = status[2]
-                            if isinstance(p, int):
-                                log.debug(
+                            if isinstance(p, int) and pPrev != p:
+                                log.info(
                                     f'capsule {uri}: '
                                     f'{iPath}: nodes pinned: {p}')
+                                pPrev = p
                         elif status[1] == -1:
+                            log.info(f'capsule {uri}: {iPath}: pin failure')
                             raise Exception(f'{uri}: failed to pin!')
 
                     assert success is True
