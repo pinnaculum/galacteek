@@ -125,7 +125,6 @@ rm -rf pkgs
 find . -type d -iname '__pycache__' -print0 | xargs -0 rm -r
 
 rm -rf lib/python3.7/site-packages/Cryptodome/SelfTest/*
-rm -rf lib/python3.7/site-packages/PyQt5/Qt5/plugins/geoservices
 rm -rf lib/python3.7/site-packages/PyQt5/Qt5/plugins/sceneparsers
 rm -rf lib/python3.7/site-packages/PyQt5/Qt5/plugins/assetimporters
 
