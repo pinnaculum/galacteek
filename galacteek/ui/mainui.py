@@ -715,7 +715,7 @@ class CentralStack(QStackedWidget,
         if event['type'] == 'QmlApplicationLoadRequest':
             iconPath = IPFSPath(event.get('appIconCid'))
 
-            icon = await getIconFromIpfs(ipfsop, str(iconPath)) if \
+            icon = await getIconFromIpfs(ipfsop, str(iconPath), timeout=5) if \
                 iconPath.valid else getIcon('galacteek.png')
 
             workspace = QMLDappWorkspace(
@@ -725,7 +725,8 @@ class CentralStack(QStackedWidget,
                 event['components'],
                 event['depends'],
                 event['qmlEntryPoint'],
-                icon=icon
+                icon=icon,
+                description=event['description']
             )
 
             if await workspace.load():

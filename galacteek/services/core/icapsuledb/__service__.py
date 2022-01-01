@@ -1,18 +1,26 @@
 from pathlib import Path
 from omegaconf import OmegaConf
+
+import validators
 import attr
 import asyncio
 import aiohttp
 import tarfile
 import hashlib
 import traceback
+
 from io import BytesIO
 from yarl import URL
 
 from galacteek import log
+from galacteek import ensure
+
+from galacteek.core.tmpf import TmpFile
 from galacteek.core.asynclib import asyncWriteFile
 from galacteek.core.asynclib import asyncReadFile
+
 from galacteek.services import GService
+
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
 
@@ -67,13 +75,13 @@ class ICapsuleRegistryLoaderService(GService):
     the application when they're ready to be used.
     """
 
-    name = 'qmlcomponents'
+    name = 'icapsuleregistry'
 
     def on_init(self):
         self.lock = asyncio.Lock()
         self.dappsStoragePath = self.rootPath.joinpath('capsules')
         self.dappsStoragePath.mkdir(exist_ok=True, parents=True)
-        self._qc = {}
+
         self._byUri = {}
         self._dappLoadedByUri = {}
         self._processing = False
@@ -113,17 +121,24 @@ class ICapsuleRegistryLoaderService(GService):
         if self._processing:
             return
 
+        breg = OmegaConf.create({})
+
         async with self.lock:
             self._processing = True
 
-            for n, srcdata in self.serviceConfig.registries.items():
+            registries = sorted(
+                self.serviceConfig.registries.items(),
+                key=lambda it: it[1]['priority']
+            )
+
+            for regname, regcfg in registries:
                 try:
                     sDataPath = self.rootPath.joinpath(
-                        'registry').joinpath(n)
+                        'registry').joinpath(regname)
                     sDataPath.mkdir(parents=True, exist_ok=True)
 
-                    url = srcdata.get('url')
-                    enabled = srcdata.get('enabled', True)
+                    url = regcfg.get('url')
+                    enabled = regcfg.get('enabled', True)
 
                     if not enabled:
                         continue
@@ -131,9 +146,11 @@ class ICapsuleRegistryLoaderService(GService):
                     reg = await self.registryFromUrl(url, sDataPath)
 
                     if reg:
-                        await self.registryProcess(reg)
+                        breg = OmegaConf.merge(breg, reg)
                 except Exception:
                     continue
+
+            await self.registryProcess(breg)
 
             self._processing = False
 
@@ -194,6 +211,15 @@ class ICapsuleRegistryLoaderService(GService):
         if not u.name:
             return None
 
+        if u.scheme == 'file':
+            try:
+                content = await asyncReadFile(u.path, mode='rt')
+                if content:
+                    return OmegaConf.create(content)
+            except Exception:
+                traceback.print_exc()
+                return None
+
         if not u.name.endswith('.tar.gz') and not u.name.endswith('.tgz'):
             return None
 
@@ -236,6 +262,45 @@ class ICapsuleRegistryLoaderService(GService):
                 return self.registryFromArchive(savePath)
         else:
             return cfg
+
+    async def capsuleExtractFromUrl(self, url: URL, dstdir: Path,
+                                    maxArchiveSize=1024 * 1024 * 4,
+                                    chunkSize=8192):
+        """
+        Pull the capsule archive from the given `url`, and
+        extract it to `dstdir`.
+
+        TODO: use async writes on the temp file
+        """
+        try:
+            size = 0
+
+            with TmpFile(mode='w+b') as tmpfd:
+                async with aiohttp.ClientSession() as sess:
+                    async with sess.get(str(url)) as resp:
+                        async for chunk in resp.content.iter_chunked(
+                                chunkSize):
+                            tmpfd.write(chunk)
+
+                            size += len(chunk)
+
+                            if size > maxArchiveSize:
+                                raise Exception(
+                                    f'{url}: capsule size exceeds maxsize')
+
+                tmpfd.seek(0, 0)
+
+                tar = tarfile.open(fileobj=tmpfd)
+                tar.extractall(str(dstdir))
+
+                tar.close()
+
+            log.debug(f'icapsule ({url}, size: {size} bytes): extract OK')
+
+            return True
+        except Exception:
+            traceback.print_exc()
+            return False
 
     @ipfsOp
     async def loadCapsuleFromManifest(self, ipfsop,
@@ -283,6 +348,8 @@ class ICapsuleRegistryLoaderService(GService):
             elif stype in ['dweb', 'ipfs']:
                 iPath = IPFSPath(comp.cid)
 
+                hDistUrl = comp.get('distUrl', '')
+
                 rpath = self.dappsStoragePath.joinpath(uri)
                 rcpath = rpath.joinpath(cn).joinpath(version)
                 cpath = rcpath.joinpath(comp.cid)
@@ -295,48 +362,33 @@ class ICapsuleRegistryLoaderService(GService):
                     continue
 
                 if cpath.is_dir():
-                    # Already loaded ?
+                    # Already installed
+
                     cloaded.append({
                         'fsPath': str(cpath)
                     })
 
                     continue
-                try:
-                    log.info(f'capsule {uri}: Fetching {iPath} to {rcpath}')
 
-                    success = False
-                    pPrev = 0
-                    async for status in ipfsop.pin2(str(iPath),
-                                                    timeout=60 * 10):
-                        if status[1] == 1:
-                            log.info(f'capsule {uri}: {iPath}: pin success')
-                            success = True
-                        elif status[1] == 0:
-                            p = status[2]
-                            if isinstance(p, int) and pPrev != p:
-                                log.info(
-                                    f'capsule {uri}: '
-                                    f'{iPath}: nodes pinned: {p}')
-                                pPrev = p
-                        elif status[1] == -1:
-                            log.info(f'capsule {uri}: {iPath}: pin failure')
-                            raise Exception(f'{uri}: failed to pin!')
+                if validators.url(hDistUrl) is True:
+                    # HTTPs dist
 
-                    assert success is True
+                    url = URL(hDistUrl)
 
-                    await ipfsop.client.core.get(
-                        str(iPath), dstdir=str(rcpath))
+                    log.debug(f'icapsule {uri}: Fetch dist URL: {url}')
 
-                    log.debug(f'capsule {uri}: Fetch finished')
+                    result = await self.capsuleExtractFromUrl(url, cpath)
+                    if result is True:
+                        cloaded.append({
+                            'fsPath': str(cpath)
+                        })
 
-                except Exception as err:
-                    log.debug(f'Could not fetch component: {iPath}: {err}')
+                        ensure(self.pinCapsule(uri, iPath))
 
-                    return None
+                        continue
                 else:
-                    cloaded.append({
-                        'fsPath': str(cpath)
-                    })
+                    log.debug(f'icapsule {uri}: no dist URL found, skipping')
+                    continue
 
         return CapsuleContext(
             type=mtype,
@@ -346,6 +398,40 @@ class ICapsuleRegistryLoaderService(GService):
             qmlEntryPoint=qmlEntryPoint
         )
 
+    @ipfsOp
+    async def pinCapsule(self, ipfsop,
+                         uri: str,
+                         iPath: IPFSPath):
+        try:
+            success = False
+            p, pPrev = 0, 0
+
+            async for status in ipfsop.pin2(str(iPath),
+                                            timeout=60 * 5):
+                if status[1] == 1:
+                    log.info(f'capsule {uri}: {iPath}: pin success')
+                    success = True
+                elif status[1] == 0:
+                    p = status[2]
+
+                    if isinstance(p, int) and pPrev != p:
+                        log.info(
+                            f'capsule {uri}: '
+                            f'{iPath}: nodes pinned: {p}')
+                        pPrev = p
+                elif status[1] == -1:
+                    log.info(f'capsule {uri}: {iPath}: pin failure')
+                    raise Exception(f'{uri}: failed to pin!')
+
+            assert success is True
+            log.debug(f'capsule {uri}: Pinned')
+
+            return True
+
+        except Exception as err:
+            log.debug(f'Could not pin capsule: {iPath}: {err}')
+            return False
+
     async def dappLoadRequest(self, ctx):
         await self.ldPublish({
             'type': 'QmlApplicationLoadRequest',
@@ -354,6 +440,7 @@ class ICapsuleRegistryLoaderService(GService):
             'appIconCid': ctx.qdef.get('icon', {}).get('cid', None),
             'qmlEntryPoint': ctx.qmlEntryPoint,
             'components': ctx.components,
+            'description': ctx.qdef.get('description', 'No description'),
             'depends': ctx.depends
         })
 
@@ -401,6 +488,10 @@ class DappsUserProfile:
                 continue
 
             ctx = self.service.capsuleCtx(uri)
+            if not ctx:
+                log.debug(f'{uri}: failed to get capsule context')
+                continue
+
             if ctx.type not in ['dapp-qml', 'dapp']:
                 continue
 

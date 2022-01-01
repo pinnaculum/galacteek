@@ -2,12 +2,14 @@ envs:
   default:
     registries:
       icapsule-registry-gitlab-continuous:
-        url: https://gitlab.com/api/v4/projects/29133437/packages/generic/icapsule-registry/continuous-${env:ICAPSULE_REGISTRY_BRANCH}/icapsule-registry.tar.gz
+        url: https://gitlab.com/galacteek/icapsule-registry/-/releases/continuous-${env:ICAPSULE_REGISTRY_BRANCH}/downloads/icapsule-registry.tar.gz
         enabled: True
+        priority: 0
 
       icapsule-registry-local-dev:
         url: file:///${env:HOME}/icapsule-registry-dev.yaml
         enabled: False
+        priority: 100
 
     profile:
       icapsulesByUri:

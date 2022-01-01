@@ -224,7 +224,7 @@ class PinObjectButton(PopupToolButton, PinActions):
     def changeObject(self, ipfsPath: IPFSPath):
         if not ipfsPath or not ipfsPath.valid:
             self.enableActions(False)
-            self.setText(iInvalidObjectPath())
+            self.setText(iInvalidObjectPath(str(ipfsPath)))
         else:
             self.ipfsPath = ipfsPath
             self.enableActions(True)
