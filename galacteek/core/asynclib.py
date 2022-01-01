@@ -1,4 +1,5 @@
 import os.path
+from pathlib import Path
 from collections import UserList
 from collections import deque
 from typing import Deque
@@ -524,3 +525,31 @@ def threadedCoro(loop, coro, *args):
             return future.result()
         except Exception:
             traceback.print_exc()
+
+
+async def httpFetch(url: str,
+                    dst: Path = None,
+                    timeout=60,
+                    chunkSize=8192):
+    from galacteek.core.tmpf import TmpFile
+
+    try:
+        size = 0
+
+        with TmpFile(mode='w+b', delete=False) as file:
+            async with async_timeout.timeout(timeout):
+                async with aiohttp.ClientSession() as sess:
+                    async with sess.get(url) as resp:
+                        if resp.status != 200:
+                            raise Exception(
+                                f'Invalid reply code: {resp.status}')
+                        async for chunk in resp.content.iter_chunked(
+                                chunkSize):
+                            file.write(chunk)
+
+                            size += len(chunk)
+
+        return file.name
+    except Exception:
+        traceback.print_exc()
+        return None

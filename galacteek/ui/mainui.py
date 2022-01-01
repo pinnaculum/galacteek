@@ -737,8 +737,6 @@ class CentralStack(QStackedWidget,
                     'appUri': event['appUri']
                 })
 
-                workspace.wsSwitch()
-
 
 class BrowseButton(PopupToolButton):
     """

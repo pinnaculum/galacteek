@@ -1,6 +1,8 @@
 import traceback
 import qasync
 import os
+import os.path
+
 from pathlib import Path
 from yarl import URL
 
@@ -25,6 +27,7 @@ from galacteek import cached_property
 from galacteek import loopTime
 
 from galacteek.core.asynclib import threadExec
+from galacteek.core.asynclib import httpFetch
 from galacteek.core.tmpf import TmpDir
 
 from . import GAsyncObject
@@ -477,6 +480,30 @@ class RDFGraphHandler(GOntoloObject):
         except Exception:
             traceback.print_exc()
             return False
+
+        return True
+
+    @opSlot(str, QJsonValue)
+    async def ipgRdfMergeFromUrl(self, url: str, options):
+        file = None
+
+        try:
+            opts = self._dict(options)
+            timeout = int(opts.get('timeout', 60))
+
+            file = await httpFetch(url, timeout=timeout)
+
+            if not file:
+                log.debug(f'Could not fetch RDF from URL: {url}')
+                return False
+
+            await self.app.rexec(self._graph.parse, file)
+        except Exception as err:
+            log.debug(f'Could not merge RDF from URL: {url}: {err}')
+            return False
+
+        if os.path.isfile(file):
+            os.remove(file)
 
         return True
 

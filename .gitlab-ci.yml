@@ -164,8 +164,6 @@ release:
   rules:
     - if: $CI_COMMIT_BRANCH =~ /^master$/
       when: always
-    - if: $CI_COMMIT_MESSAGE =~ /\[appimage-deploy\]/
-      when: always
     - if: $CI_COMMIT_MESSAGE =~ /\[deploy\]/
       when: always
     - if: $CI_COMMIT_MESSAGE =~ /\[all\]/
