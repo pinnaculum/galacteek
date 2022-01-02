@@ -99,10 +99,9 @@ build:
         echo "Building AppImage to ${APPIMAGE_PATH}"
         cd AppImage; ./appimage-build-gitlab; cd ..
 
-        CID=$(ipfs add -wQ --cid-version 1 "$APPIMAGE_PATH" | tail -1)
+        APPIMAGE_CID=$(ipfs add -wQ --cid-version 1 "$APPIMAGE_PATH" | tail -1)
 
-        echo "export APPIMAGE_DIR_CID=$CID" >> $ARTIFACT_RELEASE
-        echo "export APPIMAGE_IPFS_URL=https://gateway.pinata.cloud/ipfs/${CID}/${APPIMAGE_FILENAME}" >> $ARTIFACT_RELEASE
+        echo "export APPIMAGE_DIR_CID=${APPIMAGE_CID}" >> $ARTIFACT_RELEASE
       fi
 
     - |-
@@ -148,6 +147,8 @@ build:
             --name="${APPIMAGE_PIN_NAME}" --force
           ipfs pin remote add --service=origin \
             --name="${APPIMAGE_PIN_NAME}" $APPIMAGE_DIR_CID
+
+          echo "export APPIMAGE_IPFS_URL=https://gateway.pinata.cloud/ipfs/${APPIMAGE_DIR_CID}/${APPIMAGE_FILENAME}" >> $ARTIFACT_RELEASE
         fi
       fi
 
@@ -201,9 +202,9 @@ release:
           --tag-name $RELEASE_TAG \
           --ref $CI_COMMIT_SHA \
           --assets-link \
-          "{\"name\" :\"$APPIMAGE_IPFS_FILENAME\", \"url\": \"${APPIMAGE_IPFS_URL}\"}" \
+          "{\"name\" :\"$APPIMAGE_IPFS_FILENAME\", \"filepath\": \"/${APPIMAGE_IPFS_FILENAME}\", \"url\": \"${APPIMAGE_IPFS_URL}\"}" \
           --assets-link \
-          "{\"name\" :\"$APPIMAGE_FILENAME\", \"url\": \"${APPIMAGE_ASSET_URL}\"}"
+          "{\"name\" :\"${APPIMAGE_FILENAME}\", \"filepath\": \"/${APPIMAGE_FILENAME}\", \"url\": \"${APPIMAGE_ASSET_URL}\"}"
       else
         echo "Creating release with artifact url"
         release-cli create \
@@ -212,7 +213,7 @@ release:
           --tag-name $RELEASE_TAG \
           --ref $CI_COMMIT_SHA \
           --assets-link \
-          "{\"name\" :\"$APPIMAGE_FILENAME\", \"url\": \"${APPIMAGE_ASSET_URL}\"}"
+          "{\"name\" :\"${APPIMAGE_FILENAME}\", \"filepath\": \"/${APPIMAGE_FILENAME}\", \"url\": \"${APPIMAGE_ASSET_URL}\"}"
       fi
 
 docker_x11vnc:

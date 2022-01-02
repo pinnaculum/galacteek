@@ -17,7 +17,7 @@ the changes in the CHANGELOG formatting.
 - Add a new type of pyramid (*gems*, gemini IPFS capsules)
 - Add a DID service to serve *gems* over IPFS streams (accessible
 via the *gem:/* URL scheme)
-- New python dependency: custom [aiogemini](https://gitlab.com/galacteek/aiogemini)
+- New python dependency: custom [aiogemini](https://gitlab.com/galacteek/aiogeminipfs)
 
 ### Changed
 - Changes in the *pronto* ontolochain system

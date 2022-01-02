@@ -68,7 +68,7 @@ rdflib-sqlite>=0.1
 rule-engine>=2.1.0
 SPARQLWrapper==1.8.5
 strict-rfc3339>=0.7
-tortoise-orm>=0.16.21
+tortoise-orm==0.17.6
 validators>=0.18.1
 yarl==1.5.1
 aiogeminipfs @ git+https://gitlab.com/galacteek/aiogeminipfs.git@ipfs#egg=aiogeminipfs
