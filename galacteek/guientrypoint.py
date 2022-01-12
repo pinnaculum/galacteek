@@ -123,7 +123,7 @@ def buildArgsParser(fromParser=None):
     parser.add_argument('--binary-path', default=None,
                         help='Binary path', dest='binarypath')
     parser.add_argument('--icapsule-registry-branch',
-                        default='devel',
+                        default='purple',
                         help='Icapsule registry branch',
                         dest='icapRegistryBranch')
     parser.add_argument(

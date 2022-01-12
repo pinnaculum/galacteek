@@ -12,9 +12,12 @@ from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWidgets import QHBoxLayout
 from PyQt5.QtWidgets import QToolBar
+from PyQt5.QtWidgets import QToolButton
+from PyQt5.QtWidgets import QToolTip
 from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QSpacerItem
 from PyQt5.QtWidgets import QStackedWidget
+from PyQt5.QtWidgets import QMenu
 
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import Qt
@@ -62,6 +65,9 @@ from galacteek.ui.messenger import MessengerWidget
 from galacteek.ui.feeds import AtomFeedsViewTab
 from galacteek.ui.qmlapp import QMLApplicationWidget
 
+from galacteek.ui.icapsules import ICapsulesManagerWidget
+
+from galacteek.ui.widgets import URLDragAndDropProcessor
 from galacteek.ui.i18n import *
 
 
@@ -82,6 +88,82 @@ class TabWidgetKeyFilter(QObject):
                 if key == Qt.Key_W:
                     self.closePressed.emit()
         return False
+
+
+class WorkspaceSwitchButton(QToolButton, URLDragAndDropProcessor):
+    def __init__(self, workspace, mode=QToolButton.InstantPopup,
+                 parent=None, menu=None):
+        super().__init__(parent)
+        self.setCheckable(True)
+        self.workspace = workspace
+
+        if mode == QToolButton.MenuButtonPopup and menu:
+            self.setMenu(menu)
+
+        self.setPopupMode(mode)
+        self.setIcon(workspace.wsIcon)
+        self.setObjectName('wsSwitchButton')
+        self.setProperty("dropping", "false")
+        self.setAcceptDrops(True)
+
+        self.setToolTip(workspace.wsToolTip())
+
+        self.ipfsObjectDropped.connect(self.onObjDropped)
+
+    def flashToolTip(self):
+        QToolTip.showText(
+            self.mapToGlobal(QPoint(0, 0)),
+            self.workspace.wsToolTip())
+
+    def dragEnterEvent(self, event):
+        if self.workspace.acceptsDrops:
+            self.setProperty("dropping", "true")
+            self.setStyle(QApplication.style())
+            self.flashToolTip()
+            event.accept()
+        else:
+            event.ignore()
+
+    def dragLeaveEvent(self, event):
+        self.setProperty("dropping", "false")
+        self.setStyle(QApplication.style())
+        super().dragLeaveEvent(event)
+
+    def onObjDropped(self, path):
+        ensure(self.workspace.handleObjectDrop(path))
+
+    def checkStateSet(self):
+        super(WorkspaceSwitchButton, self).checkStateSet()
+
+    def nextCheckState(self):
+        if self.workspace.stack.currentWorkspace() is not self.workspace:
+            self.switch()
+            self.setChecked(True)
+        else:
+            self.setChecked(False)
+
+    def switch(self, soundNotify=False):
+        self.workspace.wsSwitch(soundNotify=soundNotify)
+
+    def styleNotify(self):
+        self.setProperty('wsNotify', True)
+        self.setStyleSheet('''
+            QToolButton {
+                background-color: #B7CDC2;
+            }
+        ''')
+
+    def styleActive(self):
+        self.setProperty('wsActive', True)
+        self.setStyleSheet('''
+            QToolButton::hover {
+                background-color: #4a9ea1;
+            }
+
+            QToolBar QToolButton::pressed {
+                background-color: #eec146;
+            }
+        ''')
 
 
 class MainTabBar(QTabBar):
@@ -212,6 +294,9 @@ class BaseWorkspace(QWidget):
     def setupWorkspace(self):
         pass
 
+    def createSwitchButton(self, parent=None):
+        return WorkspaceSwitchButton(self, parent=parent)
+
     async def workspaceShutDown(self):
         pass
 
@@ -302,6 +387,17 @@ class WorkspaceStatus(BaseWorkspace):
         dialog.setEnabled(True)
         idx, w = self.push(dialog, name)
         await runDialogAsync(dialog)
+
+
+class WorkspaceDapps(BaseWorkspace):
+    def setupWorkspace(self):
+        super().setupWorkspace()
+
+        self.dappsManager = ICapsulesManagerWidget(parent=self)
+        self.wLayout.addWidget(self.dappsManager)
+
+    def refresh(self):
+        self.dappsManager.refresh()
 
 
 class TabbedWorkspace(BaseWorkspace):
@@ -909,6 +1005,10 @@ class WorkspaceMessenger(SingleWidgetWorkspace, KeyListener):
             )
 
 
+class DappSwitchButton(WorkspaceSwitchButton):
+    pass
+
+
 class QMLDappWorkspace(SingleWidgetWorkspace, KeyListener):
     def __init__(self, stack,
                  name,
@@ -930,6 +1030,13 @@ class QMLDappWorkspace(SingleWidgetWorkspace, KeyListener):
     def capService(self):
         return services.getByDotName('core.icapsuledb')
 
+    def createSwitchButton(self, parent=None):
+        if 0:
+            menu = QMenu(self)
+            menu.addAction('Close', lambda: print('Quit dapp'))
+
+        return DappSwitchButton(self, parent=parent)
+
     async def load(self):
         ctx = self.capService.capsuleCtx(self.appUri)
         if not ctx:
@@ -947,9 +1054,13 @@ class QMLDappWorkspace(SingleWidgetWorkspace, KeyListener):
     async def loadDependencies(self, ctx):
         try:
             for dep in ctx.depends:
-                depctx = self.capService.capsuleCtx(dep.uri)
+                depId = dep['id']
+                depctx = self.capService.capsuleCtx(depId)
+
                 if not depctx:
-                    continue
+                    log.debug(f'{self.appUri}: did not find dep: {dep}')
+
+                    raise Exception(f'{depId}: capsule not found')
 
                 await self.loadComponents(depctx)
         except Exception as err:

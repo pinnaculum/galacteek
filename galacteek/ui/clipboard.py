@@ -2,6 +2,9 @@ import functools
 import aioipfs
 import time
 import shutil
+import orjson
+import traceback
+import yaml
 
 from PyQt5.QtWidgets import QStackedWidget
 from PyQt5.QtWidgets import QToolButton
@@ -27,6 +30,7 @@ from galacteek import partialEnsure
 from galacteek import log
 from galacteek import logUser
 from galacteek import database
+from galacteek import services
 
 from galacteek.appsettings import CFG_SECTION_BROWSER
 from galacteek.appsettings import CFG_KEY_HOMEURL
@@ -51,6 +55,7 @@ from .helpers import getFavIconFromDir
 from .helpers import getIconFromMimeType
 from .helpers import getIcon
 from .helpers import messageBox
+from .helpers import messageBoxAsync
 from .helpers import getIconFromImageData
 from .helpers import runDialog
 from .helpers import disconnectSig
@@ -173,6 +178,11 @@ def iClipItemMarkupRocks():
 def iClipItemEditText():
     return QCoreApplication.translate('ClipboardManager',
                                       'Edit text file')
+
+
+def iClipItemIcapsulesRegInstall():
+    return QCoreApplication.translate('ClipboardManager',
+                                      'Install capsules registry')
 
 
 def iClipItemDagView():
@@ -576,6 +586,11 @@ class ClipboardItemButton(PopupToolButton):
             triggered=self.onCopyGwPathToClipboard
         )
 
+        self.icapRegInstallAction = QAction(
+            getIcon('capsules/icapsule-green.png'),
+            iClipItemIcapsulesRegInstall(), self,
+            triggered=partialEnsure(self.onIcapsulesRegistryInstall))
+
         self.geoAnimation = QPropertyAnimation(self, b'geometry')
 
     @property
@@ -632,6 +647,20 @@ class ClipboardItemButton(PopupToolButton):
     def onOpenWithDefaultApp(self):
         if self.item.cid:
             ensure(self.rscOpener.openWithSystemDefault(self.item.cid))
+
+    async def onIcapsulesRegistryInstall(self, *args):
+        icapdb = services.getByDotName('core.icapsuledb')
+
+        if self.item.objGraph:
+            print('merging ........')
+            print(icapdb, icapdb.mergeRegistry)
+            res = await icapdb.mergeRegistry(self.item.objGraph)
+            print(res)
+            if res is True:
+                print('success')
+                await messageBoxAsync('Capsules registry installed')
+            else:
+                await messageBoxAsync('Capsules registry install failed')
 
     def mimeDetected(self, mType):
         if self.loadingClip.state() == QMovie.Running:
@@ -732,6 +761,8 @@ class ClipboardItemButton(PopupToolButton):
             self.menu.addSeparator()
             self.menu.addAction(self.editObjectAction)
 
+            ensure(self.analyzeText())
+
         elif self.item.mimeType.isImage:
             self.updateIcon(getMimeIcon('image/x-generic'), animate=False)
             ensure(self.analyzeImage())
@@ -816,6 +847,58 @@ class ClipboardItemButton(PopupToolButton):
 
         if statInfo.valid and not statInfo.dataLargerThan(megabytes(4)):
             pass
+
+    @ipfsOp
+    async def analyzeText(self, ipfsop):
+        statInfo = StatInfo(self.item.stat)
+
+        if statInfo.valid:
+            size = statInfo.dataSize
+
+            if size > megabytes(1):
+                return
+
+        try:
+            # Temporary
+            ldTypesAllow = [
+                'ICapsule',
+                'ICapsuleManifest',
+                'ICapsulesRegistry'
+            ]
+
+            data = await ipfsop.catObject(self.item.path)
+            text = data.decode()
+
+            try:
+                # Ying
+                obj = yaml.load(text)
+            except (AttributeError, ValueError, BaseException):
+                # Yang
+                obj = orjson.loads(text)
+
+            assert isinstance(obj, dict)
+
+            _type = obj.get('@type', None)
+
+            if not isinstance(_type, str) or _type not in ldTypesAllow:
+                return
+
+            if _type in ['ICapsulesRegistry', 'ICapsuleManifest']:
+                self.updateIcon(
+                    getIcon('capsules/icapsule-green.png')
+                )
+
+            async with ipfsop.ldOps() as ld:
+                g = await ld.rdfify(obj)
+
+            self.item.objGraph = g
+        except aioipfs.APIError:
+            pass
+        except Exception:
+            traceback.print_exc()
+        else:
+            self.menu.addAction(self.icapRegInstallAction)
+            self.menu.addSeparator()
 
     @ipfsOp
     async def analyzeImage(self, ipfsop):

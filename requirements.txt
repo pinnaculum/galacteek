@@ -32,7 +32,6 @@ jsonschema>=3.0.0,<4.0.0
 jwcrypto>=0.8
 logbook>=1.5.3
 markdown>=3.0
-matplotlib>=3.4.3
 memory-profiler>=0.58.0
 mkdocs>=1.1.2
 mkdocs-bootswatch>=1.1
@@ -69,6 +68,7 @@ rule-engine>=2.1.0
 SPARQLWrapper==1.8.5
 strict-rfc3339>=0.7
 tortoise-orm==0.17.6
+urnparse==0.2.0
 validators>=0.18.1
 yarl==1.5.1
 aiogeminipfs @ git+https://gitlab.com/galacteek/aiogeminipfs.git@ipfs#egg=aiogeminipfs

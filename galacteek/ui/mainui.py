@@ -86,7 +86,8 @@ from .widgets import PopupToolButton
 from .widgets import HashmarkMgrButton
 from .widgets import HashmarksSearcher
 from .widgets import AnimatedLabel
-from .widgets import URLDragAndDropProcessor
+
+from .icapsules import ICapsulesManagerButton
 
 from .widgets.torcontrol import TorControllerButton
 
@@ -476,76 +477,6 @@ class WorkspacesToolBar(QToolBar):
                 wsButton.repaint()
 
 
-class WorkspaceSwitchButton(QToolButton, URLDragAndDropProcessor):
-    def __init__(self, workspace, parent=None):
-        super().__init__(parent)
-        self.setCheckable(True)
-        self.workspace = workspace
-        self.setIcon(workspace.wsIcon)
-        self.setObjectName('wsSwitchButton')
-        self.setProperty("dropping", "false")
-        self.setAcceptDrops(True)
-
-        self.setToolTip(workspace.wsToolTip())
-
-        self.ipfsObjectDropped.connect(self.onObjDropped)
-
-    def flashToolTip(self):
-        QToolTip.showText(
-            self.mapToGlobal(QPoint(0, 0)),
-            self.workspace.wsToolTip())
-
-    def dragEnterEvent(self, event):
-        if self.workspace.acceptsDrops:
-            self.setProperty("dropping", "true")
-            self.setStyle(QApplication.style())
-            self.flashToolTip()
-            event.accept()
-        else:
-            event.ignore()
-
-    def dragLeaveEvent(self, event):
-        self.setProperty("dropping", "false")
-        self.setStyle(QApplication.style())
-        super().dragLeaveEvent(event)
-
-    def onObjDropped(self, path):
-        ensure(self.workspace.handleObjectDrop(path))
-
-    def checkStateSet(self):
-        super(WorkspaceSwitchButton, self).checkStateSet()
-
-    def nextCheckState(self):
-        if self.workspace.stack.currentWorkspace() is not self.workspace:
-            self.switch()
-            self.setChecked(True)
-        else:
-            self.setChecked(False)
-
-    def switch(self, soundNotify=False):
-        self.workspace.wsSwitch(soundNotify=soundNotify)
-
-    def styleNotify(self):
-        self.setProperty('wsNotify', True)
-        self.setStyleSheet('''
-            QToolButton {
-                background-color: #B7CDC2;
-            }
-        ''')
-
-    def styleActive(self):
-        self.setProperty('wsActive', True)
-        self.setStyleSheet('''
-            QToolButton::hover {
-                background-color: #4a9ea1;
-            }
-
-            QToolBar QToolButton::pressed {
-                background-color: #eec146;
-            }
-        ''')
-
-
 class CentralStack(QStackedWidget,
                    KeyListener):
     """
@@ -624,7 +555,7 @@ class CentralStack(QStackedWidget,
 
     def __addWorkspace(self, workspace, position=-1):
         if not workspace.wsAttached:
-            switchButton = self.wsSwitchButton(workspace)
+            switchButton = workspace.createSwitchButton(parent=self.toolBarWs)
 
             if position >= 0:
                 self.insertWidget(position, workspace)
@@ -673,9 +604,6 @@ class CentralStack(QStackedWidget,
 
     def createSwitchButton(self, wspace, pwspace, nwspace):
         return SwitchButton(pwspace, nwspace, self)
-
-    def wsSwitchButton(self, wspace):
-        return WorkspaceSwitchButton(wspace)
 
     def wsAddGlobalCustomAction(self, *args, **kw):
         for widx, ws in self.workspaces():
@@ -937,6 +865,10 @@ class MainWindow(QMainWindow):
         self.browseButton.menu.addAction(self.editorOpenAction)
         self.browseButton.menu.addSeparator()
 
+        self.icapsMgrButton = ICapsulesManagerButton(
+            parent=self
+        )
+
         if not self.app.cmdArgs.seed and self.app.cmdArgs.appimage:
             # Add the possibility to import the image from the menu
             # if not specified on the command-line
@@ -1071,6 +1003,8 @@ class MainWindow(QMainWindow):
         self.toolbarMain.addWidget(self.hashmarksSearcher)
         self.toolbarMain.addWidget(self.profileButton)
 
+        self.toolbarMain.addWidget(self.icapsMgrButton)
+
         self.toolbarMain.addSeparator()
         self.toolbarMain.addWidget(self.toolbarWs)
 
@@ -1103,6 +1037,7 @@ class MainWindow(QMainWindow):
         self.stack = CentralStack(self, self.toolbarWs)
 
         self.wspaceStatus = WorkspaceStatus(self.stack, 'status')
+        self.wspaceDapps = WorkspaceDapps(self.stack, 'dapps')
         self.wspacePeers = WorkspacePeers(self.stack)
         self.wspaceFs = WorkspaceFiles(self.stack)
         self.wspaceMessenger = WorkspaceMessenger(self.stack)
@@ -1301,6 +1236,7 @@ class MainWindow(QMainWindow):
 
     def setupWorkspaces(self):
         self.stack.addWorkspace(self.wspaceStatus)
+        self.stack.addWorkspace(self.wspaceDapps)
         # self.stack.addWorkspace(self.wspaceFs)
         self.stack.addWorkspace(
             self.wspaceEarth, section='planets')

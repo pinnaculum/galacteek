@@ -1,18 +1,28 @@
 envs:
   default:
-    registries:
-      icapsule-registry-gitlab-continuous:
-        url: https://gitlab.com/galacteek/icapsule-registry/-/releases/continuous-${env:ICAPSULE_REGISTRY_BRANCH}/downloads/icapsule-registry.tar.gz
-        enabled: True
-        priority: 0
+    icapregs:
+      # icapsule registries
+      # Each registry definition must use a valid URN
+      #
+      # regGraphUri is the URI of the RDF graph where the registry will
+      # be stored
 
-      icapsule-registry-local-dev:
+      urn:glk:icapsule_registries:local:
         url: file:///${env:HOME}/icapsule-registry-dev.yaml
-        enabled: False
+        enabled: True
         priority: 100
 
+        regGraphUri: urn:ipg:icapsules:registries:local
+
+      urn:glk:icapsule_registries:galacteek:
+        priority: 0
+        enabled: true
+        url: https://gitlab.com/galacteek/icapsule-registry/-/releases/continuous-${env:ICAPSULE_REGISTRY_BRANCH}/downloads/icapsule-registry.tar.gz
+
+        regGraphUri: urn:ipg:icapsules:registries:galacteek:${env:ICAPSULE_REGISTRY_BRANCH}
+
     profile:
-      icapsulesByUri:
-        urn:g:dapps:dvoz:
+      manifestsByUri:
+        urn:glk:dapps:dvoz:
           install: latest
           autoload: true

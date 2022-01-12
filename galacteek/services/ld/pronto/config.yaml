@@ -80,6 +80,7 @@ graphEnvs:
             name: i_i1
 
           urn:ipg:i:articles:
+            name: i_articles
             services:
               sparql: {}
 
@@ -102,6 +103,31 @@ graphEnvs:
 
           sync:
             use: 'urn:ipg:sync:ontolochain1'
+
+      urn:ipg:icapsules:registries:
+        type: conjunctive
+
+        name: icapsules_registries
+        guardian: urn:ipg:guardians:goliath
+
+        subgraphs:
+          urn:ipg:icapsules:registries:main:
+            name: icapsules_registries_main
+
+          urn:ipg:icapsules:registries:local:
+            name: icapsules_registries_local
+
+          urn:ipg:icapsules:registries:galacteek:purple:
+            name: icapsules_registries_galacteek_purple
+
+          urn:ipg:icapsules:registries:galacteek:blue:
+            name: icapsules_registries_galacteek_blue
+
+          urn:ipg:icapsules:registries:galacteek:red:
+            name: icapsules_registries_galacteek_red
+
+          urn:ipg:icapsules:registries:galacteek:green:
+            name: icapsules_registries_galacteek_green
 
       # Hashmarks (conjunctive)
       urn:ipg:hashmarks:

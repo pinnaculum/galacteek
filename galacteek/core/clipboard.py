@@ -32,12 +32,21 @@ class ClipboardItem(QObject):
         self._mimeType = mimeType
         self._statInfo = None
         self._cid = None
+        self._objGraph = None
         self._ts = time.time()
         self._date = QDateTime.currentDateTime()
         self._mimeIcon = None
 
         self.mimeTypeDetected.connect(self.setMimeType)
         self.statRetrieved.connect(self.statInfo)
+
+    @property
+    def objGraph(self):
+        return self._objGraph
+
+    @objGraph.setter
+    def objGraph(self, g):
+        self._objGraph = g
 
     @property
     def ts(self):

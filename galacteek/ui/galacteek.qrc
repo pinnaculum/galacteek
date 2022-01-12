@@ -235,6 +235,11 @@
     <file>../../share/static/sounds/mime-detected.wav</file>
     <file>../../share/static/misc/welcome.md</file>
   </qresource>
+
+  <qresource>
+    <file>../../share/icons/capsules/icapsule-green.png</file>
+  </qresource>
+
   <qresource>
     <file>../../share/icons/planets/pluto.png</file>
     <file>../../share/icons/planets/saturn.png</file>

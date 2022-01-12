@@ -12,6 +12,8 @@ variables:
   FS_MIGRATE_VERSION: 2.0.1
   IPFS_DIST_OS: linux
 
+  APPIMAGE_X64_BRANCH_LATEST: 'Galacteek-${CI_COMMIT_BRANCH}-latest-x86_64.AppImage'
+
   GALACTEEK_ENV_FILE: "${CI_PROJECT_DIR}/galacteek-gitlab-env.sh"
 
   RELEASE_DESCRIPTION: "release-description.md"
@@ -192,6 +194,14 @@ release:
     - export CHANGELOG=$(.gitlab/changelog-extract-raw.py ${GALACTEEK_VERSION})
     - python3 .gitlab/release-md-write.py > $RELEASE_DESCRIPTION
 
+    - |-
+      if [[ $CI_COMMIT_BRANCH =~ '^pimp-my-dweb$' ]] || [[ $CI_COMMIT_BRANCH =~ '^pronto-ld-registry$' ]]; then
+        # Use a permanent 'latest' filepath
+        APPIMAGE_FILEPATH=${APPIMAGE_X64_BRANCH_LATEST}
+      else
+        APPIMAGE_FILEPATH=${APPIMAGE_FILENAME}
+      fi
+
     # Create release
     - |-
       if [[ "$CI_COMMIT_MESSAGE" =~ '[pin]' ]] && [ ! -z "${APPIMAGE_IPFS_URL}" ]; then
@@ -213,7 +223,7 @@ release:
           --tag-name $RELEASE_TAG \
           --ref $CI_COMMIT_SHA \
           --assets-link \
-          "{\"name\" :\"${APPIMAGE_FILENAME}\", \"filepath\": \"/${APPIMAGE_FILENAME}\", \"url\": \"${APPIMAGE_ASSET_URL}\"}"
+          "{\"name\" :\"${APPIMAGE_FILENAME}\", \"filepath\": \"/${APPIMAGE_FILEPATH}\", \"url\": \"${APPIMAGE_ASSET_URL}\"}"
       fi
 
 docker_x11vnc:

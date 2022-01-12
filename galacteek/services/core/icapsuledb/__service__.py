@@ -1,6 +1,9 @@
 from pathlib import Path
 from omegaconf import OmegaConf
 
+from rdflib import URIRef
+from rdflib import RDF
+
 import validators
 import attr
 import asyncio
@@ -14,59 +17,36 @@ from yarl import URL
 
 from galacteek import log
 from galacteek import ensure
+from galacteek import cached_property
 
 from galacteek.core.tmpf import TmpFile
 from galacteek.core.asynclib import asyncWriteFile
 from galacteek.core.asynclib import asyncReadFile
 
+from galacteek.ld import gLdDefaultContext
+from galacteek.ld.rdf import BaseGraph
+from galacteek.ld.iri import urnParse
+
 from galacteek.services import GService
+from galacteek.services import getByDotName
 
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
+
+from . import ldregistry
 
 
 @attr.s(auto_attribs=True)
 class CapsuleContext:
     uri: str = ''
     type: str = ''
-    qdef: dict = {}
+    description: str = ''
+    name: str = ''
+    iconCid: str = ''
+
     depends: list = []
     components: list = []
     qmlEntryPoint: str = ''
-
-
-def depends(registry, uri: str, v: str):
-    try:
-        dpls = registry['icapsules'][uri]['deployments']
-        releases = dpls['releases']
-        if v == 'latest':
-            version = dpls['latest']
-        else:
-            version = v
-        rl = releases.get(version, None)
-    except Exception:
-        pass
-    else:
-        deps = rl['manifest'].get('depends', [])
-
-        for dep in deps:
-            try:
-                depdpls = registry['icapsules'][dep['uri']]['deployments']
-            except Exception:
-                continue
-
-            yield {
-                'uri': dep['uri'],
-                'version': dep['version'],
-                'deployments': depdpls
-            }
-            yield from depends(registry, dep['uri'], dep['version'])
-
-        yield {
-            'uri': uri,
-            'version': version,
-            'deployments': dpls
-        }
 
 
 class ICapsuleRegistryLoaderService(GService):
@@ -87,7 +67,19 @@ class ICapsuleRegistryLoaderService(GService):
         self._processing = False
 
     @property
-    def dappsProfile(self):
+    def pronto(self):
+        return getByDotName('ld.pronto')
+
+    @property
+    def graphRegistryRoot(self):
+        return self.pronto.graphByUri('urn:ipg:icapsules:registries')
+
+    @cached_property
+    def querier(self):
+        return ldregistry.ICRQuerier(self.graphRegistryRoot)
+
+    @property
+    def profile(self):
         return DappsUserProfile(
             self,
             self.serviceConfig.profile
@@ -99,10 +91,20 @@ class ICapsuleRegistryLoaderService(GService):
     async def on_start(self):
         pass
 
+    async def mergeRegistry(self, graph: BaseGraph,
+                            dstGraphUri='urn:ipg:icapsules:registries:main'):
+        dg = self.pronto.graphByUri(dstGraphUri)
+
+        if dg is not None:
+            return await dg.guardian.mergeReplace(graph, dg)
+
+        return False
+
     async def event_g_services_app(self, key, message):
         event = message['event']
 
         # TODO: event repo ready or peer count > 0
+
         if event['type'] == 'IpfsRepositoryReady':
             await self.loadCapsulesFromSources()
         elif event['type'] == 'QmlApplicationLoaded':
@@ -121,17 +123,26 @@ class ICapsuleRegistryLoaderService(GService):
         if self._processing:
             return
 
-        breg = OmegaConf.create({})
+        def regsort(it):
+            try:
+                return it[1]['priority']
+            except Exception:
+                return 100
 
         async with self.lock:
             self._processing = True
 
             registries = sorted(
-                self.serviceConfig.registries.items(),
-                key=lambda it: it[1]['priority']
+                self.serviceConfig.icapregs.items(),
+                key=regsort
             )
 
             for regname, regcfg in registries:
+                urn = urnParse(regname)
+
+                if not urn:
+                    continue
+
                 try:
                     sDataPath = self.rootPath.joinpath(
                         'registry').joinpath(regname)
@@ -139,60 +150,159 @@ class ICapsuleRegistryLoaderService(GService):
 
                     url = regcfg.get('url')
                     enabled = regcfg.get('enabled', True)
+                    graphUri = regcfg.get(
+                        'regGraphUri',
+                        'urn:ipg:icapsules:registries:main'
+                    )
 
                     if not enabled:
                         continue
 
-                    reg = await self.registryFromUrl(url, sDataPath)
-
-                    if reg:
-                        breg = OmegaConf.merge(breg, reg)
+                    await self.registryFromUrl(
+                        url,
+                        graphUri,
+                        sDataPath
+                    )
                 except Exception:
+                    traceback.print_exc()
                     continue
 
-            await self.registryProcess(breg)
+            await self.profileRun()
 
             self._processing = False
 
-    async def registryProcess(self, registry):
+    async def profileRun(self):
         try:
-            assert 'icapsules' in registry
-
-            return await self.dappsProfile.installFromRegistry(registry)
+            return await self.profile.installFromConfig()
         except Exception:
             traceback.print_exc()
             return False
 
-    async def capsuleDeploymentsParse(self, uri, depls):
+    async def capsuleInstallFromRef(self, icapid: URIRef):
+        cloaded = []
+        qmlEntryPoint = None
+
+        def mterm(attr: str):
+            return f'ips://galacteek.ld/ICapsuleManifest#{attr}'
+
+        def capterm(attr: str):
+            return f'ips://galacteek.ld/ICapsule#{attr}'
+
+        def cterm(attr: str):
+            return f'ips://galacteek.ld/ICapsuleComponent#{attr}'
+
         try:
-            version = depls.latest
-            rel = depls.releases[version]
-            manifest = rel.get('manifest')
+            depends = self.querier.capsuleDependencies(icapid)
 
-            ipfsPath = IPFSPath(rel['manifestIpfsPath'])
-            # assert ipfsPath.valid is True
+            icap = self.graphRegistryRoot.resource(icapid)
 
-            log.debug(f'Loading capsule from manifest: {ipfsPath}')
+            manifest = icap.value(capterm('manifest'))
 
-            return await self.loadCapsuleFromManifest(
-                uri, version, manifest if manifest else ipfsPath)
+            if not manifest:
+                raise ValueError(f'manifest not found for icapsule {icapid}')
+
+            assert manifest is not None
+
+            name = str(manifest.value(mterm('name')))
+            description = str(manifest.value(mterm('description')))
+            mtype = str(manifest.value(mterm('capsuleType')))
+            iconCid = str(manifest.value(mterm('iconIpfsPath')))
+            # httpGws = str(manifest.value(mterm('ipfsHttpGws')))
+
+            httpGws = ['https://gateway.pinata.cloud']
+
+            comps = await self.querier.capsuleComponents(
+                icapid
+            )
+
+            for compUri in comps:
+                comp = self.graphRegistryRoot.resource(compUri)
+
+                stype = str(comp.value(cterm('sourceType')))
+
+                fspath = Path(str(comp.value(cterm('fsPath'))))
+                ep = str(comp.value(cterm('qmlEntryPoint')))
+
+                if stype in ['localfs', 'local']:
+                    if ep and not qmlEntryPoint:
+                        qmlEntryPoint = str(
+                            fspath.joinpath('src/qml').joinpath(ep))
+
+                    if fspath:
+                        cloaded.append({
+                            'fsPath': str(fspath)
+                        })
+                    continue
+                elif stype in ['dweb', 'ipfs']:
+                    cid = str(comp.value(cterm('cid')))
+                    httpGw = httpGws.pop()
+
+                    if not cid:
+                        log.debug(f'icapsule {icapid}: '
+                                  f'component {compUri} has no CID')
+                        continue
+
+                    hDistUrl = f'{httpGw}/ipfs/{cid}'
+
+                    iPath = IPFSPath(cid)
+
+                    rpath = self.dappsStoragePath.joinpath(str(icapid))
+                    rcpath = rpath.joinpath(str(comp.identifier))
+                    cpath = rcpath.joinpath(cid)
+                    rcpath.mkdir(parents=True, exist_ok=True)
+
+                    if ep and not qmlEntryPoint:
+                        qmlEntryPoint = str(
+                            cpath.joinpath('src/qml').joinpath(ep))
+
+                    if not iPath.valid:
+                        continue
+
+                    if cpath.is_dir():
+                        # Already installed
+
+                        cloaded.append({
+                            'fsPath': str(cpath)
+                        })
+
+                        continue
+
+                    if validators.url(hDistUrl) is True:
+                        # HTTPs dist
+
+                        url = URL(hDistUrl)
+
+                        log.debug(f'icapsule {icapid}: Fetch dist URL: {url}')
+
+                        result = await self.capsuleExtractFromUrl(url, cpath)
+                        if result is True:
+                            cloaded.append({
+                                'fsPath': str(cpath)
+                            })
+
+                            ensure(self.pinCapsule(icapid, iPath))
+
+                            continue
+                    else:
+                        log.debug(
+                            f'icapsule {icapid}: no dist URL found, skipping')
+                        continue
+
+            ctx = CapsuleContext(
+                type=mtype,
+                name=name,
+                description=description,
+                uri=str(icapid),
+                iconCid=iconCid,
+                depends=depends,
+                components=cloaded,
+                qmlEntryPoint=qmlEntryPoint
+            )
+            self._byUri[str(icapid)] = ctx
+            return ctx
         except Exception as err:
-            log.debug(f'{uri}: error parsing manifest {ipfsPath}: {err}')
-
-    async def configFromUrl(self, url: str):
-        try:
-            assert url is not None
-
-            async with aiohttp.ClientSession() as sess:
-                async with sess.get(url) as resp:
-                    data = await resp.text()
-
-                cfg = OmegaConf.create(data)
-                assert cfg is not None
-        except Exception as err:
-            log.debug(f'{url}: cannot load as YAML: {err}')
-        else:
-            return cfg
+            traceback.print_exc()
+            log.debug(f'{icapid}: error installing capsule: {err}')
 
     def registryFromArchive(self, path: Path):
         try:
@@ -203,10 +313,32 @@ class ICapsuleRegistryLoaderService(GService):
         except Exception:
             log.debug(f'{path}: invalid registry')
 
-    async def registryFromUrl(self, url: str, rDataPath: Path):
+    @ipfsOp
+    async def registryRdfify(self, ipfsop, regYaml):
+        try:
+            async with ipfsop.ldOps() as ld:
+                json = OmegaConf.to_container(regYaml)
+
+                json['@context'] = gLdDefaultContext
+                g = await ld.rdfify(json)
+
+                assert g is not None
+
+                return g
+        except Exception as err:
+            log.debug(f'registry_rdfify: {err}')
+
+    @ipfsOp
+    async def registryFromUrl(self, ipfsop, url: str,
+                              regGraphUri: str,
+                              rDataPath: Path):
         hsrc, dsrc = hashlib.sha3_256(), None
         hnew, dnew = hashlib.sha3_256(), None
         u = URL(url)
+
+        dstGraph = self.pronto.graphByUri(regGraphUri)
+        if dstGraph is None:
+            return None
 
         if not u.name:
             return None
@@ -215,7 +347,24 @@ class ICapsuleRegistryLoaderService(GService):
             try:
                 content = await asyncReadFile(u.path, mode='rt')
                 if content:
-                    return OmegaConf.create(content)
+                    cfg = OmegaConf.create(content)
+                else:
+                    raise ValueError(f'{u.path}: not found')
+
+                g = await self.registryRdfify(cfg)
+
+                if 0:
+                    regs = list(g.subjects(
+                        predicate=RDF.type,
+                        object='ips://galacteek.ld/ICapsulesRegistry'
+                    ))
+                    print(regs)
+
+                await self.graphRegistryRoot.guardian.mergeReplace(
+                    g,
+                    dstGraph
+                )
+
             except Exception:
                 traceback.print_exc()
                 return None
@@ -261,6 +410,13 @@ class ICapsuleRegistryLoaderService(GService):
             if savePath.is_file():
                 return self.registryFromArchive(savePath)
         else:
+            g = await self.registryRdfify(cfg)
+
+            await self.graphRegistryRoot.guardian.mergeReplace(
+                g,
+                dstGraph
+            )
+
             return cfg
 
     async def capsuleExtractFromUrl(self, url: URL, dstdir: Path,
@@ -303,102 +459,6 @@ class ICapsuleRegistryLoaderService(GService):
             return False
 
     @ipfsOp
-    async def loadCapsuleFromManifest(self, ipfsop,
-                                      uri: str,
-                                      version: str,
-                                      manifestArg):
-        if isinstance(manifestArg, IPFSPath):
-            try:
-                yaml = await ipfsop.catObject(str(manifestArg))
-                qdef = OmegaConf.create(yaml.decode())
-            except Exception as err:
-                log.debug(f'loadCapsuleFromManifest: ERR {err}')
-                return
-        else:
-            qdef = manifestArg
-
-        cloaded = []
-        qmlEntryPoint = None
-        compdefs = qdef.get('components')
-        depends = qdef.get('depends', [])
-        mtype = qdef.get('type', 'dapp-qml')
-
-        log.debug(f'{uri}: depends {depends}')
-
-        for cn, comp in compdefs.items():
-            active = comp.get('enabled', True)
-            stype = comp.get('sourceType', 'ipfs')
-            ep = comp.get('qmlEntryPoint')
-
-            if not active:
-                continue
-
-            if stype in ['localfs', 'local']:
-                fspath = Path(comp.get('fsPath'))
-
-                if ep and not qmlEntryPoint:
-                    qmlEntryPoint = str(
-                        fspath.joinpath('src/qml').joinpath(ep))
-
-                if fspath:
-                    cloaded.append({
-                        'fsPath': str(fspath)
-                    })
-                continue
-            elif stype in ['dweb', 'ipfs']:
-                iPath = IPFSPath(comp.cid)
-
-                hDistUrl = comp.get('distUrl', '')
-
-                rpath = self.dappsStoragePath.joinpath(uri)
-                rcpath = rpath.joinpath(cn).joinpath(version)
-                cpath = rcpath.joinpath(comp.cid)
-                rcpath.mkdir(parents=True, exist_ok=True)
-
-                if ep and not qmlEntryPoint:
-                    qmlEntryPoint = str(cpath.joinpath('src/qml').joinpath(ep))
-
-                if not iPath.valid:
-                    continue
-
-                if cpath.is_dir():
-                    # Already installed
-
-                    cloaded.append({
-                        'fsPath': str(cpath)
-                    })
-
-                    continue
-
-                if validators.url(hDistUrl) is True:
-                    # HTTPs dist
-
-                    url = URL(hDistUrl)
-
-                    log.debug(f'icapsule {uri}: Fetch dist URL: {url}')
-
-                    result = await self.capsuleExtractFromUrl(url, cpath)
-                    if result is True:
-                        cloaded.append({
-                            'fsPath': str(cpath)
-                        })
-
-                        ensure(self.pinCapsule(uri, iPath))
-
-                        continue
-                else:
-                    log.debug(f'icapsule {uri}: no dist URL found, skipping')
-                    continue
-
-        return CapsuleContext(
-            type=mtype,
-            qdef=qdef,
-            uri=uri, depends=depends,
-            components=cloaded,
-            qmlEntryPoint=qmlEntryPoint
-        )
-
-    @ipfsOp
     async def pinCapsule(self, ipfsop,
                          uri: str,
                          iPath: IPFSPath):
@@ -435,12 +495,12 @@ class ICapsuleRegistryLoaderService(GService):
     async def dappLoadRequest(self, ctx):
         await self.ldPublish({
             'type': 'QmlApplicationLoadRequest',
-            'appName': ctx.qdef.get('name', 'Unknown'),
-            'appUri': ctx.qdef.get('uri'),
-            'appIconCid': ctx.qdef.get('icon', {}).get('cid', None),
+            'appName': ctx.name,
+            'appUri': ctx.uri,
+            'appIconCid': ctx.iconCid,
             'qmlEntryPoint': ctx.qmlEntryPoint,
             'components': ctx.components,
-            'description': ctx.qdef.get('description', 'No description'),
+            'description': ctx.description,
             'depends': ctx.depends
         })
 
@@ -454,49 +514,65 @@ class DappsUserProfile:
 
     async def depsInstall(self, deps):
         for dep in deps:
-            depUri = dep['uri']
+            depUri = dep['id']
+
             cap = self.service.capsuleCtx(depUri)
             if cap:
                 continue
 
-            ctx = await self.service.capsuleDeploymentsParse(
-                depUri, dep['deployments'])
-            if ctx:
-                self.service._byUri[depUri] = ctx
-            else:
+            ctx = await self.service.capsuleInstallFromRef(URIRef(depUri))
+
+            if not ctx:
                 log.debug(f'{depUri}: capsule failed to load')
                 return False
 
         return True
 
-    async def installFromRegistry(self, registry):
-        capscfg = self.cfg.icapsulesByUri
+    async def installCapsule(self, capsuleUri: URIRef,
+                             load=True):
+        uri = str(capsuleUri)
 
-        for uri, cfg in capscfg.items():
+        if uri in self.service._dappLoadedByUri:
+            return False
+
+        deps = self.service.querier.capsuleDependencies(uri)
+
+        capok = await self.depsInstall(deps)
+        if capok is False:
+            log.debug(f'{uri}: FAILED to load capsule dependencies')
+            return False
+
+        ctx = await self.service.capsuleInstallFromRef(
+            capsuleUri
+        )
+
+        if not ctx:
+            log.debug(f'{uri}: failed to get capsule context')
+            return False
+
+        if ctx.type not in ['dapp-qml', 'dapp']:
+            return False
+
+        if len(ctx.components) > 0 and ctx.qmlEntryPoint and load is True:
+            await self.service.dappLoadRequest(ctx)
+
+    async def installFromConfig(self):
+        capscfg = self.cfg.get('manifestsByUri', {})
+
+        for dappuri, cfg in capscfg.items():
             installv = cfg.get('install')
+
             if not installv:
                 continue
 
-            deps = list(depends(registry, uri, installv))
-
-            capok = await self.depsInstall(deps)
-            if capok is False:
-                log.debug(f'{uri}: FAILED to load capsule dependencies')
-                continue
-
+            uri = f'{dappuri}:{installv}'
             if uri in self.service._dappLoadedByUri:
                 continue
 
-            ctx = self.service.capsuleCtx(uri)
-            if not ctx:
-                log.debug(f'{uri}: failed to get capsule context')
-                continue
-
-            if ctx.type not in ['dapp-qml', 'dapp']:
-                continue
-
-            if len(ctx.components) > 0 and ctx.qmlEntryPoint:
-                await self.service.dappLoadRequest(ctx)
+            await self.installCapsule(
+                URIRef(uri),
+                load=cfg.get('autoload', False)
+            )
 
 
 def serviceCreate(dotPath, config, parent: GService):

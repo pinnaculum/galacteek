@@ -250,6 +250,7 @@ def reqs_parse(path):
 
 install_reqs = reqs_parse('requirements.txt')
 install_reqs_extra_markdown = reqs_parse('requirements-extra-markdown.txt')
+install_reqs_extra_matplotlib = reqs_parse('requirements-extra-matplotlib.txt')
 install_reqs_docs = reqs_parse('requirements-docs.txt')
 install_reqs_ui_pyqt_513 = reqs_parse('requirements-ui-pyqt-5.13.txt')
 install_reqs_ui_pyqt_515 = reqs_parse('requirements-ui-pyqt-5.15.txt')
@@ -279,6 +280,7 @@ setup(
         'markdown-extensions': install_reqs_extra_markdown,
         'ui-pyqt-5.13': install_reqs_ui_pyqt_513,
         'ui-pyqt-5.15': install_reqs_ui_pyqt_515,
+        'matplotlib': install_reqs_extra_matplotlib,
         'docs': install_reqs_docs,
     },
     dependency_links=deps_links,

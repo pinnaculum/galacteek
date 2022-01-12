@@ -235,7 +235,14 @@ class GraphGuardian:
         return residue
 
     async def mergeReplace(self, graph: Graph, dst: Graph):
-        for s, p, o in graph:
-            dst.remove((s, p, None))
-            dst.add((s, p, o))
-            await asyncio.sleep(0.05)
+        try:
+            for s, p, o in graph:
+                dst.remove((s, p, None))
+                await asyncio.sleep(0)
+
+            dst += graph
+        except Exception:
+            log.debug('mergeReplace failure !')
+            return False
+        else:
+            return True
