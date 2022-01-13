@@ -1,3 +1,4 @@
+import asyncio
 import traceback
 
 from distutils.version import StrictVersion
@@ -35,13 +36,17 @@ def capsuleGenDepends(graph, uri: URIRef):
                 lastp = urn.specific_string.parts[-1]
 
                 v = parseVersion(lastp)
-                assert v is not None
 
-                if 0:
+                if not v:
+                    # assert v is not None
+
                     q = urn.rqf_component.query
 
-                    if not v and q:
+                    if q:
                         version = q.get('version', None)
+                        if version == 'latest':
+                            pass
+
                         if not version:
                             raise ValueError('Invalid version spec')
             except (ValueError, Exception):
@@ -156,8 +161,8 @@ class ICRQuerier:
             ])
         ).get_text()
 
-    def capsuleDependencies(self, capsuleUri: URIRef):
-        return list(capsuleGenDepends(self.graph, capsuleUri))
+    async def capsuleDependencies(self, capsuleUri: URIRef):
+        return [d async for d in self.capsuleGenDepends(capsuleUri)]
 
     async def capsulesList(self):
         return await self.graph.queryAsync(str(self.qAllCapsules))
@@ -165,7 +170,7 @@ class ICRQuerier:
     async def capsuleManifestsList(self):
         return await self.graph.queryAsync(self.qAllManifests)
 
-    async def latestCapsuleFromManifest(self, manifestUri: URIRef):
+    async def latestCapsule(self, manifestUri: URIRef):
         results = list(await self.graph.queryAsync(
             self.qLatestCapsuleFromManifest,
             initBindings={
@@ -185,3 +190,55 @@ class ICRQuerier:
         )
 
         return [c.uri for c in comps]
+
+    async def capsuleGenDepends(self, uri: URIRef):
+        try:
+            manifest = self.graph.value(
+                subject=uri,
+                predicate=URIRef('ips://galacteek.ld/ICapsule#manifest')
+            )
+            # assert manifest is not None
+
+            deps = list(self.graph.objects(
+                subject=uri,
+                predicate=URIRef('ips://galacteek.ld/ICapsule#depends')
+            ))
+            assert len(deps) > 0
+        except Exception:
+            # No deps
+            pass
+        else:
+            for depId in deps:
+                try:
+                    urn = urnParse(str(depId))
+                    assert urn is not None
+
+                    lastp = urn.specific_string.parts[-1]
+                    q = urn.rqf_component.query
+
+                    v = parseVersion(lastp)
+
+                    if v:
+                        yield {
+                            'id': str(depId)
+                        }
+
+                    elif not v and q and manifest:
+                        version = q.get('version', None)
+                        if version == 'latest':
+                            latest = await self.latestCapsule(
+                                manifest)
+
+                            if latest:
+                                yield {
+                                    'id': latest
+                                }
+                        else:
+                            raise ValueError('Invalid version spec')
+                except (ValueError, Exception):
+                    continue
+
+                await asyncio.sleep(0)
+
+                async for val in self.capsuleGenDepends(depId):
+                    yield val

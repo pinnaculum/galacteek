@@ -192,7 +192,7 @@ class ICapsuleRegistryLoaderService(GService):
             return f'ips://galacteek.ld/ICapsuleComponent#{attr}'
 
         try:
-            depends = self.querier.capsuleDependencies(icapid)
+            depends = await self.querier.capsuleDependencies(icapid)
 
             icap = self.graphRegistryRoot.resource(icapid)
 
@@ -535,7 +535,7 @@ class DappsUserProfile:
         if uri in self.service._dappLoadedByUri:
             return False
 
-        deps = self.service.querier.capsuleDependencies(uri)
+        deps = await self.service.querier.capsuleDependencies(uri)
 
         capok = await self.depsInstall(deps)
         if capok is False:
@@ -559,13 +559,24 @@ class DappsUserProfile:
     async def installFromConfig(self):
         capscfg = self.cfg.get('manifestsByUri', {})
 
-        for dappuri, cfg in capscfg.items():
+        for manuri, cfg in capscfg.items():
             installv = cfg.get('install')
 
             if not installv:
                 continue
 
-            uri = f'{dappuri}:{installv}'
+            if installv == 'latest':
+                latest = await self.service.querier.latestCapsule(
+                    URIRef(manuri)
+                )
+
+                if not latest:
+                    continue
+
+                uri = latest
+            elif ldregistry.parseVersion(installv) is not None:
+                uri = f'{manuri}:{installv}'
+
             if uri in self.service._dappLoadedByUri:
                 continue
 

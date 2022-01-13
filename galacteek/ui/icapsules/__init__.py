@@ -59,7 +59,7 @@ class ICapsulesManagerWidget(QWidget):
             return await messageBoxAsync(
                 f'Cannot find latest icapsule for {muri}')
 
-        latest = await self.icapsuledb.querier.latestCapsuleFromManifest(
+        latest = await self.icapsuledb.querier.latestCapsule(
             muri)
 
         await self.icapsuledb.profile.installCapsule(
