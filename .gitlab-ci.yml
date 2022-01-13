@@ -86,6 +86,13 @@ build:
   stage: build
   dependencies:
     - prepare
+  only:
+    - master
+    - devel
+    - pimp-my-dweb
+    - /^pronto/
+    - /^ipid/
+    - /^rdf/
   script:
     - source $GALACTEEK_ENV_FILE
     - mkdir -p $ASSETS_ROOT
@@ -164,6 +171,9 @@ build:
 release:
   image: registry.gitlab.com/galacteek/release-cli-extra
   stage: release
+  dependencies:
+    - prepare
+    - build
   rules:
     - if: $CI_COMMIT_BRANCH =~ /^master$/
       when: always
@@ -195,12 +205,17 @@ release:
     - python3 .gitlab/release-md-write.py > $RELEASE_DESCRIPTION
 
     - |-
-      if [[ $CI_COMMIT_BRANCH =~ '^pimp-my-dweb$' ]] || [[ $CI_COMMIT_BRANCH =~ '^pronto-ld-registry$' ]]; then
+      echo "Branch is $CI_COMMIT_BRANCH"
+
+      if [[ "$CI_COMMIT_BRANCH" =~ ^pimp-my-dweb$ ]] || [[ "$CI_COMMIT_BRANCH" =~ ^pronto ]]; then
         # Use a permanent 'latest' filepath
-        APPIMAGE_FILEPATH=${APPIMAGE_X64_BRANCH_LATEST}
+        echo "Using release filepath: ${APPIMAGE_X64_BRANCH_LATEST}"
+        export APPIMAGE_FILEPATH=${APPIMAGE_X64_BRANCH_LATEST}
       else
-        APPIMAGE_FILEPATH=${APPIMAGE_FILENAME}
+        export APPIMAGE_FILEPATH=${APPIMAGE_FILENAME}
       fi
+
+      echo "APPIMAGE_FILEPATH: $APPIMAGE_FILEPATH"
 
     # Create release
     - |-

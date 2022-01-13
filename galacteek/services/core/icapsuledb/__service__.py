@@ -226,7 +226,7 @@ class ICapsuleRegistryLoaderService(GService):
                 if stype in ['localfs', 'local']:
                     if ep and not qmlEntryPoint:
                         qmlEntryPoint = str(
-                            fspath.joinpath('src/qml').joinpath(ep))
+                            fspath.joinpath('qml').joinpath(ep))
 
                     if fspath:
                         cloaded.append({
@@ -253,7 +253,7 @@ class ICapsuleRegistryLoaderService(GService):
 
                     if ep and not qmlEntryPoint:
                         qmlEntryPoint = str(
-                            cpath.joinpath('src/qml').joinpath(ep))
+                            cpath.joinpath('qml').joinpath(ep))
 
                     if not iPath.valid:
                         continue
@@ -484,7 +484,8 @@ class ICapsuleRegistryLoaderService(GService):
                     raise Exception(f'{uri}: failed to pin!')
 
             assert success is True
-            log.debug(f'capsule {uri}: Pinned')
+
+            log.info(f'capsule {uri}: Pinned')
 
             return True
 

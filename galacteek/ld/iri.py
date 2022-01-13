@@ -22,3 +22,12 @@ def urnParse(urn: str):
         return URN8141.from_string(urn)
     except InvalidURNFormatError:
         return None
+
+
+def urnStripRqf(urn: str):
+    u = urnParse(urn)
+
+    if u:
+        return urnParse(
+            f'urn:{u.namespace_id}:{u.specific_string}'
+        )

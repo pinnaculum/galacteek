@@ -34,6 +34,7 @@ from galacteek import log
 from galacteek import cached_property
 
 from galacteek.ipfs import ipfsOp
+from galacteek.ipfs.cidhelpers import IPFSPath
 
 from galacteek.core.tmpf import TmpFile
 
@@ -50,6 +51,7 @@ from galacteek.ui.pinning import pinstatus
 from galacteek.ui import seeds
 
 from galacteek.ui.helpers import getIcon
+from galacteek.ui.helpers import getIconFromIpfs
 from galacteek.ui.helpers import getPlanetIcon
 from galacteek.ui.helpers import playSound
 from galacteek.ui.helpers import questionBoxAsync
@@ -389,15 +391,30 @@ class WorkspaceStatus(BaseWorkspace):
         await runDialogAsync(dialog)
 
 
-class WorkspaceDapps(BaseWorkspace):
+class WsDappsSwitchButton(WorkspaceSwitchButton):
+    def switch(self, soundNotify=False):
+        self.workspace.refreshDapps()
+
+        self.workspace.wsSwitch(soundNotify=soundNotify)
+
+
+class WorkspaceDapps(SingleWidgetWorkspace):
+    def __init__(self, stack):
+        super().__init__(stack, 'dapps',
+                         icon=getIcon('capsules/icapsule-green.png'),
+                         description='Dapps')
+
     def setupWorkspace(self):
         super().setupWorkspace()
 
         self.dappsManager = ICapsulesManagerWidget(parent=self)
         self.wLayout.addWidget(self.dappsManager)
 
-    def refresh(self):
+    def refreshDapps(self):
         self.dappsManager.refresh()
+
+    def createSwitchButton(self, parent=None):
+        return WsDappsSwitchButton(self, parent=parent)
 
 
 class TabbedWorkspace(BaseWorkspace):
@@ -1015,7 +1032,8 @@ class QMLDappWorkspace(SingleWidgetWorkspace, KeyListener):
                  appUri,
                  appComponents,
                  depends,
-                 entryPoint,
+                 entryPoint: str,
+                 iconIpfsPath: IPFSPath,
                  **kwargs):
         super().__init__(stack, name, **kwargs)
 
@@ -1024,6 +1042,7 @@ class QMLDappWorkspace(SingleWidgetWorkspace, KeyListener):
         self.qmlEntryPoint = entryPoint
         self.appWidget = QMLApplicationWidget(self.qmlEntryPoint)
         self.appUri = appUri
+        self.iconPath = iconIpfsPath
         self.wLayout.addWidget(self.appWidget)
 
     @property
@@ -1036,6 +1055,17 @@ class QMLDappWorkspace(SingleWidgetWorkspace, KeyListener):
             menu.addAction('Close', lambda: print('Quit dapp'))
 
         return DappSwitchButton(self, parent=parent)
+
+    @ipfsOp
+    async def loadIcon(self, ipfsop):
+        if not self.iconPath.valid:
+            return
+
+        icon = await getIconFromIpfs(
+            ipfsop, str(self.iconPath), timeout=10)
+
+        if icon and self.wsSwitchButton:
+            self.wsSwitchButton.setIcon(icon)
 
     async def load(self):
         ctx = self.capService.capsuleCtx(self.appUri)
@@ -1072,9 +1102,9 @@ class QMLDappWorkspace(SingleWidgetWorkspace, KeyListener):
     async def loadComponents(self, capsuleCtx):
         try:
             for comp in capsuleCtx.components:
-                # Always inside 'src/qml'
+                # Always inside 'qml'
 
-                qPath = Path(comp['fsPath']).joinpath('src/qml')
+                qPath = Path(comp['fsPath']).joinpath('qml')
 
                 self.appWidget.importComponent(str(qPath))
         except Exception as err:

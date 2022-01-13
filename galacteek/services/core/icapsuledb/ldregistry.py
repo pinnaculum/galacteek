@@ -1,10 +1,10 @@
 import asyncio
-import traceback
 
 from distutils.version import StrictVersion
 
 from galacteek import cached_property
 from galacteek.ld.iri import urnParse
+from galacteek.ld.iri import urnStripRqf
 from galacteek.ld.sparql import *
 
 from rdflib import URIRef
@@ -15,49 +15,6 @@ def parseVersion(v: str):
         return StrictVersion(v)
     except ValueError:
         return None
-
-
-def capsuleGenDepends(graph, uri: URIRef):
-    try:
-        deps = list(graph.objects(
-            subject=uri,
-            predicate=URIRef('ips://galacteek.ld/ICapsule#depends')
-        ))
-        assert len(deps) > 0
-    except Exception:
-        # No deps
-        pass
-    else:
-        for depId in deps:
-            try:
-                urn = urnParse(str(depId))
-                assert urn is not None
-
-                lastp = urn.specific_string.parts[-1]
-
-                v = parseVersion(lastp)
-
-                if not v:
-                    # assert v is not None
-
-                    q = urn.rqf_component.query
-
-                    if q:
-                        version = q.get('version', None)
-                        if version == 'latest':
-                            pass
-
-                        if not version:
-                            raise ValueError('Invalid version spec')
-            except (ValueError, Exception):
-                traceback.print_exc()
-                continue
-
-            yield {
-                'id': str(depId)
-            }
-
-            yield from capsuleGenDepends(graph, depId)
 
 
 class ICRQuerier:
@@ -114,7 +71,7 @@ class ICRQuerier:
         ).get_text()
 
     @cached_property
-    def qCapsuleComponents(self):
+    def qCapsuleComponentsFromRef(self):
         return self.s(
             vars=['?uri'],
             w=where([
@@ -122,6 +79,18 @@ class ICRQuerier:
                   object="gs:ICapsuleComponent"),
                 T(subject='?uri', predicate="comp:icapsule",
                   object="?icapsule")
+            ])
+        ).get_text()
+
+    @cached_property
+    def qCapsuleComponents(self):
+        return self.s(
+            vars=['?component'],
+            w=where([
+                T(subject='?icapsule', predicate="a",
+                  object="gs:ICapsule"),
+                T(subject='?icapsule', predicate="capsule:usesComponent",
+                  object="?component")
             ])
         ).get_text()
 
@@ -151,16 +120,6 @@ class ICRQuerier:
             ])
         ).get_text()
 
-    @cached_property
-    def qReleaseComponents(self):
-        return select(
-            vars=['?uri'],
-            w=where([
-                T(subject='?uri', predicate="a",
-                  object="gs:ICapsuleComponent")
-            ])
-        ).get_text()
-
     async def capsuleDependencies(self, capsuleUri: URIRef):
         return [d async for d in self.capsuleGenDepends(capsuleUri)]
 
@@ -181,7 +140,7 @@ class ICRQuerier:
         if results:
             return results.pop(0).latest
 
-    async def capsuleComponents(self, capsuleUri: URIRef):
+    async def _old_capsuleComponents(self, capsuleUri: URIRef):
         comps = await self.graph.queryAsync(
             self.qCapsuleComponents,
             initBindings={
@@ -190,6 +149,16 @@ class ICRQuerier:
         )
 
         return [c.uri for c in comps]
+
+    async def capsuleComponents(self, capsuleUri: URIRef):
+        comps = await self.graph.queryAsync(
+            self.qCapsuleComponents,
+            initBindings={
+                'icapsule': capsuleUri
+            }
+        )
+
+        return [c.component for c in comps]
 
     async def capsuleGenDepends(self, uri: URIRef):
         try:
@@ -225,14 +194,19 @@ class ICRQuerier:
 
                     elif not v and q and manifest:
                         version = q.get('version', None)
-                        if version == 'latest':
-                            latest = await self.latestCapsule(
-                                manifest)
+
+                        # Strip dependency of the RQF
+                        base = urnStripRqf(depId)
+
+                        if base and version == 'latest':
+                            latest = await self.latestCapsule(str(base))
 
                             if latest:
                                 yield {
-                                    'id': latest
+                                    'id': str(latest)
                                 }
+                            else:
+                                raise Exception(f'No latest for {base}')
                         else:
                             raise ValueError('Invalid version spec')
                 except (ValueError, Exception):

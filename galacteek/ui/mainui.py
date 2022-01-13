@@ -87,8 +87,6 @@ from .widgets import HashmarkMgrButton
 from .widgets import HashmarksSearcher
 from .widgets import AnimatedLabel
 
-from .icapsules import ICapsulesManagerButton
-
 from .widgets.torcontrol import TorControllerButton
 
 from .docks.appdock import *
@@ -641,10 +639,7 @@ class CentralStack(QStackedWidget,
         event = message['event']
 
         if event['type'] == 'QmlApplicationLoadRequest':
-            iconPath = IPFSPath(event.get('appIconCid'))
-
-            icon = await getIconFromIpfs(ipfsop, str(iconPath), timeout=5) if \
-                iconPath.valid else getIcon('galacteek.png')
+            icon = getIcon('galacteek.png')
 
             workspace = QMLDappWorkspace(
                 self,
@@ -653,11 +648,14 @@ class CentralStack(QStackedWidget,
                 event['components'],
                 event['depends'],
                 event['qmlEntryPoint'],
+                IPFSPath(event.get('appIconCid')),
                 icon=icon,
                 description=event['description']
             )
 
             if await workspace.load():
+                ensure(workspace.loadIcon())
+
                 self.addWorkspace(workspace, section='qapps')
 
                 await app.s.ldPublish({
@@ -865,10 +863,6 @@ class MainWindow(QMainWindow):
         self.browseButton.menu.addAction(self.editorOpenAction)
         self.browseButton.menu.addSeparator()
 
-        self.icapsMgrButton = ICapsulesManagerButton(
-            parent=self
-        )
-
         if not self.app.cmdArgs.seed and self.app.cmdArgs.appimage:
             # Add the possibility to import the image from the menu
             # if not specified on the command-line
@@ -1003,8 +997,6 @@ class MainWindow(QMainWindow):
         self.toolbarMain.addWidget(self.hashmarksSearcher)
         self.toolbarMain.addWidget(self.profileButton)
 
-        self.toolbarMain.addWidget(self.icapsMgrButton)
-
         self.toolbarMain.addSeparator()
         self.toolbarMain.addWidget(self.toolbarWs)
 
@@ -1037,7 +1029,7 @@ class MainWindow(QMainWindow):
         self.stack = CentralStack(self, self.toolbarWs)
 
         self.wspaceStatus = WorkspaceStatus(self.stack, 'status')
-        self.wspaceDapps = WorkspaceDapps(self.stack, 'dapps')
+        self.wspaceDapps = WorkspaceDapps(self.stack)
         self.wspacePeers = WorkspacePeers(self.stack)
         self.wspaceFs = WorkspaceFiles(self.stack)
         self.wspaceMessenger = WorkspaceMessenger(self.stack)
@@ -1237,7 +1229,6 @@ class MainWindow(QMainWindow):
     def setupWorkspaces(self):
         self.stack.addWorkspace(self.wspaceStatus)
         self.stack.addWorkspace(self.wspaceDapps)
-        # self.stack.addWorkspace(self.wspaceFs)
         self.stack.addWorkspace(
             self.wspaceEarth, section='planets')
         self.stack.addWorkspace(self.wspaceFs)
