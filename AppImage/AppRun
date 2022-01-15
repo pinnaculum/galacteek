@@ -2,6 +2,8 @@
 
 HERE=$(dirname $(readlink -f "${0}"))
 
+export GALACTEEK_COMMIT_SHA="@@COMMIT_SHA@@"
+
 export FONTCONFIG_FILE=$HERE/usr/etc/fonts/fonts.conf
 export FONTCONFIG_PATH=$HERE/usr/etc/fonts/
 

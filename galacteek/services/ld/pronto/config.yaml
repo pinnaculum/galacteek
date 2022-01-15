@@ -111,8 +111,8 @@ graphEnvs:
         guardian: urn:ipg:guardians:goliath
 
         subgraphs:
-          urn:ipg:icapsules:registries:main:
-            name: icapsules_registries_main
+          urn:ipg:icapsules:registries:default:
+            name: icapsules_registries_default
 
           urn:ipg:icapsules:registries:local:
             name: icapsules_registries_local
@@ -120,14 +120,20 @@ graphEnvs:
           urn:ipg:icapsules:registries:galacteek:purple:
             name: icapsules_registries_galacteek_purple
 
+          urn:ipg:icapsules:registries:galacteek:purple:local:
+            name: icapsules_registries_galacteek_purple_local
+
           urn:ipg:icapsules:registries:galacteek:blue:
             name: icapsules_registries_galacteek_blue
+
+          urn:ipg:icapsules:registries:galacteek:blue:local:
+            name: icapsules_registries_galacteek_blue_local
 
           urn:ipg:icapsules:registries:galacteek:red:
             name: icapsules_registries_galacteek_red
 
-          urn:ipg:icapsules:registries:galacteek:green:
-            name: icapsules_registries_galacteek_green
+          urn:ipg:icapsules:registries:galacteek:red:local:
+            name: icapsules_registries_galacteek_red_local
 
       # Hashmarks (conjunctive)
       urn:ipg:hashmarks:

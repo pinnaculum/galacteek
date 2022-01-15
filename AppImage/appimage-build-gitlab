@@ -155,6 +155,8 @@ popd
 cp AppRun $APPDIR/AppRun
 chmod 755 $APPDIR/AppRun
 
+sed -i -e "s/@@COMMIT_SHA@@/${CI_COMMIT_SHA}/" $APPDIR/AppRun
+
 sed -i -e 's/#\!\/.*$/#!\/usr\/bin\/python3/' $APPDIR/usr/bin/galacteek
 sed -i -e 's/#\!\/.*$/#!\/usr\/bin\/python3/' $APPDIR/usr/bin/mkdocs
 

@@ -4,17 +4,19 @@ envs:
       # icapsule registries
       # Each registry definition must use a valid URN
       #
+      # Regs with lowest priority are loaded first
+      #
       # regGraphUri is the URI of the RDF graph where the registry will
       # be stored
 
-      urn:glk:icapsule_registries:local:
-        url: file:///${env:HOME}/icapsule-registry-dev.yaml
+      urn:glk:icapregs:dev:${env:ICAPSULE_REGISTRY_BRANCH}:
+        url: file:///${env:HOME}/icapsule-registry-dev-${env:ICAPSULE_REGISTRY_BRANCH}.yaml
         enabled: True
         priority: 100
 
-        regGraphUri: urn:ipg:icapsules:registries:local
+        regGraphUri: urn:ipg:icapsules:registries:galacteek:${env:ICAPSULE_REGISTRY_BRANCH}:local
 
-      urn:glk:icapsule_registries:galacteek:
+      urn:glk:icapregs:galacteek:${env:ICAPSULE_REGISTRY_BRANCH}:
         priority: 0
         enabled: true
         url: https://gitlab.com/galacteek/icapsule-registry/-/releases/continuous-${env:ICAPSULE_REGISTRY_BRANCH}/downloads/icapsule-registry.tar.gz

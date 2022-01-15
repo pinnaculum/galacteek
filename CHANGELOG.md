@@ -8,7 +8,7 @@ the changes in the CHANGELOG formatting.
 
 ## [Unreleased]
 
-## [0.5.3] - 2021-09-18
+## [0.5.3] - 2022-01-14
 
 ### Added
 - ICapsules registry system (based on YAML-LD)
@@ -24,6 +24,9 @@ via the *gemi:/* URL scheme)
 - Changes in the *pronto* ontolochain system
   - Store the sync date after each chain upgrade
   - Send pronto pubsub messages at random intervals
+
+### Fixed
+- Focus bug fix in the text editor widget
 
 ## [0.5.2] - 2021-08-04
 

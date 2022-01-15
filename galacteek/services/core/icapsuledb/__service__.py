@@ -71,14 +71,22 @@ class ICapsuleRegistryLoaderService(GService):
         return getByDotName('ld.pronto')
 
     @property
+    def registryBranch(self):
+        return self.app.cmdArgs.icapRegBranch
+
+    @property
+    def regUriRoot(self):
+        return f'urn:ipg:icapsules:registries:galacteek:{self.registryBranch}'
+
+    @property
     def graphRegistryRoot(self):
-        return self.pronto.graphByUri('urn:ipg:icapsules:registries')
+        return self.pronto.graphByUri(self.regUriRoot)
 
     @cached_property
     def querier(self):
         return ldregistry.ICRQuerier(self.graphRegistryRoot)
 
-    @property
+    @cached_property
     def profile(self):
         return DappsUserProfile(
             self,
@@ -92,8 +100,8 @@ class ICapsuleRegistryLoaderService(GService):
         pass
 
     async def mergeRegistry(self, graph: BaseGraph,
-                            dstGraphUri='urn:ipg:icapsules:registries:main'):
-        dg = self.pronto.graphByUri(dstGraphUri)
+                            dstUri='urn:ipg:icapsules:registries:default'):
+        dg = self.pronto.graphByUri(dstUri)
 
         if dg is not None:
             return await dg.guardian.mergeReplace(graph, dg)
@@ -152,7 +160,8 @@ class ICapsuleRegistryLoaderService(GService):
                     enabled = regcfg.get('enabled', True)
                     graphUri = regcfg.get(
                         'regGraphUri',
-                        'urn:ipg:icapsules:registries:main'
+                        self.regUriRoot
+                        # 'urn:ipg:icapsules:registries:default'
                     )
 
                     if not enabled:
@@ -366,7 +375,6 @@ class ICapsuleRegistryLoaderService(GService):
                 )
 
             except Exception:
-                traceback.print_exc()
                 return None
 
         if not u.name.endswith('.tar.gz') and not u.name.endswith('.tgz'):

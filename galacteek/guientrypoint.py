@@ -60,7 +60,7 @@ def galacteekGui(args):
 
         os.chdir(str(folder))
 
-    os.environ['ICAPSULE_REGISTRY_BRANCH'] = args.icapRegistryBranch
+    os.environ['ICAPSULE_REGISTRY_BRANCH'] = args.icapRegBranch
 
     if args.mallocdebug:
         tracemalloc.start()
@@ -125,7 +125,7 @@ def buildArgsParser(fromParser=None):
     parser.add_argument('--icapsule-registry-branch',
                         default='purple',
                         help='Icapsule registry branch',
-                        dest='icapRegistryBranch')
+                        dest='icapRegBranch')
     parser.add_argument(
         '--monitor',
         action='store_true',

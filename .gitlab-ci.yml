@@ -207,8 +207,8 @@ release:
     - |-
       echo "Branch is $CI_COMMIT_BRANCH"
 
-      if [[ "$CI_COMMIT_BRANCH" =~ ^pimp-my-dweb$ ]] || [[ "$CI_COMMIT_BRANCH" =~ ^pronto ]]; then
-        # Use a permanent 'latest' filepath
+      if [[ "$CI_COMMIT_BRANCH" =~ ^pimp-my-dweb$ ]] && [[ $CI_COMMIT_MESSAGE =~ '[release-fp-latest]' ]]; then
+        # Use a permanent 'latest' filepath for the appimage release asset
         echo "Using release filepath: ${APPIMAGE_X64_BRANCH_LATEST}"
         export APPIMAGE_FILEPATH=${APPIMAGE_X64_BRANCH_LATEST}
       else

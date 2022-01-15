@@ -891,6 +891,15 @@ class AboutDialog(QDialog):
         layout = QVBoxLayout()
         layout.addWidget(self.cube, 0, Qt.AlignCenter)
         layout.addWidget(aboutLabel)
+
+        commitSha = os.environ.get('GALACTEEK_COMMIT_SHA', None)
+
+        if isinstance(commitSha, str):
+            commitShaLabel = QLabel(
+                f'Git commit SHA: <b>{commitSha}</b>'
+            )
+            layout.addWidget(commitShaLabel)
+
         layout.addWidget(buttonBox)
 
         self.setLayout(layout)

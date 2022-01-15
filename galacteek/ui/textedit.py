@@ -1014,6 +1014,8 @@ class TextEditorWidget(QWidget):
             except Exception:
                 pDocument.setPlainText(textData)
 
+        self.textEditor.setFocus(Qt.OtherFocusReason)
+
     def showPreview(self):
         self.previewWidget.show()
         ensure(self.updatePreview())
