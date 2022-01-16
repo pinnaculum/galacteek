@@ -9,19 +9,22 @@ envs:
       # regGraphUri is the URI of the RDF graph where the registry will
       # be stored
 
-      urn:glk:icapregs:dev:${env:ICAPSULE_REGISTRY_BRANCH}:
-        url: file:///${env:HOME}/icapsule-registry-dev-${env:ICAPSULE_REGISTRY_BRANCH}.yaml
+      local:
+        urn: urn:glk:icapregs:devel:${oc.env:ICAPSULE_REGISTRY_BRANCH}
+        regUrl: file:///${oc.env:HOME}/icapsule-registry-dev-${oc.env:ICAPSULE_REGISTRY_BRANCH}.yaml
+        regGraphUri: urn:ipg:icapsules:registries:galacteek:${oc.env:ICAPSULE_REGISTRY_BRANCH}:local
+
         enabled: True
         priority: 100
 
-        regGraphUri: urn:ipg:icapsules:registries:galacteek:${env:ICAPSULE_REGISTRY_BRANCH}:local
+      gitlab:
+        urn: urn:glk:icapregs:galacteek:${oc.env:ICAPSULE_REGISTRY_BRANCH}
+        regUrl: https://gitlab.com/galacteek/icapsule-registry/-/releases/continuous-${oc.env:ICAPSULE_REGISTRY_BRANCH}/downloads/icapsule-registry.tar.gz
 
-      urn:glk:icapregs:galacteek:${env:ICAPSULE_REGISTRY_BRANCH}:
+        regGraphUri: urn:ipg:icapsules:registries:galacteek:${oc.env:ICAPSULE_REGISTRY_BRANCH}
+
         priority: 0
         enabled: true
-        url: https://gitlab.com/galacteek/icapsule-registry/-/releases/continuous-${env:ICAPSULE_REGISTRY_BRANCH}/downloads/icapsule-registry.tar.gz
-
-        regGraphUri: urn:ipg:icapsules:registries:galacteek:${env:ICAPSULE_REGISTRY_BRANCH}
 
     profile:
       manifestsByUri:

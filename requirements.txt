@@ -37,10 +37,10 @@ mkdocs>=1.1.2
 mkdocs-bootswatch>=1.1
 mode==4.4.0
 multiaddr>=0.0.8
-omegaconf==2.0.5
+omegaconf==2.1.1
 orjson>=3,<3.4
 otsrdflib>=0.5.0
-pillow==9.0.0
+pillow==8.2.0
 protobuf==3.6.1
 psutil>=5.7.2
 pydotplus==2.0.2

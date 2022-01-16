@@ -145,18 +145,18 @@ class ICapsuleRegistryLoaderService(GService):
                 key=regsort
             )
 
-            for regname, regcfg in registries:
-                urn = urnParse(regname)
+            for n, regcfg in registries:
+                urn = urnParse(regcfg.urn)
 
                 if not urn:
                     continue
 
                 try:
                     sDataPath = self.rootPath.joinpath(
-                        'registry').joinpath(regname)
+                        'registry').joinpath(regcfg.urn)
                     sDataPath.mkdir(parents=True, exist_ok=True)
 
-                    url = regcfg.get('url')
+                    url = regcfg.get('regUrl')
                     enabled = regcfg.get('enabled', True)
                     graphUri = regcfg.get(
                         'regGraphUri',
@@ -413,6 +413,8 @@ class ICapsuleRegistryLoaderService(GService):
                 cfg = OmegaConf.create(registry.read().decode())
                 assert cfg is not None
         except Exception as err:
+            traceback.print_exc()
+
             log.info(f'{url}: cannot load registry: {err}')
 
             if savePath.is_file():
