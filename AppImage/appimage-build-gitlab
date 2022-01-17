@@ -70,6 +70,10 @@ find /usr/lib -iname 'libssl.so*' -exec cp -av {} $APPDIR/usr/lib \;
 find /usr/lib -iname 'liblzma.so*' -exec cp -av {} $APPDIR/usr/lib \;
 find /usr/lib -iname 'libzstd.so*' -exec cp -av {} $APPDIR/usr/lib \;
 
+# QtMultimedia
+# cp -av /usr/lib/x86_64-linux-gnu/libQt5Multimedia.so.* $APPDIR/usr/lib
+cp -av /usr/lib/x86_64-linux-gnu/libQt5MultimediaQuick.so.* $APPDIR/usr/lib
+
 # Copy notbit
 # cp notbit/src/notbit $APPDIR/usr/bin
 

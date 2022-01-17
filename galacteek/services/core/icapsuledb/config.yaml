@@ -12,7 +12,7 @@ envs:
       local:
         urn: urn:glk:icapregs:devel:${oc.env:ICAPSULE_REGISTRY_BRANCH}
         regUrl: file:///${oc.env:HOME}/icapsule-registry-dev-${oc.env:ICAPSULE_REGISTRY_BRANCH}.yaml
-        regGraphUri: urn:ipg:icapsules:registries:galacteek:${oc.env:ICAPSULE_REGISTRY_BRANCH}:local
+        regGraphUri: urn:ipg:icapsules:registries:galacteek:${oc.env:ICAPSULE_REGISTRY_BRANCH}
 
         enabled: True
         priority: 100

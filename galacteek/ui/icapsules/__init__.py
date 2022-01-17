@@ -54,14 +54,16 @@ class ICapsulesManagerWidget(QWidget):
         muri = self.model.data(index, Qt.DisplayRole)
 
         if not muri:
+            return await messageBoxAsync('Invalid dapp index')
+
+        latest = await self.icapsuledb.querier.latestCapsule(muri)
+
+        if latest:
+            await self.icapsuledb.profile.installCapsule(
+                URIRef(latest))
+        else:
             return await messageBoxAsync(
                 f'Cannot find latest icapsule for {muri}')
-
-        latest = await self.icapsuledb.querier.latestCapsule(
-            muri)
-
-        await self.icapsuledb.profile.installCapsule(
-            URIRef(latest))
 
     def refresh(self):
         self.queryDapps()
