@@ -32,7 +32,7 @@ $APPIPIP install --upgrade pip
 $APPIPIP install wheel
 
 # Conda extra packages
-conda install -y -c conda-forge pycairo
+# conda install -y -c conda-forge pycairo
 
 # Install the wheel from local dists
 
@@ -71,7 +71,6 @@ find /usr/lib -iname 'liblzma.so*' -exec cp -av {} $APPDIR/usr/lib \;
 find /usr/lib -iname 'libzstd.so*' -exec cp -av {} $APPDIR/usr/lib \;
 
 # QtMultimedia
-# cp -av /usr/lib/x86_64-linux-gnu/libQt5Multimedia.so.* $APPDIR/usr/lib
 cp -av /usr/lib/x86_64-linux-gnu/libQt5MultimediaQuick.so.* $APPDIR/usr/lib
 
 # Copy notbit
@@ -127,6 +126,9 @@ rm -f lib/libstdc++*
 rm -f lib/libxcb-dri2.so*
 rm -f lib/libxcb-dri3.so*
 rm -f lib/libxcb.so*
+
+# Remove libcairo (use the system version otherwise it breaks gstreamer)
+rm -f lib/libcairo.so*
 
 # QT
 TSL_PATH=./lib/python3.7/site-packages/PyQt5/Qt5/translations

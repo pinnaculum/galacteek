@@ -24,6 +24,8 @@ RUN apt-get install -q -y --force-yes xvfb xorg dbus-x11 \
 	libxcb-image0 libxcb-keysyms1 libxcb-render-util0 \
 	libxcb-xinerama0
 
+RUN apt-get install -q -y --force-yes libqt5multimedia5 libqt5multimediaquick5
+
 WORKDIR /usr/local
 
 # Install dependencies.
