@@ -33,6 +33,8 @@ $APPIPIP install wheel
 
 # Conda extra packages
 # conda install -y -c conda-forge pycairo
+conda install -c conda-forge libglib
+conda install -c anaconda fontconfig
 
 # Install the wheel from local dists
 

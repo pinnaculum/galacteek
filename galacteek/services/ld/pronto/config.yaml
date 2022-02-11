@@ -146,6 +146,5 @@ graphEnvs:
           urn:ipg:hashmarks:main:
             name: hashmarks_main
 
-        services:
-          sparql:
-            exportsAllow: true
+          urn:ipg:hashmarks:search:
+            name: hashmarks_search

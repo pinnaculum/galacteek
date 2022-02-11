@@ -8,6 +8,15 @@ the changes in the CHANGELOG formatting.
 
 ## [Unreleased]
 
+## [0.5.4] - 2022-02-11
+
+### Added
+- RDF hashmarks store
+- Qt SparQL models API: add async support
+
+### Changed
+- Content providers peering: separate Pinata nodes config by region
+
 ## [0.5.3] - 2022-01-14
 
 ### Added

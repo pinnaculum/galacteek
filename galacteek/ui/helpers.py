@@ -42,6 +42,7 @@ from galacteek import partialEnsure
 from galacteek import threadExec
 from galacteek.ipfs.mimetype import mimeTypeDagUnknown
 from galacteek.ipfs.mimetype import mimeTypeDagPb
+from galacteek.ipfs.mimetype import MIMEType
 from galacteek.ipfs.cidhelpers import getCID
 from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs import ipfsOpFn
@@ -75,6 +76,15 @@ def getIcon(iconName):
 
 def getMimeIcon(mType):
     app = QApplication.instance()
+    mObj = MIMEType(mType)
+
+    if mObj.isAudio:
+        return app.mimeTypeIcons.get('audio/x-generic')
+    elif mObj.isVideo:
+        return app.mimeTypeIcons.get('video/x-generic')
+    elif mObj.isImage:
+        return app.mimeTypeIcons.get('image/x-generic')
+
     return app.mimeTypeIcons.get(mType)
 
 

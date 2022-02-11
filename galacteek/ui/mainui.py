@@ -84,7 +84,6 @@ from .pinning.pinstatus import RPSStatusButton
 from .widgets import AtomFeedsToolbarButton
 from .widgets import PopupToolButton
 from .widgets import HashmarkMgrButton
-from .widgets import HashmarksSearcher
 from .widgets import AnimatedLabel
 
 from .widgets.torcontrol import TorControllerButton
@@ -911,14 +910,12 @@ class MainWindow(QMainWindow):
         )
         self.profileButton.setEnabled(False)
 
-        # Hashmarks searcher
-        self.hashmarksSearcher = HashmarksSearcher(parent=self)
-        self.hashmarksSearcher.setToolTip(iHashmarksLibrary())
-        self.hashmarksSearcher.setShortcut(QKeySequence('Ctrl+Alt+h'))
+        self.ll1 = QToolButton()
+        self.ll1.setIcon(getIcon('hashmarks-library.png'))
+        self.ll1.clicked.connect(self.onOpenHashmarksCenter)
 
         self.hashmarkMgrButton = HashmarkMgrButton(
             marks=self.app.marksLocal)
-        self.hashmarkMgrButton.menu.addMenu(self.hashmarksSearcher.menu)
 
         self.hashmarkMgrButton.menu.addSeparator()
 
@@ -994,7 +991,7 @@ class MainWindow(QMainWindow):
 
         self.toolbarMain.addWidget(self.browseButton)
         self.toolbarMain.addWidget(self.hashmarkMgrButton)
-        self.toolbarMain.addWidget(self.hashmarksSearcher)
+        self.toolbarMain.addWidget(self.ll1)
         self.toolbarMain.addWidget(self.profileButton)
 
         self.toolbarMain.addSeparator()
@@ -1004,7 +1001,8 @@ class MainWindow(QMainWindow):
         self.toolbarMain.addWidget(self.cameraController)
 
         self.hashmarkMgrButton.hashmarkClicked.connect(self.onHashmarkClicked)
-        self.hashmarksSearcher.hashmarkClicked.connect(self.onHashmarkClicked)
+        self.hashmarkMgrButton.searcher.hashmarkClicked.connect(
+            self.onHashmarkClicked)
 
         self.toolbarMain.actionStatuses = self.toolbarMain.addAction(
             trTodo('Statuses'))
@@ -1259,6 +1257,9 @@ class MainWindow(QMainWindow):
     def onClearHistory(self):
         self.app.urlHistory.clear()
 
+    def onOpenHashmarksCenter(self):
+        self.wspaceSearch.hCenterAction.trigger()
+
     def onHashmarkClicked(self, hashmark):
         ensure(self.app.resourceOpener.openHashmark(hashmark))
 
@@ -1310,12 +1311,6 @@ class MainWindow(QMainWindow):
 
         if not profile.initialized:
             return
-
-        def hashmarksLoaded(nodeId, hmarks):
-            try:
-                self.hashmarksSearcher.register(nodeId, hmarks)
-            except Exception as err:
-                log.debug(str(err))
 
         await profile.userInfo.loaded
         self.profileButton.setEnabled(True)
@@ -1471,7 +1466,6 @@ class MainWindow(QMainWindow):
                 self.browseButton,
                 self.cameraController,
                 self.hashmarkMgrButton,
-                self.hashmarksSearcher,
                 self.toolbarWs,
                 self.profileButton]:
             btn.setEnabled(flag)

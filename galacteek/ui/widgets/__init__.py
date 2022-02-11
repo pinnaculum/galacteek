@@ -687,6 +687,8 @@ class HashmarkMgrButton(PopupToolButton, _HashmarksCommon):
                                                 mode=QToolButton.InstantPopup)
 
         self.app = QApplication.instance()
+        self.searcher = HashmarksSearcher()
+
         self.setObjectName('hashmarksMgrButton')
         self.setIcon(getIcon(iconFile))
         self.setupMenu()
@@ -705,6 +707,9 @@ class HashmarkMgrButton(PopupToolButton, _HashmarksCommon):
 
         self.sourcesMenu = QMenu(iHashmarkSources())
         self.sourcesMenu.setIcon(self.icon())
+
+        self.menu.addMenu(self.searcher.menu)
+        self.menu.addSeparator()
 
         self.popularTagsMenu = QMenu('Popular Tags')
         self.popularTagsMenu.setObjectName('popularTagsMenu')

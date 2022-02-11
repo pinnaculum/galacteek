@@ -55,20 +55,8 @@ for example this will use *mupdf* to open PDF files:
 
     xdg-mime default mupdf.desktop application/pdf
 
-Searching
----------
-
-.. image:: ../../../../share/icons/hashmarks-library.png
-    :width: 64
-    :height: 64
-
-The hashmarks library button gives you the ability to search
-for content in the hashmarks database.
-
-To quickly access the hashmarks search you can press **Mod+Control+h**
-(**Alt+Control+h** on Linux or **Command+Control+h**
-on MacOS), or just click on the hashmarks library button
-in the toolbar.
+Search
+^^^^^^
 
 Your search query will be applied to the title, description,
 comment or object path (so you can search for CIDs) of hashmarks,
@@ -77,6 +65,34 @@ as well as tags associated with the hashmark (so you can use
 
 After typing a search query, run the search by pressing
 **Shift + Return**.
+
+RDF hashmarks store
+===================
+
+.. image:: ../../../../share/icons/hashmarks-library.png
+    :width: 64
+    :height: 64
+
+galacteek also supports storing hashmarks in a dedicated
+RDF store. This is an experimental feature and is still being
+evaluated.
+
+When you search the *dweb* (with the existing engines, *ipfs-search*
+and *cyber*), every available result will automatically be
+cached in the RDF store, so that you will be able to easily
+look them up later without having to query those engines.
+Using linked data, references between objects are stored
+as triples and makes it possible for example to trace back
+which directory, which webpage contains a given image.
+
+You can filter results by *MIME category* and set a limit on the
+number of results. The search keywords are applied to the
+title of the hashmark.
+
+From the main toolbar and the search workspace you can access
+the RDF hashmarks store and run searches. Right-clicking
+a result allows you to copy the *IPFS path* of an entry.
+Double-clicking an entry will open the corresponding object.
 
 Following IPNS keys
 ===================

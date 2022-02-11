@@ -46,6 +46,18 @@ class SparQLListModel(QAbstractListModel,
             self._results = results
             self.endResetModel()
 
+    async def graphQueryAsync(self, query):
+        try:
+            results = list(await self.graph.queryAsync(query))
+        except Exception as err:
+            log.debug(f'Graph query error: {err}')
+            return
+
+        if results:
+            self.beginResetModel()
+            self._results = results
+            self.endResetModel()
+
     def runPreparedQuery(self, queryName, bindings):
         try:
             q = self._qprepared.get(queryName)

@@ -102,11 +102,6 @@ class Common(object):
             runQuery, query, initBindings
         )
 
-
-class BaseGraph(Graph, Common):
-    def __init__(self, *args, **kw):
-        super().__init__(*args, **kw)
-
     @ipfsOp
     async def pullObject(self, ipfsop, doc: dict):
         try:
@@ -117,9 +112,14 @@ class BaseGraph(Graph, Common):
                 graph = await ld.rdfify(doc)
 
             # Could be optimized using another rdflib method
-            self.parse(await graph.ttlize())
+            self.parse(await graph.ttlize(), format='ttl')
         except Exception as err:
             log.debug(f'Error pulling object {doc}: {err}')
+
+
+class BaseGraph(Graph, Common):
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
 
     async def pullObjectOld(self, doc: dict):
         try:

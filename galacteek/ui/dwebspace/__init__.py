@@ -69,6 +69,8 @@ from galacteek.ui.qmlapp import QMLApplicationWidget
 
 from galacteek.ui.icapsules import ICapsulesManagerWidget
 
+from galacteek.ui.hashmarks.search import HashmarksCenterWidget
+
 from galacteek.ui.widgets import URLDragAndDropProcessor
 from galacteek.ui.i18n import *
 
@@ -805,6 +807,28 @@ class WorkspaceSearch(TabbedWorkspace):
         action = self.wsAddCustomAction('search', self.wsIcon, iIpfsSearch(),
                                         self.onAddSearchTab, default=True)
         action.setShortcut(QKeySequence('Ctrl+s'))
+
+        self.hCenterAction = self.wsAddCustomAction(
+            'hashmarkscenter',
+            getIcon('hashmarks-library.png'),
+            iHashmarksDatabase(),
+            self.onOpenHashmarksCenter
+        )
+
+    def onOpenHashmarksCenter(self):
+        hashmarksLdCenter = HashmarksCenterWidget(
+            self.app.mainWindow)
+
+        self.wsRegisterTab(
+            hashmarksLdCenter,
+            iHashmarksDatabase(),
+            current=True,
+            icon=getIcon('hashmarks-library.png')
+        )
+
+        hashmarksLdCenter.refresh()
+
+        self.wsSwitch()
 
     def onAddSearchTab(self):
         tab = ipfssearch.IPFSSearchTab(self.app.mainWindow)

@@ -7,7 +7,7 @@ variables:
   ASSETS_ROOT: "${CI_PROJECT_DIR}/assets"
   IPFS_BINPATH: "${CI_PROJECT_DIR}/ipfs-bin"
 
-  GALACTEEK_VERSION: 0.5.3
+  GALACTEEK_VERSION: 0.5.4
   GO_IPFS_VERSION: 0.9.1
   FS_MIGRATE_VERSION: 2.0.1
   IPFS_DIST_OS: linux
@@ -207,7 +207,7 @@ release:
     - |-
       echo "Branch is $CI_COMMIT_BRANCH"
 
-      if [[ "$CI_COMMIT_BRANCH" =~ ^pimp-my-dweb$ ]] && [[ $CI_COMMIT_MESSAGE =~ '[release-fp-latest]' ]]; then
+      if [[ "$CI_COMMIT_BRANCH" =~ ^pimp-my-dweb$ ]]; then
         # Use a permanent 'latest' filepath for the appimage release asset
         echo "Using release filepath: ${APPIMAGE_X64_BRANCH_LATEST}"
         export APPIMAGE_FILEPATH=${APPIMAGE_X64_BRANCH_LATEST}

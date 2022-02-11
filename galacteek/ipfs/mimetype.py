@@ -89,6 +89,8 @@ class MIMEType(object):
             comps = self._decompose()
             return comps[0]
 
+        return 'unknown'
+
     @property
     def valid(self):
         return self._matched is not None

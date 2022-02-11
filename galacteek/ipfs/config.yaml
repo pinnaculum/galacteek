@@ -38,19 +38,20 @@ envs:
       #
 
       contentProvidersDb:
-        defaultSet: '20211208'
+        defaultSet: '20220211'
 
         # Which content providers we use
         # At the moment there isn't more fine-grained control than this
 
         use:
           cloudfare: true
-          textile: true
-          pinata: true
+          textile: false
+          pinataNyc: true
+          pinataFra: false
           protocolLabs: false
           protocolLabsNft: false
 
-        '20211208':
+        '20220211':
           cloudfare:
             - ID: QmcfgsJsMtx6qJb74akCw1M24X1zFwgGo11h1cuhwQjtJP
               Addrs: 
@@ -62,7 +63,7 @@ envs:
               Addrs:
                 - /ip4/104.210.43.77
 
-          pinata:
+          pinataFra:
             - ID: QmWaik1eJcGHq1ybTWe7sezRfqKNcDRNkeBaLnGwQJz1Cj
               Addrs:
                 - /dnsaddr/fra1-1.hostnodes.pinata.cloud
@@ -72,6 +73,8 @@ envs:
             - ID: QmPo1ygpngghu5it8u4Mr3ym6SEU2Wp2wA66Z91Y1S1g29
               Addrs:
                 - /dnsaddr/fra1-3.hostnodes.pinata.cloud
+
+          pinataNyc:
             - ID: QmRjLSisUCHVpFa5ELVvX3qVPfdxajxWJEHs9kN3EcxAW6
               Addrs:
                 - /dnsaddr/nyc1-1.hostnodes.pinata.cloud

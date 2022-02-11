@@ -2,6 +2,8 @@ import asyncio
 import async_timeout
 import weakref
 
+from rdflib import RDF
+
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWebChannel import QWebChannel
@@ -31,11 +33,14 @@ from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.search import multiSearch
 from galacteek.ipfs.stat import StatInfo
+from galacteek.ipfs.mimetype import MIMEType
 from galacteek.dweb.render import renderTemplate
 from galacteek.core import uid4
 from galacteek.core import runningApp
+from galacteek.core import utcDatetimeIso
 from galacteek import ensure
 from galacteek import log
+from galacteek import services
 
 from .colors import *
 from .helpers import *
@@ -243,6 +248,14 @@ class IPFSSearchHandler(QObject):
         self._tasks = []
         self._taskSearch = None
         self._cResults = []
+
+    @property
+    def prontoService(self):
+        return services.getByDotName('ld.pronto')
+
+    @property
+    def hashmarksGraph(self):
+        return self.prontoService.graphByUri('urn:ipg:hashmarks:search')
 
     @property
     def vPageCurrent(self):
@@ -455,7 +468,85 @@ class IPFSSearchHandler(QObject):
         self.resultReady.emit('cyber', hitHash, QVariant(pHit))
         self.objectStatAvailable.emit(hitHash, stat)
 
-    async def fetchObjectStat(self, ipfsop, cid):
+        await self.graphHashmark(
+            IPFSPath(hitHash, autoCidConv=True),
+            hit,
+            mType,
+            stat
+        )
+
+    async def graphHashmark(self, iPath: IPFSPath,
+                            hit,
+                            mType,
+                            stat):
+        """
+        Store the hashmark in the hashmarks RDF graph
+        """
+
+        refs = []
+
+        def findHashmark(g, ref):
+            return g.value(
+                subject=ref,
+                predicate=RDF.type
+            )
+
+        val = await self.hashmarksGraph.rexec(
+            findHashmark, iPath.ipfsUriRef)
+
+        if val is not None:
+            # Already graphed
+            return
+
+        title = hit.get('title')
+        descr = hit.get('description')
+        mimetype = hit.get('mimetype')
+
+        if mimetype is None:
+            mimeObj = mType
+        else:
+            mimeObj = MIMEType(mimetype)
+
+        mimeObj = mType
+        mimeCat = mimeObj.category if mimeObj.category else 'unknown'
+
+        # Even if the search query was empty, always store an empty
+        # string so that the group_concat() works
+        kwm = self.searchQuery.split() + ['']
+
+        hmark = {
+            '@type': 'Hashmark',
+            '@id': iPath.ipfsUrl,
+
+            'ipfsPath': iPath.objPath,
+            'ipfsObjType': 'unixfs',
+            'title': title if title else iNoTitle(),
+            'description': descr if descr else iNoDescription(),
+            'size': hit.get('size', 0),
+            'score': hit.get('score', 0),
+            'unixFsType': hit.get('type', 'unknown'),
+            'mimeType': str(mimeObj),
+            'mimeCategory': mimeCat,
+            'keywordMatch': kwm,
+            'dateCreated': utcDatetimeIso(),
+            'dateFirstSeen': hit.get('first-seen'),
+            'dateLastSeen': hit.get('last-seen')
+        }
+
+        for ref in hit.get('references', []):
+            p = IPFSPath(ref['parent_hash'], autoCidConv=True)
+
+            if not p.valid:
+                continue
+
+            refs.append(p.ipfsUrl)
+
+        if len(refs) > 0:
+            hmark['referencedBy'] = refs
+
+        await self.hashmarksGraph.pullObject(hmark)
+
+    async def fetchObjectStat(self, ipfsop, cid, hit):
         path = joinIpfs(cid)
 
         try:
@@ -463,8 +554,15 @@ class IPFSSearchHandler(QObject):
                 path, fetchExtraMetadata=True)
             if stat:
                 self.objectStatAvailable.emit(cid, stat)
-        except Exception:
-            pass
+
+                await self.graphHashmark(
+                    IPFSPath(path, autoCidConv=True),
+                    hit,
+                    mType,
+                    stat
+                )
+        except Exception as err:
+            log.debug(f'Fetch stat error for {cid}: {err}')
 
     @ipfsOp
     async def runSearch(self, ipfsop, searchQuery, timeout=30):
@@ -501,7 +599,7 @@ class IPFSSearchHandler(QObject):
                         self.sendHit(hit)
                         self._tasks.append(ensure(
                             self.fetchObjectStat(
-                                ipfsop, hit['hash'])))
+                                ipfsop, hit['hash'], hit)))
                     else:
                         self._tasks.append(
                             ensure(self.sendCyberHit(hit)))

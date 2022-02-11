@@ -2,6 +2,8 @@ import re
 import os
 import aioipfs
 
+from rdflib import URIRef
+
 from PyQt5.QtCore import QUrl
 
 from galacteek import log
@@ -473,6 +475,21 @@ class IPFSPath:
                 )
         else:
             return self.dwebUrl
+
+    @property
+    def ipfsUriRef(self):
+        """
+        Returns an rdflib URIRef for this object
+
+        One issue is that when inserted into a graph, rdflib seems
+        to add a trailing slash.
+        If it's a root CID we append a slash to prevent mismatch.
+        """
+
+        if self.isRoot:
+            return URIRef(self.ipfsUrl + '/')
+        else:
+            return URIRef(self.ipfsUrl)
 
     @property
     def dwebQtUrl(self):

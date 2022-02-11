@@ -67,7 +67,8 @@ configuration more finely (the settings dialog only shows
 basic settings). From the *Information* menu, select
 *Config editor* to open it.
 
-The configuration is separated by module.
+The configuration is separated by module. See the **Config settings**
+section below for more infos.
 
 **Do not change any settings you are unsure about**
 
@@ -94,3 +95,28 @@ the IPFS and Ethereum API enabled.
 When the browser needs the JS API to render a page it will
 automatically use at least the *ipfs* profile (if *minimal* or
 another profile is the default).
+
+Config settings
+===============
+
+This is a list of settings you can change in the config editor.
+
+IPFS
+----
+
+For **IPFS settings**, go to the **galacteek.ipfs** module in the editor.
+
+Peering with content providers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can choose to activate direct *peering* with different IPFS content
+providers like Pinata, Cloudfare, Textile ..
+
+- **peering.contentProvidersDb.use.cloudfare**: Peer with Cloudfare nodes
+- **peering.contentProvidersDb.use.pinataNyc**: Peer with Pinata nodes (NYC)
+- **peering.contentProvidersDb.use.pinataFra**: Peer with Pinata nodes (FR)
+- **peering.contentProvidersDb.use.textile**: Peer with Textile nodes
+- **peering.contentProvidersDb.use.protocolLabs**: Peer with ProtocolLabs
+  nodes
+- **peering.contentProvidersDb.use.protocolLabsNft**: Peer with ProtocolLabs
+  nodes (NFT)
