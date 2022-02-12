@@ -64,13 +64,17 @@ prepare:
       fi
 
       echo "export APPIMAGE_FILENAME=Galacteek-${BUNDLE_IDENT}-x86_64.AppImage" >> $GALACTEEK_ENV_FILE
+      echo "export APPIMAGE_SHA_FILENAME=Galacteek-${BUNDLE_IDENT}-x86_64.AppImage.sha512" >> $GALACTEEK_ENV_FILE
       echo "export APPIMAGE_IPFS_FILENAME=Galacteek-${BUNDLE_IDENT}-x86_64.ipfs.AppImage" >> $GALACTEEK_ENV_FILE
       echo "export APPIMAGE_PATH=${ASSETS_ROOT}/Galacteek-${BUNDLE_IDENT}-x86_64.AppImage" >> $GALACTEEK_ENV_FILE
+      echo "export APPIMAGE_SHA_PATH=${ASSETS_ROOT}/Galacteek-${BUNDLE_IDENT}-x86_64.AppImage.sha512" >> $GALACTEEK_ENV_FILE
 
       echo "export FLATPAK_FILENAME=Galacteek-${BUNDLE_IDENT}-x86_64.flatpak" >> $GALACTEEK_ENV_FILE
       echo "export FLATPAK_PATH=${ASSETS_ROOT}/Galacteek-${BUNDLE_IDENT}-x86_64.flatpak" >> $GALACTEEK_ENV_FILE
 
       echo "export APPIMAGE_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/Galacteek-${BUNDLE_IDENT}-x86_64.AppImage" >> $GALACTEEK_ENV_FILE
+      echo "export APPIMAGE_SHA_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/Galacteek-${BUNDLE_IDENT}-x86_64.AppImage.sha512" >> $GALACTEEK_ENV_FILE
+
       echo "export FLATPAK_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/Galacteek-${BUNDLE_IDENT}-x86_64.flatpak" >> $GALACTEEK_ENV_FILE
 
     - export
@@ -111,6 +115,11 @@ build:
         APPIMAGE_CID=$(ipfs add -wQ --cid-version 1 "$APPIMAGE_PATH" | tail -1)
 
         echo "export APPIMAGE_DIR_CID=${APPIMAGE_CID}" >> $ARTIFACT_RELEASE
+
+        SHA=$(sha512sum "$APPIMAGE_PATH"|awk '{print $1}')
+
+        echo "SHA512 for $APPIMAGE_PATH is $SHA"
+        echo "$SHA" > ${APPIMAGE_SHA_PATH}
       fi
 
     - |-
@@ -147,6 +156,10 @@ build:
         curl --progress-bar --header "JOB-TOKEN: $CI_JOB_TOKEN" \
           --upload-file ${APPIMAGE_PATH} ${APPIMAGE_ASSET_URL}
 
+        echo "Uploading AppImage SHA"
+        curl --progress-bar --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+          --upload-file ${APPIMAGE_SHA_PATH} ${APPIMAGE_SHA_ASSET_URL}
+
         if [[ $CI_COMMIT_MESSAGE =~ '[pin]' ]] && [ ! -z "${APPIMAGE_DIR_CID}" ]; then
           echo "Pinning AppImage with CID ${APPIMAGE_DIR_CID} to RPS"
           echo "Pin name is ${APPIMAGE_PIN_NAME}"
@@ -165,6 +178,7 @@ build:
     expire_in: 'never'
     paths:
       - assets/*x86_64.AppImage
+      - assets/*x86_64.AppImage.sha512
       - assets/*x86_64.flatpak
       - $ARTIFACT_RELEASE
 
@@ -229,7 +243,10 @@ release:
           --assets-link \
           "{\"name\" :\"$APPIMAGE_IPFS_FILENAME\", \"filepath\": \"/${APPIMAGE_IPFS_FILENAME}\", \"url\": \"${APPIMAGE_IPFS_URL}\"}" \
           --assets-link \
-          "{\"name\" :\"${APPIMAGE_FILENAME}\", \"filepath\": \"/${APPIMAGE_FILENAME}\", \"url\": \"${APPIMAGE_ASSET_URL}\"}"
+          "{\"name\" :\"${APPIMAGE_FILENAME}\", \"filepath\": \"/${APPIMAGE_FILENAME}\", \"url\": \"${APPIMAGE_ASSET_URL}\"}" \
+          --assets-link \
+          "{\"name\" :\"${APPIMAGE_SHA_FILENAME}\", \"filepath\": \"/${APPIMAGE_SHA_FILENAME}\", \"url\": \"${APPIMAGE_SHA_ASSET_URL}\"}"
+
       else
         echo "Creating release with artifact url"
         release-cli create \
@@ -238,7 +255,9 @@ release:
           --tag-name $RELEASE_TAG \
           --ref $CI_COMMIT_SHA \
           --assets-link \
-          "{\"name\" :\"${APPIMAGE_FILENAME}\", \"filepath\": \"/${APPIMAGE_FILEPATH}\", \"url\": \"${APPIMAGE_ASSET_URL}\"}"
+          "{\"name\" :\"${APPIMAGE_FILENAME}\", \"filepath\": \"/${APPIMAGE_FILEPATH}\", \"url\": \"${APPIMAGE_ASSET_URL}\"}" \
+          --assets-link \
+          "{\"name\" :\"${APPIMAGE_SHA_FILENAME}\", \"filepath\": \"/${APPIMAGE_SHA_FILENAME}\", \"url\": \"${APPIMAGE_SHA_ASSET_URL}\"}"
       fi
 
 docker_x11vnc:
