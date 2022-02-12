@@ -13,6 +13,7 @@ variables:
   IPFS_DIST_OS: linux
 
   APPIMAGE_X64_BRANCH_LATEST: 'Galacteek-${CI_COMMIT_BRANCH}-latest-x86_64.AppImage'
+  DMG_X64_BRANCH_LATEST: 'Galacteek-${CI_COMMIT_BRANCH}-latest-x86_64.dmg'
 
   GALACTEEK_ENV_FILE: "${CI_PROJECT_DIR}/galacteek-gitlab-env.sh"
 
@@ -68,6 +69,10 @@ prepare:
       echo "export APPIMAGE_IPFS_FILENAME=Galacteek-${BUNDLE_IDENT}-x86_64.ipfs.AppImage" >> $GALACTEEK_ENV_FILE
       echo "export APPIMAGE_PATH=${ASSETS_ROOT}/Galacteek-${BUNDLE_IDENT}-x86_64.AppImage" >> $GALACTEEK_ENV_FILE
       echo "export APPIMAGE_SHA_PATH=${ASSETS_ROOT}/Galacteek-${BUNDLE_IDENT}-x86_64.AppImage.sha512" >> $GALACTEEK_ENV_FILE
+
+      # DMG from GH
+      echo "export DMG_FILENAME=Galacteek-${BUNDLE_IDENT}-x86_64.dmg" >> $GALACTEEK_ENV_FILE
+      echo "export DMG_ASSET_URL=https://github.com/pinnaculum/galacteek/releases/download/continuous-${CI_COMMIT_BRANCH}/Galacteek-${BUNDLE_IDENT}-x86_64.dmg" >> $GALACTEEK_ENV_FILE
 
       echo "export FLATPAK_FILENAME=Galacteek-${BUNDLE_IDENT}-x86_64.flatpak" >> $GALACTEEK_ENV_FILE
       echo "export FLATPAK_PATH=${ASSETS_ROOT}/Galacteek-${BUNDLE_IDENT}-x86_64.flatpak" >> $GALACTEEK_ENV_FILE
@@ -225,8 +230,10 @@ release:
         # Use a permanent 'latest' filepath for the appimage release asset
         echo "Using release filepath: ${APPIMAGE_X64_BRANCH_LATEST}"
         export APPIMAGE_FILEPATH=${APPIMAGE_X64_BRANCH_LATEST}
+        export DMG_FILEPATH=${DMG_X64_BRANCH_LATEST}
       else
         export APPIMAGE_FILEPATH=${APPIMAGE_FILENAME}
+        export DMG_FILEPATH=${DMG_FILENAME}
       fi
 
       echo "APPIMAGE_FILEPATH: $APPIMAGE_FILEPATH"
@@ -245,7 +252,9 @@ release:
           --assets-link \
           "{\"name\" :\"${APPIMAGE_FILENAME}\", \"filepath\": \"/${APPIMAGE_FILENAME}\", \"url\": \"${APPIMAGE_ASSET_URL}\"}" \
           --assets-link \
-          "{\"name\" :\"${APPIMAGE_SHA_FILENAME}\", \"filepath\": \"/${APPIMAGE_SHA_FILENAME}\", \"url\": \"${APPIMAGE_SHA_ASSET_URL}\"}"
+          "{\"name\" :\"${APPIMAGE_SHA_FILENAME}\", \"filepath\": \"/${APPIMAGE_SHA_FILENAME}\", \"url\": \"${APPIMAGE_SHA_ASSET_URL}\"}" \
+          --assets-link \
+          "{\"name\" :\"${DMG_FILENAME}\", \"filepath\": \"/${DMG_FILEPATH}\", \"url\": \"${DMG_ASSET_URL}\"}"
 
       else
         echo "Creating release with artifact url"
@@ -257,7 +266,9 @@ release:
           --assets-link \
           "{\"name\" :\"${APPIMAGE_FILENAME}\", \"filepath\": \"/${APPIMAGE_FILEPATH}\", \"url\": \"${APPIMAGE_ASSET_URL}\"}" \
           --assets-link \
-          "{\"name\" :\"${APPIMAGE_SHA_FILENAME}\", \"filepath\": \"/${APPIMAGE_SHA_FILENAME}\", \"url\": \"${APPIMAGE_SHA_ASSET_URL}\"}"
+          "{\"name\" :\"${APPIMAGE_SHA_FILENAME}\", \"filepath\": \"/${APPIMAGE_SHA_FILENAME}\", \"url\": \"${APPIMAGE_SHA_ASSET_URL}\"}" \
+          --assets-link \
+          "{\"name\" :\"${DMG_FILENAME}\", \"filepath\": \"/${DMG_FILEPATH}\", \"url\": \"${DMG_ASSET_URL}\"}"
       fi
 
 docker_x11vnc:
@@ -275,5 +286,5 @@ docker_x11vnc:
   script:
     - DOCKER_TAG="${CI_COMMIT_BRANCH}-latest-x11vnc"
 
-    - docker build -f Dockerfile.x11vnc -t $DOCKER_REPOSITORY:$DOCKER_TAG .
+    - docker build -f Dockerfile.debian.x11vnc -t $DOCKER_REPOSITORY:$DOCKER_TAG .
     - docker push $DOCKER_REPOSITORY:$DOCKER_TAG
