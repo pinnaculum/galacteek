@@ -33,8 +33,6 @@ $APPIPIP install wheel
 
 # Conda extra packages
 # conda install -y -c conda-forge pycairo
-conda install -c conda-forge libglib
-conda install -c anaconda fontconfig
 
 # Install the wheel from local dists
 
@@ -42,7 +40,7 @@ echo "Installing wheel: $WHEEL"
 $APPIPIP install --force-reinstall -r ../requirements.txt
 $APPIPIP install $WHEEL
 $APPIPIP install $WHEEL'[markdown-extensions]'
-$APPIPIP install $WHEEL'[matplotlib]'
+# $APPIPIP install $WHEEL'[matplotlib]'
 
 # Pyqt dependencies
 $APPIPIP install $WHEEL'[ui-pyqt-5.15]'
