@@ -1,0 +1,26 @@
+{
+  "id": "org.gitlab.galacteek",
+  "title": "Galacteek",
+  "author": "cipres <galacteek@protonmail.com>",
+  "contactEmail": "galacteek@protonmail.com",
+  "description": "Browser for the distributed web",
+  "changelog": "file://CHANGELOG.md",
+  "version": "0.5.4",
+  "healthCheckPath": "/",
+  "httpPort": 8080,
+  "manifestVersion": 2,
+  "website": "https://galacteek.gitlab.io",
+  "icon": "file://share/icons/galacteek-incandescent-128.png",
+  "tags": [
+    "dweb",
+    "ipfs",
+    "qt",
+    "distributed",
+    "browser",
+    "rdf"
+  ],
+  "mediaLinks": [
+    "https://gitlab.com/galacteek/galacteek/-/raw/master/screenshots/browse-wikipedia-small.png"
+  ],
+  "documentationUrl": "https://galacteek.gitlab.io/docs"
+}
