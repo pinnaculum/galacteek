@@ -42,6 +42,9 @@ stages:
 prepare:
   image: alpine:3.14
   stage: prepare
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ '[no-ci]'
+      when: never
   script:
     - echo "export G_VERSION=$(cat galacteek/VERSION)" > $GALACTEEK_ENV_FILE
     - echo "export COMMIT_SHORT=$CI_COMMIT_SHORT_SHA" >> $GALACTEEK_ENV_FILE

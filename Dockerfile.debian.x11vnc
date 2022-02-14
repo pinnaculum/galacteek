@@ -8,13 +8,13 @@ ENV NOTBIT_DIST_URL "https://gitlab.com/api/v4/projects/27627112/packages/generi
 ENV X11VNC_PASSWORD "galacteek"
 ENV DEBIAN_FRONTEND "noninteractive"
 ENV QT_QPA_PLATFORM=xcb
-ENV DISPLAY=:1
+ENV DISPLAY=:99
 ENV XVFB_WHD=1024x768x24
 ENV QTWEBENGINE_DISABLE_SANDBOX=1
 # ENV QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu-compositing"
 
 RUN apt-get update && apt-get install -q -y --force-yes \
-	gcc git \
+	gcc git net-tools iproute2 \
 	file libmagic1 libmagic-mgc \
 	libgl1-mesa-glx libnss3 libxtst6 libxext6 \
 	libasound2 libegl1-mesa libpulse-mainloop-glib0 libpulse0 \
