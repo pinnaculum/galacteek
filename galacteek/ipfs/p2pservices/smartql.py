@@ -13,9 +13,18 @@ from galacteek.core import runningApp
 from galacteek.ld.rdf import BaseGraph
 from galacteek import log
 
+from rdflib.plugins.sparql.parser import parseQuery
 from rdflib_jsonld.serializer import resource_from_rdf
 
 from aiohttp import web
+
+
+MIME_N3 = 'text/rdf+n3'
+MIME_TTL = 'text/turtle'
+MIME_XTTL = 'application/x-turtle'
+MIME_NTRIPLES = 'text/plain'
+MIME_RDFXML = 'application/rdf+xml'
+MIME_JSONLD = 'application/ld+json'
 
 
 @attr.s(auto_attribs=True)
@@ -27,13 +36,6 @@ class SparQLServiceConfig:
 
 class SparQLWebApp(web.Application):
     pass
-
-
-MIME_N3 = 'text/rdf+n3'
-MIME_TTL = 'application/x-turtle'
-MIME_NTRIPLES = 'text/plain'
-MIME_RDFXML = 'application/rdf+xml'
-MIME_JSONLD = 'application/ld+json'
 
 
 class SparQLSiteHandler:
@@ -49,6 +51,10 @@ class SparQLSiteHandler:
         )
         self.service = service
         self.app = runningApp()
+
+    @property
+    def cfg(self):
+        return self.service.config
 
     async def msgError(self, error='Invalid request', status=500):
         return web.json_response({
@@ -93,10 +99,10 @@ class SparQLSiteHandler:
                     data=json.dumps(obj), format='json-ld'
                 )
 
-                if MIME_TTL in accepthl:
+                if MIME_TTL in accepthl or MIME_XTTL in accepthl:
                     data = await graph.ttlize()
 
-                    ctype = 'text/turtle'
+                    ctype = MIME_TTL
                 else:
                     return await self.msgError(error='Invalid format')
 
@@ -137,7 +143,7 @@ class SparQLSiteHandler:
                     ctype = 'application/rdf+xml'
                 elif fmt == 'ttl':
                     data = await graph.ttlize()
-                    ctype = 'text/turtle'
+                    ctype = MIME_TTL
                 else:
                     return await self.msgError(error='Invalid format')
 
@@ -157,6 +163,13 @@ class SparQLSiteHandler:
                 log.debug(f'Export error: {err}')
                 return await self.msgError(error='Export error')
 
+    def isAllowedSparqlQuery(self, query: str):
+        try:
+            parseQuery(query)
+            return True
+        except Exception:
+            return False
+
     async def sparql(self, request):
         """
         Run a SparQL query on the graph associated with the
@@ -168,6 +181,7 @@ class SparQLSiteHandler:
                 'Accept',
                 'application/json'
             ).split(',')
+
             try:
                 post = await request.post()
                 q = post['query']
@@ -176,6 +190,7 @@ class SparQLSiteHandler:
 
             try:
                 assert isinstance(q, str)
+                assert self.isAllowedSparqlQuery(q) is True
 
                 r = await self.app.loop.run_in_executor(
                     self.app.executor,
@@ -209,9 +224,12 @@ class SparQLSiteHandler:
                         body=r.serialize(format='xml'),
                         content_type=MIME_RDFXML
                     )
-                elif MIME_TTL in acceptl:
+                elif MIME_TTL in acceptl or MIME_XTTL in acceptl:
                     return web.Response(
-                        body=r.serialize(format='ttl'),
+                        body=r.serialize(
+                            format='turtle',
+                            media_type=MIME_TTL
+                        ),
                         content_type=MIME_TTL
                     )
                 elif MIME_N3 in acceptl:

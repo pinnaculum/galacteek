@@ -3,6 +3,7 @@ import asyncio
 import io
 from pathlib import Path
 
+from rdflib import RDF
 from rdflib import Graph
 from rdflib import ConjunctiveGraph
 from rdflib import Literal
@@ -115,6 +116,13 @@ class Common(object):
             self.parse(await graph.ttlize(), format='ttl')
         except Exception as err:
             log.debug(f'Error pulling object {doc}: {err}')
+
+    def replace(self, s, p, o):
+        self.remove((s, p, None))
+        self.add((s, p, o))
+
+    def typesList(self):
+        return list(self.subject_objects(RDF.type))
 
 
 class BaseGraph(Graph, Common):

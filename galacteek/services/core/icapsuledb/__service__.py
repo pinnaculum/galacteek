@@ -413,8 +413,6 @@ class ICapsuleRegistryLoaderService(GService):
                 cfg = OmegaConf.create(registry.read().decode())
                 assert cfg is not None
         except Exception as err:
-            traceback.print_exc()
-
             log.info(f'{url}: cannot load registry: {err}')
 
             if savePath.is_file():

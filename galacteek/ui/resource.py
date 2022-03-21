@@ -16,6 +16,9 @@ from galacteek import AsyncSignal
 from galacteek.database import hashmarksByPath
 from galacteek.config import cGet
 
+from galacteek.core.ps import keyLdObjects
+from galacteek.core.ps import hubPublish
+
 from galacteek import loopTime
 
 from galacteek.did.ipid import IPService
@@ -91,6 +94,7 @@ class IPFSResourceOpener(QObject):
     @ipfsOp
     async def open(self, ipfsop, pathRef,
                    mimeType=None,
+                   rdfGraph=None,
                    openingFrom=None,
                    pyramidOrigin=None,
                    minWebProfile='ipfs',
@@ -178,6 +182,19 @@ class IPFSResourceOpener(QObject):
             useWorkspace = self.app.mainWindow.stack.wsHashmarkTagRulesRun(
                 hashmark
             )
+
+        if mimeType == mimeTypeDagUnknown or rdfGraph is not None:
+            if rdfGraph is None:
+                async with ipfsop.ldOps() as ld:
+                    graph = await ld.rdfify(pathRef)
+            else:
+                graph = rdfGraph
+
+            if graph:
+                await self.openFromGraph(
+                    pathRef,
+                    graph
+                )
 
         if mimeType == mimeTypeDagUnknown:
             indexPath = ipfsPath.child('index.html')
@@ -276,7 +293,8 @@ class IPFSResourceOpener(QObject):
         if mimeType.isVideo or mimeType.isAudio:
             tab = self.app.mainWindow.getMediaPlayer()
             if tab:
-                tab.playFromPath(rscPath)
+                # tab.playFromPath(rscPath)
+                tab.queueFromPath(rscPath)
             return
 
         if mimeType == 'application/pdf' and 0:  # not usable yet
@@ -338,6 +356,17 @@ class IPFSResourceOpener(QObject):
     async def onOpenConfirmed(self, iPath, mType, dlg):
         log.debug('Open confirmed for: {0}'.format(iPath))
         await self.openWithSystemDefault(str(iPath))
+
+    @ipfsOp
+    async def openFromGraph(self, ipfsop, pathRef, graph):
+        sol = graph.typesList()
+
+        for subj, obj in sol:
+            await ipfsop.sleep()
+
+            log.debug(f'openFromGraph ({pathRef}): {subj} is {obj}')
+
+        hubPublish(keyLdObjects, (pathRef, sol, graph))
 
     @ipfsOp
     async def openBlock(self, ipfsop, pathRef, mimeType=None):

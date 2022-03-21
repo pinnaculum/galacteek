@@ -1,28 +1,65 @@
-from galacteek.ipfs import ipfsOp
+from galacteek import log
+
 from galacteek.services import GService
 
-from ..cfg import GraphSparQLSyncConfig
+from galacteek.ld.iri import ipfsPeerUrn
+from galacteek.ld.rdf.sync.base import BaseGraphSynchronizer
+from galacteek.ld.rdf.sync.cfg import GraphSparQLSyncConfig
+from galacteek.ld.sparql.aioclient import Sparkie
 
 
-class GraphSparQLSynchronizer:
+class GraphSparQLSynchronizer(BaseGraphSynchronizer):
     def __init__(self, config=None):
         self.config = config if config else GraphSparQLSyncConfig()
 
-    @ipfsOp
-    async def syncFromRemote(self, ipfsop,
-                             peerId: str,
-                             iri: str,
-                             p2pEndpoint: str,
-                             graphDescr=None):
-        async with ipfsop.p2pDialerFromAddr(p2pEndpoint) as dial:
-            if dial.failed:
-                return False
-
-            return await self.syncFromExport(ipfsop, iri, dial)
-
-    async def syncFromExport(self, ipfsop, iri, dial):
+    async def sync(self, ipfsop, peerId, iri, dial,
+                   auth):
         rdfService = GService.byDotName.get('ld.pronto')
-        graph = rdfService.graphByUri(iri)
+        localGraph = rdfService.graphByUri(iri)
 
-        if graph is None:
+        if localGraph is None:
             return
+
+        client = Sparkie(dial.httpUrl('/sparql'), auth=auth)
+
+        peerUriRef = ipfsPeerUrn(peerId)
+
+        for step in self.config.run:
+            try:
+                ctype = step.get('contentType', None)
+                action = step.get('action', None)
+                source = step.get('sourceGraph', 'remote')
+
+                assert isinstance(step.query, str)
+
+                q = step.query.replace(
+                    '@REMOTE_PEERID@',
+                    peerId
+                ).replace(
+                    '@REMOTE_PEER_URIREF@',
+                    str(peerUriRef)
+                )
+
+                if not ctype:
+                    if source == 'local':
+                        await localGraph.queryAsync(q)
+                    else:
+                        await client.query(q)
+
+                elif ctype == 'text/turtle':
+                    g = await client.queryConstructGraph(q)
+
+                    if g is None:
+                        raise ValueError(
+                            'Returned graph is invalid'
+                        )
+
+                    print(g.serialize(format='ttl'))
+
+                    if action == 'merge':
+                        await localGraph.guardian.mergeReplace(
+                            g, localGraph)
+            except Exception as err:
+                log.debug(f'Sparql sync: step failed with error: {err}')
+
+        await client.close()

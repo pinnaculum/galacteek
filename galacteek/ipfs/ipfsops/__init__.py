@@ -41,6 +41,7 @@ from galacteek.core.jtraverse import traverseParser
 from galacteek.core.tmpf import TmpFile
 from galacteek.core.asynclib import asyncRmTree
 from galacteek.ld import asyncjsonld as jsonld
+from galacteek.ld.iri import ipfsPeerUrn
 
 from galacteek import log
 from galacteek import logUser
@@ -657,7 +658,12 @@ class IPFSOperator(RemotePinningOps,
     async def nodeId(self):
         info = await self.client.core.id()
         if isDict(info):
-            return info.get('ID', 'Unknown')
+            return info.get('ID', None)
+
+    async def nodeIdUriRef(self):
+        peerId = await self.nodeId()
+        if peerId:
+            return ipfsPeerUrn(peerId)
 
     async def alive(self, timeout=5):
         nodeId = await self.waitFor(self.nodeId(), timeout,

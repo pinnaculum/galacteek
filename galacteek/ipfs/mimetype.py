@@ -6,6 +6,7 @@ import binascii
 import struct
 import platform
 import os
+import os.path
 
 import aioipfs
 
@@ -168,6 +169,18 @@ class MIMEType(object):
     def isBitTorrent(self):
         return self.type == 'application/x-bittorrent'
 
+    @property
+    def isTurtle(self):
+        return self.type == 'text/turtle'
+
+    @property
+    def isJson(self):
+        return self.type == 'application/json'
+
+    @property
+    def isYaml(self):
+        return self.type in ['application/yaml', 'text/yaml']
+
     def __str__(self):
         return self.type
 
@@ -187,19 +200,19 @@ def magicInstance():
     global iMagic
 
     if iMagic is None:
-        pl = platform.system()
+        dbPath = os.environ.get('GALACTEEK_MAGIC_DBPATH')
+        sys = platform.system()
 
-        if pl == 'Linux':
-            iMagic = magic.Magic(mime=True)
-        elif pl in ['Darwin', 'Windows']:
+        if sys in ['Darwin', 'Windows']:
             if inPyInstaller():
                 dbPath = str(pyInstallerBundleFolder().joinpath('magic.mgc'))
-            else:
-                dbPath = os.environ.get('GALACTEEK_MAGIC_DBPATH')
 
-            if dbPath:
-                log.debug(f'Using magic DB from path: {dbPath}')
-                iMagic = magic.Magic(mime=True, magic_file=dbPath)
+        if dbPath and os.path.isfile(dbPath):
+            log.debug(f'Using magic DB from path: {dbPath}')
+
+            iMagic = magic.Magic(mime=True, magic_file=dbPath)
+        else:
+            iMagic = magic.Magic(mime=True)
 
     return iMagic
 

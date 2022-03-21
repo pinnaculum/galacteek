@@ -57,6 +57,11 @@ cp ../share/icons/galacteek.png $APPDIR/usr/share/icons/hicolor/512x512/apps
 find /usr/lib -iname 'libzbar.so*' -exec cp -av {} $APPDIR/usr/lib \;
 find /usr/lib -iname 'libjpeg.so*' -exec cp -av {} $APPDIR/usr/lib \;
 
+# Custom magic db
+mkdir -p $APPDIR/usr/share/file
+wget -O $APPDIR/usr/share/file/magic-galacteek.mgc \
+    https://gitlab.com/galacteek/file/-/releases/continuous-galacteek/downloads/magic.mgc
+
 # Copy go-ipfs and fs-repo-migrations
 cp /usr/bin/ipfs $APPDIR/usr/bin
 cp /usr/bin/fs-repo-migrations $APPDIR/usr/bin

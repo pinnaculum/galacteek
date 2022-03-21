@@ -58,8 +58,22 @@ graphEnvs:
         format: ttl
         compression: gzip
 
-      urn:ipg:sync:sparql1:
+      urn:ipg:sync:sparql:hashmarksbylibrarian1:
         type: sparql
+        run:
+          - query: >
+              PREFIX hmark: <ips://galacteek.ld/Hashmark#>
+
+              CONSTRUCT {
+                ?uri ?p ?o .
+              } WHERE {
+                ?uri ?p ?o .
+                ?uri hmark:librarianId ?libId .
+                <@REMOTE_PEER_URIREF@> gs:usesLibrarianId ?libId .
+              }
+
+            contentType: text/turtle
+            action: merge
 
       urn:ipg:sync:ontolochain1:
         type: ontolochain
@@ -148,3 +162,18 @@ graphEnvs:
 
           urn:ipg:hashmarks:search:
             name: hashmarks_search
+
+            services:
+              sparql: {}
+
+      # Multimedia (conjunctive)
+      urn:ipg:multimedia:
+        name: multimedia
+        type: conjunctive
+
+        subgraphs:
+          urn:ipg:multimedia:playlists:
+            name: multimedia_playlists
+
+          urn:ipg:multimedia:playlists:public:
+            name: multimedia_playlists_public

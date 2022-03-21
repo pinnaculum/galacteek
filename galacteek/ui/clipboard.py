@@ -2,9 +2,7 @@ import functools
 import aioipfs
 import time
 import shutil
-import orjson
 import traceback
-import yaml
 
 from PyQt5.QtWidgets import QStackedWidget
 from PyQt5.QtWidgets import QToolButton
@@ -47,6 +45,7 @@ from galacteek.ipfs.mimetype import mimeTypeDagUnknown
 from galacteek.ipfs.mimetype import mimeTypeDagPb
 from galacteek.crypto.qrcode import IPFSQrDecoder
 from galacteek.crypto.qrcode import IPFSQrEncoder
+from galacteek.ld.rdf import BaseGraph
 
 from .hashmarks import addHashmarkAsync
 from .helpers import qrCodesMenuBuilder
@@ -67,6 +66,8 @@ from .widgets import PopupToolButton
 from .widgets import DownloadProgressButton
 from .widgets.pinwidgets import PinObjectAction
 from .dialogs import ChooseProgramDialog
+from .dialogs import runDialogAsync
+from .dialogs import TextBrowserDialog
 
 from . import dag
 
@@ -138,6 +139,11 @@ def iClipboardClearHistory():
     return QCoreApplication.translate(
         'ClipboardManager',
         'Clear clipboard history')
+
+
+def iClipItemViewGraphAsTTL():
+    return QCoreApplication.translate('ClipboardManager',
+                                      'View graph as TTL (turtle)')
 
 
 def iClipItemExplore():
@@ -591,6 +597,11 @@ class ClipboardItemButton(PopupToolButton):
             iClipItemIcapsulesRegInstall(), self,
             triggered=partialEnsure(self.onIcapsulesRegistryInstall))
 
+        self.viewTtlGraphAction = QAction(
+            getIcon('ipld-logo.png'),
+            iClipItemViewGraphAsTTL(), self,
+            triggered=partialEnsure(self.onViewTTLGraph))
+
         self.geoAnimation = QPropertyAnimation(self, b'geometry')
 
     @property
@@ -652,12 +663,8 @@ class ClipboardItemButton(PopupToolButton):
         icapdb = services.getByDotName('core.icapsuledb')
 
         if self.item.objGraph:
-            print('merging ........')
-            print(icapdb, icapdb.mergeRegistry)
             res = await icapdb.mergeRegistry(self.item.objGraph)
-            print(res)
             if res is True:
-                print('success')
                 await messageBoxAsync('Capsules registry installed')
             else:
                 await messageBoxAsync('Capsules registry install failed')
@@ -757,12 +764,6 @@ class ClipboardItemButton(PopupToolButton):
             self.menu.addSeparator()
             self.menu.addAction(self.editObjectAction)
 
-        elif self.item.mimeType.isText:
-            self.menu.addSeparator()
-            self.menu.addAction(self.editObjectAction)
-
-            ensure(self.analyzeText())
-
         elif self.item.mimeType.isImage:
             self.updateIcon(getMimeIcon('image/x-generic'), animate=False)
             ensure(self.analyzeImage())
@@ -771,6 +772,17 @@ class ClipboardItemButton(PopupToolButton):
             # We have an atom!
             self.menu.addSeparator()
             self.menu.addAction(self.followFeedAction)
+
+        # Text
+        if self.item.mimeType.isText:
+            self.menu.addSeparator()
+            self.menu.addAction(self.editObjectAction)
+
+        if self.item.mimeType.isJson or self.item.mimeType.isYaml:
+            ensure(self.analyseJsonOrYaml())
+
+        if self.item.mimeType.isTurtle:
+            ensure(self.analyzeTTL())
 
         mIcon = getIconFromMimeType(self.item.mimeType)
 
@@ -849,47 +861,20 @@ class ClipboardItemButton(PopupToolButton):
             pass
 
     @ipfsOp
-    async def analyzeText(self, ipfsop):
+    async def analyseJsonOrYaml(self, ipfsop):
         statInfo = StatInfo(self.item.stat)
 
-        if statInfo.valid:
-            size = statInfo.dataSize
-
-            if size > megabytes(1):
-                return
+        if not statInfo.valid or statInfo.dataSize > megabytes(2):
+            return
 
         try:
-            # Temporary
-            ldTypesAllow = [
-                'ICapsule',
-                'ICapsuleManifest',
-                'ICapsulesRegistry'
-            ]
-
             data = await ipfsop.catObject(self.item.path)
             text = data.decode()
 
-            try:
-                # Ying
-                obj = yaml.load(text)
-            except (AttributeError, ValueError, BaseException):
-                # Yang
-                obj = orjson.loads(text)
-
-            assert isinstance(obj, dict)
-
-            _type = obj.get('@type', None)
-
-            if not isinstance(_type, str) or _type not in ldTypesAllow:
-                return
-
-            if _type in ['ICapsulesRegistry', 'ICapsuleManifest']:
-                self.updateIcon(
-                    getIcon('capsules/icapsule-green.png')
-                )
-
             async with ipfsop.ldOps() as ld:
-                g = await ld.rdfify(obj)
+                g = await ld.rdfify(text)
+
+            assert g is not None
 
             self.item.objGraph = g
         except aioipfs.APIError:
@@ -898,6 +883,30 @@ class ClipboardItemButton(PopupToolButton):
             traceback.print_exc()
         else:
             self.menu.addAction(self.icapRegInstallAction)
+            self.menu.addSeparator()
+
+            self.menu.addAction(self.viewTtlGraphAction)
+            self.menu.addSeparator()
+
+    @ipfsOp
+    async def analyzeTTL(self, ipfsop):
+        statInfo = StatInfo(self.item.stat)
+
+        if not statInfo.valid or statInfo.dataSize > megabytes(2):
+            return
+
+        try:
+            g = BaseGraph()
+
+            data = await ipfsop.catObject(self.item.path)
+
+            g.parse(data=data.decode(), format='ttl')
+        except (aioipfs.APIError, Exception):
+            pass
+        else:
+            self.item.objGraph = g
+
+            self.menu.addAction(self.viewTtlGraphAction)
             self.menu.addSeparator()
 
     @ipfsOp
@@ -943,6 +952,15 @@ class ClipboardItemButton(PopupToolButton):
         except aioipfs.APIError:
             pass
 
+    async def onViewTTLGraph(self, *args):
+        ttl = await self.item.objGraph.ttlize()
+
+        if ttl:
+            dlg = TextBrowserDialog()
+            dlg.textBrowser.insertPlainText(ttl.decode())
+
+            await runDialogAsync(dlg)
+
     def onOpen(self):
         if self.item:
             if self.item.mimeType.isWasm and shutil.which('wasmer') and \
@@ -957,7 +975,8 @@ class ClipboardItemButton(PopupToolButton):
             ensure(self.rscOpener.open(
                 self.item.ipfsPath,
                 mimeType=self.item.mimeType,
-                openingFrom='clipboardmgr'
+                openingFrom='clipboardmgr',
+                rdfGraph=self.item.objGraph
             ))
 
     def onExplore(self):

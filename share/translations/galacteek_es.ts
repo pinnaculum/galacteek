@@ -359,138 +359,143 @@
 <context>
     <name>ClipboardManager</name>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="84"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="85"/>
         <source>No valid IPFS CID/path in the clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="90"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="91"/>
         <source>{} item(s) in the clipboard stack</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="120"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="121"/>
         <source>Copy to clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="126"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="127"/>
         <source>No valid address for this item</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="132"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="133"/>
         <source>Clipboard: browse IPFS path: {0}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="138"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="139"/>
         <source>Clear clipboard history</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="144"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="150"/>
         <source>Explore directory</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="149"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="155"/>
         <source>Subscribe to Atom feed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="154"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="160"/>
         <source>Hashmark</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="159"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="165"/>
         <source>Pin</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="164"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="170"/>
         <source>Download</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="169"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="175"/>
         <source>Run IPLD Explorer</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="174"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="180"/>
         <source>Open with Markdown editor</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="179"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="185"/>
         <source>Edit text file</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="193"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="199"/>
         <source>Clipboard history</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="197"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="203"/>
         <source>Browse IPFS path</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="202"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="208"/>
         <source>Open</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="206"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="212"/>
         <source>Open with application</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="211"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="217"/>
         <source>Open with default system application</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="216"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="222"/>
         <source>Set as current clipboard item</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="221"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="227"/>
         <source>Set as homepage</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="226"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="232"/>
         <source>Remove item</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="231"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="237"/>
         <source>Switch to item {} in the stack</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="237"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="243"/>
         <source>Clipboard stack</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="242"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="248"/>
         <source>QR codes: encode clipboard stack to image (encrypted)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="248"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="254"/>
         <source>QR codes: encode clipboard stack to image (clear)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="184"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="190"/>
         <source>Install capsules registry</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/clipboard.py" line="145"/>
+        <source>View graph as TTL (turtle)</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -596,22 +601,22 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="96"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="97"/>
         <source>Copy CID to clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="102"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="103"/>
         <source>Copied to clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="108"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="109"/>
         <source>Copy full path to clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/clipboard.py" line="114"/>
+        <location filename="../../galacteek/ui/clipboard.py" line="115"/>
         <source>Copy public gatewayed URL to clipboard (ipfs.io)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -835,13 +840,13 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="105"/>
+        <location filename="../../galacteek/ui/mainui.py" line="104"/>
         <source>
 Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="114"/>
+        <location filename="../../galacteek/ui/mainui.py" line="113"/>
         <source>
         &lt;p&gt;
         &lt;b&gt;galacteek&lt;/b&gt; is a multi-platform Qt5-based browser
@@ -1045,22 +1050,22 @@ Path: {0}, nodes processed: {1}</source>
 <context>
     <name>IPFSSearchResults</name>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="48"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="55"/>
         <source>Results count: &lt;b&gt;{0}&lt;/b&gt; (max score: &lt;b&gt;{1}&lt;/b&gt;)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="56"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="63"/>
         <source>&lt;b&gt;No results found&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="61"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="68"/>
         <source>&lt;b&gt;Error while fetching results&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="66"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="73"/>
         <source>&lt;b&gt;Searching ...&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1233,89 +1238,6 @@ Path: {0}, nodes processed: {1}</source>
     </message>
 </context>
 <context>
-    <name>MediaPlayer</name>
-    <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="50"/>
-        <source>No media player support available on your system</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="56"/>
-        <source>Media player error (code: {0})</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="62"/>
-        <source>Fullscreen</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="66"/>
-        <source>Copy playlist&apos;s IPFS path to the clipboard</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="72"/>
-        <source>Load playlist from the clipboard</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="78"/>
-        <source>Cannot load playlist</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="83"/>
-        <source>A playlist with this name already exists</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="89"/>
-        <source>Remove media from playlist</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="102"/>
-        <source>Playlist name</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="136"/>
-        <source>Already queued in the current playlist</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="141"/>
-        <source>No media in playlist</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="95"/>
-        <source>Playlist</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="108"/>
-        <source>Pin playlist items</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="115"/>
-        <source>Clear playlist</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="122"/>
-        <source>Save playlist</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/mediaplayer.py" line="129"/>
-        <source>Load playlist</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>MediaPlaylist</name>
     <message>
         <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="14"/>
@@ -1323,23 +1245,8 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="67"/>
+        <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="105"/>
         <source>Clear</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="101"/>
-        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Previous&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="111"/>
-        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Next&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="47"/>
-        <source>Queue from clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1350,6 +1257,26 @@ Path: {0}, nodes processed: {1}</source>
     <message>
         <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="44"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Load multimedia content from the current clipboard object (can be a multimedia file or a directory)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="129"/>
+        <source>Search playlists here ...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="47"/>
+        <source>Queue media from clipboard</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="169"/>
+        <source>...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="85"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;View playlist graph (TTL)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

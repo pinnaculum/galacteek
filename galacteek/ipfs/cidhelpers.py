@@ -3,6 +3,7 @@ import os
 import aioipfs
 
 from rdflib import URIRef
+from urllib.parse import quote
 
 from PyQt5.QtCore import QUrl
 
@@ -477,6 +478,28 @@ class IPFSPath:
             return self.dwebUrl
 
     @property
+    def ipfsUrlEncoded(self):
+        if self.isIpfs and self.rootCidUseB32:
+            # ipfs://
+            return '{scheme}://{path}'.format(
+                scheme=self.scheme,
+                path=quote(stripIpfs(self.fullPath))
+            )
+        elif self.isIpns:
+            if domainValid(self._ipnsId):
+                return '{scheme}://{path}'.format(
+                    scheme='ipns',
+                    path=quote(stripIpns(self.fullPath))
+                )
+            else:
+                return '{scheme}://{path}'.format(
+                    scheme=self.scheme,
+                    path=quote(stripIpns(self.fullPath))
+                )
+        else:
+            return self.dwebUrl
+
+    @property
     def ipfsUriRef(self):
         """
         Returns an rdflib URIRef for this object
@@ -487,9 +510,9 @@ class IPFSPath:
         """
 
         if self.isRoot:
-            return URIRef(self.ipfsUrl + '/')
+            return URIRef(self.ipfsUrlEncoded + '/')
         else:
-            return URIRef(self.ipfsUrl)
+            return URIRef(self.ipfsUrlEncoded)
 
     @property
     def dwebQtUrl(self):

@@ -240,6 +240,8 @@ def getIconFromMimeType(mimeType, defaultIcon=None):
         mIcon = 'audio/x-generic'
     elif mimeType in [mimeTypeDagUnknown, mimeTypeDagPb]:
         mIcon = mimeType.type
+    else:
+        mIcon = 'unknown'
 
     icon = getMimeIcon(mIcon)
     return icon if icon else getMimeIcon(

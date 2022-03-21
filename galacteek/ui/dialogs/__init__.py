@@ -29,6 +29,7 @@ from PyQt5.QtWidgets import QCheckBox
 from PyQt5.QtWidgets import QSpinBox
 from PyQt5.QtWidgets import QTreeWidgetItem
 from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QTextBrowser
 
 from PyQt5.QtCore import QSize
 from PyQt5.QtCore import QFile
@@ -45,6 +46,7 @@ from PyQt5.QtGui import QClipboard
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtGui import QImage
 from PyQt5.QtGui import QRegExpValidator
+from PyQt5.QtGui import QTextCursor
 
 from galacteek import GALACTEEK_NAME
 from galacteek import ensure
@@ -57,6 +59,7 @@ from galacteek.core.ipfsmarks import *
 from galacteek.core.ipfsmarks import categoryValid
 from galacteek.core.iptags import ipTagsFormat
 from galacteek.core import readQrcFileRaw
+from galacteek.core import runningApp
 from galacteek import AsyncSignal
 
 from galacteek.browser.schemes import isEnsUrl
@@ -2225,3 +2228,27 @@ class VideoChatAckWait(QWidget):
 
         self.ui = ui_videochatackwait.Ui_VideoChatAckWait()
         self.ui.setupUi(self)
+
+
+class TextBrowserDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        app = runningApp()
+        layout = QVBoxLayout()
+
+        self.setLayout(layout)
+        self.setMinimumSize(
+            (2 * app.desktopGeometry.width()) / 3,
+            (2 * app.desktopGeometry.height()) / 3,
+        )
+
+        self.textBrowser = QTextBrowser(self)
+        self.textBrowser.setFontFamily('Montserrat')
+        self.textBrowser.setFontPointSize(14)
+
+        layout.addWidget(self.textBrowser)
+
+    def setPlain(self, text: str):
+        self.textBrowser.insertPlainText(text)
+        self.textBrowser.moveCursor(QTextCursor.Start)

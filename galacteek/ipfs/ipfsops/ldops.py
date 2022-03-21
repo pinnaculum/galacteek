@@ -1,6 +1,7 @@
 import os.path
 import orjson
 import aioipfs
+import yaml
 
 from galacteek import log
 
@@ -14,6 +15,19 @@ from galacteek.ld.ldloader import aioipfs_document_loader
 from galacteek.ld import asyncjsonld as jsonld
 from galacteek.ld import ldContextsRootPath
 from galacteek.ld import gLdBaseUri
+from galacteek.ld import gLdDefaultContext
+
+
+def yamlOrJsonLoad(arg):
+    try:
+        # Ying
+        d = yaml.load(arg)
+    except (AttributeError, ValueError, BaseException):
+        # Yang
+        d = orjson.loads(arg)
+
+        assert d is not None
+    return d
 
 
 class LDOpsContext(object):
@@ -48,17 +62,37 @@ class LDOpsContext(object):
     async def dagExpandAggressive(self,
                                   arg,
                                   expandContext=None,
-                                  expandContextFromType=True):
+                                  expandContextFromType=True,
+                                  useDefaultContext=True):
         """
 
         "Wanna know how i got these scars ?"
 
         Aggressive expansion
         """
+
+        dag = None
         try:
             if isinstance(arg, IPFSPath):
-                dag = await self.operator.dagGet(str(arg))
+                # JSON or YAML
+                try:
+                    data = await self.operator.catObject(str(arg))
+                    assert data is not None
+                except (Exception, aioipfs.APIError):
+                    pass
+                else:
+                    dag = yamlOrJsonLoad(data.decode())
+                    # assert dag is not None
+
+                # IPFS DAG
+                if not dag:
+                    dag = await self.operator.dagGet(str(arg))
+                    assert dag is not None
+
+            elif isinstance(arg, str):
+                dag = yamlOrJsonLoad(arg)
                 assert dag is not None
+
             elif isinstance(arg, dict):
                 dag = arg
 
@@ -81,6 +115,11 @@ class LDOpsContext(object):
                 'base': gLdBaseUri,
                 'documentLoader': self.ldLoader
             }
+
+            if useDefaultContext and '@context' not in dag:
+                # If no @context is there, use the default galacteek.ld
+
+                dag['@context'] = gLdDefaultContext
 
             if expandContext:
                 options['expandContext'] = {
@@ -114,13 +153,14 @@ class LDOpsContext(object):
                      obj,
                      debug=False):
         """
-        IPFS DAG (or object) to RDF, via the rdflib-jsonld plugin
+        IPFS DAG (or object, string) to RDF, via the rdflib-jsonld plugin
         """
         from galacteek.ld.rdf import BaseGraph
         try:
             # Expand
 
-            if isinstance(obj, IPFSPath) or isinstance(obj, dict):
+            if isinstance(obj, IPFSPath) or isinstance(obj, dict) or \
+               isinstance(obj, str):
                 dag = await self.dagExpandAggressive(obj)
                 assert dag is not None
             else:

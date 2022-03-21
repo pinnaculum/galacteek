@@ -1,3 +1,4 @@
+import secrets
 from rdflib import URIRef
 from rdflib.plugins.sparql import prepareQuery
 
@@ -85,7 +86,8 @@ class IService(services.GService):
         self.socketPath = self.rootPath.joinpath('i.sock')
 
     def iriGenObject(self, oclass):
-        return f'i:/{self.prontoService.chainEnv}/rsc/{oclass}/{uid4()}'
+        s = secrets.token_hex(16)
+        return f'i:/{self.prontoService.chainEnv}/rsc/{oclass}/{s}-{uid4()}'
 
     async def startWebApp(self):
         self.webapp = self.createApp()

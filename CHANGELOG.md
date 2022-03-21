@@ -13,9 +13,16 @@ the changes in the CHANGELOG formatting.
 ### Added
 - RDF hashmarks store
 - Qt SparQL models API: add async support
+- Add MIME type recognition for turtle (ttl), YAML
 
 ### Changed
+- Mediaplayer:
+  - Deprecate old MFS+JSON playlists storage
+  - Store playlists as RDF (ips://galacteek.ld/MultimediaPlaylist)
 - Content providers peering: separate Pinata nodes config by region
+
+### Fixed
+- AppImage: fix xkb issue when running in Wayland (set XKB_CONFIG_ROOT)
 
 ## [0.5.3] - 2022-01-14
 

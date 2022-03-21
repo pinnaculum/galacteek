@@ -1,5 +1,11 @@
-import posixpath
 import functools
+import asyncio
+
+from datetime import timedelta
+
+from rdflib import URIRef
+from rdflib import RDF
+from rdflib import Literal
 
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QLabel
@@ -11,25 +17,21 @@ from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtWidgets import QSlider
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtWidgets import QSizePolicy
-from PyQt5.QtGui import QFont
 
 from PyQt5.QtMultimedia import QMediaPlayer
 from PyQt5.QtMultimedia import QMediaContent
 from PyQt5.QtMultimedia import QMediaPlaylist
 from PyQt5.QtMultimedia import QMultimedia
-
-from PyQt5.QtMultimediaWidgets import QVideoWidget
+from PyQt5.QtMultimedia import QAudioProbe
+from PyQt5.QtMultimedia import QAudioFormat
 
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import Qt
-from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtCore import QAbstractItemModel
-from PyQt5.QtCore import QModelIndex
 from PyQt5.QtCore import QTime
-from PyQt5.QtCore import QTimer
 from PyQt5.QtCore import QItemSelectionModel
 
 from galacteek import partialEnsure
+from galacteek import services
 
 from galacteek.core.jsono import *
 from galacteek.ipfs.cidhelpers import IPFSPath
@@ -38,12 +40,28 @@ from galacteek.ipfs.cidhelpers import qurlPercentDecode
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.paths import posixIpfsPath
 
-from .forms import ui_mediaplaylist
+from galacteek.core import utcDatetimeIso
+from galacteek.core.ps import KeyListener
+from galacteek.core.ps import keyLdObjects
 
-from .clipboard import iClipboardEmpty
-from .widgets import *
-from .widgets.pinwidgets import *
-from .helpers import *
+from galacteek.core.models.sparql.playlists import *
+
+from galacteek.ld import ipsContextUri
+from galacteek.ld import ipsTermUri
+
+from galacteek.ld.rdf import BaseGraph
+from galacteek.ld.rdf.resources.multimedia import MultimediaPlaylistResource
+from galacteek.ld.rdf.resources.multimedia import MusicRecordingResource
+from galacteek.ld.rdf.resources.multimedia import VideoObjectResource
+
+from .videowidget import MPlayerVideoWidget
+from ..forms import ui_mediaplaylist
+from ..clipboard import iClipboardEmpty
+from ..dialogs import TextBrowserDialog
+from ..dialogs import runDialogAsync
+from ..widgets import *
+from ..widgets.pinwidgets import *
+from ..helpers import *
 
 
 def iPlayerUnavailable():
@@ -145,6 +163,7 @@ def iNoMediaInPlaylist():
 def mediaPlayerAvailable(player=None):
     if player is None:
         player = QMediaPlayer()
+
     availability = player.availability()
     return availability == QMultimedia.Available
 
@@ -154,97 +173,15 @@ def durationConvert(duration):
                  duration % 60, (duration * 1000) % 1000)
 
 
-class JSONPlaylistV1(QJSONObj):
-    """
-    V1 JSON playlist document
-    """
+class QLDMediaPlaylist(QMediaPlaylist):
+    def __init__(self, model, parent=None):
+        super().__init__(parent)
 
-    def prepare(self, root):
-        root['playlist'] = {
-            'name': self.listName,
-            'formatv': 1,
-            'items': []
-        }
-
-        for path in self.itemPaths:
-            root['playlist']['items'].append({
-                'path': path
-            })
-        self.changed.emit()
-
-    def items(self):
-        return self.root['playlist']['items']
-
-    @property
-    def name(self):
-        try:
-            return self.root['playlist']['name']
-        except Exception:
-            return None
+        self.model = model
+        self.rsc = None  # RDF resource
 
 
-class MPlayerVideoWidget(QVideoWidget):
-    pauseRequested = pyqtSignal()
-
-    def __init__(self, player, parent=None):
-        super(MPlayerVideoWidget, self).__init__(parent)
-        self.player = player
-
-    def keyPressEvent(self, event):
-        mSecMove = 3000
-        pos = self.player.position()
-
-        if event.key() == Qt.Key_Escape:
-            self.viewFullScreen(False)
-        if event.key() in [Qt.Key_Space, Qt.Key_P]:
-            self.pauseRequested.emit()
-        if event.key() == Qt.Key_Right:
-            self.player.setPosition(pos + mSecMove)
-        if event.key() == Qt.Key_Left:
-            pos = self.player.position()
-            if pos > mSecMove:
-                self.player.setPosition(pos - mSecMove)
-            else:
-                self.player.setPosition(0)
-
-        if event.key() == Qt.Key_Up:
-            pos = self.player.position()
-            self.player.setPosition(pos + mSecMove * 2)
-
-        if event.key() == Qt.Key_Down:
-            pos = self.player.position()
-            if pos > mSecMove * 2:
-                self.player.setPosition(pos - mSecMove * 2)
-            else:
-                self.player.setPosition(0)
-        if event.key() == Qt.Key_F:
-            self.viewFullScreen(not self.isFullScreen())
-
-        super(MPlayerVideoWidget, self).keyPressEvent(event)
-
-    def mouseDoubleClickEvent(self, event):
-        self.viewFullScreen(not self.isFullScreen())
-        super(MPlayerVideoWidget, self).mouseDoubleClickEvent(event)
-
-    def mousePressEvent(self, event):
-        self.changeFocus()
-        super(MPlayerVideoWidget, self).mousePressEvent(event)
-
-    def viewFullScreen(self, fullscreen):
-        self.setFullScreen(fullscreen)
-        if fullscreen:
-            self.setCursor(Qt.BlankCursor)
-        else:
-            self.setCursor(Qt.ArrowCursor)
-
-        self.changeFocus()
-
-    def changeFocus(self):
-        QTimer.singleShot(0, functools.partial(self.setFocus,
-                                               Qt.OtherFocusReason))
-
-
-class MediaPlayerTab(GalacteekTab):
+class MediaPlayerTab(GalacteekTab, KeyListener):
     statePlaying = QMediaPlayer.PlayingState
     statePaused = QMediaPlayer.PausedState
     stateStopped = QMediaPlayer.StoppedState
@@ -252,10 +189,22 @@ class MediaPlayerTab(GalacteekTab):
     def __init__(self, gWindow):
         super(MediaPlayerTab, self).__init__(gWindow, sticky=True)
 
-        self.playlistCurrent = None
+        self.psListen(keyLdObjects)
+
+        self.player = QMediaPlayer(self)
+        self.probe = QAudioProbe(self)
+        self.probe.audioBufferProbed.connect(self.onAudioBuffer)
         self.playlistIpfsPath = None
-        self.playlist = QMediaPlaylist()
-        self.model = ListModel(self.playlist)
+
+        self.model = LDPlayListModel(graph=BaseGraph())
+        self.model.playlistChanged.connect(self.onPlaylistChanged)
+
+        self.searchModel = LDPlayListsSearchModel(
+            graphUri='urn:ipg:multimedia'
+        )
+
+        # TODO: deprecate fully, we don't use the playlist API anymore
+        self.playlist = QLDMediaPlaylist(self.model, parent=self)
 
         self.pMenu = QMenu(self)
         self.playlistsMenu = QMenu(iPlaylistLoad(), self.pMenu)
@@ -267,10 +216,14 @@ class MediaPlayerTab(GalacteekTab):
                                          iPlaylistPinItems(), self,
                                          triggered=partialEnsure(
             self.onPinPlaylistMedia))
+        self.scanMetadataAction = QAction(getIcon('pin.png'),
+                                          'Scan metadata', self,
+                                          triggered=partialEnsure(
+            self.onScanMetadata))
         self.clearPlaylistAction = QAction(getIcon('clear-all.png'),
                                            iPlaylistClear(), self,
                                            triggered=self.onClearPlaylist)
-        self.savePlaylistAction.setEnabled(False)
+
         self.copyPathAction = QAction(getIconIpfsIce(),
                                       iCopyPlaylistPath(), self,
                                       triggered=self.onCopyPlaylistPath)
@@ -285,15 +238,16 @@ class MediaPlayerTab(GalacteekTab):
         self.pMenu.addSeparator()
         self.pMenu.addAction(self.pinPlaylistAction)
         self.pMenu.addSeparator()
+        self.pMenu.addAction(self.scanMetadataAction)
+        self.pMenu.addSeparator()
 
         self.pMenu.addAction(self.copyPathAction)
         self.pMenu.addSeparator()
-        self.pMenu.addAction(self.loadPathAction)
-        self.pMenu.addSeparator()
+        # self.pMenu.addAction(self.loadPathAction)
+        # self.pMenu.addSeparator()
 
-        self.pMenu.addMenu(self.playlistsMenu)
-
-        self.playlistsMenu.triggered.connect(self.onPlaylistsMenu)
+        # self.pMenu.addMenu(self.playlistsMenu)
+        # self.playlistsMenu.triggered.connect(self.onPlaylistsMenu)
 
         self.pListWidget = QWidget(self)
         self.uipList = ui_mediaplaylist.Ui_MediaPlaylist()
@@ -306,10 +260,14 @@ class MediaPlayerTab(GalacteekTab):
 
         self.uipList.clearButton.clicked.connect(self.onClearPlaylist)
 
-        self.uipList.nextButton.clicked.connect(self.onPlaylistNext)
-        self.uipList.previousButton.clicked.connect(self.onPlaylistPrevious)
+        self.uipList.nextButton.clicked.connect(self.playlistNextMedia)
+        self.uipList.previousButton.clicked.connect(self.playlistPreviousMedia)
         self.uipList.nextButton.setIcon(getIcon('go-next.png'))
         self.uipList.previousButton.setIcon(getIcon('go-previous.png'))
+
+        self.uipList.viewPlGraphButton.clicked.connect(
+            partialEnsure(self.onViewPlaylistGraph))
+        self.uipList.quickSaveButton.clicked.connect(self.onSavePlaylist)
 
         self.pListView = self.uipList.listView
         self.pListView.mousePressEvent = self.playlistMousePressEvent
@@ -317,10 +275,10 @@ class MediaPlayerTab(GalacteekTab):
         self.pListView.setResizeMode(QListView.Adjust)
         self.pListView.setMinimumWidth(self.width() / 2)
 
+        self.uipList.ldSearchView.setModel(self.searchModel)
+
         self.duration = None
         self.playerState = None
-        self.player = QMediaPlayer(self)
-        self.player.setPlaylist(self.playlist)
 
         self.videoWidget = MPlayerVideoWidget(self.player, self)
         self.useUpdates(True)
@@ -339,12 +297,21 @@ class MediaPlayerTab(GalacteekTab):
         self.player.durationChanged.connect(self.mediaDurationChanged)
         self.player.positionChanged.connect(self.mediaPositionChanged)
         self.player.videoAvailableChanged.connect(self.onVideoAvailable)
+        self.player.mediaStatusChanged.connect(self.onMediaStatusChanged)
+        # self.player.currentMediaChanged.connect(self.playerMediaChanged)
+        self.player.mediaChanged.connect(self.playerMediaChanged)
 
-        self.pListView.activated.connect(self.onListActivated)
-        self.playlist.currentIndexChanged.connect(self.playlistPositionChanged)
-        self.playlist.currentMediaChanged.connect(self.playlistMediaChanged)
-        self.playlist.mediaInserted.connect(self.playlistMediaInserted)
-        self.playlist.mediaRemoved.connect(self.playlistMediaRemoved)
+        # self.pListView.activated.connect(self.onListActivated)
+        self.pListView.doubleClicked.connect(self.onListActivated)
+
+        self.uipList.ldSearchView.doubleClicked.connect(
+            partialEnsure(self.onPlaylistDoubleClicked)
+        )
+
+        self.uipList.searchLine.textChanged.connect(
+            partialEnsure(self.onSearch))
+
+        self.model.modelReset.connect(self.refreshActions)
 
         self.togglePList = GLargeToolButton(parent=self)
         self.togglePList.setIcon(getIcon('playlist.png'))
@@ -411,13 +378,31 @@ class MediaPlayerTab(GalacteekTab):
         self.update()
         self.videoWidget.changeFocus()
 
+        self.model.newPlaylist()
+
+    @property
+    def pronto(self):
+        return services.getByDotName('ld.pronto')
+
+    @property
+    def graphPlaylists(self):
+        return self.pronto.graphByUri('urn:ipg:multimedia:playlists')
+
+    @property
+    def currentIndex(self):
+        return self.pListView.currentIndex()
+
+    @property
+    def selModel(self):
+        return self.pListView.selectionModel()
+
     @property
     def clipboardButton(self):
         return self.uipList.queueFromClipboard
 
     @property
     def mediaCount(self):
-        return self.playlist.mediaCount()
+        return self.model.rowCount()
 
     @property
     def playlistEmpty(self):
@@ -435,13 +420,22 @@ class MediaPlayerTab(GalacteekTab):
     def isStopped(self):
         return self.playerState == self.stateStopped
 
+    @property
+    def plGraphIsStandalone(self):
+        return self.model.graph.identifier != self.graphPlaylists.identifier
+
     def useUpdates(self, updates=True):
         # Enable widget updates or not on the video widget
         self.videoWidget.setUpdatesEnabled(updates)
 
     def update(self):
         self.refreshActions()
-        self.app.task(self.updatePlaylistsMenu)
+        # self.app.task(self.updatePlaylistsMenu)
+
+    def onPlaylistChanged(self, uri, playlistName: str):
+        if playlistName:
+            self.uipList.labelPlName.setText(str(playlistName))
+            self.uipList.labelPlName.setToolTip(str(uri))
 
     def onFullScreen(self):
         self.videoWidget.viewFullScreen(True)
@@ -461,7 +455,7 @@ class MediaPlayerTab(GalacteekTab):
             self.app.setClipboardText(self.playlistIpfsPath)
 
     def onPinMediaClicked(self):
-        currentMedia = self.playlist.currentMedia()
+        currentMedia = self.player.currentMedia()
         if currentMedia.isNull():
             return messageBox(iNoMediaInPlaylist())
 
@@ -502,7 +496,7 @@ class MediaPlayerTab(GalacteekTab):
         if not idx.isValid():
             return
 
-        path = self.model.data(idx)
+        path = self.model.data(idx, role=MediaIpfsPathRole)
         if path:
             selModel.reset()
             selModel.select(
@@ -513,11 +507,14 @@ class MediaPlayerTab(GalacteekTab):
             menu.addAction(
                 getIcon('clear-all.png'),
                 iPlaylistRemoveMedia(), functools.partial(
-                    self.onRemoveMediaFromIndex, idx))
+                    self.onRemoveMediaFromIndex, idx, IPFSPath(path)))
             menu.exec_(event.globalPos())
 
-    def onRemoveMediaFromIndex(self, idx):
-        self.playlist.removeMedia(idx.row())
+    def onRemoveMediaFromIndex(self, idx, iPath: IPFSPath):
+        r = self.model.rsc.findByPath(iPath)
+        if r:
+            self.model.rsc.removeTrack(r)
+            ensure(self.model.update())
 
     def playlistMousePressEvent(self, event):
         if event.button() == Qt.RightButton:
@@ -529,25 +526,58 @@ class MediaPlayerTab(GalacteekTab):
 
             QListView.mousePressEvent(self.pListView, event)
 
+    async def onPlaylistDoubleClicked(self, index, *args):
+        # When a playlist search result is double-clicked
+
+        uri = self.searchModel.data(index, Qt.UserRole)
+
+        if uri:
+            self.uipList.searchLine.clear()
+            await self.ldPlaylistOpen(URIRef(uri), self.graphPlaylists)
+
+            self.stackViewPlaylist()
+
     def onPlaylistsMenu(self, action):
         entry = action.data()
         if entry:
             ensure(self.loadPlaylistFromPath(joinIpfs(entry['Hash'])))
 
     def onSavePlaylist(self):
-        paths = self.playlistGetPaths()
-
-        currentPl = self.playlistCurrent
-        if currentPl:
-            listName = currentPl.name
-        else:
-            listName = inputText(title=iPlaylistName(), label=iPlaylistName())
+        listName = inputTextCustom(
+            title=iPlaylistName(),
+            label=iPlaylistName(),
+            text=str(self.model.rsc.name)
+        )
 
         if not listName:
             return
 
-        obj = JSONPlaylistV1(listName=listName, itemPaths=paths)
-        ensure(self.savePlaylist(obj, listName))
+        if self.model.rsc:
+            ensure(self.saveLdPlaylist(self.model.rsc, listName))
+
+    @ipfsOp
+    async def saveLdPlaylist(self, ipfsop, rsc, name):
+        g = self.model.graph
+
+        g.replace(
+            self.model.rsc.identifier,
+            ipsTermUri('name'),
+            Literal(name)
+        )
+
+        if g.identifier != self.graphPlaylists.identifier:
+            await self.graphPlaylists.guardian.mergeReplace(
+                g,
+                self.graphPlaylists
+            )
+        else:
+            # Playlist is in a pronto graph, no need to do anything
+            pass
+
+        self.update()
+
+        self.uipList.quickSaveButton.setEnabled(False)
+        self.savePlaylistAction.setEnabled(False)
 
     @ipfsOp
     async def savePlaylist(self, ipfsop, obj, name):
@@ -579,17 +609,39 @@ class MediaPlayerTab(GalacteekTab):
         try:
             # Assume v1 format for now, when the format evolves we'll just
             # use json validation
-            pList = JSONPlaylistV1(data=obj)
+            # pList = JSONPlaylistV1(data=obj)
             self.clearPlaylist()
 
-            for item in pList.items():
-                self.queueFromPath(item['path'])
+            # for item in pList.items():
+            #     self.queueFromPath(item['path'])
 
             self.playlistIpfsPath = path
             self.copyPathAction.setEnabled(True)
-            self.playlistCurrent = pList
+            # self.playlistCurrent = pList
         except Exception:
             return messageBox(iCannotLoadPlaylist())
+
+    async def onScanMetadata(self, *args):
+        # Scan metadata for each item
+        # Since metadata reading is asynchronous we call asyncio.sleep
+
+        self.pListView.setEnabled(False)
+        selModel = self.pListView.selectionModel()
+
+        for row in range(0, self.mediaCount):
+            idx = self.model.createIndex(row, 0)
+            media = self.model.mediaForIndex(idx)
+            if not media:
+                continue
+
+            selModel.clearSelection()
+            selModel.select(idx, QItemSelectionModel.Select)
+
+            self.player.setMedia(media)
+            await asyncio.sleep(1)
+
+        self.pListView.setEnabled(True)
+        await self.model.update()
 
     @ipfsOp
     async def onPinPlaylistMedia(self, ipfsop, *args):
@@ -603,23 +655,26 @@ class MediaPlayerTab(GalacteekTab):
     def refreshActions(self):
         self.pinPlaylistAction.setEnabled(not self.playlistEmpty)
         self.savePlaylistAction.setEnabled(not self.playlistEmpty)
+        self.scanMetadataAction.setEnabled(not self.playlistEmpty)
 
-    def playlistMediaInserted(self, start, end):
-        self.refreshActions()
-
-    def playlistMediaRemoved(self, start, end):
-        self.refreshActions()
-
-        self.model.modelReset.emit()
+        self.uipList.quickSaveButton.setEnabled(not self.playlistEmpty)
 
     def playlistGetPaths(self):
         return [u.path() for u in self.playlistGetUrls()]
 
     def playlistGetUrls(self):
         urls = []
-        for idx in range(0, self.mediaCount):
-            media = self.playlist.media(idx)
-            urls.append(media.canonicalUrl())
+        for row in range(0, self.mediaCount):
+            media = self.model.mediaForIndex(
+                self.model.createIndex(
+                    row,
+                    self.currentIndex.column()
+                )
+            )
+
+            if media:
+                urls.append(media.canonicalUrl())
+
         return urls
 
     def onClipItemChange(self, item):
@@ -659,16 +714,35 @@ class MediaPlayerTab(GalacteekTab):
                     str(self.clipboardMediaItem.path)):
                 self.queueFromPath(objPath)
         else:
-            self.playFromPath(self.clipboardMediaItem.path)
+            self.queueFromPath(self.clipboardMediaItem.path)
 
     def onSliderReleased(self):
         pass
 
-    def onPlaylistNext(self):
-        self.playlist.next()
+    def playlistViewCurrentChanged(self, current, prev):
+        media = self.model.mediaForIndex(self.currentIndex)
 
-    def onPlaylistPrevious(self):
-        self.playlist.previous()
+        if media:
+            self.player.setMedia(media)
+            self.player.play()
+
+    def playlistNextMedia(self):
+        row = self.currentIndex.row() + 1
+
+        if row < self.mediaCount:
+            self.pListView.setCurrentIndex(self.model.createIndex(
+                row,
+                self.currentIndex.column()
+            ))
+
+    def playlistPreviousMedia(self):
+        row = self.currentIndex.row() - 1
+
+        if row >= 0:
+            self.pListView.setCurrentIndex(self.model.createIndex(
+                row,
+                self.currentIndex.column()
+            ))
 
     def onPlayClicked(self):
         self.player.play()
@@ -718,6 +792,10 @@ class MediaPlayerTab(GalacteekTab):
         self.playerState = state
         self.updateControls(state)
 
+    def onMediaStatusChanged(self, status):
+        if status == QMediaPlayer.EndOfMedia:
+            self.playlistNextMedia()
+
     def updateControls(self, state):
         if self.isStopped:
             self.stopButton.setEnabled(False)
@@ -739,16 +817,58 @@ class MediaPlayerTab(GalacteekTab):
 
     def onListActivated(self, index):
         if index.isValid():
-            self.playlist.setCurrentIndex(index.row())
-            self.player.play()
+            media = self.model.mediaForIndex(index)
+
+            if media:
+                self.player.setMedia(media)
+                self.player.play()
+
+    def durationAs8601(self, td: timedelta):
+        s = td.seconds
+        ms = td.microseconds
+
+        if ms != 0:
+            ms /= 1000000
+            ms = round(ms, 3)
+            s += ms
+
+        return 'P{}DT{}S'.format(td.days, s)
 
     def onMetaData(self):
-        # Unfinished
-        if self.player.isMetaDataAvailable():
-            availableKeys = self.player.availableMetaData()
+        # Update metadata in the RDF resource corresponding
+        # to the current media played
 
-            for key in availableKeys:
-                self.player.metaData(key)
+        if not self.player.isMetaDataAvailable():
+            return
+
+        try:
+            media = self.player.media()
+            if media.isNull() or not self.model.rsc:
+                return
+
+            duration = self.player.duration()
+            d8601 = self.durationAs8601(
+                timedelta(milliseconds=duration)) if duration else None
+
+            p = IPFSPath(media.canonicalUrl().toString())
+            if not p.valid:
+                return
+
+            track = self.model.rsc.findByPath(p)
+            if not track:
+                return
+
+            for key in self.player.availableMetaData():
+                val = self.player.metaData(key)
+                if not val:
+                    continue
+
+                track.updateMetadata(key, val)
+
+            if d8601:
+                track.updateMetadata('Duration', d8601)
+        except Exception as err:
+            log.debug(f'Media metadata update error: {err}')
 
     def playFromUrl(self, url, mediaName=None):
         if self.isPlaying:
@@ -768,14 +888,34 @@ class MediaPlayerTab(GalacteekTab):
         self.player.play()
 
     def playFromPath(self, path, mediaName=None):
-        mediaUrl = self.app.subUrl(path)
-        self.playFromUrl(mediaUrl)
+        # mediaUrl = self.app.subUrl(path)
+        # self.playFromUrl(mediaUrl)
 
-    def queueFromPath(self, path, playLast=False, mediaName=None):
-        mediaUrl = self.app.subUrl(path)
-        self.playlist.addMedia(QMediaContent(mediaUrl))
+        self.queueFromPath(path, play=True)
 
-        if playLast:
+    def queueFromPath(self, path, playLast=False, mediaName=None,
+                      play=False):
+        items = [IPFSPath(p) for p in path] if isinstance(path, list) else \
+            [IPFSPath(path, autoCidConv=True)]
+
+        for p in items:
+            if not p.valid:
+                continue
+
+            rsc = MusicRecordingResource(self.model.graph, p.ipfsUriRef)
+            rsc.add(RDF.type, ipsContextUri('MusicRecording'))
+            rsc.add(ipsTermUri('url'), Literal(p.ipfsUrl))
+            rsc.add(ipsTermUri('dateCreated'), Literal(utcDatetimeIso()))
+
+            if p.basename:
+                # ??
+                rsc.add(ipsTermUri('name'), Literal(p.basename))
+
+            self.model.rsc.addTrack(rsc)
+
+        ensure(self.model.queryTrack())
+
+        if playLast or play:
             count = self.playlist.mediaCount()
 
             if count > 0:
@@ -784,9 +924,10 @@ class MediaPlayerTab(GalacteekTab):
                 self.player.play()
 
     def clearPlaylist(self):
+        self.model.newPlaylist()
+
         self.playlist.clear()
         self.pListView.reset()
-        self.playlistCurrent = None
         self.copyPathAction.setEnabled(False)
 
     def playlistPositionChanged(self, position):
@@ -795,27 +936,13 @@ class MediaPlayerTab(GalacteekTab):
     def deselectPlaylistItems(self):
         self.pListView.selectionModel().reset()
 
-    def playlistMediaChanged(self, media):
-        media = self.playlist.currentMedia()
-        if media.isNull():
-            return
-
+    def playerMediaChanged(self, media):
         url = media.canonicalUrl()
         iPath = IPFSPath(url.toString())
 
         self.pinButton.setEnabled(iPath.valid)
         if iPath.valid:
             self.pinButton.changeObject(iPath)
-
-        selModel = self.pListView.selectionModel()
-
-        self.deselectPlaylistItems()
-
-        self.model.modelReset.emit()
-        idx = self.model.index(self.playlist.currentIndex(), 0)
-
-        if idx.isValid():
-            selModel.select(idx, QItemSelectionModel.Select)
 
     def onVideoAvailable(self, available):
         if available:
@@ -850,80 +977,85 @@ class MediaPlayerTab(GalacteekTab):
     def playerAvailable(self):
         return mediaPlayerAvailable(player=self.player)
 
+    async def event_g_ld_objects(self, key, message):
+        iPath, sol, graph = message
 
-class ListModel(QAbstractItemModel):
-    def __init__(self, playlist, parent=None):
-        super(ListModel, self).__init__(parent)
-        self.playlist = playlist
-        self.playlist.mediaAboutToBeInserted.connect(
-            self.beginInsertItems)
-        self.playlist.mediaInserted.connect(self.endInsertItems)
-        self.playlist.mediaChanged.connect(self.changeItems)
+        for subj, otype in sol:
+            if otype == ipsContextUri('MultimediaPlaylist'):
+                playlists = list(graph.subject_predicates(
+                    ipsContextUri('MultimediaPlaylist'))
+                )
 
-    def rowCount(self, parent=QModelIndex()):
-        return self.playlist.mediaCount()
+                if len(playlists) == 0:
+                    return
 
-    def columnCount(self, parent=QModelIndex()):
-        return 1 if not parent.isValid() else 0
+                plsuri, _o = playlists.pop()
 
-    def index(self, row, column, parent=QModelIndex()):
-        return self.createIndex(row, column)
+                await self.ldPlaylistOpen(plsuri, graph)
 
-    def parent(self, child):
-        return QModelIndex()
-
-    def beginInsertItems(self, start, end):
-        self.beginInsertRows(QModelIndex(), start, end)
-
-    def endInsertItems(self):
-        self.endInsertRows()
-
-    def changeItems(self, start, end):
-        self.dataChanged.emit(self.index(start, 0), self.index(end, 1))
-
-    def basenameForIndex(self, index):
-        if index.column() == 0:
-            media = self.playlist.media(index.row())
-            if media is None:
-                return iUnknown()
-            location = media.canonicalUrl()
-            path = location.path()
-            basename = posixpath.basename(path)
-
-            if basename:
-                return basename
-            else:
-                return path
-
-    def data(self, index, role=Qt.DisplayRole):
-        if not index.isValid():
+    async def ldPlaylistOpen(self, plsuri, graph):
+        pls = MultimediaPlaylistResource(graph, plsuri)
+        if len(pls.track) == 0:
             return
 
-        if role == Qt.DisplayRole:
-            if index.column() == 0:
-                media = self.playlist.media(index.row())
-                if media is None:
-                    return iUnknown()
-                location = media.canonicalUrl()
-                path = location.path()
-                basename = posixpath.basename(path)
-                if basename:
-                    return basename
-                else:
-                    return path
-            return self.m_data[index]
-        elif role == Qt.ToolTipRole:
-            return self.basenameForIndex(index)
-        elif role == Qt.FontRole and 0:
-            curPlIndex = self.playlist.currentIndex()
+        self.clearPlaylist()
 
-            font = QFont('Times', pointSize=12)
+        self.model.setGraph(graph)
+        self.model.attach(pls)
 
-            if curPlIndex == index.row():
-                font = QFont('Times', pointSize=14)
-                font.setBold(True)
-                return font
+        for trsc in pls.track:
+            t = trsc.value(RDF.type)
+
+            if t.identifier == ipsContextUri('MusicRecording'):
+                record = MusicRecordingResource(graph, trsc.identifier)
+
+                if record.ipfsPath.valid:
+                    # self.queueFromPath(record.ipfsPath.objPath)
+                    pass
+            elif t.identifier == ipsContextUri('VideoObject'):
+                vid = VideoObjectResource(graph, trsc.identifier)
+
+                if vid.ipfsPath.valid:
+                    # self.queueFromPath(vid.ipfsPath.objPath)
+                    pass
             else:
-                return QFont('Times', pointSize=12)
+                continue
 
-        return None
+        await self.model.update()
+
+        self.togglePList.setChecked(True)
+        self.app.mainWindow.wspaceMultimedia.wsSwitch()
+
+    async def onSearch(self, text, *args):
+        if text != '':
+            await self.searchModel.queryPlaylists(text)
+
+            self.stackViewSearches()
+        else:
+            self.stackViewPlaylist()
+
+    async def onViewPlaylistGraph(self, *args):
+        try:
+            ttl = await self.model.graph.ttlize()
+            dlg = TextBrowserDialog()
+            dlg.setPlain(ttl.decode())
+
+            await runDialogAsync(dlg)
+        except Exception as err:
+            print(str(err))
+            pass
+
+    def stackViewPlaylist(self):
+        self.uipList.stack.setCurrentIndex(0)
+
+    def stackViewSearches(self):
+        self.uipList.stack.setCurrentIndex(1)
+
+    def onAudioBuffer(self, buffer):
+        # TODO: visualizer
+
+        if buffer.format().channelCount() != 2:
+            return
+
+        if buffer.format().sampleType() == QAudioFormat.SignedInt:
+            pass

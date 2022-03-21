@@ -256,3 +256,8 @@ def mergeDicts(dict1, dict2):
                 dict2[key] = val
 
     return dict2
+
+
+def rLimitGetMaxFiles():
+    import resource
+    return resource.getrlimit(resource.RLIMIT_NOFILE)

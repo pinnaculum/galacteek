@@ -6,9 +6,10 @@
   "description": "Browser for the distributed web",
   "changelog": "file://CHANGELOG.md",
   "version": "0.5.4",
-  "healthCheckPath": "/",
+  "healthCheckPath": "/ipfs/bafybeiahiixfpzirbz6rjjd4fkgvw7kksaigyd3fwnomrw5r3eo56ls6xm",
   "httpPort": 8080,
   "manifestVersion": 2,
+  "memoryLimit": 524288000,
   "website": "https://galacteek.gitlab.io",
   "icon": "file://share/icons/galacteek-incandescent-128.png",
   "tags": [

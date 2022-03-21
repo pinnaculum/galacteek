@@ -15,3 +15,5 @@ tUriOntoloChainDateSynced = termUri('ontoloChainDateSynced')  # noqa
 tUriOntoloChainVcProcessed = termUri('ontoloChainVcProcessed')  # noqa
 
 tUriOntoRecordOutputGraph = termUri('OntoloChainRecord#outputGraph')
+
+tUriUsesLibrarianId = termUri('usesLibrarianId')

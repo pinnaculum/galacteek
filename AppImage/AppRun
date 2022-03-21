@@ -4,6 +4,14 @@ HERE=$(dirname $(readlink -f "${0}"))
 
 export GALACTEEK_COMMIT_SHA="@@COMMIT_SHA@@"
 
+# conda's xkbcommon package hardcodes XKB_CONFIG_ROOT it seems :|
+# Set XKB_CONFIG_ROOT for when we run inside wayland
+# https://gitlab.com/galacteek/galacteek/-/issues/3
+export XKB_CONFIG_ROOT=/usr/share/X11/xkb
+
+# Custom magic.mgc db
+export GALACTEEK_MAGIC_DBPATH=/usr/share/file/magic-galacteek.mgc
+
 export FONTCONFIG_FILE=$HERE/usr/etc/fonts/fonts.conf
 export FONTCONFIG_PATH=$HERE/usr/etc/fonts/
 

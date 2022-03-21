@@ -1459,8 +1459,15 @@ class FileManager(QWidget):
 
     @ipfsOp
     async def mediaPlayerQueueDir(self, ipfsop, ipfsPath):
+        objList = []
+
         async for objPath, parent in ipfsop.walk(str(ipfsPath)):
-            await self.mediaPlayerQueueFile(objPath)
+            mType, stat = await self.app.rscAnalyzer(objPath)
+            if mType and (mType.isAudio or mType.isVideo):
+                objList.append(objPath)
+
+        if objList:
+            self.app.mainWindow.mediaPlayerQueue(objList)
 
     @ipfsOp
     async def mediaPlayerQueueFile(self, ipfsop, objPath):

@@ -4,16 +4,20 @@ from PyQt5.QtCore import QAbstractListModel
 from PyQt5.QtCore import QVariant
 
 from galacteek import log
+from galacteek.core import runningApp
 from galacteek import services
 from galacteek.dweb.channels import GAsyncObject
 
 
 class SparQLListModel(QAbstractListModel,
                       GAsyncObject):
-    def __init__(self, graphUri='urn:ipg:i'):
+    def __init__(self, graphUri='urn:ipg:i', graph=None):
         super().__init__()
 
+        self.app = runningApp()
+
         self.graphUri = graphUri
+        self._graph = graph
         self._results = []
         self._qprepared = {}
 
@@ -23,7 +27,14 @@ class SparQLListModel(QAbstractListModel,
 
     @property
     def graph(self):
-        return self.rdf.graphByUri(self.graphUri)
+        if self._graph is not None:
+            return self._graph
+        elif self.graphUri:
+            return self.rdf.graphByUri(self.graphUri)
+
+    def setGraph(self, graph):
+        self._graph = graph
+        self.clearModel()
 
     def clearModel(self):
         self.beginResetModel()
@@ -46,9 +57,13 @@ class SparQLListModel(QAbstractListModel,
             self._results = results
             self.endResetModel()
 
-    async def graphQueryAsync(self, query):
+    async def graphQueryAsync(self, query, bindings=None):
         try:
-            results = list(await self.graph.queryAsync(query))
+            results = list(
+                await self.graph.queryAsync(
+                    query,
+                    initBindings=bindings
+                ))
         except Exception as err:
             log.debug(f'Graph query error: {err}')
             return

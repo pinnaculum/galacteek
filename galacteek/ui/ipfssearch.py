@@ -25,6 +25,9 @@ from PyQt5.QtGui import QSyntaxHighlighter
 from PyQt5.QtGui import QTextCharFormat
 from PyQt5.QtGui import QFont
 
+from galacteek import ensure
+from galacteek import log
+from galacteek import services
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import stripIpfs
 from galacteek.ipfs.cidhelpers import IPFSPath
@@ -38,9 +41,8 @@ from galacteek.dweb.render import renderTemplate
 from galacteek.core import uid4
 from galacteek.core import runningApp
 from galacteek.core import utcDatetimeIso
-from galacteek import ensure
-from galacteek import log
-from galacteek import services
+from galacteek.ld.rdf.terms import tUriUsesLibrarianId
+from galacteek.ld.iri import p2pLibrarianGenUrn
 
 from .colors import *
 from .helpers import *
@@ -475,10 +477,13 @@ class IPFSSearchHandler(QObject):
             stat
         )
 
-    async def graphHashmark(self, iPath: IPFSPath,
-                            hit,
-                            mType,
-                            stat):
+    @ipfsOp
+    async def graphHashmark(self,
+                            ipfsop,
+                            iPath: IPFSPath,
+                            hit: dict,
+                            mType: str,
+                            stat: dict):
         """
         Store the hashmark in the hashmarks RDF graph
         """
@@ -491,12 +496,35 @@ class IPFSSearchHandler(QObject):
                 predicate=RDF.type
             )
 
+        def getLibrarianId(g, nodeId):
+            val = g.value(
+                subject=nodeId,
+                predicate=tUriUsesLibrarianId
+            )
+
+            if not val:
+                lid = p2pLibrarianGenUrn(str(nodeId))
+
+                g.add((
+                    nodeId,
+                    tUriUsesLibrarianId,
+                    lid
+                ))
+
+                return lid
+            else:
+                return val
+
         val = await self.hashmarksGraph.rexec(
             findHashmark, iPath.ipfsUriRef)
 
         if val is not None:
             # Already graphed
             return
+
+        nodeIdUriRef = await ipfsop.nodeIdUriRef()
+        librarianId = await self.hashmarksGraph.rexec(
+            getLibrarianId, nodeIdUriRef)
 
         title = hit.get('title')
         descr = hit.get('description')
@@ -528,6 +556,7 @@ class IPFSSearchHandler(QObject):
             'mimeType': str(mimeObj),
             'mimeCategory': mimeCat,
             'keywordMatch': kwm,
+            'librarianId': str(librarianId),
             'dateCreated': utcDatetimeIso(),
             'dateFirstSeen': hit.get('first-seen'),
             'dateLastSeen': hit.get('last-seen')

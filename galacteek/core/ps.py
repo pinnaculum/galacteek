@@ -69,6 +69,8 @@ keySmartContracts = makeKey('g', 'smartcontracts', '*')
 
 keyIpidServExposure = makeKey('g', 'ipid', 'services', 'exposure')
 
+keyLdObjects = makeKey('g', 'ld', 'objects')
+
 # The answer to everything
 key42 = makeKey('g', '42')
 
