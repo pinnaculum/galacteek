@@ -13,15 +13,15 @@
         title="Search engine: ${ engine }"/>
 
       <a class="hitlink" style="margin-right: 15px" href="${hit.url}" onclick='event.preventDefault(); window.openIpfs("${hit.path}")' >${hit.title}</a>
-      <a href="#" onclick='event.preventDefault(); window.hashmark("${hit.path}")'><img src="qrc:///share/icons/hashmarks.png" width="32" height="auto"/></a>
-      <a href="#" onclick='event.preventDefault(); window.ipfssearch.pinObject("${hit.path }")'><img src="qrc:///share/icons/pin.png" width="32" height="auto"/></a>
-      <a href="#" onclick='event.preventDefault(); window.ipfssearch.clipboardInput("${hit.path}")'><img src="qrc:///share/icons/clipboard.png" width="32" height="auto"/></a>
+      <a href="#" title="Hashmaek" onclick='event.preventDefault(); window.hashmark("${hit.path}")'><img src="qrc:///share/icons/hashmarks.png" width="32" height="auto"/></a>
+      <a href="#" title="Pin object" onclick='event.preventDefault(); window.ipfssearch.pinObject("${hit.path }")'><img src="qrc:///share/icons/pin.png" width="32" height="auto"/></a>
+      <a href="#" title="Copy address to clipboard" onclick='event.preventDefault(); window.ipfssearch.clipboardInput("${hit.path}")'><img src="qrc:///share/icons/clipboard.png" width="32" height="auto"/></a>
       `;
 
         if (hit['mimetype'].startsWith('audio') || hit['mimetype'].startsWith('video')) {
           markup += `
-        <a href="#" onclick='event.preventDefault(); window.ipfssearch.mplayerQueue("${hit.path}")'>
-        <img src="qrc:/share/icons/mediaplayer.png" width="16" />
+        <a href="#" title="Open in mediaplayer" onclick='event.preventDefault(); window.ipfssearch.mplayerQueue("${hit.path}")'>
+        <img src="qrc:/share/icons/multimedia/mplayer1.png" width="32" height="auto" />
         </a>`;
         }
 

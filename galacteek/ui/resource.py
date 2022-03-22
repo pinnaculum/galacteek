@@ -293,8 +293,8 @@ class IPFSResourceOpener(QObject):
         if mimeType.isVideo or mimeType.isAudio:
             tab = self.app.mainWindow.getMediaPlayer()
             if tab:
-                # tab.playFromPath(rscPath)
-                tab.queueFromPath(rscPath)
+                await tab.queueFromPath(rscPath)
+
             return
 
         if mimeType == 'application/pdf' and 0:  # not usable yet

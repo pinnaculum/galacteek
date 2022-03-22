@@ -1229,8 +1229,9 @@ class MainWindow(QMainWindow):
         self.stack.addWorkspace(self.wspaceDapps)
         self.stack.addWorkspace(
             self.wspaceEarth, section='planets')
+        self.stack.addWorkspace(self.wspaceSearch)
         self.stack.addWorkspace(self.wspaceFs)
-        self.stack.addWorkspace(self.wspaceMessenger)
+
         self.stack.addWorkspace(
             self.wspaceMars, section='planets', dormant=True)
         self.stack.addWorkspace(
@@ -1242,10 +1243,12 @@ class MainWindow(QMainWindow):
         self.stack.addWorkspace(
             self.wspacePluto, section='planets', dormant=True)
 
-        self.stack.addWorkspace(self.wspacePeers)
-        self.stack.addWorkspace(self.wspaceSearch)
-        self.stack.addWorkspace(self.wspaceEdit)
         self.stack.addWorkspace(self.wspaceMultimedia)
+
+        self.stack.addWorkspace(self.wspacePeers)
+        self.stack.addWorkspace(self.wspaceEdit)
+        self.stack.addWorkspace(self.wspaceMessenger)
+
         self.stack.addWorkspace(self.wspaceMisc)
 
         self.stack.wsAddGlobalAction(self.browseAction, default=True)
@@ -1617,12 +1620,13 @@ class MainWindow(QMainWindow):
     def mediaPlayerQueue(self, path, playLast=False, mediaName=None):
         tab = self.getMediaPlayer()
         if tab:
-            tab.queueFromPath(path, mediaName=mediaName, playLast=playLast)
+            ensure(tab.queueFromPath(path, mediaName=mediaName,
+                                     playLast=playLast))
 
     def mediaPlayerPlay(self, path, mediaName=None):
         tab = self.getMediaPlayer()
         if tab:
-            tab.playFromPath(path, mediaName=mediaName)
+            ensure(tab.playFromPath(path, mediaName=mediaName))
 
     def onTabChanged(self, idx):
         tab = self.tabWidget.widget(idx)

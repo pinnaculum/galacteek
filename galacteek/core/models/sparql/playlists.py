@@ -8,8 +8,6 @@ from PyQt5.QtCore import QVariant
 from PyQt5.QtCore import pyqtSignal
 
 from galacteek.core import uid4
-from galacteek.core import utcDatetime
-from galacteek.core import utcDatetimeIso
 from galacteek.core.models.sparql import SparQLListModel
 from galacteek.ipfs.cidhelpers import IPFSPath
 
@@ -18,6 +16,9 @@ from galacteek.ld import ipsTermUri
 from galacteek.ld.rdf import BaseGraph
 from galacteek.ld.iri import superUrn
 from galacteek.ld.rdf.resources.multimedia import MultimediaPlaylistResource
+from galacteek.ld.rdf.util import literalDtNow
+
+from galacteek.ui.helpers import getIcon
 
 
 MediaIpfsPathRole = Qt.UserRole + 1
@@ -27,7 +28,7 @@ MediaGatewayedUrlRole = Qt.UserRole + 3
 
 class LDPlayListModel(SparQLListModel):
     """
-    Playlist model based on RDF
+    Playlist model based on RDF and SparQL
     """
 
     playlistChanged = pyqtSignal(URIRef, str)
@@ -38,9 +39,12 @@ class LDPlayListModel(SparQLListModel):
 
         self.newPlaylist()
 
+    def emitPlChanged(self):
+        self.playlistChanged.emit(self.uri, self.rsc.name)
+
     def attach(self, rsc: MultimediaPlaylistResource):
         self.rsc = rsc
-        self.playlistChanged.emit(self.uri, str(self.rsc.name))
+        self.emitPlChanged()
 
     def newPlaylist(self):
         self.clearModel()
@@ -48,9 +52,8 @@ class LDPlayListModel(SparQLListModel):
         try:
             # iService = services.getByDotName('dweb.schemes.i')
             # uri = iService.iriGenObject('MultimediaPlaylist')
-
-            now = utcDatetime()
-            name = now.strftime('%d-%m-%y (%H:%M)')
+            # now = utcDatetime()
+            # name = now.strftime('%d-%m-%y (%H:%M)')
 
             self.setGraph(BaseGraph())
 
@@ -58,15 +61,14 @@ class LDPlayListModel(SparQLListModel):
 
             self.rsc = MultimediaPlaylistResource(self.graph, self.uri)
             self.rsc.add(RDF.type, ipsContextUri('MultimediaPlaylist'))
-            self.rsc.add(ipsTermUri('name'),
-                         Literal(f'Unknown playlist: {name}'))
             self.rsc.add(ipsTermUri('numTracks'), Literal(0))
             self.rsc.add(ipsTermUri('dateCreated'),
-                         Literal(utcDatetimeIso()))
+                         literalDtNow())
         except Exception:
             pass
         else:
-            self.playlistChanged.emit(self.uri, str(self.rsc.name))
+            self.emitPlChanged()
+            # self.playlistChanged.emit(self.uri, self.rsc.name)
 
     def mediaForIndex(self, idx):
         try:
@@ -89,6 +91,11 @@ class LDPlayListModel(SparQLListModel):
                 return str(item['name'])
             elif role == Qt.ToolTipRole:
                 return str(item['url'])
+            elif role == Qt.DecorationRole:
+                if item['ttype'] == ipsContextUri('MusicRecording'):
+                    return getIcon('multimedia/song.png')
+                elif item['ttype'] == ipsContextUri('VideoObject'):
+                    return getIcon('multimedia/video.png')
             elif role == MediaIpfsPathRole:
                 p = IPFSPath(str(item['url']))
                 if p.valid:
@@ -105,11 +112,12 @@ class LDPlayListModel(SparQLListModel):
         await self.graphQueryAsync('''
           PREFIX gs: <ips://galacteek.ld/>
 
-          SELECT ?name ?url ?dateCreated
+          SELECT ?ttype ?name ?url ?dateCreated
           WHERE {
             ?uri a gs:MultimediaPlaylist .
             ?uri gs:track ?t .
             OPTIONAL { ?t gs:dateCreated ?dateCreated . } .
+            ?t a ?ttype .
             ?t gs:name ?name .
             ?t gs:url ?url .
 
@@ -129,6 +137,8 @@ class LDPlayListsSearchModel(SparQLListModel):
                 return str(item['name'])
             elif role == Qt.UserRole or role == Qt.ToolTipRole:
                 return str(item['pluri'])
+            elif role == Qt.DecorationRole:
+                return getIcon('multimedia/playlist.png')
         except (KeyError, IndexError):
             return QVariant(None)
         except Exception:

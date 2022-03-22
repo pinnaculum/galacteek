@@ -1260,7 +1260,7 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="129"/>
+        <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="131"/>
         <source>Search playlists here ...</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1270,13 +1270,28 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="169"/>
-        <source>...</source>
+        <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="85"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;View playlist graph (TTL)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="85"/>
-        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;View playlist graph (TTL)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="138"/>
+        <source>View ALL playlists</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="169"/>
+        <source>Name:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="188"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Scan metadata of media files&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="191"/>
+        <source>...</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

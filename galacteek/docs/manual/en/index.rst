@@ -29,6 +29,7 @@ You can easily access this manual by typing
     File sharing <filesharing>
     Explorer <unixfs>
     Messenger <messenger>
+    Mediaplayer <mediaplayer>
     Browsing <browsing>
     Markdown <markdown> 
     Editing <editing> 

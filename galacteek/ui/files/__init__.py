@@ -1349,12 +1349,12 @@ class FileManager(QWidget):
         # Media player actions
         if nameItem.isFile():
             actionsMenu.addAction(
-                getIcon('mediaplayer.png'),
+                getIcon('multimedia/mplayer1.png'),
                 iMediaPlayerQueue(), partialEnsure(
                     self.mediaPlayerQueueFile, str(ipfsPath)))
         elif nameItem.isDir():
             actionsMenu.addAction(
-                getIcon('mediaplayer.png'),
+                getIcon('multimedia/mplayer1.png'),
                 iMediaPlayerQueue(), partialEnsure(
                     self.mediaPlayerQueueDir, str(ipfsPath)))
 
@@ -1462,21 +1462,14 @@ class FileManager(QWidget):
         objList = []
 
         async for objPath, parent in ipfsop.walk(str(ipfsPath)):
-            mType, stat = await self.app.rscAnalyzer(objPath)
-            if mType and (mType.isAudio or mType.isVideo):
-                objList.append(objPath)
+            objList.append(objPath)
 
         if objList:
             self.app.mainWindow.mediaPlayerQueue(objList)
 
     @ipfsOp
     async def mediaPlayerQueueFile(self, ipfsop, objPath):
-        mType, stat = await self.app.rscAnalyzer(objPath)
-        if not mType:
-            return
-
-        if mType.isAudio or mType.isVideo:
-            self.app.mainWindow.mediaPlayerQueue(objPath)
+        self.app.mainWindow.mediaPlayerQueue(objPath)
 
     def browse(self, path):
         self.gWindow.addBrowserTab().browseFsPath(

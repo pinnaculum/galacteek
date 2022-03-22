@@ -129,7 +129,7 @@ for more information).
 - Search content with the ipfs-search_ search engine as well as with cyber_
 - Built-in blog with Atom feeds
 - Webcam to IPFS capture (image and videos)
-- Basic built-in media player with IPFS-stored playlists
+- Basic built-in media player with playlists based on linked-data
 - Image viewer and QR codes support
 - Use the IPFS filestore to avoid file duplication
 - ENS_ (Ethereum Name Service) resolving (access to ENS+IPFS websites)

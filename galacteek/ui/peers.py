@@ -696,7 +696,7 @@ class PeersManager(GalacteekTab):
         pass
 
     async def onPeerAdded(self, piCtx):
-        self.tabActiveNotify()
+        pass
 
     def onContextMenu(self, point):
         idx = self.ui.peersMgrView.indexAt(point)

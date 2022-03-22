@@ -24,6 +24,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import QEvent
 from PyQt5.QtCore import QSize
+from PyQt5.QtCore import QPoint
 
 from PyQt5.QtGui import QKeySequence
 
@@ -772,8 +773,9 @@ class WorkspaceFiles(TabbedWorkspace):
 
 class WorkspaceMultimedia(SingleWidgetWorkspace):
     def __init__(self, stack):
-        super().__init__(stack, WS_MULTIMEDIA, icon=getIcon('mediaplayer.png'),
-                         description='Multimedia',
+        super().__init__(stack, WS_MULTIMEDIA,
+                         icon=getIcon('multimedia/mplayer1.png'),
+                         description='Mediaplayer',
                          acceptsDrops=True)
 
     @cached_property
@@ -793,7 +795,8 @@ class WorkspaceMultimedia(SingleWidgetWorkspace):
 
     async def handleObjectDrop(self, ipfsPath):
         tab = self.mPlayerTab()
-        tab.queueFromPath(ipfsPath.objPath)
+        if tab:
+            await tab.queueFromPath(ipfsPath.objPath)
 
 
 class WorkspaceSearch(TabbedWorkspace):

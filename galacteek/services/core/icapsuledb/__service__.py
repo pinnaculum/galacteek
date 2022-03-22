@@ -436,12 +436,18 @@ class ICapsuleRegistryLoaderService(GService):
 
         TODO: use async writes on the temp file
         """
+        from aiohttp.web_exceptions import HTTPOk
+
         try:
             size = 0
 
             with TmpFile(mode='w+b') as tmpfd:
                 async with aiohttp.ClientSession() as sess:
                     async with sess.get(str(url)) as resp:
+                        if resp.status != HTTPOk.status_code:
+                            raise Exception(
+                                f'Invalid response code: {resp.status}')
+
                         async for chunk in resp.content.iter_chunked(
                                 chunkSize):
                             tmpfd.write(chunk)
@@ -462,8 +468,8 @@ class ICapsuleRegistryLoaderService(GService):
             log.debug(f'icapsule ({url}, size: {size} bytes): extract OK')
 
             return True
-        except Exception:
-            traceback.print_exc()
+        except Exception as err:
+            log.debug(f'icapextract {url}: fetch error: {err}')
             return False
 
     @ipfsOp

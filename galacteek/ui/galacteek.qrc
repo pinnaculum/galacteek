@@ -254,6 +254,14 @@
   </qresource>
 
   <qresource>
+    <file>../../share/icons/multimedia/mplayer1.png</file>
+    <file>../../share/icons/multimedia/playlist.png</file>
+    <file>../../share/icons/multimedia/song.png</file>
+    <file>../../share/icons/multimedia/scan-metadata.png</file>
+    <file>../../share/icons/multimedia/video.png</file>
+  </qresource>
+
+  <qresource>
     <file>../../galacteek/ui/themes/common.qss</file>
     <file>../../galacteek/ui/themes/moon3/galacteek.qss</file>
     <file>../../galacteek/ui/themes/chloride/galacteek.qss</file>
