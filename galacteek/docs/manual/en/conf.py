@@ -92,9 +92,8 @@ html_theme_path = ['themes']
 #
 # html_theme_options = {}
 
-# html_logo = '../../../../share/icons/galacteek-incandescent.png'
-html_logo = '../../../../share/icons/helmets/ipfs-cosmo-black.png'
-# html_logo = '../../../../share/icons/helmets/ipfs-cosmon-1d3351-2.png'
+html_logo = '../../../../share/icons/galacteek.png'
+# html_logo = '../../../../share/icons/helmets/ipfs-cosmo-black.png'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

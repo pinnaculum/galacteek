@@ -1657,7 +1657,7 @@ class IPFSOperator(RemotePinningOps,
                     self.debug('dagPut: no CID in output')
                     return None
             except aioipfs.APIError as err:
-                self.debug(err.message)
+                self.debug(f'dagPut error: {err.message}')
                 return None
 
     async def dagPutOffline(self, data, pin=False):

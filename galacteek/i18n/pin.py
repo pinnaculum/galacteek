@@ -247,7 +247,7 @@ def iRpsStatusSummary(service, status, pinned, pinning, queued, failed):
         <p>Remote pinning service: <b>{service}</b></p>
         <p>{status}</p>
         <ul>
-            <li><b>PIND: {pinned} objects</b></li>
+            <li><b>PINNED: {pinned} objects</b></li>
             <li><b>PINNING: {pinning} objects</b></li>
             <li><b>INQUEUE: {queued} objects</b></li>
             <li><b>FAIL: {failed} objects</b></li>

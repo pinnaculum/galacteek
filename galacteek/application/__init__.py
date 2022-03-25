@@ -18,7 +18,6 @@ import signal
 import psutil
 from pathlib import Path
 from filelock import FileLock
-from cachetools import cached, LRUCache
 
 from distutils.version import StrictVersion
 
@@ -846,10 +845,14 @@ class GalacteekApplication(QApplication):
         return aioipfs.AsyncIPFS(host=connParams.host,
                                  port=connParams.apiPort, loop=loop)
 
-    @cached(LRUCache(256))
     def ipfsOperatorForLoop(self, loop=None):
         if not loop:
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
+
+        try:
+            return getattr(loop, '_attachedIpfsOperator')
+        except AttributeError:
+            pass
 
         op = GalacteekOperator(self.ipfsClientForLoop(loop),
                                ctx=self.ipfsCtx,

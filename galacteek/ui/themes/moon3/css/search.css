@@ -42,9 +42,8 @@ input.waitinput[type=text] {
   background-size: 32px 32px;
   background-repeat: no-repeat;
   border: 1px solid #4a9ea1;
-  border-radius: 4px;
-  width: 42%;
-  height: 50px;
+  border-radius: 6px;
+  height: 60px;
   margin: 8px 0;
   padding-left: 50px;
   padding-right: 50px;
@@ -59,11 +58,11 @@ input.searching[type=text] {
   background-size: 32px 32px;
   background-repeat: no-repeat;
   border: 1px solid #4a9ea1;
-  border-radius: 4px;
-  width: 42%;
-  height: 50px;
+  border-radius: 6px;
+  height: 60px;
   margin: 8px 0;
   padding-left: 50px;
+  padding-right: 50px;
   box-sizing: border-box;
 }
 

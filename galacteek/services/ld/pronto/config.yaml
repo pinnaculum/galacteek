@@ -95,8 +95,6 @@ graphEnvs:
 
           urn:ipg:i:articles:
             name: i_articles
-            services:
-              sparql: {}
 
           urn:ipg:i:uni:
             name: i_uni
@@ -166,14 +164,14 @@ graphEnvs:
             services:
               sparql: {}
 
-      # Multimedia (conjunctive)
-      urn:ipg:multimedia:
-        name: multimedia
+      # User's multimedia (conjunctive)
+      urn:ipg:user:multimedia:
+        name: user_multimedia
         type: conjunctive
 
         subgraphs:
-          urn:ipg:multimedia:playlists:
-            name: multimedia_playlists
+          urn:ipg:user:multimedia:playlists:
+            name: user_multimedia_playlists
 
-          urn:ipg:multimedia:playlists:public:
-            name: multimedia_playlists_public
+          urn:ipg:user:multimedia:playlists:public:
+            name: user_multimedia_playlists_public

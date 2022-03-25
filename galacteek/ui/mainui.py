@@ -1226,7 +1226,7 @@ class MainWindow(QMainWindow):
 
     def setupWorkspaces(self):
         self.stack.addWorkspace(self.wspaceStatus)
-        self.stack.addWorkspace(self.wspaceDapps)
+
         self.stack.addWorkspace(
             self.wspaceEarth, section='planets')
         self.stack.addWorkspace(self.wspaceSearch)
@@ -1249,6 +1249,7 @@ class MainWindow(QMainWindow):
         self.stack.addWorkspace(self.wspaceEdit)
         self.stack.addWorkspace(self.wspaceMessenger)
 
+        self.stack.addWorkspace(self.wspaceDapps)
         self.stack.addWorkspace(self.wspaceMisc)
 
         self.stack.wsAddGlobalAction(self.browseAction, default=True)

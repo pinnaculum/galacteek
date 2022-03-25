@@ -216,7 +216,7 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
         self.model.playlistChanged.connect(self.onPlaylistChanged)
 
         self.searchModel = LDPlayListsSearchModel(
-            graphUri='urn:ipg:multimedia'
+            graphUri='urn:ipg:user:multimedia'
         )
 
         # TODO: deprecate fully, we don't use the playlist API anymore
@@ -264,6 +264,13 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
         # self.pMenu.addAction(self.loadPathAction)
         # self.pMenu.addSeparator()
 
+        self.publishAction = QAction(
+            getIcon('multimedia/playlist.png'),
+            'Publish', self,
+            triggered=partialEnsure(self.onPublishPlaylist)
+        )
+        self.publishAction.setEnabled(False)
+
         self.ttlExportAction = QAction(
             getIcon('multimedia/playlist.png'),
             iPlaylistExportToTTL(), self,
@@ -272,6 +279,7 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
 
         self.exportMenu.addAction(self.ttlExportAction)
 
+        self.pMenu.addAction(self.publishAction)
         self.pMenu.addMenu(self.exportMenu)
 
         # self.pMenu.addMenu(self.playlistsMenu)
@@ -420,11 +428,16 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
 
     @property
     def graphMultimedia(self):
-        return self.pronto.graphByUri('urn:ipg:multimedia')
+        return self.pronto.graphByUri('urn:ipg:user:multimedia')
 
     @property
     def graphPlaylists(self):
-        return self.pronto.graphByUri('urn:ipg:multimedia:playlists')
+        return self.pronto.graphByUri('urn:ipg:user:multimedia:playlists')
+
+    @property
+    def graphPlaylistsPublic(self):
+        return self.pronto.graphByUri(
+            'urn:ipg:user:multimedia:playlists:public')
 
     @property
     def currentIndex(self):
@@ -1209,3 +1222,9 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
             await asyncWriteFile(fp, ttl, mode='w+b')
         except Exception:
             await messageBoxAsync('Export error')
+
+    async def onPublishPlaylist(self, *args):
+        await self.graphPlaylistsPublic.guardian.mergeReplace(
+            self.model.graph,
+            self.graphPlaylistsPublic
+        )

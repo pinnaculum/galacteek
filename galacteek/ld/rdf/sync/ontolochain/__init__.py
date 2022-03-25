@@ -25,11 +25,15 @@ from galacteek.ld import ipsContextUri
 from galacteek.ld.rdf import BaseGraph
 from galacteek.ld import ontolochain
 from galacteek.ld.rdf.terms import *
-from galacteek.ld.sparql import select, where, T, Filter
+from galacteek.ld.sparql import select, where, T, Filter, Prefix
 
 
 from ..smartqlclient import SmartQLClient
 from ..cfg import GraphSemChainSyncConfig
+
+
+def trackerSubject(curi):
+    return f'urn:ontolochain:status:{curi}'
 
 
 class GraphSemChainSynchronizer:
@@ -108,42 +112,47 @@ class GraphSemChainSynchronizer:
 
         smartql = SmartQLClient(dial, auth=auth)
 
-        chains = await hGraph.rexec(self.ontoloChainsList)
-
-        try:
-            await self.syncGeoEntities(
-                hGraph, smartql,
-                await hGraph.rexec(self.ontoloChainsGeoEmittersList),
-                contextName='OntoloChainGeoEmitter'
-            )
-            await self.syncGeoEntities(
-                hGraph, smartql,
-                await hGraph.rexec(self.ontoloChainsGeoTranspondersList),
-                contextName='OntoloChainGeoTransponder'
-            )
-        except Exception as err:
-            log.debug(
-                f'Sync with {peerId}: failed to fetch geo entities: {err}')
+        if 0:
+            try:
+                await self.syncGeoEntities(
+                    hGraph, smartql,
+                    await hGraph.rexec(self.ontoloChainsGeoEmittersList),
+                    contextName='OntoloChainGeoEmitter'
+                )
+                await self.syncGeoEntities(
+                    hGraph, smartql,
+                    await hGraph.rexec(self.ontoloChainsGeoTranspondersList),
+                    contextName='OntoloChainGeoTransponder'
+                )
+            except Exception as err:
+                log.debug(
+                    f'Sync with {peerId}: failed to fetch geo entities: {err}')
 
         w = where([
-            T(subject='?uri', predicate="a", object="gs:OntoloChain")
+            T(subject='?uri', predicate="a", object="gs:OntoloChain"),
+            T(subject='?uri', predicate="ochain:peerId",
+              object="?fpeerid"),
         ])
-
-        for curi in chains:
-            w.add_filter(filter=Filter(
-                f'?uri != <{curi}>'
-            ))
 
         w.add_filter(filter=Filter(
             f'?uri != <{ourChain.identifier}>'
+        ))
+
+        w.add_filter(filter=Filter(
+            f'str(?fpeerid) = "{peerId}"'
         ))
 
         q = select(
             vars=['?uri'],
             w=w
         )
+        q.add_prefix(prefix=Prefix(
+            prefix='ochain',
+            namespace='ips://galacteek.ld/OntoloChain#')
+        )
 
         reply = await smartql.spql.query(str(q))
+        chains = []
 
         try:
             if not reply:
@@ -152,17 +161,23 @@ class GraphSemChainSynchronizer:
             for res in reply['results']['bindings']:
                 uri = URIRef(res['uri']['value'])
 
-                gttl = await smartql.resource(
-                    str(uri),
-                    context='ips://galacteek.ld/OntoloChain'
+                typecheck = graph.value(
+                    subject=uri,
+                    predicate=RDF.type
                 )
 
-                if not gttl:
-                    continue
+                if not typecheck:
+                    gttl = await smartql.resource(
+                        str(uri),
+                        context='ips://galacteek.ld/OntoloChain'
+                    )
 
-                graph.parse(data=gttl, format='ttl')
+                    if not gttl:
+                        continue
 
-                subj = f'urn:ontolochain:status:{uri}'
+                    graph.parse(data=gttl, format='ttl')
+
+                subj = trackerSubject(uri)
 
                 res = hGraph.value(
                     predicate='ips://galacteek.ld/ontoloChainTracked',
@@ -179,7 +194,9 @@ class GraphSemChainSynchronizer:
                             '@id': str(uri)
                         }
                     })
-                    chains.append(uri)
+                    # chains.append(uri)
+
+                chains.append(uri)
         except Exception as err:
             log.debug(f'OntoloSync: {iri}: error: {err}')
 
@@ -187,13 +204,11 @@ class GraphSemChainSynchronizer:
             if curi == ourChain.identifier:
                 continue
 
-            tsubj = f'urn:ontolochain:status:{curi}'
+            tsubj = trackerSubject(curi)
 
             syncing = self._chainSync.get(curi, False)
 
             if not syncing:
-                log.debug(f'OntoloSync: {iri}: synchronizing chain {curi}')
-
                 self._chainSync[curi] = True
                 await self.syncChain(
                     ipid,
@@ -261,6 +276,8 @@ class GraphSemChainSynchronizer:
 
         if not tracker:
             return False
+
+        log.debug(f'OntoloSync: synchronizing chain {chainUri}')
 
         predCurObj = tUriSemObjCurrent
 

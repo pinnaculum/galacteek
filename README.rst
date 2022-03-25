@@ -1,4 +1,4 @@
-.. image:: https://gitlab.com/galacteek/galacteek/-/raw/master/share/icons/galacteek-incandescent-128.png
+.. image:: https://gitlab.com/galacteek/galacteek/-/raw/master/share/icons/galacteek.png
     :align: center
 
 :info: A multi-platform browser and semantic agent for the distributed web

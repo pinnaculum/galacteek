@@ -279,12 +279,10 @@
   <body>
 
 {% if searchMode == 'classic' %}
-
     <div width="100%" class="container" id="searchcontrols">
-      <div style="float: left; width='40%'">
+      <div style="float: left; width='80%'">
         <form onsubmit="event.preventDefault(); window.runSearch();">
-          <input type="text" class="waitinput" name="query" id="searchquery"
-            width="400"/>
+          <input type="text" class="waitinput" name="query" id="searchquery" />
           <select name="contenttype" id="contenttype">
             <option value="all">All</option>
             <option value="images">Images</option>
