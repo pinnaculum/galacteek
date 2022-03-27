@@ -3,20 +3,26 @@ import json
 import orjson
 import attr
 import zlib
+import collections
+
+from cachetools import TTLCache
 
 from asyncio_throttle import Throttler
-from aiohttp_basicauth import BasicAuthMiddleware
 
-from galacteek.ipfs.tunnel import P2PListener
-from galacteek.ipfs.p2pservices import P2PService
-from galacteek.core import runningApp
-from galacteek.ld.rdf import BaseGraph
-from galacteek import log
+from aiohttp import web
+from aiohttp import BasicAuth
+from aiohttp import hdrs
+from aiohttp_basicauth import BasicAuthMiddleware
 
 from rdflib.plugins.sparql.parser import parseQuery
 from rdflib_jsonld.serializer import resource_from_rdf
 
-from aiohttp import web
+from galacteek import log
+from galacteek.core import runningApp
+from galacteek.core.asynclib import loopTime
+from galacteek.ipfs.tunnel import P2PListener
+from galacteek.ipfs.p2pservices import P2PService
+from galacteek.ld.rdf import BaseGraph
 
 
 MIME_N3 = 'text/rdf+n3'
@@ -60,6 +66,10 @@ class SparQLSiteHandler:
         return web.json_response({
             'error': error
         }, status=status)
+
+    async def peerAuthorized(self, request, auth: BasicAuth, loopTime: float):
+        # TODO: filter based on peer activity
+        return True
 
     async def resource(self, request):
         """
@@ -183,6 +193,21 @@ class SparQLSiteHandler:
             ).split(',')
 
             try:
+                auth = BasicAuth.decode(
+                    auth_header=request.headers[hdrs.AUTHORIZATION]
+                )
+
+                assert auth.login is not None
+                assert await self.peerAuthorized(
+                    request,
+                    auth,
+                    loopTime()
+                ) is True
+            except (BaseException, ValueError):
+                return await self.msgError(error='Invalid auth',
+                                           status=401)
+
+            try:
                 post = await request.post()
                 q = post['query']
             except Exception:
@@ -190,7 +215,7 @@ class SparQLSiteHandler:
 
             try:
                 assert isinstance(q, str)
-                assert self.isAllowedSparqlQuery(q) is True
+                # assert self.isAllowedSparqlQuery(q) is True
 
                 r = await self.app.loop.run_in_executor(
                     self.app.executor,
@@ -241,10 +266,15 @@ class SparQLSiteHandler:
                     raise Exception('Invalid Accept header')
             except Exception as err:
                 log.debug(f'Query error: {err}')
+
                 return await self.msgError(error='Invalid query')
 
 
 class SmartQLAuthMiddleware(BasicAuthMiddleware):
+    """
+    Simple password-based auth middleware for the SparQL p2p service
+    """
+
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
 
@@ -264,6 +294,46 @@ class SmartQLAuthMiddleware(BasicAuthMiddleware):
             password == self.smartqlPassword
 
 
+class SmartQLPeerBasedAuthMiddleware(BasicAuthMiddleware):
+    """
+    Peer-based auth middleware
+    """
+
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
+
+        self.__cache = TTLCache(32, 60)
+        self.__blacklist = collections.deque([], 32)
+
+    def passwordForPeer(self, peerId: str):
+        pwd = self.__cache.get(peerId)
+
+        if not pwd:
+            self.__cache[peerId] = secrets.token_hex(16)
+
+        return self.__cache[peerId]
+
+    async def check_credentials(self, username, password, request):
+        """
+        Here username is the PeerID
+        """
+
+        if not isinstance(username, str) or len(username) > 128:
+            self.__blacklist.append(username)
+
+            log.debug('SmartQL auth: invalid username input')
+            return False
+
+        if username not in self.__cache or username in self.__blacklist:
+            log.debug('SmartQL auth: wrong or blacklisted username')
+            return False
+
+        if self.__cache.get(username) == password:
+            return True
+
+        return False
+
+
 class P2PSmartQLService(P2PService):
     """
     SparQL IPFS P2P service
@@ -280,7 +350,7 @@ class P2PSmartQLService(P2PService):
         self.graph = graph
         self.config = config if config else SparQLServiceConfig()
 
-        self.mwAuth = SmartQLAuthMiddleware()
+        self.mwAuth = SmartQLPeerBasedAuthMiddleware()
 
         super().__init__(
             'smartql',

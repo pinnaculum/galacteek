@@ -3,9 +3,6 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-The changelog for versions prior to v0.4.39 is not available, due to
-the changes in the CHANGELOG formatting.
-
 ## [Unreleased]
 
 ## [0.5.4] - 2022-02-11
@@ -16,9 +13,18 @@ the changes in the CHANGELOG formatting.
 - Add MIME type recognition for turtle (ttl), YAML
 
 ### Changed
+- Improve the Curve25519 pubsub API
+- SmartQL P2P service
+  - Implement a peer-dependent authentication middleware for the http service
+- Pronto
+  - galacteek.ld.pronto is now encrypted with curve25519
+  - Use time-rotating peer-dependent credentials for the smartql p2p service
 - Mediaplayer:
   - Deprecate old MFS+JSON playlists storage
-  - Store playlists as RDF (ips://galacteek.ld/MultimediaPlaylist)
+  - Store playlists as RDF (schema is: ips://galacteek.ld/MultimediaPlaylist)
+  - Playlists by default are stored in a private RDF store
+  - Playlists can be published to a public RDF store
+  - Public playlists are synchronized between peers via a SparQL script
 - Content providers peering: separate Pinata nodes config by region
 
 ### Fixed

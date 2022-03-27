@@ -12,6 +12,7 @@ from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.core.asynclib import GThrottler
 from galacteek.core.ps import makeKeyService
 
+from galacteek.ipfs.pubsub import TOPIC_LD_PRONTO
 from galacteek.ipfs.pubsub.srvs import graphs as pubsub_graphs
 from galacteek.ipfs.pubsub.messages.ld import RDFGraphsExchangeMessage
 from galacteek.ipfs.pubsub.messages.ld import SparQLHeartbeatMessage
@@ -178,9 +179,10 @@ class RDFStoresService(GService):
                 except Exception:
                     spconfig = p2psmartql.SparQLServiceConfig()
 
-                srv = p2psmartql.P2PSmartQLService(
-                    self.chainEnv, graph, config=spconfig)
-                await self.ipfsP2PService(srv)
+                await self.ipfsP2PService(
+                    p2psmartql.P2PSmartQLService(
+                        self.chainEnv, graph, config=spconfig)
+                )
             elif srvtype == 'sync':
                 use = cfg.get('use', None)
                 if use:
@@ -260,9 +262,11 @@ class RDFStoresService(GService):
     async def declareIpfsComponents(self):
         self.psService = pubsub_graphs.RDFBazaarService(
             self.app.ipfsCtx,
-            scheduler=self.app.scheduler,
-            igraphs=self._graphs
+            TOPIC_LD_PRONTO,
+            None,
+            scheduler=self.app.scheduler
         )
+
         self.psService.sExch.connectTo(self.onNewExchange)
         self.psService.sSparql.connectTo(self.onSparqlHeartBeat)
 
@@ -427,6 +431,16 @@ class RDFStoresService(GService):
                 if isinstance(msg, SparQLHeartbeatMessage):
                     await self.heartBeatProcess(sender, msg)
 
+    def p2pSmartQLServices(self):
+        for service in reversed(self._children):
+            if isinstance(service, p2psmartql.P2PSmartQLService):
+                yield service
+
+    def p2pSmartQLServiceByUri(self, uri: URIRef):
+        for service in self.p2pSmartQLServices():
+            if service.graph.identifier == uri:
+                return service
+
     @GService.task
     async def heartbeatTask(self):
         r = random.Random()
@@ -449,26 +463,21 @@ class RDFStoresService(GService):
                 if not isinstance(service, p2psmartql.P2PSmartQLService):
                     continue
 
+                # Add definition for graph
+                # SmartQL http credentials are set by the curve pubsub service
                 msg.graphs.append({
                     'graphIri': service.graph.identifier,
                     'smartqlEndpointAddr': service.endpointAddr(),
                     'smartqlCredentials': {
-                        'user': service.mwAuth.smartqlUser,
-                        'password': service.mwAuth.smartqlPassword
+                        'user': 'smartql',
+                        'password': ''
                     }
                 })
 
-            await self.psService.send(msg)
-
-    @GService.task
-    async def historyTtlDumpTask(self):
-        if not self.app.debugEnabled:
-            return
-
-        while not self.should_stop:
-            await asyncio.sleep(60 * 10)
-
-            await self.graphHistory.exportTtl()
+            try:
+                await self.psService.send(msg)
+            except Exception as err:
+                log.debug(f'Could not send smartql heartbeat: {err}')
 
 
 def serviceCreate(dotPath, config, parent: GService):

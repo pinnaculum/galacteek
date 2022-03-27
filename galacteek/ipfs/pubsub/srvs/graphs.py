@@ -1,25 +1,24 @@
-import asyncio
-import secrets
+from rdflib import URIRef
 
 from galacteek import AsyncSignal
-
-from galacteek.ipfs.pubsub import TOPIC_LD_PRONTO
-from galacteek.ipfs.pubsub.service import JSONPubsubService
+from galacteek import services
+from galacteek.ipfs.pubsub.service import Curve25519JSONPubsubService
 from galacteek.ipfs.pubsub.messages.ld import *
 
 
-class RDFBazaarService(JSONPubsubService):
-    def __init__(self, ipfsCtx, **kw):
-        self._igraphs = kw.pop('igraphs', {})
-
-        super().__init__(ipfsCtx, TOPIC_LD_PRONTO,
+class RDFBazaarService(Curve25519JSONPubsubService):
+    def __init__(self, *args, **kw):
+        super().__init__(*args,
                          runPeriodic=False,
+                         peered=True,
                          filterSelfMessages=True, **kw)
-
-        self.__serviceToken = secrets.token_hex(64)
 
         self.sExch = AsyncSignal(RDFGraphsExchangeMessage)
         self.sSparql = AsyncSignal(str, SparQLHeartbeatMessage)
+
+    @property
+    def prontoService(self):
+        return services.getByDotName('ld.pronto')
 
     async def processJsonMessage(self, sender, msg, msgDbRecord=None):
         msgType = msg.get('msgtype', None)
@@ -33,24 +32,45 @@ class RDFBazaarService(JSONPubsubService):
         if msgType in SparQLHeartbeatMessage.VALID_TYPES:
             await self.handleSparqlMessage(sender, msg, msgDbRecord)
 
+    async def peersToSend(self):
+        async with self.ipfsCtx.peers.lock.reader_lock:
+            for peerId, piCtx in self.ipfsCtx.peers.byPeerId.items():
+                if peerId == self.ipfsCtx.node.id or not piCtx.ident:
+                    continue
+
+                pubKeyCid = piCtx.ident.defaultCurve25519PubKeyCid
+
+                if pubKeyCid:
+                    yield (piCtx, None,
+                           f'{self.topicBase}.{peerId}',
+                           pubKeyCid)
+
+    async def presetMessageForPeer(self, piCtx, message):
+        """
+        Presets the SmartQL credentials on the heartbeat message
+
+        :rtype: str
+        """
+        if isinstance(message, SparQLHeartbeatMessage):
+            # For every graph, we set the password given by the mw auth
+
+            for graphdef in message.graphs:
+                iri = URIRef(graphdef['graphIri'])
+
+                service = self.prontoService.p2pSmartQLServiceByUri(iri)
+
+                if not service:
+                    continue
+
+                graphdef['smartqlCredentials'] = {
+                    'user': piCtx.peerId,
+                    'password': service.mwAuth.passwordForPeer(piCtx.peerId)
+                }
+
+        return str(message)
+
     async def handleSparqlMessage(self, sender, msg, msgDbRecord):
         sMsg = SparQLHeartbeatMessage(msg)
 
         if sMsg.valid():
             await self.sSparql.emit(sender, sMsg)
-
-    async def handleExchangeMessage(self, sender, msg, msgDbRecord):
-        eMsg = RDFGraphsExchangeMessage(msg)
-
-        if not eMsg.valid():
-            self.debug('Invalid exchange message')
-            return
-
-        await self.sExch.emit(eMsg)
-
-    async def periodic(self):
-        while True:
-            await asyncio.sleep(20)
-
-            # msg = RDFGraphsExchangeMessage.make(self._igraphs)
-            # await self.send(msg)

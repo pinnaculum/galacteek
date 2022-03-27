@@ -727,8 +727,7 @@ class Curve25519JSONPubsubService(JSONPubsubService):
     encodingType = PS_ENCTYPE_CURVE25519
     hubKey = keyPsEncJson
 
-    def __init__(self, ipfsCtx, baseTopic, privEccKey,
-                 **kw):
+    def __init__(self, ipfsCtx, baseTopic, privEccKey, **kw):
         self.__privEccKey = privEccKey
         self._authorizedPeers = []
 
@@ -740,12 +739,27 @@ class Curve25519JSONPubsubService(JSONPubsubService):
         return configMerge(base, cParentGet('serviceTypes.curve25519EncJson'))
 
     @ipfsOp
+    async def getPrivEccKey(self, ipfsop):
+        """
+        Return the CURVE25519 priv key used for decoding
+        """
+        try:
+            if self.__privEccKey:
+                return self.__privEccKey
+            else:
+                # Default ECC key
+                return ipfsop.curve25519Agent.privKey
+        except Exception:
+            return None
+
+    @ipfsOp
     async def asyncMsgDataToJson(self, ipfsop, msg):
         try:
             sender = msg['from'] if isinstance(msg['from'], str) else \
                 msg['from'].decode()
 
-            if sender not in self._authorizedPeers:
+            if len(self._authorizedPeers) > 0 and \
+               sender not in self._authorizedPeers:
                 raise Exception(f'Unauthorized message from {sender} '
                                 'on curve25519 topic {self.topic()}')
 
@@ -760,12 +774,19 @@ class Curve25519JSONPubsubService(JSONPubsubService):
             # curve25519 decryption
             dec = await ipfsop.ctx.curve25Exec.decrypt(
                 base64.b64decode(msg['data']),
-                self.__privEccKey,
+                await self.getPrivEccKey(),
                 pubKey
             )
+
+            if not dec:
+                raise ValueError(
+                    f'Curve25519 decryption failed : '
+                    f'sender is: {sender}')
+
             return orjson.loads(dec.decode())
         except Exception as err:
-            logger.debug(f'Could not decode encrypted message: {err}')
+            logger.debug(
+                f'{self.topic()}: Could not decode encrypted message: {err}')
             return None
 
     async def peerEncFilter(self, piCtx, msg):
@@ -776,6 +797,19 @@ class Curve25519JSONPubsubService(JSONPubsubService):
 
     @ipfsOp
     async def send(self, ipfsop, msg):
+        """
+        Send a message encrypted as curve25519 to all peers
+
+        Implement peersToSend() as an async generator to tell which
+        peers we should the message to.
+        """
+        try:
+            pmfp = getattr(self, 'presetMessageForPeer')
+        except Exception:
+            usePmfp = False
+        else:
+            usePmfp = asyncio.iscoroutinefunction(pmfp)
+
         async for piCtx, sessionKey, _topic, pubKeyCid in self.peersToSend():
             if await self.peerEncFilter(piCtx, msg) is True:
                 continue
@@ -789,9 +823,17 @@ class Curve25519JSONPubsubService(JSONPubsubService):
                              f'peer {piCtx.peerId} (CID: {pubKeyCid})')
                 continue
 
+            if usePmfp:
+                msgString = await pmfp(piCtx, msg)
+            else:
+                msgString = str(msg)
+
+            if not isinstance(msgString, str):
+                continue
+
             enc = await ipfsop.ctx.curve25Exec.encrypt(
-                str(msg).encode(),
-                self.__privEccKey,
+                msgString.encode(),
+                await self.getPrivEccKey(),
                 pubKey
             )
 
