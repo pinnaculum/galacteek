@@ -13,7 +13,7 @@ class GraphSparQLSynchronizer(BaseGraphSynchronizer):
         self.config = config if config else GraphSparQLSyncConfig()
 
     async def sync(self, ipfsop, peerId, iri, dial,
-                   auth):
+                   auth, p2pLibrarianId=None):
         rdfService = GService.byDotName.get('ld.pronto')
         localGraph = rdfService.graphByUri(iri)
 
@@ -26,6 +26,7 @@ class GraphSparQLSynchronizer(BaseGraphSynchronizer):
 
         for step in self.config.run:
             try:
+                sname = step.get('name', 'unknown')
                 ctype = step.get('contentType', None)
                 action = step.get('action', None)
                 source = step.get('sourceGraph', 'remote')
@@ -39,6 +40,12 @@ class GraphSparQLSynchronizer(BaseGraphSynchronizer):
                     '@REMOTE_PEER_URIREF@',
                     str(peerUriRef)
                 )
+
+                if p2pLibrarianId:
+                    q = q.replace(
+                        '@REMOTE_P2P_LIBRARIANID@',
+                        str(p2pLibrarianId)
+                    )
 
                 if not ctype:
                     if source == 'local':
@@ -54,12 +61,16 @@ class GraphSparQLSynchronizer(BaseGraphSynchronizer):
                             'Returned graph is invalid'
                         )
 
-                    print(g.serialize(format='ttl'))
+                    if self.config.debug:
+                        print(g.serialize(format='ttl'))
 
                     if action == 'merge':
                         await localGraph.guardian.mergeReplace(
                             g, localGraph)
+                    else:
+                        raise ValueError(f'Unknown step action: {action}')
             except Exception as err:
-                log.debug(f'Sparql sync: step failed with error: {err}')
+                log.debug(f'Sparql sync for graph {iri}: '
+                          f'step {sname} failed with error: {err}')
 
         await client.close()

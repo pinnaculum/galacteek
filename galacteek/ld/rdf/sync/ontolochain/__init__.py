@@ -51,7 +51,8 @@ class GraphSemChainSynchronizer:
                              peerId: str,
                              iri: str,
                              p2pEndpoint: str,
-                             graphDescr=None):
+                             graphDescr=None,
+                             p2pLibrarianId=None):
         async with ipfsop.p2pDialerFromAddr(p2pEndpoint) as dial:
             if dial.failed:
                 return False

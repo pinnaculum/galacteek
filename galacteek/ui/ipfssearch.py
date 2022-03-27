@@ -497,6 +497,7 @@ class IPFSSearchHandler(QObject):
             )
 
         def getLibrarianId(g, nodeId):
+            # Deprecated
             val = g.value(
                 subject=nodeId,
                 predicate=tUriUsesLibrarianId
@@ -522,9 +523,11 @@ class IPFSSearchHandler(QObject):
             # Already graphed
             return
 
-        nodeIdUriRef = await ipfsop.nodeIdUriRef()
-        librarianId = await self.hashmarksGraph.rexec(
-            getLibrarianId, nodeIdUriRef)
+        # nodeIdUriRef = await ipfsop.nodeIdUriRef()
+        # librarianId = await self.hashmarksGraph.rexec(
+        #     getLibrarianId, nodeIdUriRef)
+
+        librarianId = await self.prontoService.getLibrarianId()
 
         title = hit.get('title')
         descr = hit.get('description')
@@ -556,11 +559,13 @@ class IPFSSearchHandler(QObject):
             'mimeType': str(mimeObj),
             'mimeCategory': mimeCat,
             'keywordMatch': kwm,
-            'librarianId': str(librarianId),
             'dateCreated': utcDatetimeIso(),
             'dateFirstSeen': hit.get('first-seen'),
             'dateLastSeen': hit.get('last-seen')
         }
+
+        if librarianId:
+            hmark['fromLibrarian'] = str(librarianId)
 
         for ref in hit.get('references', []):
             p = IPFSPath(ref['parent_hash'], autoCidConv=True)

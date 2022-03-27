@@ -11,6 +11,7 @@ class GraphExportSyncConfig:
 @attr.s(auto_attribs=True)
 class GraphSparQLSyncConfig:
     type: str = 'sparkie'
+    debug: bool = False
     run: list = []
 
 

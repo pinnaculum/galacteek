@@ -21,7 +21,6 @@ class Sparkie(SPARQLClient):
                 if ctype == 'application/json':
                     return await resp.json()
                 else:
-                    print('read')
                     return await resp.read()
         except SPARQLRequestFailed as rerr:
             log.debug(f'{self.endpoint}: Request failed: {rerr}')

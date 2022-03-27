@@ -43,6 +43,11 @@ def ipfsPeerUrn(peerId: str):
 
 
 def p2pLibrarianGenUrn(peerId: str):
+    """
+    Generate Librarian ID based on PeerID
+
+    :rtype: URIRef
+    """
     h = hashlib.sha3_256()
     h.update(str(peerId).encode())
     h.update(secrets.token_hex(32).encode())

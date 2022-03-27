@@ -12,8 +12,8 @@ class BaseGraphSynchronizer:
                              peerId: str,
                              iri: str,
                              p2pEndpoint: str,
-                             graphDescr=None):
-        print('sync from remote', graphDescr)
+                             graphDescr=None,
+                             p2pLibrarianId=None):
         creds = graphDescr.get('smartqlCredentials', {})
         auth = aiohttp.BasicAuth(
             creds.get('user', 'smartql'),
@@ -29,12 +29,14 @@ class BaseGraphSynchronizer:
                 peerId,
                 iri,
                 dial,
-                auth
+                auth,
+                p2pLibrarianId=p2pLibrarianId
             )
 
     async def sync(self, ipfsop,
                    peerId: str,
                    iri: str,
                    dial,
-                   auth):
+                   auth,
+                   p2pLibrarianId=None):
         pass

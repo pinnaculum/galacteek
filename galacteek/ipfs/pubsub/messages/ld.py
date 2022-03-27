@@ -78,13 +78,14 @@ class RDFGraphsExchangeMessage(PubsubMessage):
         return self.data['graphs']
 
 
-exchSchema = {
+hbSchema = {
     "type": "object",
     "properties": {
         "msgtype": {"type": "string"},
         "version": {"type": "integer"},
         "date": {"type": "string"},
         "rev": {"type": "string"},
+        "p2pLibrarianId": {"type": "string"},
 
         "prontoChainEnv": {
             "type": "string",
@@ -136,15 +137,16 @@ class SparQLHeartbeatMessage(PubsubMessage):
         TYPE
     ]
 
-    schema = exchSchema
+    schema = hbSchema
 
     @staticmethod
-    def make(prontoEnv):
+    def make(prontoEnv: str, librarianId: str):
         msg = SparQLHeartbeatMessage({
             'msgtype': SparQLHeartbeatMessage.TYPE,
             'version': 1,
             'date': utcDatetimeIso(),
             'prontoChainEnv': prontoEnv,
+            'p2pLibrarianId': librarianId,
             'graphs': []
         })
 
@@ -153,6 +155,10 @@ class SparQLHeartbeatMessage(PubsubMessage):
     @property
     def revision(self):
         return self.jsonAttr('rev')
+
+    @property
+    def p2pLibrarianId(self):
+        return self.jsonAttr('p2pLibrarianId')
 
     @property
     def prontoChainEnv(self):

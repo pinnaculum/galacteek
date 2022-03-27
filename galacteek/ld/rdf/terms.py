@@ -16,4 +16,10 @@ tUriOntoloChainVcProcessed = termUri('ontoloChainVcProcessed')  # noqa
 
 tUriOntoRecordOutputGraph = termUri('OntoloChainRecord#outputGraph')
 
+# P2P Librarian ids terms
+
+# Which ID a peer uses
 tUriUsesLibrarianId = termUri('usesLibrarianId')
+
+# Term used to identify which librarian created a given resource
+tUriFromLibrarian = termUri('fromLibrarian')

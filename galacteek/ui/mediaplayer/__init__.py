@@ -55,6 +55,7 @@ from galacteek.ld.rdf.resources.multimedia import MultimediaPlaylistResource
 from galacteek.ld.rdf.resources.multimedia import MusicRecordingResource
 from galacteek.ld.rdf.resources.multimedia import VideoObjectResource
 from galacteek.ld.rdf.util import literalDtNow
+from galacteek.ld.rdf.terms import tUriFromLibrarian
 
 from .videowidget import MPlayerVideoWidget
 from ..forms import ui_mediaplaylist
@@ -269,7 +270,6 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
             'Publish', self,
             triggered=partialEnsure(self.onPublishPlaylist)
         )
-        self.publishAction.setEnabled(False)
 
         self.ttlExportAction = QAction(
             getIcon('multimedia/playlist.png'),
@@ -279,6 +279,7 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
 
         self.exportMenu.addAction(self.ttlExportAction)
 
+        self.pMenu.addSeparator()
         self.pMenu.addAction(self.publishAction)
         self.pMenu.addMenu(self.exportMenu)
 
@@ -594,7 +595,8 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
 
         if uri:
             self.uipList.plSearchLine.clear()
-            await self.ldPlaylistOpen(URIRef(uri), self.graphPlaylists)
+            # await self.ldPlaylistOpen(URIRef(uri), self.graphPlaylists)
+            await self.ldPlaylistOpen(URIRef(uri), self.graphMultimedia)
 
             self.stackViewPlaylist()
 
@@ -730,6 +732,7 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
         self.savePlaylistAction.setEnabled(not self.playlistEmpty)
         self.scanMetadataAction.setEnabled(not self.playlistEmpty)
         self.ttlExportAction.setEnabled(not self.playlistEmpty)
+        self.publishAction.setEnabled(not self.playlistEmpty)
 
         self.uipList.quickSaveButton.setEnabled(not self.playlistEmpty)
         self.uipList.scanMetadataButton.setEnabled(not self.playlistEmpty)
@@ -975,7 +978,10 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
     async def playFromPath(self, path, mediaName=None):
         await self.queueFromPath(path, play=True)
 
-    async def queueFromPath(self, path, playLast=False, mediaName=None,
+    async def queueFromPath(self,
+                            path,
+                            playLast=False,
+                            mediaName=None,
                             play=False):
         items = [IPFSPath(p) for p in path] if isinstance(path, list) else \
             [IPFSPath(path, autoCidConv=True)]
@@ -1224,7 +1230,22 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
             await messageBoxAsync('Export error')
 
     async def onPublishPlaylist(self, *args):
-        await self.graphPlaylistsPublic.guardian.mergeReplace(
-            self.model.graph,
-            self.graphPlaylistsPublic
-        )
+        try:
+            g = BaseGraph()
+            g += self.model.graph
+
+            libId = await self.pronto.getLibrarianId()
+
+            # Set librarian ID for the resource
+            g.replace(
+                self.model.rsc.identifier,
+                tUriFromLibrarian,
+                libId
+            )
+
+            await self.graphPlaylistsPublic.guardian.mergeReplace(
+                g,
+                self.graphPlaylistsPublic
+            )
+        except Exception as err:
+            await messageBoxAsync(f'Error publishing playlist: {err}')

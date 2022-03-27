@@ -25,6 +25,8 @@ from rdflib import plugin
 from rdflib import URIRef
 from rdflib.store import Store
 
+from galacteek.ld.iri import p2pLibrarianGenUrn
+from galacteek.ld.rdf.terms import tUriUsesLibrarianId
 from galacteek.ld.rdf.sync import *
 
 
@@ -222,6 +224,39 @@ class RDFStoresService(GService):
             else:
                 await self.registerRegularGraph(uri, cfg)
 
+    @ipfsOp
+    async def getLibrarianId(self, ipfsop):
+        """
+        Return a P2P Librarian ID for this node
+
+        :rtype: URIRef
+        """
+
+        nodeIdUriRef = await ipfsop.nodeIdUriRef()
+
+        h0g = self.graphByUri('urn:ipg:h0')
+        if not nodeIdUriRef or h0g is None:
+            return None
+
+        # Find existing ID
+        val = h0g.value(
+            subject=nodeIdUriRef,
+            predicate=tUriUsesLibrarianId
+        )
+
+        if not val:
+            lid = p2pLibrarianGenUrn(str(nodeIdUriRef))
+
+            h0g.add((
+                nodeIdUriRef,
+                tUriUsesLibrarianId,
+                lid
+            ))
+
+            return lid
+        else:
+            return val
+
     async def declareIpfsComponents(self):
         self.psService = pubsub_graphs.RDFBazaarService(
             self.app.ipfsCtx,
@@ -372,8 +407,10 @@ class RDFStoresService(GService):
 
                 await graph.synchronizer.syncFromRemote(
                     sender,
-                    iri, p2pEndpointRaw,
-                    graphDescr=graphdef
+                    iri,
+                    p2pEndpointRaw,
+                    graphDescr=graphdef,
+                    p2pLibrarianId=msg.p2pLibrarianId
                 )
         except Exception as err:
             print(err)
@@ -401,7 +438,12 @@ class RDFStoresService(GService):
             )
             await asyncio.sleep(t)
 
-            msg = SparQLHeartbeatMessage.make(self.chainEnv)
+            libId = await self.getLibrarianId()
+
+            msg = SparQLHeartbeatMessage.make(
+                self.chainEnv,
+                libId if libId else ''
+            )
 
             for service in reversed(self._children):
                 if not isinstance(service, p2psmartql.P2PSmartQLService):
