@@ -41,7 +41,7 @@ multiaddr>=0.0.8
 omegaconf==2.1.1
 orjson>=3,<3.4
 otsrdflib>=0.5.0
-pillow==8.2.0
+pillow==9.0.1
 protobuf==3.6.1
 psutil>=5.7.2
 pydotplus==2.0.2
@@ -57,7 +57,7 @@ py-multibase>=1.0.3
 pyyaml>=5.3.1
 pyparsing==2.4.7
 pyzbar>=0.1.8
-qrcode==6.1
+qrcode==7.3.1
 qasync==0.22.0
 qtawesome>=0.7.2
 random-username>=1.0.2

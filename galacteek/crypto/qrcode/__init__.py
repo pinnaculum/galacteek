@@ -260,9 +260,9 @@ class IPFSQrEncoder:
         if url and len(self._codes) < self._maxCodes:
             self._codes.append(url)
 
-    def _newImage(self, width, height, mode='P', fill=255, color='#000000'):
+    def _newImage(self, width, height, mode='L', fill=255, color='#000000'):
         """ Create a new Pillow image with the given params """
-        img = NewImage(mode, (width, height), color=color)
+        img = NewImage(mode, (width, height))
         img.paste(fill, (0, 0, img.width, img.height))
         return img
 
