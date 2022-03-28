@@ -87,17 +87,42 @@ async def bmMailBoxRegister(bmAddress: str,
         log.debug(f'Could not create BM account {bmAddress}: {cerr}')
 
 
-# Groups
-
-
 # Contacts
+
+
+async def bmContactFilter(name: str,
+                          separator: str = ''):
+    return BitMessageContact.filter(
+        Q(fullname=name) & Q(cSeparator=separator))
+
+    # return BitMessageContact.filter(
+    #     Q(fullname__icontains=name) & Q(cSeparator=separator))
+
+
+async def bmContactByName(name: str,
+                          separator: str = ''):
+    return await (await bmContactFilter(name, separator)).all()
+
+
+async def bmContactByNameFirst(name: str,
+                               separator: str = ''):
+    return await (await bmContactFilter(name, separator)).first()
+
+
+async def bmContactByAddr(bmAddr: str):
+    return await BitMessageContact.filter(bmAddress=bmAddr).first()
+
+
+async def bmContactAll():
+    return await BitMessageContact.all()
 
 
 async def bmContactAdd(bmAddress: str,
                        fullname: str,
                        separator: str = '',
                        groupName: str = '',
-                       did=None):
+                       did=None,
+                       purgeWithSameName=False):
     from galacteek.services.net.bitmessage import bmAddressValid
 
     try:
@@ -112,6 +137,20 @@ async def bmContactAdd(bmAddress: str,
                 group = BitMessageContactGroup(name=groupName)
                 await group.save()
 
+        if purgeWithSameName:
+            # Purge a contact which has the same fullname
+
+            exlist = await bmContactByName(fullname)
+
+            for econtact in exlist:
+                if econtact.bmAddress != bmAddress:
+                    log.warning(
+                        f'Purging old contact with BM address: '
+                        f'{econtact.bmAddress}'
+                    )
+
+                    await econtact.delete()
+
         contact = BitMessageContact(
             bmAddress=bmAddress,
             fullname=fullname,
@@ -124,28 +163,3 @@ async def bmContactAdd(bmAddress: str,
         log.debug(f'Could not add BM contact {bmAddress}: {cerr}')
     else:
         return contact
-
-
-async def bmContactFilter(name: str,
-                          separator: str = ''):
-    return BitMessageContact.filter(
-        Q(fullname__icontains=name) & Q(cSeparator=separator))
-
-
-async def bmContactByName(name: str,
-                          separator: str = ''):
-    return await (await bmContactFilter(name, separator)).all()
-
-
-async def bmContactByNameFirst(name: str,
-                               separator: str = ''):
-    return await (await bmContactFilter(name, separator)).first()
-
-
-async def bmContactByAddr(bmAddr: str):
-    return await BitMessageContact.filter(
-        bmAddress=bmAddr).first()
-
-
-async def bmContactAll():
-    return await BitMessageContact.all()

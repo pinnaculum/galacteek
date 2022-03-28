@@ -14,8 +14,9 @@ envs:
 
     bmCoreContacts:
       - name: 'galacteek-support'
-        address: 'BM-87bMT2xqtucvbs7TPJb9nrEKumP7NVpWFdv'
+        address: 'BM-87UhSBhPjGqENCxQerGXpxRfSZHs2aX3TKc'
         group: 'galacteek'
+
       - name: 'cipres'
         address: 'BM-87dtCqLxqnpwzUyjzL8etxGK8MQQrhnxnt1'
         group: 'galacteek'

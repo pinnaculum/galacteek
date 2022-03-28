@@ -1,10 +1,10 @@
 import asyncio
 import os
 import re
+import time
 
 from pathlib import Path
 from email.message import EmailMessage
-# from email.utils import parseaddr as parseEmailAddress
 from mailbox import Maildir
 import email.errors
 
@@ -13,6 +13,9 @@ from galacteek import AsyncSignal
 from galacteek import cached_property
 from galacteek import database
 from galacteek import ensure
+from galacteek import ensureLater
+
+from galacteek.database import bmMailBoxGetDefault
 
 from galacteek.config import cParentGet
 from galacteek.core.process import ProcessLauncher
@@ -23,6 +26,8 @@ from galacteek.core.asynclib import asyncRmTree
 from galacteek.core.asynclib import asyncReadFile
 from galacteek.core.asynclib import asyncWriteFile
 from galacteek.services import GService
+
+from galacteek.ld.iri import superUrn
 
 from galacteek.services.net.bitmessage import bmAddressValid
 from galacteek.services.net.bitmessage.storage import RegularMailDir
@@ -250,8 +255,13 @@ class BitMessageMailManService(GService):
         msg['From'] = f'{bmSource}@bitmessage'
         msg['To'] = f'{bmDest}@bitmessage'
         msg['Subject'] = subject
-        msg['Content-Type'] = \
-            f'{contentType}; charset={encoding.upper()}; markup={textMarkup}'
+
+        if contentType == 'text/plain':
+            msg['Content-Type'] = f'{contentType}; '
+            f'charset={encoding.upper()}; '
+            f'markup={textMarkup}'
+        else:
+            msg['Content-Type'] = contentType
 
         msg.set_content(message)
         msgBytes = msg.as_bytes()
@@ -273,6 +283,56 @@ class BitMessageMailManService(GService):
             log.debug(f'BM send: {bmSource} => {bmDest}: failed')
 
         return retCode == 0
+
+    async def sendFromDefault(self,
+                              bmDest: str,
+                              subject: str,
+                              message: str,
+                              contentType='text/plain',
+                              textMarkup='markdown',
+                              encoding='utf-8'):
+
+        try:
+            mbox = await bmMailBoxGetDefault()
+
+            assert mbox is not None
+
+            return await self.send(mbox.bmAddress,
+                                   bmDest,
+                                   subject,
+                                   message,
+                                   contentType=contentType,
+                                   textMarkup=textMarkup,
+                                   encoding=encoding)
+        except BaseException:
+            # TODO
+            return None
+
+    async def sendVersionBeacon(self):
+        from galacteek.__version__ import __version__
+
+        try:
+            commitSha = os.environ.get('GALACTEEK_COMMIT_SHA', 'null')
+
+            if len(commitSha) > 64:
+                commitSha = 'invalid-sha'
+
+            urn = superUrn(
+                'glk',
+                'beacon-version',
+                '1',  # beacon format version
+                __version__,
+                commitSha,
+                str(int(time.time()))
+            )
+
+            await self.sendFromDefault(
+                'BM-87nPjK931X2EAfUsMYZPSKnnrKih6eqQsvG',
+                '[galacteek-beacon-version]',
+                f"[beacon]({urn})"
+            )
+        except Exception:
+            log.debug('No version beacon sent')
 
     async def on_stop(self) -> None:
         log.debug('Stopping BM mailer ..')
@@ -390,6 +450,8 @@ class BitMessageClientService(GService):
                         'servicePort': self.notbitProcess.listenPort
                     }
                 })
+
+                ensureLater(5, self.mailer.sendVersionBeacon)
         else:
             log.debug('Notbit could not be found, not starting process')
 
@@ -400,12 +462,20 @@ class BitMessageClientService(GService):
             return
 
         for contact in contacts:
+            enabled = contact.get('enabled', True)
+            name = contact.get('name', None)
+
+            if enabled is False or not name:
+                log.debug(f'Ignoring contact {contact}')
+                continue
+
             log.debug(f'Storing contact {contact}')
 
             await database.bmContactAdd(
                 contact.get('address'),
-                contact.get('name'),
-                groupName=contact.get('group')
+                name,
+                groupName=contact.get('group'),
+                purgeWithSameName=True
             )
 
     async def onPowCalculated(self):
