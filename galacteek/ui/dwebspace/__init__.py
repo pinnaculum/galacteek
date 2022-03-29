@@ -27,6 +27,7 @@ from PyQt5.QtCore import QSize
 from PyQt5.QtCore import QPoint
 
 from PyQt5.QtGui import QKeySequence
+from PyQt5.QtGui import QIcon
 
 from galacteek.ui.peers import PeersManager
 from galacteek import partialEnsure
@@ -295,6 +296,13 @@ class BaseWorkspace(QWidget):
 
     def __exit__(self, *a):
         pass
+
+    def changeIcon(self, icon: QIcon):
+        # Change workspace icon
+        self.wsIcon = icon
+
+        if self.wsSwitchButton:
+            self.wsSwitchButton.setIcon(self.wsIcon)
 
     def setupWorkspace(self):
         pass

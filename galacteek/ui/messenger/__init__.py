@@ -377,8 +377,13 @@ class MessageHandlingError(Exception):
     pass
 
 
+MessageKeyRole = Qt.UserRole
+MessageReadStatusRole = Qt.UserRole + 1
+
+
 class MessageListView(QTreeWidget):
     messageNeedsDisplay = pyqtSignal()
+    unreadMsgCountChanged = pyqtSignal()
 
     viewActive = pyqtSignal()
 
@@ -387,6 +392,7 @@ class MessageListView(QTreeWidget):
 
         self.app = QApplication.instance()
         self.maildir = maildir
+        self.unreadCounter = 0
         self.currentItemChanged.connect(
             partialEnsure(self.onCurMessageChanged))
         self.setColumnCount(2)
@@ -411,7 +417,8 @@ class MessageListView(QTreeWidget):
         return self.selectionModel()
 
     def onViewSwitched(self):
-        self.selectLatestMessage(force=True)
+        # self.selectLatestMessage(force=True)
+        self.updateUnread()
 
     async def onNewMessageReceived(self, key, msg):
         self.app.systemTrayMessage(
@@ -432,9 +439,36 @@ class MessageListView(QTreeWidget):
         for col in range(0, self.columnCount()):
             item.setFont(col, self.fontNoBold)
 
+        # Set the read role data
+        item.setData(0, MessageReadStatusRole, True)
+
         # Mark it as read
         msg.set_subdir('cur')
         self.maildir.updateMessage(mKey, msg)
+
+        self.updateUnread()
+
+    def unreadMessagesCount(self):
+        count = 0
+
+        for row in range(self.model().rowCount()):
+            if self.model().data(
+                self.model().index(row, 0, QModelIndex()),
+                MessageReadStatusRole
+            ) is False:
+                count += 1
+
+        return count
+
+    def updateUnread(self):
+        try:
+            count = self.unreadMessagesCount()
+
+            if count != self.unreadCounter:
+                self.unreadCounter = count
+                self.unreadMsgCountChanged.emit()
+        except BaseException:
+            pass
 
     async def insertMessage(self, mKey, msg):
         idxL = self.model().match(
@@ -453,21 +487,24 @@ class MessageListView(QTreeWidget):
 
         itemFrom = QTreeWidgetItem(self)
         itemFrom.setText(0, msg['Subject'])
-        itemFrom.setData(0, Qt.UserRole, mKey)
+        itemFrom.setData(0, MessageKeyRole, mKey)
         itemFrom.setToolTip(0, msg['Subject'])
         itemFrom.setText(1, msg['Date'])
         itemFrom.setText(2, msg['From'])
 
         if msgSubDir == 'new':
+            itemFrom.setData(0, MessageReadStatusRole, False)
             for col in range(0, 3):
                 itemFrom.setFont(col, self.fontBold)
         elif msgSubDir == 'cur':
-            pass
+            itemFrom.setData(0, MessageReadStatusRole, True)
 
         self.addTopLevelItem(itemFrom)
         self.sortByColumn(1, Qt.DescendingOrder)
 
         log.debug(f'Message {mKey}: added to view')
+
+        self.updateUnread()
 
     async def refresh(self):
         async for mKey, msg in self.maildir.yieldNewMessages():
@@ -477,7 +514,7 @@ class MessageListView(QTreeWidget):
                 log.debug(f'Refresh error: {err}')
                 continue
 
-        self.selectLatestMessage(force=True)
+        # self.selectLatestMessage(force=True)
 
     def selectLatestMessage(self, force=False):
         # Select latest message
@@ -688,6 +725,8 @@ class MessengerWidget(QWidget):
             idx = self.ui.mailBoxStack.addWidget(view)
             self.ui.mailBoxStack.setCurrentIndex(idx)
 
+            view.unreadMsgCountChanged.connect(self.onMboxUnreadCountChanged)
+
             view.sMessageNeedsDisplay.connectTo(
                 self.onMessageDisplay)
             maildir.sNewMessage.connectTo(
@@ -767,3 +806,26 @@ class MessengerWidget(QWidget):
 
         if bmMailBox:
             return key, bmMailBox, mailDir
+
+    def onMboxUnreadCountChanged(self):
+        from ..dwebspace import WS_DMESSENGER
+
+        total = 0
+
+        try:
+            windowStack = self.app.mainWindow.stack
+
+            for bma, view in self.messageBoxViews.items():
+                total += view.unreadCounter
+
+            with windowStack.workspaceCtx(WS_DMESSENGER, show=False) as ws:
+                if total > 0:
+                    ws.changeIcon(
+                        getIcon('dmessenger/dmessenger-inbox-newmessages.png')
+                    )
+                else:
+                    ws.changeIcon(
+                        getIcon('dmessenger/dmessenger.png')
+                    )
+        except BaseException:
+            pass
