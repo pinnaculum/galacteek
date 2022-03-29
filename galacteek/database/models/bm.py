@@ -102,3 +102,15 @@ class BitMessageContact(Model):
         through='bm_contact_group',
         null=True,
         description='BM group')
+
+
+class SoftwareVersionBeacon(Model):
+    id = fields.IntField(pk=True)
+
+    bmSourceAddress = fields.CharField(max_length=128)
+    bmDestAddress = fields.CharField(max_length=128, null=True)
+
+    content = fields.CharField(max_length=256, null=True)
+    flags = fields.IntField(default=0)
+
+    dateSent = fields.DatetimeField(auto_now_add=True)

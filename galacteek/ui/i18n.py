@@ -14,6 +14,7 @@ from galacteek.i18n.ip import *  # noqa
 from galacteek.i18n.ipfs import *  # noqa
 from galacteek.i18n.ipfsd import *  # noqa
 from galacteek.i18n.lang import *  # noqa
+from galacteek.i18n.ld import *  # noqa
 from galacteek.i18n.mfs import *  # noqa
 from galacteek.i18n.misc import *  # noqa
 from galacteek.i18n.mplayer import *  # noqa

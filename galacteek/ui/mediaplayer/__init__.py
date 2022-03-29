@@ -55,7 +55,7 @@ from galacteek.ld.rdf.resources.multimedia import MultimediaPlaylistResource
 from galacteek.ld.rdf.resources.multimedia import MusicRecordingResource
 from galacteek.ld.rdf.resources.multimedia import VideoObjectResource
 from galacteek.ld.rdf.util import literalDtNow
-from galacteek.ld.rdf.terms import tUriFromLibrarian
+from galacteek.ld.rdf.terms import tUriFromLibertarian
 
 from .videowidget import MPlayerVideoWidget
 from ..forms import ui_mediaplaylist
@@ -1234,12 +1234,12 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
             g = BaseGraph()
             g += self.model.graph
 
-            libId = await self.pronto.getLibrarianId()
+            libId = await self.pronto.getLibertarianId()
 
-            # Set librarian ID for the resource
+            # Set libertarian ID for the resource
             g.replace(
                 self.model.rsc.identifier,
-                tUriFromLibrarian,
+                tUriFromLibertarian,
                 libId
             )
 

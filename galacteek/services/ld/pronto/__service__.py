@@ -26,8 +26,8 @@ from rdflib import plugin
 from rdflib import URIRef
 from rdflib.store import Store
 
-from galacteek.ld.iri import p2pLibrarianGenUrn
-from galacteek.ld.rdf.terms import tUriUsesLibrarianId
+from galacteek.ld.iri import p2pLibertarianGenUrn
+from galacteek.ld.rdf.terms import tUriUsesLibertarianId
 from galacteek.ld.rdf.sync import *
 
 
@@ -54,6 +54,12 @@ class RDFStoresService(GService):
     @property
     def chainEnv(self):
         return self.app.cmdArgs.prontoChainEnv
+
+    @property
+    def graphsUrisStrings(self):
+        return sorted(
+            [str(g.identifier) for n, g in self._graphs.items()]
+        )
 
     def graphByUri(self, uri: str):
         for n, graph in self._graphs.items():
@@ -227,31 +233,31 @@ class RDFStoresService(GService):
                 await self.registerRegularGraph(uri, cfg)
 
     @ipfsOp
-    async def getLibrarianId(self, ipfsop):
+    async def getLibertarianId(self, ipfsop):
         """
-        Return a P2P Librarian ID for this node
+        Return a P2P Libertarian ID for this node
 
         :rtype: URIRef
         """
 
         nodeIdUriRef = await ipfsop.nodeIdUriRef()
 
-        h0g = self.graphByUri('urn:ipg:h0')
-        if not nodeIdUriRef or h0g is None:
+        l0g = self.graphByUri('urn:ipg:l:l0')
+        if not nodeIdUriRef or l0g is None:
             return None
 
         # Find existing ID
-        val = h0g.value(
+        val = l0g.value(
             subject=nodeIdUriRef,
-            predicate=tUriUsesLibrarianId
+            predicate=tUriUsesLibertarianId
         )
 
         if not val:
-            lid = p2pLibrarianGenUrn(str(nodeIdUriRef))
+            lid = p2pLibertarianGenUrn(str(nodeIdUriRef))
 
-            h0g.add((
+            l0g.add((
                 nodeIdUriRef,
-                tUriUsesLibrarianId,
+                tUriUsesLibertarianId,
                 lid
             ))
 
@@ -414,7 +420,7 @@ class RDFStoresService(GService):
                     iri,
                     p2pEndpointRaw,
                     graphDescr=graphdef,
-                    p2pLibrarianId=msg.p2pLibrarianId
+                    p2pLibertarianId=msg.p2pLibertarianId
                 )
         except Exception as err:
             print(err)
@@ -452,7 +458,7 @@ class RDFStoresService(GService):
             )
             await asyncio.sleep(t)
 
-            libId = await self.getLibrarianId()
+            libId = await self.getLibertarianId()
 
             msg = SparQLHeartbeatMessage.make(
                 self.chainEnv,

@@ -17,7 +17,7 @@ class GraphExportSynchronizer:
                              peerId: str,
                              iri: str, p2pEndpoint: str,
                              graphDescr=None,
-                             p2pLibrarianId=None):
+                             p2pLibertarianId=None):
         async with ipfsop.p2pDialerFromAddr(p2pEndpoint) as dial:
             if dial.failed:
                 return False

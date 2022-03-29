@@ -551,5 +551,4 @@ async def httpFetch(url: str,
 
         return file.name
     except Exception:
-        traceback.print_exc()
         return None

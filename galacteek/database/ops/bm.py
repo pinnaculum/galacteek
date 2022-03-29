@@ -6,6 +6,7 @@ from galacteek.database.models.bm import BitMessageMailBox
 from galacteek.database.models.bm import BitMessageMailBoxPrefs
 from galacteek.database.models.bm import BitMessageContact
 from galacteek.database.models.bm import BitMessageContactGroup
+from galacteek.database.models.bm import SoftwareVersionBeacon
 
 # BM
 
@@ -163,3 +164,18 @@ async def bmContactAdd(bmAddress: str,
         log.debug(f'Could not add BM contact {bmAddress}: {cerr}')
     else:
         return contact
+
+
+async def bmSoftVersionBeaconLast(sourceAddress: str):
+    return await SoftwareVersionBeacon.filter(
+        bmSourceAddress=sourceAddress
+    ).order_by('-dateSent').first()
+
+
+async def bmSoftVersionBeaconRecord(sourceAddress: str,
+                                    dstAddress: str):
+    record = SoftwareVersionBeacon(
+        bmSourceAddress=sourceAddress,
+        bmDestAddress=dstAddress
+    )
+    await record.save()

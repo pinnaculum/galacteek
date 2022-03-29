@@ -13,7 +13,7 @@ class GraphSparQLSynchronizer(BaseGraphSynchronizer):
         self.config = config if config else GraphSparQLSyncConfig()
 
     async def sync(self, ipfsop, peerId, iri, dial,
-                   auth, p2pLibrarianId=None):
+                   auth, p2pLibertarianId=None):
         rdfService = GService.byDotName.get('ld.pronto')
         localGraph = rdfService.graphByUri(iri)
 
@@ -41,10 +41,10 @@ class GraphSparQLSynchronizer(BaseGraphSynchronizer):
                     str(peerUriRef)
                 )
 
-                if p2pLibrarianId:
+                if p2pLibertarianId:
                     q = q.replace(
                         '@REMOTE_P2P_LIBRARIANID@',
-                        str(p2pLibrarianId)
+                        str(p2pLibertarianId)
                     )
 
                 if not ctype:

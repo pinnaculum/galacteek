@@ -46,6 +46,7 @@ from galacteek import logUser
 from galacteek import ensure
 from galacteek import partialEnsure
 from galacteek import database
+from galacteek import services
 from galacteek.config import cGet
 from galacteek.config import configModRegCallback
 
@@ -68,6 +69,7 @@ from galacteek.browser.schemes import SCHEME_HTTP
 from galacteek.browser.schemes import SCHEME_HTTPS
 from galacteek.browser.schemes import SCHEME_FTP
 from galacteek.browser.schemes import SCHEME_Z
+from galacteek.browser.schemes import SCHEME_PRONTO_GRAPHS
 from galacteek.browser.schemes import DAGProxySchemeHandler
 from galacteek.browser.schemes import MultiDAGProxySchemeHandler
 from galacteek.browser.schemes import IPFSObjectProxyScheme
@@ -87,6 +89,8 @@ from galacteek.dweb.page import BaseHandler
 from galacteek.dweb.page import pyqtSlot
 from galacteek.dweb.render import renderTemplate
 from galacteek.dweb.htmlparsers import IPFSLinksParser
+
+from ..pronto import buildProntoGraphsMenu
 
 from ..forms import ui_browsertab
 from ..dag import DAGViewer
@@ -1180,6 +1184,9 @@ class BrowserTab(GalacteekTab):
         # Setup the IPFS control tool button (has actions
         # for browsing CIDS and web profiles etc..)
 
+        self.prontoGraphsMenu = buildProntoGraphsMenu()
+        self.prontoGraphsMenu.triggered.connect(self.onViewProntoGraph)
+
         self.ipfsControlMenu = QMenu(self)
         self.webProfilesMenu = QMenu('Web profile', self.ipfsControlMenu)
 
@@ -1266,6 +1273,9 @@ class BrowserTab(GalacteekTab):
         self.ipfsControlMenu.addAction(self.followIpnsAction)
         self.ipfsControlMenu.addAction(self.loadHomeAction)
 
+        self.ipfsControlMenu.addSeparator()
+        self.ipfsControlMenu.addMenu(self.prontoGraphsMenu)
+
         self.ui.loadIpfsButton.setMenu(self.ipfsControlMenu)
         self.ui.loadIpfsButton.setPopupMode(QToolButton.InstantPopup)
         self.ui.loadIpfsButton.clicked.connect(self.onLoadIpfsCID)
@@ -1338,6 +1348,10 @@ class BrowserTab(GalacteekTab):
 
         self.configApply()
         configModRegCallback(self.onModuleConfigChanged)
+
+    @property
+    def prontoService(self):
+        return services.getByDotName('ld.pronto')
 
     @property
     def history(self):
@@ -2287,6 +2301,12 @@ class BrowserTab(GalacteekTab):
     def onZoomOut(self):
         cFactor = self.webView.zoomFactor()
         self.setZoom(cFactor - 0.25)
+
+    def onViewProntoGraph(self, action: QAction):
+        graphUri = str(action.data())
+
+        if graphUri:
+            self.enterUrl(QUrl(f'{SCHEME_PRONTO_GRAPHS}:/{graphUri}'))
 
     def configure(self):
         pass

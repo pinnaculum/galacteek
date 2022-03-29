@@ -27,8 +27,11 @@ from galacteek.ld.rdf import BaseGraph
 
 MIME_N3 = 'text/rdf+n3'
 MIME_TTL = 'text/turtle'
-MIME_XTTL = 'application/x-turtle'
 MIME_NTRIPLES = 'text/plain'
+
+MIME_RESULTS_JSON = 'application/sparql-results+json'
+MIME_RESULTS_XML = 'application/sparql-results+xml'
+MIME_XTTL = 'application/x-turtle'
 MIME_RDFXML = 'application/rdf+xml'
 MIME_JSONLD = 'application/ld+json'
 
@@ -229,6 +232,7 @@ class SparQLSiteHandler:
                         orjson.loads(
                             r.serialize(format='json')
                         ),
+                        content_type=MIME_RESULTS_JSON,
                         status=200
                     )
                 elif MIME_JSONLD in acceptl:

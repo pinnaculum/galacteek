@@ -41,8 +41,8 @@ from galacteek.dweb.render import renderTemplate
 from galacteek.core import uid4
 from galacteek.core import runningApp
 from galacteek.core import utcDatetimeIso
-from galacteek.ld.rdf.terms import tUriUsesLibrarianId
-from galacteek.ld.iri import p2pLibrarianGenUrn
+from galacteek.ld.rdf.terms import tUriUsesLibertarianId
+from galacteek.ld.iri import p2pLibertarianGenUrn
 
 from .colors import *
 from .helpers import *
@@ -496,19 +496,19 @@ class IPFSSearchHandler(QObject):
                 predicate=RDF.type
             )
 
-        def getLibrarianId(g, nodeId):
+        def getLibertarianId(g, nodeId):
             # Deprecated
             val = g.value(
                 subject=nodeId,
-                predicate=tUriUsesLibrarianId
+                predicate=tUriUsesLibertarianId
             )
 
             if not val:
-                lid = p2pLibrarianGenUrn(str(nodeId))
+                lid = p2pLibertarianGenUrn(str(nodeId))
 
                 g.add((
                     nodeId,
-                    tUriUsesLibrarianId,
+                    tUriUsesLibertarianId,
                     lid
                 ))
 
@@ -524,10 +524,10 @@ class IPFSSearchHandler(QObject):
             return
 
         # nodeIdUriRef = await ipfsop.nodeIdUriRef()
-        # librarianId = await self.hashmarksGraph.rexec(
-        #     getLibrarianId, nodeIdUriRef)
+        # libertarianId = await self.hashmarksGraph.rexec(
+        #     getLibertarianId, nodeIdUriRef)
 
-        librarianId = await self.prontoService.getLibrarianId()
+        libertarianId = await self.prontoService.getLibertarianId()
 
         title = hit.get('title')
         descr = hit.get('description')
@@ -564,8 +564,8 @@ class IPFSSearchHandler(QObject):
             'dateLastSeen': hit.get('last-seen')
         }
 
-        if librarianId:
-            hmark['fromLibrarian'] = str(librarianId)
+        if libertarianId:
+            hmark['fromLibertarian'] = str(libertarianId)
 
         for ref in hit.get('references', []):
             p = IPFSPath(ref['parent_hash'], autoCidConv=True)

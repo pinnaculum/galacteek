@@ -16,8 +16,11 @@ from galacteek import ensure
 from galacteek import ensureLater
 
 from galacteek.database import bmMailBoxGetDefault
+from galacteek.database import bmSoftVersionBeaconLast
+from galacteek.database import bmSoftVersionBeaconRecord
 
 from galacteek.config import cParentGet
+from galacteek.core import utcDatetime
 from galacteek.core.process import ProcessLauncher
 from galacteek.core.process import Process
 from galacteek.core.process import LineReaderProcessProtocol
@@ -311,7 +314,21 @@ class BitMessageMailManService(GService):
     async def sendVersionBeacon(self):
         from galacteek.__version__ import __version__
 
+        dsta = 'BM-87nPjK931X2EAfUsMYZPSKnnrKih6eqQsvG'
+
         try:
+            mbox = await bmMailBoxGetDefault()
+
+            assert mbox is not None
+
+            lastBeacon = await bmSoftVersionBeaconLast(mbox.bmAddress)
+
+            if lastBeacon:
+                diff = utcDatetime() - lastBeacon.dateSent
+
+                if diff.days < 5:
+                    raise Exception('Sent beacon recently')
+
             commitSha = os.environ.get('GALACTEEK_COMMIT_SHA', 'null')
 
             if len(commitSha) > 64:
@@ -326,13 +343,19 @@ class BitMessageMailManService(GService):
                 str(int(time.time()))
             )
 
-            await self.sendFromDefault(
-                'BM-87nPjK931X2EAfUsMYZPSKnnrKih6eqQsvG',
+            if await self.sendFromDefault(
+                dsta,
                 '[galacteek-beacon-version]',
                 f"[beacon]({urn})"
-            )
-        except Exception:
-            log.debug('No version beacon sent')
+            ):
+                await bmSoftVersionBeaconRecord(
+                    mbox.bmAddress,
+                    dsta
+                )
+            else:
+                raise Exception('Failed to send')
+        except Exception as err:
+            log.debug(f'No version beacon sent: {err}')
 
     async def on_stop(self) -> None:
         log.debug('Stopping BM mailer ..')

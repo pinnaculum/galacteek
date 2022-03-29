@@ -85,7 +85,7 @@ hbSchema = {
         "version": {"type": "integer"},
         "date": {"type": "string"},
         "rev": {"type": "string"},
-        "p2pLibrarianId": {"type": "string"},
+        "p2pLibertarianId": {"type": "string"},
 
         "prontoChainEnv": {
             "type": "string",
@@ -140,13 +140,13 @@ class SparQLHeartbeatMessage(PubsubMessage):
     schema = hbSchema
 
     @staticmethod
-    def make(prontoEnv: str, librarianId: str):
+    def make(prontoEnv: str, libertarianId: str):
         msg = SparQLHeartbeatMessage({
             'msgtype': SparQLHeartbeatMessage.TYPE,
             'version': 1,
             'date': utcDatetimeIso(),
             'prontoChainEnv': prontoEnv,
-            'p2pLibrarianId': librarianId,
+            'p2pLibertarianId': libertarianId,
             'graphs': []
         })
 
@@ -157,8 +157,8 @@ class SparQLHeartbeatMessage(PubsubMessage):
         return self.jsonAttr('rev')
 
     @property
-    def p2pLibrarianId(self):
-        return self.jsonAttr('p2pLibrarianId')
+    def p2pLibertarianId(self):
+        return self.jsonAttr('p2pLibertarianId')
 
     @property
     def prontoChainEnv(self):

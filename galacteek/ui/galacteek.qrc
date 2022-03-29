@@ -263,6 +263,10 @@
   </qresource>
 
   <qresource>
+    <file>../../share/icons/linked-data/chain-link.png</file>
+  </qresource>
+
+  <qresource>
     <file>../../galacteek/ui/themes/common.qss</file>
     <file>../../galacteek/ui/themes/moon3/galacteek.qss</file>
     <file>../../galacteek/ui/themes/chloride/galacteek.qss</file>

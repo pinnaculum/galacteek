@@ -42,9 +42,9 @@ def ipfsPeerUrn(peerId: str):
     return URIRef(f'urn:ipfs:peer:{peerId}')
 
 
-def p2pLibrarianGenUrn(peerId: str):
+def p2pLibertarianGenUrn(peerId: str):
     """
-    Generate Librarian ID based on PeerID
+    Generate Libertarian ID based on PeerID
 
     :rtype: URIRef
     """
@@ -52,4 +52,4 @@ def p2pLibrarianGenUrn(peerId: str):
     h.update(str(peerId).encode())
     h.update(secrets.token_hex(32).encode())
 
-    return URIRef(f'urn:glk:p2plibrarian:{h.hexdigest()}')
+    return URIRef(f'urn:glk:p2plibertarian:{h.hexdigest()}')
