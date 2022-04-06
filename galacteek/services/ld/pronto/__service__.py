@@ -2,6 +2,7 @@ import asyncio
 import otsrdflib
 import io
 import random
+import traceback
 
 from galacteek import log
 from galacteek.services import GService
@@ -422,8 +423,8 @@ class RDFStoresService(GService):
                     graphDescr=graphdef,
                     p2pLibertarianId=msg.p2pLibertarianId
                 )
-        except Exception as err:
-            print(err)
+        except Exception:
+            traceback.print_exc()
 
     @GService.task
     async def mProcessTask(self):

@@ -7,7 +7,12 @@ import random
 import string
 import weakref
 
+from rdflib import URIRef
+from rdflib import RDF
+from rdflib import Literal
+
 from aiohttp.web_exceptions import HTTPOk
+from datetime import datetime
 
 from yarl import URL
 from cachetools import LRUCache
@@ -41,6 +46,8 @@ from galacteek.core.asynccache import amlrucache
 from galacteek.crypto.rsa import RSAExecutor
 
 from galacteek.ld.signatures import jsonldsig
+from galacteek.ld.rdf import BaseGraph
+from galacteek.ld.rdf.terms import DID
 
 from galacteek.did.ipid.services import IPService
 from galacteek.did.ipid.services import IPServiceRegistry
@@ -122,6 +129,10 @@ class IPIdentifier(DAGOperations):
         return self._did
 
     @property
+    def didUriRef(self):
+        return URIRef(self._did)
+
+    @property
     def p2pServices(self):
         return self._p2pServices
 
@@ -143,7 +154,7 @@ class IPIdentifier(DAGOperations):
         return str(
             URL.build(
                 host='galacteek.ld',
-                scheme='ipschema',
+                scheme='ips',
                 path='/' + path,
                 fragment=fragment
             )
@@ -199,6 +210,25 @@ class IPIdentifier(DAGOperations):
             # Reset expanded cache
             self.message('LRU cache reset')
             del self.cache[cacheKey]
+
+    @ipfsOp
+    async def rdfGraph(self, ipfsop):
+        """
+        Return the RDF graph for the DID document
+
+        The documentIpfsCid predicate is always added
+        """
+        if self.doc:
+            async with ipfsop.ldOps() as ld:
+                g = await ld.rdfify(self.doc)
+
+                g.add((
+                    self.didUriRef,
+                    DID.documentIpfsCid,
+                    Literal(str(self.docCid))
+                ))
+
+            return g
 
     @ipfsOp
     async def unlock(self, ipfsop, rsaPassphrase=None):
@@ -397,6 +427,10 @@ class IPIdentifier(DAGOperations):
             'type': IPService.SRV_TYPE_COLLECTION,
         }, context='ObjectsCollectionEndpoint',
             endpoint={
+            '@id': self.didUrl(
+                path=posixpath.join('/collections', name),
+                fragment='#endpoint'
+            ),
             'name': name,
             'created': utcDatetimeIso(),
             'objects': []
@@ -433,16 +467,21 @@ class IPIdentifier(DAGOperations):
     @ipfsOp
     async def updateDocument(self, ipfsop, document, publish=False):
         """
-        Update the document and set the 'previous' IPLD link
+        Update the DID document
         """
 
         now = normedUtcDate()
         self._document = document
 
         if self.docCid:
-            self._document['previous'] = {
-                '/': self.docCid
-            }
+            # 'previous'
+            if 'previous' in self._document:
+                del self._document['previous']
+
+            if 0:
+                self._document['previous'] = {
+                    '/': self.docCid
+                }
 
         self._document['updated'] = now
 
@@ -456,7 +495,7 @@ class IPIdentifier(DAGOperations):
 
             await self.sChanged.emit(cid)
 
-            await self.rdfPush()
+            # await self.rdfPush()
         else:
             self.message('Could not inject new DID document!')
 
@@ -479,16 +518,64 @@ class IPIdentifier(DAGOperations):
             self.message(f'Failed to create JSON-LD signature: {err}')
 
     @ipfsOp
+    async def jsonLdSigVerify(self, ipfsop, document, pubKey=None):
+        try:
+            rsaAgent = await self.rsaAgentGet(ipfsop)
+
+            return jsonldsig.verify(
+                document, pubKey if pubKey else rsaAgent.pubKeyPem
+            )
+        except Exception as err:
+            self.message(f'Failed to verify JSON-LD signature: {err}')
+
+    @ipfsOp
+    async def jsonLdSubjectSignature(self, ipfsop, uri):
+        """
+        Return a subjectSignature
+        """
+        try:
+            rsaAgent = await self.rsaAgentGet(ipfsop)
+
+            token = await rsaAgent.jwsToken(str(uri))
+            jwss = token.serialize(compact=True)
+
+            return {
+                'type': 'RsaSignature2018',
+                'creator': str(self.didUriRef),
+                'created': datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ'),
+                'signatureValue': jwss
+            }
+        except Exception as err:
+            self.message(f'Failed to create signature: {err}')
+
+    @ipfsOp
+    async def jsonLdSubjectSigVerify(self, ipfsop,
+                                     signature: str,
+                                     subjUri: URIRef,
+                                     pubKeyPem: str):
+        """
+        Verify a subjectSignature
+        """
+        try:
+            rsaAgent = await self.rsaAgentGet(ipfsop)
+
+            payload = await rsaAgent.rsaExec.jwsVerifyFromPem(
+                signature, pubKeyPem
+            )
+
+            return payload.decode('utf-8') == str(subjUri)
+        except Exception as err:
+            self.message(f'Failed to create signature: {err}')
+
+    @ipfsOp
     async def resolve(self, ipfsop, resolveTimeout=None):
         resolveTimeout = resolveTimeout if resolveTimeout else \
             cGet('resolve.timeout')
 
         if self.local:
-            hours = cGet('resolve.cacheLifetime.local.hours')
+            maxLifetime = cGet('resolve.cacheLifetime.local.seconds')
         else:
-            hours = cGet('resolve.cacheLifetime.default.hours')
-
-        maxLifetime = hours * 3600
+            maxLifetime = cGet('resolve.cacheLifetime.default.seconds')
 
         useCache = 'always'
         cache = 'always'
@@ -496,9 +583,8 @@ class IPIdentifier(DAGOperations):
         self.message('DID resolve: {did} (using cache: {usecache})'.format(
             did=self.ipnsKey, usecache=useCache))
 
-        return await ipfsop.nameResolveStreamFirst(
+        return await ipfsop.nameResolve(
             joinIpns(self.ipnsKey),
-            count=1,
             timeout=resolveTimeout,
             useCache=useCache,
             cache=cache,
@@ -507,7 +593,7 @@ class IPIdentifier(DAGOperations):
         )
 
     async def refresh(self):
-        staleValue = cGet('resolve.staleAfterDelay')
+        staleValue = cGet('resolve.staleDelay')
         last = self._lastResolve
 
         if self.local or not last or (loopTime() - last) > staleValue:
@@ -736,19 +822,19 @@ class IPIdentifier(DAGOperations):
         avatarServiceId = self.didUrl(path='/avatar')
         return await self.searchServiceById(avatarServiceId)
 
-    async def avatarSet(self, ipfsPath):
+    async def avatarSet(self, ipfsPath: IPFSPath):
         avatarServiceId = self.didUrl(path='/avatar')
 
         if not await self.avatarService():
             await self.addServiceRaw({
                 'id': avatarServiceId,
                 'type': IPService.SRV_TYPE_AVATAR,
-                'serviceEndpoint': str(ipfsPath),
+                'serviceEndpoint': ipfsPath.ipfsUrl,
                 'description': 'User Avatar'
             }, publish=True)
         else:
             async with self.editServiceById(avatarServiceId) as editor:
-                editor.service['serviceEndpoint'] = str(ipfsPath)
+                editor.service['serviceEndpoint'] = ipfsPath.ipfsUrl
 
     @async_enterable
     async def editServiceById(self, _id: str, sync=True):
@@ -919,10 +1005,8 @@ class IPIDManager:
 
         # Initial document
         initialDoc = {
-            # "@context": await ipfsop.ldContext('did-v0.11'),
             "@context": {
-                "@vocab": "ips://galacteek.ld/",
-                "@base": "ips://galacteek.ld/"
+                "@vocab": "ips://galacteek.ld/"
             },
             "@type": "did",
             "publicKey": [{
@@ -1030,44 +1114,89 @@ class IPIDManager:
         """ Validate the verifiable credentials """
 
         try:
-            issued = document.get(
-                'https://www.w3.org/2018/credentials#issued')[0]['@value']
+            # vcid = URIRef('urn:glk:vc:{did}'.format(did=req['did']))
+            # sigid = URIRef('urn:glk:vc:{did}:proof'.format(did=req['did']))
+
+            graph = BaseGraph().parse(
+                data=json.dumps(document), format='json-ld'
+            )
+            assert graph is not None
+
+            vcid = graph.value(
+                predicate=RDF.type,
+                object=URIRef(
+                    'https://www.w3.org/2018/credentials#VerifiableCredential'
+                )
+            )
+            sigid = graph.value(
+                predicate=RDF.type,
+                object=URIRef(
+                    'https://w3id.org/security#RsaSignature2018'
+                )
+            )
+
+            issued = graph.value(
+                subject=vcid,
+                predicate=URIRef('https://www.w3.org/2018/credentials#issued')
+            )
+
             assert issued is not None
 
             # Issuer's DID
+
+            issuer = graph.value(
+                subject=vcid,
+                predicate=URIRef('https://www.w3.org/2018/credentials#issuer')
+            )
             issuer = document.get(
                 'https://www.w3.org/2018/credentials#issuer')[0]['@id']
             assert issuer == req['did']
 
             # Credential Subject
-            cSubject = document.get(
-                'https://www.w3.org/2018/credentials#'
-                'credentialSubject')[0]['@id']
-            assert cSubject == req['did']
+            cSubject = graph.value(
+                subject=vcid,
+                predicate=URIRef(
+                    'https://www.w3.org/2018/credentials#credentialSubject'
+                )
+            )
+
+            assert str(cSubject) == req['did']
 
             # Get the proof and check the type and nonce
-            proof = document.get(
-                'https://w3id.org/security#proof')[0]['@graph'][0]
-            assert proof.get('https://w3id.org/security'
-                             '#challenge')[0]['@value'] == req['nonce']
-            assert proof['@type'][0] == \
-                'https://w3id.org/security#RsaSignature2018'
 
-            assert proof.get(
-                'https://w3id.org/security#proofPurpose')[0]['@id'] == \
+            challenge = graph.value(
+                subject=sigid,
+                predicate=URIRef('https://w3id.org/security#challenge')
+            )
+            assert str(challenge) == req['nonce']
+
+            purpose = graph.value(
+                subject=sigid,
+                predicate=URIRef('https://w3id.org/security#proofPurpose')
+            )
+
+            assert purpose == URIRef(
                 'https://w3id.org/security#authenticationMethod'
+            )
 
-            sigValue = proof.get(
-                'https://w3id.org/security#proofValue')[0]['@value']
-            assert isinstance(sigValue, str)
+            sigValue = graph.value(
+                subject=sigid,
+                predicate=URIRef('https://w3id.org/security#proofValue')
+            )
 
             # IRI: https://w3id.org/security#verificationMethod
             # corresponds to the signer's publicKey DID's id
+            vMethod = graph.value(
+                subject=sigid,
+                predicate=URIRef(
+                    'https://w3id.org/security#verificationMethod'
+                )
+            )
 
-            vMethod = proof.get(
-                'https://w3id.org/security#verificationMethod')[0]['@id']
+            assert sigValue is not None
+            assert vMethod is not None
 
-            rsaPubPem = await ipid.pubKeyPemGetWithId(vMethod)
+            rsaPubPem = await ipid.pubKeyPemGetWithId(str(vMethod))
             if not rsaPubPem:
                 log.debug('didAuthPerform: PubKey not found: {}'.format(
                     str(vMethod)))
@@ -1076,13 +1205,12 @@ class IPIDManager:
             # Check the signature with PSS
             return await self._rsaExec.pssVerif(
                 req['challenge'].encode(),
-                base64.b64decode(sigValue),
+                base64.b64decode(str(sigValue)),
                 rsaPubPem
             )
         except AssertionError as aerr:
-            log.debug('Verifiable credentials assert error: {}'.format(
-                str(aerr)))
+            log.debug(f'Verifiable credentials assert error: {aerr}')
             return False
         except Exception as err:
-            log.debug('Unknown VC error: {}'.format(str(err)))
+            log.debug(f'Unknown VC error: {err}')
             return False

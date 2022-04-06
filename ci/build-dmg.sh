@@ -90,6 +90,10 @@ cp /usr/local/bin/tor galacteek.app/Contents/Resources/bin
 # Copy notbit
 cp $GITHUB_WORKSPACE/notbit/src/notbit galacteek.app/Contents/Resources/bin
 
+mkdir -p galacteek.app/Contents/Resources/share/file
+wget -O galacteek.app/Contents/Resources/share/file/magic-galacteek.mgc \
+    https://gitlab.com/galacteek/file/-/releases/continuous-galacteek/downloads/magic.mgc
+
 pushd galacteek.app/Contents/Resources/bin
 ln -s ipfs-${GO_IPFS_VERSION} ipfs
 ln -s notbit notbit-keygen
@@ -114,7 +118,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export GALACTEEK_MAGIC_DBPATH="$DIR/../Resources/share/misc/magic.mgc"
 export DYLD_FALLBACK_LIBRARY_PATH=$DYLD_FALLBACK_LIBRARY_PATH:$DIR/../Resources/lib
 export PATH=$PATH:$DIR/../Resources/bin
-$DIR/../Resources/bin/python $DIR/../Resources/bin/galacteek -d --from-dmg --no-ssl-verify
+$DIR/../Resources/bin/python $DIR/../Resources/bin/galacteek --from-dmg --no-ssl-verify "$@"
 EAT
 
 chmod a+x galacteek.app/Contents/MacOS/galacteek

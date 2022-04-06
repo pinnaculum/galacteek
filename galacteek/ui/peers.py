@@ -91,10 +91,7 @@ def iPeerToolTip(avatarUrl, peerId, ipHandle, did, validated, authenticated,
         'PeersManager',
         '''
         <p><img src="{0}"/></p>
-        <p>
-            Peer ID: {1}
-        </p>
-        <p>Space Handle: {2}</p>
+        <p>Handle: {2}</p>
         <p>DID: <b>{3}</b></p>
         <p>{4}</p>
         <p>{5}</p>

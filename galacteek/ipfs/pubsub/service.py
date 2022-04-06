@@ -40,6 +40,7 @@ from galacteek.database.psmanager import psManagerForTopic
 from galacteek.services import GService
 
 import aioipfs
+from aioipfs.exceptions import IPFSConnectionError
 
 
 psServSubscriber = psSubscriber('pubsubServices')
@@ -381,9 +382,7 @@ class PubsubService(Configurable, GService):
             self.debug('Cancelled, queue size was {0}'.format(
                 self.inQueue.qsize()))
             return
-        except Exception as err:
-            traceback.print_exc()
-
+        except (Exception, IPFSConnectionError) as err:
             # Unregister
             self.ipfsCtx.pubsub.unreg(self)
 
@@ -391,10 +390,10 @@ class PubsubService(Configurable, GService):
                 f'Serve interrupted by unknown exception {err}')
 
             ensureLater(5, self.serve, ipfsop)
+        else:
+            await self.stopListening()
 
-        await self.stopListening()
-
-        self.ipfsCtx.pubsub.unreg(self)
+            self.ipfsCtx.pubsub.unreg(self)
 
     @ipfsOp
     async def send(self, ipfsop, msg, topic=None):
@@ -816,7 +815,9 @@ class Curve25519JSONPubsubService(JSONPubsubService):
 
             topic = _topic if _topic else self.topic()
 
-            pubKey = await ipfsop.ctx.curve25Exec.pubKeyFromCid(pubKeyCid)
+            pubKey = await ipfsop.ctx.curve25Exec.pubKeyFromCid(
+                pubKeyCid, timeout=5
+            )
 
             if not pubKey:
                 logger.debug(f'Could not get curve25519 public key for '

@@ -49,7 +49,7 @@ class NotBitProtocol(LineReaderProcessProtocol):
         self.sMessageAccepted = AsyncSignal(str)
 
     def lineReceived(self, fd, line):
-        log.debug(f'NotBit daemon message: {line}')
+        # log.debug(f'NotBit daemon message: {line}')
 
         match = re.search(
             r'\[\d*\-\d*\-\d.*?\]\s(.*)$',

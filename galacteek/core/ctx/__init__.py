@@ -2,6 +2,7 @@ import asyncio
 import aiorwlock
 import re
 import collections
+
 from datetime import datetime
 
 from PyQt5.QtWidgets import QApplication
@@ -19,6 +20,7 @@ from galacteek import ensure
 from galacteek import partialEnsure
 from galacteek import AsyncSignal
 from galacteek import cached_property
+from galacteek import services
 
 from galacteek.config import cGet
 
@@ -370,6 +372,10 @@ class Peers(GService):
         self.peerAuthenticated.connectTo(self.onPeerAuthenticated)
 
     @property
+    def prontoService(self):
+        return services.getByDotName('ld.pronto')
+
+    @property
     def pgScanCount(self):
         return self._pgScanCount
 
@@ -654,9 +660,36 @@ class Peers(GService):
                     piCtx.ident = iMsg
                     await piCtx.ipid.refresh()
 
+                    await self.graphIpid(piCtx.ipid)
+
                     await self.peerModified.emit(piCtx)
 
         await self.changed.emit()
+
+    async def graphIpid(self, ipid):
+        from galacteek.ld.rdf.terms import DID
+
+        # Graph it in
+
+        try:
+            iamg = self.prontoService.graphByUri('urn:ipg:i:am')
+
+            val = str(iamg.value(
+                ipid.didUriRef,
+                DID.documentIpfsCid
+            ))
+
+            if not val or val != ipid.docCid:
+                g = await ipid.rdfGraph()
+                assert g is not None
+
+                await iamg.guardian.mergeReplace(
+                    g,
+                    iamg,
+                    debug=True
+                )
+        except Exception as err:
+            log.debug(f'Could not graph IPID: {ipid.did}: {err}')
 
     @ipfsOp
     async def didPerformAuth(self, ipfsop, piCtx, identMsg):

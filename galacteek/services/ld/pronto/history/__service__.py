@@ -16,6 +16,7 @@ from galacteek.ipfs.pubsub.messages.ld import SparQLHeartbeatMessage
 from galacteek.ld import gLdDefaultContext
 from galacteek.ld import ontolochain
 from galacteek.ld.sparql.aioclient import Sparkie
+from galacteek.ld.signatures import jsonldsig
 
 
 class GraphHistorySynchronizer:
@@ -115,16 +116,9 @@ class GraphingHistoryService(GService):
         self.synchro = GraphHistorySynchronizer(self.hGraph)
 
     async def ontoloChainCreate(self, ipid, chainId, peerId):
-        log.debug(f'Creating ontolochain: {chainId}')
+        from galacteek.ld.ontolochain import create
 
-        doc = await ipid.jsonLdSign({
-            '@context': gLdDefaultContext,
-            '@type': 'OntoloChain',
-            '@id': chainId,
-            'peerId': peerId,
-            'dateCreated': utcDatetimeIso()
-        })
-        await self.hGraph.pullObject(doc)
+        return await create(self.hGraph, ipid, chainId, peerId)
 
     async def trustTokenForDid(self, did: str):
         tokens = list(await self.mainGraph.queryAsync(
@@ -156,6 +150,8 @@ class GraphingHistoryService(GService):
         ipfsCtx = ipfsop.ctx
         profile = ipfsCtx.currentProfile
         ipid = await profile.userInfo.ipIdentifier()
+        rsaAgent = await ipid.rsaAgentGet(ipfsop)
+        privKey = await rsaAgent._privateKey()
 
         # Graph where we store the ontolorecord
         # dstGraph = self.rdfService.graphByUri(graphUri)
@@ -167,6 +163,11 @@ class GraphingHistoryService(GService):
 
         if not ipid:
             log.debug('No IPID found')
+            return
+
+        dagraw = await ipfsop.dagGet(str(iPath), timeout=15)
+        if not dagraw:
+            log.debug(f'trace: object {iPath} could not be retrieved')
             return
 
         h = hashlib.sha1()
@@ -227,7 +228,7 @@ class GraphingHistoryService(GService):
         if result:
             return
 
-        doc = await ipid.jsonLdSign({
+        doc = {
             '@context': gLdDefaultContext,
             '@type': recordType,
             '@id': nodeId,
@@ -250,8 +251,9 @@ class GraphingHistoryService(GService):
             'ipfsPath': str(iPath),
             'outputGraph': graphUri,
 
-            'verificationMethod': f'{ipid.did}#keys-1'
-        })
+            'verificationMethod': f'{ipid.did}#keys-1',
+            'signature': jsonldsig.signsa(dagraw, privKey.exportKey())
+        }
 
         await dstGraph.pullObject(doc)
 

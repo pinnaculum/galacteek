@@ -12,6 +12,8 @@ from rdflib import Literal
 from rdflib import URIRef
 from rdflib.plugins.sparql import prepareQuery
 
+from SPARQLWrapper import SPARQLWrapper, JSON, RDF
+
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import QAbstractListModel
 from PyQt5.QtCore import Qt
@@ -506,6 +508,125 @@ class RDFGraphHandler(GOntoloObject):
             os.remove(file)
 
         return True
+
+
+class SparQLWrapperResultsModel(SparQLResultsModel):
+    """
+    Use SparQLWrapper to query a sparql endpoint (dbpedia by default)
+    """
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
+
+        self._endpoint = 'https://dbpedia.org/sparql'
+        self._pConstructQuery = ''
+
+        self._sparqlw = SPARQLWrapper(self._endpoint)
+        self._sparqlw.addDefaultGraph("http://dbpedia.org")
+
+    def _getConstructQuery(self):
+        return self._pConstructQuery
+
+    def _setConstructQuery(self, q):
+        self._pConstructQuery = q
+
+    constructQuery = pyqtProperty(
+        "QString", _getConstructQuery, _setConstructQuery)
+
+    async def a_sparqlWrapperQueryJson(self, app, loop, query, bindings):
+        try:
+            # emulate bindings
+            for k, v in self._pBindings.items():
+                query = query.replace(
+                    f'?{k}', f'"{v}"'
+                )
+
+            self._sparqlw.setQuery(query)
+            self._sparqlw.setReturnFormat(JSON)
+
+            ret = self._sparqlw.queryAndConvert()
+
+            assert ret is not None
+
+            self._rolesNames = ret['head']['vars']
+
+            return ret
+        except Exception as err:
+            log.debug(f'Graph query error: {err}')
+
+    async def a_sparqlWrapperQueryGraph(self, app, loop, query, bindings):
+        try:
+            # emulate bindings
+            for k, v in self._pBindings.items():
+                query = query.replace(
+                    f'?{k}', f'"{v}"'
+                )
+
+            self._sparqlw.setQuery(query)
+            self._sparqlw.setReturnFormat(RDF)
+
+            graph = self._sparqlw.queryAndConvert()
+
+            dstGraph = self.rdf.graphByUri(self._pGraphUri)
+
+            assert dstGraph is not None
+
+            await dstGraph.guardian.mergeReplace(
+                graph,
+                dstGraph
+            )
+
+            return True
+        except Exception as err:
+            log.debug(f'Graph query error: {err}')
+
+    @pyqtSlot(str, QJsonValue)
+    def endpointQueryJson(self, query, bindings):
+        results = self.tc(self.a_sparqlWrapperQueryJson, query, bindings)
+
+        if results:
+            self.beginResetModel()
+            self._results = results['results']['bindings']
+            self.endResetModel()
+
+            self.resultsReady.emit(0)
+
+    @pyqtSlot(str, QJsonValue)
+    def endpointMergeGraph(self, query, bindings):
+        self.tc(self.a_sparqlWrapperQueryGraph, query, bindings)
+
+    def rowCount(self, parent=None, *args, **kwargs):
+        return len(self._results)
+
+    def data(self, QModelIndex, role=None):
+        row = QModelIndex.row()
+
+        try:
+            val = None
+            item = self._results[row]
+            roleName = self.roles[role]
+
+            cell = item[roleName.decode()]
+
+            if cell['type'] == 'uri':
+                val = str(cell['value'])
+            elif cell['type'] == 'literal':
+                val = str(cell['value'])
+            elif cell['type'] == 'typed-literal':
+                dtype = cell['datatype']
+
+                if dtype == 'http://www.w3.org/2001/XMLSchema#float':
+                    val = float(cell['value'])
+            else:
+                val = None
+
+            if val:
+                return val
+        except KeyError:
+            return ''
+        except IndexError:
+            return ''
+
+        return None
 
 
 def createSparQLSingletonProxy(engine, script_engine):

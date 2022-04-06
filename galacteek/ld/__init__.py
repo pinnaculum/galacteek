@@ -5,8 +5,7 @@ from galacteek.core import pkgResourcesRscFilename
 
 gLdBaseUri = 'ips://galacteek.ld/'
 gLdDefaultContext = {
-    '@vocab': 'ips://galacteek.ld/',
-    '@base': 'ips://galacteek.ld/'
+    '@vocab': 'ips://galacteek.ld/'
 }
 
 

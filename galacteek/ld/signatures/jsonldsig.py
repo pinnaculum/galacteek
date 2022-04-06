@@ -37,6 +37,21 @@ def sign(jld_document, private_key):
     return jld_document
 
 
+def signsa(jld_document, private_key):
+    jld_document = deepcopy(jld_document)
+    normalized_jld_hash = normalize_jsonld(jld_document)
+    jws_signature = sign_jws(normalized_jld_hash, private_key)
+
+    # construct the signature document and add it to jsonld
+    signature = {
+        'type': 'RsaSignatureSuite2017',
+        'created': datetime.now(tz=pytz.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
+        'signatureValue': jws_signature.decode('utf-8')
+    }
+
+    return signature
+
+
 def verify(signed_jld_document, public_key):
     """
     Verifies the Json Web Signature of a signed JSON-LD Document
@@ -47,3 +62,13 @@ def verify(signed_jld_document, public_key):
     normalized_jld_hash = normalize_jsonld(signed_jld_document)
 
     return verify_jws(normalized_jld_hash, jws_signature, public_key)
+
+
+def verifysa(jld_document, jws_signature_value: str, public_key):
+    normalized_jld_hash = normalize_jsonld(deepcopy(jld_document))
+
+    return verify_jws(
+        normalized_jld_hash,
+        jws_signature_value.encode('utf-8'),
+        public_key
+    )

@@ -85,6 +85,7 @@ hbSchema = {
         "version": {"type": "integer"},
         "date": {"type": "string"},
         "rev": {"type": "string"},
+
         "p2pLibertarianId": {"type": "string"},
 
         "prontoChainEnv": {
@@ -92,11 +93,23 @@ hbSchema = {
             "pattern": r"[a-z]{3,12}"
         },
 
+        "prontoNodeType": {
+            "type": "string",
+            "pattern": r"[a-zA-Z]{1,16}"
+        },
+
+        "prontoNodeParams": {
+            "type": "object"
+        },
+
         "graphs": {
             "type": "array",
             "items": {
                 "type": "object",
                 "properties": {
+                    "priority": {
+                        "type": "integer"
+                    },
                     "graphIri": {
                         "type": "string",
                         "pattern": r"\w{2,512}"
@@ -121,7 +134,8 @@ hbSchema = {
                 },
                 "required": [
                     "graphIri",
-                    "smartqlEndpointAddr"
+                    "smartqlEndpointAddr",
+                    "smartqlCredentials"
                 ]
             }
         }
@@ -143,9 +157,10 @@ class SparQLHeartbeatMessage(PubsubMessage):
     def make(prontoEnv: str, libertarianId: str):
         msg = SparQLHeartbeatMessage({
             'msgtype': SparQLHeartbeatMessage.TYPE,
-            'version': 1,
+            'version': 2,
             'date': utcDatetimeIso(),
             'prontoChainEnv': prontoEnv,
+            'prontoNodeType': 'standard',
             'p2pLibertarianId': libertarianId,
             'graphs': []
         })
@@ -163,6 +178,10 @@ class SparQLHeartbeatMessage(PubsubMessage):
     @property
     def prontoChainEnv(self):
         return self.jsonAttr('prontoChainEnv')
+
+    @property
+    def prontoNodeType(self):
+        return self.jsonAttr('prontoNodeType')
 
     @property
     def graphs(self):

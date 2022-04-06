@@ -1,12 +1,12 @@
 graphEnvs:
   # Graphs definitions
   # ipg = interplanetary graph, g = galacteek
-  beta:
+  alpha:
     # Pubsub service config
     pubsub:
       heartbeat:
-        intervalMin: 90
-        intervalMax: 220
+        intervalMin: 150
+        intervalMax: 280
 
     mSyncThrottler:
       rateLimit: 12
@@ -58,7 +58,7 @@ graphEnvs:
         format: ttl
         compression: gzip
 
-      urn:ipg:sync:sparql:hashmarksbylibrarian1:
+      urn:ipg:sync:sparql:hashmarks:h20220326:
         type: sparql
         run:
           - query: >
@@ -68,8 +68,39 @@ graphEnvs:
                 ?uri ?p ?o .
               } WHERE {
                 ?uri ?p ?o .
-                ?uri hmark:librarianId ?libId .
-                <@REMOTE_PEER_URIREF@> gs:usesLibrarianId ?libId .
+                ?uri gs:fromLibertarian ?libertarianId .
+
+                FILTER(?libertarianId = <@REMOTE_P2P_LIBRARIANID@>)
+              }
+
+            contentType: text/turtle
+            action: merge
+
+      urn:ipg:sync:sparql:playlists:bylibertarian:
+        type: sparql
+        run:
+          - query: >
+              PREFIX pl: <ips://galacteek.ld/MultimediaPlaylist#>
+
+              CONSTRUCT {
+                ?pluri ?p ?o .
+                ?pluri gs:track ?t .
+                ?pluri ?plp ?plo .
+                ?t a ?ttype .
+                ?t gs:name ?name .
+                ?t gs:url ?url .
+                ?t ?tp ?to .
+              } WHERE {
+                ?pluri a gs:MultimediaPlaylist .
+                ?pluri gs:fromLibertarian ?libertarianId .
+                ?pluri gs:track ?t .
+                ?pluri ?plp ?plo .
+                ?t a ?ttype .
+                ?t gs:name ?name .
+                ?t gs:url ?url .
+                ?t ?tp ?to .
+
+                FILTER(?libertarianId = <@REMOTE_P2P_LIBRARIANID@>)
               }
 
             contentType: text/turtle
@@ -90,8 +121,12 @@ graphEnvs:
         subgraphs:
           urn:ipg:i:i0:
             name: i_i0
+
           urn:ipg:i:i1:
             name: i_i1
+
+          urn:ipg:i:am:
+            name: i_am
 
           urn:ipg:i:articles:
             name: i_articles
@@ -115,6 +150,14 @@ graphEnvs:
 
           sync:
             use: 'urn:ipg:sync:ontolochain1'
+
+      urn:ipg:l:
+        name: l
+        type: conjunctive
+
+        subgraphs:
+          urn:ipg:l:l0:
+            name: l_l0
 
       urn:ipg:icapsules:registries:
         type: conjunctive
@@ -175,3 +218,8 @@ graphEnvs:
 
           urn:ipg:user:multimedia:playlists:public:
             name: user_multimedia_playlists_public
+            services:
+              sparql: {}
+
+              sync:
+                use: urn:ipg:sync:sparql:playlists:bylibertarian

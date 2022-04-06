@@ -122,6 +122,13 @@ class QMLApplicationWidget(QWidget):
             'SpQLModel'
         )
         qmlRegisterType(
+            SparQLWrapperResultsModel,
+            'Galacteek',
+            1, 0,
+            'SpQLEndpointModel'
+        )
+
+        qmlRegisterType(
             IPFSHandler,
             'Galacteek',
             1, 0,

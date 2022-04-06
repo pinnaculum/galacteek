@@ -44,9 +44,9 @@ envs:
         # At the moment there isn't more fine-grained control than this
 
         use:
-          cloudfare: true
+          cloudfare: false
           textile: false
-          pinataNyc: true
+          pinataNyc: false
           pinataFra: false
           protocolLabs: false
           protocolLabsNft: false

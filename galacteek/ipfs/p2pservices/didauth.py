@@ -93,6 +93,7 @@ class DIDAuthSiteHandler:
 
         return web.json_response({
             '@context': 'ips://galacteek.ld/VerifiableCredential',
+            '@id': f'urn:glk:vc:{did}',
             'type': 'VerifiableCredential',
             'issuer': did,
             'issued': normedUtcDate(),

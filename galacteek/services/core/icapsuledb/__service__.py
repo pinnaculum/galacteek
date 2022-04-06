@@ -218,7 +218,7 @@ class ICapsuleRegistryLoaderService(GService):
             iconCid = str(manifest.value(mterm('iconIpfsPath')))
             # httpGws = str(manifest.value(mterm('ipfsHttpGws')))
 
-            httpGws = ['https://gateway.pinata.cloud']
+            httpGws = ['https://ipfs.io']
 
             comps = await self.querier.capsuleComponents(
                 icapid
@@ -400,17 +400,18 @@ class ICapsuleRegistryLoaderService(GService):
 
                 if dsrc and dnew and (dsrc == dnew):
                     # Same ol'
-                    return self.registryFromArchive(savePath)
+                    cfg = self.registryFromArchive(savePath)
+                else:
+                    fd = BytesIO(data)
+                    tar = tarfile.open(fileobj=fd)
+                    names = tar.getnames()
+                    assert 'icapsule-registry.yaml' in names
 
-                fd = BytesIO(data)
-                tar = tarfile.open(fileobj=fd)
-                names = tar.getnames()
-                assert 'icapsule-registry.yaml' in names
+                    await asyncWriteFile(str(savePath), data)
+                    registry = tar.extractfile('icapsule-registry.yaml')
 
-                await asyncWriteFile(str(savePath), data)
-                registry = tar.extractfile('icapsule-registry.yaml')
+                    cfg = OmegaConf.create(registry.read().decode())
 
-                cfg = OmegaConf.create(registry.read().decode())
                 assert cfg is not None
         except Exception as err:
             log.info(f'{url}: cannot load registry: {err}')
