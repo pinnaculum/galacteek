@@ -19,7 +19,6 @@ from galacteek.core import runningApp
 from galacteek.core import utcDatetimeIso
 
 from galacteek.ld import gLdBaseUri
-from galacteek.ld.signatures import jsonldsig
 from galacteek.ld.iri import *
 
 from . import GAsyncObject
@@ -86,11 +85,7 @@ class LDInterface(object):
 
             dag['verificationMethod'] = f'{ipid.did}#keys-1'
 
-            # JSON-LD signature
-            signed = jsonldsig.sign(dag, privKey.exportKey())
-
-            # Store in IPFS
-            cid = await ipfsop.dagPut(signed)
+            cid = await ipfsop.dagPut(dag)
 
             # Notify the RDF service
             await runningApp().s.rdfStore(

@@ -33,7 +33,9 @@ async def shell(arg):
     stdout, stderr = await p.communicate()
     try:
         if p.returncode != 0:
-            return False, None, stderr.decode()
+            out = stdout.decode() if stdout else None
+            err = stderr.decode() if stderr else None
+            return False, out, err
 
         try:
             return True, stdout.decode(), None

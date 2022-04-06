@@ -14,14 +14,13 @@ Where
 **galacteek** is developed `on GitLab <https://gitlab.com/galacteek/galacteek>`_
 (`official website here <https://galacteek.gitlab.io>`_).
 
-Join in `on the Telegram channel <https://t.me/Galacteek>`_
-(there's also a channel on the Aether_ network, search for the *Galacteek*
-community there).
+Join in `on the Telegram channel <https://t.me/Galacteek>`_ or
+`in the Matrix room <https://matrix.to/#/#galacteek:matrix.org>`_
 
 Installation
 ============
 
-Please go to `the download section on the website <https://galacteek.gitlab.io/#download>`_
+Please go to `the download section on the website <https://galacteek.gitlab.io/download>`_
 
 *On Linux*: Be sure to install all the **gstreamer** packages on your
 system to be able to use the mediaplayer. Problem with the AppImage ?

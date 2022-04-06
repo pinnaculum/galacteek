@@ -18,7 +18,7 @@ class ExpandedJSONLDQuerier:
     def gu(self, _id, attr):
         uri = URL.build(
             host='galacteek.ld',
-            scheme='ipschema',
+            scheme='ips',
             path=f'/{_id}',
             fragment=attr
         )

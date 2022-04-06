@@ -1,5 +1,7 @@
 from galacteek.ld import ipsTermUri as termUri
 
+from . import DID  # noqa
+
 
 tUriIpfsPath = termUri('ipfsPath')  # noqa
 tUriSemObjCurrent = termUri('semObjectCurrent')  # noqa

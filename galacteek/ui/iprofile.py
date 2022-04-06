@@ -22,8 +22,8 @@ from galacteek import ensure
 from galacteek import partialEnsure
 from galacteek import log
 from galacteek.ipfs.wrappers import ipfsOp
-from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import joinIpns
+from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.core.iphandle import ipHandleGen
 from galacteek.core.iphandle import SpaceHandle
 
@@ -345,7 +345,7 @@ class ProfileEditDialog(QDialog):
         # Update the avatar DID service
         ipid = await self.profile.userInfo.ipIdentifier()
 
-        await ipid.avatarSet(joinIpfs(entry['Hash']))
+        await ipid.avatarSet(IPFSPath(entry['Hash']))
         await op.sleep(1)
         await self.loadIcon()
 

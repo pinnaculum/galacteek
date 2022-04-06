@@ -879,7 +879,7 @@ class UserProfile(QObject):
 
                 if entry:
                     path = IPFSPath(entry['Hash'])
-                    await ipid.avatarSet(path.objPath)
+                    await ipid.avatarSet(path)
 
             pwd = self.initOptions.get('ipidRsaPassphrase', None)
 
@@ -1028,7 +1028,7 @@ class UserProfile(QObject):
 
         if entry:
             defAvatar = IPFSPath(entry['Hash'])
-            await ipid.avatarSet(defAvatar.objPath)
+            await ipid.avatarSet(defAvatar)
 
         await ipid.upgrade()
 

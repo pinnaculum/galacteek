@@ -26,6 +26,7 @@ from galacteek.ld.rdf import BaseGraph
 from galacteek.ld import ontolochain
 from galacteek.ld.rdf.terms import *
 from galacteek.ld.sparql import select, where, T, Filter, Prefix
+from galacteek.ld.signatures import jsonldsig
 
 
 from ..smartqlclient import SmartQLClient
@@ -34,6 +35,17 @@ from ..cfg import GraphSemChainSyncConfig
 
 def trackerSubject(curi):
     return f'urn:ontolochain:status:{curi}'
+
+
+def rsaPubKeyPemFromKeyId(graph, keyId: URIRef):
+    # did:ipid:k2k4r8nz8qoi .... 0l1awpkheqaosj7qr2xb6h0jvw5r#keys-1
+
+    pem = graph.value(
+        subject=keyId,
+        predicate=URIRef('https://w3id.org/security#publicKeyPem')
+    )
+
+    return str(pem) if pem else None
 
 
 class GraphSemChainSynchronizer:
@@ -58,7 +70,8 @@ class GraphSemChainSynchronizer:
                 return False
 
             return await self._sync(ipfsop, peerId, iri, dial,
-                                    graphDescr=graphDescr)
+                                    graphDescr=graphDescr,
+                                    p2pLibertarianId=p2pLibertarianId)
 
     @cached(TTLCache(4096, 180))
     def ontoloChainsList(self, hGraph):
@@ -81,10 +94,12 @@ class GraphSemChainSynchronizer:
             object=str(tUriOntoloChainGeoTransponder)
         ))
 
-    async def _sync(self, ipfsop, peerId, iri, dial, graphDescr=None):
+    async def _sync(self, ipfsop, peerId, iri, dial, graphDescr=None,
+                    p2pLibertarianId=None):
         ipid = await ipfsop.ipid()
+        peerCtx = ipfsop.ctx.peers.getByPeerId(peerId)
 
-        if not ipid:
+        if not ipid or not peerCtx:
             log.debug(
                 f'Sync with peer {peerId} aborted: no IPID attached')
             return
@@ -113,26 +128,18 @@ class GraphSemChainSynchronizer:
 
         smartql = SmartQLClient(dial, auth=auth)
 
-        if 0:
-            try:
-                await self.syncGeoEntities(
-                    hGraph, smartql,
-                    await hGraph.rexec(self.ontoloChainsGeoEmittersList),
-                    contextName='OntoloChainGeoEmitter'
-                )
-                await self.syncGeoEntities(
-                    hGraph, smartql,
-                    await hGraph.rexec(self.ontoloChainsGeoTranspondersList),
-                    contextName='OntoloChainGeoTransponder'
-                )
-            except Exception as err:
-                log.debug(
-                    f'Sync with {peerId}: failed to fetch geo entities: {err}')
-
         w = where([
             T(subject='?uri', predicate="a", object="gs:OntoloChain"),
-            T(subject='?uri', predicate="ochain:peerId",
+            T(subject='?uri', predicate="gs:peerId",
               object="?fpeerid"),
+            T(subject='?uri', predicate="sec:verificationMethod",
+              object="?vmethod"),
+            T(subject='?uri', predicate="gs:subjectSignature",
+              object="?s"),
+            T(subject='?s', predicate="a",
+              object="sec:RsaSignature2018"),
+            T(subject='?s', predicate="sec:signatureValue",
+              object="?jws")
         ])
 
         w.add_filter(filter=Filter(
@@ -144,12 +151,16 @@ class GraphSemChainSynchronizer:
         ))
 
         q = select(
-            vars=['?uri'],
+            vars=['?uri', '?vmethod', '?jws'],
             w=w
         )
         q.add_prefix(prefix=Prefix(
             prefix='ochain',
             namespace='ips://galacteek.ld/OntoloChain#')
+        )
+        q.add_prefix(prefix=Prefix(
+            prefix='sec',
+            namespace='https://w3id.org/security#')
         )
 
         reply = await smartql.spql.query(str(q))
@@ -161,6 +172,8 @@ class GraphSemChainSynchronizer:
 
             for res in reply['results']['bindings']:
                 uri = URIRef(res['uri']['value'])
+                jws = str(res['jws']['value'])
+                vmethod = URIRef(res['vmethod']['value'])
 
                 typecheck = graph.value(
                     subject=uri,
@@ -168,6 +181,27 @@ class GraphSemChainSynchronizer:
                 )
 
                 if not typecheck:
+                    # Chain is not in our graph
+
+                    pem = rsaPubKeyPemFromKeyId(
+                        self.pronto.graphByUri('urn:ipg:i:am'),
+                        vmethod
+                    )
+
+                    if 0:
+                        pem = await peerCtx.ipid.pubKeyPemGet()
+                        if not pem:
+                            continue
+
+                    verif = await ipid.jsonLdSubjectSigVerify(
+                        jws,
+                        uri,
+                        pem
+                    )
+
+                    if not verif:
+                        continue
+
                     gttl = await smartql.resource(
                         str(uri),
                         context='ips://galacteek.ld/OntoloChain'
@@ -195,7 +229,6 @@ class GraphSemChainSynchronizer:
                             '@id': str(uri)
                         }
                     })
-                    # chains.append(uri)
 
                 chains.append(uri)
         except Exception as err:
@@ -211,26 +244,59 @@ class GraphSemChainSynchronizer:
 
             if not syncing:
                 self._chainSync[curi] = True
-                await self.syncChain(
-                    ipid,
-                    hGraph,
-                    smartql,
-                    curi,
-                    tsubj
-                )
+
+                try:
+                    await self.syncChain(
+                        ipfsop,
+                        ipid,
+                        hGraph,
+                        smartql,
+                        curi,
+                        tsubj
+                    )
+                except Exception as err:
+                    self._chainSync[curi] = False
+                    log.debug(f'syncChain: {curi}: error {err}')
+                    continue
+
+                try:
+                    await self.syncGeoEntities(
+                        hGraph, smartql,
+                        await hGraph.rexec(self.ontoloChainsGeoEmittersList),
+                        curi,
+                        contextName='OntoloChainGeoEmitter'
+                    )
+
+                    if 0:
+                        await self.syncGeoEntities(
+                            hGraph, smartql,
+                            await hGraph.rexec(
+                                self.ontoloChainsGeoEmittersList),
+                            curi,
+                            contextName='OntoloChainGeoTransponder'
+                        )
+                except Exception as err:
+                    log.debug(
+                        f'Sync with {peerId}: '
+                        f'failed to fetch geo entities: {err}')
+
                 self._chainSync[curi] = False
+
             else:
                 log.debug(f'OntoloSync: {iri}: already syncing {curi}')
 
         await smartql.spql.close()
 
     async def syncGeoEntities(self, graph, smartql, rings,
+                              chainId,
                               contextName='OntoloChainGeoEmitter'):
         ctxUri = ipsContextUri(contextName)
 
         w = where([
             T(subject='?uri', predicate="a",
-              object=f"gs:{contextName}")
+              object=f"gs:{contextName}"),
+            T(subject='?uri', predicate="gs:ontoloChain",
+              object=f'<{chainId}>')
         ])
 
         for curi in rings:
@@ -263,6 +329,7 @@ class GraphSemChainSynchronizer:
             log.debug(f'Geo rings sync error: {err}')
 
     async def syncChain(self,
+                        ipfsop,
                         ipid,
                         hGraph,
                         smartql,
@@ -371,7 +438,15 @@ class GraphSemChainSynchronizer:
                 T(subject='?uri', predicate="a",
                   object="gs:OntoloChainRecord"),
                 T(subject='?uri', predicate="gs:ontoloChain",
-                  object=f'<{chainUri}>')
+                  object=f'<{chainUri}>'),
+                T(subject='?uri', predicate="gs:ipfsPath",
+                  object='?ipfsPath'),
+                T(subject='?uri', predicate="sec:verificationMethod",
+                  object="?vmethod"),
+                T(subject='?uri', predicate="sec:signature",
+                  object="?s"),
+                T(subject='?s', predicate="sec:signatureValue",
+                  object="?sigjws")
             ])
 
             curObject = tracker.value(p=predCurObj)
@@ -391,7 +466,8 @@ class GraphSemChainSynchronizer:
             )
 
             req = select(
-                vars=['?uri'],
+                # vars=['?uri'],
+                vars=['?uri', '?vmethod', '?sigjws', '?ipfsPath'],
                 w=w
             )
 
@@ -399,6 +475,37 @@ class GraphSemChainSynchronizer:
                 objCount += 1
 
                 uri = URIRef(res['uri']['value'])
+                objPath = str(res['ipfsPath']['value'])
+                vmethod = URIRef(res['vmethod']['value'])
+
+                obj = await ipfsop.dagGet(objPath, timeout=10)
+                if not obj:
+                    raise Exception(
+                        f'Cannot fetch ontorecord object: {objPath}')
+
+                pem = rsaPubKeyPemFromKeyId(
+                    self.pronto.graphByUri('urn:ipg:i:am'),
+                    vmethod
+                )
+
+                if not pem:
+                    raise Exception(f'Cannot fetch PEM for {vmethod}')
+
+                await asyncio.sleep(0.05)
+
+                # JSON-LD signature verification
+                verif = jsonldsig.verifysa(
+                    obj,
+                    str(res['sigjws']['value']),
+                    pem
+                )
+
+                if verif is not True:
+                    log.debug(f'JSON-LD signature for {uri} is wrong')
+
+                    raise Exception(f'Invalid JSON-LD sig for record {uri}')
+                else:
+                    log.debug(f'JSON-LD signature for {uri} is correct')
 
                 ex = hGraph.value(subject=uri, predicate=RDF.type)
                 if not ex:

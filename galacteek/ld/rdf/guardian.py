@@ -234,7 +234,7 @@ class GraphGuardian:
 
         return residue
 
-    async def mergeReplace(self, graph: Graph, dst: Graph):
+    async def mergeReplace(self, graph: Graph, dst: Graph, debug=False):
         try:
             for s, p, o in graph:
                 dst.remove((s, p, None))

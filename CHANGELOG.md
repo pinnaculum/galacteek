@@ -5,19 +5,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.5.4] - 2022-02-11
+## [0.5.4] - 2022-04-04
 
 ### Added
 - RDF hashmarks store
 - Qt SparQL models API: add async support
 - Add MIME type recognition for turtle (ttl), YAML
+- Add UI to browse pronto graphs from a browser tab
 
 ### Changed
 - Improve the Curve25519 pubsub API
 - SmartQL P2P service
   - Implement a peer-dependent authentication middleware for the http service
 - Pronto
-  - galacteek.ld.pronto is now encrypted with curve25519
+  - galacteek.ld.pronto: pubsub service is now encrypted with curve25519
   - Use time-rotating peer-dependent credentials for the smartql p2p service
 - Mediaplayer:
   - Deprecate old MFS+JSON playlists storage
@@ -26,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Playlists can be published to a public RDF store
   - Public playlists are synchronized between peers via a SparQL script
 - Content providers peering: separate Pinata nodes config by region
+- Update *Pillow* to v9.0.1
+- IPS contexts loader: add TTLCache for small schemas
 
 ### Fixed
 - AppImage: fix xkb issue when running in Wayland (set XKB_CONFIG_ROOT)

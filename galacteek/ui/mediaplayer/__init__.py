@@ -281,6 +281,7 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
 
         self.pMenu.addSeparator()
         self.pMenu.addAction(self.publishAction)
+        self.pMenu.addSeparator()
         self.pMenu.addMenu(self.exportMenu)
 
         # self.pMenu.addMenu(self.playlistsMenu)
@@ -732,7 +733,10 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
         self.savePlaylistAction.setEnabled(not self.playlistEmpty)
         self.scanMetadataAction.setEnabled(not self.playlistEmpty)
         self.ttlExportAction.setEnabled(not self.playlistEmpty)
-        self.publishAction.setEnabled(not self.playlistEmpty)
+
+        self.publishAction.setEnabled(
+            not self.playlistEmpty and self.model.rsc.name is not None
+        )
 
         self.uipList.quickSaveButton.setEnabled(not self.playlistEmpty)
         self.uipList.scanMetadataButton.setEnabled(not self.playlistEmpty)
@@ -800,7 +804,7 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
     def onSliderReleased(self):
         pass
 
-    def playlistViewCurrentChanged(self, current, prev):
+    def playCurrentIndexMedia(self):
         media = self.model.mediaForIndex(self.currentIndex)
 
         if media:
@@ -815,6 +819,7 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
                 row,
                 self.currentIndex.column()
             ))
+            self.playCurrentIndexMedia()
 
     def playlistPreviousMedia(self):
         row = self.currentIndex.row() - 1
@@ -824,6 +829,7 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
                 row,
                 self.currentIndex.column()
             ))
+            self.playCurrentIndexMedia()
 
     def onPlayClicked(self):
         self.player.play()
@@ -1249,3 +1255,5 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
             )
         except Exception as err:
             await messageBoxAsync(f'Error publishing playlist: {err}')
+        else:
+            await messageBoxAsync(f'Published playlist: {self.model.rsc.name}')

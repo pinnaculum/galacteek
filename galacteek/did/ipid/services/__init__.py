@@ -230,6 +230,8 @@ class CollectionService(IPService):
         try:
             for obj in endpoint.get(self.ipid.contextUrl(
                     self.endpointName, fragment='objects')):
+                if '@id' not in obj:
+                    continue
 
                 yield {
                     'id': obj['@id'],
@@ -261,7 +263,8 @@ class CollectionService(IPService):
         try:
             async with self.ipid.editServiceById(self.id) as editor:
                 editor.service['serviceEndpoint']['objects'].append({
-                    '@context': await ipfsop.ldContext('IpfsObject'),
+                    '@context': 'ips://galacteek.ld/IpfsObject',
+                    '@type': 'IpfsObject',
                     'id': oId,
                     'objectPath': objPath,
                     'objectName': path.basename,

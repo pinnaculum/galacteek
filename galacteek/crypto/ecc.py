@@ -19,12 +19,12 @@ class Curve25519(BaseCryptoExec):
         return await self._exec(_generateKeypair)
 
     @ipfsOp
-    async def pubKeyFromCid(self, ipfsop, pubKeyCid):
+    async def pubKeyFromCid(self, ipfsop, pubKeyCid, timeout=None):
         cached = self.cachedKey(pubKeyCid)
         if cached:
             return cached
 
-        key = await ipfsop.catObject(pubKeyCid)
+        key = await ipfsop.catObject(pubKeyCid, timeout=timeout)
         if key:
             self.cacheKey(pubKeyCid, key)
             return key

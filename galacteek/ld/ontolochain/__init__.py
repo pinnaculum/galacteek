@@ -80,15 +80,19 @@ async def create(ipfsop,
         return False
 
     async with graph.lock:
-        log.debug(f'Creating ontolochain: {chainId}')
+        log.debug(f'Creating ontolochain: {chainId} for {peerId}')
 
-        doc = await ipid.jsonLdSign({
+        doc = {
             '@context': gLdDefaultContext,
             '@type': 'OntoloChain',
             '@id': chainId,
             'peerId': peerId,
             'description': description,
-            'dateCreated': utcDatetimeIso()
-        })
+            'dateCreated': utcDatetimeIso(),
+            'verificationMethod': f'{ipid.did}#keys-1',
+            'subjectSignature': await ipid.jsonLdSubjectSignature(chainId)
+        }
 
         await graph.pullObject(doc)
+
+    return True

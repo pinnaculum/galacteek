@@ -1770,7 +1770,8 @@ class IPFSOperator(RemotePinningOps,
 
         return peers
 
-    async def provide(self, multihash, recursive=False):
+    async def provide(self, multihash, recursive=False,
+                      timeout=60):
         """
         Announce to the network that we are providing this multihash
 
@@ -1781,15 +1782,21 @@ class IPFSOperator(RemotePinningOps,
         try:
             # Not much exception handling here.. if we get out of the
             # async generator alive, we consider that it's a success
-            async for resp in self.client.dht.provide(
-                    multihash, recursive=recursive):
-                if not isinstance(resp, dict):
-                    continue
-                provideRespCount += 1
+            with async_timeout.timeout(timeout):
+                async for resp in self.client.dht.provide(
+                        multihash, recursive=recursive):
+                    if not isinstance(resp, dict):
+                        continue
+
+                    provideRespCount += 1
+                    await self.sleep()
 
             self.debug('DHT provide {multihash}: {count} messages'.format(
                 multihash=multihash, count=provideRespCount))
+
             return True
+        except (asyncio.TimeoutError, Exception):
+            return False
         except aioipfs.APIError:
             return False
 

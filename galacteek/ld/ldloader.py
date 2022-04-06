@@ -19,6 +19,9 @@ async def keysList(client):
     return await client.key.list()
 
 
+contextsCache = TTLCache(32, 180)
+
+
 async def aioipfs_document_loader(ipfsClient: aioipfs.AsyncIPFS,
                                   ldSchemas,
                                   loop=None,
@@ -36,6 +39,9 @@ async def aioipfs_document_loader(ipfsClient: aioipfs.AsyncIPFS,
             o = urlparse(url)
             if o.scheme in ['ipschema', 'ips']:
                 ipsKey = o.netloc
+
+                if not ipsKey:
+                    raise Exception(f'Invalid context url: {url}')
 
                 if ipsKey == 'galacteek.ld.contexts':
                     # Compat
@@ -55,6 +61,16 @@ async def aioipfs_document_loader(ipfsClient: aioipfs.AsyncIPFS,
                         code='loading document failed'
                     )
 
+                if url in contextsCache:
+                    # In cache already
+
+                    return {
+                        'contentType': 'application/ld+json',
+                        'document': contextsCache[url],
+                        'documentUrl': url,
+                        'contextUrl': None
+                    }
+
                 sIpfsPath = await ldSchemas.nsToIpfs(ipsKey)
                 path = None if sIpfsPath is None else sIpfsPath.child(o.path)
             else:
@@ -70,6 +86,13 @@ async def aioipfs_document_loader(ipfsClient: aioipfs.AsyncIPFS,
                 obj = orjson.loads(data.decode())
                 assert obj is not None
 
+                # log.debug(
+                #     f'IPS loader: REQ {url} => {path.objPath}')
+
+                if url not in contextsCache and len(data) < 4096:
+                    # Cache contexts <4kb
+                    contextsCache[url] = obj
+
                 return {
                     'contentType': 'application/ld+json',
                     'document': obj,
@@ -80,7 +103,7 @@ async def aioipfs_document_loader(ipfsClient: aioipfs.AsyncIPFS,
             log.debug(f'Timeout error while loading context: {terr}')
             raise terr
         except aioipfs.APIError as e:
-            log.debug(f'IPFS error while loading context: {e}')
+            log.debug(f'IPFS error while loading context {url}: {e}')
             raise e
         except JsonLdError as e:
             log.debug(str(e))

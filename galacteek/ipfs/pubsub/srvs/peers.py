@@ -102,6 +102,18 @@ class PSPeersService(JSONPubsubService):
         pssSigCurDid = await self.didSigCache(
             op, profile.userInfo.personDid)
 
+        #
+        # Get the default curve25519 pubkey's CID and do
+        # a DHT provide call.
+        # We do this cause we want the other peers to be able to
+        # quickly pick up the key and establish the secure pubsub
+        # channels.
+        #
+
+        c25PubKeyCid = await op.curve25519Agent.pubKeyCid()
+
+        await op.provide(c25PubKeyCid, timeout=10)
+
         msg = await PeerIdentMessageV4.make(
             nodeId,
             self.__identToken,
@@ -111,7 +123,7 @@ class PSPeersService(JSONPubsubService):
             profile.userInfo.personDid,
             ipid.docCid,
             await op.rsaAgent.pubKeyCid(),
-            await op.curve25519Agent.pubKeyCid(),
+            c25PubKeyCid,
             pssSigCurDid,
             profile.dagNetwork.dagCid
         )

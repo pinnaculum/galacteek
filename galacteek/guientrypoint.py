@@ -202,7 +202,7 @@ def buildArgsParser(fromParser=None):
         help="Configure IPFS and IPID automatically (no dialogs)")
     parser.add_argument(
         '--pronto-chain',
-        default='beta',
+        default='alpha',
         dest='prontoChainEnv',
         help="Pronto chain name")
     parser.add_argument(

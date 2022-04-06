@@ -480,7 +480,7 @@ class MessageListView(QTreeWidget):
         )
 
         if len(idxL) > 0:
-            log.debug(f'Message {mKey} already exists')
+            # log.debug(f'Message {mKey} already exists')
             raise MessageHandlingError(f'Already exists: {mKey}')
 
         msgSubDir = msg.get_subdir()
@@ -501,8 +501,6 @@ class MessageListView(QTreeWidget):
 
         self.addTopLevelItem(itemFrom)
         self.sortByColumn(1, Qt.DescendingOrder)
-
-        log.debug(f'Message {mKey}: added to view')
 
         self.updateUnread()
 
