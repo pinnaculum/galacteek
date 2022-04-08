@@ -539,7 +539,8 @@ class IPFSSearchHandler(QObject):
             mimeObj = MIMEType(mimetype)
 
         mimeObj = mType
-        mimeCat = mimeObj.category if mimeObj.category else 'unknown'
+        mimeCat = mimeObj.category if \
+            mimeObj and mimeObj.category else 'unknown'
 
         # Even if the search query was empty, always store an empty
         # string so that the group_concat() works

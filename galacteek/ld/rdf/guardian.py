@@ -45,6 +45,31 @@ class GuardianTriggerAction:
             followee
         ))
 
+    async def processLikeAction(self, src: Graph, dst: Graph, s, p, o):
+        lpred = URIRef('ips://galacteek.ld/likes')
+
+        liked = src.value(
+            subject=s,
+            predicate=URIRef('ips://galacteek.ld/object')
+        )
+        agent = src.value(
+            subject=s,
+            predicate=URIRef('ips://galacteek.ld/agent')
+        )
+
+        # Like it or not, you'll only ever like it once
+        dst.remove((
+            agent,
+            lpred,
+            liked
+        ))
+
+        dst.add((
+            agent,
+            lpred,
+            liked
+        ))
+
     async def unfollowSubject(self, src: Graph, dst: Graph, s, p, o):
         followee = src.value(
             subject=s,

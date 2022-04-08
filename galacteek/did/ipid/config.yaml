@@ -18,12 +18,13 @@ envs:
       timeout: 45
 
       cacheLifetime:
-        # IPNS cache records values
+        # Default cache lifetime for IPIDs (in minutes)
         default:
-          seconds: 240
+          minutes: 10
 
+        # Cache lifetime for local IPIDs (in minutes)
         local:
-          seconds: 180
+          minutes: 1036800
 
       # Delay before a resolved IPID is considered "stale", in seconds
       staleDelay: 180

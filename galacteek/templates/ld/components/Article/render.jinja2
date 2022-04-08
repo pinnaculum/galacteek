@@ -4,21 +4,21 @@
 
 {% set agent_likes = graph.queryAsync(
   spql.q_rsc_likes,
-  initBindings={'agent': pass.dwebPass.me["@id"], 'rsc': rscUri}) | length
+  initBindings={'agent': U(pass.dwebPass.me["@id"]), 'rsc': rscUriRef}) | length
 %}
-{% set likes = graph.queryAsync(spql.q_rsc_likes, initBindings={'rsc': rscUri}) %}
+{% set likes = graph.queryAsync(spql.q_rsc_likes, initBindings={'rsc': rscUriRef}) %}
 
 {% set headline = graph.value(
-  rscUri, 'ips://galacteek.ld/headline') %}
+  rscUriRef, URIRef('ips://galacteek.ld/headline')) %}
 
 {% set body = graph.value(
-  rscUri, 'ips://galacteek.ld/articleMarkdownBody') %}
+  rscUriRef, URIRef('ips://galacteek.ld/articleMarkdownBody')) %}
 
 {% set descr = graph.value(
-  rscUri, 'ips://galacteek.ld/description') %}
+  rscUriRef, URIRef('ips://galacteek.ld/description')) %}
 
 {% set dateCreated = graph.value(
-  rscUri, 'ips://galacteek.ld/dateCreated') %}
+  rscUriRef, URIRef('ips://galacteek.ld/dateCreated')) %}
 
 {% block body %}
 
@@ -26,7 +26,7 @@
 {{ likes|length }}
 
 {% if agent_likes == 0 %}
-<button onclick="rsc_like('{{ pass.dwebPass.me["@id"] }}', '{{ rscUri }}')">
+<button id="btnlike" onclick="rsc_like('{{ pass.dwebPass.me["@id"] }}', '{{ rscUri }}')">
   <img width="16" src="qrc:/share/icons/social/like.png"/>
 </button>
 {% else %}
@@ -43,6 +43,5 @@
 <p>
 {{ body|markdown }}
 </p>
-
 
 {% endblock %}

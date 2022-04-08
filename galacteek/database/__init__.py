@@ -400,6 +400,7 @@ async def hashmarkSourcesNeedSync(minutes=60):
     filter = Q(type__in=[
         HashmarkSource.TYPE_GITREPOS,
         HashmarkSource.TYPE_IPFSMARKS_LEGACY,
+        HashmarkSource.TYPE_YAML_ARCHIVE,
         HashmarkSource.TYPE_PYMODULE
     ])
 

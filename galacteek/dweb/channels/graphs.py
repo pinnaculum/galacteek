@@ -393,9 +393,10 @@ class SparQLResultsModel(QAbstractListModel,
             assert graph is not None
 
             # TODO: compute bindings on property setting if possible
+            # TOTO: detect urns here ?
             for k, v in bindings.items():
                 u = URL(v)
-                if u.scheme and u.scheme in ['http', 'ips', 'i']:
+                if u.scheme and u.scheme in ['http', 'ips', 'i', 'inter']:
                     _bindings[k] = URIRef(v)
                 else:
                     _bindings[k] = Literal(v)

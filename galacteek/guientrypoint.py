@@ -8,6 +8,10 @@ import os
 import gc
 import tracemalloc
 
+import rdflib.plugin
+from rdflib.parser import Parser
+from rdflib.serializer import Serializer
+
 from PyQt5.QtCore import QProcess
 from PyQt5.QtWebEngine import QtWebEngine
 
@@ -54,9 +58,13 @@ def galacteekGui(args):
     gc.enable()
 
     if inPyInstaller():
+        # Special env settings when running in pyinstaller
         folder = pyInstallerBundleFolder()
         binPath = folder.joinpath('bin')
+
         os.environ['PATH'] = str(binPath) + os.pathsep + os.environ['PATH']
+        os.environ['GALACTEEK_MAGIC_DBPATH'] = \
+            str(folder) + os.pathsep + 'magic.mgc'
 
         os.chdir(str(folder))
 
@@ -300,6 +308,24 @@ def start():
     if platform.system() == 'Windows' and inPyInstaller() and 0:
         # Hide the console window when running with pyinstaller
         hideConsoleWindow()
+
+    if platform.system() == 'Windows' and inPyInstaller():
+        # Register json-ld plugin manually if running in pyinstaller
+        # TODO: move this to a function in galacteek.ld.rdf
+
+        for name in ['json-ld', 'application/ld+json']:
+            rdflib.plugin.register(
+                name,
+                Parser,
+                'rdflib_jsonld.parser',
+                'JsonLDParser'
+            )
+            rdflib.plugin.register(
+                name,
+                Serializer,
+                'rdflib_jsonld.serializer',
+                'JsonLDSerializer'
+            )
 
     args = gArgsParse()
 

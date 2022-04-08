@@ -4,6 +4,8 @@ import io
 import random
 import traceback
 
+from omegaconf import OmegaConf
+
 from galacteek import log
 from galacteek.services import GService
 
@@ -12,6 +14,7 @@ from galacteek.ipfs.cidhelpers import IPFSPath
 
 from galacteek.core.asynclib import GThrottler
 from galacteek.core.ps import makeKeyService
+from galacteek.core import pkgResourcesRscFilename
 
 from galacteek.ipfs.pubsub import TOPIC_LD_PRONTO
 from galacteek.ipfs.pubsub.srvs import graphs as pubsub_graphs
@@ -84,6 +87,11 @@ class RDFStoresService(GService):
         self._cgraphs = []
         self._cgMain = None
 
+        self._cfgAgentsPath = pkgResourcesRscFilename(
+            __package__,
+            'agents.yaml'
+        )
+
     def defaultThrottler(self):
         return GThrottler(
             rate_limit=10,
@@ -94,6 +102,8 @@ class RDFStoresService(GService):
 
     async def on_start(self):
         await super().on_start()
+
+        self._cfgAgents = OmegaConf.load(self._cfgAgentsPath)
 
         tcfg = self.serviceConfig.mSyncThrottler
 
@@ -114,20 +124,23 @@ class RDFStoresService(GService):
         await self.initializeGraphs()
 
     async def registerRegularGraph(self, uri, cfg):
-        self.store = plugin.get("SQLAlchemy", Store)(
+        store = plugin.get("Sleepycat", Store)(
             identifier=self.rdfIdent
         )
 
-        rootPath = self.storesPath.joinpath(f'igraph_{cfg.name}')
+        rootPath = self.storesPath.joinpath(f'igraph_{cfg.name}').joinpath(
+            'bsddb')
         rootPath.mkdir(parents=True, exist_ok=True)
 
         graph = IGraph(
-            self.store,
+            store,
             rootPath,
             name=cfg.name,
             identifier=uri
         )
-        graph.open(graph.dbUri, create=True)
+
+        # graph.open(graph.dbUri, create=True)
+        graph.open(str(rootPath), create=True)
 
         # XXX: NS bind
         graph.iNsBind()
@@ -139,16 +152,21 @@ class RDFStoresService(GService):
         self._graphs[cfg.name] = graph
 
     async def registerConjunctive(self, uri, cfg):
-        store = plugin.get("SQLAlchemy", Store)(
+        store = plugin.get("Sleepycat", Store)(
             identifier=uri
         )
 
-        rootPath = self.storesPath.joinpath(f'ipcg_{cfg.name}')
+        rootPath = self.storesPath.joinpath(f'ipcg_{cfg.name}').joinpath(
+            'bsddb')
         rootPath.mkdir(parents=True, exist_ok=True)
-        dbPath = rootPath.joinpath('g_rdf.db')
+
+        # dbPath = rootPath.joinpath('g_rdf.db')
+        dbPath = rootPath
 
         cgraph = IConjunctiveGraph(store=store, identifier=uri)
-        cgraph.open('sqlite:///{}'.format(str(dbPath)), create=True)
+        # cgraph.open('sqlite:///{}'.format(str(dbPath)), create=True)
+
+        cgraph.open(str(dbPath), create=True)
         cgraph.iNsBind()
 
         subgraphs = cfg.get('subgraphs', {})
@@ -200,7 +218,9 @@ class RDFStoresService(GService):
                 graph.synchronizer = GraphExportSynchronizer(graph)
 
     async def initializeGraphs(self):
-        syncs = self.serviceConfig.get('synchronizers', {})
+        # syncs = self.serviceConfig.get('synchronizers', {})
+        syncs = self._cfgAgents.get('synchronizers', {})
+
         for uri, cfg in syncs.items():
             stype = cfg.get('type', 'export')
 
@@ -218,7 +238,9 @@ class RDFStoresService(GService):
                 synccfg = GraphSemChainSyncConfig(**cfg)
                 self._synchros[uri] = GraphSemChainSynchronizer(synccfg)
 
-        guardians = self.serviceConfig.get('guardians', {})
+        # guardians = self.serviceConfig.get('guardians', {})
+        guardians = self._cfgAgents.get('guardians', {})
+
         for uri, cfg in guardians.items():
             g = GraphGuardian(uri, cfg)
             if g.configure():
@@ -324,7 +346,7 @@ class RDFStoresService(GService):
                     await self.historyService.trace(
                         path, graphIri,
                         recordType=recordType,
-                        chainUri=chainUri
+                        chainUri=URIRef(chainUri) if chainUri else None
                     )
             else:
                 log.debug(f'{path}: invalid')

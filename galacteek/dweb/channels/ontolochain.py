@@ -75,7 +75,7 @@ class OntoloChainInterface(object):
             await runningApp().s.rdfStore(
                 IPFSPath(cid),
                 recordType=recType,
-                chainUri=self.chainUri,
+                chainUri=URIRef(self.chainUri),
                 outputGraph=self.graphUri
             )
 
@@ -133,7 +133,7 @@ class OntoloChainHandler(GOntoloObject, OntoloChainInterface):
 
             await ontolochain.create(self.pronto.graphHistory,
                                      ipid,
-                                     self.chainUri,
+                                     URIRef(self.chainUri),
                                      ipfsop.ctx.node.id)
             return True
         except Exception:

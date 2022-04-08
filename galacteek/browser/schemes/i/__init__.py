@@ -1,9 +1,11 @@
 import aiohttp
 
 from rdflib import URIRef
+from rdflib import Literal
 from rdflib.plugins.sparql import prepareQuery
 
 from galacteek import services
+from galacteek.browser.schemes import SCHEME_I
 from galacteek.ld import uriTermExtract
 from galacteek.ld.sparql import uri_objtype
 
@@ -62,12 +64,11 @@ class ISchemeHandler(NativeIPFSSchemeHandler):
         if not ipid:
             return self.reqFailed(request)
 
-        path = rUrl.path()
-        rscUri = f'i:{path}'
+        rscUri = URIRef(f'{SCHEME_I}:{path}')
 
         try:
             results = list(await self.pronto.gQuery(
-                uri_objtype(rscUri).get_text()))
+                uri_objtype(str(rscUri)).get_text()))
             otype = uriTermExtract(results[0]['type'])
         except Exception:
             return self.reqFailed(request)
@@ -82,8 +83,12 @@ class ISchemeHandler(NativeIPFSSchemeHandler):
                 graph=self.pronto.graphG,
                 prepareQuery=prepareQuery,
                 ipid=ipid,
-                rscUri=rscUri,
-                URIRef=URIRef
+                rscUri=str(rscUri),
+                rscUriRef=rscUri,
+                URIRef=URIRef,
+                U=URIRef,
+                Literal=Literal,
+                L=Literal
             )
             self.serveContent(
                 uid,

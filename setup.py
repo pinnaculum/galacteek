@@ -254,6 +254,7 @@ install_reqs_extra_matplotlib = reqs_parse('requirements-extra-matplotlib.txt')
 install_reqs_docs = reqs_parse('requirements-docs.txt')
 install_reqs_ui_pyqt_513 = reqs_parse('requirements-ui-pyqt-5.13.txt')
 install_reqs_ui_pyqt_515 = reqs_parse('requirements-ui-pyqt-5.15.txt')
+install_reqs_rdf_bsddb = reqs_parse('requirements-rdf-bsddb.txt')
 
 
 found_packages = find_packages(exclude=['tests', 'tests.*'])
@@ -280,6 +281,7 @@ setup(
         'markdown-extensions': install_reqs_extra_markdown,
         'ui-pyqt-5.13': install_reqs_ui_pyqt_513,
         'ui-pyqt-5.15': install_reqs_ui_pyqt_515,
+        'rdf-bsddb': install_reqs_rdf_bsddb,
         'matplotlib': install_reqs_extra_matplotlib,
         'docs': install_reqs_docs,
     },

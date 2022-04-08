@@ -16,9 +16,6 @@ goIpfsVersion = os.getenv('GO_IPFS_VERSION')
 block_cipher = None
 
 
-block_cipher = None
-
-
 source_mods = [
     tortoise.models,
     galacteek.database.models.atomfeeds,
@@ -109,6 +106,8 @@ a = Analysis(['galacteek_win.py'],
     ('./packaging/windows/cygwin/fstab',
      'etc'),
     ('./packaging/windows/matplotlibrc',
+     '.'),
+    ('./packaging/windows/magic.mgc',
      '.'),
     ('./packaging/windows/matplotlibrc',
      'matplotlib/mpl-data')

@@ -3,6 +3,8 @@ import orjson
 import aioipfs
 import yaml
 
+import rdflib_jsonld  # noqa
+
 from galacteek import log
 
 from galacteek.core import runningApp

@@ -1,5 +1,7 @@
 <script>
   function rsc_like(agent, rsc) {
+    let btn = document.getElementById('btnlike')
+
     window.g_pronto.ontoloCreateObjectAuto({
       '@type': 'LikeAction',
       'agent': {
@@ -10,7 +12,8 @@
         '@id': rsc
       }
     }, {}).then(function(res) {
-      location.reload()
+      btn.style.visibility = "hidden"
+      // location.reload()
     })
   }
 </script>

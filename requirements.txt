@@ -27,7 +27,7 @@ filelock>=3.0.1
 gitpython>=2.1.11
 html2text==2020.1.16
 ipfshttpclient>=0.7.0
-jinja2>=2.10.1
+jinja2==3.0.1
 json-traverse>=0.4
 jsonschema>=3.0.0,<4.0.0
 jwcrypto>=0.8

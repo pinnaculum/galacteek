@@ -350,6 +350,11 @@ class PubsubService(Configurable, GService):
         async queue (inQueue) to be later treated in the processMessages() task
         """
 
+        while not self.ipfsCtx.node.id:
+            self.debug('Waiting for IPFS node context initialization')
+
+            await ipfsop.sleep(1)
+
         topic = self.topic()
 
         # We're only in the bytopic list when listening

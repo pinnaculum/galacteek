@@ -1,0 +1,103 @@
+# Graph guardians
+guardians:
+  # Goliath (default)
+  urn:ipg:guardians:goliath:
+    rules:
+      - subject: '^did:ipid:.*'
+        action:
+          do: 'upgrade'
+      - subject: '^inter:/.*Person/'
+        action:
+          do: 'upgrade'
+
+      - subject: '^.*$'
+        predicate: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
+        object: 'ips://galacteek.ld/FollowAction'
+        action:
+          do: 'trigger'
+          call: 'followSubject'
+
+      - subject: '^.*$'
+        predicate: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
+        object: 'ips://galacteek.ld/UnfollowAction'
+        action:
+          do: 'trigger'
+          call: 'unfollowSubject'
+
+      - subject: '^urn:vc:captcha3auth'
+        predicate: 'ips://galacteek.ld/issuer'
+        object: 'did:ipid:.*'
+        action:
+          do: 'trigger'
+          call: 'captchaVcProcess'
+
+      - subject: '^.*$'
+        predicate: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
+        object: 'ips://galacteek.ld/LikeAction'
+        action:
+          do: 'trigger'
+          call: 'processLikeAction'
+
+
+# Graph synchronizers definitions
+synchronizers:
+  urn:ipg:sync:xmlgzexport:
+    type: rdfexport
+    format: xml
+    compression: gzip
+
+  urn:ipg:sync:ttlgzexport:
+    type: rdfexport
+    format: ttl
+    compression: gzip
+
+  urn:ipg:sync:sparql:hashmarks:h20220326:
+    type: sparql
+    run:
+      - query: >
+          PREFIX hmark: <ips://galacteek.ld/Hashmark#>
+
+          CONSTRUCT {
+            ?uri ?p ?o .
+          } WHERE {
+            ?uri ?p ?o .
+            ?uri gs:fromLibertarian ?libertarianId .
+
+            FILTER(?libertarianId = <@REMOTE_P2P_LIBRARIANID@>)
+          }
+
+        contentType: text/turtle
+        action: merge
+
+  urn:ipg:sync:sparql:playlists:bylibertarian:
+    type: sparql
+    run:
+      - query: >
+          PREFIX pl: <ips://galacteek.ld/MultimediaPlaylist#>
+
+          CONSTRUCT {
+            ?pluri ?p ?o .
+            ?pluri gs:track ?t .
+            ?pluri ?plp ?plo .
+            ?t a ?ttype .
+            ?t gs:name ?name .
+            ?t gs:url ?url .
+            ?t ?tp ?to .
+          } WHERE {
+            ?pluri a gs:MultimediaPlaylist .
+            ?pluri gs:fromLibertarian ?libertarianId .
+            ?pluri gs:track ?t .
+            ?pluri ?plp ?plo .
+            ?t a ?ttype .
+            ?t gs:name ?name .
+            ?t gs:url ?url .
+            ?t ?tp ?to .
+
+            FILTER(?libertarianId = <@REMOTE_P2P_LIBRARIANID@>)
+          }
+
+        contentType: text/turtle
+        action: merge
+
+  urn:ipg:sync:ontolochain1:
+    type: ontolochain

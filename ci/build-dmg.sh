@@ -53,6 +53,9 @@ export PATH="$GITHUB_WORKSPACE/miniconda/bin:$PATH"
 conda create -n galacteek python=3.7 --yes
 source activate galacteek
 
+# bsddb3 (for rdflib stores)
+conda install -c conda-forge bsddb3
+
 WHEEL="$OLD_CWD"/dist/galacteek-${G_VERSION}-py3-none-any.whl
 
 # install dependencies
@@ -118,7 +121,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export GALACTEEK_MAGIC_DBPATH="$DIR/../Resources/share/misc/magic.mgc"
 export DYLD_FALLBACK_LIBRARY_PATH=$DYLD_FALLBACK_LIBRARY_PATH:$DIR/../Resources/lib
 export PATH=$PATH:$DIR/../Resources/bin
-$DIR/../Resources/bin/python $DIR/../Resources/bin/galacteek --from-dmg --no-ssl-verify "$@"
+$DIR/../Resources/bin/python $DIR/../Resources/bin/galacteek --from-dmg --no-ssl-verify
 EAT
 
 chmod a+x galacteek.app/Contents/MacOS/galacteek

@@ -3,12 +3,49 @@ from SPARQLBurger.SPARQLQueryBuilder import *
 T = Triple
 
 
-def select(vars=None, w=None, distinct=True, limit=10000):
+def select(vars=None, w=None, distinct=True, limit=10000,
+           commonPrefixes=True):
     s = SPARQLSelectQuery(distinct=distinct, limit=limit)
     s.add_prefix(
         prefix=Prefix(
             prefix='gs', namespace='ips://galacteek.ld/')
     )
+
+    if commonPrefixes:
+        s.add_prefix(
+            prefix=Prefix(
+                prefix='sec',
+                namespace='https://w3id.org/security#'
+            )
+        )
+
+        s.add_prefix(
+            prefix=Prefix(
+                prefix='ontoloChain',
+                namespace='ips://galacteek.ld/OntoloChain#'
+            )
+        )
+
+        s.add_prefix(
+            prefix=Prefix(
+                prefix='ontoloChainRecord',
+                namespace='ips://galacteek.ld/OntoloChainRecord#'
+            )
+        )
+
+        s.add_prefix(
+            prefix=Prefix(
+                prefix='dc',
+                namespace='http://purl.org/dc/terms/'
+            )
+        )
+
+        s.add_prefix(
+            prefix=Prefix(
+                prefix='didv',
+                namespace='https://w3id.org/did#'
+            )
+        )
 
     if isinstance(vars, list):
         s.add_variables(vars)
@@ -23,16 +60,6 @@ def where(triples):
     wpattern = SPARQLGraphPattern()
     wpattern.add_triples(triples=triples)
     return wpattern
-
-
-"""
-SELECT DISTINCT ?type WHERE {
-  [] a ?type
-  FILTER( regex(str(?type), "^(?!http://dbpedia.org/class/yago/).+"))
-}
-ORDER BY ASC(?type)
-LIMIT 10
-"""
 
 
 def uri_regex(ureg):

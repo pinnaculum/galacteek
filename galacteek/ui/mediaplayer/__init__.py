@@ -47,6 +47,8 @@ from galacteek.core.asynclib import asyncWriteFile
 
 from galacteek.core.models.sparql.playlists import *
 
+from galacteek.config.cmods import pinning as cfgpinning
+
 from galacteek.ld import ipsContextUri
 from galacteek.ld import ipsTermUri
 
@@ -57,6 +59,8 @@ from galacteek.ld.rdf.resources.multimedia import VideoObjectResource
 from galacteek.ld.rdf.util import literalDtNow
 from galacteek.ld.rdf.terms import tUriFromLibertarian
 
+# from ..widgets.pinwidgets import Pi
+
 from .videowidget import MPlayerVideoWidget
 from ..forms import ui_mediaplaylist
 from ..clipboard import iClipboardEmpty
@@ -65,6 +69,7 @@ from ..dialogs import runDialogAsync
 from ..widgets import *
 from ..widgets.pinwidgets import *
 from ..helpers import *
+from ..i18n import *
 
 
 def iPlayerUnavailable():
@@ -142,7 +147,7 @@ def iPlaylistName():
 def iPlaylistPinItems():
     return QCoreApplication.translate(
         'MediaPlayer',
-        'Pin playlist items'
+        'Pin playlist items (here)'
     )
 
 
@@ -224,6 +229,11 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
         self.playlist = QLDMediaPlaylist(self.model, parent=self)
 
         self.pMenu = QMenu(self)
+        self.pMenu.aboutToShow.connect(self.onPlaylistMenuShowingUp)
+        self.rpsMenu = QMenu(iPinPlaylistMediaChooseRps(), self.pMenu)
+        self.rpsMenu.triggered.connect(self.onPinPlaylistToRps)
+        self.rpsMenu.setIcon(getIcon('pin/pin-diago-red.png'))
+
         self.playlistsMenu = QMenu(iPlaylistLoad(), self.pMenu)
         self.exportMenu = QMenu('Export', self.pMenu)
         self.exportMenu.setIcon(getIcon('multimedia/playlist.png'))
@@ -257,6 +267,8 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
         self.pMenu.addSeparator()
         self.pMenu.addAction(self.pinPlaylistAction)
         self.pMenu.addSeparator()
+        self.pMenu.addMenu(self.rpsMenu)
+        self.pMenu.addSeparator()
         self.pMenu.addAction(self.scanMetadataAction)
         self.pMenu.addSeparator()
 
@@ -274,7 +286,7 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
         self.ttlExportAction = QAction(
             getIcon('multimedia/playlist.png'),
             iPlaylistExportToTTL(), self,
-            triggered=partialEnsure(self.onExportTTL)
+            triggered=self.onExportTTL
         )
 
         self.exportMenu.addAction(self.ttlExportAction)
@@ -483,7 +495,6 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
 
     def update(self):
         self.refreshActions()
-        # self.app.task(self.updatePlaylistsMenu)
 
     def onViewAllPlaylists(self, checked):
         self.uipList.plSearchLine.clear()
@@ -502,6 +513,9 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
 
     def onFullScreen(self):
         self.videoWidget.viewFullScreen(True)
+
+    def onPlaylistMenuShowingUp(self):
+        self.refreshRpsMenu()
 
     def onClearPlaylist(self):
         self.copyPathAction.setEnabled(False)
@@ -734,6 +748,8 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
         self.scanMetadataAction.setEnabled(not self.playlistEmpty)
         self.ttlExportAction.setEnabled(not self.playlistEmpty)
 
+        self.rpsMenu.setEnabled(not self.playlistEmpty)
+
         self.publishAction.setEnabled(
             not self.playlistEmpty and self.model.rsc.name is not None
         )
@@ -743,6 +759,29 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
 
         self.uipList.quickSaveButton.setVisible(
             self.model.rsc.name is None)
+
+    def refreshRpsMenu(self):
+        """
+        Build the remote pinning service menu, to choose a RPS
+        to pin the playlist items to.
+        """
+
+        self.rpsMenu.clear()
+
+        try:
+            for srv in cfgpinning.rpsList():
+                action = QAction(
+                    self.rpsMenu.icon(),
+                    iPinToRps(srv.displayName),
+                    self.rpsMenu
+                )
+                action.setData(srv.serviceName)
+
+                self.rpsMenu.addAction(action)
+        except Exception:
+            pass
+
+        self.rpsMenu.setEnabled(len(self.rpsMenu.actions()) > 0)
 
     def playlistGetPaths(self):
         return [u.path() for u in self.playlistGetUrls()]
@@ -797,9 +836,9 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
             # Queue from directory
             async for objPath, parent in ipfsop.walk(
                     str(self.clipboardMediaItem.path)):
-                self.queueFromPath(objPath)
+                await self.queueFromPath(objPath)
         else:
-            self.queueFromPath(self.clipboardMediaItem.path)
+            await self.queueFromPath(self.clipboardMediaItem.path)
 
     def onSliderReleased(self):
         pass
@@ -1195,11 +1234,14 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
         if buffer.format().sampleType() == QAudioFormat.SignedInt:
             pass
 
-    async def onExportTTL(self, *args):
+    def onExportTTL(self):
         fp = saveFileSelect(filter='(*.ttl)')
         if not fp:
             return
 
+        ensure(self.exportToTTL(fp))
+
+    async def exportToTTL(self, fp: str):
         try:
             r = await self.model.graph.queryAsync(
                 '''
@@ -1236,6 +1278,8 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
             await messageBoxAsync('Export error')
 
     async def onPublishPlaylist(self, *args):
+        privg = self.graphPlaylists
+
         try:
             g = BaseGraph()
             g += self.model.graph
@@ -1253,7 +1297,49 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
                 g,
                 self.graphPlaylistsPublic
             )
+
+            privg -= self.model.graph
         except Exception as err:
             await messageBoxAsync(f'Error publishing playlist: {err}')
         else:
             await messageBoxAsync(f'Published playlist: {self.model.rsc.name}')
+
+    def onPinPlaylistToRps(self, action):
+        serviceName = action.data()
+
+        if not serviceName:
+            return
+
+        ensure(self.pinPlaylistToRps(serviceName))
+
+    @ipfsOp
+    async def pinPlaylistToRps(self, ipfsop, serviceName: str):
+        """
+        Pin all the items in the current playlist to the IPFS
+        remote pinning service identified by serviceName.
+        """
+
+        count = 0
+
+        for qurl in self.playlistGetUrls():
+            itemp = IPFSPath(qurl.toString(), autoCidConv=True)
+
+            if not itemp.valid:
+                continue
+
+            if await ipfsop.pinRemoteAdd(
+                serviceName,
+                itemp.objPath,
+                name=itemp.basename,
+                background=True
+            ) is True:
+                count += 1
+
+        if count > 0:
+            await messageBoxAsync(
+                iPinPlaylistToRpsFinished(serviceName, count)
+            )
+        else:
+            await messageBoxAsync(
+                iPinPlaylistToRpsFailed(serviceName, 'No items pinned')
+            )

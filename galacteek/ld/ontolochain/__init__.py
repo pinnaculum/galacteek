@@ -55,7 +55,7 @@ def didMainChainUri(ipid):
     return URIRef(f'urn:ontolochain:ipid:{ipid.id}')
 
 
-async def selectByUri(graph, chainUri):
+async def selectByUri(graph, chainUri: URIRef):
     async with graph.lock:
         return list(await graph.queryAsync(
             '''
@@ -73,8 +73,10 @@ async def selectByUri(graph, chainUri):
 
 @ipfsOpFn
 async def create(ipfsop,
-                 graph, ipid, chainId, peerId,
-                 description=''):
+                 graph, ipid,
+                 chainId: URIRef,
+                 peerId: str,
+                 description: str = ''):
     ex = await selectByUri(graph, chainId)
     if len(ex) > 0:
         return False
@@ -85,12 +87,13 @@ async def create(ipfsop,
         doc = {
             '@context': gLdDefaultContext,
             '@type': 'OntoloChain',
-            '@id': chainId,
+            '@id': str(chainId),
             'peerId': peerId,
             'description': description,
             'dateCreated': utcDatetimeIso(),
             'verificationMethod': f'{ipid.did}#keys-1',
-            'subjectSignature': await ipid.jsonLdSubjectSignature(chainId)
+            'subjectSignature': await ipid.jsonLdSubjectSignature(
+                str(chainId))
         }
 
         await graph.pullObject(doc)

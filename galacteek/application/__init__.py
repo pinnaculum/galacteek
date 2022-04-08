@@ -624,9 +624,15 @@ class GalacteekApplication(QApplication):
             )
             await self.hmSynchronizer.sync()
 
+        if 0:
+            await database.hashmarkSourceAdd(
+                type=models.HashmarkSource.TYPE_GITREPOS,
+                url='https://gitlab.com/galacteek/hashmarks-dwebland'
+            )
+
         await database.hashmarkSourceAdd(
-            type=models.HashmarkSource.TYPE_GITREPOS,
-            url='https://gitlab.com/galacteek/hashmarks-dwebland'
+            type=models.HashmarkSource.TYPE_YAML_ARCHIVE,
+            url='https://gitlab.com/galacteek/hashmarks-dwebland/-/releases/continuous-master/downloads/hashmarks-dwebland.tar.gz'  # noqa
         )
 
         await self.scheduler.spawn(self.hmSynchronizer.syncTask())
@@ -1516,7 +1522,7 @@ class GalacteekApplication(QApplication):
         # Use asyncio.wait_for to wait for the proto.eventStarted
         # event to be fired.
 
-        for attempt in range(1, 24):
+        for attempt in range(1, 30):
             pDialog.log(iIpfsDaemonWaiting(attempt))
 
             with async_timeout.timeout(1):

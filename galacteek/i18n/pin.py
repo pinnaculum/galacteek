@@ -172,31 +172,59 @@ def iPinataInstructions():
     )
 
 
+def iPinToRpsUnspecific():
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Pin to a remote pinning service'
+    )
+
+
+def iPinPlaylistMediaChooseRps():
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Pin playlist items to a remote service'
+    )
+
+
+def iPinPlaylistToRpsFinished(serviceName: str, count: int):
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Pinned {0} playlist item(s) to remote service named: <b>{1}</b>'
+    ).format(count, serviceName)
+
+
+def iPinPlaylistToRpsFailed(serviceName: str, error: str):
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Error pinning to RPS <b>{0}</b>: {1}'
+    ).format(serviceName, error)
+
+
 def iPinToRps(serviceName):
     return QCoreApplication.translate(
         'GalacteekWindow',
-        'Pin to remote service: {}'
+        'Pin to remote pinning service: {}'
     ).format(serviceName)
 
 
 def iUnpinFromRps(serviceName):
     return QCoreApplication.translate(
         'GalacteekWindow',
-        'Unpin from remote service: {}'
+        'Unpin from remote pinning service: {}'
     ).format(serviceName)
 
 
 def iUnpinFromRpsToolTip(serviceName):
     return QCoreApplication.translate(
         'GalacteekWindow',
-        'Unpin from remote service: {}'
+        'Unpin from remote pinning service: {}'
     ).format(serviceName)
 
 
 def iPinToRpsWithName(serviceName):
     return QCoreApplication.translate(
         'GalacteekWindow',
-        'Custom Pin to remote service: {}'
+        'Custom Pin to remote pinning service: {}'
     ).format(serviceName)
 
 

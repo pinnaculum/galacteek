@@ -5,10 +5,10 @@
 {% block body %}
 
 {% set post = graph.queryAsync(
-  spql.q_social_post, initBindings={'uri': rscUri}) | first %}
+  spql.q_social_post, initBindings={'uri': rscUriRef}) | first %}
 
-{% set replies = graph.queryAsync(spql.q_rsc_replies, initBindings={'rsc': rscUri}) %}
-{% set likes = graph.queryAsync(spql.q_rsc_likes, initBindings={'rsc': rscUri}) %}
+{% set replies = graph.queryAsync(spql.q_rsc_replies, initBindings={'rsc': rscUriRef}) %}
+{% set likes = graph.queryAsync(spql.q_rsc_likes, initBindings={'rsc': rscUriRef}) %}
 
 {{ social.social_post_render(post) }}
 

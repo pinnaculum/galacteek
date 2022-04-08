@@ -530,7 +530,10 @@ def threadedCoro(loop, coro, *args):
 async def httpFetch(url: str,
                     dst: Path = None,
                     timeout=60,
-                    chunkSize=8192):
+                    chunkSize=8192,
+                    maxSize=0):
+    from aiohttp.web_exceptions import HTTPOk
+    from galacteek import log
     from galacteek.core.tmpf import TmpFile
 
     try:
@@ -540,15 +543,25 @@ async def httpFetch(url: str,
             async with async_timeout.timeout(timeout):
                 async with aiohttp.ClientSession() as sess:
                     async with sess.get(url) as resp:
-                        if resp.status != 200:
+                        if resp.status != HTTPOk.status_code:
                             raise Exception(
-                                f'Invalid reply code: {resp.status}')
+                                f'httpFetch: {url}: '
+                                f'Invalid reply code: {resp.status}'
+                            )
+
                         async for chunk in resp.content.iter_chunked(
                                 chunkSize):
                             file.write(chunk)
 
                             size += len(chunk)
 
+                            if maxSize > 0 and size > maxSize:
+                                raise Exception(
+                                    f'{url}: capsule size exceeds maxsize')
+
+            file.seek(0, 0)
+
         return file.name
-    except Exception:
+    except Exception as err:
+        log.debug(f'httpFetch ({url}): fetch error: {err}')
         return None
