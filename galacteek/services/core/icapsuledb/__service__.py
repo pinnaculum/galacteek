@@ -26,6 +26,7 @@ from galacteek.core.asynclib import asyncReadFile
 from galacteek.ld import gLdDefaultContext
 from galacteek.ld.rdf import BaseGraph
 from galacteek.ld.iri import urnParse
+from galacteek.ld.iri import urnFsFormat
 
 from galacteek.services import GService
 from galacteek.services import getByDotName
@@ -153,7 +154,7 @@ class ICapsuleRegistryLoaderService(GService):
 
                 try:
                     sDataPath = self.rootPath.joinpath(
-                        'registry').joinpath(regcfg.urn)
+                        'registry').joinpath(urnFsFormat(regcfg.urn))
                     sDataPath.mkdir(parents=True, exist_ok=True)
 
                     url = regcfg.get('regUrl')
@@ -192,13 +193,13 @@ class ICapsuleRegistryLoaderService(GService):
         qmlEntryPoint = None
 
         def mterm(attr: str):
-            return f'ips://galacteek.ld/ICapsuleManifest#{attr}'
+            return URIRef(f'ips://galacteek.ld/ICapsuleManifest#{attr}')
 
         def capterm(attr: str):
-            return f'ips://galacteek.ld/ICapsule#{attr}'
+            return URIRef(f'ips://galacteek.ld/ICapsule#{attr}')
 
         def cterm(attr: str):
-            return f'ips://galacteek.ld/ICapsuleComponent#{attr}'
+            return URIRef(f'ips://galacteek.ld/ICapsuleComponent#{attr}')
 
         try:
             depends = await self.querier.capsuleDependencies(icapid)
@@ -255,8 +256,10 @@ class ICapsuleRegistryLoaderService(GService):
 
                     iPath = IPFSPath(cid)
 
-                    rpath = self.dappsStoragePath.joinpath(str(icapid))
-                    rcpath = rpath.joinpath(str(comp.identifier))
+                    # Use urnFsFormat
+                    rpath = self.dappsStoragePath.joinpath(
+                        urnFsFormat(icapid))
+                    rcpath = rpath.joinpath(urnFsFormat(comp.identifier))
                     cpath = rcpath.joinpath(cid)
                     rcpath.mkdir(parents=True, exist_ok=True)
 
@@ -551,7 +554,7 @@ class DappsUserProfile:
         if uri in self.service._dappLoadedByUri:
             return False
 
-        deps = await self.service.querier.capsuleDependencies(uri)
+        deps = await self.service.querier.capsuleDependencies(capsuleUri)
 
         capok = await self.depsInstall(deps)
         if capok is False:

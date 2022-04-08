@@ -1516,7 +1516,7 @@ class GalacteekApplication(QApplication):
         # Use asyncio.wait_for to wait for the proto.eventStarted
         # event to be fired.
 
-        for attempt in range(1, 24):
+        for attempt in range(1, 30):
             pDialog.log(iIpfsDaemonWaiting(attempt))
 
             with async_timeout.timeout(1):

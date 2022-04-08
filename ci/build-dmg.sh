@@ -64,6 +64,9 @@ pip install $WHEEL'[markdown-extensions]'
 # ui-pyqt (5.15)
 pip install $WHEEL'[ui-pyqt-5.15]'
 
+# bsddb
+pip install $WHEEL'[rdf-bsddb]'
+
 # leave conda env
 source deactivate
 

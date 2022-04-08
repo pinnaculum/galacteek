@@ -199,7 +199,8 @@ class ICRQuerier:
                         base = urnStripRqf(depId)
 
                         if base and version == 'latest':
-                            latest = await self.latestCapsule(str(base))
+                            latest = await self.latestCapsule(
+                                URIRef(str(base)))
 
                             if latest:
                                 yield {

@@ -602,7 +602,13 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
         self.requestTimeout = cGet('schemes.ipfsNative.reqTimeout')
 
     def debug(self, msg):
-        log.debug('Native scheme handler: {}'.format(msg))
+        log.debug(f'Native scheme handler (DEBUG): {msg}')
+
+    def warning(self, msg):
+        log.warning(f'Native scheme handler (WARNING): {msg}')
+
+    def info(self, msg):
+        log.warning(f'Native scheme handler (INFO): {msg}')
 
     async def directoryListing(self, request, ipfsop, path):
         currentIpfsPath = IPFSPath(path)
@@ -775,7 +781,7 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
         except aioipfs.APIError as exc:
             await asyncio.sleep(0)
 
-            self.debug('API error ({path}): {err}'.format(
+            self.info('API error ({path}): {err}'.format(
                 path=str(ipfsPath), err=exc.message)
             )
 

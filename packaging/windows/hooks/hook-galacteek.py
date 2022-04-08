@@ -37,6 +37,14 @@ hiddenimports = [
     'galacteek.ui.forms.ui_settings_center',
     'galacteek.ui.forms.ui_settings_ui',
 
+    'bsddb3',
+
+    'rdflib',
+    'rdflib_jsonld',
+    'rdflib_pyld_compat',
+    'rdflib_sqlalchemy',
+    'rdflib_sqlite',
+
     'markdown.extensions',
     'markdown.extensions.attr_list',
     'random_username',
@@ -70,7 +78,7 @@ hiddenimports += [
     'multiaddr.codecs.onion',
     'multiaddr.codecs.p2p',
     'multiaddr.codecs.uint16be',
-    'multiaddr.codecs.utf8'
+    'multiaddr.codecs.utf8',
     'multiaddr.codecs._util'
 ]
 
@@ -81,6 +89,12 @@ hiddenimports += collect_submodules('galacteek.ui.forms')
 hiddenimports += collect_submodules('galacteek.ui.settings')
 
 hiddenimports += collect_submodules('mkdocs')
+
+hiddenimports += collect_submodules('rdflib')
+hiddenimports += collect_submodules('rdflib_jsonld')
+hiddenimports += collect_submodules('rdflib_sqlalchemy')
+hiddenimports += collect_submodules('rdflib_sqlite')
+hiddenimports += collect_submodules('rdflib_pyld_compat')
 
 for imp in hiddenimports:
     print(f'Hidden import: {imp}')
@@ -105,7 +119,7 @@ datas += [('galacteek/docs/manual', f'{pkgrDest}/galacteek/docs/manual')]
 datas += [('galacteek-ld-web4/galacteek_ld_web4',
            f'{pkgrDest}/galacteek_ld_web4')]
 datas += [('packaging/windows/random_username', 'random_username')]
-datas += [('magic.mgc', '.')]
+# datas += [('magic.mgc', '.')]
 
 for root, dirs, files in os.walk('galacteek'):
     for file in files:

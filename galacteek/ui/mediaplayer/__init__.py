@@ -797,9 +797,9 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
             # Queue from directory
             async for objPath, parent in ipfsop.walk(
                     str(self.clipboardMediaItem.path)):
-                self.queueFromPath(objPath)
+                await self.queueFromPath(objPath)
         else:
-            self.queueFromPath(self.clipboardMediaItem.path)
+            await self.queueFromPath(self.clipboardMediaItem.path)
 
     def onSliderReleased(self):
         pass
@@ -1236,6 +1236,8 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
             await messageBoxAsync('Export error')
 
     async def onPublishPlaylist(self, *args):
+        privg = self.graphPlaylists
+
         try:
             g = BaseGraph()
             g += self.model.graph
@@ -1253,6 +1255,8 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
                 g,
                 self.graphPlaylistsPublic
             )
+
+            privg -= self.model.graph
         except Exception as err:
             await messageBoxAsync(f'Error publishing playlist: {err}')
         else:

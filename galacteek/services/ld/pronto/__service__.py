@@ -114,20 +114,23 @@ class RDFStoresService(GService):
         await self.initializeGraphs()
 
     async def registerRegularGraph(self, uri, cfg):
-        self.store = plugin.get("SQLAlchemy", Store)(
+        store = plugin.get("Sleepycat", Store)(
             identifier=self.rdfIdent
         )
 
-        rootPath = self.storesPath.joinpath(f'igraph_{cfg.name}')
+        rootPath = self.storesPath.joinpath(f'igraph_{cfg.name}').joinpath(
+            'bsddb')
         rootPath.mkdir(parents=True, exist_ok=True)
 
         graph = IGraph(
-            self.store,
+            store,
             rootPath,
             name=cfg.name,
             identifier=uri
         )
-        graph.open(graph.dbUri, create=True)
+
+        # graph.open(graph.dbUri, create=True)
+        graph.open(str(rootPath), create=True)
 
         # XXX: NS bind
         graph.iNsBind()
@@ -139,16 +142,21 @@ class RDFStoresService(GService):
         self._graphs[cfg.name] = graph
 
     async def registerConjunctive(self, uri, cfg):
-        store = plugin.get("SQLAlchemy", Store)(
+        store = plugin.get("Sleepycat", Store)(
             identifier=uri
         )
 
-        rootPath = self.storesPath.joinpath(f'ipcg_{cfg.name}')
+        rootPath = self.storesPath.joinpath(f'ipcg_{cfg.name}').joinpath(
+            'bsddb')
         rootPath.mkdir(parents=True, exist_ok=True)
-        dbPath = rootPath.joinpath('g_rdf.db')
+
+        # dbPath = rootPath.joinpath('g_rdf.db')
+        dbPath = rootPath
 
         cgraph = IConjunctiveGraph(store=store, identifier=uri)
-        cgraph.open('sqlite:///{}'.format(str(dbPath)), create=True)
+        # cgraph.open('sqlite:///{}'.format(str(dbPath)), create=True)
+
+        cgraph.open(str(dbPath), create=True)
         cgraph.iNsBind()
 
         subgraphs = cfg.get('subgraphs', {})

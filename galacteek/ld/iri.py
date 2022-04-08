@@ -38,6 +38,13 @@ def urnStripRqf(urn: str):
         )
 
 
+def urnFsFormat(urn):
+    # Format a urn to be used as a filesystem path
+    # This is used to replace forbidden characters on certain platforms
+
+    return str(urn).replace(':', '..').replace('#', '_')
+
+
 def ipfsPeerUrn(peerId: str):
     return URIRef(f'urn:ipfs:peer:{peerId}')
 
