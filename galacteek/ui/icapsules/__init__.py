@@ -3,7 +3,6 @@ from rdflib import URIRef
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWidgets import QListView
-from PyQt5.QtWidgets import QLabel
 
 from PyQt5.QtCore import Qt
 
@@ -35,9 +34,6 @@ class ICapsulesManagerWidget(QWidget):
         self.vLayout = QVBoxLayout()
         self.setLayout(self.vLayout)
 
-        self.l1 = QLabel(self)
-        self.l1.setText('Hello')
-
         self.listW = DappsView(self)
         self.listW.setModel(self.model)
         self.listW.setViewMode(QListView.IconMode)
@@ -56,7 +52,7 @@ class ICapsulesManagerWidget(QWidget):
         if not muri:
             return await messageBoxAsync('Invalid dapp index')
 
-        latest = await self.icapsuledb.querier.latestCapsule(muri)
+        latest = await self.icapsuledb.querier.latestCapsule(URIRef(muri))
 
         if latest:
             await self.icapsuledb.profile.installCapsule(

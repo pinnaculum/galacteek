@@ -5,6 +5,7 @@ from rdflib.plugins.sparql import prepareQuery
 from aiohttp import web
 
 from galacteek import services
+from galacteek.browser.schemes import SCHEME_I
 from galacteek.ipfs import ipfsOp
 from galacteek.core import uid4
 from galacteek.ld import uriTermExtract
@@ -87,7 +88,8 @@ class IService(services.GService):
 
     def iriGenObject(self, oclass):
         s = secrets.token_hex(16)
-        return f'i:/{self.prontoService.chainEnv}/rsc/{oclass}/{s}-{uid4()}'
+
+        return f'{SCHEME_I}:/{self.prontoService.chainEnv}/rsc/{oclass}/{s}-{uid4()}'  # noqa
 
     async def startWebApp(self):
         self.webapp = self.createApp()

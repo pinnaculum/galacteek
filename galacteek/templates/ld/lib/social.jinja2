@@ -5,7 +5,7 @@
 
 {% set agent_likes = graph.queryAsync(
   spql.q_rsc_likes,
-  initBindings={'agent': pass.dwebPass.me["@id"], 'rsc': post.uri}) | length
+  initBindings={'agent': U(pass.dwebPass.me["@id"]), 'rsc': post.uri}) | length
 %}
 
 {% set likes = graph.queryAsync(
@@ -16,7 +16,7 @@
 
 <div class="bubble1">
 
-<p class="alignleft"><a href="{{ post.uri }}" target="_blank">Open</a></p>
+<p class="alignleft"><a href="{{ uri }}" target="_blank">Open</a></p>
 <p class="alignright">
 <a target="_blank" href="{{ post.author }}"> @{{ post.authorNick }}</a>
 ({{ post.dateCreated|dtclean }})

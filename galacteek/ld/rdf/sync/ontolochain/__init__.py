@@ -25,7 +25,7 @@ from galacteek.ld import ipsContextUri
 from galacteek.ld.rdf import BaseGraph
 from galacteek.ld import ontolochain
 from galacteek.ld.rdf.terms import *
-from galacteek.ld.sparql import select, where, T, Filter, Prefix
+from galacteek.ld.sparql import select, where, T, Filter
 from galacteek.ld.signatures import jsonldsig
 
 
@@ -153,14 +153,6 @@ class GraphSemChainSynchronizer:
         q = select(
             vars=['?uri', '?vmethod', '?jws'],
             w=w
-        )
-        q.add_prefix(prefix=Prefix(
-            prefix='ochain',
-            namespace='ips://galacteek.ld/OntoloChain#')
-        )
-        q.add_prefix(prefix=Prefix(
-            prefix='sec',
-            namespace='https://w3id.org/security#')
         )
 
         reply = await smartql.spql.query(str(q))

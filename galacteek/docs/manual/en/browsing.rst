@@ -32,7 +32,7 @@ orange-colored IPFS cube or a blue-colored IPFS cube to the
 left of the address bar.
 
 If you are browsing using an *indirect* scheme (an URL scheme
-that proxies/maps IPFS objects, like *ens://* or *q://*), the
+that proxies/maps IPFS objects, like *ens://* or *qmap://*), the
 cube will always display information about the "underlying"
 IPFS object that is being accessed.
 
@@ -194,15 +194,15 @@ the URL bar, just type in **manual:/** (or just **manual:**)
 - `manual:/ <manual:/>`_
 - `manual:/browsing.html <manual:/browsing.html>`_
 
-q://
+qmap://
 ^^^^
 
-The **q://** URL scheme allows quick access to IPFS objects that
+The **qmap://** URL scheme allows quick access to IPFS objects that
 you've mapped from the browser. From a browser tab, open the IPFS
 menu and select *Create quick-access mapping*. Once the object is
-mapped, it will be accessible with the **q://mappingname** URL,
+mapped, it will be accessible with the **qmap://mappingname** URL,
 for instance if your mapping name is *docs*, the quick-access URL
-would be **q://docs**
+would be **qmap://docs**
 
 If you are mapping an IPNS path, it is resolved periodically
 and the result is cached.

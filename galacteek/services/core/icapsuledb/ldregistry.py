@@ -114,7 +114,7 @@ class ICRQuerier:
                 T(subject='?uri', predicate="a",
                   object="gs:ICapsuleManifest"),
                 T(subject='?uri', predicate="manifest:capsuleType",
-                  object='"dapp-qml"'),
+                  object='"dapp-qml"^^xsd:string'),
                 T(subject='?uri', predicate="manifest:description",
                   object="?description"),
             ])

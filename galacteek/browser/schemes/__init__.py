@@ -7,6 +7,7 @@ import async_timeout
 import collections
 import time
 import traceback
+import aiohttp
 from yarl import URL
 from datetime import datetime
 from cachetools import TTLCache
@@ -55,7 +56,7 @@ SCHEME_IPFS = 'ipfs'
 SCHEME_IPNS = 'ipns'
 SCHEME_IPID = 'ipid'
 SCHEME_IPS = 'ips'
-SCHEME_I = 'i'
+SCHEME_I = 'inter'
 SCHEME_QDAPP = 'qdapp'
 SCHEME_GEMINI = 'gemini'
 SCHEME_GEMIPFS = 'gemipfs'
@@ -75,8 +76,8 @@ SCHEME_FTP = 'ftp'
 # Misc schemes
 SCHEME_Z = 'z'
 SCHEME_Q = 'q'
-SCHEME_GALACTEEK = 'g'
-SCHEME_DISTRIBUTED = 'd'
+SCHEME_QMAP = 'qmap'
+SCHEME_GALACTEEK = 'glk'
 SCHEME_PALACE = 'palace'
 SCHEME_MANUAL = 'manual'
 
@@ -171,7 +172,7 @@ def registerMiscSchemes():
                      flags=QWebEngineUrlScheme.LocalScheme,
                      schemeSection='core'
                      )
-    declareUrlScheme(SCHEME_Q,
+    declareUrlScheme(SCHEME_QMAP,
                      syntax=QWebEngineUrlScheme.Syntax.Host,
                      flags=QWebEngineUrlScheme.LocalScheme,
                      schemeSection='core'
@@ -468,18 +469,26 @@ class ENSWhoisSchemeHandler(BaseURLSchemeHandler):
             request.fail(QWebEngineUrlRequestJob.UrlInvalid)
 
 
+class EthDNSError(Exception):
+    pass
+
+
 class EthDNSResolver:
-    def __init__(self, loop):
+    def __init__(self, loop, verify_ssl=True):
         self.dnsResolver = aiodns.DNSResolver(loop=loop)
+        self.verify_ssl = verify_ssl
 
     def debug(self, msg):
         log.debug('EthDNS resolver: {}'.format(msg))
 
     @cachedcoromethod(TTLCache(128, 120))
-    async def _resolve(self, domain):
+    async def _resolve_old(self, domain):
         """
-        TTL-cached EthDNS resolver
+        Deprecated
+        EthDNS uses the .link TLD
+        domainWLink = '{domain}.link'.format(domain=domain)
         """
+
         result = await self.dnsResolver.query(domain, 'TXT')
 
         if not result:
@@ -495,6 +504,57 @@ class EthDNSResolver:
 
             return match.group(1)
 
+    @cachedcoromethod(TTLCache(128, 180))
+    async def _resolve(self, domain):
+        """
+        TTL-cached EthDNS resolver
+
+        This uses the DNS-over-HTTPS eth.link JSON API
+        """
+
+        url = 'https://eth.link/dns-query'
+        dnsJsonCtype = 'application/dns-json'
+        headers = {'content-type': dnsJsonCtype}
+        reply = None
+
+        try:
+            async with aiohttp.ClientSession(headers=headers) as sess:
+                async with sess.get(url,
+                                    verify_ssl=self.verify_ssl,
+                                    params={
+                                        'type': 'TXT',
+                                        'name': domain
+                                    }) as resp:
+                    reply = await resp.json(
+                        content_type=dnsJsonCtype
+                    )
+        except Exception as e:
+            raise EthDNSError(
+                f'Could not resolve eth domain: {domain}: {e}')
+
+        if reply:
+            try:
+                for ans in reply['Answer']:
+                    if 'data' not in ans:
+                        continue
+
+                    match = re.search('^\"*?dnslink=(.*?)\"*?$', ans['data'])
+                    if not match:
+                        continue
+
+                    return match.group(1).lstrip()
+
+                raise EthDNSError(
+                    f'Could not resolve eth domain: {domain}: '
+                    'No dnslink found'
+                )
+            except Exception as e:
+                raise EthDNSError(
+                    f'Could not resolve eth domain: {domain}: {e}')
+        else:
+            raise EthDNSError(
+                f'Could not resolve eth domain: {domain}: Empty reply')
+
     async def resolveEnsDomain(self, domain, timeout=20):
         """
         Resolve an ENS domain with EthDNS, and return the
@@ -504,12 +564,9 @@ class EthDNSResolver:
         :rtype: IPFSPath
         """
 
-        # EthDNS uses the .link TLD
-        domainWLink = '{domain}.link'.format(domain=domain)
-
         try:
             with async_timeout.timeout(timeout):
-                return await self._resolve(domainWLink)
+                return await self._resolve(domain)
         except asyncio.TimeoutError:
             self.debug('Timeout resolving domain {}'.format(domain))
         except Exception as err:
@@ -531,7 +588,7 @@ class EthDNSSchemeHandler(BaseURLSchemeHandler):
 
         self.app = app
         self.ethResolver = resolver if resolver else \
-            EthDNSResolver(self.app.loop)
+            EthDNSResolver(self.app.loop, verify_ssl=self.app.sslverify)
 
     def debug(self, msg):
         log.debug('EthDNS: {}'.format(msg))
@@ -860,10 +917,10 @@ class MultiObjectHostSchemeHandler(NativeIPFSSchemeHandler,
     """
     Somehow similar to ObjectProxySchemeHandler, but this handler
     is host-based, the host being the name of a user-defined
-    name-to-ipfs-path mapping. Used by the q:// scheme.
+    name-to-ipfs-path mapping. Used by the qmap:// scheme.
     A URL would look like this (with foo being the mapping name)::
 
-        q://foo/src/luser.c
+        qmap://foo/src/luser.c
 
     If the mapped object is an IPNS path, it's periodically
     resolved and the result is cached.
@@ -1276,7 +1333,7 @@ class EthDNSProxySchemeHandler(NativeIPFSSchemeHandler, IPFSObjectProxyScheme):
         super(EthDNSProxySchemeHandler, self).__init__(app, parent)
 
         self.ethResolver = resolver if resolver else \
-            EthDNSResolver(self.app.loop)
+            EthDNSResolver(self.app.loop, verify_ssl=self.app.sslverify)
 
     def debug(self, msg):
         log.debug('EthDNS proxy: {}'.format(msg))

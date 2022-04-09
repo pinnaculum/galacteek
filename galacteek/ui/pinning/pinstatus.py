@@ -369,7 +369,7 @@ class RPSStatusButton(GMediumToolButton, KeyListener):
             failed = pinCount.get(RPS_S_FAILED)
 
             if isinstance(pinning, int) and pinning > 0:
-                status = iRpcStatusPinning()
+                status = iRpsStatusPinning()
             elif isinstance(pinned, int) and pinned > 0:
                 status = iRpsStatusPinnedObjCount(pinned)
             else:

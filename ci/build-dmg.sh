@@ -53,6 +53,9 @@ export PATH="$GITHUB_WORKSPACE/miniconda/bin:$PATH"
 conda create -n galacteek python=3.7 --yes
 source activate galacteek
 
+# bsddb3 (for rdflib stores)
+conda install -c conda-forge bsddb3
+
 WHEEL="$OLD_CWD"/dist/galacteek-${G_VERSION}-py3-none-any.whl
 
 # install dependencies
@@ -63,9 +66,6 @@ pip install $WHEEL'[markdown-extensions]'
 
 # ui-pyqt (5.15)
 pip install $WHEEL'[ui-pyqt-5.15]'
-
-# bsddb
-pip install $WHEEL'[rdf-bsddb]'
 
 # leave conda env
 source deactivate

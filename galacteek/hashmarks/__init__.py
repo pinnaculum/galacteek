@@ -1,6 +1,9 @@
 import asyncio
 import tempfile
 import shutil
+import tarfile
+import os
+from pathlib import Path
 from datetime import datetime
 from yaml import load
 
@@ -15,6 +18,7 @@ from galacteek.core import pkgResourcesListDir
 from galacteek.core import pkgResourcesRscFilename
 from galacteek.core.iptags import ipTagRe
 from galacteek.core.ipfsmarks import IPFSMarks
+from galacteek.core.asynclib import httpFetch
 
 
 try:
@@ -113,8 +117,8 @@ async def importHashmark(mark, source):
     url = mark.get('url')
     datecreated = mark.get('datecreated', utcDatetimeIso())
 
-    log.debug('Importing {u} ({date})'.format(
-        u=url, date=datecreated))
+    # log.debug('Importing {u} ({date})'.format(
+    #     u=url, date=datecreated))
 
     return await database.hashmarkAdd(
         url,
@@ -132,7 +136,7 @@ async def importHashmark(mark, source):
 
 
 class HashmarksCatalogLoader:
-    async def updateSourceInfo(self, yamlpath, source):
+    async def updateSourceInfo(self, yamlpath: str, source):
         try:
             with open(yamlpath, 'rt') as fd:
                 data = load(fd, Loader=Loader)
@@ -146,9 +150,14 @@ class HashmarksCatalogLoader:
             name = data.get('source_name')
             author = data.get('source_author')
 
-            source.name = name
+            if not source.name:
+                source.name = name
+
             source.author = author
-            await source.save()
+            try:
+                await source.save()
+            except Exception:
+                return False
 
             return True
 
@@ -237,6 +246,65 @@ class GitCatalogLoader(HashmarksCatalogLoader):
 
 
 @SingletonDecorator
+class YAMLArchiveLoader(HashmarksCatalogLoader):
+    async def load(self, source):
+        loop = asyncio.get_event_loop()
+
+        tarfp = await httpFetch(source.url)
+
+        if not tarfp:
+            return False
+
+        def extract(fp: str):
+            try:
+                dst = tempfile.mkdtemp(prefix='yaml_hashmarks_')
+
+                tar = tarfile.open(fp)
+                tar.extractall(dst)
+                tar.close()
+            except Exception as err:
+                log.debug(f'YAMLArchiveLoader extract error: {err}')
+            else:
+                return Path(dst)
+
+        try:
+            dstdir = await loop.run_in_executor(
+                None, extract, tarfp)
+            assert dstdir is not None
+
+            os.unlink(tarfp)
+        except Exception as err:
+            log.debug(f'YAMLArchiveLoader extract error: {err}')
+            return -1
+        else:
+            count = 0
+            infosp = dstdir.joinpath('infos.yaml')
+
+            if infosp.is_file():
+                if await self.updateSourceInfo(
+                        str(infosp), source) is True:
+                    log.debug(f'YAMLArchiveLoader ({source.url}) :'
+                              'Updated source infos')
+
+            for root, dirs, files in os.walk(
+                    str(dstdir.joinpath('hashmarks'))):
+                rootp = Path(root)
+
+                for file in files:
+                    if file.endswith('.yaml'):
+                        path = str(rootp.joinpath(file))
+                        c = await self.importYamlHashmarks(path, source)
+
+                        if c > 0:
+                            count += c
+
+            shutil.rmtree(dstdir)
+            log.debug(f'YAMLArchiveLoader ({source.url}): '
+                      f'Loaded {count} hashmarks')
+            return count
+
+
+@ SingletonDecorator
 class IPFSMarksCatalogLoader(HashmarksCatalogLoader):
     """
     Loads hashmarks from legacy ipfsmarks JSON files
@@ -320,14 +388,17 @@ class HashmarksSynchronizer:
         for source in sources:
             if source.type == HashmarkSource.TYPE_PYMODULE:
                 loader = ModuleCatalogLoader()
-            elif source.type == HashmarkSource.TYPE_GITREPOS:
-                loader = GitCatalogLoader()
+            # elif source.type == HashmarkSource.TYPE_GITREPOS:
+            #     loader = GitCatalogLoader()
             elif source.type == HashmarkSource.TYPE_IPFSMARKS_LEGACY:
                 loader = IPFSMarksCatalogLoader()
+            elif source.type == HashmarkSource.TYPE_YAML_ARCHIVE:
+                loader = YAMLArchiveLoader()
             else:
                 continue
 
-            log.info('Synchronizing: {}'.format(source))
+            log.info(f'Synchronizing: {source}')
+
             _count += await loader.load(source)
 
             if _count >= 0:

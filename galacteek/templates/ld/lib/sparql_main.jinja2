@@ -17,7 +17,7 @@
 
 {# LikeAction on a resource #}
 
-{% set q_rsc_likes = prepareQuery("""
+{% set q_rsc_likeactions = prepareQuery("""
   PREFIX gs: <ips://galacteek.ld/>
 
   SELECT ?uri ?agent
@@ -25,6 +25,15 @@
     ?uri a gs:LikeAction ;
       gs:agent ?agent ;
       gs:object ?rsc .
+  }
+""") %}
+
+{% set q_rsc_likes = prepareQuery("""
+  PREFIX gs: <ips://galacteek.ld/>
+
+  SELECT ?uri ?agent
+  WHERE {
+    ?agent gs:likes ?rsc ;
   }
 """) %}
 

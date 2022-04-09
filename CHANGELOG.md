@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pronto
   - galacteek.ld.pronto: pubsub service is now encrypted with curve25519
   - Use time-rotating peer-dependent credentials for the smartql p2p service
+  - Use Sleepycat as the default RDF store
 - Mediaplayer:
   - Deprecate old MFS+JSON playlists storage
   - Store playlists as RDF (schema is: ips://galacteek.ld/MultimediaPlaylist)
@@ -28,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Public playlists are synchronized between peers via a SparQL script
 - Content providers peering: separate Pinata nodes config by region
 - Update *Pillow* to v9.0.1
+- EthDNS resolver: use DNS over HTTPs requests using the JSON API from eth.link
 - IPS contexts loader: add TTLCache for small schemas
 
 ### Fixed

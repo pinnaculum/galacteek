@@ -210,6 +210,7 @@ class HashmarkSource(Model):
     TYPE_GITREPOS = 2
     TYPE_IPFS = 3
     TYPE_IPFSMARKS_LEGACY = 4
+    TYPE_YAML_ARCHIVE = 5
 
     id = fields.IntField(pk=True)
 
@@ -233,6 +234,8 @@ class HashmarkSource(Model):
             return 'GIT source: {0} ({1})'.format(self.name, self.url)
         elif self.type == HashmarkSource.TYPE_IPFSMARKS_LEGACY:
             return 'IPFSMarks source: {0}'.format(self.name)
+        elif self.type == HashmarkSource.TYPE_YAML_ARCHIVE:
+            return 'YAML Archive source: {0}'.format(self.url)
         else:
             return 'Unknown source'
 

@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from omegaconf import OmegaConf
 
@@ -19,9 +20,9 @@ from galacteek import log
 from galacteek import ensure
 from galacteek import cached_property
 
-from galacteek.core.tmpf import TmpFile
 from galacteek.core.asynclib import asyncWriteFile
 from galacteek.core.asynclib import asyncReadFile
+from galacteek.core.asynclib import httpFetch
 
 from galacteek.ld import gLdDefaultContext
 from galacteek.ld.rdf import BaseGraph
@@ -295,6 +296,11 @@ class ICapsuleRegistryLoaderService(GService):
                             ensure(self.pinCapsule(icapid, iPath))
 
                             continue
+                        else:
+                            raise Exception(
+                                f'Capsule {icapid}: extraction from '
+                                f'URL {url} failed'
+                            )
                     else:
                         log.debug(
                             f'icapsule {icapid}: no dist URL found, skipping')
@@ -431,50 +437,58 @@ class ICapsuleRegistryLoaderService(GService):
 
             return cfg
 
-    async def capsuleExtractFromUrl(self, url: URL, dstdir: Path,
-                                    maxArchiveSize=1024 * 1024 * 4,
-                                    chunkSize=8192):
+    async def capsuleExtractFromUrl(self,
+                                    url: URL,
+                                    dstdir: Path,
+                                    maxArchiveSize=1024 * 1024 * 8,
+                                    chunkSize=32768,
+                                    maxAttempts=5):
         """
         Pull the capsule archive from the given `url`, and
         extract it to `dstdir`.
 
-        TODO: use async writes on the temp file
+        :rtype: bool
         """
-        from aiohttp.web_exceptions import HTTPOk
 
-        try:
-            size = 0
+        for attempt in range(0, maxAttempts):
+            fp = await httpFetch(
+                str(url),
+                maxSize=maxArchiveSize
+            )
 
-            with TmpFile(mode='w+b') as tmpfd:
-                async with aiohttp.ClientSession() as sess:
-                    async with sess.get(str(url)) as resp:
-                        if resp.status != HTTPOk.status_code:
-                            raise Exception(
-                                f'Invalid response code: {resp.status}')
+            if not fp:
+                log.debug(
+                    f'icapextract {url} (attempt {attempt}): failed'
+                )
+                continue
+            else:
+                log.info(
+                    f'icapextract {url} (attempt {attempt}): Fetch OK!'
+                )
 
-                        async for chunk in resp.content.iter_chunked(
-                                chunkSize):
-                            tmpfd.write(chunk)
-
-                            size += len(chunk)
-
-                            if size > maxArchiveSize:
-                                raise Exception(
-                                    f'{url}: capsule size exceeds maxsize')
-
-                tmpfd.seek(0, 0)
-
-                tar = tarfile.open(fileobj=tmpfd)
+            try:
+                tar = tarfile.open(fp)
                 tar.extractall(str(dstdir))
-
                 tar.close()
+            except Exception as err:
+                log.debug(
+                    f'icapextract {url} (attempt {attempt}): '
+                    f'extract failed: {err}'
+                )
+                continue
+            else:
+                log.info(
+                    f'icapextract {url} (attempt {attempt}): Success'
+                )
 
-            log.debug(f'icapsule ({url}, size: {size} bytes): extract OK')
+                try:
+                    os.unlink(fp)
+                except Exception:
+                    pass
 
-            return True
-        except Exception as err:
-            log.debug(f'icapextract {url}: fetch error: {err}')
-            return False
+                return True
+
+        return False
 
     @ipfsOp
     async def pinCapsule(self, ipfsop,

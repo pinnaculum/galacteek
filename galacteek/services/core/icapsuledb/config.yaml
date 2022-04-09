@@ -9,13 +9,13 @@ envs:
       # regGraphUri is the URI of the RDF graph where the registry will
       # be stored
 
-      local:
-        urn: urn:glk:icapregs:devel:${oc.env:ICAPSULE_REGISTRY_BRANCH}
-        regUrl: file:///${oc.env:HOME}/icapsule-registry-dev-${oc.env:ICAPSULE_REGISTRY_BRANCH}.yaml
-        regGraphUri: urn:ipg:icapsules:registries:galacteek:${oc.env:ICAPSULE_REGISTRY_BRANCH}
+      # local:
+      #  urn: urn:glk:icapregs:devel:${oc.env:ICAPSULE_REGISTRY_BRANCH}
+      #  regUrl: file:///${oc.env:HOME}/icapsule-registry-dev-${oc.env:ICAPSULE_REGISTRY_BRANCH}.yaml
+      #  regGraphUri: urn:ipg:icapsules:registries:galacteek:${oc.env:ICAPSULE_REGISTRY_BRANCH}
 
-        enabled: True
-        priority: 100
+      #  enabled: True
+      #  priority: 100
 
       gitlab:
         urn: urn:glk:icapregs:galacteek:${oc.env:ICAPSULE_REGISTRY_BRANCH}

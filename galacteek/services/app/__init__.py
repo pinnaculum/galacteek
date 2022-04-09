@@ -1,6 +1,8 @@
 import io
 import asyncio
 
+from rdflib import URIRef
+
 from galacteek import log
 
 from galacteek.core.ps import makeKeyService
@@ -121,13 +123,13 @@ class AppService(GService):
     async def rdfStore(self, ipfsPath: IPFSPath,
                        outputGraph: str = 'urn:ipg:i:i0',
                        recordType='OntoloChainRecord',
-                       chainUri=None,
+                       chainUri: URIRef = None,
                        trace=True):
         await self.ldPublish({
             'type': 'DagRdfStorageRequest',
             'recordType': recordType,
             'historyTrace': trace,
-            'chainUri': chainUri,
+            'chainUri': str(chainUri) if chainUri else None,
             'outputGraphIri': outputGraph,
             'ipfsPath': str(ipfsPath)
         }, key=makeKeyService('ld'))

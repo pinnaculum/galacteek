@@ -5,19 +5,19 @@
 {% set endpoint = passport.compact().serviceEndpoint %}
 
 {% set nick = graph.value(
-  rscUri, 'ips://galacteek.ld/nickName') %}
+  rscUriRef, U('ips://galacteek.ld/nickName')) %}
 
 {% set avatar = graph.value(
-  rscUri, 'ips://galacteek.ld/image') %}
+  rscUriRef, U('ips://galacteek.ld/image')) %}
 
 {% set firstName = graph.value(
-  rscUri, 'ips://galacteek.ld/firstName') %}
+  rscUriRef, U('ips://galacteek.ld/firstName')) %}
 
 {% set lastName = graph.value(
-  rscUri, 'ips://galacteek.ld/lastName') %}
+  rscUriRef, U('ips://galacteek.ld/lastName')) %}
 
 {% set dateCreated = graph.value(
-  rscUri, 'ips://galacteek.ld/dateCreated') %}
+  rscUriRef, U('ips://galacteek.ld/dateCreated')) %}
 
 {% set cq = prepareQuery("""
   PREFIX gs: <ips://galacteek.ld/>
@@ -30,7 +30,7 @@
   ORDER BY DESC(?date)
 """) %}
 
-{% set passports = graph.query(cq, initBindings={'person': rscUri}) %}
+{% set passports = graph.query(cq, initBindings={'person': rscUriRef}) %}
 
 {% set cq = prepareQuery("""
   PREFIX gs: <ips://galacteek.ld/>
@@ -44,7 +44,7 @@
 """) %}
 
 {% set following = graph.queryAsync(
-    cq, initBindings={'followed': rscUri, 'follower': endpoint.me['@id'] }) %}
+    cq, initBindings={'followed': rscUriRef, 'follower': U(endpoint.me['@id']) }) %}
 
 {% set cq = prepareQuery("""
   PREFIX gs: <ips://galacteek.ld/>
@@ -60,7 +60,7 @@
 """) %}
 
 {% set recent = graph.queryAsync(
-    cq, initBindings={'author': rscUri }) %}
+    cq, initBindings={'author': rscUriRef }) %}
 
 <p align="center">
 <h1><b>{{ headline }}</b></h1>

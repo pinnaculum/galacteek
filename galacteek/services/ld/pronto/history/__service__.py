@@ -2,6 +2,8 @@ import hashlib
 import asyncio
 import aiohttp
 
+from rdflib import URIRef
+
 from galacteek import log
 from galacteek.services import GService
 
@@ -142,7 +144,7 @@ class GraphingHistoryService(GService):
                     iPath: IPFSPath,
                     graphUri: str,
                     recordType='OntoloChainRecord',
-                    chainUri=None):
+                    chainUri: URIRef = None):
         """
         Main history API (trace an object in the history graph)
         """
