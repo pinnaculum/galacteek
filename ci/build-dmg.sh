@@ -121,7 +121,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export GALACTEEK_MAGIC_DBPATH="$DIR/../Resources/share/misc/magic.mgc"
 export DYLD_FALLBACK_LIBRARY_PATH=$DYLD_FALLBACK_LIBRARY_PATH:$DIR/../Resources/lib
 export PATH=$PATH:$DIR/../Resources/bin
-$DIR/../Resources/bin/python $DIR/../Resources/bin/galacteek --from-dmg --no-ssl-verify "$@"
+$DIR/../Resources/bin/python $DIR/../Resources/bin/galacteek --from-dmg --no-ssl-verify
 EAT
 
 chmod a+x galacteek.app/Contents/MacOS/galacteek

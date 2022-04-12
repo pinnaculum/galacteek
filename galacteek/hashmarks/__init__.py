@@ -157,7 +157,7 @@ class HashmarksCatalogLoader:
             try:
                 await source.save()
             except Exception:
-                return False
+                pass
 
             return True
 

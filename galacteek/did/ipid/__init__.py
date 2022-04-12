@@ -573,15 +573,18 @@ class IPIdentifier(DAGOperations):
             cGet('resolve.timeout')
 
         if self.local:
-            maxLifetime = cGet('resolve.cacheLifetime.local.seconds')
+            cLifeTimeMinutes = cGet('resolve.cacheLifetime.local.minutes')
         else:
-            maxLifetime = cGet('resolve.cacheLifetime.default.seconds')
+            cLifeTimeMinutes = cGet('resolve.cacheLifetime.default.minutes')
 
+        cLifeTimeSecs = cLifeTimeMinutes * 60
         useCache = 'always'
         cache = 'always'
 
-        self.message('DID resolve: {did} (using cache: {usecache})'.format(
-            did=self.ipnsKey, usecache=useCache))
+        self.message(
+            f'DID resolve: {self.ipnsKey}: '
+            f'max cache lifetime is: {cLifeTimeMinutes} minutes'
+        )
 
         return await ipfsop.nameResolve(
             joinIpns(self.ipnsKey),
@@ -589,7 +592,7 @@ class IPIdentifier(DAGOperations):
             useCache=useCache,
             cache=cache,
             cacheOrigin='ipidmanager',
-            maxCacheLifetime=maxLifetime
+            maxCacheLifetime=cLifeTimeSecs
         )
 
     async def refresh(self):
