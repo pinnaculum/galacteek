@@ -65,6 +65,14 @@ def datetimeclean(datestring):
         return None
 
 
+def jinjaEnvSetCommonFilters(env):
+    env.filters['tstodate'] = tstodate
+    env.filters['ipfspathnorm'] = ipfspathnorm
+    env.filters['markdown'] = markdownconv
+    env.filters['dtclean'] = datetimeclean
+    env.filters['ipidExtract'] = ipidExtract
+
+
 def defaultJinjaEnv():
     # We use Jinja's async rendering
 
@@ -80,11 +88,8 @@ def defaultJinjaEnv():
         loader=loader,
         enable_async=True
     )
-    env.filters['tstodate'] = tstodate
-    env.filters['ipfspathnorm'] = ipfspathnorm
-    env.filters['markdown'] = markdownconv
-    env.filters['dtclean'] = datetimeclean
-    env.filters['ipidExtract'] = ipidExtract
+
+    jinjaEnvSetCommonFilters(env)
     return env
 
 

@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update *Pillow* to v9.0.1
 - EthDNS resolver: use DNS over HTTPs requests using the JSON API from eth.link
 - IPS contexts loader: add TTLCache for small schemas
+- inter:/ URL scheme j2 templates are now dynamically loaded from an icapsule
 
 ### Fixed
 - AppImage: fix xkb issue when running in Wayland (set XKB_CONFIG_ROOT)

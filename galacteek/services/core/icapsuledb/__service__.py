@@ -20,6 +20,8 @@ from galacteek import log
 from galacteek import ensure
 from galacteek import cached_property
 
+from galacteek.browser.schemes import SCHEME_I
+
 from galacteek.core.asynclib import asyncWriteFile
 from galacteek.core.asynclib import asyncReadFile
 from galacteek.core.asynclib import httpFetch
@@ -49,6 +51,27 @@ class CapsuleContext:
     depends: list = []
     components: list = []
     qmlEntryPoint: str = ''
+
+
+allowedCapsuleTypes = [
+    'dapp-qml',
+    'dapp',
+    'lib-qml',
+    'jinja2-scheme-templates',
+    'jinja2-templates'
+]
+
+
+def mTerm(attr: str):
+    return URIRef(f'ips://galacteek.ld/ICapsuleManifest#{attr}')
+
+
+def capTerm(attr: str):
+    return URIRef(f'ips://galacteek.ld/ICapsule#{attr}')
+
+
+def compTerm(attr: str):
+    return URIRef(f'ips://galacteek.ld/ICapsuleComponent#{attr}')
 
 
 class ICapsuleRegistryLoaderService(GService):
@@ -97,6 +120,9 @@ class ICapsuleRegistryLoaderService(GService):
 
     def capsuleCtx(self, uri: str):
         return self._byUri.get(uri)
+
+    def capsuleResource(self, icapid: URIRef):
+        return self.graphRegistryRoot.resource(icapid)
 
     async def on_start(self):
         pass
@@ -193,32 +219,24 @@ class ICapsuleRegistryLoaderService(GService):
         cloaded = []
         qmlEntryPoint = None
 
-        def mterm(attr: str):
-            return URIRef(f'ips://galacteek.ld/ICapsuleManifest#{attr}')
-
-        def capterm(attr: str):
-            return URIRef(f'ips://galacteek.ld/ICapsule#{attr}')
-
-        def cterm(attr: str):
-            return URIRef(f'ips://galacteek.ld/ICapsuleComponent#{attr}')
-
         try:
             depends = await self.querier.capsuleDependencies(icapid)
 
-            icap = self.graphRegistryRoot.resource(icapid)
+            # icap = self.graphRegistryRoot.resource(icapid)
+            icap = self.capsuleResource(icapid)
 
-            manifest = icap.value(capterm('manifest'))
+            manifest = icap.value(capTerm('manifest'))
 
             if not manifest:
                 raise ValueError(f'manifest not found for icapsule {icapid}')
 
             assert manifest is not None
 
-            name = str(manifest.value(mterm('name')))
-            description = str(manifest.value(mterm('description')))
-            mtype = str(manifest.value(mterm('capsuleType')))
-            iconCid = str(manifest.value(mterm('iconIpfsPath')))
-            # httpGws = str(manifest.value(mterm('ipfsHttpGws')))
+            name = str(manifest.value(mTerm('name')))
+            description = str(manifest.value(mTerm('description')))
+            mtype = str(manifest.value(mTerm('capsuleType')))
+            iconCid = str(manifest.value(mTerm('iconIpfsPath')))
+            # httpGws = str(manifest.value(mTerm('ipfsHttpGws')))
 
             httpGws = ['https://ipfs.io']
 
@@ -229,10 +247,10 @@ class ICapsuleRegistryLoaderService(GService):
             for compUri in comps:
                 comp = self.graphRegistryRoot.resource(compUri)
 
-                stype = str(comp.value(cterm('sourceType')))
+                stype = str(comp.value(compTerm('sourceType')))
 
-                fspath = Path(str(comp.value(cterm('fsPath'))))
-                ep = str(comp.value(cterm('qmlEntryPoint')))
+                fspath = Path(str(comp.value(compTerm('fsPath'))))
+                ep = str(comp.value(compTerm('qmlEntryPoint')))
 
                 if stype in ['localfs', 'local']:
                     if ep and not qmlEntryPoint:
@@ -245,7 +263,7 @@ class ICapsuleRegistryLoaderService(GService):
                         })
                     continue
                 elif stype in ['dweb', 'ipfs']:
-                    cid = str(comp.value(cterm('cid')))
+                    cid = str(comp.value(compTerm('cid')))
                     httpGw = httpGws.pop()
 
                     if not cid:
@@ -285,7 +303,7 @@ class ICapsuleRegistryLoaderService(GService):
 
                         url = URL(hDistUrl)
 
-                        log.debug(f'icapsule {icapid}: Fetch dist URL: {url}')
+                        log.info(f'icapsule {icapid}: Fetch dist URL: {url}')
 
                         result = await self.capsuleExtractFromUrl(url, cpath)
                         if result is True:
@@ -545,19 +563,44 @@ class DappsUserProfile:
         self.service = service
         self.cfg = cfg
 
+    @property
+    def iSchemeService(self):
+        return getByDotName('dweb.schemes.i')
+
     async def depsInstall(self, deps):
         for dep in deps:
-            depUri = dep['id']
+            depUri = URIRef(dep['id'])
 
-            cap = self.service.capsuleCtx(depUri)
+            cap = self.service.capsuleCtx(str(depUri))
             if cap:
                 continue
 
-            ctx = await self.service.capsuleInstallFromRef(URIRef(depUri))
+            ctx = await self.service.capsuleInstallFromRef(depUri)
 
             if not ctx:
                 log.debug(f'{depUri}: capsule failed to load')
                 return False
+
+            # Post-install
+            if ctx.type in ['jinja2-scheme-templates', 'jinja2-templates']:
+                try:
+                    paths = [comp['fsPath'] for comp in ctx.components]
+                    assert len(paths) > 0
+
+                    icap = self.service.capsuleResource(depUri)
+                    manifest = icap.value(capTerm('manifest'))
+                    forScheme = manifest.value(
+                        mTerm('templatesForUrlScheme')
+                    )
+
+                    if not forScheme or str(forScheme) == SCHEME_I:
+                        log.debug(
+                            f'{depUri}: Templates for scheme: {forScheme}'
+                        )
+
+                        self.iSchemeService.jinjaEnvFromPath(paths)
+                except Exception as err:
+                    log.debug(f'{depUri}: failed to install templates: {err}')
 
         return True
 
@@ -583,7 +626,7 @@ class DappsUserProfile:
             log.debug(f'{uri}: failed to get capsule context')
             return False
 
-        if ctx.type not in ['dapp-qml', 'dapp']:
+        if ctx.type not in allowedCapsuleTypes:
             return False
 
         if len(ctx.components) > 0 and ctx.qmlEntryPoint and load is True:

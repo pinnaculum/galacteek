@@ -54,7 +54,10 @@ conda create -n galacteek python=3.7 --yes
 source activate galacteek
 
 # bsddb3 (for rdflib stores)
-conda install -c conda-forge bsddb3
+conda install -y -c conda-forge bsddb3
+
+# zlib 1.2.12 is rotten (dylib is missing)
+conda install -y zlib=1.2.11
 
 WHEEL="$OLD_CWD"/dist/galacteek-${G_VERSION}-py3-none-any.whl
 

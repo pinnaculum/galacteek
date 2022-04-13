@@ -5,15 +5,12 @@ from rdflib import Literal
 from rdflib.plugins.sparql import prepareQuery
 
 from galacteek import services
+from galacteek import cached_property
 from galacteek.browser.schemes import SCHEME_I
+from galacteek.browser.schemes import NativeIPFSSchemeHandler
+from galacteek.ipfs import ipfsOp
 from galacteek.ld import uriTermExtract
 from galacteek.ld.sparql import uri_objtype
-
-
-from galacteek import cached_property
-from galacteek.ipfs import ipfsOp
-
-from galacteek.browser.schemes import NativeIPFSSchemeHandler
 
 
 class ISchemeHandler(NativeIPFSSchemeHandler):
@@ -51,14 +48,18 @@ class ISchemeHandler(NativeIPFSSchemeHandler):
                     'text/html',
                     content.encode()
                 )
-        except Exception as err:
-            print(str(err))
+        except Exception:
             self.reqFailed(request)
 
     @ipfsOp
     async def handleRequest(self, ipfsop, request, uid):
         rUrl = request.requestUrl()
         path = rUrl.path()
+
+        if not self.iService.jinjaEnv:
+            self.warning('No jinja2 templates environment found for i')
+
+            return self.reqFailed(request)
 
         ipid = await ipfsop.ipid()
         if not ipid:
@@ -73,8 +74,7 @@ class ISchemeHandler(NativeIPFSSchemeHandler):
         except Exception:
             return self.reqFailed(request)
 
-        # TODO: check object type, fixed for test
-        tmpl = self.app.jinjaEnv.get_template(
+        tmpl = self.iService.jinjaEnv.get_template(
             f'ld/components/{otype}/render.jinja2'
         )
 

@@ -1,13 +1,20 @@
 import secrets
+import jinja2
+
 from rdflib import URIRef
 from rdflib.plugins.sparql import prepareQuery
 
 from aiohttp import web
 
 from galacteek import services
-from galacteek.browser.schemes import SCHEME_I
-from galacteek.ipfs import ipfsOp
+from galacteek import log
 from galacteek.core import uid4
+
+from galacteek.browser.schemes import SCHEME_I
+from galacteek.dweb.render import jinjaEnvSetCommonFilters
+
+from galacteek.ipfs import ipfsOp
+
 from galacteek.ld import uriTermExtract
 from galacteek.ld.sparql import uri_objtype
 
@@ -85,6 +92,19 @@ class IService(services.GService):
 
     def on_init(self):
         self.socketPath = self.rootPath.joinpath('i.sock')
+
+        self.jinjaEnv = None
+
+    def jinjaEnvFromPath(self, fsPaths: list):
+        log.debug(f'Scheme {SCHEME_I}: setting up jinja2 env '
+                  f'with FS paths list: {fsPaths}')
+
+        self.jinjaEnv = jinja2.Environment(
+            loader=jinja2.FileSystemLoader(fsPaths),
+            enable_async=True
+        )
+
+        jinjaEnvSetCommonFilters(self.jinjaEnv)
 
     def iriGenObject(self, oclass):
         s = secrets.token_hex(16)

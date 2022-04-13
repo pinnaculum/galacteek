@@ -469,7 +469,8 @@ class WebView(IPFSWebView):
             selectedText = self.webPage.selectedText()
 
             if selectedText:
-                menu = QMenu(self)
+                menu = self.contextMenuCreateDefault()
+                menu.addSeparator()
                 menu.addAction(iSaveSelectedText(), self.onSaveSelection)
                 menu.exec(event.globalPos())
                 return
