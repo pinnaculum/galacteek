@@ -1164,8 +1164,8 @@ class BrowserTab(GalacteekTab):
 
         self.ui.backButton.setEnabled(False)
         self.ui.forwardButton.setEnabled(False)
-        self.ui.backButton.setVisible(False)
-        self.ui.forwardButton.setVisible(False)
+        self.ui.backButton.setVisible(True)
+        self.ui.forwardButton.setVisible(True)
 
         self.ui.stopButton.setEnabled(False)
         self.ui.reloadPageButton.hide()
@@ -2024,8 +2024,6 @@ class BrowserTab(GalacteekTab):
         if currentPage:
             history = currentPage.history()
 
-            self.ui.backButton.setVisible(history.canGoBack())
-            self.ui.forwardButton.setVisible(history.canGoForward())
             self.ui.backButton.setEnabled(history.canGoBack())
             self.ui.forwardButton.setEnabled(history.canGoForward())
 

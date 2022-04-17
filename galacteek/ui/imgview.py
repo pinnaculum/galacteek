@@ -261,7 +261,7 @@ class ImageView(QScrollArea):
     def zoomOutClicked(self):
         self.zoomOut()
 
-    def resizePixmap(self):
+    def resizePixmap(self, auto=False):
         if self.labelImage.movie() and self.clipFirstPixmap:
             self.labelImage.resize(
                 self.scaleFactor * self.clipFirstPixmap.size())
@@ -272,8 +272,13 @@ class ImageView(QScrollArea):
         if pixmap == 0 or pixmap is None:
             return
 
-        self.labelImage.resize(
-            self.scaleFactor * pixmap.size())
+        size = pixmap.size()
+
+        if auto:
+            self.scaleFactor = max(0.5,
+                                   (self.width() / size.width()) / 2)
+
+        self.labelImage.resize(self.scaleFactor * size)
 
     @ipfsOp
     async def showImage(self, ipfsop, imgPath, fromBlock=False, timeout=10):
@@ -318,8 +323,7 @@ class ImageView(QScrollArea):
                 self.image = img
 
                 self.labelImage.setPixmap(QPixmap.fromImage(self.image))
-                self.labelImage.adjustSize()
-                self.resizePixmap()
+                self.resizePixmap(auto=True)
 
                 if self.qrDecoder:
                     # See if we have any QR codes in the image
@@ -327,7 +331,6 @@ class ImageView(QScrollArea):
                     if urls:
                         self.qrCodesPresent.emit(urls)
 
-            self.labelImage.adjustSize()
             self.currentImgPath = IPFSPath(imgPath)
             self.imageLoaded.emit(self.currentImgPath, mimeType)
 

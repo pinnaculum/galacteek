@@ -444,6 +444,8 @@ class TabbedWorkspace(BaseWorkspace):
         self.wsTagRules = []
         self.wsActions = {}
 
+        self.previousOpenedTabIdx = -1
+
         self.toolBarCtrl = QToolBar()
         self.toolBarActions = QToolBar()
         self.toolBarActions.setObjectName('wsActionsToolBar')
@@ -517,10 +519,14 @@ class TabbedWorkspace(BaseWorkspace):
     def wsRegisterTab(self, tab, name, icon=None, current=False,
                       tooltip=None,
                       position='append'):
+        curIdx = self.tabWidget.currentIndex()
+        if curIdx >= 0:
+            self.previousOpenedTabIdx = curIdx
+
         if position == 'append':
             atIdx = self.tabWidget.count()
         elif position == 'nextcurrent':
-            atIdx = self.tabWidget.currentIndex() + 1
+            atIdx = curIdx + 1
 
         if icon:
             idx = self.tabWidget.insertTab(atIdx, tab, icon, name)
@@ -596,6 +602,9 @@ class TabbedWorkspace(BaseWorkspace):
         if await tab.onClose() is True:
             self.tabWidget.removeTab(idx)
             tab.deleteLater()
+
+            if self.previousOpenedTabIdx >= 0:
+                self.tabWidget.setCurrentIndex(self.previousOpenedTabIdx)
 
     def wsSwitch(self, soundNotify=False):
         self.stack.setCurrentIndex(self.workspaceIdx())

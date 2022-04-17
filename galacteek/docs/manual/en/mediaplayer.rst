@@ -32,15 +32,21 @@ Playlists
 ---------
 
 The playlists are based on :term:`RDF`. New playlists are
-stored in memory, and can be saved in the multimedia graph
+stored in memory, and can be saved in the private playlists store
 using the **Save** button.
 
 The **View all playlists** button shows all the playlists in the
-multimedia graph. You can also search playlists by name (the
+playlists store. You can also search playlists by name (the
 search field uses regular expressions).
 
-Playlists loaded from the multimedia graph don't need to be
-saved, this is done automatically (the save button won't appear).
+Publishing a playlist
+---------------------
+
+Playlists can be published to a public store and will be visible
+to the other peers on the network.
+
+To publish a saved playlist, click on the *Playlist* button and
+select *Publish*.
 
 Metadata
 ^^^^^^^^
