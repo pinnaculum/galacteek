@@ -10,6 +10,8 @@ cfgInitTable = [
     'galacteek.ipfs.pubsub',
     'galacteek.ipfs.pubsub.srvs',
 
+    'galacteek.tshaping.ttroll',
+
     'galacteek.services.net.bitmessage',
     'galacteek.services.net.tor',
 

@@ -255,6 +255,7 @@ install_reqs_docs = reqs_parse('requirements-docs.txt')
 install_reqs_ui_pyqt_513 = reqs_parse('requirements-ui-pyqt-5.13.txt')
 install_reqs_ui_pyqt_515 = reqs_parse('requirements-ui-pyqt-5.15.txt')
 install_reqs_rdf_bsddb = reqs_parse('requirements-rdf-bsddb.txt')
+install_reqs_trafficshaping = reqs_parse('requirements-trafficshaping.txt')
 
 
 found_packages = find_packages(exclude=['tests', 'tests.*'])
@@ -282,6 +283,7 @@ setup(
         'ui-pyqt-5.13': install_reqs_ui_pyqt_513,
         'ui-pyqt-5.15': install_reqs_ui_pyqt_515,
         'rdf-bsddb': install_reqs_rdf_bsddb,
+        'trafficshaping': install_reqs_trafficshaping,
         'matplotlib': install_reqs_extra_matplotlib,
         'docs': install_reqs_docs,
     },

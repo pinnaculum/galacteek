@@ -1033,6 +1033,10 @@ class WorkspaceMessenger(SingleWidgetWorkspace, KeyListener):
 
         self.psListen(makeKeyService('net', 'bitmessage'))
 
+    @property
+    def bmService(self):
+        return services.getByDotName('bitmessage')
+
     def setupWorkspace(self):
         super().setupWorkspace()
 
@@ -1044,8 +1048,13 @@ class WorkspaceMessenger(SingleWidgetWorkspace, KeyListener):
     async def event_g_services_net_bitmessage(self, key, message):
         log.debug(f'Bitmessage service event: {message}')
 
-        await self.msger.setup()
-        self.wsSwitchButton.setEnabled(True)
+        mtype = message['event'].get('type')
+
+        if mtype == 'ServiceStarted':
+            await self.msger.setup()
+            self.wsSwitchButton.setEnabled(True)
+        elif mtype == 'ServiceStopped':
+            self.wsSwitchButton.setEnabled(False)
 
     async def event_g_42(self, key, message):
         if self.msger.bmReady and message['event'] == 'bmComposeRequest':

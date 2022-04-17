@@ -111,7 +111,7 @@ class ProcessLauncher:
     async def startProcess(self):
         return False
 
-    async def runProcess(self, args, proto):
+    async def runProcess(self, args, proto, nice=None):
         try:
             startupInfo = None
             if platform.system() == 'Windows':
@@ -131,6 +131,9 @@ class ProcessLauncher:
 
             self._procPid = self.transport.get_pid()
             self.process = Process(self._procPid)
+
+            if isinstance(nice, int) and nice in range(-20, 20):
+                self.process.nice(nice)
         except Exception as err:
             log.debug(f'Could not run process with args {args}: {err}')
             if self.transport:

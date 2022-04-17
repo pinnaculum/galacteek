@@ -1,0 +1,29 @@
+envs:
+  default:
+    enabled: False
+    interfaces:
+      eth[0-9]+:
+        enabled: True
+      wlan*:
+        enabled: False
+
+    configs: {}
+
+    defaultTtConfig:
+      download-priority: 0
+      upload-priority: 0
+
+      download: 65535
+      upload: 32768
+
+      processes:
+        ipfs:
+          download-priority: 3
+          upload-priority: 1
+
+          download: 768
+          upload: 128
+
+          recursive: True
+          match:
+            - name: ipfs

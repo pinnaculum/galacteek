@@ -51,13 +51,12 @@ lose access to the content that you might have published using the previous
 settings, so use with care. Use separate *application profiles* with the
 **--profile** command-line switch to keep multiple separate profiles.
 
-Ethereum settings
------------------
+BitMessage settings
+-------------------
 
-In this section you can configure the Ethereum connection settings.
-These settings are used by the *web3* web profile to provide
-a web3.js *Web3* instance available as *window.web3* in the main
-Javascript world.
+By default the BitMessage service is enabled. From the settings you can
+enable or disable the messenger service, and set the default *nice*
+process priority.
 
 Configuration editor
 --------------------

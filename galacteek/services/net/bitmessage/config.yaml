@@ -6,11 +6,16 @@ envs:
       useTor: False
       listenPort: 8444
 
+      process:
+        nice: 19
+
       objects:
         # Purge objects directory before starting notbit
-        purgeOnStartup: False
+        purgeAllOnStartup: False
         purgeOlderThan:
-          days: 60
+          onStartup: False
+          periodic: False
+          hours: 96
 
     bmCoreContacts:
       - name: 'galacteek-support'

@@ -1,5 +1,6 @@
 import asyncio
 import os
+import os.path
 import re
 import time
 
@@ -20,7 +21,9 @@ from galacteek.database import bmSoftVersionBeaconLast
 from galacteek.database import bmSoftVersionBeaconRecord
 
 from galacteek.config import cParentGet
+from galacteek.config import configModRegCallback
 from galacteek.core import utcDatetime
+from galacteek.core import runningApp
 from galacteek.core.process import ProcessLauncher
 from galacteek.core.process import Process
 from galacteek.core.process import LineReaderProcessProtocol
@@ -101,11 +104,43 @@ class NotBitProcess(ProcessLauncher):
 
             self.pidFilePath.unlink()
 
+    async def purgeOldObjects(self,
+                              objectsPath: Path,
+                              olderThanHours: int):
+        app = runningApp()
+        now = time.time()
+        secs = olderThanHours * 3600
+
+        dirlist = await app.rexec(os.scandir, str(objectsPath))
+
+        if not dirlist:
+            return False
+
+        for file in dirlist:
+            try:
+                stat = os.stat(file.path)
+                if len(file.name) == 64 and (now - stat.st_ctime) > secs:
+                    os.unlink(file.path)
+
+                    await asyncio.sleep(0)
+            except Exception:
+                continue
+
+        return True
+
     async def startProcess(self):
-        if cParentGet('notbit.objects.purgeOnStartup') is True:
+        olderThan = cParentGet('notbit.objects.purgeOlderThan.hours')
+        pOnStartup = cParentGet('notbit.objects.purgeOlderThan.onStartup')
+
+        if cParentGet('notbit.objects.purgeAllOnStartup') is True:
             log.debug(f'Purging objects cache: {self.objectsPath}')
 
             await asyncRmTree(str(self.objectsPath))
+        elif pOnStartup and isinstance(olderThan, int) and olderThan > 0:
+            log.info(f'Purging objects cache: {self.objectsPath}: '
+                     f'objects older than {olderThan} hours')
+
+            await self.purgeOldObjects(self.objectsPath, olderThan)
 
         if self.pidFilePath.is_file():
             # TODO: move to ProcessLauncher
@@ -143,7 +178,8 @@ class NotBitProcess(ProcessLauncher):
 
         if await self.runProcess(
             [NOTBIT] + args,
-            self.nbProtocol
+            self.nbProtocol,
+            nice=19
         ):
             log.debug(f'Started notbit at PID: {self.process.pid}')
 
@@ -430,10 +466,28 @@ class BitMessageClientService(GService):
         self.mailDirPath = self.rootPath.joinpath('maildir')
         self.mailBoxesPath = self.rootPath.joinpath('mailboxes')
         self.notBitDataPath = self.rootPath.joinpath('notbit-data')
+        self.notbitProcess = None
+
+        configModRegCallback(
+            self.onConfigChange,
+            mod='galacteek.services.net.bitmessage'
+        )
+
+    async def onConfigChange(self):
+        enabled = cParentGet('enabled')
+
+        if not enabled and self.notbitProcess:
+            # Was asked to disable the service
+            await self.stopProcess()
+        elif enabled and not self.notbitProcess:
+            await self.startBitmessage()
 
     async def on_start(self) -> None:
         await super().on_start()
 
+        return await self.startBitmessage()
+
+    async def startBitmessage(self):
         if self.app.windowsSystem:
             log.debug('Bitmessage service not yet supported on this platform')
             return
@@ -516,6 +570,15 @@ class BitMessageClientService(GService):
     async def on_stop(self) -> None:
         log.debug('Stopping bitmessage client')
 
+        await self.stopProcess()
+
+    async def stopProcess(self):
         if self.notbitProcess:
             self.notbitProcess.stop()
             self.notbitProcess.removePidFile()
+
+            self.notbitProcess = None
+
+            await self.psPublish({
+                'type': 'ServiceStopped'
+            })

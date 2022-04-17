@@ -110,9 +110,9 @@ def setDefaultSettings(gApp):
     sManager.setDefaultSetting(section, CFG_KEY_SWARMPORT_QUIC, 4001)
     sManager.setDefaultSetting(section, CFG_KEY_SWARMPORT_WS, 4011)
     sManager.setDefaultSetting(section, CFG_KEY_HTTPGWPORT, 8080)
-    sManager.setDefaultSetting(section, CFG_KEY_SWARMHIGHWATER, 900)
-    sManager.setDefaultSetting(section, CFG_KEY_SWARMLOWWATER, 600)
-    sManager.setDefaultSetting(section, CFG_KEY_STORAGEMAX, 50)
+    sManager.setDefaultSetting(section, CFG_KEY_SWARMHIGHWATER, 300)
+    sManager.setDefaultSetting(section, CFG_KEY_SWARMLOWWATER, 200)
+    sManager.setDefaultSetting(section, CFG_KEY_STORAGEMAX, 70)
     sManager.setDefaultSetting(section, CFG_KEY_ROUTINGMODE, 'dht')
     sManager.setDefaultSetting(section, CFG_KEY_IPFSD_PROFILES, '')
     sManager.setDefaultSetting(section, CFG_KEY_PUBSUB_ROUTER,

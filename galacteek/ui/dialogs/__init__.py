@@ -1781,6 +1781,8 @@ class IPFSDaemonInitDialog(QDialog):
                 sManager.getInt(CFG_SECTION_IPFSD, CFG_KEY_HTTPGWPORT))
             self.ui.keepDaemonRunning.setChecked(
                 sManager.isTrue(CFG_SECTION_IPFSD, CFG_KEY_IPFSD_DETACHED))
+            self.ui.contentRoutingMode.setCurrentText(
+                sManager.getSetting(CFG_SECTION_IPFSD, CFG_KEY_ROUTINGMODE))
 
             self.ui.customDaemonHost.setText(
                 sManager.getSetting(CFG_SECTION_IPFSCONN1, CFG_KEY_HOST))

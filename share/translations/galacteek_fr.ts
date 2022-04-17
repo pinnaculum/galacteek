@@ -1444,10 +1444,7 @@ Path: {0}, nodes processed: {1}</source>
         <location filename="../../galacteek/ui/peers.py" line="90"/>
         <source>
         &lt;p&gt;&lt;img src=&quot;{0}&quot;/&gt;&lt;/p&gt;
-        &lt;p&gt;
-            Peer ID: {1}
-        &lt;/p&gt;
-        &lt;p&gt;Space Handle: {2}&lt;/p&gt;
+        &lt;p&gt;Handle: {2}&lt;/p&gt;
         &lt;p&gt;DID: &lt;b&gt;{3}&lt;/b&gt;&lt;/p&gt;
         &lt;p&gt;{4}&lt;/p&gt;
         &lt;p&gt;{5}&lt;/p&gt;

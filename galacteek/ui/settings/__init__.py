@@ -29,6 +29,7 @@ from galacteek.ui.forms import ui_settings_general
 from galacteek.ui.forms import ui_settings_pinning
 from galacteek.ui.forms import ui_settings_ipfs
 from galacteek.ui.forms import ui_settings_center
+from galacteek.ui.forms import ui_settings_bitmessage
 
 from . import *
 
@@ -370,6 +371,8 @@ class SettingsCenterTab(GalacteekTab):
                   'files', ui_settings_files)
         self.load(iPinningSettings(),
                   'pinning', ui_settings_pinning)
+        self.load(iBitMessage(),
+                  'bitmessage', ui_settings_bitmessage)
 
         self.addToLayout(widget)
 
