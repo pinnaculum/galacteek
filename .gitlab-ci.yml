@@ -61,7 +61,6 @@ prepare:
       if [[ $CI_COMMIT_BRANCH =~ '^master$' ]]; then
         echo "Building from master"
         BUNDLE_IDENT="${GALACTEEK_VERSION}"
-        WHEEL_FILENAME="${CI_PROJECT_NAME}-${GALACTEEK_VERSION}-py3-none-any.whl"
 
         echo "export RELEASE_TAG=v${GALACTEEK_VERSION}" >> $GALACTEEK_ENV_FILE
         echo "export APPIMAGE_PIN_NAME=galacteek-appimage-v${GALACTEEK_VERSION}" >> $GALACTEEK_ENV_FILE
@@ -74,6 +73,8 @@ prepare:
         echo "export APPIMAGE_PIN_NAME=galacteek-appimage-branch-${CI_COMMIT_BRANCH}" >> $GALACTEEK_ENV_FILE
         echo "export FLATPAK_PIN_NAME=galacteek-flatpak-branch-${CI_COMMIT_BRANCH}" >> $GALACTEEK_ENV_FILE
       fi
+
+      WHEEL_FILENAME="${CI_PROJECT_NAME}-${GALACTEEK_VERSION}-py3-none-any.whl"
 
       echo "export APPIMAGE_FILENAME=Galacteek-${BUNDLE_IDENT}-x86_64.AppImage" >> $GALACTEEK_ENV_FILE
       echo "export APPIMAGE_SHA_FILENAME=Galacteek-${BUNDLE_IDENT}-x86_64.AppImage.sha512" >> $GALACTEEK_ENV_FILE
