@@ -287,7 +287,7 @@ release:
           --tag-name $RELEASE_TAG \
           --ref $CI_COMMIT_SHA \
           --assets-link \
-          "{\"name\" :\"${WHEEL_FILENAME}\", \"filepath\": \"/${WHEEL_FILENAME}\", \"url\": \"${WHEEL_ASSET_URL}\"}" \
+          "{\"name\" :\"${WHEEL_FILENAME}\", \"filepath\": \"/galacteek-latest-py3-none-any.whl\", \"url\": \"${WHEEL_ASSET_URL}\"}" \
           --assets-link \
           "{\"name\" :\"${APPIMAGE_FILENAME}\", \"filepath\": \"/${APPIMAGE_FILEPATH}\", \"url\": \"${APPIMAGE_ASSET_URL}\"}" \
           --assets-link \
