@@ -47,9 +47,11 @@ prepare:
     - master
     - devel
     - pimp-my-dweb
+    - /^feature/
     - /^pronto/
     - /^ipid/
     - /^rdf/
+    - /^ld/
   script:
     - echo "export G_VERSION=$(cat galacteek/VERSION)" > $GALACTEEK_ENV_FILE
     - echo "export COMMIT_SHORT=$CI_COMMIT_SHORT_SHA" >> $GALACTEEK_ENV_FILE
@@ -59,6 +61,7 @@ prepare:
       if [[ $CI_COMMIT_BRANCH =~ '^master$' ]]; then
         echo "Building from master"
         BUNDLE_IDENT="${GALACTEEK_VERSION}"
+        WHEEL_FILENAME="${CI_PROJECT_NAME}-${GALACTEEK_VERSION}-py3-none-any.whl"
 
         echo "export RELEASE_TAG=v${GALACTEEK_VERSION}" >> $GALACTEEK_ENV_FILE
         echo "export APPIMAGE_PIN_NAME=galacteek-appimage-v${GALACTEEK_VERSION}" >> $GALACTEEK_ENV_FILE
@@ -92,6 +95,10 @@ prepare:
 
       echo "export FLATPAK_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/Galacteek-${BUNDLE_IDENT}-x86_64.flatpak" >> $GALACTEEK_ENV_FILE
 
+      # Wheel
+      echo "export WHEEL_FILENAME=${WHEEL_FILENAME}" >> $GALACTEEK_ENV_FILE
+      echo "export ARTIFACT_WHEEL=dist/${CI_PROJECT_NAME}-${GALACTEEK_VERSION}-py3-none-any.whl" >> $GALACTEEK_ENV_FILE
+      echo "export WHEEL_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/${WHEEL_FILENAME}" >> $GALACTEEK_ENV_FILE
     - export
 
   artifacts:
@@ -109,9 +116,11 @@ build:
     - master
     - devel
     - pimp-my-dweb
+    - /^feature/
     - /^pronto/
     - /^ipid/
     - /^rdf/
+    - /^ld/
   script:
     - source $GALACTEEK_ENV_FILE
     - mkdir -p $ASSETS_ROOT
@@ -196,6 +205,7 @@ build:
       - assets/*x86_64.AppImage.sha512
       - assets/*x86_64.flatpak
       - $ARTIFACT_RELEASE
+      - $ARTIFACT_WHEEL
 
 release:
   image: registry.gitlab.com/galacteek/release-cli-extra
@@ -275,6 +285,8 @@ release:
           --description $RELEASE_DESCRIPTION \
           --tag-name $RELEASE_TAG \
           --ref $CI_COMMIT_SHA \
+          --assets-link \
+          "{\"name\" :\"${WHEEL_FILENAME}\", \"filepath\": \"/${WHEEL_FILENAME}\", \"url\": \"${WHEEL_ASSET_URL}\"}" \
           --assets-link \
           "{\"name\" :\"${APPIMAGE_FILENAME}\", \"filepath\": \"/${APPIMAGE_FILEPATH}\", \"url\": \"${APPIMAGE_ASSET_URL}\"}" \
           --assets-link \

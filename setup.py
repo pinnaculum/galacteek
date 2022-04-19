@@ -324,7 +324,8 @@ setup(
             'galacteek = galacteek.guientrypoint:start'
         ],
         'console_scripts': [
-            'galacteek-eth-master = galacteek.entrypoints.ethtool:ethTool'
+            'galacteek-eth-master = galacteek.entrypoints.ethtool:ethTool',
+            'galacteek-rdfifier = galacteek.entrypoints.rdfifier:rdfifier'
         ]
     },
     classifiers=[

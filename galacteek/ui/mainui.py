@@ -639,6 +639,7 @@ class CentralStack(QStackedWidget,
 
         if event['type'] == 'QmlApplicationLoadRequest':
             icon = getIcon('galacteek.png')
+            runSettings = event['runSettings']
 
             workspace = QMLDappWorkspace(
                 self,
@@ -661,6 +662,9 @@ class CentralStack(QStackedWidget,
                     'type': 'QmlApplicationLoaded',
                     'appUri': event['appUri']
                 })
+
+                if runSettings['wsSwitch'] is True:
+                    workspace.wsSwitch()
 
 
 class BrowseButton(PopupToolButton):

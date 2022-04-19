@@ -287,6 +287,7 @@ class GalacteekApplication(QApplication):
         self._ipfsIconsCacheMax = 32
         self._goIpfsBinPath = None
 
+        self.scheduler = None
         self.orbitConnector = None
         self.netProxy = None
 
@@ -1125,14 +1126,16 @@ class GalacteekApplication(QApplication):
     def task(self, fn, *args, **kw):
         return self.loop.create_task(fn(*args, **kw))
 
-    def configure(self, dbSigEmit=True):
+    def configure(self, dbSigEmit=True, full=True):
         self.initSettings()
         self.initMisc()
         self.setupMainObjects()
         self.setupSchemeHandlers()
         self.applyStyle()
         self.themeChange()
-        self.setupDb(emitConfigured=dbSigEmit)
+
+        if full is True:
+            self.setupDb(emitConfigured=dbSigEmit)
 
     def acquireLock(self):
         if 0:
@@ -1716,7 +1719,10 @@ class GalacteekApplication(QApplication):
 
         # Asyncio shutdown
         await self.loop.shutdown_asyncgens()
-        await self.shutdownScheduler()
+
+        if self.scheduler:
+            await self.shutdownScheduler()
+
         await cancelAllTasks(timeout=tasksCfg.cancelTimeout)
 
         if self.ipfsClient:
