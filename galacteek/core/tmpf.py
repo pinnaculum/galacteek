@@ -16,7 +16,7 @@ class TmpFile:
         file_name = os.urandom(24).hex()
 
         if self._suffix:
-            file_name += self._suffix
+            file_name += f'_{self._suffix}'
 
         file_path = os.path.join(
             tempfile.gettempdir(), file_name)

@@ -2,17 +2,23 @@ import asyncio
 import otsrdflib
 import io
 import random
+import tarfile
 import traceback
 
+from pathlib import Path
+from yarl import URL
 from omegaconf import OmegaConf
 
 from galacteek import log
+from galacteek import ensure
 from galacteek.services import GService
 
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
 
 from galacteek.core.asynclib import GThrottler
+from galacteek.core.asynclib import httpFetch
+from galacteek.core.asynclib import asyncReadFile
 from galacteek.core.ps import makeKeyService
 from galacteek.core import pkgResourcesRscFilename
 
@@ -22,6 +28,7 @@ from galacteek.ipfs.pubsub.messages.ld import RDFGraphsExchangeMessage
 from galacteek.ipfs.pubsub.messages.ld import SparQLHeartbeatMessage
 from galacteek.ipfs.p2pservices import smartql as p2psmartql
 
+from galacteek.ld.rdf import BaseGraph
 from galacteek.ld.rdf import IGraph
 from galacteek.ld.rdf import IConjunctiveGraph
 from galacteek.ld.rdf.guardian import GraphGuardian
@@ -31,7 +38,9 @@ from rdflib import URIRef
 from rdflib.store import Store
 
 from galacteek.ld.iri import p2pLibertarianGenUrn
+from galacteek.ld.iri import urnParse
 from galacteek.ld.rdf.terms import tUriUsesLibertarianId
+from galacteek.ld.rdf.terms import DATASET
 from galacteek.ld.rdf.sync import *
 
 
@@ -217,6 +226,148 @@ class RDFStoresService(GService):
             elif synctype == 'export':
                 graph.synchronizer = GraphExportSynchronizer(graph)
 
+        for dseturi, setcfg in cfg.get('datasets', {}).items():
+            url = setcfg.get('url')
+            checksum = setcfg.get('checksumUrl', None)
+            dsrevurl = setcfg.get('revisionUrl', None)
+            # dseturi = setcfg.get('opSubject')
+
+            if not isinstance(url, str):
+                continue
+
+            if not urnParse(dseturi):
+                continue
+
+            source = URL(url)
+            if not source.name.endswith('.tar.gz'):
+                continue
+
+            ensure(self.graphDataSetPullTask(
+                graph,
+                URIRef(dseturi),
+                source,
+                URL(checksum) if checksum else None,
+                URL(dsrevurl) if dsrevurl else None
+            ))
+
+    async def graphDataSetPullTask(self, graph,
+                                   opSubject: URIRef,
+                                   url: URL,
+                                   checksumUrl: URL,
+                                   revisionUrl: URL):
+        async def dsTarProcess(ograph, tarfp: Path):
+            lastRevision = ograph.value(
+                subject=opSubject,
+                predicate=DATASET.revision
+            )
+
+            try:
+                tar = tarfile.open(str(tarfp))
+                names = tar.getnames()
+                g = BaseGraph()
+
+                for name in names:
+                    if not name.endswith('.nt'):
+                        continue
+
+                    try:
+                        file = tar.extractfile(name)
+                        g.parse(file)
+                    except Exception as err:
+                        log.debug(f'dsProcess: {name} failed: {err}')
+                        continue
+
+                tar.close()
+
+                thisRevision = g.value(
+                    subject=opSubject,
+                    predicate=DATASET.revision
+                )
+
+                if lastRevision and thisRevision == lastRevision and 0:
+                    log.debug(f'Dataset {opSubject}: same revision')
+                    return False
+
+                await ograph.guardian.mergeReplace(
+                    g,
+                    ograph
+                )
+            except Exception:
+                traceback.print_exc()
+                pass
+            else:
+                ograph.add((
+                    opSubject,
+                    DATASET.processedRevision,
+                    thisRevision
+                ))
+                return True
+
+        while not self.should_stop:
+            fp = None
+
+            try:
+                checksum = None
+                remoteRev = None
+
+                lastProcessedRev = graph.value(
+                    subject=opSubject,
+                    predicate=DATASET.processedRevision
+                )
+
+                if revisionUrl:
+                    rfp, _s = await httpFetch(revisionUrl)
+                    if rfp:
+                        contents = await asyncReadFile(
+                            str(rfp), mode='rt')
+                        if contents:
+                            remoteRev = contents.split()[0]
+
+                        rfp.unlink()
+
+                if lastProcessedRev and remoteRev == str(lastProcessedRev):
+                    # Already processed
+                    await asyncio.sleep(60 * 30)
+                    continue
+
+                if checksumUrl:
+                    cfp, _s = await httpFetch(checksumUrl)
+                    if cfp:
+                        contents = await asyncReadFile(
+                            str(cfp), mode='rt')
+                        if contents:
+                            checksum = contents.split()[0]
+
+                        cfp.unlink()
+
+                fp, _sum = await httpFetch(url)
+                if not fp:
+                    await asyncio.sleep(60 * 5)
+                    continue
+
+                if checksumUrl and _sum != checksum:
+                    log.debug(f'Dataset {url}: checksum mismatch!')
+                    await asyncio.sleep(60 * 3)
+                    continue
+
+                if fp.name.endswith('.tar.gz'):
+                    await dsTarProcess(graph, fp)
+                else:
+                    log.debug('Unsupported dataset format')
+                    await asyncio.sleep(60)
+                    continue
+
+                fp.unlink()
+
+                await asyncio.sleep(60 * 5)
+            except Exception:
+                traceback.print_exc()
+
+                if fp:
+                    fp.unlink()
+
+            await asyncio.sleep(60)
+
     async def initializeGraphs(self):
         # syncs = self.serviceConfig.get('synchronizers', {})
         syncs = self._cfgAgents.get('synchronizers', {})
@@ -312,14 +463,13 @@ class RDFStoresService(GService):
     async def on_stop(self):
         log.debug('RDF stores: closing')
 
-        # self.graphG.destroy(self.dbUri)
-
-        try:
-            self.graphG.close()
-        except Exception:
-            pass
-        else:
-            log.debug('RDF graph closed')
+        for gn, graph in self._graphs.items():
+            try:
+                graph.close()
+            except Exception as err:
+                log.debug(f'RDF graphs close error: {err}')
+            else:
+                log.debug('RDF graphs closed')
 
     @ipfsOp
     async def event_g_services_ld(self, ipfsop, key, message):

@@ -47,9 +47,11 @@ prepare:
     - master
     - devel
     - pimp-my-dweb
+    - /^feature/
     - /^pronto/
     - /^ipid/
     - /^rdf/
+    - /^ld/
   script:
     - echo "export G_VERSION=$(cat galacteek/VERSION)" > $GALACTEEK_ENV_FILE
     - echo "export COMMIT_SHORT=$CI_COMMIT_SHORT_SHA" >> $GALACTEEK_ENV_FILE
@@ -72,6 +74,8 @@ prepare:
         echo "export FLATPAK_PIN_NAME=galacteek-flatpak-branch-${CI_COMMIT_BRANCH}" >> $GALACTEEK_ENV_FILE
       fi
 
+      WHEEL_FILENAME="${CI_PROJECT_NAME}-${GALACTEEK_VERSION}-py3-none-any.whl"
+
       echo "export APPIMAGE_FILENAME=Galacteek-${BUNDLE_IDENT}-x86_64.AppImage" >> $GALACTEEK_ENV_FILE
       echo "export APPIMAGE_SHA_FILENAME=Galacteek-${BUNDLE_IDENT}-x86_64.AppImage.sha512" >> $GALACTEEK_ENV_FILE
       echo "export APPIMAGE_IPFS_FILENAME=Galacteek-${BUNDLE_IDENT}-x86_64.ipfs.AppImage" >> $GALACTEEK_ENV_FILE
@@ -92,6 +96,10 @@ prepare:
 
       echo "export FLATPAK_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/Galacteek-${BUNDLE_IDENT}-x86_64.flatpak" >> $GALACTEEK_ENV_FILE
 
+      # Wheel
+      echo "export WHEEL_FILENAME=${WHEEL_FILENAME}" >> $GALACTEEK_ENV_FILE
+      echo "export ARTIFACT_WHEEL=dist/${CI_PROJECT_NAME}-${GALACTEEK_VERSION}-py3-none-any.whl" >> $GALACTEEK_ENV_FILE
+      echo "export WHEEL_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/${WHEEL_FILENAME}" >> $GALACTEEK_ENV_FILE
     - export
 
   artifacts:
@@ -109,9 +117,11 @@ build:
     - master
     - devel
     - pimp-my-dweb
+    - /^feature/
     - /^pronto/
     - /^ipid/
     - /^rdf/
+    - /^ld/
   script:
     - source $GALACTEEK_ENV_FILE
     - mkdir -p $ASSETS_ROOT
@@ -121,6 +131,12 @@ build:
 
     - python setup.py build build_docs
     - python setup.py sdist bdist_wheel
+
+    # Upload wheel
+    - >
+      curl --progress-bar
+      --header "JOB-TOKEN: $CI_JOB_TOKEN"
+      --upload-file dist/${WHEEL_FILENAME} ${WHEEL_ASSET_URL}
 
     - |-
       if [[ $CI_COMMIT_MESSAGE =~ '[appimage]' ]]; then
@@ -196,6 +212,7 @@ build:
       - assets/*x86_64.AppImage.sha512
       - assets/*x86_64.flatpak
       - $ARTIFACT_RELEASE
+      - dist/*.whl
 
 release:
   image: registry.gitlab.com/galacteek/release-cli-extra
@@ -275,6 +292,8 @@ release:
           --description $RELEASE_DESCRIPTION \
           --tag-name $RELEASE_TAG \
           --ref $CI_COMMIT_SHA \
+          --assets-link \
+          "{\"name\" :\"${WHEEL_FILENAME}\", \"filepath\": \"/galacteek-latest-py3-none-any.whl\", \"url\": \"${WHEEL_ASSET_URL}\"}" \
           --assets-link \
           "{\"name\" :\"${APPIMAGE_FILENAME}\", \"filepath\": \"/${APPIMAGE_FILEPATH}\", \"url\": \"${APPIMAGE_ASSET_URL}\"}" \
           --assets-link \

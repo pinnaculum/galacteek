@@ -10,7 +10,10 @@ export GALACTEEK_COMMIT_SHA="@@COMMIT_SHA@@"
 export XKB_CONFIG_ROOT=/usr/share/X11/xkb
 
 # Custom magic.mgc db
-export GALACTEEK_MAGIC_DBPATH=/usr/share/file/magic-galacteek.mgc
+export GALACTEEK_MAGIC_DBPATH=${HERE}/usr/share/file/magic-galacteek.mgc
+
+# Use certifi's cacert.pem for SSL_CERT_FILE
+export SSL_CERT_FILE=${HERE}/usr/lib/python3.7/site-packages/certifi/cacert.pem
 
 export FONTCONFIG_FILE=$HERE/usr/etc/fonts/fonts.conf
 export FONTCONFIG_PATH=$HERE/usr/etc/fonts/

@@ -90,6 +90,10 @@ class Common(object):
         return await self.loop.run_in_executor(
             None, self._serial, 'ttl')
 
+    async def ntize(self):
+        return await self.loop.run_in_executor(
+            None, self._serial, 'nt')
+
     async def xmlize(self):
         return await self.loop.run_in_executor(
             None, self._serial, 'pretty-xml')

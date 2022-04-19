@@ -1,8 +1,8 @@
 from rdflib import XSD
 from rdflib import Literal
 
-from galacteek.core import utcDatetimeIso
+from galacteek.core import normalizedUtcDate
 
 
 def literalDtNow():
-    return Literal(utcDatetimeIso(), datatype=XSD.dateTime)
+    return Literal(normalizedUtcDate(), datatype=XSD.dateTime)

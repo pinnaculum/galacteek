@@ -121,10 +121,12 @@ cp /usr/local/Cellar/openssl@1.1/1.1.1*/lib/libcrypto*.dylib galacteek.app/Conte
 cat > galacteek.app/Contents/MacOS/galacteek <<\EAT
 #!/usr/bin/env bash
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-export GALACTEEK_MAGIC_DBPATH="$DIR/../Resources/share/misc/magic.mgc"
-export DYLD_FALLBACK_LIBRARY_PATH=$DYLD_FALLBACK_LIBRARY_PATH:$DIR/../Resources/lib
+export SSL_CERT_FILE="${DIR}/../Resources/lib/python3.7/site-packages/certifi/cacert.pem"
+export GALACTEEK_MAGIC_DBPATH="${DIR}/../Resources/share/file/magic-galacteek.mgc"
+export DYLD_FALLBACK_LIBRARY_PATH="$DYLD_FALLBACK_LIBRARY_PATH:$DIR/../Resources/lib"
 export PATH=$PATH:$DIR/../Resources/bin
-$DIR/../Resources/bin/python $DIR/../Resources/bin/galacteek --from-dmg --no-ssl-verify
+
+"$DIR/../Resources/bin/python" $DIR/../Resources/bin/galacteek --from-dmg
 EAT
 
 chmod a+x galacteek.app/Contents/MacOS/galacteek

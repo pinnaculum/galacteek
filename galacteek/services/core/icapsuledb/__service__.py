@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from omegaconf import OmegaConf
 
@@ -419,7 +418,8 @@ class ICapsuleRegistryLoaderService(GService):
 
         try:
             async with aiohttp.ClientSession() as sess:
-                async with sess.get(url) as resp:
+                async with sess.get(url,
+                                    verify_ssl=self.app.sslverify) as resp:
                     data = await resp.read()
                     assert data is not None
                     hnew.update(data)
@@ -469,7 +469,7 @@ class ICapsuleRegistryLoaderService(GService):
         """
 
         for attempt in range(0, maxAttempts):
-            fp = await httpFetch(
+            fp, _s = await httpFetch(
                 str(url),
                 maxSize=maxArchiveSize
             )
@@ -485,7 +485,7 @@ class ICapsuleRegistryLoaderService(GService):
                 )
 
             try:
-                tar = tarfile.open(fp)
+                tar = tarfile.open(str(fp))
                 tar.extractall(str(dstdir))
                 tar.close()
             except Exception as err:
@@ -500,7 +500,7 @@ class ICapsuleRegistryLoaderService(GService):
                 )
 
                 try:
-                    os.unlink(fp)
+                    fp.unlink()
                 except Exception:
                     pass
 
@@ -543,7 +543,7 @@ class ICapsuleRegistryLoaderService(GService):
             log.debug(f'Could not pin capsule: {iPath}: {err}')
             return False
 
-    async def dappLoadRequest(self, ctx):
+    async def dappLoadRequest(self, ctx, settings: dict):
         await self.ldPublish({
             'type': 'QmlApplicationLoadRequest',
             'appName': ctx.name,
@@ -552,7 +552,8 @@ class ICapsuleRegistryLoaderService(GService):
             'qmlEntryPoint': ctx.qmlEntryPoint,
             'components': ctx.components,
             'description': ctx.description,
-            'depends': ctx.depends
+            'depends': ctx.depends,
+            'runSettings': settings
         })
 
 
@@ -605,7 +606,8 @@ class DappsUserProfile:
         return True
 
     async def installCapsule(self, capsuleUri: URIRef,
-                             load=True):
+                             load=True,
+                             wsSwitch=False):
         uri = str(capsuleUri)
 
         if uri in self.service._dappLoadedByUri:
@@ -630,7 +632,9 @@ class DappsUserProfile:
             return False
 
         if len(ctx.components) > 0 and ctx.qmlEntryPoint and load is True:
-            await self.service.dappLoadRequest(ctx)
+            await self.service.dappLoadRequest(ctx, {
+                'wsSwitch': wsSwitch
+            })
 
     async def installFromConfig(self):
         capscfg = self.cfg.get('manifestsByUri', {})
@@ -658,7 +662,8 @@ class DappsUserProfile:
 
             await self.installCapsule(
                 URIRef(uri),
-                load=cfg.get('autoload', False)
+                load=cfg.get('autoload', False),
+                wsSwitch=cfg.get('wsSwitchOnLoad', False)
             )
 
 

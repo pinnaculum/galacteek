@@ -1,8 +1,10 @@
 import os.path
+import hashlib
 from pathlib import Path
 from collections import UserList
 from collections import deque
 from typing import Deque
+from yarl import URL
 
 import concurrent.futures
 import threading
@@ -527,22 +529,29 @@ def threadedCoro(loop, coro, *args):
             traceback.print_exc()
 
 
-async def httpFetch(url: str,
+async def httpFetch(u,
                     dst: Path = None,
                     timeout=60,
                     chunkSize=8192,
                     maxSize=0):
     from aiohttp.web_exceptions import HTTPOk
     from galacteek import log
+    from galacteek.core import runningApp
     from galacteek.core.tmpf import TmpFile
 
+    h = hashlib.sha512()
+    url = u if isinstance(u, URL) else URL(u)
+
     try:
+        app = runningApp()
         size = 0
 
-        with TmpFile(mode='w+b', delete=False) as file:
+        with TmpFile(mode='w+b', delete=False,
+                     suffix=url.name) as file:
             async with async_timeout.timeout(timeout):
                 async with aiohttp.ClientSession() as sess:
-                    async with sess.get(url) as resp:
+                    async with sess.get(str(url),
+                                        verify_ssl=app.sslverify) as resp:
                         if resp.status != HTTPOk.status_code:
                             raise Exception(
                                 f'httpFetch: {url}: '
@@ -552,6 +561,7 @@ async def httpFetch(url: str,
                         async for chunk in resp.content.iter_chunked(
                                 chunkSize):
                             file.write(chunk)
+                            h.update(chunk)
 
                             size += len(chunk)
 
@@ -561,7 +571,7 @@ async def httpFetch(url: str,
 
             file.seek(0, 0)
 
-        return file.name
+        return Path(file.name), h.hexdigest()
     except Exception as err:
         log.debug(f'httpFetch ({url}): fetch error: {err}')
-        return None
+        return None, None

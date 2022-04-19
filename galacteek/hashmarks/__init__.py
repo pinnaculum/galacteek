@@ -250,7 +250,7 @@ class YAMLArchiveLoader(HashmarksCatalogLoader):
     async def load(self, source):
         loop = asyncio.get_event_loop()
 
-        tarfp = await httpFetch(source.url)
+        tarfp, _sum = await httpFetch(source.url)
 
         if not tarfp:
             return False
@@ -269,10 +269,10 @@ class YAMLArchiveLoader(HashmarksCatalogLoader):
 
         try:
             dstdir = await loop.run_in_executor(
-                None, extract, tarfp)
+                None, extract, str(tarfp))
             assert dstdir is not None
 
-            os.unlink(tarfp)
+            tarfp.unlink()
         except Exception as err:
             log.debug(f'YAMLArchiveLoader extract error: {err}')
             return -1

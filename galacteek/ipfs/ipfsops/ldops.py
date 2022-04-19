@@ -2,6 +2,7 @@ import os.path
 import orjson
 import aioipfs
 import yaml
+from yaml import Loader
 
 import rdflib_jsonld  # noqa
 
@@ -23,7 +24,7 @@ from galacteek.ld import gLdDefaultContext
 def yamlOrJsonLoad(arg):
     try:
         # Ying
-        d = yaml.load(arg)
+        d = yaml.load(arg, Loader=Loader)
     except (AttributeError, ValueError, BaseException):
         # Yang
         d = orjson.loads(arg)

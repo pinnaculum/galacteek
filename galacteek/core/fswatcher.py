@@ -31,8 +31,14 @@ class FileWatcher(QObject):
         try:
             for root, dirs, files in os.walk(str(path)):
                 for dir in dirs:
-                    r = Path(root).joinpath(dir)
-                    self._watcher.addPath(str(r))
+                    self._watcher.addPath(str(
+                        Path(root).joinpath(dir)
+                    ))
+
+                for file in files:
+                    self._watcher.addPath(str(
+                        Path(root).joinpath(file)
+                    ))
         except Exception:
             pass
 

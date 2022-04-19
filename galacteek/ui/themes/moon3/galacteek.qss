@@ -636,7 +636,7 @@ QToolBar#qaToolBar[hovering=true] {
 
 QToolBar#qaToolBar[hovering=false] {
     border: 2px solid #446474;
-    background-color: #4b1e1e
+    background-color: #4b1e1e;
 }
 
 
