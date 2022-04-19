@@ -132,6 +132,12 @@ build:
     - python setup.py build build_docs
     - python setup.py sdist bdist_wheel
 
+    # Upload wheel
+    - >
+      curl --progress-bar
+      --header "JOB-TOKEN: $CI_JOB_TOKEN"
+      --upload-file dist/${WHEEL_FILENAME} ${WHEEL_ASSET_URL}
+
     - |-
       if [[ $CI_COMMIT_MESSAGE =~ '[appimage]' ]]; then
         echo "Building AppImage to ${APPIMAGE_PATH}"
