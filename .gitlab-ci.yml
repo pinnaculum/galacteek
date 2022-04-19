@@ -206,7 +206,7 @@ build:
       - assets/*x86_64.AppImage.sha512
       - assets/*x86_64.flatpak
       - $ARTIFACT_RELEASE
-      - $ARTIFACT_WHEEL
+      - dist/*.whl
 
 release:
   image: registry.gitlab.com/galacteek/release-cli-extra
