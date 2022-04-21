@@ -31,3 +31,5 @@ envs:
         urn:glk:dapps:dvoz:
           install: latest
           autoload: true
+
+          wsSwitchOnLoad: true

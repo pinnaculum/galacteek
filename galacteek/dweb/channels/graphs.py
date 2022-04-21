@@ -240,7 +240,6 @@ class SparQLResultsModel(QAbstractListModel,
         return _caches[_id]
 
     def _prepareQuery(self, name, query):
-
         try:
             ns = self._pStdPrefixes.copy()
             ns.update(self._pPrefixes)
@@ -280,7 +279,8 @@ class SparQLResultsModel(QAbstractListModel,
     @qasync.asyncSlot(str, QVariant)
     async def runPreparedQuery(self, queryName, bindings):
         cache = self._cache
-        if len(cache) > 0:
+
+        if len(cache) > 0 and 0:
             self.beginResetModel()
             self._results = []
             self.endResetModel()
@@ -289,6 +289,7 @@ class SparQLResultsModel(QAbstractListModel,
             return
 
         try:
+            bv = bindings.toVariant()
             q = self._qprepared.get(queryName)
             assert q is not None
 
@@ -296,7 +297,7 @@ class SparQLResultsModel(QAbstractListModel,
                 self.__rSyncPreparedQuery,
                 self._pGraphUri,
                 q,
-                bindings.toVariant()
+                bv if bv else self._pBindings
             )
         except Exception:
             traceback.print_exc()

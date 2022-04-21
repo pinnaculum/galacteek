@@ -1,3 +1,4 @@
+from pathlib import Path
 import traceback
 
 from PyQt5.QtCore import pyqtSlot
@@ -5,6 +6,7 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import QVariant
 from PyQt5.QtCore import QByteArray
 from PyQt5.QtCore import QJsonValue
+from PyQt5.QtCore import QUrl
 
 from galacteek import log
 from galacteek.core import runningApp
@@ -21,8 +23,21 @@ from . import tcSlot
 
 class IPFSInterface(object):
     async def a_addFromPath(self, ipfsop, path, opts):
+        fp = Path(path)
+
+        if not fp.exists():
+            # Try QUrl for file://
+            url = QUrl(path)
+
+            if url.isValid() and url.scheme() == 'file':
+                fp = Path(url.toLocalFile())
+
+        if not fp.exists():
+            log.info(f'Cannot find file from path: {fp}')
+            return {}
+
         entry = await ipfsop.addPath(
-            path,
+            str(fp),
             callback=opts.get('callback', None),
             recursive=opts.get('recursive', True),
             only_hash=opts.get('only_hash', False),

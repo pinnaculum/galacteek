@@ -419,7 +419,8 @@ class ICapsuleRegistryLoaderService(GService):
 
         try:
             async with aiohttp.ClientSession() as sess:
-                async with sess.get(url) as resp:
+                async with sess.get(url,
+                                    verify_ssl=self.app.sslverify) as resp:
                     data = await resp.read()
                     assert data is not None
                     hnew.update(data)
