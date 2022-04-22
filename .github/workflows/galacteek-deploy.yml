@@ -207,9 +207,9 @@ jobs:
         python -m venv venvg
         ./venvg/Scripts/activate.bat
 
+    - uses: ilammy/msvc-dev-cmd@v1
     - name: HDT
       if: startsWith(matrix.os, 'windows')
-      uses: ilammy/msvc-dev-cmd@v1
       run: |
         ./venvg/Scripts/activate.bat
         pip install pybind11
