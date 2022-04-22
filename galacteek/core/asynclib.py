@@ -534,15 +534,17 @@ async def httpFetch(url: str,
                     maxSize=0):
     from aiohttp.web_exceptions import HTTPOk
     from galacteek import log
+    from galacteek.core import runningApp
     from galacteek.core.tmpf import TmpFile
 
     try:
+        app = runningApp()
         size = 0
 
         with TmpFile(mode='w+b', delete=False) as file:
             async with async_timeout.timeout(timeout):
                 async with aiohttp.ClientSession() as sess:
-                    async with sess.get(url) as resp:
+                    async with sess.get(url, verify_ssl=app.sslverify) as resp:
                         if resp.status != HTTPOk.status_code:
                             raise Exception(
                                 f'httpFetch: {url}: '
@@ -561,7 +563,7 @@ async def httpFetch(url: str,
 
             file.seek(0, 0)
 
-        return file.name
+        return Path(file.name)
     except Exception as err:
         log.debug(f'httpFetch ({url}): fetch error: {err}')
         return None

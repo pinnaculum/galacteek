@@ -282,7 +282,7 @@ class SparQLResultsModel(QAbstractListModel,
 
         if len(cache) > 0 and 0:
             self.beginResetModel()
-            self._results = []
+            # self._results = cache
             self.endResetModel()
 
             self.resultsReady.emit(0)
@@ -305,7 +305,7 @@ class SparQLResultsModel(QAbstractListModel,
 
     def rowCount(self, parent=None, *args, **kwargs):
         if self._cache and len(self._cache) > 0:
-            return len(self._cache)
+            return len(self._cache) - 1
 
         return len(self._results)
 
@@ -328,14 +328,8 @@ class SparQLResultsModel(QAbstractListModel,
     def data(self, QModelIndex, role=None):
         global _caches
 
-        col = QModelIndex.column()
         row = QModelIndex.row()
-        idx = (col, row, role)
 
-        if self._pCacheUse is True:
-            ex = self._cache.get(idx)
-            if ex:
-                return QVariant(ex)
         try:
             val = None
             item = self._results[row]
@@ -350,9 +344,6 @@ class SparQLResultsModel(QAbstractListModel,
                 val = str(cell)
 
             if val:
-                if self._pCacheUse and self._cache is not None:
-                    self._cache[idx] = val
-
                 return val
         except KeyError:
             traceback.print_exc()
@@ -369,7 +360,7 @@ class SparQLResultsModel(QAbstractListModel,
                 return idx
 
     def roleNames(self):
-        if self._cache:
+        if self._cache and 0:
             cr = self._cache.get('roles')
             if cr:
                 return cr
@@ -421,12 +412,10 @@ class SparQLResultsModel(QAbstractListModel,
                 return None, None
 
             if self._pCacheUse:
-                for cidx in range(0, 1):
-                    for eidx, entry in enumerate(results):
-                        for ridx, role in self.roleNames().items():
-                            idx = (cidx, eidx, ridx)
-                            val = self._results[eidx][role.decode()]
-                            self._cache[idx] = str(val)
+                self._cache.clear()
+
+                for row, entry in enumerate(results):
+                    self._cache[row] = entry
 
                 self._cache['roles'] = self.roleNames()
 
@@ -501,13 +490,13 @@ class RDFGraphHandler(GOntoloObject):
                 log.debug(f'Could not fetch RDF from URL: {url}')
                 return False
 
-            await self.app.rexec(self._graph.parse, file)
+            await self.app.rexec(self._graph.parse, str(file))
         except Exception as err:
             log.debug(f'Could not merge RDF from URL: {url}: {err}')
             return False
 
-        if os.path.isfile(file):
-            os.remove(file)
+        if file and file.is_file():
+            file.unlink()
 
         return True
 

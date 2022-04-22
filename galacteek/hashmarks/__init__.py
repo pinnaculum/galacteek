@@ -269,10 +269,10 @@ class YAMLArchiveLoader(HashmarksCatalogLoader):
 
         try:
             dstdir = await loop.run_in_executor(
-                None, extract, tarfp)
+                None, extract, str(tarfp))
             assert dstdir is not None
 
-            os.unlink(tarfp)
+            tarfp.unlink()
         except Exception as err:
             log.debug(f'YAMLArchiveLoader extract error: {err}')
             return -1
