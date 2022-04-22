@@ -208,14 +208,6 @@ jobs:
         python -m venv venvg
         ./venvg/Scripts/activate.bat
 
-    - uses: ilammy/msvc-dev-cmd@v1
-    - name: HDT
-      if: startsWith(matrix.os, 'windows')
-      run: |
-        ./venvg/Scripts/activate.bat
-        pip install pybind11
-        pip install rdflib-hdt
-
     - name: Virtual environment install
       if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'mac')
       run: |
@@ -239,6 +231,7 @@ jobs:
     #    restore-keys: |
     #      ${{ runner.os }}-pip-
 
+    - uses: ilammy/msvc-dev-cmd@v1
     - name: Virtual environment install (win)
       # if: startsWith(matrix.os, 'windows') && steps.cache-venv.outputs.cache-hit != 'true'
       if: startsWith(matrix.os, 'windows')
@@ -247,6 +240,10 @@ jobs:
         ./venvg/Scripts/activate.bat
 
         pip install --upgrade pip
+
+        pip install pybind11
+        pip install rdflib-hdt
+
         pip install wheel
         pip install "sphinx==1.8.5"
         pip install -r requirements.txt
