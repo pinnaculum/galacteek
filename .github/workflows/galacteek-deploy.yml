@@ -207,6 +207,14 @@ jobs:
         python -m venv venvg
         ./venvg/Scripts/activate.bat
 
+    - name: HDT
+      if: startsWith(matrix.os, 'windows')
+      uses: ilammy/msvc-dev-cmd@v1
+      run: |
+        ./venvg/Scripts/activate.bat
+        pip install pybind11
+        pip install rdflib-hdt
+
     - name: Virtual environment install
       if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'mac')
       run: |
