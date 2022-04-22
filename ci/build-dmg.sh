@@ -59,10 +59,6 @@ conda install -y -c conda-forge bsddb3
 # zlib 1.2.12 is rotten (dylib is missing)
 conda install -y zlib=1.2.11
 
-# certifi
-conda remove certifi
-conda install certifi
-
 WHEEL="$OLD_CWD"/dist/galacteek-${G_VERSION}-py3-none-any.whl
 
 # install dependencies
