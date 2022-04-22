@@ -59,6 +59,10 @@ conda install -y -c conda-forge bsddb3
 # zlib 1.2.12 is rotten (dylib is missing)
 conda install -y zlib=1.2.11
 
+# certifi
+conda remove certifi
+conda install certifi
+
 WHEEL="$OLD_CWD"/dist/galacteek-${G_VERSION}-py3-none-any.whl
 
 # install dependencies
@@ -121,10 +125,12 @@ cp /usr/local/Cellar/openssl@1.1/1.1.1*/lib/libcrypto*.dylib galacteek.app/Conte
 cat > galacteek.app/Contents/MacOS/galacteek <<\EAT
 #!/usr/bin/env bash
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-export GALACTEEK_MAGIC_DBPATH="$DIR/../Resources/share/misc/magic.mgc"
+export SSL_CERT_FILE=${HERE}/../Resources/lib/python3.7/site-packages/certifi/cacert.pem
+export GALACTEEK_MAGIC_DBPATH="$DIR/../Resources/share/file/magic-galacteek.mgc"
 export DYLD_FALLBACK_LIBRARY_PATH=$DYLD_FALLBACK_LIBRARY_PATH:$DIR/../Resources/lib
 export PATH=$PATH:$DIR/../Resources/bin
-$DIR/../Resources/bin/python $DIR/../Resources/bin/galacteek --from-dmg --no-ssl-verify
+
+$DIR/../Resources/bin/python $DIR/../Resources/bin/galacteek --from-dmg
 EAT
 
 chmod a+x galacteek.app/Contents/MacOS/galacteek

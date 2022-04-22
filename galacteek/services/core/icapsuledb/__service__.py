@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from omegaconf import OmegaConf
 
@@ -486,7 +485,7 @@ class ICapsuleRegistryLoaderService(GService):
                 )
 
             try:
-                tar = tarfile.open(fp)
+                tar = tarfile.open(str(fp))
                 tar.extractall(str(dstdir))
                 tar.close()
             except Exception as err:
@@ -501,7 +500,7 @@ class ICapsuleRegistryLoaderService(GService):
                 )
 
                 try:
-                    os.unlink(fp)
+                    fp.unlink()
                 except Exception:
                     pass
 
