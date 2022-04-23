@@ -5,6 +5,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.5] - 2022-04-23
+
+### Added
+- Add a way to define datasets in the pronto config
+- Add rdfifier entrypoint.
+
+### Changed
+- Allow file:// URLs to be passed from QML code
+- CI: distribute wheel
+- httpFetch returns a Path and sha512 checksum
+- Set SSL_CERT_FILE from certifi for dmg and AppImage
+
 ## [0.5.4] - 2022-04-04
 
 ### Added
