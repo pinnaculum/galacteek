@@ -38,6 +38,12 @@ graphEnvs:
           urn:ipg:i:uni:
             name: i_uni
 
+          urn:ipg:i:uni:mw:ss:earth:
+            name: i_uni_mw_ss_earth
+            datasets:
+              urn:glk:datasets:earth:
+                url: https://gitlab.com/galacteek/dataset-earth/-/releases/continuous-master/downloads/dataset-earth.tar.gz
+
           urn:ipg:i:uni:mw:ss:earth:rings:
             name: i_uni_mw_ss_earth_rings
 

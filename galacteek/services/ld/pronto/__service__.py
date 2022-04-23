@@ -228,12 +228,20 @@ class RDFStoresService(GService):
 
         for dseturi, setcfg in cfg.get('datasets', {}).items():
             url = setcfg.get('url')
-            checksum = setcfg.get('checksumUrl', None)
-            dsrevurl = setcfg.get('revisionUrl', None)
-            # dseturi = setcfg.get('opSubject')
+            format = setcfg.get('format', 'gdsa1')
 
             if not isinstance(url, str):
                 continue
+
+            csUrl = setcfg.get(
+                'checksumUrl',
+                f'{url}.sha512'
+            )
+
+            dsrevurl = setcfg.get(
+                'revisionUrl',
+                f'{url}.dsrev'
+            )
 
             if not urnParse(dseturi):
                 continue
@@ -246,15 +254,17 @@ class RDFStoresService(GService):
                 graph,
                 URIRef(dseturi),
                 source,
-                URL(checksum) if checksum else None,
-                URL(dsrevurl) if dsrevurl else None
+                URL(csUrl) if csUrl else None,
+                URL(dsrevurl) if dsrevurl else None,
+                format=format
             ))
 
     async def graphDataSetPullTask(self, graph,
                                    opSubject: URIRef,
                                    url: URL,
                                    checksumUrl: URL,
-                                   revisionUrl: URL):
+                                   revisionUrl: URL,
+                                   format=None):
         async def dsTarProcess(ograph, tarfp: Path):
             lastRevision = ograph.value(
                 subject=opSubject,

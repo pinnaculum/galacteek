@@ -85,6 +85,9 @@ margin-right: 20px;
         </item>
         <item row="1" column="1">
          <widget class="QPushButton" name="generateRandom">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="text">
            <string>Generate random user</string>
           </property>

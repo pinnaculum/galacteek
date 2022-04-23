@@ -3,6 +3,7 @@ import tarfile
 import io
 import time
 import hashlib
+import os
 from pathlib import Path
 
 from rdflib import RDF
@@ -27,25 +28,32 @@ async def rdfifyInput(app, ipfsop, args):
     outg = BaseGraph()
 
     async with ipfsop.ldOps() as ld:
-        for inputf in args.yamlldfiles:
-            log.debug(f'Processing {inputf}')
-            try:
-                data = await asyncReadFile(inputf, mode='rt')
-                if not data:
-                    log.debug(f'Cannot read {inputf}')
-                    continue
+        for path in args.yldpaths:
+            for root, dirs, files in os.walk(path):
+                for inputf in files:
+                    if not inputf.endswith('yaml-ld'):
+                        continue
 
-                graph = await ld.rdfify(data)
-                if graph is None:
-                    log.debug(f'Impossible to rdfify: {inputf}')
-                    continue
+                    fullp = Path(root).joinpath(inputf)
 
-                log.debug(f'{inputf}: built graph size: {len(graph)}')
+                    log.debug(f'Processing {inputf}')
+                    try:
+                        data = await asyncReadFile(str(fullp), mode='rt')
+                        if not data:
+                            log.debug(f'Cannot read {inputf}')
+                            continue
 
-                outg += graph
-            except Exception:
-                traceback.print_exc()
-                continue
+                        graph = await ld.rdfify(data)
+                        if graph is None:
+                            log.debug(f'Impossible to rdfify: {inputf}')
+                            continue
+
+                        log.debug(f'{inputf}: built graph size: {len(graph)}')
+
+                        outg += graph
+                    except Exception:
+                        traceback.print_exc()
+                        continue
 
     subj = superUrn(
         'glk',
@@ -125,7 +133,7 @@ def rdfifier():
     parser = buildArgsParser()
     parser.add_argument(
         nargs='+',
-        dest='yamlldfiles'
+        dest='yldpaths'
     )
     parser.add_argument(
         '--output',
