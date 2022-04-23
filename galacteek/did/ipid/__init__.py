@@ -858,7 +858,7 @@ class IPIdentifier(DAGOperations):
     async def _stop(self):
         await self._stopP2PServices()
 
-    async def upgrade(self):
+    async def upgrade(self, iphandle=None):
         if not self.local:
             return
 
@@ -867,7 +867,7 @@ class IPIdentifier(DAGOperations):
 
         if not ps:
             # Create a dweb passport
-            await passport.create(self)
+            await passport.create(self, initialIpHandle=iphandle)
 
     def __eq__(self, other):
         return self.did == other.did

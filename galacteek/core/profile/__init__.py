@@ -988,7 +988,7 @@ class UserProfile(QObject):
                     setAsCurrent=True
                 )
 
-            await self.ipIdentifierInit(ipid)
+            await self.ipIdentifierInit(ipid, iphandle=iphandle)
 
             ensure(ipid.publish())
 
@@ -1004,7 +1004,8 @@ class UserProfile(QObject):
             return ipid
 
     @ipfsOp
-    async def ipIdentifierInit(self, ipfsop, ipid: IPIdentifier):
+    async def ipIdentifierInit(self, ipfsop, ipid: IPIdentifier,
+                               iphandle=None):
         # Register the blog as an IP service on the DID
         blogPath = IPFSPath(joinIpns(self.keyRootId)).child('blog')
         await ipid.addServiceRaw({
@@ -1030,7 +1031,7 @@ class UserProfile(QObject):
             defAvatar = IPFSPath(entry['Hash'])
             await ipid.avatarSet(defAvatar)
 
-        await ipid.upgrade()
+        await ipid.upgrade(iphandle=iphandle)
 
     @ipfsOp
     async def rsaEncryptSelf(self, op, data, offline=False):

@@ -3,6 +3,7 @@ import asyncio
 from galacteek import services
 from galacteek.core import mergeDicts
 from galacteek.core import runningApp
+from galacteek.core.iphandle import SpaceHandle
 from galacteek.did.ipid.services import IPService
 
 from galacteek import GALACTEEK_NAME
@@ -91,7 +92,9 @@ class DwebPassportService(IPService):
         return 'Dweb passport'
 
 
-async def create(ipid):
+async def create(ipid, initialIpHandle: str = None):
+    handle = SpaceHandle(initialIpHandle)
+
     iService = services.getByDotName('dweb.schemes.i')
 
     iriPassport = iService.iriGenObject('DwebPassport')
@@ -108,8 +111,12 @@ async def create(ipid):
         'me': {
             '@id': iriPerson,
             '@type': 'Person',
-            'nickName': '',
+            'nickName': handle.username if handle.valid else '',
+            'ipHandleShort': handle.human if handle.valid else '',
             'familyName': '',
-            'givenName': ''
+            'givenName': '',
+            'mainLanguage': {
+                '@id': 'inter:/rsc/Language/English'
+            }
         }
     })

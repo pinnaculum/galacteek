@@ -66,7 +66,7 @@ class OntoloChainInterface(object):
             if 'dateModified' not in dag:
                 dag['dateModified'] = utcDatetimeIso()
 
-            dag['verificationMethod'] = f'{ipid.did}#keys-1'
+            # dag['verificationMethod'] = f'{ipid.did}#keys-1'
 
             # Store in IPFS
             cid = await ipfsop.dagPut(dag)

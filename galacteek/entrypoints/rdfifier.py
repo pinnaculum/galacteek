@@ -27,33 +27,44 @@ async def rdfifyInput(app, ipfsop, args):
     outp = Path(args.outpath)
     outg = BaseGraph()
 
+    async def yamlLdProcess(fullp: Path):
+        fullp = Path(root).joinpath(inputf)
+
+        log.debug(f'Processing {inputf}')
+        try:
+            data = await asyncReadFile(str(fullp), mode='rt')
+            if not data:
+                log.debug(f'Cannot read {inputf}')
+                return
+
+            graph = await ld.rdfify(data)
+            if graph is None:
+                log.debug(f'Impossible to rdfify: {inputf}')
+                return
+
+            log.debug(f'{inputf}: built graph size: {len(graph)}')
+            return graph
+        except Exception:
+            traceback.print_exc()
+
     async with ipfsop.ldOps() as ld:
         for path in args.yldpaths:
             for root, dirs, files in os.walk(path):
                 for inputf in files:
-                    if not inputf.endswith('yaml-ld'):
-                        continue
-
                     fullp = Path(root).joinpath(inputf)
 
-                    log.debug(f'Processing {inputf}')
-                    try:
-                        data = await asyncReadFile(str(fullp), mode='rt')
-                        if not data:
-                            log.debug(f'Cannot read {inputf}')
-                            continue
+                    if inputf.endswith('yaml-ld'):
+                        graph = await yamlLdProcess(fullp)
+                    elif inputf.endswith('.nt') or \
+                            inputf.endswith('.ttl'):
+                        try:
+                            graph = BaseGraph()
+                            graph.parse(str(fullp))
+                        except Exception:
+                            traceback.print_exc()
 
-                        graph = await ld.rdfify(data)
-                        if graph is None:
-                            log.debug(f'Impossible to rdfify: {inputf}')
-                            continue
-
-                        log.debug(f'{inputf}: built graph size: {len(graph)}')
-
+                    if graph:
                         outg += graph
-                    except Exception:
-                        traceback.print_exc()
-                        continue
 
     subj = superUrn(
         'glk',

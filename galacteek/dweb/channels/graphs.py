@@ -133,7 +133,7 @@ class SparQLResultsModel(QAbstractListModel,
 
         self._rolesNames = {}
 
-        self._pCacheSize = 128
+        self._pCacheSize = 0
         self._pCacheTtl = 3600 * 24
         self._pCacheUse = False
         self._pCacheUsePrefill = False
@@ -280,7 +280,7 @@ class SparQLResultsModel(QAbstractListModel,
     async def runPreparedQuery(self, queryName, bindings):
         cache = self._cache
 
-        if len(cache) > 0 and 0:
+        if len(cache) > 0:
             self.beginResetModel()
             # self._results = cache
             self.endResetModel()
@@ -360,7 +360,7 @@ class SparQLResultsModel(QAbstractListModel,
                 return idx
 
     def roleNames(self):
-        if self._cache and 0:
+        if self._cache:
             cr = self._cache.get('roles')
             if cr:
                 return cr
