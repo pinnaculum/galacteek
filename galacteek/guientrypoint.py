@@ -160,6 +160,11 @@ def buildArgsParser(fromParser=None):
         dest='appimage',
         help='Running from an AppImage')
     parser.add_argument(
+        '--from-flatpak',
+        action='store_true',
+        dest='fromflatpak',
+        help='Running from a Flatpak')
+    parser.add_argument(
         '--from-dmg',
         action='store_true',
         dest='dmg',

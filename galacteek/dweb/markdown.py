@@ -154,8 +154,8 @@ def markitdown(text):
         ]
     else:
         extensions += [
-            'attr_list',
-            'mdx_unimoji'
+            'attr_list'
+            # 'mdx_unimoji'
         ]
 
     return markdown.markdown(

@@ -2,7 +2,7 @@ app-id: io.gitlab.galacteek.Galacteek
 runtime: org.freedesktop.Platform
 runtime-version: '20.08'
 sdk: org.freedesktop.Sdk
-command: galacteek
+command: galacteek-flatpak-runner
 finish-args:
   - --share=ipc
   - --socket=pulseaudio
@@ -13,20 +13,21 @@ finish-args:
   - --filesystem=home
 
 modules:
-  # Install miniconda 4.8.3, and some required conda-forge packages
+  # Install miniconda 4.10.3, and some required conda-forge packages
   - name: conda
     buildsystem: simple
     build-commands:
-      - bash Miniconda3-py37_4.9.2-Linux-x86_64.sh -b -p ${FLATPAK_DEST} -f
-      - conda install -y -c conda-forge libxkbcommon pip libjpeg-turbo zbar
+      - bash Miniconda3-py37_4.10.3-Linux-x86_64.sh -b -p ${FLATPAK_DEST} -f
+      - conda install -y -c conda-forge libxkbcommon pip libjpeg-turbo zbar libmagic=5.35 xcb-util bsddb3 krb5
       - conda install -y --no-deps libxcb
+      - conda install -c anaconda fontconfig
     build-options:
       build-args:
         - --share=network
     sources:
       - type: file
-        url: "https://repo.anaconda.com/miniconda/Miniconda3-py37_4.9.2-Linux-x86_64.sh"
-        sha256: "79510c6e7bd9e012856e25dcb21b3e093aa4ac8113d9aa7e82a86987eabe1c31"
+        url: "https://repo.anaconda.com/miniconda/Miniconda3-py37_4.10.3-Linux-x86_64.sh"
+        sha256: "a1a7285dea0edc430b2bc7951d89bb30a2a1b32026d2a7b02aacaaa95cf69c7c"
 
   - name: libevent
     build-options:
@@ -47,19 +48,19 @@ modules:
         url: "https://dist.torproject.org/tor-0.4.5.6.tar.gz"
         sha256: "22cba3794fedd5fa87afc1e512c6ce2c21bc20b4e1c6f8079d832dc1e545e733"
 
-  # Fetch and extract go-ipfs 0.9.0
+  # Fetch and extract go-ipfs 0.9.1
   - name: fetch-go-ipfs
     buildsystem: simple
     build-commands:
-      - tar -xvf go-ipfs_v0.9.0_linux-amd64.tar.gz
+      - tar -xvf go-ipfs_v0.9.1_linux-amd64.tar.gz
       - cp go-ipfs/ipfs ${FLATPAK_DEST}/bin
     build-options:
       build-args:
         - --share=network
     sources:
       - type: file
-        url: "https://dist.ipfs.io/go-ipfs/v0.9.0/go-ipfs_v0.9.0_linux-amd64.tar.gz"
-        sha256: "e737fd6ccbd1917d302fcdc9e8d29d58fa456dd6a8f92835be29f060c6ddc967"
+        url: "https://dist.ipfs.io/go-ipfs/v0.9.1/go-ipfs_v0.9.1_linux-amd64.tar.gz"
+        sha256: "aff633d271f642e1c57ce7d1fb3cbf11e50e7e05b35ee17f7373cbb06e519133"
 
   # Fetch and extract fs-repo-migrations 2.0.1
   - name: fetch-fs-repo-migrations
@@ -88,8 +89,7 @@ modules:
         url: "https://github.com/pinnaculum/notbit/releases/download/continuous-master/notbit.tar.gz"
         sha256: "de6ee5bc619890c53e458603d119c258e0298d844cac498e6ae2f62a15a046b1"
 
-  # Install galacteek
-  - name: galacteek
+  # Install galacteek - name: galacteek
     buildsystem: simple
     build-commands:
       # Create directories for license, metainfo, icons
@@ -97,6 +97,10 @@ modules:
       - mkdir -p ${FLATPAK_DEST}/share/applications
       - mkdir -p ${FLATPAK_DEST}/share/metainfo
       - mkdir -p ${FLATPAK_DEST}/share/icons/hicolor/512x512/apps
+
+      - mkdir -p ${FLATPAK_DEST}/share/file
+      - wget -O ${FLATPAK_DEST}/share/file/magic-galacteek.mgc
+        "https://gitlab.com/galacteek/file/-/releases/continuous-galacteek/downloads/magic.mgc"
 
       # Copy appdata, .desktop, licenses and icon
       - cp galacteek.appdata.xml
@@ -108,6 +112,10 @@ modules:
       - cp share/icons/galacteek.png
           ${FLATPAK_DEST}/share/icons/hicolor/512x512/apps/io.gitlab.galacteek.Galacteek.png
 
+      # Copy the wrapper script
+      - sed -i -e "s/@@COMMIT_SHA@@/`git rev-parse HEAD`/" packaging/linux/flatpak/galacteek-flatpak-runner
+      - cp packaging/linux/flatpak/galacteek-flatpak-runner ${FLATPAK_DEST}/bin
+
       # Activate the conda venv
       - source ${FLATPAK_DEST}/bin/activate
 
@@ -116,15 +124,19 @@ modules:
       - pip install -r requirements.txt
       - pip install -r requirements-extra-markdown.txt
       - pip install -r requirements-ui-pyqt-5.15.txt
-      - python3 setup.py build build_docs install
+      - python3 setup.py build build_docs
+      - python3 setup.py sdist bdist_wheel
+      - pip install dist/galacteek-*-py3-none-any.whl
     build-options:
       build-args:
         - --share=network
     sources:
       - type: git
         url: https://gitlab.com/galacteek/galacteek.git
+        branch: pimp-my-dweb
 
 cleanup:
+  - '/docs'
   - '/pkgs'
   - '/lib/cmake'
   - '/include'
@@ -147,13 +159,10 @@ cleanup:
   - '/lib/python3.7/site-packages/conda_package_handling'
   - '/lib/python3.7/ensurepip'
   - '/lib/python3.7/site-packages/{setuptools,pip}'
-  - '/lib/python3.7/site-packages/PyQt5/Qt5/plugins/geoservices'
   - '/lib/python3.7/site-packages/PyQt5/Qt5/plugins/sceneparsers'
   - '/lib/python3.7/site-packages/PyQt5/Qt5/plugins/sqldrivers'
   - '/lib/python3.7/site-packages/PyQt5/Qt5/lib/libQt5XmlPatterns*'
   - '/lib/python3.7/site-packages/PyQt5/Qt5/lib/libQt5Designer*'
-  - '/lib/python3.7/site-packages/PyQt5/Qt5/qml/QtCharts/designer/images'
-  - '/lib/python3.7/site-packages/PyQt5/Qt5/qml/Qt/labs'
   - '/share/doc'
   - '/share/gtk-doc'
   - '/share/man'

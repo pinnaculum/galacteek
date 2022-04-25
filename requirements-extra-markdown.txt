@@ -1,2 +1,1 @@
-mdx-unimoji>=1.0
 mkdocs-blog-plugin>=0.25

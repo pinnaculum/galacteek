@@ -90,16 +90,22 @@ prepare:
 
       echo "export FLATPAK_FILENAME=Galacteek-${BUNDLE_IDENT}-x86_64.flatpak" >> $GALACTEEK_ENV_FILE
       echo "export FLATPAK_PATH=${ASSETS_ROOT}/Galacteek-${BUNDLE_IDENT}-x86_64.flatpak" >> $GALACTEEK_ENV_FILE
+      echo "export FLATPAK_REPO_FILENAME=flatpak-repo.tar.gz" >> $GALACTEEK_ENV_FILE
+      echo "export FLATPAK_REPO_TGZ=${ASSETS_ROOT}/flatpak-repo.tar.gz" >> $GALACTEEK_ENV_FILE
 
       echo "export APPIMAGE_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/Galacteek-${BUNDLE_IDENT}-x86_64.AppImage" >> $GALACTEEK_ENV_FILE
       echo "export APPIMAGE_SHA_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/Galacteek-${BUNDLE_IDENT}-x86_64.AppImage.sha512" >> $GALACTEEK_ENV_FILE
 
       echo "export FLATPAK_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/Galacteek-${BUNDLE_IDENT}-x86_64.flatpak" >> $GALACTEEK_ENV_FILE
+      echo "export FLATPAK_REPO_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/flatpak-repo-${BUNDLE_IDENT}.tar.gz" >> $GALACTEEK_ENV_FILE
 
       # Wheel
       echo "export WHEEL_FILENAME=${WHEEL_FILENAME}" >> $GALACTEEK_ENV_FILE
       echo "export ARTIFACT_WHEEL=dist/${CI_PROJECT_NAME}-${GALACTEEK_VERSION}-py3-none-any.whl" >> $GALACTEEK_ENV_FILE
       echo "export WHEEL_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/${WHEEL_FILENAME}" >> $GALACTEEK_ENV_FILE
+
+
+
     - export
 
   artifacts:
@@ -159,20 +165,30 @@ build:
 
         # Build to flatpak repo
         flatpak-builder --force-clean --install-deps-from=flathub \
-          --repo=gflat-repo flatpak-build \
+          --repo=flatpak-repo flatpak-build \
           packaging/linux/flatpak/io.gitlab.galacteek.Galacteek.yaml
 
-        # Create bundle
-        flatpak build-bundle gflat-repo \
-          ${FLATPAK_PATH} io.gitlab.galacteek.Galacteek
+        # tar-gzip the repo
+        tar -czvf ${FLATPAK_REPO_TGZ} flatpak-repo
 
-        CID=$(ipfs add -wQ --cid-version 1 "$FLATPAK_PATH" | tail -1)
-        echo "export FLATPAK_DIR_CID=$CID" >> $ARTIFACT_RELEASE
+        # Create bundle
+        # flatpak build-bundle flatpak-repo \
+        #   ${FLATPAK_PATH} io.gitlab.galacteek.Galacteek
+
+        # CID=$(ipfs add -wQ --cid-version 1 "$FLATPAK_PATH" | tail -1)
+        # echo "export FLATPAK_DIR_CID=$CID" >> $ARTIFACT_RELEASE
       fi
 
     - echo "export APPIMAGE_ASSET_PATH=$APPIMAGE_PATH" >> $ARTIFACT_RELEASE
 
     - source $ARTIFACT_RELEASE
+
+    - |-
+      if [ -e "${FLATPAK_REPO_TGZ}" ]; then
+        echo "Uploading flatpak repo"
+        curl --progress-bar --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+          --upload-file ${FLATPAK_REPO_TGZ} ${FLATPAK_REPO_ASSET_URL}
+      fi
 
     - |-
       if [ ! -z "${FLATPAK_DIR_CID}" ]; then
@@ -211,6 +227,7 @@ build:
       - assets/*x86_64.AppImage
       - assets/*x86_64.AppImage.sha512
       - assets/*x86_64.flatpak
+      - assets/*.tar.gz
       - $ARTIFACT_RELEASE
       - dist/*.whl
 
@@ -301,7 +318,9 @@ release:
           --assets-link \
           "{\"name\" :\"${DMG_FILENAME}\", \"filepath\": \"/${DMG_FILEPATH}\", \"url\": \"${DMG_ASSET_URL}\"}" \
           --assets-link \
-          "{\"name\" :\"${NSI_FILENAME}\", \"filepath\": \"/${NSI_FILEPATH}\", \"url\": \"${NSI_ASSET_URL}\"}"
+          "{\"name\" :\"${NSI_FILENAME}\", \"filepath\": \"/${NSI_FILEPATH}\", \"url\": \"${NSI_ASSET_URL}\"}" \
+          --assets-link \
+          "{\"name\" :\"${FLATPAK_REPO_FILENAME}\", \"filepath\": \"/${FLATPAK_REPO_FILENAME}\", \"url\": \"${FLATPAK_REPO_ASSET_URL}\"}"
       fi
 
 docker_x11vnc:
