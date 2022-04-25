@@ -9,7 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Add a way to define datasets in the pronto config
-- Add rdfifier entrypoint.
+- Add a console script: *rdfifier* (converts YAML-LD to RDF)
+- MFS model: add an API to trigger UnixFS listing from external
+  agents (like a QML dapp)
 
 ### Changed
 - Allow file:// URLs to be passed from QML code

@@ -993,8 +993,36 @@ class FileManager(QWidget):
         self.model.fileDropEvent.connect(self.onDropFile)
         self.model.directoryDropEvent.connect(self.onDropDirectory)
 
+        # Various signals
+        self.model.unixFsListingRequested.connect(
+            self.onExternalListingRequest)
+
         if self.ui.pathSelector.count() == 0:
             self.setupPathSelector()
+
+    def onExternalListingRequest(self,
+                                 requestId: str,
+                                 idx: QModelIndex,
+                                 item: MFSItem,
+                                 depth: int,
+                                 timeout: int):
+        # UnixFS listing requested by an external agent
+        # (QML code for example)
+
+        if not idx or not idx.isValid() or depth not in range(0, 3) or \
+           timeout not in range(1, 90):
+            return
+
+        if not item or not item.path:
+            return
+
+        self.app.task(self.listFiles,
+                      item.path,
+                      parentItem=item,
+                      autoexpand=True,
+                      maxdepth=depth,
+                      requestId=requestId,
+                      timeout=timeout)
 
     def enableButtons(self, flag=True):
         for elem in [self.addFilesAction,
@@ -1780,6 +1808,7 @@ class FileManager(QWidget):
     async def listFiles(self, ipfsop, path, parentItem, maxdepth=1,
                         autoexpand=False, timeout=40,
                         timeFrameUpdate=False,
+                        requestId=None,
                         **kw):
         if self.isBusy:
             return
@@ -1797,6 +1826,10 @@ class FileManager(QWidget):
 
             if timeFrameUpdate:
                 await self.applyTimeFrame()
+
+        if requestId:
+            # Tell the model we're done with it
+            self.model.unixFsListingFinished.emit(requestId, 1)
 
         self.sortMfsTree(True)
         self.enableButtons()

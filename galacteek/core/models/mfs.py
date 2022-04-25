@@ -23,6 +23,7 @@ from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.appsettings import *
 
+from galacteek.core import uid4
 from galacteek.core.modelhelpers import *
 from galacteek.ui.i18n import *  # noqa
 from galacteek.ui.helpers import *
@@ -303,6 +304,10 @@ class MFSItemModel(QStandardItemModel):
 
     needExpand = pyqtSignal(QModelIndex)
 
+    # Signals for requesting listing of unixfs directories
+    unixFsListingRequested = pyqtSignal(str, QModelIndex, MFSItem, int, int)
+    unixFsListingFinished = pyqtSignal(str, int)
+
     # Specific roles
     CidRole = Qt.UserRole + 1
     TimeFrameRole = Qt.UserRole + 2
@@ -310,6 +315,7 @@ class MFSItemModel(QStandardItemModel):
     IpfsPathRole = Qt.UserRole + 4
     IpfsUrlRole = Qt.UserRole + 5
     MimeTypeRole = Qt.UserRole + 6
+    UnixFsTypeRole = Qt.UserRole + 7
 
     def __init__(self):
         QStandardItemModel.__init__(self)
@@ -558,6 +564,30 @@ class MFSItemModel(QStandardItemModel):
     @pyqtSlot(result=int)
     def ipfsUrlRoleValue(self):
         return self.IpfsUrlRole
+
+    @pyqtSlot(QModelIndex, int, int, result=str)
+    def requestListingFromIndex(self, idx, depth: int, timeout: int):
+        """
+        Experimental ^_^
+
+        Sends a signal so that a particular MFS item
+        will have its content listed.
+        """
+
+        item = self.itemFromIndex(idx)
+        rid = uid4()
+
+        if item:
+            self.unixFsListingRequested.emit(
+                rid,
+                item.index(),
+                item,
+                depth,
+                timeout
+            )
+            return rid
+        else:
+            return ''
 
 
 def createMFSModel():

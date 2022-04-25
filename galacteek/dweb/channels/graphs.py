@@ -336,7 +336,9 @@ class SparQLResultsModel(QAbstractListModel,
             roleName = self.roles[role]
             cell = item[roleName.decode()]
 
-            if isinstance(cell, Literal):
+            if cell is None:
+                return QVariant(None)
+            elif isinstance(cell, Literal):
                 val = str(cell)
             elif isinstance(cell, URIRef):
                 val = str(cell)
@@ -345,14 +347,16 @@ class SparQLResultsModel(QAbstractListModel,
 
             if val:
                 return val
-        except KeyError:
-            traceback.print_exc()
-            return ''
-        except IndexError:
-            traceback.print_exc()
-            return ''
+            else:
+                return QVariant(None)
+        except KeyError as kerr:
+            log.warning(f'KeyError on row {row}: {kerr}')
+            return QVariant(None)
+        except IndexError as ierr:
+            log.warning(f'IndexError on row {row}: {ierr}')
+            return QVariant(None)
 
-        return None
+        return QVariant(None)
 
     def roleIdxFromName(self, name):
         for idx, n in self.roleNames():
