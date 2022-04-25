@@ -34,6 +34,10 @@ $APPIPIP install wheel
 # Conda extra packages
 # conda install -y -c conda-forge pycairo
 
+# Ship libmagic 5.35. Our custom mgc uses an old db version, so
+# this makes sure we can read the db
+conda install -c conda-forge libmagic=5.35
+
 # Install the wheel from local dists
 
 echo "Installing wheel: $WHEEL"

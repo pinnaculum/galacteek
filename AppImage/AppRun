@@ -48,4 +48,4 @@ BINARY_NAME=$(basename "$APPIMAGE")
 "${HERE}"/usr/bin/python "${HERE}"/usr/bin/galacteek \
 	--from-appimage \
 	--binary-name="${BINARY_NAME}" --binary-path="${BINARY_PATH}" \
-	--no-ssl-verify --no-release-check "$@"
+	--no-release-check "$@"
