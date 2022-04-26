@@ -13,6 +13,7 @@ variables:
   IPFS_DIST_OS: linux
 
   APPIMAGE_X64_BRANCH_LATEST: 'Galacteek-${CI_COMMIT_BRANCH}-latest-x86_64.AppImage'
+  FLATPAK_X64_BRANCH_LATEST: 'Galacteek-${CI_COMMIT_BRANCH}-latest-x86_64.flatpak'
   DMG_X64_BRANCH_LATEST: 'Galacteek-${CI_COMMIT_BRANCH}-latest-x86_64.dmg'
   NSI_X64_BRANCH_LATEST: 'Galacteek-${CI_COMMIT_BRANCH}-latest-x86_64.exe'
 
@@ -27,12 +28,11 @@ variables:
   before_script:
     - ipfs version
     - ipfs init
+    - ipfs pin remote service add origin $IPFS_RPS_ENDPOINT $IPFS_RPS_TOKEN
     - nohup ipfs daemon &
-    - sleep 3
+    - sleep 5
 
     - echo "Adding remote pin service with endpoint => $IPFS_RPS_ENDPOINT"
-
-    - ipfs pin remote service add origin $IPFS_RPS_ENDPOINT $IPFS_RPS_TOKEN
 
 stages:
   - prepare
@@ -104,8 +104,6 @@ prepare:
       echo "export ARTIFACT_WHEEL=dist/${CI_PROJECT_NAME}-${GALACTEEK_VERSION}-py3-none-any.whl" >> $GALACTEEK_ENV_FILE
       echo "export WHEEL_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/${WHEEL_FILENAME}" >> $GALACTEEK_ENV_FILE
 
-
-
     - export
 
   artifacts:
@@ -128,6 +126,15 @@ build:
     - /^ipid/
     - /^rdf/
     - /^ld/
+  cache:
+    paths:
+      # flatpak-build cache
+      - .flatpak-builder/build
+      - .flatpak-builder/cache
+      - .flatpak-builder/ccache
+      - .flatpak-builder/downloads
+      - .flatpak-builder/checksums
+      - .flatpak-builder
   script:
     - source $GALACTEEK_ENV_FILE
     - mkdir -p $ASSETS_ROOT
@@ -160,43 +167,46 @@ build:
       fi
 
     - |-
-      if [[ $CI_COMMIT_MESSAGE =~ '[flatpak]' ]]; then
+      if [[ $CI_COMMIT_MESSAGE =~ '[flatpak]' ]] || [[ $CI_COMMIT_MESSAGE =~ '[flatpak-repo]' ]] || [[ $CI_COMMIT_MESSAGE =~ '[flatpak-bundle]' ]]; then
         echo "Building flatpak as ${FLATPAK_FILENAME}"
 
         # Build to flatpak repo
         flatpak-builder --force-clean --install-deps-from=flathub \
+          --keep-build-dirs \
+          --default-branch="${CI_COMMIT_BRANCH}" \
           --repo=flatpak-repo flatpak-build \
           packaging/linux/flatpak/io.gitlab.galacteek.Galacteek.yaml
 
         # tar-gzip the repo
-        tar -czvf ${FLATPAK_REPO_TGZ} flatpak-repo
-
-        # Create bundle
-        # flatpak build-bundle flatpak-repo \
-        #   ${FLATPAK_PATH} io.gitlab.galacteek.Galacteek
-
-        # CID=$(ipfs add -wQ --cid-version 1 "$FLATPAK_PATH" | tail -1)
-        # echo "export FLATPAK_DIR_CID=$CID" >> $ARTIFACT_RELEASE
+        tar -czf ${FLATPAK_REPO_TGZ} flatpak-repo
       fi
 
     - echo "export APPIMAGE_ASSET_PATH=$APPIMAGE_PATH" >> $ARTIFACT_RELEASE
 
-    - source $ARTIFACT_RELEASE
-
     - |-
-      if [ -e "${FLATPAK_REPO_TGZ}" ]; then
+      if [ -e "${FLATPAK_REPO_TGZ}" ] && [[ $CI_COMMIT_MESSAGE =~ '[flatpak]' ]]; then
         echo "Uploading flatpak repo"
         curl --progress-bar --header "JOB-TOKEN: $CI_JOB_TOKEN" \
           --upload-file ${FLATPAK_REPO_TGZ} ${FLATPAK_REPO_ASSET_URL}
       fi
 
     - |-
-      if [ ! -z "${FLATPAK_DIR_CID}" ]; then
+      if [[ $CI_COMMIT_MESSAGE =~ '[flatpak-bundle]' ]]; then
+        # Create bundle
+        flatpak build-bundle flatpak-repo \
+          ${FLATPAK_PATH} io.gitlab.galacteek.Galacteek "${CI_COMMIT_BRANCH}"
+
+        CID=$(ipfs add -wQ --cid-version 1 "$FLATPAK_PATH" | tail -1)
+        echo "export FLATPAK_DIR_CID=$CID" >> $ARTIFACT_RELEASE
+
         echo "Uploading flatpak ${FLATPAK_PATH}"
         curl --progress-bar --header "JOB-TOKEN: $CI_JOB_TOKEN" \
           --upload-file ${FLATPAK_PATH} ${FLATPAK_ASSET_URL}
       fi
 
+    - source $ARTIFACT_RELEASE
+
+    - |-
       if [[ $CI_COMMIT_MESSAGE =~ '[appimage]' ]] && [[ $CI_COMMIT_MESSAGE =~ '[deploy]' ]]; then
 
         echo "Uploading AppImage ${APPIMAGE_PATH} to ${APPIMAGE_ASSET_URL}"
@@ -320,7 +330,9 @@ release:
           --assets-link \
           "{\"name\" :\"${NSI_FILENAME}\", \"filepath\": \"/${NSI_FILEPATH}\", \"url\": \"${NSI_ASSET_URL}\"}" \
           --assets-link \
-          "{\"name\" :\"${FLATPAK_REPO_FILENAME}\", \"filepath\": \"/${FLATPAK_REPO_FILENAME}\", \"url\": \"${FLATPAK_REPO_ASSET_URL}\"}"
+          "{\"name\" :\"${FLATPAK_REPO_FILENAME}\", \"filepath\": \"/${FLATPAK_REPO_FILENAME}\", \"url\": \"${FLATPAK_REPO_ASSET_URL}\"}" \
+          --assets-link \
+          "{\"name\" :\"${FLATPAK_FILENAME}\", \"filepath\": \"/${FLATPAK_X64_BRANCH_LATEST}\", \"url\": \"${FLATPAK_ASSET_URL}\"}"
       fi
 
 docker_x11vnc:

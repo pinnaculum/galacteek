@@ -18,7 +18,9 @@ modules:
     buildsystem: simple
     build-commands:
       - bash Miniconda3-py37_4.10.3-Linux-x86_64.sh -b -p ${FLATPAK_DEST} -f
-      - conda install -y -c conda-forge libxkbcommon pip libjpeg-turbo zbar libmagic=5.35 xcb-util bsddb3 krb5
+      - conda update -n base -c defaults conda
+      - conda install -y -c conda-forge libmagic=5.35
+      - conda install -y -c conda-forge zbar libxkbcommon libjpeg-turbo xcb-util bsddb3 krb5
       - conda install -y --no-deps libxcb
       - conda install -c anaconda fontconfig
     build-options:
@@ -104,7 +106,7 @@ modules:
 
       # Copy appdata, .desktop, licenses and icon
       - cp galacteek.appdata.xml
-          ${FLATPAK_DEST}/share/metainfo/io.gitlab.galacteek.Galacteek.xml
+          ${FLATPAK_DEST}/share/metainfo/io.gitlab.galacteek.Galacteek.appdata.xml
       - cp {LICENSE,LICENSE.go-ipfs,LICENSE.Qt.GPLv3}
           ${FLATPAK_DEST}/share/licenses/galacteek
       - cp galacteek.desktop
@@ -120,6 +122,10 @@ modules:
       - source ${FLATPAK_DEST}/bin/activate
 
       # Install requirements; build and install via setup.py
+      - pip install -U pip
+      # XXX: temporary fix for rdflib relying on old setuptools 2_to_3
+      - pip install setuptools==58
+
       - pip install -r requirements-docs.txt
       - pip install -r requirements.txt
       - pip install -r requirements-extra-markdown.txt

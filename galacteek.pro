@@ -20,7 +20,7 @@ SOURCES = galacteek/application/__init__.py \
 	galacteek/ui/files/unixfs.py \
 	galacteek/ui/keys.py \
 	galacteek/ui/mainui.py \
-	galacteek/ui/mediaplayer.py \
+	galacteek/ui/mediaplayer/__init__.py \
 	galacteek/ui/peers.py \
 	galacteek/ui/pinning/pinstatus.py \
 	galacteek/ui/pyramids.py \
