@@ -12,12 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add a console script: *rdfifier* (converts YAML-LD to RDF)
 - MFS model: add an API to trigger UnixFS listing from external
   agents (like a QML dapp)
+- ipfs dweb channel: Add API for remote pinning
 
 ### Changed
 - Allow file:// URLs to be passed from QML code
 - CI: distribute wheel
 - httpFetch returns a Path and sha512 checksum
 - Set SSL_CERT_FILE from certifi for dmg and AppImage
+- IPFSOperator: isPinned() can receive a pin type argument
 
 ## [0.5.4] - 2022-04-04
 

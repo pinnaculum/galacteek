@@ -380,6 +380,10 @@ class SparQLResultsModel(QAbstractListModel,
     def roles(self):
         return self.roleNames()
 
+    @pyqtSlot(result=QVariant)
+    def getRolesNames(self):
+        return QVariant(self._rolesNames)
+
     def __rSyncPreparedQuery(self,
                              graphUri, query, bindings):
         graph = self.rdf.graphByUri(graphUri)

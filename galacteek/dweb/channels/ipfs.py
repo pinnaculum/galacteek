@@ -9,11 +9,14 @@ from PyQt5.QtCore import QJsonValue
 from PyQt5.QtCore import QUrl
 
 from galacteek import log
+from galacteek import ensure
 from galacteek.core import runningApp
 from galacteek.core.ps import KeyListener
 
+from galacteek.ipfs.mimetype import detectMimeType
 from galacteek.ipfs.pubsub.messages import PubsubMessage
 from galacteek.ipfs.pubsub.service import JSONPubsubService
+from galacteek.ipfs.pubsub.service import Curve25519JSONPubsubService
 from galacteek import ensureSafe
 
 from . import GAsyncObject
@@ -50,14 +53,24 @@ class IPFSInterface(object):
 
         return {}
 
-    async def a_psJsonSend(self, app, loop, topic, msg):
-        ipfsop = app.ipfsOperatorForLoop(loop)
+    async def a_psJsonSend_Old(self, app, loop, topic, msg):
+        ipfsop = app.getIpfsOperator()
 
         service = ipfsop.ctx.pubsub.byTopic(topic)
 
         if service:
             await service.send(PubsubMessage(msg))
+            return True
 
+        return False
+
+    async def a_psJsonSend(self, app, loop, topic, msg):
+        ipfsop = app.getIpfsOperator()
+
+        service = ipfsop.ctx.pubsub.byTopic(topic)
+
+        if service:
+            await service.send(PubsubMessage(msg))
             return True
 
         return False
@@ -155,6 +168,38 @@ class IPFSHandler(GAsyncObject, IPFSInterface, KeyListener):
             return entry
 
     @opSlot(str, QJsonValue)
+    async def cat(self, path, options):
+        opts = self._dict(options)
+        offset = opts.get('offset', None)
+        length = opts.get('length', None)
+        timeout = opts.get('timeout', None)
+
+        try:
+            data = await (self.app.ipfsOperatorForLoop()).catObject(
+                path,
+                offset=offset,
+                length=length,
+                timeout=timeout
+            )
+            assert data is not None
+        except Exception:
+            return QVariant(QByteArray(bytes(b'')))
+        else:
+            return QVariant(QByteArray(bytes(data)))
+
+    @opSlot(str)
+    async def getJson(self, path):
+        ipfsop = self.app.ipfsOperatorForLoop()
+
+        try:
+            js = await ipfsop.getJson(path)
+            assert js is not None
+        except Exception:
+            return {}
+        else:
+            return js
+
+    @opSlot(str, QJsonValue)
     async def pin(self, path, options):
         ipfsop = self.app.ipfsOperatorForLoop()
 
@@ -169,13 +214,136 @@ class IPFSHandler(GAsyncObject, IPFSInterface, KeyListener):
                     break
         except Exception:
             traceback.print_exc()
-            return success
+
+        return success
+
+    @opSlot(str, QJsonValue)
+    async def unpin(self, path: str, options):
+        ipfsop = self.app.ipfsOperatorForLoop()
+
+        opts = self._dict(options)
+        recursive = opts.get('recursive', True)
+
+        try:
+            result = await ipfsop.unpin(path, recursive=recursive)
+            assert 'Pins' in result
+        except Exception:
+            return False
         else:
-            return success
+            return True
+
+    @opSlot(str, QJsonValue)
+    async def list(self, path: str, options):
+        try:
+            return [obj async for obj in
+                    self.app.ipfsOperatorForLoop().list(path)]
+        except Exception:
+            return []
+
+    @opSlot(str, int)
+    async def stat(self, path: str, timeout: int):
+        return await (self.app.ipfsOperatorForLoop()).objStat(
+            path, timeout=timeout)
+
+    @opSlot(str, str, QJsonValue)
+    async def pinRemoteAdd(self, serviceName, path, options):
+        ipfsop = self.app.ipfsOperatorForLoop()
+
+        opts = self._dict(options)
+        background = opts.get('background', True)
+        name = opts.get('name', None)
+
+        try:
+            return await ipfsop.pinRemoteAdd(
+                serviceName,
+                path,
+                background=background,
+                name=name
+            )
+        except Exception:
+            traceback.print_exc()
+            return False
+        else:
+            return True
+
+    @opSlot(str, QJsonValue)
+    async def pinRemoteList(self, serviceName, options):
+        ipfsop = self.app.ipfsOperatorForLoop()
+
+        opts = self._dict(options)
+        name = opts.get('name', None)
+        status = opts.get('status', ['pinned'])
+
+        try:
+            return await ipfsop.pinRemoteList(
+                serviceName,
+                name=name,
+                status=status
+            )
+        except Exception:
+            traceback.print_exc()
+            return []
+
+    @opSlot(str, QJsonValue)
+    async def pinRemoteRemove(self, serviceName, options):
+        ipfsop = self.app.ipfsOperatorForLoop()
+
+        opts = self._dict(options)
+        name = opts.get('name', None)
+        cid = opts.get('cid', None)
+        status = opts.get('status', ['pinned'])
+        force = opts.get('force', False)
+
+        try:
+            return await ipfsop.pinRemoteRemove(
+                serviceName,
+                name=name,
+                cid=cid,
+                status=status,
+                force=force
+            )
+        except Exception:
+            traceback.print_exc()
+            return []
+
+    @tcSlot(str, str)
+    async def isPinnedSync(self, path: str, pinType: str):
+        return await (self.app.ipfsOperatorForLoop()).isPinned(
+            path, pinType=pinType)
+
+    @opSlot(str, str)
+    async def isPinned(self, path: str, pinType: str):
+        return await (self.app.ipfsOperatorForLoop()).isPinned(
+            path, pinType=pinType)
+
+    @opSlot(str, QJsonValue)
+    async def resolve(self, path: str, options):
+        return await (self.app.ipfsOperatorForLoop()).resolve(path)
+
+    @opSlot(str, QJsonValue)
+    async def detectMimeType(self, path: str, options):
+        mType = await detectMimeType(path)
+        if mType:
+            return str(mType)
+
+        return 'application/unknown'
+
+    @tcSlot()
+    async def pinRemoteServiceListSync(self):
+        ipfsop = self.app.ipfsOperatorForLoop()
+        try:
+            services = await ipfsop.pinRemoteServiceList()
+            assert isinstance(services, list)
+        except Exception:
+            return []
+        else:
+            return services
 
     @pyqtSlot(str, QJsonValue, result=bool)
     def psJsonSend(self, topic, message):
-        return self.tc(self.a_psJsonSend, topic, self._dict(message))
+        ensure(self.a_psJsonSend(
+            self.app, self.app.loop, topic, self._dict(message)))
+        return True
 
     @pyqtSlot(str, result=bool)
     def psJsonChannelDestroy(self, topic):
@@ -192,10 +360,8 @@ class IPFSHandler(GAsyncObject, IPFSInterface, KeyListener):
 
         return False
 
-    # @pyqtSlot(str, QJsonValue, result=bool)
     @opSlot(str, QJsonValue)
     async def psJsonChannelCreate(self, topic, options):
-        # ipfsop = self.app.ipfsOperatorForLoop()
         service = self.app.ipfsCtx.pubsub.byTopic(topic)
         if service:
             return False
@@ -204,22 +370,32 @@ class IPFSHandler(GAsyncObject, IPFSInterface, KeyListener):
             opts = self._dict(options)
             lifetime = int(opts.get('lifetime', 0))
             filterSelf = bool(opts.get('filterSelf', True))
+            encryption = opts.get('encryption', None)
         except Exception:
             lifetime = 0
 
-        service = JSONPubsubService(
-            self.app.ipfsCtx, topic=topic,
-            scheduler=self.app.scheduler,
-            metrics=False,
-            serveLifetime=lifetime,
-            filterSelfMessages=filterSelf
-        )
+        if encryption == 'curve25519':
+            service = Curve25519JSONPubsubService(
+                self.app.ipfsCtx,
+                topic,
+                None,
+                scheduler=self.app.scheduler,
+                metrics=False,
+                serveLifetime=lifetime,
+                filterSelfMessages=filterSelf
+            )
+        else:
+            service = JSONPubsubService(
+                self.app.ipfsCtx, topic=topic,
+                scheduler=self.app.scheduler,
+                metrics=False,
+                serveLifetime=lifetime,
+                filterSelfMessages=filterSelf
+            )
+
         self.app.ipfsCtx.pubsub.reg(service)
 
-        async def startService(srv):
-            await srv.startListening()
-
-        await startService(service)
+        await service.startListening()
 
         return True
 

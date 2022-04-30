@@ -1052,22 +1052,36 @@ class IPFSOperator(RemotePinningOps,
         """
         return await self.client.repo.gc(quiet=quiet)
 
-    async def isPinned(self, hashRef):
+    async def isPinned(self, path: str, pinType=None):
         """
-        Returns True if the IPFS object referenced by hashRef is pinned,
+        Returns True if the IPFS object referenced by path is pinned,
         False otherwise
         """
         try:
-            mHash = stripIpfs(hashRef)
-            result = await self.client.pin.ls(multihash=mHash)
+            cid = stripIpfs(await self.resolve(path, recursive=True))
+            if not cid:
+                raise ValueError(f'Could not resolve: {path}')
+
+            result = await self.client.pin.ls(path)
             assert isinstance(result, dict)
+
             keys = result.get('Keys', {})
-            return mHash in keys
+
+            if pinType and pinType in ['direct', 'recursive', 'indirect']:
+                v1Pinned = [
+                    cidConvertBase32(c) for c,
+                    d in keys.items() if d['Type'] == pinType or
+                    d['Type'].startswith(pinType)
+                ]
+            else:
+                v1Pinned = [cidConvertBase32(c) for c in keys.keys()]
+
+            return cid in v1Pinned
         except aioipfs.APIError as e:
-            self.debug('isPinned error: {}'.format(e.message))
+            self.debug(f'isPinned API error: {e.message}')
             return False
         except Exception as err:
-            self.debug(f'isPinned: unknown error {err}')
+            self.debug(f'isPinned({path}): unknown error: {err}')
             return False
 
     async def pinned(self, type='all'):
@@ -1133,14 +1147,14 @@ class IPFSOperator(RemotePinningOps,
             self.debug(f'Unknown pin error: {err}')
             yield path, -1, None
 
-    async def unpin(self, obj):
+    async def unpin(self, obj, recursive=True):
         """
         Unpin an object
         """
 
         self.debug('unpinning: {0}'.format(obj))
         try:
-            result = await self.client.pin.rm(obj)
+            result = await self.client.pin.rm(obj, recursive=recursive)
         except aioipfs.APIError as e:
             self.debug('unpin error: {}'.format(e.message))
             return None
@@ -1216,7 +1230,7 @@ class IPFSOperator(RemotePinningOps,
             self.debug(f'listStreamed ({path}): IPFS error: {e.message}')
             raise e
         except asyncio.CancelledError:
-            self.debug('listStreamed ({path}): cancelled')
+            self.debug(f'listStreamed ({path}): cancelled')
         except BaseException as err:
             self.debug(f'listStreamed ({path}): unknown error: {err}')
             raise err

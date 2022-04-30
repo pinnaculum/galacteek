@@ -1,4 +1,3 @@
-
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QAbstractListModel
 from PyQt5.QtCore import QModelIndex
@@ -8,6 +7,7 @@ from PyQt5.QtCore import QUrl
 from PyQt5.QtCore import QSize
 from PyQt5.QtCore import QVariant
 
+from galacteek import log
 from galacteek.ipfs.paths import posixIpfsPath
 from galacteek.ipfs.cidhelpers import getCID
 from galacteek.ipfs.cidhelpers import IPFSPath
@@ -106,6 +106,25 @@ class UnixFSEntryInfo:
         return self.entry['Type'] == -1
 
 
+UnixFsNameRole = Qt.UserRole + 1
+UnixFsSizeRole = Qt.UserRole + 2
+UnixFsTypeRole = Qt.UserRole + 3
+UnixFsHashRole = Qt.UserRole + 4
+UnixFsMimeRole = Qt.UserRole + 5
+UnixFsIpfsPathRole = Qt.UserRole + 6
+UnixFsIpfsUrlRole = Qt.UserRole + 7
+
+UnixFsRoles = {
+    UnixFsNameRole: b'Name',
+    UnixFsSizeRole: b'Size',
+    UnixFsTypeRole: b'Type',
+    UnixFsHashRole: b'Hash',
+    UnixFsMimeRole: b'MimeType',
+    UnixFsIpfsPathRole: b'IpfsPath',
+    UnixFsIpfsUrlRole: b'IpfsUrl'
+}
+
+
 class UnixFSDirectoryModel(QAbstractListModel):
     COL_UNIXFS_NAME = 0
     COL_UNIXFS_SIZE = 1
@@ -167,7 +186,7 @@ class UnixFSDirectoryModel(QAbstractListModel):
     def getUnixFSEntryInfoFromIdx(self, idx):
         try:
             return self.entries[idx.row()]
-        except IndexError:
+        except (IndexError, Exception):
             return None
 
     def formatEntries(self):
@@ -223,3 +242,64 @@ class UnixFSDirectoryModel(QAbstractListModel):
             -1,
             Qt.MatchContains | Qt.MatchWrap | Qt.MatchRecursive
         )
+
+
+class UnixFSModelAgent:
+    """
+    The UnixFSModelAgent operates on a UnixFSDirectoryModel.
+    It can list the content of unixfs directories and fill in
+    the entries served by data()
+    """
+
+    def __init__(self, unixFsModel: UnixFSDirectoryModel):
+        self.model = unixFsModel
+
+    async def listDirectory(self,
+                            ipfsop,
+                            path: str,
+                            resolve_type=True,
+                            clearModel=True,
+                            generatorTimeout=9,
+                            maxEntries=2048):
+        eCount = 0
+
+        eGenerator = ipfsop.listStreamed(path, resolve_type)
+        fetching = True
+
+        if clearModel:
+            self.model.clearModel()
+
+        while fetching:
+            try:
+                entries = await ipfsop.waitFor(
+                    eGenerator.__anext__(),
+                    generatorTimeout
+                )
+                if entries is None:
+                    raise ValueError('Entries generator timeout')
+
+                for entry in entries:
+                    if not entry:
+                        continue
+
+                    eCount += 1
+
+                    if eCount >= maxEntries:
+                        # Limit reached
+                        fetching = False
+                        break
+
+                    rowStart = self.model.rowCount(QModelIndex())
+
+                    self.model.beginInsertRows(
+                        QModelIndex(), rowStart, rowStart)
+                    self.model.entries.append(entry)
+                    self.model.endInsertRows()
+            except StopAsyncIteration:
+                fetching = False
+            except Exception as err:
+                log.warning(
+                    f'UnixFS list({path}): error: {err}')
+                return False
+
+        return True

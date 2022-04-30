@@ -21,6 +21,7 @@ from galacteek.dweb.channels.ipid import IPIDHandler
 from galacteek.dweb.channels.ipfs import IPFSHandler
 from galacteek.dweb.channels.ontolochain import OntoloChainHandler
 from galacteek.dweb.channels.graphs import *
+from galacteek.dweb.channels.unixfs import UnixFsDirModel
 
 from galacteek.services import getByDotName
 
@@ -126,6 +127,12 @@ class QMLApplicationWidget(QWidget):
             'Galacteek',
             1, 0,
             'SpQLEndpointModel'
+        )
+        qmlRegisterType(
+            UnixFsDirModel,
+            'Galacteek',
+            1, 0,
+            'UnixFsDirectoryModel'
         )
 
         qmlRegisterType(

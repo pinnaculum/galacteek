@@ -797,7 +797,20 @@ class Curve25519JSONPubsubService(JSONPubsubService):
         return False
 
     async def peersToSend(self):
-        raise Exception('implement peersToSend')
+        # XXX
+        # TODO: Stop using a aiorwlock as it's loop-bound
+        # and forces us to always call this inside the main loop
+        async with self.ipfsCtx.peers.lock.reader_lock:
+            for peerId, piCtx in self.ipfsCtx.peers.byPeerId.items():
+                if peerId == self.ipfsCtx.node.id or not piCtx.ident:
+                    continue
+
+                pubKeyCid = piCtx.ident.defaultCurve25519PubKeyCid
+
+                if pubKeyCid:
+                    yield (piCtx, None,
+                           f'{self.topicBase}.{peerId}',
+                           pubKeyCid)
 
     @ipfsOp
     async def send(self, ipfsop, msg):
@@ -805,7 +818,7 @@ class Curve25519JSONPubsubService(JSONPubsubService):
         Send a message encrypted as curve25519 to all peers
 
         Implement peersToSend() as an async generator to tell which
-        peers we should the message to.
+        peers we should send the message to.
         """
         try:
             pmfp = getattr(self, 'presetMessageForPeer')

@@ -2,8 +2,11 @@ from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtWidgets import QWidgetAction
 
+from PyQt5.QtQuick import QQuickPaintedItem
+
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import Qt
+from PyQt5.QtCore import pyqtSlot
 
 from galacteek import AsyncSignal
 from galacteek import partialEnsure
@@ -378,6 +381,22 @@ class PinObjectButton(PopupToolButton, PinActions):
         if srvCount > 0:
             menu.addAction(actionPinRpsAll)
             menu.addSeparator()
+
+
+class QuickItemPinObjectButton(QQuickPaintedItem):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.button = PinObjectButton()
+        self.setRenderTarget(QQuickPaintedItem.FramebufferObject)
+
+    @pyqtSlot(str)
+    def change(self, path: str):
+        self.button.changeObject(IPFSPath(path))
+        self.update()
+
+    def paint(self, painter):
+        self.button.render(painter)
 
 
 class PinObjectAction(QWidgetAction):

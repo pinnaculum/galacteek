@@ -11,7 +11,7 @@ from . import GAsyncObject
 class GHandler(GAsyncObject):
     @pyqtSlot(result=int)
     def apiVersion(self):
-        return 4
+        return 5
 
     @pyqtSlot(str, str)
     def logMsg(self, level: str, message: str):
@@ -39,4 +39,21 @@ class GHandler(GAsyncObject):
                 app.getIpfsConnectionParams()
             )
         else:
+            return ''
+
+    @pyqtSlot(str)
+    def setClipboardText(self, text: str):
+        try:
+            assert isinstance(text, str)
+            assert len(text) in range(1, 4096)
+
+            self.app.setClipboardText(text)
+        except Exception:
+            pass
+
+    @pyqtSlot()
+    def getClipboardText(self):
+        try:
+            return self.app.getClipboardText()
+        except Exception:
             return ''

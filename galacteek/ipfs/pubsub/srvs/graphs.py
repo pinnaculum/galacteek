@@ -32,19 +32,6 @@ class RDFBazaarService(Curve25519JSONPubsubService):
         if msgType in SparQLHeartbeatMessage.VALID_TYPES:
             await self.handleSparqlMessage(sender, msg, msgDbRecord)
 
-    async def peersToSend(self):
-        async with self.ipfsCtx.peers.lock.reader_lock:
-            for peerId, piCtx in self.ipfsCtx.peers.byPeerId.items():
-                if peerId == self.ipfsCtx.node.id or not piCtx.ident:
-                    continue
-
-                pubKeyCid = piCtx.ident.defaultCurve25519PubKeyCid
-
-                if pubKeyCid:
-                    yield (piCtx, None,
-                           f'{self.topicBase}.{peerId}',
-                           pubKeyCid)
-
     async def presetMessageForPeer(self, piCtx, message):
         """
         Presets the SmartQL credentials on the heartbeat message
