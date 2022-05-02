@@ -130,8 +130,7 @@ class IPFSHandler(GAsyncObject, IPFSInterface, KeyListener):
 
         return await self.a_addFromPath(ipfsop, path, opts)
 
-    @opSlot(str)
-    async def addStr(self, data):
+    async def __addString(self, data):
         ipfsop = self.app.ipfsOperatorForLoop()
 
         try:
@@ -142,8 +141,15 @@ class IPFSHandler(GAsyncObject, IPFSInterface, KeyListener):
         else:
             return entry
 
-    @opSlot(QByteArray)
-    async def addBytes(self, data):
+    @opSlot(str)
+    async def addStr(self, data):
+        return await self.__addString(data)
+
+    @tcSlot(str)
+    async def addStrSync(self, data):
+        return await self.__addString(data)
+
+    async def __addBytes(self, data):
         ipfsop = self.app.ipfsOperatorForLoop()
 
         try:
@@ -153,6 +159,14 @@ class IPFSHandler(GAsyncObject, IPFSInterface, KeyListener):
             return {}
         else:
             return entry
+
+    @opSlot(QByteArray)
+    async def addBytes(self, data):
+        return await self.__addBytes(data)
+
+    @tcSlot(QByteArray)
+    async def addBytesSync(self, data):
+        return await self.__addBytes(data)
 
     @tcSlot(QJsonValue)
     async def addJson(self, obj):

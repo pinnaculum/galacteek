@@ -330,9 +330,7 @@ release:
           --assets-link \
           "{\"name\" :\"${NSI_FILENAME}\", \"filepath\": \"/${NSI_FILEPATH}\", \"url\": \"${NSI_ASSET_URL}\"}" \
           --assets-link \
-          "{\"name\" :\"${FLATPAK_REPO_FILENAME}\", \"filepath\": \"/${FLATPAK_REPO_FILENAME}\", \"url\": \"${FLATPAK_REPO_ASSET_URL}\"}" \
-          --assets-link \
-          "{\"name\" :\"${FLATPAK_FILENAME}\", \"filepath\": \"/${FLATPAK_X64_BRANCH_LATEST}\", \"url\": \"${FLATPAK_ASSET_URL}\"}"
+          "{\"name\" :\"${FLATPAK_REPO_FILENAME}\", \"filepath\": \"/${FLATPAK_REPO_FILENAME}\", \"url\": \"${FLATPAK_REPO_ASSET_URL}\"}"
       fi
 
 docker_x11vnc:
