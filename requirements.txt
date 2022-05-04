@@ -26,6 +26,7 @@ frozendict==1.2
 filelock>=3.0.1
 gitpython>=2.1.11
 html2text==2020.1.16
+ignition-gemini==0.1.11
 ipfshttpclient>=0.7.0
 jinja2==3.0.1
 json-traverse>=0.4
@@ -51,6 +52,7 @@ pycryptodomex==3.9.8
 pygments>=2.3.1
 pyld>=2.0.2
 PyNaCl>=1.4.0
+python-dateutil==2.8.2
 python-magic>=0.4.15
 python3-crdt>=1.0.3
 py-multibase>=1.0.3
@@ -76,5 +78,4 @@ aiogeminipfs @ git+https://gitlab.com/galacteek/aiogeminipfs.git@ipfs#egg=aiogem
 rdflib @ git+https://gitlab.com/galacteek/rdflib.git@ipfs#egg=rdflib
 rdflib-jsonld @ git+https://gitlab.com/galacteek/rdflib-jsonld.git@galacteek#egg=rdflib-jsonld
 galacteek-ld-web4 @ git+https://gitlab.com/galacteek/galacteek-ld-web4.git@master
-ignition-gemini @ git+https://gitlab.com/cipres/ignition.git@galacteek
 SPARQL-Burger @ git+https://gitlab.com/galacteek/SPARQL-Burger.git@master#egg=SPARQL-Burger

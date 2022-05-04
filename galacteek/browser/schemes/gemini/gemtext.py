@@ -62,8 +62,6 @@ def gemTextToHtml(gmi: str):
     title = None
 
     for line in gmi.split('\n'):
-        line = line.strip()
-
         if len(line):
             if line.startswith("```") or line.endswith("```"):
                 preformat = not preformat

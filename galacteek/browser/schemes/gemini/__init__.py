@@ -1,6 +1,7 @@
 import re
 import ignition
 from yarl import URL
+from pathlib import Path
 
 from PyQt5.QtCore import QUrl
 
@@ -10,6 +11,7 @@ from galacteek.browser.schemes import BaseURLSchemeHandler
 from galacteek.browser.schemes import SCHEME_GEMINI
 
 from .gemtext import gemTextToHtml
+from .x509 import x509SelfSignedGenerate
 
 
 class GeminiError(Exception):
@@ -17,14 +19,37 @@ class GeminiError(Exception):
 
 
 class GeminiClient:
-    def geminiRequest(self, url: str):
+    def geminiRequest(self, url: str, referer, certificate):
         # Run in the thread executor
         try:
-            response = ignition.request(url)
-            data = response.data()
-            return response, data
+            response = ignition.request(
+                url,
+                referer=referer,
+                ca_cert=certificate
+            )
+            return response, response.data()
         except Exception as err:
             log.debug(f'Gemini request error for URL {url}: {err}')
+            return None, None
+
+    def certificateForHost(self, certsPath: Path, host: str):
+        try:
+            hcPath = certsPath.joinpath(host)
+            hcPath.mkdir(parents=True, exist_ok=True)
+
+            keyPath = hcPath.joinpath('ca.key')
+            certPath = hcPath.joinpath('ca.crt')
+
+            if keyPath.is_file() and certPath.is_file():
+                # TODO: load the cert here, is_file() is cheap ..
+                return certPath, keyPath
+            else:
+                return x509SelfSignedGenerate(
+                    host,
+                    keyDestPath=keyPath,
+                    certDestPath=certPath
+                )
+        except Exception:
             return None, None
 
 
@@ -42,6 +67,9 @@ class GeminiSchemeHandler(BaseURLSchemeHandler, GeminiClient):
         ignition.set_default_hosts_file(
             str(self.app.geminiHostsLocation)
         )
+
+        self.certStoreLocation = self.app.dataLocation.joinpath(
+            'gemini').joinpath('identities')
 
     async def handleRequest(self, request, uid):
         rUrl = request.requestUrl()
@@ -68,11 +96,21 @@ class GeminiSchemeHandler(BaseURLSchemeHandler, GeminiClient):
         else:
             log.debug(f'{rMethod}: {url}')
 
+        # Get cert
+        cert = await self.app.loop.run_in_executor(
+            self.app.executor,
+            self.certificateForHost,
+            self.certStoreLocation,
+            host
+        )
+
         # Run the request in the app's executor
         response, data = await self.app.loop.run_in_executor(
             self.app.executor,
             self.geminiRequest,
-            url
+            url,
+            None,
+            cert
         )
 
         if not response or not data:
@@ -215,7 +253,9 @@ class GemIpfsSchemeHandler(BaseURLSchemeHandler, GeminiClient):
             response, data = await self.app.loop.run_in_executor(
                 self.app.executor,
                 self.geminiRequest,
-                url
+                url,
+                None,
+                None
             )
 
             if not response or not data:

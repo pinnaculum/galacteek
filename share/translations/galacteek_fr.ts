@@ -1238,6 +1238,99 @@ Path: {0}, nodes processed: {1}</source>
     </message>
 </context>
 <context>
+    <name>MediaPlayer</name>
+    <message>
+        <location filename="../../galacteek/ui/mediaplayer/__init__.py" line="76"/>
+        <source>No media player support available on your system</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/mediaplayer/__init__.py" line="82"/>
+        <source>Media player error (code: {0})</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/mediaplayer/__init__.py" line="88"/>
+        <source>Fullscreen</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/mediaplayer/__init__.py" line="92"/>
+        <source>Copy playlist&apos;s IPFS path to the clipboard</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/mediaplayer/__init__.py" line="98"/>
+        <source>Load playlist from the clipboard</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/mediaplayer/__init__.py" line="104"/>
+        <source>Cannot load playlist</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/mediaplayer/__init__.py" line="109"/>
+        <source>Export to Turtle (text/turtle)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/mediaplayer/__init__.py" line="116"/>
+        <source>A playlist with this name already exists</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/mediaplayer/__init__.py" line="122"/>
+        <source>Remove media from playlist</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/mediaplayer/__init__.py" line="128"/>
+        <source>Playlist</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/mediaplayer/__init__.py" line="135"/>
+        <source>Unsaved playlist</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/mediaplayer/__init__.py" line="142"/>
+        <source>Playlist name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/mediaplayer/__init__.py" line="148"/>
+        <source>Pin playlist items (here)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/mediaplayer/__init__.py" line="155"/>
+        <source>Clear playlist</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/mediaplayer/__init__.py" line="162"/>
+        <source>Save playlist</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/mediaplayer/__init__.py" line="169"/>
+        <source>Load playlist</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/mediaplayer/__init__.py" line="176"/>
+        <source>Already queued in the current playlist</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/mediaplayer/__init__.py" line="181"/>
+        <source>No media in playlist</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>MediaPlaylist</name>
     <message>
         <location filename="../../galacteek/ui/forms/mediaplaylist.ui" line="14"/>

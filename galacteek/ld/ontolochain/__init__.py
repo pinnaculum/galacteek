@@ -89,6 +89,9 @@ async def create(ipfsop,
             '@type': 'OntoloChain',
             '@id': str(chainId),
             'peerId': peerId,
+            'didCreator': {
+                '@id': str(ipid.didUriRef)
+            },
             'description': description,
             'dateCreated': utcDatetimeIso(),
             'verificationMethod': f'{ipid.did}#keys-1',

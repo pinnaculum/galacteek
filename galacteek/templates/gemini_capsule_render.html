@@ -4,9 +4,15 @@
     <meta charset="UTF-8">
     <title>{{ title }} </title>
     <style>
+      @font-face {
+        font-family: 'Symbola';
+        font-style:  normal;
+        src: url('qrc:/share/static/fonts/Symbola.ttf') format('ttf');
+      }
+
       body {
         background-color: #323232;
-        font: 12pt "Montserrat";
+        font: 14pt "Symbola";
         margin: 5px;
         color: white;
       }
@@ -14,21 +20,28 @@
       a {
         color: #fe921f;
         text-decoration: underline;
-        font-size: 14pt;
+        font-size: 1.1em;
       }
 
       a:hover {
-        color: #ffffff;
+        color: steelblue;
+        font-size: 1.2em;
       }
 
       h1 {
         color: #4a9ea1;
+        padding: 10px;
+        font-size: 1.6em;
       }
       h2 {
         color: #4a9fa1;
+        padding: 10px;
+        font-size: 1.4em;
       }
       h3 {
         color: #4a9ba1;
+        padding: 10px;
+        font-size: 1.3em;
       }
 
       p {
@@ -36,11 +49,17 @@
       }
 
       pre {
+        color: lightsteelblue;
         white-space: pre-wrap;
         white-space: -moz-pre-wrap;
         white-space: -pre-wrap;
         white-space: -o-pre-wrap;
         word-wrap: break-word;
+        overflow-x: auto;
+        tab-width: 4;
+        font-family: monospace;
+        font-size: 0.9em;
+        margin: 0;
       }
     </style>
 
