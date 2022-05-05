@@ -19,6 +19,7 @@ from galacteek.dweb.channels.ld import LDHandler
 from galacteek.dweb.channels.sparql import SparQLHandler
 from galacteek.dweb.channels.ipid import IPIDHandler
 from galacteek.dweb.channels.ipfs import IPFSHandler
+from galacteek.dweb.channels.ipfs import IpfsObjectInterface
 from galacteek.dweb.channels.ontolochain import OntoloChainHandler
 from galacteek.dweb.channels.graphs import *
 from galacteek.dweb.channels.unixfs import UnixFsDirModel
@@ -152,6 +153,12 @@ class QMLApplicationWidget(QWidget):
             'Galacteek',
             1, 0,
             'RDFGraphOperator'
+        )
+        qmlRegisterType(
+            IpfsObjectInterface,
+            'Galacteek',
+            1, 0,
+            'IpfsObject'
         )
 
         if 0:

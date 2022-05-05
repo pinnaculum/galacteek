@@ -1,8 +1,13 @@
+# Adapted by timconsidine
+#
+# https://git.cloudron.io/timconsidine/cloudron-galacteek/-/raw/master/Dockerfile
+
 FROM python:3.7-slim-buster
 
 EXPOSE 5900-5904
 EXPOSE 4001
 EXPOSE 8080
+EXPOSE 8000
 
 ENV NOTBIT_DIST_URL "https://gitlab.com/api/v4/projects/27627112/packages/generic/notbit/0.7/notbit.tar.gz"
 ENV X11VNC_PASSWORD "galacteek"
@@ -11,7 +16,14 @@ ENV QT_QPA_PLATFORM=xcb
 ENV DISPLAY=:99
 ENV XVFB_WHD=1024x768x24
 ENV QTWEBENGINE_DISABLE_SANDBOX=1
+ENV PATH "/app/code/bin:${PATH}"
 # ENV QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu-compositing"
+
+# start TC added for Cloudron
+ENV XDG_RUNTIME_DIR "/app/data/tmp/runtime-galacteek"
+# end TC
+
+RUN echo "${PATH}" >> /etc/bash.bashrc
 
 RUN apt-get update && apt-get install -q -y --force-yes \
 	gcc git net-tools iproute2 \
@@ -26,34 +38,40 @@ RUN apt-get update && apt-get install -q -y --force-yes \
 	libxcb-image0 libxcb-keysyms1 libxcb-render-util0 \
 	libxcb-xinerama0 libqt5multimedia5 libqt5multimediaquick5
 
-WORKDIR /usr/local
+# start TC added for Cloudron
+RUN mkdir -p /app/code
+RUN mkdir -p /tmp/.X11-unix
+RUN chmod 1777 /tmp/.X11-unix
+WORKDIR /app/code
+# end TC
 
 # Get ipfs binary
 RUN wget http://dist.ipfs.io/go-ipfs/v0.9.1/go-ipfs_v0.9.1_linux-amd64.tar.gz && \
 	tar -xvf go-ipfs_v0.9.1_linux-amd64.tar.gz && \
-	cp go-ipfs/ipfs /usr/local/bin && rm go-ipfs_v0.9.1_linux-amd64.tar.gz
+	cp go-ipfs/ipfs /app/code/bin && cp go-ipfs/ipfs /usr/bin && \
+	rm go-ipfs_v0.9.1_linux-amd64.tar.gz
 
 # Add source code.
 COPY README.rst COPYING LICENSE LICENSE.go-ipfs \
 	requirements*.txt setup.py galacteek.pro \
-	/usr/local/galacteek/
+	/app/code/galacteek/
 
-COPY share /usr/local/galacteek/share
-COPY galacteek/ /usr/local/galacteek/galacteek
+COPY share /app/code/galacteek/share
+COPY galacteek/ /app/code/galacteek/galacteek
 
 COPY requirements.txt requirements-dev.txt \
 	requirements-extra-markdown.txt \
 	requirements-rdf-bsddb.txt \
 	requirements-ui-pyqt-5.15.txt \
 	./
-
+	
 RUN pip install -U pip wheel && pip install -r requirements.txt && \
 	pip install -r requirements-dev.txt && \
 	pip install -r requirements-extra-markdown.txt && \
 	pip install -r requirements-rdf-bsddb.txt && \
 	pip install -r requirements-ui-pyqt-5.15.txt
 
-RUN cd /usr/local/galacteek && \
+RUN cd /app/code/galacteek && \
 	python setup.py build build_docs install && \
 	rm -f requirements*.txt
 
@@ -66,9 +84,20 @@ RUN wget ${NOTBIT_DIST_URL} && \
 	tar -C /usr/bin -xvf notbit.tar.gz && \
 	rm notbit.tar.gz
 
-RUN useradd -m -u 1000 galacteek
+# start TC added for Cloudron
+RUN mkdir -p /app/data
+RUN mkdir -p /app/data/.X-11-unix
+RUN mkdir -p /app/data/tmp/runtime-galacteek
+RUN mkdir -p /app/data/.local
+RUN mkdir -p /app/data/.local/share
+RUN mkdir -p /app/data/.local/share/galacteek
+RUN mkdir -p /app/data/.local/share/galacteek/main
+RUN mkdir -p /app/data/.local/share/galacteek/main/mhashmetadb
+RUN useradd -m -u 1000 -d /app/data galacteek
+RUN chown -R galacteek /app/data
+# end TC
 
-COPY .docker/x11vnc_start.sh /
-RUN chmod +x /x11vnc_start.sh
+COPY .docker/x11vnc_cloudron_start.sh /
+RUN chmod +x /x11vnc_cloudron_start.sh
 USER galacteek
-CMD ["/x11vnc_start.sh", "galacteek", "--config-ipfs-auto", "-d"]
+CMD ["/x11vnc_cloudron_start.sh", "galacteek", "--config-ipfs-auto", "-d"]

@@ -11,7 +11,7 @@ from . import GAsyncObject
 class GHandler(GAsyncObject):
     @pyqtSlot(result=int)
     def apiVersion(self):
-        return 5
+        return 6
 
     @pyqtSlot(str, str)
     def logMsg(self, level: str, message: str):

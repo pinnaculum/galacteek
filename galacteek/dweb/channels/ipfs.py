@@ -3,10 +3,12 @@ import traceback
 
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtProperty
 from PyQt5.QtCore import QVariant
 from PyQt5.QtCore import QByteArray
 from PyQt5.QtCore import QJsonValue
 from PyQt5.QtCore import QUrl
+from PyQt5.QtCore import QObject
 
 from galacteek import log
 from galacteek import ensure
@@ -14,6 +16,7 @@ from galacteek.core import runningApp
 from galacteek.core.ps import KeyListener
 
 from galacteek.ipfs.mimetype import detectMimeType
+from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.pubsub.messages import PubsubMessage
 from galacteek.ipfs.pubsub.service import JSONPubsubService
 from galacteek.ipfs.pubsub.service import Curve25519JSONPubsubService
@@ -422,3 +425,94 @@ class IPFSHandler(GAsyncObject, IPFSInterface, KeyListener):
             path,
             self._dict(body)
         )
+
+
+class IpfsObjectInterface(QObject):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self._ipfsPath = IPFSPath(None)
+
+    def _getAddress(self):
+        return str(self._ipfsPath)
+
+    def _setAddress(self, addr: str):
+        self._ipfsPath = IPFSPath(addr, autoCidConv=True)
+
+    @pyqtSlot(result=str)
+    def objPath(self):
+        if self._ipfsPath.valid:
+            return self._ipfsPath.objPath
+
+        return ''
+
+    @pyqtSlot(result=str)
+    def fragment(self):
+        if self._ipfsPath.valid:
+            return self._ipfsPath.fragment
+
+        return ''
+
+    @pyqtSlot(result=str)
+    def basename(self):
+        if self._ipfsPath.valid and self._ipfsPath.basename:
+            return self._ipfsPath.basename
+
+        return ''
+
+    @pyqtSlot(result=str)
+    def ipnsId(self):
+        if self._ipfsPath.valid and self._ipfsPath.ipnsId:
+            return self._ipfsPath.ipnsId
+
+        return ''
+
+    @pyqtSlot(result=str)
+    def ipfsUrl(self):
+        if self._ipfsPath.valid:
+            return self._ipfsPath.ipfsUrl
+
+        return ''
+
+    @pyqtSlot(result=str)
+    def dwebUrl(self):
+        if self._ipfsPath.valid:
+            return self._ipfsPath.dwebUrl
+
+        return ''
+
+    @pyqtSlot(result=str)
+    def ipfsUrlEncoded(self):
+        if self._ipfsPath.valid:
+            return self._ipfsPath.ipfsUrlEncoded
+
+        return ''
+
+    @pyqtSlot(result=bool)
+    def valid(self):
+        return self._ipfsPath.valid
+
+    @pyqtSlot(result=bool)
+    def isIpfs(self):
+        return self._ipfsPath.isIpfs
+
+    @pyqtSlot(result=bool)
+    def isIpns(self):
+        return self._ipfsPath.isIpns
+
+    @pyqtSlot(result=str)
+    def rootCid(self):
+        if self._ipfsPath.valid:
+            return self._ipfsPath.rootCid
+
+        return ''
+
+    @pyqtSlot(result=str)
+    def publicGwUrl(self):
+        if self._ipfsPath.valid:
+            return self._ipfsPath.publicGwUrl
+
+        return ''
+
+    address = pyqtProperty(
+        'QString', _getAddress, _setAddress)
