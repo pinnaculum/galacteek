@@ -507,6 +507,30 @@ class IpfsObjectInterface(QObject):
 
         return ''
 
+    @pyqtSlot(str, result=str)
+    def child(self, subpath: str):
+        ch = self._ipfsPath.child(subpath)
+        if ch and ch.valid:
+            return str(ch)
+
+        return ''
+
+    @pyqtSlot(result=str)
+    def parent(self):
+        pa = self._ipfsPath.parent()
+        if pa and pa.valid:
+            return str(pa)
+
+        return ''
+
+    @pyqtSlot(result=str)
+    def root(self):
+        r = self._ipfsPath.root()
+        if r and r.valid:
+            return str(r)
+
+        return ''
+
     @pyqtSlot(result=str)
     def publicGwUrl(self):
         if self._ipfsPath.valid:

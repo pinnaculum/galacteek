@@ -23,9 +23,7 @@ def opSlot(*args, **kws):
     def _error_handler(task):
         try:
             res = task.result()
-        except Exception:
-            traceback.print_exc()
-        else:
+
             if result is QVariant:
                 # Convert explicitely as QVariant (should be dict)
                 try:
@@ -39,6 +37,11 @@ def opSlot(*args, **kws):
                 task._tid,
                 value
             )
+        except RuntimeError:
+            # Wrapped object probably deleted
+            pass
+        except Exception:
+            traceback.print_exc()
 
     def outer_decorator(fn):
         @pyqtSlot(*args, result=result)
@@ -93,6 +96,12 @@ class GAsyncObject(QObject):
         super().__init__(parent)
         self.loop = asyncio.SelectorEventLoop()
         self.app = runningApp()
+
+    @tcSlot()
+    async def close(self):
+        op = self.ipfsOpGet()
+        if op:
+            await op.client.close()
 
     def ipfsOpGet(self):
         return self.app.ipfsOperatorForLoop(self.loop)

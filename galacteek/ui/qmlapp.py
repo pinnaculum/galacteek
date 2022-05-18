@@ -1,7 +1,9 @@
 from pathlib import Path
+
 from PyQt5.QtQml import QQmlEngine
 from PyQt5.QtQml import qmlRegisterType
-from PyQt5.QtQml import qmlRegisterSingletonType
+
+from PyQt5.QtQuickWidgets import QQuickWidget
 
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QStackedWidget
@@ -12,7 +14,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtCore import pyqtSlot
 
-from galacteek.ipfs.wrappers import *
+from galacteek import log
 
 from galacteek.dweb.channels.g import GHandler
 from galacteek.dweb.channels.ld import LDHandler
@@ -26,7 +28,7 @@ from galacteek.dweb.channels.unixfs import UnixFsDirModel
 
 from galacteek.services import getByDotName
 
-from galacteek.qml import *
+from galacteek.qml import quickEnginedWidget
 
 from .helpers import *
 from .dialogs import *
@@ -47,28 +49,31 @@ class IHandler(QObject):
         if self.size:
             return self.size.width()
 
+        return 0
+
     @pyqtSlot(result=int)
     def getHeight(self):
         if self.size:
             return self.size.height()
 
-    def set_fake(self, *a):
-        pass
+        return 0
 
 
 class QMLApplicationWidget(QWidget):
     def __init__(self, fileUrl, parent=None):
         super(QMLApplicationWidget, self).__init__(parent=parent)
 
+        self.stack = QStackedWidget()
+
         self.setLayout(QVBoxLayout())
 
         self.app = runningApp()
         self.epFileUrl = fileUrl
-        self.fsw = FileWatcher(parent=self)
+
+        self.fsw = FileWatcher(bufferMs=10000, delay=1, parent=self)
         self.fsw.pathChanged.connect(self.onReloadApp)
         self.fsw.watch(self.epFileUrl)
 
-        self.stack = QStackedWidget()
         self.layout().addWidget(self.stack)
 
         self.gInterface = GHandler(self)
@@ -78,8 +83,6 @@ class QMLApplicationWidget(QWidget):
         self.ipidInterface = IPIDHandler(self)
         self.ipfsInterface = IPFSHandler(self)
         self.ipfsInterface.psListen(keyPsJson)
-
-        self.currentComponent = None
 
         # Clone the IPFS profile
         self.webProfile = self.app.webProfiles['ipfs'].quickClone()
@@ -98,10 +101,6 @@ class QMLApplicationWidget(QWidget):
 
         ctx = engine.rootContext()
 
-        # XML graph exports paths
-        # ctx.setContextProperty('graphGXmlPath',
-        #                        stores.graphG.xmlExportUrl)
-
         ctx.setContextProperty('g', self.gInterface)
         ctx.setContextProperty('g_pronto', self.ldInterface)
         ctx.setContextProperty('g_sparql', self.sparqlInterface)
@@ -117,65 +116,12 @@ class QMLApplicationWidget(QWidget):
 
         ctx.setContextProperty('modelMfs', filesModel)
 
-        qmlRegisterType(
-            SparQLResultsModel,
-            'Galacteek',
-            1, 0,
-            'SpQLModel'
-        )
-        qmlRegisterType(
-            SparQLWrapperResultsModel,
-            'Galacteek',
-            1, 0,
-            'SpQLEndpointModel'
-        )
-        qmlRegisterType(
-            UnixFsDirModel,
-            'Galacteek',
-            1, 0,
-            'UnixFsDirectoryModel'
-        )
-
-        qmlRegisterType(
-            IPFSHandler,
-            'Galacteek',
-            1, 0,
-            'GalacteekIpfsOperator'
-        )
-        qmlRegisterType(
-            OntoloChainHandler,
-            'Galacteek',
-            1, 0,
-            'OntologicalSideChain'
-        )
-        qmlRegisterType(
-            RDFGraphHandler,
-            'Galacteek',
-            1, 0,
-            'RDFGraphOperator'
-        )
-        qmlRegisterType(
-            IpfsObjectInterface,
-            'Galacteek',
-            1, 0,
-            'IpfsObject'
-        )
-
-        if 0:
-            qmlRegisterSingletonType(
-                SparQLSingletonResultsModel,
-                'Galacteek',
-                1, 0,
-                'SpQLSingletonModel',
-                createSparQLSingletonProxy
-            )
-
         return engine
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
 
-        if self.currentComponent:
+        if self.stack.count() > 0:
             self.iInterface.size = event.size()
             self.iInterface.sizeChanged.emit(
                 event.size().width(),
@@ -186,19 +132,28 @@ class QMLApplicationWidget(QWidget):
         self.engine.addImportPath(path)
         self.fsw.watchWalk(Path(path))
 
+    def onSceneGraphError(self, error, message: str):
+        log.warning(f'Scene graph error ({error}): {message}')
+
     def load(self):
-        if self.currentComponent:
-            self.stack.removeWidget(self.currentComponent)
-            self.currentComponent = None
+        current = self.stack.currentWidget()
+
+        if isinstance(current, QQuickWidget) and \
+                current.status != QQuickWidget.Null:
+            disconnectSig(current.sceneGraphError, self.onSceneGraphError)
+
+            current.deleteLater()
+            self.stack.removeWidget(current)
 
         qcomp = quickEnginedWidget(
             self.engine,
-            QUrl.fromLocalFile(self.epFileUrl),
-            parent=self.stack
+            QUrl.fromLocalFile(self.epFileUrl)
         )
 
         if not qcomp:
             return
+
+        qcomp.sceneGraphError.connect(self.onSceneGraphError)
 
         self.stack.addWidget(qcomp)
         self.stack.setCurrentWidget(qcomp)
@@ -206,10 +161,55 @@ class QMLApplicationWidget(QWidget):
         self.stack.setFocus(Qt.OtherFocusReason)
         qcomp.setFocus(Qt.OtherFocusReason)
 
-        self.currentComponent = qcomp
-
         self.iInterface.size = self.size()
         self.iInterface.sizeChanged.emit(
             self.size().width(),
             self.size().height()
         )
+
+
+def qmlRegisterCustomTypes():
+    # Here's where we register custom types for the QML capsules
+
+    qmlRegisterType(
+        SparQLResultsModel,
+        'Galacteek',
+        1, 0,
+        'SpQLModel'
+    )
+    qmlRegisterType(
+        SparQLWrapperResultsModel,
+        'Galacteek',
+        1, 0,
+        'SpQLEndpointModel'
+    )
+    qmlRegisterType(
+        UnixFsDirModel,
+        'Galacteek',
+        1, 0,
+        'UnixFsDirectoryModel'
+    )
+    qmlRegisterType(
+        IPFSHandler,
+        'Galacteek',
+        1, 0,
+        'GalacteekIpfsOperator'
+    )
+    qmlRegisterType(
+        OntoloChainHandler,
+        'Galacteek',
+        1, 0,
+        'OntologicalSideChain'
+    )
+    qmlRegisterType(
+        RDFGraphHandler,
+        'Galacteek',
+        1, 0,
+        'RDFGraphOperator'
+    )
+    qmlRegisterType(
+        IpfsObjectInterface,
+        'Galacteek',
+        1, 0,
+        'IpfsObject'
+    )

@@ -127,6 +127,7 @@ from galacteek.ui import history
 from galacteek.ui.dwebspace import *
 from galacteek.ui.resource import IPFSResourceOpener
 from galacteek.ui.style import GalacteekStyle
+from galacteek.ui.qmlapp import qmlRegisterCustomTypes
 
 from galacteek.ui.helpers import *
 from galacteek.ui.i18n import *
@@ -595,6 +596,8 @@ class GalacteekApplication(QApplication):
         self._goIpfsBinPath = self.suitableGoIpfsBinary()
 
         self.browserRuntime = BrowserRuntimeObjects(app=self)
+
+        qmlRegisterCustomTypes()
 
     def tempDirCreate(self, basedir, name=None):
         tmpdir = QDir(basedir)
