@@ -104,6 +104,9 @@ prepare:
       echo "export ARTIFACT_WHEEL=dist/${CI_PROJECT_NAME}-${GALACTEEK_VERSION}-py3-none-any.whl" >> $GALACTEEK_ENV_FILE
       echo "export WHEEL_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/${WHEEL_FILENAME}" >> $GALACTEEK_ENV_FILE
 
+      # dist list (yaml)
+      echo "export DISTMAP_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/dist-install.yaml" >> $GALACTEEK_ENV_FILE
+
     - export
 
   artifacts:
@@ -150,6 +153,12 @@ build:
       curl --progress-bar
       --header "JOB-TOKEN: $CI_JOB_TOKEN"
       --upload-file dist/${WHEEL_FILENAME} ${WHEEL_ASSET_URL}
+
+    - python .gitlab/write-dist.py --template .gitlab/dist.tmpl.yaml --dst dist-install.yaml
+    - >
+      curl --progress-bar
+      --header "JOB-TOKEN: $CI_JOB_TOKEN"
+      --upload-file dist-install.yaml ${DISTMAP_ASSET_URL}
 
     - |-
       if [[ $CI_COMMIT_MESSAGE =~ '[appimage]' ]]; then
@@ -321,6 +330,8 @@ release:
           --ref $CI_COMMIT_SHA \
           --assets-link \
           "{\"name\" :\"${WHEEL_FILENAME}\", \"filepath\": \"/galacteek-latest-py3-none-any.whl\", \"url\": \"${WHEEL_ASSET_URL}\"}" \
+          --assets-link \
+          "{\"name\" :\"dist-install.yaml\", \"filepath\": \"/dist-install.yaml\", \"url\": \"${DISTMAP_ASSET_URL}\"}" \
           --assets-link \
           "{\"name\" :\"${APPIMAGE_FILENAME}\", \"filepath\": \"/${APPIMAGE_FILEPATH}\", \"url\": \"${APPIMAGE_ASSET_URL}\"}" \
           --assets-link \

@@ -197,6 +197,12 @@ def buildArgsParser(fromParser=None):
         dest='forcegoipfsdl',
         help="Force go-ipfs download")
     parser.add_argument(
+        '--capsules-devel',
+        action='store_true',
+        dest='capsulesDevel',
+        default=False,
+        help="Capsules devel mode (reload dapp when a capsule's code changes)")
+    parser.add_argument(
         '--offline',
         action='store_true',
         dest='offline',

@@ -1,0 +1,7 @@
+branch: ${oc.env:CI_COMMIT_BRANCH}
+wheels:
+  - name: galacteek
+    disturl: ${oc.env:WHEEL_ASSET_URL}
+    version: ${oc.env:GALACTEEK_VERSION}
+    pip_install_flags:
+      - --no-deps

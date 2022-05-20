@@ -42,7 +42,7 @@ conda install -c conda-forge libmagic=5.35
 
 echo "Installing wheel: $WHEEL"
 $APPIPIP install --force-reinstall -r ../requirements.txt
-$APPIPIP install $WHEEL
+# $APPIPIP install $WHEEL
 $APPIPIP install $WHEEL'[markdown-extensions]'
 # $APPIPIP install $WHEEL'[matplotlib]'
 
@@ -51,6 +51,9 @@ $APPIPIP install $WHEEL'[ui-pyqt-5.15]'
 
 # bsddb
 $APPIPIP install $WHEEL'[rdf-bsddb]'
+
+# starter
+$APPIPIP install "git+https://gitlab.com/galacteek/galacteek-starter"
 
 cp ../{COPYING,LICENSE,LICENSE.go-ipfs,LICENSE.Qt.GPLv3} \
 	$APPDIR/usr/share/licenses/galacteek
@@ -164,7 +167,7 @@ rm -rf lib/python3.7/site-packages/PyQt5/Qt5/qml/QtCharts/designer/images
 # rm -rf lib/python3.7/site-packages/PyQt5/Qt5/qml/Qt/labs
 # rm -rf lib/python3.7/site-packages/PyQt5/Qt5/qml/QtQuick3D/
 
-python3 -m compileall lib/python3.7/site-packages/galacteek
+# python3 -m compileall lib/python3.7/site-packages/galacteek
 
 popd
 
@@ -175,7 +178,7 @@ chmod 755 $APPDIR/AppRun
 
 sed -i -e "s/@@COMMIT_SHA@@/${CI_COMMIT_SHA}/" $APPDIR/AppRun
 
-sed -i -e 's/#\!\/.*$/#!\/usr\/bin\/python3/' $APPDIR/usr/bin/galacteek
+# sed -i -e 's/#\!\/.*$/#!\/usr\/bin\/python3/' $APPDIR/usr/bin/galacteek
 sed -i -e 's/#\!\/.*$/#!\/usr\/bin\/python3/' $APPDIR/usr/bin/mkdocs
 
 wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage

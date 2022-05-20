@@ -1,1 +1,1 @@
-traffictoll==1.5.0
+TrafficTroll @ git+https://gitlab.com/galacteek/TrafficTroll.git@master#egg=TrafficTroll
