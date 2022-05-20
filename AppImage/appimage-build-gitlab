@@ -128,8 +128,8 @@ rm -rf lib/python3.7/lib2to3/
 rm -rf lib/python3.7/idlelib
 rm -rf lib/python3.7/site-packages/git/test
 rm -rf lib/python3.7/site-packages/conda_package_handling
-rm -rf lib/python3.7/ensurepip
-rm -rf lib/python3.7/site-packages/{setuptools,pip}
+# rm -rf lib/python3.7/ensurepip
+# rm -rf lib/python3.7/site-packages/{setuptools,pip}
 rm -rf share/man
 rm -rf share/readline
 rm -rf share/terminfo
@@ -179,6 +179,7 @@ chmod 755 $APPDIR/AppRun
 sed -i -e "s/@@COMMIT_SHA@@/${CI_COMMIT_SHA}/" $APPDIR/AppRun
 
 # sed -i -e 's/#\!\/.*$/#!\/usr\/bin\/python3/' $APPDIR/usr/bin/galacteek
+sed -i -e 's/#\!\/.*$/#!\/usr\/bin\/python3/' $APPDIR/usr/bin/galacteek-starter
 sed -i -e 's/#\!\/.*$/#!\/usr\/bin\/python3/' $APPDIR/usr/bin/mkdocs
 
 wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
