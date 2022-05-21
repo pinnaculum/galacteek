@@ -55,6 +55,9 @@ $APPIPIP install $WHEEL'[rdf-bsddb]'
 # starter
 $APPIPIP install "git+https://gitlab.com/galacteek/galacteek-starter"
 
+$APPIPIP uninstall -y galacteek
+$APPIPIP uninstall -y galacteek-ld-web4
+
 cp ../{COPYING,LICENSE,LICENSE.go-ipfs,LICENSE.Qt.GPLv3} \
 	$APPDIR/usr/share/licenses/galacteek
 cp ../galacteek.desktop $APPDIR/usr/share/applications

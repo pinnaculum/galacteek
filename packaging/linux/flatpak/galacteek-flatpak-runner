@@ -5,7 +5,9 @@ HERE=$(dirname $(readlink -f "${0}"))
 export GALACTEEK_COMMIT_SHA="@@COMMIT_SHA@@"
 export XKB_CONFIG_ROOT=/usr/share/X11/xkb
 
-export GALACTEEK_MAGIC_DBPATH=${HERE}/../share/file/magic-galacteek.mgc
-export SSL_CERT_FILE=${HERE}/../lib/python3.7/site-packages/certifi/cacert.pem
+export GALACTEEK_MAGIC_DBPATH=/app/share/file/magic-galacteek.mgc
 
-galacteek --from-flatpak "$@"
+export PYTHONPATH=/app/lib/python3.7/site-packages
+export SSL_CERT_FILE=${PYTHONPATH}/certifi/cacert.pem
+
+galacteek-starter --from-flatpak "$@"

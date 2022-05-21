@@ -11,15 +11,15 @@
     <key>CFBundleIconFile</key>
     <string>share/icons/galacteek.icns</string>
     <key>CFBundleIdentifier</key>
-    <string>org.gitlab.galacteek</string>
+    <string>io.gitlab.galacteek.Galacteek</string>
     <key>CFBundleName</key>
     <string>galacteek</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleVersion</key>
-    <string>0.5.2</string>
+    <string>0.5.5</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.5.2</string>
+    <string>0.5.5</string>
     <key>LSMinimumSystemVersion</key>
     <string>10.7.0</string>
     <key>LSUIElement</key>

@@ -104,8 +104,8 @@ prepare:
       echo "export ARTIFACT_WHEEL=dist/${CI_PROJECT_NAME}-${GALACTEEK_VERSION}-py3-none-any.whl" >> $GALACTEEK_ENV_FILE
       echo "export WHEEL_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/${WHEEL_FILENAME}" >> $GALACTEEK_ENV_FILE
 
-      # dist list (yaml)
-      echo "export DISTMAP_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/dist-install.yaml" >> $GALACTEEK_ENV_FILE
+      # wheel dist (yaml)
+      echo "export DISTMAP_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/dist-wheel.yaml" >> $GALACTEEK_ENV_FILE
 
     - export
 
@@ -142,11 +142,16 @@ build:
     - source $GALACTEEK_ENV_FILE
     - mkdir -p $ASSETS_ROOT
 
+    # Install CI tools
+    - pip install "git+https://gitlab.com/galacteek/ci-tools"
+
     - pip install -U pip
     - pip install -r requirements.txt
 
     - python setup.py build build_docs
     - python setup.py sdist bdist_wheel
+
+    - export WHEEL_SHA512_CHECKSUM=$(sha512sum "dist/${WHEEL_FILENAME}"|awk '{print $1}')
 
     # Upload wheel
     - >
@@ -154,11 +159,12 @@ build:
       --header "JOB-TOKEN: $CI_JOB_TOKEN"
       --upload-file dist/${WHEEL_FILENAME} ${WHEEL_ASSET_URL}
 
-    - python .gitlab/write-dist.py --template .gitlab/dist.tmpl.yaml --dst dist-install.yaml
+    - yaml-xform -s .gitlab/wheel.tmpl.yaml -o dist-wheel.yaml
+
     - >
       curl --progress-bar
       --header "JOB-TOKEN: $CI_JOB_TOKEN"
-      --upload-file dist-install.yaml ${DISTMAP_ASSET_URL}
+      --upload-file dist-wheel.yaml ${DISTMAP_ASSET_URL}
 
     - |-
       if [[ $CI_COMMIT_MESSAGE =~ '[appimage]' ]]; then
@@ -178,6 +184,10 @@ build:
     - |-
       if [[ $CI_COMMIT_MESSAGE =~ '[flatpak]' ]] || [[ $CI_COMMIT_MESSAGE =~ '[flatpak-repo]' ]] || [[ $CI_COMMIT_MESSAGE =~ '[flatpak-bundle]' ]]; then
         echo "Building flatpak as ${FLATPAK_FILENAME}"
+
+        yaml-xform -s \
+          packaging/linux/flatpak/io.gitlab.galacteek.Galacteek_oc.yaml \
+          -o packaging/linux/flatpak/io.gitlab.galacteek.Galacteek.yaml
 
         # Build to flatpak repo
         flatpak-builder --force-clean --install-deps-from=flathub \
@@ -331,7 +341,7 @@ release:
           --assets-link \
           "{\"name\" :\"${WHEEL_FILENAME}\", \"filepath\": \"/galacteek-latest-py3-none-any.whl\", \"url\": \"${WHEEL_ASSET_URL}\"}" \
           --assets-link \
-          "{\"name\" :\"dist-install.yaml\", \"filepath\": \"/dist-install.yaml\", \"url\": \"${DISTMAP_ASSET_URL}\"}" \
+          "{\"name\" :\"dist-wheel.yaml\", \"filepath\": \"/dist-wheel.yaml\", \"url\": \"${DISTMAP_ASSET_URL}\"}" \
           --assets-link \
           "{\"name\" :\"${APPIMAGE_FILENAME}\", \"filepath\": \"/${APPIMAGE_FILEPATH}\", \"url\": \"${APPIMAGE_ASSET_URL}\"}" \
           --assets-link \

@@ -20,6 +20,7 @@ export FONTCONFIG_PATH=$HERE/usr/etc/fonts/
 
 export PATH=${HERE}/usr/bin:$PATH
 export LD_LIBRARY_PATH=${HERE}/usr/lib:$LD_LIBRARY_PATH
+export PYTHONHOME=${HERE}/usr
 export PYTHONPATH=$PYTHONPATH:${HERE}/usr/lib/python3.7/site-packages
 export QT_QPA_PLATFORM_PLUGIN_PATH=${HERE}/usr/lib/python3.7/site-packages/PyQt5/Qt5/plugins/platforms
 export QT_STYLE_OVERRIDE=Fusion

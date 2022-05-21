@@ -17,7 +17,7 @@ modules:
   - name: conda
     buildsystem: simple
     build-commands:
-      - bash Miniconda3-py37_4.10.3-Linux-x86_64.sh -b -p ${FLATPAK_DEST} -f
+      - bash Miniconda3-py37_4.10.3-Linux-x86_64.sh -b -p $FLATPAK_DEST -f
       - conda update -n base -c defaults conda
       - conda install -y -c conda-forge libmagic=5.35
       - conda install -y -c conda-forge zbar libxkbcommon libjpeg-turbo xcb-util bsddb3 krb5
@@ -55,7 +55,7 @@ modules:
     buildsystem: simple
     build-commands:
       - tar -xvf go-ipfs_v0.9.1_linux-amd64.tar.gz
-      - cp go-ipfs/ipfs ${FLATPAK_DEST}/bin
+      - cp go-ipfs/ipfs $FLATPAK_DEST/bin
     build-options:
       build-args:
         - --share=network
@@ -69,7 +69,7 @@ modules:
     buildsystem: simple
     build-commands:
       - tar -xvf fs-repo-migrations_v2.0.1_linux-amd64.tar.gz
-      - cp fs-repo-migrations/fs-repo-migrations ${FLATPAK_DEST}/bin
+      - cp fs-repo-migrations/fs-repo-migrations $FLATPAK_DEST/bin
     build-options:
       build-args:
         - --share=network
@@ -82,7 +82,7 @@ modules:
   - name: fetch-notbit
     buildsystem: simple
     build-commands:
-      - tar -C ${FLATPAK_DEST} -xvf notbit.tar.gz
+      - tar -C $FLATPAK_DEST -xvf notbit.tar.gz
     build-options:
       build-args:
         - --share=network
@@ -91,35 +91,36 @@ modules:
         url: "https://github.com/pinnaculum/notbit/releases/download/continuous-master/notbit.tar.gz"
         sha256: "de6ee5bc619890c53e458603d119c258e0298d844cac498e6ae2f62a15a046b1"
 
-  # Install galacteek - name: galacteek
+  # Install galacteek
+  - name: galacteek
     buildsystem: simple
     build-commands:
       # Create directories for license, metainfo, icons
-      - mkdir -p ${FLATPAK_DEST}/share/licenses/galacteek
-      - mkdir -p ${FLATPAK_DEST}/share/applications
-      - mkdir -p ${FLATPAK_DEST}/share/metainfo
-      - mkdir -p ${FLATPAK_DEST}/share/icons/hicolor/512x512/apps
+      - mkdir -p $FLATPAK_DEST/share/licenses/galacteek
+      - mkdir -p $FLATPAK_DEST/share/applications
+      - mkdir -p $FLATPAK_DEST/share/metainfo
+      - mkdir -p $FLATPAK_DEST/share/icons/hicolor/512x512/apps
 
-      - mkdir -p ${FLATPAK_DEST}/share/file
-      - wget -O ${FLATPAK_DEST}/share/file/magic-galacteek.mgc
+      - mkdir -p $FLATPAK_DEST/share/file
+      - wget -O $FLATPAK_DEST/share/file/magic-galacteek.mgc
         "https://gitlab.com/galacteek/file/-/releases/continuous-galacteek/downloads/magic.mgc"
 
       # Copy appdata, .desktop, licenses and icon
       - cp galacteek.appdata.xml
-          ${FLATPAK_DEST}/share/metainfo/io.gitlab.galacteek.Galacteek.appdata.xml
+          $FLATPAK_DEST/share/metainfo/io.gitlab.galacteek.Galacteek.appdata.xml
       - cp {LICENSE,LICENSE.go-ipfs,LICENSE.Qt.GPLv3}
-          ${FLATPAK_DEST}/share/licenses/galacteek
+          $FLATPAK_DEST/share/licenses/galacteek
       - cp galacteek.desktop
-          ${FLATPAK_DEST}/share/applications/io.gitlab.galacteek.Galacteek.desktop
+          $FLATPAK_DEST/share/applications/io.gitlab.galacteek.Galacteek.desktop
       - cp share/icons/galacteek.png
-          ${FLATPAK_DEST}/share/icons/hicolor/512x512/apps/io.gitlab.galacteek.Galacteek.png
+          $FLATPAK_DEST/share/icons/hicolor/512x512/apps/io.gitlab.galacteek.Galacteek.png
 
       # Copy the wrapper script
       - sed -i -e "s/@@COMMIT_SHA@@/`git rev-parse HEAD`/" packaging/linux/flatpak/galacteek-flatpak-runner
-      - cp packaging/linux/flatpak/galacteek-flatpak-runner ${FLATPAK_DEST}/bin
+      - cp packaging/linux/flatpak/galacteek-flatpak-runner $FLATPAK_DEST/bin
 
       # Activate the conda venv
-      - source ${FLATPAK_DEST}/bin/activate
+      - source $FLATPAK_DEST/bin/activate
 
       # Install requirements; build and install via setup.py
       - pip install -U pip
@@ -131,15 +132,16 @@ modules:
       - pip install -r requirements-extra-markdown.txt
       - pip install -r requirements-ui-pyqt-5.15.txt
       - python3 setup.py build build_docs
-      - python3 setup.py sdist bdist_wheel
-      - pip install dist/galacteek-*-py3-none-any.whl
+
+      # galacteek-starter
+      - pip install "git+https://gitlab.com/galacteek/galacteek-starter"
     build-options:
       build-args:
         - --share=network
     sources:
       - type: git
         url: https://gitlab.com/galacteek/galacteek.git
-        branch: pimp-my-dweb
+        branch: ${oc.env:CI_COMMIT_BRANCH,pimp-my-dweb}
 
 cleanup:
   - '/docs'
@@ -163,8 +165,6 @@ cleanup:
   - '/lib/python3.7/idlelib'
   - '/lib/python3.7/site-packages/git/test'
   - '/lib/python3.7/site-packages/conda_package_handling'
-  - '/lib/python3.7/ensurepip'
-  - '/lib/python3.7/site-packages/{setuptools,pip}'
   - '/lib/python3.7/site-packages/PyQt5/Qt5/plugins/sceneparsers'
   - '/lib/python3.7/site-packages/PyQt5/Qt5/plugins/sqldrivers'
   - '/lib/python3.7/site-packages/PyQt5/Qt5/lib/libQt5XmlPatterns*'

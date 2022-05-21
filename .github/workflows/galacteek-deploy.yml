@@ -121,7 +121,7 @@ jobs:
         # compilation
         ls /usr/local/Cellar/openssl@1.1
 
-        echo "PKG_CONFIG_PATH=/usr/local/Cellar/openssl@1.1/1.1.1n/lib/pkgconfig:/usr/local/Cellar/openssl/1.1.1n/lib/pkgconfig" >> $GITHUB_ENV
+        echo "PKG_CONFIG_PATH=/usr/local/Cellar/openssl@1.1/1.1.1o/lib/pkgconfig:/usr/local/Cellar/openssl/1.1.1o/lib/pkgconfig" >> $GITHUB_ENV
 
     - name: OS-specific vars (win)
       if: startsWith(matrix.os, 'windows')

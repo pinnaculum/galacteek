@@ -189,7 +189,7 @@ class GService(Service, KeyListener):
             service = srvMod.serviceCreate(
                 srvDotPath, config, parent)
 
-            if service.disabled is True:
+            if not service or service.disabled is True:
                 raise DisabledServiceException(
                       'Disabled service: {srvDotPath}')
 

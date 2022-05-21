@@ -1,6 +1,6 @@
 envs:
   default:
-    enabled: True
+    enabled: False
 
     notbit:
       useTor: False

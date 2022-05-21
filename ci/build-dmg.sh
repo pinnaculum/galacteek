@@ -64,11 +64,16 @@ WHEEL="$OLD_CWD"/dist/galacteek-${G_VERSION}-py3-none-any.whl
 # install dependencies
 pip install wheel
 pip install -r "$OLD_CWD"/requirements.txt
-pip install $WHEEL
+# pip install $WHEEL
 pip install $WHEEL'[markdown-extensions]'
 
 # ui-pyqt (5.15)
 pip install $WHEEL'[ui-pyqt-5.15]'
+
+# starter
+pip install "git+https://gitlab.com/galacteek/galacteek-starter"
+pip uninstall -y galacteek
+pip uninstall -y galacteek-ld-web4
 
 # leave conda env
 source deactivate
@@ -121,15 +126,32 @@ cp /usr/local/Cellar/openssl@1.1/1.1.1*/lib/libcrypto*.dylib galacteek.app/Conte
 cat > galacteek.app/Contents/MacOS/galacteek <<\EAT
 #!/usr/bin/env bash
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-export SSL_CERT_FILE="${DIR}/../Resources/lib/python3.7/site-packages/certifi/cacert.pem"
+
+export PYTHONPATH="${DIR}/../Resources/lib/python3.7/site-packages"
+export SSL_CERT_FILE="${PYTHONPATH}/certifi/cacert.pem"
 export GALACTEEK_MAGIC_DBPATH="${DIR}/../Resources/share/file/magic-galacteek.mgc"
 export DYLD_FALLBACK_LIBRARY_PATH="$DYLD_FALLBACK_LIBRARY_PATH:$DIR/../Resources/lib"
 export PATH=$PATH:$DIR/../Resources/bin
 
-"$DIR/../Resources/bin/python" $DIR/../Resources/bin/galacteek --from-dmg
+"$DIR/../Resources/bin/python" "$DIR/../Resources/bin/galacteek-starter" --from-dmg
+EAT
+
+# create entry script for galacteek
+cat > galacteek.app/Contents/MacOS/galacteek-debug <<\EAT
+#!/usr/bin/env bash
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+export PYTHONPATH="${DIR}/../Resources/lib/python3.7/site-packages"
+export SSL_CERT_FILE="${PYTHONPATH}/certifi/cacert.pem"
+export GALACTEEK_MAGIC_DBPATH="${DIR}/../Resources/share/file/magic-galacteek.mgc"
+export DYLD_FALLBACK_LIBRARY_PATH="$DYLD_FALLBACK_LIBRARY_PATH:$DIR/../Resources/lib"
+export PATH=$PATH:$DIR/../Resources/bin
+
+"$DIR/../Resources/bin/python" "$DIR/../Resources/bin/galacteek-starter" --from-dmg -d
 EAT
 
 chmod a+x galacteek.app/Contents/MacOS/galacteek
+chmod a+x galacteek.app/Contents/MacOS/galacteek-debug
 
 # bloat deletion sequence
 pushd galacteek.app/Contents/Resources

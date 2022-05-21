@@ -1015,11 +1015,12 @@ class P2PServices(QObject):
         except Exception:
             log.debug('Could not register DID Auth service')
 
-        try:
-            self.dagExchService = dagexchange.DAGExchangeService()
-            await self.register(self.dagExchService)
-        except Exception:
-            log.debug('Could not register DAG service')
+        if 0:
+            try:
+                self.dagExchService = dagexchange.DAGExchangeService()
+                await self.register(self.dagExchService)
+            except Exception:
+                log.debug('Could not register DAG service')
 
     async def stop(self):
         for srv in self.services:

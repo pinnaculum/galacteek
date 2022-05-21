@@ -10,6 +10,8 @@ from galacteek.ipfs.p2pservices import dagexchange
 class DAGExchangeService(GService):
     name = 'dagexchange'
 
+    disabled = True
+
     @cached_property
     def dagExchService(self):
         return dagexchange.DAGExchangeService()

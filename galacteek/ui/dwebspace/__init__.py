@@ -698,13 +698,13 @@ class WorkspaceFiles(TabbedWorkspace):
             fileManager=fileManager
         )
 
-        self.seedsTab = seeds.SeedsTrackerTab(self.app.mainWindow)
-
         icon = getIcon('folder-open.png')
 
         self.wsRegisterTab(self.fileManagerTab, iFileManager(), icon)
-        self.wsRegisterTab(self.seedsTab, iFileSharing(),
-                           getIcon('fileshare.png'))
+        if 0:
+            self.seedsTab = seeds.SeedsTrackerTab(self.app.mainWindow)
+            self.wsRegisterTab(self.seedsTab, iFileSharing(),
+                               getIcon('fileshare.png'))
 
         self.wsAddAction(fileManager.addFilesAction)
         self.wsAddAction(fileManager.addDirectoryAction)
@@ -760,7 +760,8 @@ class WorkspaceFiles(TabbedWorkspace):
         await self.getTorrentClient(show=True)
 
     async def seedsSetup(self):
-        await self.seedsTab.loadSeeds()
+        # await self.seedsTab.loadSeeds()
+        pass
 
     async def importWelcome(self):
         pass
