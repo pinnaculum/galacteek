@@ -1,0 +1,157 @@
+image: "registry.gitlab.com/galacteek/galacteek-docker-debian-base:latest"
+
+variables:
+  DEBIAN_FRONTEND: noninteractive
+
+  ASSETS_ROOT: "${CI_PROJECT_DIR}/assets"
+  IPFS_BINPATH: "${CI_PROJECT_DIR}/ipfs-bin"
+
+  GO_IPFS_VERSION: 0.9.1
+  FS_MIGRATE_VERSION: 2.0.1
+  IPFS_DIST_OS: linux
+
+  GALACTEEK_ENV_FILE: "${CI_PROJECT_DIR}/galacteek-gitlab-env.sh"
+
+  RELEASE_DESCRIPTION: "release-description.md"
+
+stages:
+  - prepare
+  - build
+  - release
+
+prepare:
+  image: alpine:3.14
+  stage: prepare
+  only:
+    - master
+    - devel
+    - pimp-my-dweb
+    - /^feature/
+    - /^pronto/
+    - /^ipid/
+    - /^rdf/
+    - /^ld/
+  script:
+    - export GALACTEEK_VERSION=$(cat galacteek/VERSION)
+
+    - echo "export GALACTEEK_VERSION=$GALACTEEK_VERSION" > $GALACTEEK_ENV_FILE
+    - echo "export G_VERSION=$GALACTEEK_VERSION" >> $GALACTEEK_ENV_FILE
+    - echo "export COMMIT_SHORT=$CI_COMMIT_SHORT_SHA" >> $GALACTEEK_ENV_FILE
+    - echo "export GIT_BRANCH=$CI_COMMIT_BRANCH" >> $GALACTEEK_ENV_FILE
+
+    - |-
+      if [[ $CI_COMMIT_BRANCH =~ '^master$' ]]; then
+        echo "Building from master"
+        BUNDLE_IDENT="${GALACTEEK_VERSION}"
+
+        echo "export RELEASE_TAG=v${GALACTEEK_VERSION}" >> $GALACTEEK_ENV_FILE
+      else
+        echo "Building from branch ${CI_COMMIT_BRANCH}"
+        BUNDLE_IDENT="${CI_COMMIT_SHORT_SHA}"
+
+        echo "export RELEASE_TAG=continuous-${CI_COMMIT_BRANCH}" >> $GALACTEEK_ENV_FILE
+      fi
+
+      WHEEL_FILENAME="${CI_PROJECT_NAME}-${GALACTEEK_VERSION}-py3-none-any.whl"
+
+      # Wheel
+      echo "export WHEEL_FILENAME=${WHEEL_FILENAME}" >> $GALACTEEK_ENV_FILE
+      echo "export ARTIFACT_WHEEL=dist/${CI_PROJECT_NAME}-${GALACTEEK_VERSION}-py3-none-any.whl" >> $GALACTEEK_ENV_FILE
+      echo "export WHEEL_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/${WHEEL_FILENAME}" >> $GALACTEEK_ENV_FILE
+
+      # wheel dist (yaml)
+      echo "export DISTMAP_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/dist-wheel.yaml" >> $GALACTEEK_ENV_FILE
+
+  artifacts:
+    paths:
+      - $GALACTEEK_ENV_FILE
+      - $RELEASE_DESCRIPTION
+
+build:
+  stage: build
+  dependencies:
+    - prepare
+  only:
+    - master
+    - devel
+    - pimp-my-dweb
+    - /^feature/
+    - /^pronto/
+    - /^ipid/
+    - /^rdf/
+    - /^ld/
+  script:
+    - source $GALACTEEK_ENV_FILE
+    - mkdir -p $ASSETS_ROOT
+
+    # Install CI tools
+    - pip install "git+https://gitlab.com/galacteek/ci-tools"
+
+    - pip install -U pip
+    - pip install -r requirements.txt
+
+    - python setup.py build build_docs
+    - python setup.py sdist bdist_wheel
+
+    - export WHEEL_SHA512_CHECKSUM=$(sha512sum "dist/${WHEEL_FILENAME}"|awk '{print $1}')
+
+    # Upload wheel
+    - >
+      curl --progress-bar
+      --header "JOB-TOKEN: $CI_JOB_TOKEN"
+      --upload-file dist/${WHEEL_FILENAME} ${WHEEL_ASSET_URL}
+
+    - yaml-xform -s .gitlab/wheel.tmpl.yaml -o dist-wheel.yaml
+
+    - >
+      curl --progress-bar
+      --header "JOB-TOKEN: $CI_JOB_TOKEN"
+      --upload-file dist-wheel.yaml ${DISTMAP_ASSET_URL}
+
+  artifacts:
+    expire_in: 'never'
+    paths:
+      - assets/*.tar.gz
+      - $ARTIFACT_RELEASE
+      - dist/*.whl
+
+release:
+  image: registry.gitlab.com/galacteek/release-cli-extra
+  stage: release
+  dependencies:
+    - prepare
+    - build
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^master$/
+      when: always
+    - if: $CI_COMMIT_MESSAGE =~ /\[deploy\]/
+      when: always
+    - if: $CI_COMMIT_MESSAGE =~ /\[all\]/
+      when: always
+  script:
+    - source $GALACTEEK_ENV_FILE
+
+    # Delete release
+    - >
+      curl
+      --request DELETE
+      --header "JOB-TOKEN: $CI_JOB_TOKEN"
+      --header "PRIVATE-TOKEN: ${GITLAB_PRIVATE_TOKEN}"
+      "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases/${RELEASE_TAG}"
+
+    # Get the changelog entry
+    - pip3 install keepachangelog
+    - export CHANGELOG=$(.gitlab/changelog-extract-raw.py ${GALACTEEK_VERSION})
+    - python3 .gitlab/release-md-write.py > $RELEASE_DESCRIPTION
+
+    # Create release
+    - >
+      release-cli create
+      --name "Galacteek v$GALACTEEK_VERSION"
+      --description $RELEASE_DESCRIPTION
+      --tag-name $RELEASE_TAG
+      --ref $CI_COMMIT_SHA
+      --assets-link
+      "{\"name\" :\"${WHEEL_FILENAME}\", \"filepath\": \"/galacteek-latest-py3-none-any.whl\", \"url\": \"${WHEEL_ASSET_URL}\"}"
+      --assets-link
+      "{\"name\" :\"dist-wheel.yaml\", \"filepath\": \"/dist-wheel.yaml\", \"url\": \"${DISTMAP_ASSET_URL}\"}"

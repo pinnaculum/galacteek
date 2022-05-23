@@ -48,14 +48,14 @@ starting the container.
 
 Pull the image and run it with::
 
-    docker pull registry.gitlab.com/galacteek/galacteek:pimp-my-dweb-latest-x11vnc
-    docker run -p 5900:5900 -t registry.gitlab.com/galacteek/galacteek:pimp-my-dweb-latest-x11vnc
+    docker pull registry.gitlab.com/galacteek/galacteek-installer:pimp-my-dweb-latest-x11vnc
+    docker run -p 5900:5900 -t registry.gitlab.com/galacteek/galacteek-installer:pimp-my-dweb-latest-x11vnc
 
 If you want to persist the container's *galacteek* data on your system,
 use the following::
 
     mkdir /usr/local/galacteek-docker
-    docker run -p 5900:5900 -v /usr/local/galacteek-docker:/home/galacteek -t registry.gitlab.com/galacteek/galacteek:pimp-my-dweb-latest-x11vnc
+    docker run -p 5900:5900 -v /usr/local/galacteek-docker:/home/galacteek -t registry.gitlab.com/galacteek/galacteek-installer:pimp-my-dweb-latest-x11vnc
 
 Open your *VNC* client using the container's IP address (port *5900*)
 using the password issued on the container's console.

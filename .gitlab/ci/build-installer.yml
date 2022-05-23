@@ -1,0 +1,386 @@
+image: "registry.gitlab.com/galacteek/galacteek-docker-debian-base:latest"
+
+variables:
+  DEBIAN_FRONTEND: noninteractive
+  DOCKER_REPOSITORY: "${CI_REGISTRY}/galacteek/${CI_PROJECT_NAME}"
+
+  CI_PROJECT_DIR: "/builds/custom-build-galacteek/galacteek"
+
+  ASSETS_ROOT: "${CI_PROJECT_DIR}/assets"
+  IPFS_BINPATH: "${CI_PROJECT_DIR}/ipfs-bin"
+
+  GALACTEEK_VERSION: 0.5.5
+  GO_IPFS_VERSION: 0.9.1
+  FS_MIGRATE_VERSION: 2.0.1
+  IPFS_DIST_OS: linux
+
+  APPIMAGE_X64_BRANCH_LATEST: 'Galacteek-${CI_COMMIT_BRANCH}-latest-x86_64.AppImage'
+  FLATPAK_X64_BRANCH_LATEST: 'Galacteek-${CI_COMMIT_BRANCH}-latest-x86_64.flatpak'
+  DMG_X64_BRANCH_LATEST: 'Galacteek-${CI_COMMIT_BRANCH}-latest-x86_64.dmg'
+  NSI_X64_BRANCH_LATEST: 'Galacteek-${CI_COMMIT_BRANCH}-latest-x86_64.exe'
+
+  GALACTEEK_ENV_FILE: "${CI_PROJECT_DIR}/galacteek-gitlab-env.sh"
+
+  RELEASE_DESCRIPTION: "release-description.md"
+
+  ARTIFACT_RELEASE: "${CI_PROJECT_DIR}/galacteek-gitlab-release-env.sh"
+  ARTIFACT_RELEASE_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/galacteek-gitlab-release-env.sh"
+
+.clone_script_template:
+  before_script:
+    - git clone -b ${CI_COMMIT_BRANCH} https://gitlab.com/galacteek/galacteek ${CI_PROJECT_DIR}
+
+.ipfs_script_template:
+  before_script:
+    - ipfs version
+    - ipfs init
+    - ipfs pin remote service add origin $IPFS_RPS_ENDPOINT $IPFS_RPS_TOKEN
+    - nohup ipfs daemon &
+    - sleep 5
+
+    - echo "Adding remote pin service with endpoint => $IPFS_RPS_ENDPOINT"
+
+stages:
+  - prepare
+  - build
+  - docker_x11vnc
+  - release
+
+prepare:
+  image: alpine:3.14
+  stage: prepare
+  only:
+    - master
+    - devel
+    - pimp-my-dweb
+    - /^feature/
+    - /^pronto/
+    - /^ipid/
+    - /^rdf/
+    - /^ld/
+  script:
+    - apk add bash git curl
+    - git clone -b ${CI_COMMIT_BRANCH} https://gitlab.com/galacteek/galacteek ${CI_PROJECT_DIR}
+
+    - echo "CI_PROJECT_DIR => ${CI_PROJECT_DIR}"
+    - echo "ASSETS_ROOT => ${ASSETS_ROOT}"
+    - echo "export G_VERSION=$(cat galacteek/VERSION)" > $GALACTEEK_ENV_FILE
+    - echo "export COMMIT_SHORT=$CI_COMMIT_SHORT_SHA" >> $GALACTEEK_ENV_FILE
+    - echo "export GIT_BRANCH=$CI_COMMIT_BRANCH" >> $GALACTEEK_ENV_FILE
+
+    - |-
+      if [[ $CI_COMMIT_BRANCH =~ '^master$' ]]; then
+        echo "Building from master"
+        BUNDLE_IDENT="${GALACTEEK_VERSION}"
+
+        echo "export RELEASE_TAG=v${GALACTEEK_VERSION}" >> $GALACTEEK_ENV_FILE
+        echo "export APPIMAGE_PIN_NAME=galacteek-appimage-v${GALACTEEK_VERSION}" >> $GALACTEEK_ENV_FILE
+        echo "export FLATPAK_PIN_NAME=galacteek-flatpak-v${GALACTEEK_VERSION}" >> $GALACTEEK_ENV_FILE
+      else
+        echo "Building from branch ${CI_COMMIT_BRANCH}"
+        BUNDLE_IDENT="${CI_COMMIT_SHORT_SHA}"
+
+        echo "export RELEASE_TAG=continuous-${CI_COMMIT_BRANCH}" >> $GALACTEEK_ENV_FILE
+        echo "export APPIMAGE_PIN_NAME=galacteek-appimage-branch-${CI_COMMIT_BRANCH}" >> $GALACTEEK_ENV_FILE
+        echo "export FLATPAK_PIN_NAME=galacteek-flatpak-branch-${CI_COMMIT_BRANCH}" >> $GALACTEEK_ENV_FILE
+      fi
+
+      WHEEL_FILENAME="${CI_PROJECT_NAME}-${GALACTEEK_VERSION}-py3-none-any.whl"
+
+      echo "export APPIMAGE_FILENAME=Galacteek-${BUNDLE_IDENT}-x86_64.AppImage" >> $GALACTEEK_ENV_FILE
+      echo "export APPIMAGE_SHA_FILENAME=Galacteek-${BUNDLE_IDENT}-x86_64.AppImage.sha512" >> $GALACTEEK_ENV_FILE
+      echo "export APPIMAGE_IPFS_FILENAME=Galacteek-${BUNDLE_IDENT}-x86_64.ipfs.AppImage" >> $GALACTEEK_ENV_FILE
+      echo "export APPIMAGE_PATH=${ASSETS_ROOT}/Galacteek-${BUNDLE_IDENT}-x86_64.AppImage" >> $GALACTEEK_ENV_FILE
+      echo "export APPIMAGE_SHA_PATH=${ASSETS_ROOT}/Galacteek-${BUNDLE_IDENT}-x86_64.AppImage.sha512" >> $GALACTEEK_ENV_FILE
+
+      # DMG from GH
+      echo "export DMG_FILENAME=Galacteek-${BUNDLE_IDENT}-x86_64.dmg" >> $GALACTEEK_ENV_FILE
+      echo "export DMG_ASSET_URL=https://github.com/pinnaculum/galacteek/releases/download/continuous-${CI_COMMIT_BRANCH}/Galacteek-${BUNDLE_IDENT}-x86_64.dmg" >> $GALACTEEK_ENV_FILE
+      echo "export NSI_FILENAME=Galacteek-${BUNDLE_IDENT}-installer-x86_64.exe" >> $GALACTEEK_ENV_FILE
+      echo "export NSI_ASSET_URL=https://github.com/pinnaculum/galacteek/releases/download/continuous-${CI_COMMIT_BRANCH}/Galacteek-${BUNDLE_IDENT}-installer-x86_64.exe" >> $GALACTEEK_ENV_FILE
+
+      echo "export FLATPAK_FILENAME=Galacteek-${BUNDLE_IDENT}-x86_64.flatpak" >> $GALACTEEK_ENV_FILE
+      echo "export FLATPAK_PATH=${ASSETS_ROOT}/Galacteek-${BUNDLE_IDENT}-x86_64.flatpak" >> $GALACTEEK_ENV_FILE
+      echo "export FLATPAK_REPO_FILENAME=flatpak-repo.tar.gz" >> $GALACTEEK_ENV_FILE
+      echo "export FLATPAK_REPO_TGZ=${ASSETS_ROOT}/flatpak-repo.tar.gz" >> $GALACTEEK_ENV_FILE
+
+      echo "export APPIMAGE_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/Galacteek-${BUNDLE_IDENT}-x86_64.AppImage" >> $GALACTEEK_ENV_FILE
+      echo "export APPIMAGE_SHA_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/Galacteek-${BUNDLE_IDENT}-x86_64.AppImage.sha512" >> $GALACTEEK_ENV_FILE
+
+      echo "export FLATPAK_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/Galacteek-${BUNDLE_IDENT}-x86_64.flatpak" >> $GALACTEEK_ENV_FILE
+      echo "export FLATPAK_REPO_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/flatpak-repo-${BUNDLE_IDENT}.tar.gz" >> $GALACTEEK_ENV_FILE
+
+      # Wheel
+      echo "export WHEEL_FILENAME=${WHEEL_FILENAME}" >> $GALACTEEK_ENV_FILE
+      echo "export ARTIFACT_WHEEL=dist/${CI_PROJECT_NAME}-${GALACTEEK_VERSION}-py3-none-any.whl" >> $GALACTEEK_ENV_FILE
+      echo "export WHEEL_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/${WHEEL_FILENAME}" >> $GALACTEEK_ENV_FILE
+
+      # wheel dist (yaml)
+      echo "export DISTMAP_ASSET_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${GALACTEEK_VERSION}/dist-wheel.yaml" >> $GALACTEEK_ENV_FILE
+
+    - export
+
+  artifacts:
+    paths:
+      - $GALACTEEK_ENV_FILE
+      - $RELEASE_DESCRIPTION
+
+build:
+  extends:
+    - .ipfs_script_template
+  stage: build
+  dependencies:
+    - prepare
+  only:
+    - master
+    - devel
+    - pimp-my-dweb
+    - /^feature/
+    - /^pronto/
+    - /^ipid/
+    - /^rdf/
+    - /^ld/
+  cache:
+    paths:
+      # flatpak-build cache
+      - .flatpak-builder/build
+      - .flatpak-builder/cache
+      - .flatpak-builder/ccache
+      - .flatpak-builder/downloads
+      - .flatpak-builder/checksums
+      - .flatpak-builder
+  script:
+    - git clone -b ${CI_COMMIT_BRANCH} https://gitlab.com/galacteek/galacteek
+
+    - source $GALACTEEK_ENV_FILE
+    - mkdir -p $ASSETS_ROOT
+
+    # Install CI tools
+    - pip install "git+https://gitlab.com/galacteek/ci-tools"
+
+    - pip install -U pip
+    - pip install -r requirements.txt
+
+    - python setup.py build build_docs
+    - python setup.py sdist bdist_wheel
+
+    - export WHEEL_SHA512_CHECKSUM=$(sha512sum "dist/${WHEEL_FILENAME}"|awk '{print $1}')
+
+    # Upload wheel
+    - >
+      curl --progress-bar
+      --header "JOB-TOKEN: $CI_JOB_TOKEN"
+      --upload-file dist/${WHEEL_FILENAME} ${WHEEL_ASSET_URL}
+
+    - yaml-xform -s .gitlab/wheel.tmpl.yaml -o dist-wheel.yaml
+
+    - >
+      curl --progress-bar
+      --header "JOB-TOKEN: $CI_JOB_TOKEN"
+      --upload-file dist-wheel.yaml ${DISTMAP_ASSET_URL}
+
+    - |-
+      if [[ $CI_COMMIT_MESSAGE =~ '[appimage]' ]]; then
+        echo "Building AppImage to ${APPIMAGE_PATH}"
+        cd AppImage; ./appimage-build-gitlab; cd ..
+
+        APPIMAGE_CID=$(ipfs add -wQ --cid-version 1 "$APPIMAGE_PATH" | tail -1)
+
+        echo "export APPIMAGE_DIR_CID=${APPIMAGE_CID}" >> $ARTIFACT_RELEASE
+
+        SHA=$(sha512sum "$APPIMAGE_PATH"|awk '{print $1}')
+
+        echo "SHA512 for $APPIMAGE_PATH is $SHA"
+        echo "$SHA" > ${APPIMAGE_SHA_PATH}
+      fi
+
+    - |-
+      if [[ $CI_COMMIT_MESSAGE =~ '[flatpak]' ]] || [[ $CI_COMMIT_MESSAGE =~ '[flatpak-repo]' ]] || [[ $CI_COMMIT_MESSAGE =~ '[flatpak-bundle]' ]]; then
+        echo "Building flatpak as ${FLATPAK_FILENAME}"
+
+        yaml-xform -s \
+          packaging/linux/flatpak/io.gitlab.galacteek.Galacteek_oc.yaml \
+          -o packaging/linux/flatpak/io.gitlab.galacteek.Galacteek.yaml
+
+        # Build to flatpak repo
+        flatpak-builder --force-clean --install-deps-from=flathub \
+          --keep-build-dirs \
+          --default-branch="${CI_COMMIT_BRANCH}" \
+          --repo=flatpak-repo flatpak-build \
+          packaging/linux/flatpak/io.gitlab.galacteek.Galacteek.yaml
+
+        # tar-gzip the repo
+        tar -czf ${FLATPAK_REPO_TGZ} flatpak-repo
+      fi
+
+    - echo "export APPIMAGE_ASSET_PATH=$APPIMAGE_PATH" >> $ARTIFACT_RELEASE
+
+    - |-
+      if [ -e "${FLATPAK_REPO_TGZ}" ] && [[ $CI_COMMIT_MESSAGE =~ '[flatpak]' ]]; then
+        echo "Uploading flatpak repo"
+        curl --progress-bar --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+          --upload-file ${FLATPAK_REPO_TGZ} ${FLATPAK_REPO_ASSET_URL}
+      fi
+
+    - |-
+      if [[ $CI_COMMIT_MESSAGE =~ '[flatpak-bundle]' ]]; then
+        # Create bundle
+        flatpak build-bundle flatpak-repo \
+          ${FLATPAK_PATH} io.gitlab.galacteek.Galacteek "${CI_COMMIT_BRANCH}"
+
+        CID=$(ipfs add -wQ --cid-version 1 "$FLATPAK_PATH" | tail -1)
+        echo "export FLATPAK_DIR_CID=$CID" >> $ARTIFACT_RELEASE
+
+        echo "Uploading flatpak ${FLATPAK_PATH}"
+        curl --progress-bar --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+          --upload-file ${FLATPAK_PATH} ${FLATPAK_ASSET_URL}
+      fi
+
+    - source $ARTIFACT_RELEASE
+
+    - |-
+      if [[ $CI_COMMIT_MESSAGE =~ '[appimage]' ]] && [[ $CI_COMMIT_MESSAGE =~ '[deploy]' ]]; then
+
+        echo "Uploading AppImage ${APPIMAGE_PATH} to ${APPIMAGE_ASSET_URL}"
+        curl --progress-bar --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+          --upload-file ${APPIMAGE_PATH} ${APPIMAGE_ASSET_URL}
+
+        echo "Uploading AppImage SHA"
+        curl --progress-bar --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+          --upload-file ${APPIMAGE_SHA_PATH} ${APPIMAGE_SHA_ASSET_URL}
+
+        if [[ $CI_COMMIT_MESSAGE =~ '[pin]' ]] && [ ! -z "${APPIMAGE_DIR_CID}" ]; then
+          echo "Pinning AppImage with CID ${APPIMAGE_DIR_CID} to RPS"
+          echo "Pin name is ${APPIMAGE_PIN_NAME}"
+
+          # pin remote: force-remove and add
+          ipfs pin remote rm --service=origin \
+            --name="${APPIMAGE_PIN_NAME}" --force
+          ipfs pin remote add --service=origin \
+            --name="${APPIMAGE_PIN_NAME}" $APPIMAGE_DIR_CID
+
+          echo "export APPIMAGE_IPFS_URL=https://gateway.pinata.cloud/ipfs/${APPIMAGE_DIR_CID}/${APPIMAGE_FILENAME}" >> $ARTIFACT_RELEASE
+        fi
+      fi
+
+  artifacts:
+    expire_in: 'never'
+    paths:
+      - assets/*x86_64.AppImage
+      - assets/*x86_64.AppImage.sha512
+      - assets/*x86_64.flatpak
+      - assets/*.tar.gz
+      - $ARTIFACT_RELEASE
+      - dist/*.whl
+
+release:
+  image: registry.gitlab.com/galacteek/release-cli-extra
+  stage: release
+  dependencies:
+    - prepare
+    - build
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^master$/
+      when: always
+    - if: $CI_COMMIT_MESSAGE =~ /\[deploy\]/
+      when: always
+    - if: $CI_COMMIT_MESSAGE =~ /\[all\]/
+      when: always
+  script:
+    - source $GALACTEEK_ENV_FILE
+    - source $ARTIFACT_RELEASE
+
+    # Upload the artifact
+    - >
+      curl --header "JOB-TOKEN: $CI_JOB_TOKEN"
+      --upload-file
+      ${ARTIFACT_RELEASE}
+      ${ARTIFACT_RELEASE_URL}
+
+    # Delete release
+    - >
+      curl
+      --request DELETE
+      --header "JOB-TOKEN: $CI_JOB_TOKEN"
+      --header "PRIVATE-TOKEN: ${GITLAB_PRIVATE_TOKEN}"
+      "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases/${RELEASE_TAG}"
+
+    - pip3 install keepachangelog
+    - export CHANGELOG=$(.gitlab/changelog-extract-raw.py ${GALACTEEK_VERSION})
+    - python3 .gitlab/release-md-write.py > $RELEASE_DESCRIPTION
+
+    - |-
+      echo "Branch is $CI_COMMIT_BRANCH"
+
+      if [[ "$CI_COMMIT_BRANCH" =~ ^pimp-my-dweb$ ]]; then
+        # Use a permanent 'latest' filepath for the appimage release asset
+        echo "Using release filepath: ${APPIMAGE_X64_BRANCH_LATEST}"
+        export APPIMAGE_FILEPATH=${APPIMAGE_X64_BRANCH_LATEST}
+        export DMG_FILEPATH=${DMG_X64_BRANCH_LATEST}
+        export NSI_FILEPATH=${NSI_X64_BRANCH_LATEST}
+      else
+        export APPIMAGE_FILEPATH=${APPIMAGE_FILENAME}
+        export DMG_FILEPATH=${DMG_FILENAME}
+        export NSI_FILEPATH=${NSI_FILENAME}
+      fi
+
+      echo "APPIMAGE_FILEPATH: $APPIMAGE_FILEPATH"
+
+    # Create release
+    - |-
+      if [[ "$CI_COMMIT_MESSAGE" =~ '[pin]' ]] && [ ! -z "${APPIMAGE_IPFS_URL}" ]; then
+        echo "Creating release with IPFS url"
+        release-cli create \
+          --name "Galacteek v$G_VERSION" \
+          --description $RELEASE_DESCRIPTION \
+          --tag-name $RELEASE_TAG \
+          --ref $CI_COMMIT_SHA \
+          --assets-link \
+          "{\"name\" :\"$APPIMAGE_IPFS_FILENAME\", \"filepath\": \"/${APPIMAGE_IPFS_FILENAME}\", \"url\": \"${APPIMAGE_IPFS_URL}\"}" \
+          --assets-link \
+          "{\"name\" :\"${APPIMAGE_FILENAME}\", \"filepath\": \"/${APPIMAGE_FILENAME}\", \"url\": \"${APPIMAGE_ASSET_URL}\"}" \
+          --assets-link \
+          "{\"name\" :\"${APPIMAGE_SHA_FILENAME}\", \"filepath\": \"/${APPIMAGE_SHA_FILENAME}\", \"url\": \"${APPIMAGE_SHA_ASSET_URL}\"}" \
+          --assets-link \
+          "{\"name\" :\"${DMG_FILENAME}\", \"filepath\": \"/${DMG_FILEPATH}\", \"url\": \"${DMG_ASSET_URL}\"}"
+
+      else
+        echo "Creating release with artifact url"
+        release-cli create \
+          --name "Galacteek v$G_VERSION" \
+          --description $RELEASE_DESCRIPTION \
+          --tag-name $RELEASE_TAG \
+          --ref $CI_COMMIT_SHA \
+          --assets-link \
+          "{\"name\" :\"${WHEEL_FILENAME}\", \"filepath\": \"/galacteek-latest-py3-none-any.whl\", \"url\": \"${WHEEL_ASSET_URL}\"}" \
+          --assets-link \
+          "{\"name\" :\"dist-wheel.yaml\", \"filepath\": \"/dist-wheel.yaml\", \"url\": \"${DISTMAP_ASSET_URL}\"}" \
+          --assets-link \
+          "{\"name\" :\"${APPIMAGE_FILENAME}\", \"filepath\": \"/${APPIMAGE_FILEPATH}\", \"url\": \"${APPIMAGE_ASSET_URL}\"}" \
+          --assets-link \
+          "{\"name\" :\"${APPIMAGE_SHA_FILENAME}\", \"filepath\": \"/${APPIMAGE_SHA_FILENAME}\", \"url\": \"${APPIMAGE_SHA_ASSET_URL}\"}" \
+          --assets-link \
+          "{\"name\" :\"${DMG_FILENAME}\", \"filepath\": \"/${DMG_FILEPATH}\", \"url\": \"${DMG_ASSET_URL}\"}" \
+          --assets-link \
+          "{\"name\" :\"${NSI_FILENAME}\", \"filepath\": \"/${NSI_FILEPATH}\", \"url\": \"${NSI_ASSET_URL}\"}" \
+          --assets-link \
+          "{\"name\" :\"${FLATPAK_REPO_FILENAME}\", \"filepath\": \"/${FLATPAK_REPO_FILENAME}\", \"url\": \"${FLATPAK_REPO_ASSET_URL}\"}"
+      fi
+
+docker_x11vnc:
+  image: docker:latest
+  stage: docker_x11vnc
+  services:
+    - docker:dind
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[docker-x11\]/
+      when: always
+    - if: $CI_COMMIT_MESSAGE =~ /\[all\]/
+      when: always
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - DOCKER_TAG="${CI_COMMIT_BRANCH}-latest-x11vnc"
+
+    - docker build -f Dockerfile.debian.x11vnc -t $DOCKER_REPOSITORY:$DOCKER_TAG .
+    - docker push $DOCKER_REPOSITORY:$DOCKER_TAG
