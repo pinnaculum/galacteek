@@ -42,13 +42,9 @@ prepare:
     - |-
       if [[ $CI_COMMIT_BRANCH =~ '^master$' ]]; then
         echo "Building from master"
-        BUNDLE_IDENT="${GALACTEEK_VERSION}"
-
         echo "export RELEASE_TAG=v${GALACTEEK_VERSION}" >> $GALACTEEK_ENV_FILE
       else
         echo "Building from branch ${CI_COMMIT_BRANCH}"
-        BUNDLE_IDENT="${CI_COMMIT_SHORT_SHA}"
-
         echo "export RELEASE_TAG=continuous-${CI_COMMIT_BRANCH}" >> $GALACTEEK_ENV_FILE
       fi
 
@@ -90,19 +86,23 @@ build:
     - pip install -U pip
     - pip install -r requirements.txt
 
+    # Build everything and create the python wheel
     - python setup.py build build_docs
     - python setup.py sdist bdist_wheel
 
+    # Compute the python wheel's sha512 checksum
     - export WHEEL_SHA512_CHECKSUM=$(sha512sum "dist/${WHEEL_FILENAME}"|awk '{print $1}')
 
-    # Upload wheel
+    # Upload the python wheel
     - >
       curl --progress-bar
       --header "JOB-TOKEN: $CI_JOB_TOKEN"
       --upload-file dist/${WHEEL_FILENAME} ${WHEEL_ASSET_URL}
 
+    # Build the yaml wheel dist infos file with yaml-xform
     - yaml-xform -s .gitlab/wheel.tmpl.yaml -o dist-wheel.yaml
 
+    # Upload it
     - >
       curl --progress-bar
       --header "JOB-TOKEN: $CI_JOB_TOKEN"
@@ -112,7 +112,6 @@ build:
     expire_in: 'never'
     paths:
       - assets/*.tar.gz
-      - $ARTIFACT_RELEASE
       - dist/*.whl
 
 release:
@@ -144,7 +143,7 @@ release:
     - export CHANGELOG=$(.gitlab/changelog-extract-raw.py ${GALACTEEK_VERSION})
     - python3 .gitlab/release-md-write.py > $RELEASE_DESCRIPTION
 
-    # Create release
+    # Create the release
     - >
       release-cli create
       --name "Galacteek v$GALACTEEK_VERSION"

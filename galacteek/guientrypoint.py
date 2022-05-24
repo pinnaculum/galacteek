@@ -13,6 +13,7 @@ from rdflib.parser import Parser
 from rdflib.serializer import Serializer
 
 from PyQt5.QtCore import QProcess
+from PyQt5.QtCore import QProcessEnvironment
 from PyQt5.QtWebEngine import QtWebEngine
 
 from galacteek.__version__ import __version__
@@ -44,11 +45,19 @@ class ApplicationStarter:
         galacteekGui(self.args)
 
     def startProcess(self, args):
+        env = QProcessEnvironment.systemEnvironment()
+
         p = QProcess()
         prog = self.args.binarypath if self.args.binarypath else args[0]
         p.setProgram(prog)
+
+        if env and not env.isEmpty():
+            # Reuse environment from previous instance
+            p.setProcessEnvironment(env)
+
         if len(args) > 1:
             p.setArguments(args[1:])
+
         p.startDetached()
 
 
