@@ -71,7 +71,6 @@ hiddenimports += collect_submodules('rdflib_pyld_compat')
 
 hiddenimports += collect_submodules('pkg_resources')
 hiddenimports += collect_submodules('setuptools')
-hiddenimports += collect_submodules('distutils')
 
 pip_datas, pip_binaries, pip_hiddenimports = collect_all('pip', include_py_files=True)
 
