@@ -3,11 +3,11 @@ import os.path
 from pathlib import Path
 
 from PyInstaller.utils.hooks import *
-from PyInstaller.utils.hooks import collect_all
 from PyInstaller.compat import modname_tkinter
 
 
 datas = []
+binaries = []
 
 try:
     datas += copy_metadata('galacteek.templates')
@@ -97,14 +97,23 @@ hiddenimports += collect_submodules('rdflib_sqlalchemy')
 hiddenimports += collect_submodules('rdflib_sqlite')
 hiddenimports += collect_submodules('rdflib_pyld_compat')
 
-hiddenimports += collect_all('pkg_resources')
-hiddenimports += collect_all('setuptools')
-hiddenimports += collect_all('pip')
-hiddenimports += collect_all('ensurepip')
+hiddenimports += collect_submodules('pkg_resources')
+hiddenimports += collect_submodules('setuptools')
+hiddenimports += collect_submodules('ensurepip')
+
+pip_datas, pip_binaries, pip_hiddenimports += collect_all('pip')
+
+hiddenimports += pip_hiddenimports
+binaries += pip_binaries
+datas += pip_datas
 
 
 for imp in hiddenimports:
     print(f'Hidden import: {imp}')
+
+
+for binary in binaries:
+    print(f'Including binary: {binary}')
 
 excludedimports = [
     'tkinter',
