@@ -71,19 +71,22 @@ hiddenimports += collect_submodules('rdflib_pyld_compat')
 
 hiddenimports += collect_submodules('pkg_resources')
 hiddenimports += collect_submodules('setuptools')
-hiddenimports += collect_submodules('ensurepip')
+hiddenimports += collect_submodules('distutils')
 
-pip_datas, pip_binaries, pip_hiddenimports = collect_all('pip')
-epip_datas, epip_binaries, epip_hiddenimports = collect_all('ensurepip')
+pip_datas, pip_binaries, pip_hiddenimports = collect_all('pip', include_py_files=True)
+
+# :\
+pip_binaries += [
+    'venvg/Scripts/pip.exe',
+    'venvg/Scripts/pip3.exe',
+    'venvg/Scripts/pip3.7.exe'
+]
 
 print('pip binaries', pip_binaries)
 
 hiddenimports += pip_hiddenimports
-hiddenimports += epip_hiddenimports
 binaries += pip_binaries
-binaries += epip_binaries
 datas += pip_datas
-datas += epip_datas
 
 print('>>>>', binaries)
 
@@ -111,8 +114,8 @@ datas += [('galacteek/templates', f'{pkgrDest}/galacteek/templates')]
 datas += [('galacteek/ui/themes', f'{pkgrDest}/galacteek/ui/themes')]
 datas += [('galacteek/hashmarks', f'{pkgrDest}/galacteek/hashmarks')]
 datas += [('galacteek/docs/manual', f'{pkgrDest}/galacteek/docs/manual')]
-datas += [('galacteek-ld-web4/galacteek_ld_web4',
-           f'{pkgrDest}/galacteek_ld_web4')]
+# datas += [('galacteek-ld-web4/galacteek_ld_web4',
+#            f'{pkgrDest}/galacteek_ld_web4')]
 datas += [('packaging/windows/random_username', 'random_username')]
 
 for root, dirs, files in os.walk('galacteek'):
