@@ -1,5 +1,6 @@
 import os
 import os.path
+import traceback
 from pathlib import Path
 
 from PyInstaller.utils.hooks import *
@@ -20,7 +21,7 @@ try:
     datas += copy_metadata('mkdocs')
     datas += copy_metadata('mkdocs-bootswatch')
 except Exception:
-    pass
+    traceback.print_exc()
 
 hiddenimports = [
     'galacteek.templates',
@@ -101,7 +102,7 @@ hiddenimports += collect_submodules('pkg_resources')
 hiddenimports += collect_submodules('setuptools')
 hiddenimports += collect_submodules('ensurepip')
 
-pip_datas, pip_binaries, pip_hiddenimports += collect_all('pip')
+pip_datas, pip_binaries, pip_hiddenimports = collect_all('pip')
 
 hiddenimports += pip_hiddenimports
 binaries += pip_binaries

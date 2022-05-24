@@ -129,8 +129,6 @@ a = Analysis(['galacteek_win.py'],
         'tornado',
         'lib2to3',
         'PyInstaller',
-        'pip',
-        'setuptools',
         'pytest',
         'Cryptodome.SelfTest',
         'PIL.ImageQt'
