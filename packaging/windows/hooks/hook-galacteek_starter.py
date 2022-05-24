@@ -87,8 +87,6 @@ hiddenimports += pip_hiddenimports
 binaries += pip_binaries
 datas += pip_datas
 
-print('>>>>', binaries)
-
 
 for imp in hiddenimports:
     print(f'Hidden import: {imp}')

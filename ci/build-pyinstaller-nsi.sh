@@ -8,11 +8,11 @@ export PYTHONPATH=$GITHUB_WORKSPACE
 unset VIRTUAL_ENV
 
 pip install -U pip
-pip install "pyinstaller==4.10"
+pip install "pyinstaller==5.1"
 pip install pywin32
 
 # Patch pyimod03_importers.py (to include source code with inspect)
-cp packaging/windows/pyinstaller4.10/pyimod03_importers.py \
+cp packaging/windows/pyinstaller5.1/pyimod03_importers.py \
     c:\\hostedtoolcache\\windows\\python\\3.7.9\\x64\\lib\\site-packages\\PyInstaller\\loader
 
 # Copy tor and the dlls
