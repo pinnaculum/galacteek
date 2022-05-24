@@ -113,6 +113,8 @@ a = Analysis(['galacteek_win.py'],
      'matplotlib/mpl-data')
     ],
     hiddenimports=[
+        'galacteek_starter',
+        'galacteek_starter.entrypoint',
         'multiaddr',
         'multiaddr.codecs.*',
         'omegaconf',
