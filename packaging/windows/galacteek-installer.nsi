@@ -177,10 +177,10 @@ Section G
     WriteUninstaller "$GFILESDIR\uninstall.exe"
 
     createDirectory "$SHORTCUTDIR"
-    createShortCut "$SHORTCUTDIR\${APPNAME}.lnk" "$GFILESDIR\galacteek.exe"
-    createShortCut "$SHORTCUTDIR\${APPNAME} (Debug).lnk" "$GFILESDIR\galacteek.exe" '-d'
+    createShortCut "$SHORTCUTDIR\${APPNAME}.lnk" "$GFILESDIR\galacteek-starter.exe"
+    createShortCut "$SHORTCUTDIR\${APPNAME} (Debug).lnk" "$GFILESDIR\galacteek-starter.exe" '-d'
     createShortCut "$SHORTCUTDIR\Uninstall.lnk" "$GFILESDIR\uninstall.exe"
-    createShortCut "$DESKTOPDIR\${APPNAME}.lnk" "$GFILESDIR\galacteek.exe"
+    createShortCut "$DESKTOPDIR\${APPNAME}.lnk" "$GFILESDIR\galacteek-starter.exe"
 
     # fw rules (ipfs)
     ExecWait 'netsh advfirewall firewall add rule name=g_ipfs_in dir=in action=allow program="$GFILESDIR\ipfs.exe" enable=yes profile=public,private'
