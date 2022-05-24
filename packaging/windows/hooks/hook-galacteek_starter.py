@@ -4,7 +4,6 @@ import traceback
 from pathlib import Path
 
 from PyInstaller.utils.hooks import *
-from PyInstaller.compat import modname_tkinter
 
 datas = []
 binaries = []
@@ -102,7 +101,6 @@ excludedimports = [
     'sphinxcontrib',
     'tornado',
     'lib2to3'
-    # modname_tkinter
 ]
 
 pkgrDest = '_pkg'
@@ -111,8 +109,6 @@ datas += [('galacteek/templates', f'{pkgrDest}/galacteek/templates')]
 datas += [('galacteek/ui/themes', f'{pkgrDest}/galacteek/ui/themes')]
 datas += [('galacteek/hashmarks', f'{pkgrDest}/galacteek/hashmarks')]
 datas += [('galacteek/docs/manual', f'{pkgrDest}/galacteek/docs/manual')]
-# datas += [('galacteek-ld-web4/galacteek_ld_web4',
-#            f'{pkgrDest}/galacteek_ld_web4')]
 datas += [('packaging/windows/random_username', 'random_username')]
 
 for root, dirs, files in os.walk('galacteek'):
