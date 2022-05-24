@@ -77,9 +77,9 @@ pip_datas, pip_binaries, pip_hiddenimports = collect_all('pip', include_py_files
 
 # :\
 pip_binaries += [
-    'venvg/Scripts/pip.exe',
-    'venvg/Scripts/pip3.exe',
-    'venvg/Scripts/pip3.7.exe'
+    ('venvg/Scripts/pip.exe', '.'),
+    ('venvg/Scripts/pip3.exe', '.'),
+    ('venvg/Scripts/pip3.7.exe', '.')
 ]
 
 print('pip binaries', pip_binaries)
