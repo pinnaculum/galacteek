@@ -8,7 +8,6 @@ export PYTHONPATH=$GITHUB_WORKSPACE
 unset VIRTUAL_ENV
 
 pip install -U pip
-# pip install "pyinstaller==4.2"
 pip install "pyinstaller==4.10"
 pip install pywin32
 

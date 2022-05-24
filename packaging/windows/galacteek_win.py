@@ -17,5 +17,5 @@ faulthandler.enable(sys.stderr)
 if '-d' not in sys.argv:
     hideConsoleWindow()
 
-from galacteek.guientrypoint import start
+from galacteek_starter.entrypoint import start
 start()
