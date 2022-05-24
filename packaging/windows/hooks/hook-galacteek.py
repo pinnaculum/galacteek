@@ -3,6 +3,7 @@ import os.path
 from pathlib import Path
 
 from PyInstaller.utils.hooks import *
+from PyInstaller.utils.hooks import collect_all
 from PyInstaller.compat import modname_tkinter
 
 
@@ -95,6 +96,12 @@ hiddenimports += collect_submodules('rdflib_jsonld')
 hiddenimports += collect_submodules('rdflib_sqlalchemy')
 hiddenimports += collect_submodules('rdflib_sqlite')
 hiddenimports += collect_submodules('rdflib_pyld_compat')
+
+hiddenimports += collect_all('pkg_resources')
+hiddenimports += collect_all('setuptools')
+hiddenimports += collect_all('pip')
+hiddenimports += collect_all('ensurepip')
+
 
 for imp in hiddenimports:
     print(f'Hidden import: {imp}')
