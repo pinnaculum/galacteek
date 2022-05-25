@@ -21,6 +21,30 @@ envs:
           enabled: True
           priority: 0
 
+    ipfsHttpGateways:
+      # Uses gateways listed in
+      # https://raw.githubusercontent.com/ipfs/public-gateway-checker/master/src/gateways.json
+
+      networks:
+        # Gateways for the main IPFS network
+        main:
+          gateway.pinata.cloud:
+            priority: 0
+          dweb.link:
+            priority: 1
+          gateway.ipfs.io:
+            priority: 1
+          cloudflare-ipfs.com:
+            priority: 1
+          c4rex.co:
+            priority: 2
+          infura-ipfs.io:
+            priority: 3
+          ipfs.infura.io:
+            priority: 5
+          ipfs.eth.aragon.network:
+            priority: 5
+
     peering:
       #
       # Content Providers that with peer with by default

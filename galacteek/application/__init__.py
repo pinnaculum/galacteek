@@ -1098,6 +1098,8 @@ class GalacteekApplication(QApplication):
         Install the asyncqt event loop and enable debugging
         """
 
+        from galacteek.core.aiohttpsslerror import ignore_aiohttp_ssl_error
+
         loop = QEventLoop(self)
         asyncio.set_event_loop(loop)
         # logging.getLogger('asyncqt').setLevel(logging.INFO)
@@ -1116,6 +1118,9 @@ class GalacteekApplication(QApplication):
                 signal.SIGINT,
                 functools.partial(self.signalHandler, 'SIGINT'),
             )
+
+        # Ignore KRBS errors if running with a python version < 3.7.4
+        ignore_aiohttp_ssl_error(loop)
 
         self.loop = loop
         return loop

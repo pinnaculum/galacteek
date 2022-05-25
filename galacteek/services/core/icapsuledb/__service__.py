@@ -4,7 +4,6 @@ from omegaconf import OmegaConf
 from rdflib import URIRef
 from rdflib import RDF
 
-import validators
 import attr
 import asyncio
 import aiohttp
@@ -23,7 +22,6 @@ from galacteek.browser.schemes import SCHEME_I
 
 from galacteek.core.asynclib import asyncWriteFile
 from galacteek.core.asynclib import asyncReadFile
-from galacteek.core.asynclib import httpFetch
 
 from galacteek.ld import gLdDefaultContext
 from galacteek.ld.rdf import BaseGraph
@@ -35,6 +33,7 @@ from galacteek.services import getByDotName
 
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
+from galacteek.ipfs.fetch import fetchWithRandomGateway
 
 from . import ldregistry
 
@@ -237,8 +236,6 @@ class ICapsuleRegistryLoaderService(GService):
             iconCid = str(manifest.value(mTerm('iconIpfsPath')))
             # httpGws = str(manifest.value(mTerm('ipfsHttpGws')))
 
-            httpGws = ['https://ipfs.io']
-
             comps = await self.querier.capsuleComponents(
                 icapid
             )
@@ -263,14 +260,11 @@ class ICapsuleRegistryLoaderService(GService):
                     continue
                 elif stype in ['dweb', 'ipfs']:
                     cid = str(comp.value(compTerm('cid')))
-                    httpGw = httpGws.pop()
 
                     if not cid:
                         log.debug(f'icapsule {icapid}: '
                                   f'component {compUri} has no CID')
                         continue
-
-                    hDistUrl = f'{httpGw}/ipfs/{cid}'
 
                     iPath = IPFSPath(cid)
 
@@ -297,31 +291,23 @@ class ICapsuleRegistryLoaderService(GService):
 
                         continue
 
-                    if validators.url(hDistUrl) is True:
-                        # HTTPs dist
+                    log.info(f'icapsule {icapid}: Fetching: {iPath}')
 
-                        url = URL(hDistUrl)
+                    result = await self.capsuleExtractFromPath(iPath, cpath)
+                    if result is True:
+                        cloaded.append({
+                            'fsPath': str(cpath)
+                        })
 
-                        log.info(f'icapsule {icapid}: Fetch dist URL: {url}')
+                        # Pin in the background
+                        ensure(self.pinCapsule(icapid, iPath))
 
-                        result = await self.capsuleExtractFromUrl(url, cpath)
-                        if result is True:
-                            cloaded.append({
-                                'fsPath': str(cpath)
-                            })
-
-                            ensure(self.pinCapsule(icapid, iPath))
-
-                            continue
-                        else:
-                            raise Exception(
-                                f'Capsule {icapid}: extraction from '
-                                f'URL {url} failed'
-                            )
-                    else:
-                        log.debug(
-                            f'icapsule {icapid}: no dist URL found, skipping')
                         continue
+                    else:
+                        raise Exception(
+                            f'Capsule {icapid}: extraction from '
+                            f'object {iPath} failed'
+                        )
 
             ctx = CapsuleContext(
                 type=mtype,
@@ -455,12 +441,12 @@ class ICapsuleRegistryLoaderService(GService):
 
             return cfg
 
-    async def capsuleExtractFromUrl(self,
-                                    url: URL,
-                                    dstdir: Path,
-                                    maxArchiveSize=1024 * 1024 * 8,
-                                    chunkSize=32768,
-                                    maxAttempts=5):
+    async def capsuleExtractFromPath(self,
+                                     cIpfsPath: IPFSPath,
+                                     dstdir: Path,
+                                     maxArchiveSize=1024 * 1024 * 8,
+                                     chunkSize=32768,
+                                     maxAttempts=5):
         """
         Pull the capsule archive from the given `url`, and
         extract it to `dstdir`.
@@ -469,19 +455,19 @@ class ICapsuleRegistryLoaderService(GService):
         """
 
         for attempt in range(0, maxAttempts):
-            fp, _s = await httpFetch(
-                str(url),
+            fp, _s = await fetchWithRandomGateway(
+                cIpfsPath,
                 maxSize=maxArchiveSize
             )
 
             if not fp:
                 log.debug(
-                    f'icapextract {url} (attempt {attempt}): failed'
+                    f'icapextract {cIpfsPath} (attempt {attempt}): failed'
                 )
                 continue
             else:
                 log.info(
-                    f'icapextract {url} (attempt {attempt}): Fetch OK!'
+                    f'icapextract {cIpfsPath} (attempt {attempt}): Fetch OK!'
                 )
 
             try:
@@ -490,13 +476,13 @@ class ICapsuleRegistryLoaderService(GService):
                 tar.close()
             except Exception as err:
                 log.debug(
-                    f'icapextract {url} (attempt {attempt}): '
+                    f'icapextract {cIpfsPath} (attempt {attempt}): '
                     f'extract failed: {err}'
                 )
                 continue
             else:
                 log.info(
-                    f'icapextract {url} (attempt {attempt}): Success'
+                    f'icapextract {cIpfsPath} (attempt {attempt}): Success'
                 )
 
                 try:
