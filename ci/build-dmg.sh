@@ -127,6 +127,7 @@ cat > galacteek.app/Contents/MacOS/galacteek <<\EAT
 #!/usr/bin/env bash
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+export PYTHONHOME="${DIR}/../Resources"
 export PYTHONPATH="${DIR}/../Resources/lib/python3.7/site-packages"
 export SSL_CERT_FILE="${PYTHONPATH}/certifi/cacert.pem"
 export GALACTEEK_MAGIC_DBPATH="${DIR}/../Resources/share/file/magic-galacteek.mgc"
@@ -136,11 +137,12 @@ export PATH=$PATH:$DIR/../Resources/bin
 "$DIR/../Resources/bin/python" "$DIR/../Resources/bin/galacteek-starter" --from-dmg
 EAT
 
-# create entry script for galacteek
+# create entry script for galacteek (debug)
 cat > galacteek.app/Contents/MacOS/galacteek-debug <<\EAT
 #!/usr/bin/env bash
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+export PYTHONHOME="${DIR}/../Resources"
 export PYTHONPATH="${DIR}/../Resources/lib/python3.7/site-packages"
 export SSL_CERT_FILE="${PYTHONPATH}/certifi/cacert.pem"
 export GALACTEEK_MAGIC_DBPATH="${DIR}/../Resources/share/file/magic-galacteek.mgc"
