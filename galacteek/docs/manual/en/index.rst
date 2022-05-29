@@ -23,6 +23,7 @@ You can easily access this manual by typing
     Using the clipboard <clipboard>
     Decentralized Identity <did>
     Connection status <status>
+    IPFS networks <networks>
     Shortcuts <shortcuts>
     Hashmarks <hashmarks>
     File manager <filemanager>

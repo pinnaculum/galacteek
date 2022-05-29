@@ -1,6 +1,20 @@
 from PyQt5.QtCore import QCoreApplication
 
 
+def iIpfsNetwork():
+    return QCoreApplication.translate('Galacteek', 'IPFS network')
+
+
+def iNoIpfsNetwork():
+    return QCoreApplication.translate('Galacteek', 'No IPFS network')
+
+
+def iCurrentIpfsNetwork(netName):
+    return QCoreApplication.translate(
+        'Galacteek',
+        'Current IPFS network: {}').format(netName)
+
+
 # IPFS daemon messages
 
 

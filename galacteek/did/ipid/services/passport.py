@@ -76,6 +76,9 @@ class DwebPassportService(IPService):
 
             psPeers = ipfsop.ctx.pubsub.byTopic('galacteek.peers')
 
+            if not psPeers:
+                continue
+
             await psPeers.send(
                 IpidServiceExposureMessage.make(
                     self.ipid.did,

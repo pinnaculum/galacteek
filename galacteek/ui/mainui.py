@@ -45,13 +45,12 @@ from galacteek.core.glogger import loggerMain
 from galacteek.core.glogger import loggerUser
 from galacteek.core.glogger import LogRecordStyler
 from galacteek.core.asynclib import asyncify
+from galacteek.core.modelhelpers import *
 from galacteek.core.ps import KeyListener
 from galacteek.core.ps import makeKeyService
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.cidhelpers import IPFSPath
-
-from galacteek.core.modelhelpers import *
 
 from .forms import ui_ipfsinfos
 
@@ -68,7 +67,6 @@ from .files import unixfs
 from .dids import DIDExplorer
 from .clips import RotatingCubeClipSimple
 from .clips import RotatingCubeRedFlash140d
-# from .eth import EthereumStatusButton
 from .textedit import TextEditorTab
 from .iprofile import ProfileEditDialog
 from .iprofile import ProfileButton
@@ -85,6 +83,7 @@ from .widgets import AtomFeedsToolbarButton
 from .widgets import PopupToolButton
 from .widgets import HashmarkMgrButton
 from .widgets import AnimatedLabel
+from .widgets.netselector import IPFSNetworkSelectorToolButton
 
 from .widgets.torcontrol import TorControllerButton
 
@@ -667,7 +666,7 @@ class CentralStack(QStackedWidget,
                     workspace.wsSwitch()
 
 
-class BrowseButton(PopupToolButton):
+class BrowseButton(PopupToolButton, KeyListener):
     """
     Browse button. When the button is hovered we play the
     rotating cube clip.
@@ -676,6 +675,7 @@ class BrowseButton(PopupToolButton):
     def __init__(self, parent):
         super().__init__(parent=parent, mode=QToolButton.InstantPopup)
 
+        self.app = runningApp()
         self.animatedActions = []
         self.rotatingCubeClip = RotatingCubeClipSimple()
         self.rotatingCubeClip.finished.connect(
@@ -694,7 +694,7 @@ class BrowseButton(PopupToolButton):
 
         self.setIcon(icon)
 
-        if self.menu and self.menu.isVisible():
+        if self.menu and self.menu.isVisible() and 0:
             for action in self.menu.actions():
                 if action in self.animatedActions:
                     action.setIcon(icon)
@@ -718,7 +718,7 @@ class BrowseButton(PopupToolButton):
         super(BrowseButton, self).leaveEvent(event)
 
 
-class MainWindow(QMainWindow):
+class MainWindow(QMainWindow, KeyListener):
     def __init__(self, app):
         super(MainWindow, self).__init__()
 
@@ -861,8 +861,10 @@ class MainWindow(QMainWindow):
         self.browseButton.menu.addAction(self.browseAction)
         self.browseButton.menu.addAction(self.browseAutopinAction)
         self.browseButton.menu.addSeparator()
-        self.browseButton.menu.addAction(self.searchServicesAction)
-        self.browseButton.menu.addSeparator()
+        # self.browseButton.menu.addMenu(self.browseButton.ipfsNetworksMenu())
+        # self.browseButton.menu.addSeparator()
+        # self.browseButton.menu.addAction(self.searchServicesAction)
+        # self.browseButton.menu.addSeparator()
         self.browseButton.menu.addAction(self.editorOpenAction)
         self.browseButton.menu.addSeparator()
 
@@ -1086,6 +1088,9 @@ class MainWindow(QMainWindow):
         self.logsPopupWindow.hidden.connect(
             functools.partial(self.userLogsButton.setChecked, False))
 
+        self.networkSelectorButton = IPFSNetworkSelectorToolButton()
+        self.networkSelectorButton.buildNetworksMenu()
+
         # Bandwidth graph
         self.bwGraphView = BandwidthGraphView(parent=None)
         self.peersGraphView = PeersCountGraphView(parent=None)
@@ -1120,9 +1125,11 @@ class MainWindow(QMainWindow):
         )
 
         # self.ethereumStatusBtn = EthereumStatusButton(parent=self)
-        self.dockCrafting.addStatusWidget(self.ipfsStatusCube)
-        self.dockCrafting.addStatusWidget(self.torControlButton)
         # self.dockCrafting.addStatusWidget(self.ethereumStatusBtn)
+
+        self.dockCrafting.addStatusWidget(self.ipfsStatusCube)
+        self.dockCrafting.addStatusWidget(self.networkSelectorButton)
+        self.dockCrafting.addStatusWidget(self.torControlButton)
 
         self.dockCrafting.addStatusWidget(self.pinningStatusButton)
         self.dockCrafting.addStatusWidget(self.rpsStatusButton)
@@ -1758,3 +1765,11 @@ class MainWindow(QMainWindow):
     def getPyrDropButtonFor(self, ipfsPath, origin=None):
         return self.toolbarPyramids.getPyrDropButtonFor(
             ipfsPath, origin=origin)
+
+    async def event_g_42(self, key, message):
+        # Forward IPFS daemon events to the main ToolButton
+        event = message.get('event')
+
+        if event and event.get('type') in ['IpfsDaemonStartedEvent',
+                                           'IpfsDaemonStoppedEvent']:
+            await self.networkSelectorButton.processIpfsDaemonEvent(event)

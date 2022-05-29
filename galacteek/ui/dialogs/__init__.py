@@ -1829,9 +1829,25 @@ class IPFSDaemonInitDialog(QDialog):
         if self.countdown == 0:
             self.accept()
 
+    def setDefaultNetwork(self):
+        sManager = self.app.settingsMgr
+        defaultNetwork = sManager.getSetting(
+            CFG_SECTION_IPFSD,
+            CFG_KEY_IPFS_DEFAULT_NETWORK_NAME
+        )
+
+        sManager.setSetting(
+            CFG_SECTION_IPFSD,
+            CFG_KEY_IPFS_NETWORK_NAME,
+            defaultNetwork if defaultNetwork else 'main'
+        )
+
     def accept(self):
         sManager = self.app.settingsMgr
         cfg = self.options()
+
+        # Reset default network when creating a new repo
+        self.setDefaultNetwork()
 
         if cfg['daemonType'] == 'custom':
             # Disable local daemon
@@ -1863,6 +1879,7 @@ class IPFSDaemonInitDialog(QDialog):
             #     section, CFG_KEY_IPFSD_PROFILES,
             #     cfg['profiles']
             # )
+
             sManager.setSetting(
                 section, CFG_KEY_APIPORT,
                 cfg['apiPort']
@@ -1907,6 +1924,10 @@ class IPFSDaemonInitDialog(QDialog):
         }
 
         if opts['daemonType'] == 'local':
+            ipfsNetwork = self.app.settingsMgr.getSetting(
+                CFG_SECTION_IPFSD,
+                CFG_KEY_IPFS_NETWORK_NAME
+            )
             opts.update({
                 'dataStore': self.ui.dataStore.currentText(),
                 'swarmPort': self.ui.swarmPort.value(),
@@ -1914,7 +1935,8 @@ class IPFSDaemonInitDialog(QDialog):
                 'apiPort': self.ui.apiPort.value(),
                 'routingMode': self.ui.contentRoutingMode.currentText(),
                 'keepDaemonRunning': self.ui.keepDaemonRunning.isChecked(),
-                'profiles': self.profiles()
+                'profiles': self.profiles(),
+                'ipfsNetworkName': ipfsNetwork if ipfsNetwork else 'main'
             })
         elif opts['daemonType'] == 'custom':
             opts.update({
@@ -2233,7 +2255,7 @@ class VideoChatAckWait(QWidget):
 
 
 class TextBrowserDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, addButtonBox=False, parent=None):
         super().__init__(parent)
 
         app = runningApp()
@@ -2251,6 +2273,18 @@ class TextBrowserDialog(QDialog):
 
         layout.addWidget(self.textBrowser)
 
+        if addButtonBox:
+            buttonBox = QDialogButtonBox(
+                QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self)
+            buttonBox.setCenterButtons(True)
+            buttonBox.accepted.connect(self.accept)
+            buttonBox.rejected.connect(self.reject)
+            layout.addWidget(buttonBox)
+
     def setPlain(self, text: str):
         self.textBrowser.insertPlainText(text)
+        self.textBrowser.moveCursor(QTextCursor.Start)
+
+    def setHtml(self, html: str):
+        self.textBrowser.setHtml(html)
         self.textBrowser.moveCursor(QTextCursor.Start)

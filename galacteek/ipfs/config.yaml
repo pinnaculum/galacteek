@@ -21,6 +21,52 @@ envs:
           enabled: True
           priority: 0
 
+    ipfsNetworks:
+      main:
+        name: main
+        description: 'Main IPFS network'
+        uri: urn:ipfs:networks:main
+
+      invicta:
+        name: invicta
+        uri: urn:ipfs:networks:invicta
+        description: 'Invicta IPFS network'
+
+        covenant:
+          en: |
+            # Invicta IPFS network
+
+            This IPFS network is meant to be used with galacteek.
+
+            By joining the network you pledge to respect the rules of the
+            network as best as you can.
+
+            # Examples of unacceptable behavior by participants
+
+            - Trolling, insulting/derogatory comments, and personal attacks
+            - Public or private harassment
+            - Sharing of inappropriate content
+            - Publishing the private information of others, such as a physical or electronic address, without explicit permission
+            - The use of sexualized imagery and unwelcome sexual attention or advances
+
+            # Availability of content
+
+            As this is a separate IPFS network, the majority of the content
+            that is available in the main IPFS network is not directly
+            accessible within this network. An effort will be made to
+            backport a lot of the essential tools and content that makes
+            using the dweb easier.
+
+        covenantsAcceptedByCid: {}
+
+        swarmKey: |
+          /key/swarm/psk/1.0.0/
+          /base16/
+          916283e1e1e72d9703eb529ff9703d10337931b3ff22e01f013203525b367ae7
+
+        bootstrap:
+          - "/ip4/163.172.218.222/tcp/4002/p2p/12D3KooWBseK2TxiXKRTGmqz71iY3n2keJUSEgzYWkt6e4ZbWs1n"
+
     ipfsHttpGateways:
       # Uses gateways listed in
       # https://raw.githubusercontent.com/ipfs/public-gateway-checker/master/src/gateways.json

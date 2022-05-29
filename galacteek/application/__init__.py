@@ -1302,6 +1302,7 @@ class GalacteekApplication(QApplication):
 
     async def ipfsDaemonInitDialog(self, dlg):
         if self.cmdArgs.configAuto:
+            dlg.setDefaultNetwork()
             return dlg.options()
 
         await runDialogAsync(dlg)
@@ -1335,6 +1336,8 @@ class GalacteekApplication(QApplication):
                 self.ipfsDataLocation,
                 goIpfsPath=self.goIpfsBinPath,
                 statusPath=self._ipfsdStatusLocation,
+                ipfsNetwork=sManager.getSetting(
+                    section, CFG_KEY_IPFS_NETWORK_NAME),
                 apiport=sManager.getInt(
                     section, CFG_KEY_APIPORT),
                 swarmport=sManager.getInt(
@@ -1393,6 +1396,7 @@ class GalacteekApplication(QApplication):
                 self.ipfsd.swarmportQuic = cfg['swarmPort']
                 self.ipfsd.gatewayport = cfg['gatewayPort']
                 self.ipfsd.detached = cfg['keepDaemonRunning']
+                self.ipfsd.ipfsNetworkName = cfg.get('ipfsNetworkName', 'main')
             except Exception:
                 dataStore = None
                 daemonProfiles = []

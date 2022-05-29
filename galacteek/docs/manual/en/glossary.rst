@@ -217,6 +217,17 @@
         content on demand, through a specific API. go-ipfs
         supports remote pinning since the 0.8.0 version.
 
+    swarm key
+
+        An IPFS swarm key is a private swarm key that is used by
+        nodes in a private IPFS network.
+
+        Swarm keys have the following format::
+
+            /key/swarm/psk/1.0.0/
+            /base16/
+            6e9eb7f47b10a0e09afbc049744e58067ed9ad694959b98e7d72af8513e3382e
+
     UnixFS
 
         UnixFS is a protocol-buffers-based format for describing files,

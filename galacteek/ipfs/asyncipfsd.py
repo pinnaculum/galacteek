@@ -16,9 +16,14 @@ from pathlib import Path
 from galacteek import log
 from galacteek.config import cGet
 from galacteek.config.util import ocToContainer
+from galacteek.config.cmods import ipfs as cmodipfs
 from galacteek.core import utcDatetimeIso
 from galacteek.core.tmpf import TmpFile
 from galacteek.core.jsono import DotJSON
+from galacteek.core.asynclib import asyncWriteFile
+from galacteek.core.asynclib import asyncReadFile
+from galacteek.core.ps import hubPublish
+from galacteek.core.ps import key42
 
 
 def boolarg(arg):
@@ -229,7 +234,9 @@ class AsyncIPFSDaemon(object):
                  dataStore=None,
                  detached=True, autoRestart=True,
                  p2pStreams=True, migrateRepo=False, routingMode='dht',
-                 gwWritable=False, storageMax=20, debug=False, loop=None):
+                 gwWritable=False, storageMax=20,
+                 ipfsNetwork='main',
+                 debug=False, loop=None):
 
         self.loop = loop if loop else asyncio.get_event_loop()
         self.exitFuture = asyncio.Future(loop=self.loop)
@@ -266,6 +273,10 @@ class AsyncIPFSDaemon(object):
         self.gwWritable = gwWritable
         self.routingMode = routingMode
 
+        self.ipfsNetworkName = ipfsNetwork if ipfsNetwork else 'main'
+
+        self.ipfsNetworkRunningUri = None
+
         self.profiles = profiles
         self.dataStore = dataStore
         self.offline = offline
@@ -301,6 +312,13 @@ class AsyncIPFSDaemon(object):
     @property
     def running(self):
         return self.pid is not None
+
+    @property
+    def swarmKeyPath(self):
+        # Returns the path to the 'swarm.key' file for this daemon's repo
+
+        if self.repoPath and self.repoPath.is_dir():
+            return self.repoPath.joinpath('swarm.key')
 
     def addMessageCallback(self, cb):
         self._msgCallback.append(cb)
@@ -349,15 +367,41 @@ class AsyncIPFSDaemon(object):
         for cb in self._msgCallback:
             cb(msg)
 
-    async def restart(self):
+    def publishEvent(self, event):
+        hubPublish(key42, {
+            'event': event
+        })
+
+    async def switchNetworkByName(self, networkName: str):
+        self.autoRestart = False
+        self.stop()
+
+        await self.restart(ipfsNetworkName=networkName)
+
+        self.autoRestart = True
+
+    async def restart(self, ipfsNetworkName=None):
         self.message('Restarting daemon')
 
-        async for pct, msg in self.start():
+        async for pct, msg in self.start(ipfsNetworkName=ipfsNetworkName):
             self.message(msg)
 
-    async def start(self):
+    async def start(self, ipfsNetworkName=None):
         # Set the IPFS_PATH environment variable
         os.environ['IPFS_PATH'] = str(self.repoPath)
+
+        switchingNetwork = ipfsNetworkName is not None  # noqa
+
+        if ipfsNetworkName:
+            self.ipfsNetworkName = ipfsNetworkName
+            self.ipfsNetworkRunningUri = None
+
+        ipfsNetCfg = cmodipfs.ipfsNetworkConfig(self.ipfsNetworkName)
+
+        if ipfsNetCfg is None:
+            # Load the 'main' network if that network can't be found
+            self.ipfsNetworkName = 'main'
+            ipfsNetCfg = cmodipfs.ipfsNetworkConfig(self.ipfsNetworkName)
 
         self.message('Using go-ipfs binary: {}'.format(self.goIpfsPath))
 
@@ -390,6 +434,33 @@ class AsyncIPFSDaemon(object):
         if self.repoApiFilePath.exists():
             self.repoApiFilePath.unlink()
 
+        yield 30, 'Configuring swarm key ...'
+
+        swarmKey = cmodipfs.ipfsNetworkSwarmKey(self.ipfsNetworkName)
+        privNetwork = False
+
+        if isinstance(swarmKey, str):
+            # We have a swarm key
+            try:
+                await asyncWriteFile(str(self.swarmKeyPath),
+                                     swarmKey,
+                                     mode='w+t')
+
+                # Enforce
+                os.environ['LIBP2P_FORCE_PNET'] = '1'
+
+                privNetwork = True
+            except Exception as err:
+                log.warning(f'Error writing swarm key '
+                            f'to file: {self.swarmKeyPath}: {err}')
+        else:
+            # We're not using a swarm key, remove it if it exists
+            if 'LIBP2P_FORCE_PNET' in os.environ:
+                os.environ.pop('LIBP2P_FORCE_PNET')
+
+            if self.swarmKeyPath.is_file():
+                self.swarmKeyPath.unlink()
+
         yield 35, 'Reading current configuration ..'
 
         ok, startConfig = await ipfsConfigShow(self.goIpfsPath)
@@ -397,6 +468,32 @@ class AsyncIPFSDaemon(object):
             raise Exception("Could not read go-ipfs's configuration")
 
         goIpfsC = GoIPFSConfigurator(startConfig)
+
+        bstrapInit, bstrapInitPath = None, self.repoPath.joinpath(
+            f'bootstrap.init.{self.ipfsNetworkName}'
+        )
+
+        if self.ipfsNetworkName == 'main':
+            if not bstrapInitPath.is_file() and goIpfsC.Bootstrap:
+                # Save a copy of the initial boostrap
+                # The bootstrap is pretty much the only config item we want
+                # to keep a record of
+
+                await asyncWriteFile(
+                    str(bstrapInitPath),
+                    orjson.dumps(goIpfsC.Bootstrap),
+                    'wb'
+                )
+
+        try:
+            loaded = orjson.loads(
+                await asyncReadFile(str(bstrapInitPath))
+            )
+            assert isinstance(loaded, list) and len(loaded) > 0
+        except Exception:
+            bstrapInit = None
+        else:
+            bstrapInit = loaded
 
         with TmpFile(mode='w+t', delete=False) as newCfgFile:
             goIpfsC.Addresses.API = \
@@ -435,6 +532,17 @@ class AsyncIPFSDaemon(object):
             goIpfsC.Swarm.ConnMgr.LowWater = self.swarmLowWater
             goIpfsC.Swarm.ConnMgr.HighWater = self.swarmHighWater
             goIpfsC.Swarm.ConnMgr.GracePeriod = '60s'
+
+            yield 55, 'Configuring boostrap ..'
+
+            if privNetwork is True:
+                # Private network: set the bootstrap list
+
+                goIpfsC.Bootstrap = list(ipfsNetCfg.get('bootstrap', []))
+            else:
+                if self.ipfsNetworkName == 'main' and bstrapInit:
+                    # Reuse the initial bootstrap
+                    goIpfsC.Bootstrap = bstrapInit
 
             yield 60, 'Configuring pubsub/p2p ..'
 
@@ -538,6 +646,16 @@ class AsyncIPFSDaemon(object):
         self.process = psutil.Process(self._procPid)
         self.setProcNiceness(nice=self.nice, proc=self.process)
 
+        # Set the running IPFS network URI
+        self.ipfsNetworkRunningUri = ipfsNetCfg.get('uri')
+
+        # Publish a pubsub event message
+        self.publishEvent({
+            'type': 'IpfsDaemonStartedEvent',
+            'ipfsNetworkName': self.ipfsNetworkName,
+            'ipfsNetworkUri': self.ipfsNetworkRunningUri
+        })
+
         yield 100, 'go-ipfs started'
 
     async def profilesListApply(self, profiles):
@@ -560,6 +678,10 @@ class AsyncIPFSDaemon(object):
             except psutil.NoSuchProcess as err:
                 self.message(f'go-ipfs (PID: {self.process.pid}): '
                              f'NoSuchProcess error: {err}')
+
+                self.publishEvent({
+                    'type': 'IpfsDaemonGoneEvent'
+                })
 
                 if self.autoRestart is True:
                     self.message(f'go-ipfs (PID: {self.process.pid}): '
@@ -796,6 +918,14 @@ class AsyncIPFSDaemon(object):
             else:
                 self.process.send_signal(signal.SIGINT)
                 self.process.send_signal(signal.SIGHUP)
+
+            # Publish a pubsub event message notifying
+            # that the daemon was stopped
+            self.publishEvent({
+                'type': 'IpfsDaemonStoppedEvent',
+                'ipfsNetworkName': self.ipfsNetworkName,
+                'ipfsNetworkUri': self.ipfsNetworkRunningUri
+            })
 
             self._procPid = None
             return True

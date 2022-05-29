@@ -42,6 +42,8 @@ CFG_KEY_IPFSD_DETACHED_DONTASK = 'detached_dontask'
 CFG_KEY_IPFSD_AUTORESTART = 'autorestart'
 CFG_KEY_IPFSD_PROFILES = 'daemonprofiles'
 CFG_KEY_ACCELERATED_DHT_CLIENT = 'accelerated_dht_client'
+CFG_KEY_IPFS_NETWORK_NAME = 'ipfs_network_name'
+CFG_KEY_IPFS_DEFAULT_NETWORK_NAME = 'ipfs_default_network_name'
 
 # Browser
 CFG_KEY_HOMEURL = 'homeurl'
@@ -105,6 +107,10 @@ def setDefaultSettings(gApp):
     sManager = gApp.settingsMgr
 
     section = CFG_SECTION_IPFSD
+    sManager.setDefaultSetting(section, CFG_KEY_IPFS_NETWORK_NAME,
+                               'main')
+    sManager.setDefaultSetting(section, CFG_KEY_IPFS_DEFAULT_NETWORK_NAME,
+                               'main')
     sManager.setDefaultSetting(section, CFG_KEY_APIPORT, 5001)
     sManager.setDefaultSetting(section, CFG_KEY_SWARMPORT, 4001)
     sManager.setDefaultSetting(section, CFG_KEY_SWARMPORT_QUIC, 4001)

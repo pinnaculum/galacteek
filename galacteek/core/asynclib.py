@@ -336,6 +336,8 @@ async def asyncWriteFile(path, data, mode='w+b'):
     try:
         async with aiofiles.open(path, mode) as fd:
             await fd.write(data)
+
+        await fd.close()
     except BaseException:
         return None
 

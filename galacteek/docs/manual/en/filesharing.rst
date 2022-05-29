@@ -3,6 +3,8 @@
 Sharing files
 =============
 
+**This module is disabled at the moment**
+
 From the files workspace you can easily share files on
 the network.
 

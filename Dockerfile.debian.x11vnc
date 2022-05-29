@@ -4,14 +4,13 @@ EXPOSE 5900-5904
 EXPOSE 4001
 EXPOSE 8080
 
-ENV NOTBIT_DIST_URL "https://gitlab.com/api/v4/projects/27627112/packages/generic/notbit/0.7/notbit.tar.gz"
-ENV X11VNC_PASSWORD "galacteek"
-ENV DEBIAN_FRONTEND "noninteractive"
+ENV NOTBIT_DIST_URL="https://gitlab.com/api/v4/projects/27627112/packages/generic/notbit/0.7/notbit.tar.gz"
+ENV X11VNC_PASSWORD="galacteek"
+ENV DEBIAN_FRONTEND="noninteractive"
 ENV QT_QPA_PLATFORM=xcb
 ENV DISPLAY=:99
 ENV XVFB_WHD=1024x768x24
-ENV QTWEBENGINE_DISABLE_SANDBOX=1
-# ENV QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu-compositing"
+ENV PYTHONPATH="/usr/local/lib/python3.7/site-packages"
 
 RUN apt-get update && apt-get install -q -y --force-yes \
 	gcc git net-tools iproute2 \
@@ -51,11 +50,8 @@ RUN pip install -U pip wheel && pip install -r requirements.txt && \
 	pip install -r requirements-dev.txt && \
 	pip install -r requirements-extra-markdown.txt && \
 	pip install -r requirements-rdf-bsddb.txt && \
-	pip install -r requirements-ui-pyqt-5.15.txt
-
-RUN cd /usr/local/galacteek && \
-	python setup.py build build_docs install && \
-	rm -f requirements*.txt
+	pip install -r requirements-ui-pyqt-5.15.txt && \
+	pip install "git+https://gitlab.com/galacteek/galacteek-starter"
 
 RUN apt-get remove -y gcc perl
 
@@ -71,4 +67,4 @@ RUN useradd -m -u 1000 galacteek
 COPY .docker/x11vnc_start.sh /
 RUN chmod +x /x11vnc_start.sh
 USER galacteek
-CMD ["/x11vnc_start.sh", "galacteek", "--config-ipfs-auto", "-d"]
+CMD ["/x11vnc_start.sh", "galacteek-starter", "--config-ipfs-auto", "-d"]
