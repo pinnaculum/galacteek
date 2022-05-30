@@ -35,6 +35,21 @@
        </item>
        <item>
         <property name="text">
+         <string>Web3.storage</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Estuary.tech</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Nft.storage</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
          <string>Other</string>
         </property>
        </item>

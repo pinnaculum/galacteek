@@ -172,6 +172,65 @@ def iPinataInstructions():
     )
 
 
+def iWeb3StorageInstructions():
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        '''
+        <p>
+            Please first <a href="https://web3.storage">
+            sign up for an account at Web3.storage</a>.
+        </p>
+        <p>
+            Once registered, paste the API token in the
+            form field below named <i>Key</i>.
+        </p>
+        '''
+    )
+
+
+def iEstuaryTechInstructions():
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        '''
+        <p>
+            Please first <a href="https://estuary.tech/sign-up">
+            sign up for an account at Estuary.tech</a>.
+        </p>
+        <p>
+            Once registered, paste the API token in the
+            form field below named <i>Key</i>.
+        </p>
+        '''
+    )
+
+
+def iNftStorageInstructions():
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        '''
+        <p>
+            Please first <a href="https://nft.storage/login/">
+            sign up for an account at nft.storage</a>.
+        </p>
+        <p>
+            Once registered, paste the API token in the
+            form field below named <i>Key</i>.
+        </p>
+        '''
+    )
+
+
+def iCustomRpsInstructions():
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        '''
+        <p>
+            Please set the custom endpoint address and the API key.
+        </p>
+        '''
+    )
+
+
 def iPinToRpsUnspecific():
     return QCoreApplication.translate(
         'GalacteekWindow',

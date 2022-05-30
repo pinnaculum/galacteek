@@ -121,25 +121,29 @@ Sign up
 -------
 
 First you'll have to sign up for an account with
-a service provider. This is a (short) list of services that
+a service provider. This is a list of services that
 you can use at the moment:
 
-- Pinata_: `sign up for an account here <https://pinata.cloud/signup>`_
+- Pinata_: `sign up for an account at Pinata here <https://pinata.cloud/signup>`_
+- Web3.storage_: `sign up for an account at web3.storage here <https://web3.storage>`_
+- Estuary.tech_: `sign up for an account estuary.tech here <https://estuary.tech/sign-up>`_
+- Nft.storage_: `sign up for an account nft.storage here <https://nft.storage/login/>`_
 
 What you will need to register the service in *galacteek*
-is the API *token* (the *JWT*, which is encoded).
+is the *API key*.
 
 Register a service
 ------------------
 
-Once you have signed up, you should have your API token (*JWT*).
+Once you have signed up, you should have your API key.
 
 To register a *remote pinning service*, go to the settings
 panel, then head to the *Pinning settings* section and
-select *Register a remote pinning service*.
+select *Register a remote pinning service*. A dialog for
+will pop up.
 
 Enter an adequate *name* for the service. Then copy/paste your
-Pinata API *token* (long, encoded string) in the form in the
+API *key* (long, encoded string) in the form's
 *Key* field. Select *Ok* and your service should appear in the
 list.
 
@@ -147,5 +151,15 @@ Your service will now appear in the list of *remote* services
 when clicking on the blue *Pin* buttons in the browser, and you
 can start *pinning* and sharing content !
 
+Unregister a service
+--------------------
+
+If you made a mistake entering the key, or you want to remove
+a particular remote pinning service, click on the service you
+want to remove in the services list and select *Remove service*.
+
 
 .. _Pinata: https://pinata.cloud/
+.. _Web3.storage: https://web3.storage/
+.. _Estuary.tech: https://estuary.tech/
+.. _Nft.storage: https://nft.storage/

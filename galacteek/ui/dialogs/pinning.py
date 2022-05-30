@@ -6,10 +6,14 @@ from PyQt5.QtCore import QRegExp
 from PyQt5.QtGui import QRegExpValidator
 
 from galacteek.ui.dialogs import BaseDialog
-
 from galacteek.ui.widgets import LabelWithURLOpener
 from galacteek.ui.forms.ui_rps_adddialog import *
+
 from galacteek.ui.i18n import iPinataInstructions
+from galacteek.ui.i18n import iWeb3StorageInstructions
+from galacteek.ui.i18n import iEstuaryTechInstructions
+from galacteek.ui.i18n import iNftStorageInstructions
+from galacteek.ui.i18n import iCustomRpsInstructions
 
 
 class PinningServiceAddDialog(BaseDialog):
@@ -24,7 +28,7 @@ class PinningServiceAddDialog(BaseDialog):
             lambda checked: self.ui.endpoint.setEnabled(checked))
 
         self.infoLabel = LabelWithURLOpener('')
-        self.infoLabel.setObjectName('rpsPinataInstructions')
+        self.infoLabel.setObjectName('rpsInstructions')
 
         self.ui.hLayoutInfo.addWidget(self.infoLabel, 0, Qt.AlignCenter)
 
@@ -32,23 +36,43 @@ class PinningServiceAddDialog(BaseDialog):
             QRegExpValidator(QRegExp(r"[\w\-\_]{1,32}"))
         )
 
-        self.ui.provider.currentTextChanged.connect(
-            self.onProviderChanged)
+        self.ui.provider.currentTextChanged.connect(self.onProviderChanged)
         self.providerReact(self.ui.provider.currentText())
 
     def onProviderChanged(self, provName):
         self.providerReact(provName)
 
     def providerReact(self, provName: str):
+        self.ui.endpointCustom.setChecked(False)
+
         if provName == 'Pinata':
             self.ui.endpoint.setText(
                 'https://api.pinata.cloud/psa'
             )
 
             self.infoLabel.setText(iPinataInstructions())
+        elif provName == 'Web3.storage':
+            self.ui.endpoint.setText(
+                'https://api.web3.storage/'
+            )
+
+            self.infoLabel.setText(iWeb3StorageInstructions())
+        elif provName == 'Estuary.tech':
+            self.ui.endpoint.setText(
+                'https://api.estuary.tech/pinning/'
+            )
+
+            self.infoLabel.setText(iEstuaryTechInstructions())
+        elif provName == 'Nft.storage':
+            self.ui.endpoint.setText(
+                'https://nft.storage/api'
+            )
+
+            self.infoLabel.setText(iNftStorageInstructions())
         elif provName == 'Other':
             self.ui.endpointCustom.setChecked(True)
             self.ui.endpoint.setText('')
+            self.infoLabel.setText(iCustomRpsInstructions())
 
     def getKey(self, inputKey: str):
         st = inputKey.strip().split('\n')
