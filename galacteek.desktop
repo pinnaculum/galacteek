@@ -1,9 +1,9 @@
 [Desktop Entry]
 Type=Application
 Name=Galacteek
-Comment=IPFS Browser
+Comment=Distributed web browser
 Icon=io.gitlab.galacteek.Galacteek
-Exec=galacteek
+Exec=
 Terminal=false
 Categories=Network;P2P;WebBrowser;Qt;
 StartupWMClass=galacteek
