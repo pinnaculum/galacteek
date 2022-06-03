@@ -63,6 +63,13 @@ SCHEME_GEMIPFS = 'gemipfs'
 SCHEME_GEMI = 'gemi'
 SCHEME_GEM = 'gem'
 
+# Torrent stuff
+
+# webtorrent-desktop uses stream-magnet:/
+SCHEME_MAGNET = 'magnet'
+SCHEME_WEBT_STREAM_MAGNET = 'stream-magnet'
+SCHEME_WEBT = 'webtorrent'
+
 # ENS-related schemes (ensr is redirect-on-resolve ENS scheme)
 SCHEME_ENS = 'ens'
 SCHEME_ENSR = 'ensr'
@@ -259,6 +266,16 @@ def initializeSchemes():
 
     declareUrlScheme(
         SCHEME_PRONTO_GRAPHS,
+        syntax=QWebEngineUrlScheme.Syntax.Path
+    )
+
+    declareUrlScheme(
+        SCHEME_WEBT_STREAM_MAGNET,
+        syntax=QWebEngineUrlScheme.Syntax.Path
+    )
+
+    declareUrlScheme(
+        SCHEME_MAGNET,
         syntax=QWebEngineUrlScheme.Syntax.Path
     )
 

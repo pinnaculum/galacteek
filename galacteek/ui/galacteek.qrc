@@ -38,6 +38,7 @@
     <file>../../share/icons/blockchain1.png</file>
     <file>../../share/icons/blockchain2.png</file>
     <file>../../share/js/web3.min.js</file>
+    <file>../../share/js/webtorrent.min.js</file>
     <file>../../share/js/rxjs.umd.min.js</file>
     <file>../../share/js/jquery-3.6.0.min.js</file>
     <file>../../share/static/docs/markdown-reference.html</file>

@@ -5,6 +5,7 @@ from PyQt5.QtWebEngineWidgets import QWebEngineSettings
 from PyQt5.QtWebEngine import QQuickWebEngineProfile
 
 from galacteek.dweb.webscripts import ethereumClientScripts
+from galacteek.dweb.webscripts import webTorrentScripts
 from galacteek.dweb.webscripts import scriptFromQFile
 
 from galacteek.browser.schemes import SCHEME_DWEB
@@ -21,6 +22,8 @@ from galacteek.browser.schemes import SCHEME_GEMINI
 from galacteek.browser.schemes import SCHEME_GEMI
 from galacteek.browser.schemes import SCHEME_GEM
 from galacteek.browser.schemes import SCHEME_PRONTO_GRAPHS
+from galacteek.browser.schemes import SCHEME_MAGNET
+from galacteek.browser.schemes import SCHEME_WEBT_STREAM_MAGNET
 
 from galacteek import log
 from galacteek.core import runningApp
@@ -107,6 +110,9 @@ class BaseProfile(QWebEngineProfile, KeyListener):
         if not scriptsList:
             return
 
+        # Webtorrent
+        [self.webScripts.insert(script) for script in webTorrentScripts()]
+
         for script in scriptsList:
             _type = script.get('type')
 
@@ -158,18 +164,10 @@ class BaseProfile(QWebEngineProfile, KeyListener):
         self.installHandler(SCHEME_GEM, self.app.gemIpfsSchemeHandler)
         self.installHandler(SCHEME_PRONTO_GRAPHS,
                             self.app.prontoGSchemeHandler)
-
-    def profileSetting2(self, defaults, name, default=False):
-        return self.config.settings.get(
-            name,
-            defaults.settings.get(name, default)
-        )
-
-    def profileJsSetting2(self, defaults, name, default=False):
-        return self.config.settings.javascript.get(
-            name,
-            defaults.settings.javascript.get(name, default)
-        )
+        self.installHandler(SCHEME_WEBT_STREAM_MAGNET,
+                            self.app.webTorrentSchemeHandler)
+        self.installHandler(SCHEME_MAGNET,
+                            self.app.webTorrentSchemeHandler)
 
     def profileFont(self, name, default=None):
         return self.config.fonts.get(name, default)

@@ -1,0 +1,56 @@
+{% extends "layouts/webtorrent.html" %}
+
+{% block body %}
+
+<div id="content">
+</div>
+
+<script type="text/javascript">
+    const client = new window.WebTorrent()
+    const cdiv = document.getElementById('content')
+
+    const torrent = client.add('{{ webTorrentId }}')
+
+    function download_file(fileidx) {
+      /*
+       * Transfer a file from the torrent to IPFS and change the window's
+       * location to point to the injected file.
+       */
+
+      var file = torrent.files[fileidx]
+
+      file.getBuffer(function (e, buffer) {
+        let result = window.ipfs.add(buffer, { cidVersion: 1 }).then(function(res, err) {
+          if (err) {
+            alert(err)
+          } else {
+            window.location = `ipfs://${ res[0].hash }`
+          }
+        })
+      })
+    }
+
+    torrent.on('ready', () => {
+      console.log('Torrent name:', torrent.name)
+      console.log('Files:')
+
+      for (var i = 0; i < torrent.files.length; i++) {
+        var file = torrent.files[i]
+        var path = file.path
+
+        if (path === 'index.html') {
+          index = torrent.files[i]
+        }
+
+        let elem = document.createElement('p')
+        elem.innerHTML = `
+ <a href="#" onclick="event.preventDefault(); download_file(${ i });">${ file.name }</a>
+        `
+
+        file.appendTo(cdiv, { muted: false, autoplay: false })
+        cdiv.appendChild(elem)
+      }
+    })
+</script>
+
+{% endblock %}

@@ -115,3 +115,19 @@ def orbitScripts(connParams):
         "})"]))
     script.setWorldId(QWebEngineScript.MainWorld)
     return scripts
+
+
+def webTorrentScripts():
+    scripts = []
+    jsFile = QFile(':/share/js/webtorrent.min.js')
+    if not jsFile.open(QFile.ReadOnly):
+        return
+
+    scriptWebTorrent = QWebEngineScript()
+    scriptWebTorrent.setName('webtorrent')
+    scriptWebTorrent.setSourceCode(jsFile.readAll().data().decode('utf-8'))
+    scriptWebTorrent.setWorldId(QWebEngineScript.MainWorld)
+    scriptWebTorrent.setInjectionPoint(QWebEngineScript.DocumentCreation)
+    scriptWebTorrent.setRunsOnSubFrames(True)
+    scripts.append(scriptWebTorrent)
+    return scripts
