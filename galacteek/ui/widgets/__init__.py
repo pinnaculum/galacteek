@@ -261,6 +261,7 @@ class GalacteekTab(QWidget):
 class GToolButton(QToolButton, Configurable):
     configModuleName = 'galacteek.ui.widgets'
     gObjName = 'gToolButton'
+    hovered = pyqtSignal(bool)
 
     def __init__(self, parent=None, **kw):
         super(GToolButton, self).__init__(parent=parent, **kw)
@@ -279,11 +280,13 @@ class GToolButton(QToolButton, Configurable):
 
     def enterEvent(self, event):
         self.setProperty('hovering', True)
+        self.hovered.emit(True)
         # self.app.repolishWidget(self)
         super().enterEvent(event)
 
     def leaveEvent(self, event):
         self.setProperty('hovering', False)
+        self.hovered.emit(False)
         # self.app.repolishWidget(self)
         super().leaveEvent(event)
 

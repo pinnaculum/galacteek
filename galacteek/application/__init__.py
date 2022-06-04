@@ -1509,6 +1509,7 @@ class GalacteekApplication(QApplication):
         running, client = await ipfsd.loadStatus()
         if running and client:
             log.debug('Daemon was already running')
+
             self.systemTrayMessage('IPFS', iIpfsDaemonResumed())
 
             await self.updateIpfsClient(client)
@@ -1516,6 +1517,9 @@ class GalacteekApplication(QApplication):
             await self.setupProfileAndRepo()
             await self.scheduler.spawn(self.ipfsd.watchProcess())
             await self.ipfsCtx.ipfsDaemonStarted.emit()
+
+            # XXX: emit signal indicating we're reconnecting to this daemon
+            ipfsd.publishReconnectingEvent()
             return
 
         pDialog.log('Starting daemon ...')

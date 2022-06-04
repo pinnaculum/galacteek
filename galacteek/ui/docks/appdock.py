@@ -1,3 +1,5 @@
+import functools
+
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QDockWidget
 from PyQt5.QtWidgets import QHBoxLayout
@@ -8,6 +10,7 @@ from PyQt5.Qt import QSizePolicy
 
 from PyQt5.QtCore import QSize
 from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QTimer
 
 from galacteek.core import runningApp
 from galacteek.config import Configurable
@@ -16,80 +19,213 @@ from galacteek.config import cWidgetSetAttr
 
 from ..widgets import SpacingHWidget
 from ..widgets import GMediumToolButton
+from ..widgets import GLargeToolButton
+from ..widgets.toolbar import BasicToolBar
 from ..helpers import getIcon
 from ..helpers import iconSizeGet
 
+from ..clips import RotatingCubeRedFlash140d
+
+from ..dwebspace import *
+
 from . import SpaceDock
+
+
+class MainDockButton(GLargeToolButton):
+    def __init__(self, toolbarWs, icon=None, parent=None):
+        super().__init__(icon=icon, parent=parent)
+
+        self.setObjectName('wsMagicianButton')
+
+        self.opened = False
+        self.wsCurrent = None
+
+        self.setMinimumSize(QSize(48, 48))
+        self.setCheckable(True)
+
+        self.toolbarWs = toolbarWs
+        self.toolbarWs.wsSwitched.connect(self.onWsSwitched)
+        self.toolbarWs.hovered.connect(self.onHovered)
+
+        self.rotatingCubeClip = RotatingCubeRedFlash140d()
+        self.rotatingCubeClip.setSpeed(120)
+        self.rotatingCubeClip.finished.connect(
+            functools.partial(self.rotatingCubeClip.start))
+        self.rotatingCubeClip.frameChanged.connect(self.onCubeClipFrame)
+
+        self.hovered.connect(self.onHovered)
+        self.toggled.connect(self.onToggled)
+
+    def onToggled(self, toggled: bool):
+        self.toolbarWs.setProperty('pinned', toggled)
+
+        runningApp().repolishWidget(self.toolbarWs)
+
+    def onHovered(self, hovered: bool):
+        self.opened = hovered
+
+        self.setProperty('wsShown', hovered)
+        self.toolbarWs.setProperty('wsShown', hovered)
+
+        if self.opened:
+            self.rotatingCubeClip.start()
+        else:
+            self.rotatingCubeClip.stop()
+            self.setCurrentWsIcon()
+
+        runningApp().repolishWidget(self.toolbarWs)
+        runningApp().repolishWidget(self)
+
+    def setCurrentWsIcon(self):
+        if self.wsCurrent and self.wsCurrent.wsIcon:
+            self.setIcon(self.wsCurrent.wsIcon)
+
+    def onCubeClipFrame(self, no):
+        if self.opened:
+            self.setIcon(self.rotatingCubeClip.createIcon())
+        else:
+            self.setCurrentWsIcon()
+
+    def onWsSwitched(self, workspace):
+        if type(workspace) is not WorkspaceStatus:
+            self.wsCurrent = workspace
+            self.setCurrentWsIcon()
 
 
 class DwebCraftingWidget(QWidget, Configurable):
     configModuleName = 'galacteek.ui.widgets'
 
-    def __init__(self, tbPyramids, parent):
+    def __init__(self, tbWorkspaces, parent=None):
         super().__init__(parent)
 
         self.setObjectName('dockCraftingZone')
         self.dock = parent
-        self.vLayout = QHBoxLayout(self)
-        self.setLayout(self.vLayout)
+        self.hLayout = QHBoxLayout(self)
+        self.setLayout(self.hLayout)
 
+        self.t1 = QTimer(self)
+        self.t1.timeout.connect(self.onTimeout)
         self.spacing = SpacingHWidget()
-        self.toolbarPyramids = tbPyramids
+
+        self.toolbarWs = tbWorkspaces
+        self.toolbarWs.setVisible(False)
+        self.toolbarWs.hovered.connect(self.onWsToolbarHovered)
+        self.toolbarWsHovered = False
+        self.toolbarMisc = BasicToolBar()
+        self.toolbarTools = BasicToolBar()
+        self.toolbarToolsSep = self.toolbarTools.addSeparator()
         self.toolbarAppStatus = QToolBar(self)
         self.toolbarAppStatus.setIconSize(QSize(24, 24))
 
-        self.showHidePyramids = GMediumToolButton(
-            icon=getIcon('pyramid-aqua.png'))
-        self.showHidePyramids.setCheckable(True)
+        self.showHideMain = MainDockButton(
+            self.toolbarWs,
+            icon=getIcon('ipfs-cube-64.png')
+        )
 
-        self.showHideStatus = GMediumToolButton(
-            icon=getIcon('information.png'))
-        self.showHideStatus.setCheckable(True)
+        if 0:
+            self.showHidePyramids = GMediumToolButton(
+                icon=getIcon('pyramid-aqua.png'))
+            self.showHidePyramids.setCheckable(True)
 
-        self.vLayout.addWidget(self.showHidePyramids)
-        self.vLayout.addWidget(self.showHideStatus)
-        self.vLayout.addWidget(self.toolbarPyramids)
+            self.showHideStatus = GMediumToolButton(
+                icon=getIcon('information.png'))
+            self.showHideStatus.setCheckable(True)
 
-        self.spacer = QSpacerItem(128, 32, QSizePolicy.Maximum,
+        self.hLayout.addWidget(self.showHideMain)
+        self.hLayout.addWidget(self.toolbarWs)
+        self.hLayout.addWidget(self.toolbarMisc)
+        # self.hLayout.addWidget(self.showHidePyramids)
+        # self.hLayout.addWidget(self.showHideStatus)
+        # self.hLayout.addWidget(self.toolbarPyramids)
+
+        self.spacer = QSpacerItem(2, 32, QSizePolicy.Maximum,
                                   QSizePolicy.Maximum)
 
-        self.vLayout.addItem(self.spacer)
+        self.hLayout.addItem(self.spacer)
 
-        self.vLayout.addWidget(self.toolbarAppStatus)
+        self.hLayout.addWidget(self.toolbarTools)
+        self.hLayout.addWidget(self.toolbarAppStatus)
 
         self.setSizePolicy(
             QSizePolicy.Expanding,
             QSizePolicy.Fixed
         )
 
+        self.setMinimumHeight(72)
+        self.setMaximumHeight(72)
+
+        self.toolbarWs.setSizePolicy(
+            QSizePolicy.Maximum,
+            QSizePolicy.Expanding
+        )
+
+        self.toolbarMisc.setSizePolicy(
+            QSizePolicy.Maximum,
+            QSizePolicy.Expanding
+        )
+
+        self.toolbarTools.setSizePolicy(
+            QSizePolicy.Maximum,
+            QSizePolicy.Expanding
+        )
+
+        self.spacerAdjust(QSizePolicy.Expanding)
+
         self.cApply()
-        self.showHidePyramids.toggled.connect(
-            self.onShowHidePyramids)
-        self.showHideStatus.toggled.connect(
-            self.onShowHideAppStatus)
+        self.showHideMain.hovered.connect(
+            self.onShowHideWorkspaces)
+
+        if 0:
+            self.showHidePyramids.toggled.connect(
+                self.onShowHidePyramids)
+            self.showHideStatus.toggled.connect(
+                self.onShowHideAppStatus)
 
     def config(self):
         return cWidgetGet(
             self.objectName(), mod='galacteek.ui.widgets')
 
     def configApply(self, cfg):
-        self.showHidePyramids.setChecked(
-            cfg.toolbarPyramids.visible)
-        self.showHideStatus.setChecked(
-            cfg.toolbarAppStatus.visible)
+        if 0:
+            self.showHidePyramids.setChecked(
+                cfg.toolbarPyramids.visible)
+            self.showHideStatus.setChecked(
+                cfg.toolbarAppStatus.visible)
 
-        self.toolbarPyramids.setVisible(
-            cfg.toolbarPyramids.visible)
+            self.toolbarPyramids.setVisible(
+                cfg.toolbarPyramids.visible)
+            self.toolbarPyramids.setIconSize(
+                iconSizeGet(cfg.toolbarPyramids.iconSize))
+
         self.toolbarAppStatus.setVisible(
             cfg.toolbarAppStatus.visible)
 
-        self.toolbarPyramids.setIconSize(
-            iconSizeGet(cfg.toolbarPyramids.iconSize))
         self.toolbarAppStatus.setIconSize(
             iconSizeGet(cfg.toolbarAppStatus.iconSize))
 
         self.adjust()
         runningApp().repolishWidget(self)
+
+    def onTimeout(self):
+        if not self.toolbarWsHovered and not self.showHideMain.opened and not \
+                self.showHideMain.isChecked():
+            # self.toolbarWs.setVisible(not self.toolbarWsHovered)
+            self.toolbarWs.setVisible(False)
+
+    def onWsToolbarHovered(self, hovered):
+        self.toolbarWsHovered = hovered
+
+    def onShowHideWorkspaces(self, checked):
+        if checked:
+            self.toolbarWs.setVisible(checked)
+            self.toolbarWs.sizePolicy().setHorizontalPolicy(
+                QSizePolicy.MinimumExpanding)
+        else:
+            self.toolbarWs.sizePolicy().setHorizontalPolicy(
+                QSizePolicy.Maximum)
+
+        self.t1.stop()
+        self.t1.start(1400)
 
     def onShowHidePyramids(self, checked):
         cWidgetSetAttr(self.objectName(),
@@ -111,51 +247,49 @@ class DwebCraftingWidget(QWidget, Configurable):
         super().resizeEvent(event)
 
     def adjust(self, checked=None):
-        if self.toolbarPyramids.isVisible():
-            self.spacerAdjust(QSizePolicy.Maximum)
-        else:
-            self.spacerAdjust(QSizePolicy.Expanding)
+        self.spacerAdjust(QSizePolicy.Expanding)
 
     def spacerAdjust(self, hPolicy, vPolicy=QSizePolicy.Maximum):
-        self.spacer.changeSize(32, 32,
-                               hPolicy,
-                               vPolicy)
+        self.spacer.changeSize(1, 1, hPolicy, vPolicy)
 
-    def sizeHint(self):
+    def sizeHintNot(self):
         return QSize(self.width(),
-                     self.toolbarPyramids.height())
-
-    def sizeHintPerRow(self):
-        cfg = self.config()
-        maxPerRow = cfg.toolbarPyramids.maxActionsPerRow
-
-        if not self.toolbarPyramids.entered:
-            return self.toolbarPyramids.idealShrunkSize(
-                maxPerRow)
-        else:
-            return self.toolbarPyramids.idealExpandedSize(
-                maxPerRow)
+                     self.toolbarWs.height())
 
 
-class DwebCraftingDock(SpaceDock, Configurable):
+class DwebAppDock(SpaceDock, Configurable):
     """
-    Where we craft
+    Main dock
     """
 
-    def __init__(self, tbPyramids, parent=None):
+    def __init__(self, tbWs, parent=None):
         super().__init__(parent)
 
-        self.setObjectName('dockCrafting')
+        self.setObjectName('appDock')
 
-        self.cWidget = DwebCraftingWidget(tbPyramids, self)
+        self.cWidget = DwebCraftingWidget(tbWs, parent=self)
         self.setWidget(self.cWidget)
         self.setTitleBarWidget(QWidget())
 
         self.setFeatures(QDockWidget.NoDockWidgetFeatures)
         self.setContextMenuPolicy(Qt.PreventContextMenu)
 
+    @property
+    def tbTools(self):
+        return self.cWidget.toolbarTools
+
+    @property
+    def tbToolsSep(self):
+        return self.cWidget.toolbarToolsSep
+
     def config(self):
         return cWidgetGet(self.objectName(), mod='galacteek.ui.widgets')
+
+    def addButton(self, widget):
+        self.cWidget.toolbarMisc.addWidget(widget)
+
+    def addToolWidget(self, widget):
+        self.cWidget.toolbarTools.addWidget(widget)
 
     def addStatusWidget(self, widget):
         self.cWidget.toolbarAppStatus.addWidget(widget)

@@ -372,6 +372,13 @@ class AsyncIPFSDaemon(object):
             'event': event
         })
 
+    def publishReconnectingEvent(self):
+        self.publishEvent({
+            'type': 'IpfsDaemonResumeEvent',
+            'ipfsNetworkName': self.ipfsNetworkName,
+            'ipfsNetworkUri': self.ipfsNetworkRunningUri
+        })
+
     async def switchNetworkByName(self, networkName: str):
         self.autoRestart = False
         self.stop()

@@ -48,11 +48,12 @@ class QuickAccessToolBar(SmartToolBar,
     Quick Access toolbar, child of the main toolbar
     """
 
-    def __init__(self, parent):
+    def __init__(self, parent=None):
         SmartToolBar.__init__(self, parent)
         URLDragAndDropProcessor.__init__(self)
         KeyListener.__init__(self)
 
+        self.toolbarPyramids = None
         self.app = QCoreApplication.instance()
         self.analyzer = self.app.rscAnalyzer
         self.lock = asyncio.Lock(loop=self.app.loop)
@@ -61,10 +62,10 @@ class QuickAccessToolBar(SmartToolBar,
         self.setObjectName('qaToolBar')
         self.setToolTip(iQuickAccess())
 
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setAcceptDrops(True)
 
         self.setOrientation(Qt.Vertical)
+        self.orientationChanged.connect(self.onReoriented)
 
         database.QATagItemConfigured.connectTo(self.qaTagItemConfigured)
 
@@ -77,6 +78,16 @@ class QuickAccessToolBar(SmartToolBar,
     @property
     def largeIcons(self):
         return QSize(64, 64)
+
+    def onReoriented(self, orientation):
+        if self.toolbarPyramids:
+            self.toolbarPyramids.setOrientation(orientation)
+
+    def attachPyramidsToolbar(self, toolbar):
+        self.toolbarPyramids = toolbar
+        self.toolbarPyramids.setSizePolicy(
+            QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        self.addWidget(self.toolbarPyramids)
 
     def sizeHintUnused(self):
         try:
@@ -265,8 +276,6 @@ class QuickAccessToolBar(SmartToolBar,
         """
         Add some apps and links to the quickaccess bar
         """
-
-        self.clear()
 
         await self.registerDefaults()
         await self.load()

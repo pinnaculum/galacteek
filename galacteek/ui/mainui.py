@@ -21,7 +21,6 @@ from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QUrl
 from PyQt5.QtCore import QTimer
-from PyQt5.QtCore import QDateTime
 from PyQt5.QtCore import QSize
 from PyQt5.QtCore import QPoint
 from PyQt5.QtCore import QRect
@@ -58,7 +57,6 @@ from . import userwebsite
 from . import browser
 from . import files
 from . import keys
-from . import orbital
 from . import textedit
 from . import ipfssearch
 from . import eventlog
@@ -70,7 +68,7 @@ from .clips import RotatingCubeRedFlash140d
 from .textedit import TextEditorTab
 from .iprofile import ProfileEditDialog
 from .iprofile import ProfileButton
-from .peers import PeersServiceSearchDock
+# from .peers import PeersServiceSearchDock
 from .pubsub import PubsubSnifferWidget
 from .pyramids import MultihashPyramidsToolBar
 from .quickaccess import QuickAccessToolBar
@@ -84,6 +82,7 @@ from .widgets import PopupToolButton
 from .widgets import HashmarkMgrButton
 from .widgets import AnimatedLabel
 from .widgets.netselector import IPFSNetworkSelectorToolButton
+from .widgets.toolbar import BasicToolBar
 
 from .widgets.torcontrol import TorControllerButton
 
@@ -326,107 +325,9 @@ class IPFSDaemonStatusWidget(QWidget):
             self.enableLabels(True)
 
 
-class DatabasesManager(QObject):
-    def __init__(self, orbitConnector, parent=None):
-        super().__init__(parent)
+class WorkspacesToolBar(BasicToolBar):
+    wsSwitched = pyqtSignal(BaseWorkspace)
 
-        self.mainW = parent
-
-        self.icon = getIcon('orbitdb.png')
-        self.connector = orbitConnector
-        self._dbButton = self.buildButton()
-
-    @property
-    def button(self):
-        return self._dbButton
-
-    def buildButton(self):
-        dbButton = QToolButton(self)
-        dbButton.setIconSize(QSize(24, 24))
-        dbButton.setIcon(self.icon)
-        dbButton.setPopupMode(QToolButton.MenuButtonPopup)
-
-        self.databasesMenu = QMenu(self)
-        self.mainFeedAction = QAction(self.icon,
-                                      'General discussions feed', self,
-                                      triggered=self.onMainFeed)
-        self.databasesMenu.addAction(self.mainFeedAction)
-        dbButton.setMenu(self.databasesMenu)
-        return dbButton
-
-    def onMainFeed(self):
-        database = self.connector.database('feeds', 'general')
-        view = orbital.OrbitFeedView(self.connector, database,
-                                     parent=self.mainW.tabWidget)
-        self.mainW.registerTab(view, 'General', current=True,
-                               icon=self.icon)
-
-
-class MiscToolBar(QToolBar):
-    moved = pyqtSignal(int)
-
-    def __init__(self, parent):
-        super().__init__(parent)
-
-        self.setObjectName('miscToolBar')
-        self.setAllowedAreas(
-            Qt.LeftToolBarArea | Qt.RightToolBarArea
-        )
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
-    def contextMenuEvent(self, event):
-        # no context menu
-        pass
-
-
-class MainToolBar(QToolBar):
-    moved = pyqtSignal(int)
-
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.setObjectName('mainToolBar')
-
-        self.setMovable(False)
-        self.setMovable(True)
-        self.setFloatable(False)
-        self.setContextMenuPolicy(Qt.NoContextMenu)
-
-        # Empty widget
-        self.emptySpace = QWidget()
-        self.emptySpace.setSizePolicy(
-            QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.lastPos = None
-
-    @property
-    def vertical(self):
-        return self.orientation() == Qt.Vertical
-
-    @property
-    def horizontal(self):
-        return self.orientation() == Qt.Horizontal
-
-    def dragEnterEvent(self, event):
-        event.acceptProposedAction()
-
-    def dropEvent(self, event):
-        pass
-
-
-class DwebDepotToolBar(QToolBar):
-    def __init__(self, parent):
-        super().__init__(parent)
-
-        self.setObjectName('dwebToolBar')
-
-        self.setMovable(True)
-        self.setFloatable(False)
-        self.setAllowedAreas(
-            Qt.LeftToolBarArea | Qt.RightToolBarArea
-        )
-        self.setOrientation(Qt.Vertical)
-
-
-class WorkspacesToolBar(QToolBar):
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -437,6 +338,7 @@ class WorkspacesToolBar(QToolBar):
         self.setAcceptDrops(True)
 
         self.setOrientation(Qt.Horizontal)
+        self.setObjectName('workspacesToolBar')
 
     def dragEnterEvent(self, ev):
         ev.accept()
@@ -459,7 +361,7 @@ class WorkspacesToolBar(QToolBar):
             if wsButton.workspace is workspace:
                 return wsButton
 
-    def wsSwitched(self, workspace):
+    def wsWasSwitched(self, workspace):
         # Current workspace has changed, update the buttons
 
         for wsButton in self.wsButtons.keys():
@@ -471,6 +373,8 @@ class WorkspacesToolBar(QToolBar):
                 # rare cases it seems to still appear checked
                 wsButton.setChecked(False)
                 wsButton.repaint()
+
+        self.wsSwitched.emit(workspace)
 
 
 class CentralStack(QStackedWidget,
@@ -547,11 +451,11 @@ class CentralStack(QStackedWidget,
         if wspace:
             await wspace.workspaceSwitched()
 
-        self.toolBarWs.wsSwitched(wspace)
+        self.toolBarWs.wsWasSwitched(wspace)
 
     def __addWorkspace(self, workspace, position=-1):
         if not workspace.wsAttached:
-            switchButton = workspace.createSwitchButton(parent=self.toolBarWs)
+            switchButton = workspace.createSwitchButton()
 
             if position >= 0:
                 self.insertWidget(position, workspace)
@@ -653,14 +557,14 @@ class CentralStack(QStackedWidget,
             )
 
             if await workspace.load():
-                ensure(workspace.loadIcon())
-
                 self.addWorkspace(workspace, section='qapps')
 
                 await app.s.ldPublish({
                     'type': 'QmlApplicationLoaded',
                     'appUri': event['appUri']
                 })
+
+                await workspace.loadIcon()
 
                 if runSettings['wsSwitch'] is True:
                     workspace.wsSwitch()
@@ -672,7 +576,7 @@ class BrowseButton(PopupToolButton, KeyListener):
     rotating cube clip.
     """
 
-    def __init__(self, parent):
+    def __init__(self, parent=None):
         super().__init__(parent=parent, mode=QToolButton.InstantPopup)
 
         self.app = runningApp()
@@ -784,16 +688,13 @@ class MainWindow(QMainWindow, KeyListener):
         self.pinAllGlobalButton.setChecked(self.app.settingsMgr.browserAutoPin)
 
         # Toolbars
-        self.toolbarMain = MainToolBar(self)
-
-        self.toolbarPyramids = MultihashPyramidsToolBar(self)
-
         self.toolbarWs = WorkspacesToolBar()
-
-        self.toolbarMain.orientationChanged.connect(self.onMainToolbarMoved)
 
         # Apps/shortcuts toolbar
         self.toolbarQa = QuickAccessToolBar(self)
+        self.toolbarPyramids = MultihashPyramidsToolBar()
+        self.toolbarPyramids.setOrientation(self.toolbarQa.orientation())
+        self.toolbarQa.attachPyramidsToolbar(self.toolbarPyramids)
 
         # Main actions and browse button setup
         self.quitAction = QAction(getIcon('quit.png'),
@@ -853,44 +754,34 @@ class MainWindow(QMainWindow, KeyListener):
             triggered=self.onSeedAppImage
         )
 
-        self.browseButton = BrowseButton(self)
-        self.browseButton.setPopupMode(QToolButton.InstantPopup)
-        self.browseButton.setObjectName('buttonBrowseIpfs')
-        self.browseButton.normalIcon()
+        if 0:
+            self.browseButton = BrowseButton()
+            self.browseButton.setPopupMode(QToolButton.InstantPopup)
+            self.browseButton.setObjectName('buttonBrowseIpfs')
+            self.browseButton.normalIcon()
 
-        self.browseButton.menu.addAction(self.browseAction)
-        self.browseButton.menu.addAction(self.browseAutopinAction)
-        self.browseButton.menu.addSeparator()
-        # self.browseButton.menu.addMenu(self.browseButton.ipfsNetworksMenu())
-        # self.browseButton.menu.addSeparator()
-        # self.browseButton.menu.addAction(self.searchServicesAction)
-        # self.browseButton.menu.addSeparator()
-        self.browseButton.menu.addAction(self.editorOpenAction)
-        self.browseButton.menu.addSeparator()
-
-        if not self.app.cmdArgs.seed and self.app.cmdArgs.appimage:
-            # Add the possibility to import the image from the menu
-            # if not specified on the command-line
-            self.browseButton.menu.addAction(self.seedAppImageAction)
+            self.browseButton.menu.addAction(self.browseAction)
+            self.browseButton.menu.addAction(self.browseAutopinAction)
+            self.browseButton.menu.addSeparator()
+            self.browseButton.menu.addAction(self.editorOpenAction)
             self.browseButton.menu.addSeparator()
 
-        self.browseButton.menu.addAction(self.quitAction)
+            if not self.app.cmdArgs.seed and self.app.cmdArgs.appimage:
+                # Add the possibility to import the image from the menu
+                # if not specified on the command-line
+                self.browseButton.menu.addAction(self.seedAppImageAction)
+                self.browseButton.menu.addSeparator()
 
-        self.browseButton.animatedActions = [
-            self.browseAction,
-            self.browseAutopinAction
-        ]
-        self.browseButton.rotateCube()
+            self.browseButton.menu.addAction(self.quitAction)
+
+            self.browseButton.animatedActions = [
+                self.browseAction,
+                self.browseAutopinAction
+            ]
+            self.browseButton.rotateCube()
 
         # File manager
         self.fileManagerWidget = files.FileManager(parent=self)
-
-        if 0:
-            # Text editor button
-            self.textEditorButton = QToolButton(self)
-            self.textEditorButton.setToolTip(iTextEditor())
-            self.textEditorButton.setIcon(getIcon('text-editor.png'))
-            self.textEditorButton.clicked.connect(self.addEditorTab)
 
         # Camera controller
         self.cameraController = CameraController(parent=self)
@@ -925,7 +816,7 @@ class MainWindow(QMainWindow, KeyListener):
 
         self.hashmarkMgrButton.menu.addSeparator()
 
-        self.clipboardItemsStack = ClipboardItemsStack(parent=self.toolbarMain)
+        self.clipboardItemsStack = ClipboardItemsStack()
 
         # Clipboard loader button
         self.clipboardManager = ClipboardManager(
@@ -933,7 +824,7 @@ class MainWindow(QMainWindow, KeyListener):
             self.clipboardItemsStack,
             self.app.resourceOpener,
             icon=getIcon('clipboard.png'),
-            parent=self.toolbarMain
+            parent=self
         )
 
         # Atom
@@ -941,7 +832,7 @@ class MainWindow(QMainWindow, KeyListener):
 
         # Settings button
         settingsIcon = getIcon('settings.png')
-        self.settingsToolButton = QToolButton(self)
+        self.settingsToolButton = QToolButton()
         self.settingsToolButton.setIcon(settingsIcon)
         self.settingsToolButton.setPopupMode(QToolButton.InstantPopup)
         menu = QMenu(self)
@@ -965,7 +856,7 @@ class MainWindow(QMainWindow, KeyListener):
         self.settingsToolButton.setMenu(menu)
 
         # Help button
-        self.helpToolButton = QToolButton(self)
+        self.helpToolButton = QToolButton()
         self.helpToolButton.setObjectName('helpToolButton')
         self.helpToolButton.setIcon(getIcon('information.png'))
         self.helpToolButton.setPopupMode(QToolButton.InstantPopup)
@@ -984,8 +875,7 @@ class MainWindow(QMainWindow, KeyListener):
         self.helpToolButton.setMenu(menu)
 
         # Quit button
-        self.quitButton = PopupToolButton(
-            parent=self, mode=QToolButton.InstantPopup)
+        self.quitButton = PopupToolButton(mode=QToolButton.InstantPopup)
         self.quitButton.setObjectName('quitToolButton')
         self.quitButton.setIcon(self.quitAction.icon())
         self.quitButton.menu.addAction(self.restartAction)
@@ -995,39 +885,11 @@ class MainWindow(QMainWindow, KeyListener):
 
         self.ipfsSearchPageFactory = ipfssearch.SearchResultsPageFactory(self)
 
-        self.toolbarMain.addWidget(self.browseButton)
-        self.toolbarMain.addWidget(self.hashmarkMgrButton)
-        self.toolbarMain.addWidget(self.ll1)
-        self.toolbarMain.addWidget(self.profileButton)
-
-        self.toolbarMain.addSeparator()
-        self.toolbarMain.addWidget(self.toolbarWs)
-
-        self.toolbarMain.addSeparator()
-        self.toolbarMain.addWidget(self.cameraController)
-
         self.hashmarkMgrButton.hashmarkClicked.connect(self.onHashmarkClicked)
         self.hashmarkMgrButton.searcher.hashmarkClicked.connect(
             self.onHashmarkClicked)
 
-        self.toolbarMain.actionStatuses = self.toolbarMain.addAction(
-            trTodo('Statuses'))
-        self.toolbarMain.actionStatuses.setVisible(False)
-
-        self.toolbarMain.addWidget(self.toolbarMain.emptySpace)
-        self.toolbarMain.addSeparator()
-        self.toolbarMain.addWidget(self.clipboardItemsStack)
-        self.toolbarMain.addWidget(self.clipboardManager)
-        self.toolbarMain.addSeparator()
-
-        self.toolbarMain.addWidget(self.pinAllGlobalButton)
-        self.toolbarMain.addWidget(self.settingsToolButton)
-
-        self.toolbarMain.addWidget(self.helpToolButton)
-        self.toolbarMain.addSeparator()
-        self.toolbarMain.addWidget(self.quitButton)
-
-        self.addToolBar(Qt.TopToolBarArea, self.toolbarMain)
+        # self.addToolBar(Qt.TopToolBarArea, self.toolbarMain)
         self.addToolBar(Qt.LeftToolBarArea, self.toolbarQa)
 
         self.stack = CentralStack(self, self.toolbarWs)
@@ -1044,11 +906,13 @@ class MainWindow(QMainWindow, KeyListener):
 
         # Planet workspaces
         self.wspaceEarth = PlanetWorkspace(self.stack, 'Earth')
-        self.wspaceMars = PlanetWorkspace(self.stack, 'Mars')
-        self.wspaceJupiter = PlanetWorkspace(self.stack, 'Jupiter')
-        self.wspaceMercury = PlanetWorkspace(self.stack, 'Mercury')
-        self.wspaceNeptune = PlanetWorkspace(self.stack, 'Neptune')
-        self.wspacePluto = PlanetWorkspace(self.stack, 'Pluto')
+
+        if 0:
+            self.wspaceMars = PlanetWorkspace(self.stack, 'Mars')
+            self.wspaceJupiter = PlanetWorkspace(self.stack, 'Jupiter')
+            self.wspaceMercury = PlanetWorkspace(self.stack, 'Mercury')
+            self.wspaceNeptune = PlanetWorkspace(self.stack, 'Neptune')
+            self.wspacePluto = PlanetWorkspace(self.stack, 'Pluto')
 
         self.webProfile = QtWebEngineWidgets.QWebEngineProfile.defaultProfile()
 
@@ -1060,8 +924,8 @@ class MainWindow(QMainWindow, KeyListener):
         self.pinningStatusButton.setIcon(getIcon('pin-curve.png'))
         self.pinningStatusButton.clicked.connect(
             self.showPinningStatusWidget)
-        self.pubsubStatusButton = QPushButton(self)
-        self.pubsubStatusButton.setIcon(getIcon('network-offline.png'))
+        # self.pubsubStatusButton = QPushButton(self)
+        # self.pubsubStatusButton.setIcon(getIcon('network-offline.png'))
 
         self.rpsStatusButton = RPSStatusButton()
         self.rpsStatusButton.setIcon(getIcon('pin/pin-circle-red.png'))
@@ -1115,36 +979,44 @@ class MainWindow(QMainWindow, KeyListener):
         self.enableButtons(False)
 
         # Docks
-        self.pSearchDock = PeersServiceSearchDock(self.app.peersTracker, self)
-        self.pSearchDock.setAllowedAreas(Qt.BottomDockWidgetArea)
+        # self.pSearchDock = PeersServiceSearchDock(
+        # self.app.peersTracker, self)
+        # self.pSearchDock.setAllowedAreas(Qt.BottomDockWidgetArea)
 
-        # self.dockQa = DwebQADock(self)
-        self.dockCrafting = DwebCraftingDock(
-            self.toolbarPyramids,
+        self.appDock = DwebAppDock(
+            self.toolbarWs,
             parent=self
         )
 
-        # self.ethereumStatusBtn = EthereumStatusButton(parent=self)
-        # self.dockCrafting.addStatusWidget(self.ethereumStatusBtn)
+        self.appDock.addButton(self.hashmarkMgrButton)
+        self.appDock.addButton(self.profileButton)
+        self.appDock.addButton(self.cameraController)
 
-        self.dockCrafting.addStatusWidget(self.ipfsStatusCube)
-        self.dockCrafting.addStatusWidget(self.networkSelectorButton)
-        self.dockCrafting.addStatusWidget(self.torControlButton)
+        self.appDock.addToolWidget(self.clipboardItemsStack)
+        self.appDock.addToolWidget(self.clipboardManager)
+        self.appDock.addToolWidget(self.pinAllGlobalButton)
 
-        self.dockCrafting.addStatusWidget(self.pinningStatusButton)
-        self.dockCrafting.addStatusWidget(self.rpsStatusButton)
-        self.dockCrafting.addStatusWidget(self.pubsubStatusButton)
-        self.dockCrafting.addStatusWidget(self.userLogsButton)
+        self.appDock.addStatusWidget(self.ipfsStatusCube)
+        self.appDock.addStatusWidget(self.networkSelectorButton)
+        self.appDock.addStatusWidget(self.torControlButton)
 
-        self.addDockWidget(Qt.BottomDockWidgetArea, self.pSearchDock)
-        self.addDockWidget(Qt.BottomDockWidgetArea, self.dockCrafting)
+        self.appDock.addStatusWidget(self.pinningStatusButton)
+        self.appDock.addStatusWidget(self.rpsStatusButton)
+        # self.appDock.addStatusWidget(self.pubsubStatusButton)
+        self.appDock.addStatusWidget(self.settingsToolButton)
+        self.appDock.addStatusWidget(self.userLogsButton)
+        self.appDock.addStatusWidget(self.helpToolButton)
+        self.appDock.addStatusWidget(self.quitButton)
+
+        # self.addDockWidget(Qt.BottomDockWidgetArea, self.pSearchDock)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.appDock)
 
         # Connect the IPFS context signals
         self.app.ipfsCtx.ipfsConnectionReady.connectTo(self.onConnReady)
         self.app.ipfsCtx.ipfsRepositoryReady.connectTo(self.onRepoReady)
 
-        self.app.ipfsCtx.pubsub.psMessageRx.connect(self.onPubsubRx)
-        self.app.ipfsCtx.pubsub.psMessageTx.connect(self.onPubsubTx)
+        # self.app.ipfsCtx.pubsub.psMessageRx.connect(self.onPubsubRx)
+        # self.app.ipfsCtx.pubsub.psMessageTx.connect(self.onPubsubTx)
         self.app.ipfsCtx.profilesAvailable.connect(self.onProfilesList)
         self.app.ipfsCtx.profileChanged.connect(self.onProfileChanged)
         self.app.ipfsCtx.pinItemStatusChanged.connect(self.onPinStatusChanged)
@@ -1206,7 +1078,8 @@ class MainWindow(QMainWindow, KeyListener):
     def eventFilterMouseMove(self, obj, event):
         # This wakes up auto-hiding toolbars (.widgets.SmartToolBar)
         # to be used when we use auto-hiding on one of the main toolbars
-        if event.type() == QEvent.MouseMove:
+
+        if event.type() == QEvent.MouseMove and 0:
             if obj.objectName().startswith('gMainWindow'):
                 if event.pos().y() < 5:
                     self.toolbarMain.wakeUp()
@@ -1243,16 +1116,17 @@ class MainWindow(QMainWindow, KeyListener):
         self.stack.addWorkspace(self.wspaceSearch)
         self.stack.addWorkspace(self.wspaceFs)
 
-        self.stack.addWorkspace(
-            self.wspaceMars, section='planets', dormant=True)
-        self.stack.addWorkspace(
-            self.wspaceJupiter, section='planets', dormant=True)
-        self.stack.addWorkspace(
-            self.wspaceMercury, section='planets', dormant=True)
-        self.stack.addWorkspace(
-            self.wspaceNeptune, section='planets', dormant=True)
-        self.stack.addWorkspace(
-            self.wspacePluto, section='planets', dormant=True)
+        if 0:
+            self.stack.addWorkspace(
+                self.wspaceMars, section='planets', dormant=True)
+            self.stack.addWorkspace(
+                self.wspaceJupiter, section='planets', dormant=True)
+            self.stack.addWorkspace(
+                self.wspaceMercury, section='planets', dormant=True)
+            self.stack.addWorkspace(
+                self.wspaceNeptune, section='planets', dormant=True)
+            self.stack.addWorkspace(
+                self.wspacePluto, section='planets', dormant=True)
 
         self.stack.addWorkspace(self.wspaceMultimedia)
 
@@ -1277,18 +1151,6 @@ class MainWindow(QMainWindow, KeyListener):
 
     def onHashmarkClicked(self, hashmark):
         ensure(self.app.resourceOpener.openHashmark(hashmark))
-
-    def onMainToolbarMoved(self, orientation):
-        self.toolbarMain.lastPos = self.toolbarMain.pos()
-
-        self.toolbarWs.setOrientation(orientation)
-
-        if self.toolbarMain.vertical:
-            self.toolbarMain.emptySpace.setSizePolicy(
-                QSizePolicy.Minimum, QSizePolicy.Expanding)
-        elif self.toolbarMain.horizontal:
-            self.toolbarMain.emptySpace.setSizePolicy(QSizePolicy.Expanding,
-                                                      QSizePolicy.Minimum)
 
     def onOpenEventLog(self):
         self.addEventLogTab(current=True)
@@ -1359,7 +1221,7 @@ class MainWindow(QMainWindow, KeyListener):
             self.menuUserProfile.addAction(action)
 
     async def onRepoReady(self):
-        self.browseButton.normalIcon()
+        # self.browseButton.normalIcon()
         self.stack.activateWorkspaces(True)
 
         self.fileManagerWidget.setupModel()
@@ -1380,23 +1242,6 @@ class MainWindow(QMainWindow, KeyListener):
             await ws.loadDapps()
 
         self.enableButtons()
-
-    @ipfsOp
-    async def orbitStart(self, ipfsop):
-        resp = await self.app.ipfsCtx.orbitConnector.start()
-
-        if resp:
-            orbitIcon = QPushButton()
-            orbitIcon.setIcon(getIcon('orbitdb.png'))
-            orbitIcon.setToolTip('OrbitDB: connected')
-            self.statusbar.addPermanentWidget(orbitIcon)
-
-            self.orbitManager = DatabasesManager(
-                self.app.ipfsCtx.orbitConnector, self)
-            self.toolbarTools.addWidget(self.orbitManager.button)
-
-            await ipfsop.ctx.currentProfile.orbitalSetup(
-                self.app.ipfsCtx.orbitConnector)
 
     def onSystrayMsgClicked(self):
         # Open last shown mark in the systray
@@ -1435,10 +1280,11 @@ class MainWindow(QMainWindow, KeyListener):
         pass
 
     def onPubsubRx(self):
-        now = QDateTime.currentDateTime()
-        self.pubsubStatusButton.setIcon(getIcon('network-transmit.png'))
-        self.pubsubStatusButton.setToolTip(
-            'Pubsub: last message received {}'.format(now.toString()))
+        # now = QDateTime.currentDateTime()
+        # self.pubsubStatusButton.setIcon(getIcon('network-transmit.png'))
+        # self.pubsubStatusButton.setToolTip(
+        #     'Pubsub: last message received {}'.format(now.toString()))
+        pass
 
     def onPubsubTx(self):
         pass
@@ -1478,7 +1324,7 @@ class MainWindow(QMainWindow, KeyListener):
     def enableButtons(self, flag=True):
         for btn in [
                 self.clipboardManager,
-                self.browseButton,
+                # self.browseButton,
                 self.cameraController,
                 self.hashmarkMgrButton,
                 self.toolbarWs,
@@ -1771,5 +1617,6 @@ class MainWindow(QMainWindow, KeyListener):
         event = message.get('event')
 
         if event and event.get('type') in ['IpfsDaemonStartedEvent',
+                                           'IpfsDaemonResumeEvent',
                                            'IpfsDaemonStoppedEvent']:
             await self.networkSelectorButton.processIpfsDaemonEvent(event)

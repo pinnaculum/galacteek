@@ -307,7 +307,7 @@ class MultihashPyramidsToolBar(SmartToolBar):
     moved = pyqtSignal(int)
     mfsInit = pyqtSignal(UserProfile)
 
-    def __init__(self, parent):
+    def __init__(self, parent=None):
         super().__init__(parent=parent, autoExpand=False)
 
         self.app = QApplication.instance()
@@ -317,7 +317,6 @@ class MultihashPyramidsToolBar(SmartToolBar):
         self.app.marksLocal.pyramidEmpty.connect(self.onPyramidEmpty)
         self.app.marksLocal.pyramidAddedMark.connect(self.onPyramidNewMark)
 
-        self.setObjectName('toolbarPyramids')
         self.setObjectName('pyramidsToolBar')
         self.setToolTip('Dynamic dweb')
         self.setContextMenuPolicy(Qt.PreventContextMenu)
@@ -878,7 +877,10 @@ class MultihashPyramidToolButton(PopupToolButton):
         ''')
 
     def flashToolTip(self, message):
-        QToolTip.showText(self.mapToGlobal(QPoint(0, 0)), message)
+        QToolTip.showText(self.mapToGlobal(QPoint(
+            self.size().width(),
+            self.size().height())
+        ), message)
 
     def updateToolTip(self):
         if not self.pyramid:

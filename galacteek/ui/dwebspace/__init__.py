@@ -17,7 +17,6 @@ from PyQt5.QtWidgets import QToolTip
 from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QSpacerItem
 from PyQt5.QtWidgets import QStackedWidget
-from PyQt5.QtWidgets import QMenu
 
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import Qt
@@ -28,6 +27,7 @@ from PyQt5.QtCore import QPoint
 
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QPixmap
 
 from galacteek.ui.peers import PeersManager
 from galacteek import partialEnsure
@@ -877,11 +877,11 @@ class WorkspaceEdition(TabbedWorkspace):
 
         self.actionPostBlog = self.wsAddCustomAction(
             'blogpost', getIcon('blog.png'),
-            iNewBlogPost(), self.onAddBlogPost, default=True)
+            iNewBlogPost(), self.onAddBlogPost)
 
         self.actionTextEdit = self.wsAddCustomAction(
             'textedit', getIcon('text-editor.png'),
-            iTextEditor(), self.onAddTextEditorTab)
+            iTextEditor(), self.onAddTextEditorTab, default=True)
 
     def onHelpEditing(self):
         self.app.manuals.browseManualPage('editing.html')
@@ -1098,20 +1098,21 @@ class QMLDappWorkspace(SingleWidgetWorkspace, KeyListener):
         self.appUri = appUri
         self.iconPath = iconIpfsPath
         self.wLayout.addWidget(self.appWidget)
+        self.dappIcon = None
 
     @property
     def capService(self):
         return services.getByDotName('core.icapsuledb')
 
     def createSwitchButton(self, parent=None):
-        if 0:
-            menu = QMenu(self)
-            menu.addAction('Close', lambda: print('Quit dapp'))
-
         return DappSwitchButton(self, parent=parent)
 
+    async def loadIcon(self):
+        if self.dappIcon:
+            self.changeIcon(self.dappIcon)
+
     @ipfsOp
-    async def loadIcon(self, ipfsop):
+    async def loadIconOld(self, ipfsop):
         if not self.iconPath.valid:
             return
 
@@ -1158,7 +1159,14 @@ class QMLDappWorkspace(SingleWidgetWorkspace, KeyListener):
             for comp in capsuleCtx.components:
                 # Always inside 'qml'
 
-                qPath = Path(comp['fsPath']).joinpath('qml')
+                rootPath = Path(comp['fsPath'])
+                dappIconPath = rootPath.joinpath(
+                    'share').joinpath('icons').joinpath('dapp.png')
+
+                if dappIconPath.is_file():
+                    self.dappIcon = QIcon(QPixmap(str(dappIconPath)))
+
+                qPath = rootPath.joinpath('qml')
 
                 self.appWidget.importComponent(str(qPath))
         except Exception as err:

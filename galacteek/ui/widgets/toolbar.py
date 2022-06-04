@@ -3,11 +3,44 @@ from PyQt5.QtWidgets import QScrollArea
 from PyQt5.QtWidgets import QLayout
 
 from PyQt5.QtCore import Qt
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.Qt import QSizePolicy
 
 from galacteek.core import runningApp
 
 from . import URLDragAndDropProcessor
+
+
+class BasicToolBar(QToolBar):
+    hovered = pyqtSignal(bool)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+
+    @property
+    def vertical(self):
+        return self.orientation() == Qt.Vertical
+
+    @property
+    def horizontal(self):
+        return self.orientation() == Qt.Horizontal
+
+    def repolish(self):
+        runningApp().repolishWidget(self)
+
+    def enterEvent(self, event):
+        self.hovered.emit(True)
+        self.setProperty('hovering', True)
+
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self.hovered.emit(False)
+        self.setProperty('hovering', False)
+
+        super().leaveEvent(event)
 
 
 class ScrollableToolBar(QToolBar,
@@ -41,7 +74,7 @@ class ScrollableToolBar(QToolBar,
         self.scrollArea.setWidget(self)
 
 
-class SmartToolBar(QToolBar):
+class SmartToolBar(BasicToolBar):
     """
     Scrollable toolbar
     """
@@ -79,7 +112,6 @@ class SmartToolBar(QToolBar):
             if self.autoExpand:
                 self.expand(True)
 
-            self.setProperty('hovering', True)
             self.repolish()
 
     def leaveEvent(self, event):
@@ -91,7 +123,6 @@ class SmartToolBar(QToolBar):
                 self.expand(False)
 
             self.setProperty('dropping', False)
-            self.setProperty('hovering', False)
             self.repolish()
 
     def dragEnterEvent(self, event):

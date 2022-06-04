@@ -2,7 +2,6 @@ from PyQt5.QtWidgets import QMenu
 from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QActionGroup
-from PyQt5.QtCore import Qt
 from galacteek.config.cmods import ipfs as cmodipfs
 
 from galacteek.appsettings import *
@@ -19,7 +18,6 @@ from ..helpers import messageBoxAsync
 from ..i18n import iIpfsNetwork
 from ..i18n import iCurrentIpfsNetwork
 from ..i18n import iNoIpfsNetwork
-from ..i18n import iUnknown
 
 
 class IPFSNetworkSelectorToolButton(QToolButton):
@@ -33,9 +31,7 @@ class IPFSNetworkSelectorToolButton(QToolButton):
 
         self.setObjectName('networkSelectorToolButton')
         self.setIcon(getIcon('network.png'))
-        self.setText(iUnknown())
         self.setToolTip(iNoIpfsNetwork())
-        self.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.setPopupMode(QToolButton.InstantPopup)
         self.setMenu(self.networksMenu)
 
@@ -130,18 +126,16 @@ class IPFSNetworkSelectorToolButton(QToolButton):
     async def processIpfsDaemonEvent(self, event):
         etype = event.get('type')
 
-        if etype == 'IpfsDaemonStartedEvent':
+        if etype in ['IpfsDaemonStartedEvent', 'IpfsDaemonResumeEvent']:
             networkName = event.get('ipfsNetworkName')
             if not networkName:
                 return
 
             self.ipfsNetworkActionClearAllExcept(networkName)
-            self.setText(networkName)
             self.setToolTip(iCurrentIpfsNetwork(networkName))
 
             self.networksMenu.setEnabled(True)
             self.setEnabled(True)
         elif etype == 'IpfsDaemonStoppedEvent':
             self.setEnabled(False)
-            self.setText(iUnknown())
             self.setToolTip(iNoIpfsNetwork())

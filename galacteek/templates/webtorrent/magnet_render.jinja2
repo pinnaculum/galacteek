@@ -17,10 +17,15 @@
        * location to point to the injected file.
        */
 
+      var elem = document.getElementById(`file${fileidx}`)
       var file = torrent.files[fileidx]
 
+      function prog(bytes, fp) {
+          elem.innerHTML = `Downloaded ${ bytes } / ${ file.length } bytes `
+      }
+
       file.getBuffer(function (e, buffer) {
-        let result = window.ipfs.add(buffer, { cidVersion: 1 }).then(function(res, err) {
+        let result = window.ipfs.add(buffer, { cidVersion: 1, progress: prog }).then(function(res, err) {
           if (err) {
             alert(err)
           } else {
@@ -32,24 +37,28 @@
 
     torrent.on('ready', () => {
       console.log('Torrent name:', torrent.name)
-      console.log('Files:')
 
-      for (var i = 0; i < torrent.files.length; i++) {
-        var file = torrent.files[i]
+      for (var idx = 0; idx < torrent.files.length; idx++) {
+        var file = torrent.files[idx]
         var path = file.path
 
         if (path === 'index.html') {
-          index = torrent.files[i]
+          index = torrent.files[idx]
         }
 
         let elem = document.createElement('p')
+        elem.setAttribute('id', `file${idx}`)
         elem.innerHTML = `
- <a href="#" onclick="event.preventDefault(); download_file(${ i });">${ file.name }</a>
+ <a href="#" onclick="event.preventDefault(); download_file(${ idx });">${ file.name }</a>
         `
 
         file.appendTo(cdiv, { muted: false, autoplay: false })
         cdiv.appendChild(elem)
       }
+    })
+
+    torrent.on('error', (err) => {
+      alert(err)
     })
 </script>
 

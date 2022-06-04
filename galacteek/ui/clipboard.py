@@ -1035,19 +1035,19 @@ class ClipboardItemButton(PopupToolButton):
 
     @ipfsOp
     async def downloadItem(self, ipfsop, item):
-        toolbarMain = self.app.mainWindow.toolbarMain
+        appDock = self.app.mainWindow.appDock
+
         button = DownloadProgressButton(item.path, item.stat,
                                         parent=self)
         button.show()
 
-        action = toolbarMain.insertWidget(
-            toolbarMain.actionStatuses, button)
+        action = appDock.tbTools.insertWidget(appDock.tbToolsSep, button)
 
         button.task = self.app.ipfsTaskOp(self.downloadItemTask,
                                           item, button, action)
-        button.cancelled.connect(lambda: toolbarMain.removeAction(action))
+        button.cancelled.connect(lambda: appDock.tbTools.removeAction(action))
         button.downloadFinished.connect(
-            lambda: toolbarMain.removeAction(action))
+            lambda: appDock.tbTools.removeAction(action))
 
     async def downloadItemTask(self, ipfsop, item, progButton, action):
         downloadsDir = self.app.settingsMgr.downloadsDir

@@ -612,6 +612,17 @@ QToolBar::separator:vertical {
 
 /* Galacteek toolbars */
 
+QToolBar#workspacesToolBar {
+    padding: 0;
+    margin: 0;
+    border: 1px solid #446474;
+    background-color: #4f4f4f;
+}
+
+QToolBar#workspacesToolBar[pinned=true] {
+    border: 2px solid #4b1e1e;
+}
+
 QToolBar#pyramidsToolBar {
     padding: 0;
     margin: 0;
@@ -854,7 +865,7 @@ QTabWidget{
 }
 
 QTabWidget::pane {
-    border: 1px solid #76797C;
+    /* border: 1px solid #76797C; */
     padding: 5px;
     margin: 0px;
 }
@@ -899,8 +910,8 @@ QTabBar::close-button:pressed {
 
 /* TOP TABS */
 QTabBar::tab:top {
-    color: #eff0f1;
-    border: 1px solid #76797C;
+    /* color: #eff0f1; */
+    /* border: 1px solid #76797C; */
     border-bottom: 1px transparent black;
     background-color: #323232;
     padding: 5px;
@@ -910,15 +921,16 @@ QTabBar::tab:top {
 }
 
 QTabBar::tab:top:selected {
-    border: 1px solid #3996e8;
+    /* border: 1px solid #3996e8; */
     border-bottom: 1px transparent black;
+    background-color: lightsteelblue;
 }
 
 QTabBar::tab:top:!selected
 {
     color: #eff0f1;
     background-color: #54575B;
-    border: 1px solid #76797C;
+    /* border: 1px solid #76797C; */
     border-bottom: 1px transparent black;
     border-top-left-radius: 2px;
     border-top-right-radius: 2px;
@@ -932,7 +944,7 @@ QTabBar::tab:top:!selected:hover {
 /* BOTTOM TABS */
 QTabBar::tab:bottom {
     color: #eff0f1;
-    border: 1px solid #76797C;
+    /* border: 1px solid #76797C; */
     border-top: 1px transparent black;
     background-color: #323232;
     padding: 5px;
@@ -945,7 +957,7 @@ QTabBar::tab:bottom:!selected
 {
     color: #eff0f1;
     background-color: #54575B;
-    border: 1px solid #76797C;
+    /* border: 1px solid #76797C; */
     border-top: 1px transparent black;
     border-bottom-left-radius: 2px;
     border-bottom-right-radius: 2px;
@@ -959,7 +971,7 @@ QTabBar::tab:bottom:!selected:hover {
 /* LEFT TABS */
 QTabBar::tab:left {
     color: #eff0f1;
-    border: 1px solid #76797C;
+    /* border: 1px solid #76797C; */
     border-left: 1px transparent black;
     background-color: #323232;
     padding: 5px;
@@ -972,7 +984,7 @@ QTabBar::tab:left:!selected
 {
     color: #eff0f1;
     background-color: #54575B;
-    border: 1px solid #76797C;
+    /* border: 1px solid #76797C; */
     border-left: 1px transparent black;
     border-top-right-radius: 2px;
     border-bottom-right-radius: 2px;
@@ -987,7 +999,7 @@ QTabBar::tab:left:!selected:hover {
 /* RIGHT TABS */
 QTabBar::tab:right {
     color: #eff0f1;
-    border: 1px solid #76797C;
+    /* border: 1px solid #76797C; */
     border-right: 1px transparent black;
     background-color: #323232;
     padding: 5px;
@@ -1000,7 +1012,7 @@ QTabBar::tab:right:!selected
 {
     color: #eff0f1;
     background-color: #54575B;
-    border: 1px solid #76797C;
+    /* border: 1px solid #76797C; */
     border-right: 1px transparent black;
     border-top-left-radius: 2px;
     border-bottom-left-radius: 2px;
@@ -1013,7 +1025,8 @@ QTabBar::tab:right:!selected:hover {
 
 QTabBar::tab:selected {
     margin-top: 1px;
-    color: #4a9fa1;
+    /* color: #4a9fa1; */
+    color: black;
 }
 
 QTabBar::tab:!selected {
@@ -1561,4 +1574,25 @@ QPlainTextEdit#markdownTextEdit {
 
 QPlainTextEdit#markdownTextEdit {
     font: 14pt "Inter UI";
+}
+
+/* Dock button that shows the workspaces toolbar */
+
+QToolButton#wsMagicianButton {
+    background-color: #6495ed;
+    border: 1px solid black;
+}
+
+QToolButton#wsMagicianButton[wsShown=true] {
+    border: 1px solid darkorange;
+    background-color: #1e90ff;
+}
+
+QToolButton#wsMagicianButton::hover {
+    background-color: #4a9ea1;
+}
+
+QToolButton#wsMagicianButton::pressed,
+QToolButton#wsMagicianButton::checked {
+    background-color: #eec146;
 }

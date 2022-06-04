@@ -164,14 +164,27 @@ gemini://
 
 You can browse Gemini_ capsules using the *gemini* URL scheme.
 
+- `gemini://geminispace.info <gemini://geminispace.info>`_
+
 gemi:/
-^^^^^^^^^
+^^^^^^
 
 You can browse Gemini_ capsules over IPFS streams using the
 *gemi* URL scheme. *gemi* URLs include the peer ID and the
 capsule name::
 
     gemi:/12D3KooWNLKji99VFXXRns4vXnqvHGNdEN5rBBwSqKVGhDQHfzT1/hello/
+
+magnet: and stream-magnet:
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+`WebTorrent <https://webtorrent.io/>`_ is partially supported. The contents
+of a torrent can be rendered from a *magnet* link. Example:
+
+- `Sintel (animation) <magnet:?xt=urn:btih:08ada5a7a6183aae1e09d831df6748d566095a10&dn=Sintel&ws=https%3A%2F%2Fwebtorrent.io%2Ftorrents%2F&xs=https%3A%2F%2Fwebtorrent.io%2Ftorrents%2Fsintel.torrent#>`_
+
+The individual files of the torrent can be transferred to your IPFS node by
+clicking on the links in the page.
 
 prontog:/
 ^^^^^^^^^
@@ -195,7 +208,7 @@ the URL bar, just type in **manual:/** (or just **manual:**)
 - `manual:/browsing.html <manual:/browsing.html>`_
 
 qmap://
-^^^^
+^^^^^^^
 
 The **qmap://** URL scheme allows quick access to IPFS objects that
 you've mapped from the browser. From a browser tab, open the IPFS
