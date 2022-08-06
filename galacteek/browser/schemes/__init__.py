@@ -55,12 +55,15 @@ SCHEME_FS = 'fs'
 SCHEME_IPFS = 'ipfs'
 SCHEME_IPNS = 'ipns'
 SCHEME_IPID = 'ipid'
+SCHEME_IPFS_P_HTTP = 'ipfs+http'
+SCHEME_IPFS_P_HTTPS = 'ipfs+https'
+SCHEME_IPFS_P_GEMINI = 'ipfs+gemini'
 SCHEME_IPS = 'ips'
 SCHEME_I = 'inter'
 SCHEME_QDAPP = 'qdapp'
 SCHEME_GEMINI = 'gemini'
 SCHEME_GEMIPFS = 'gemipfs'
-SCHEME_GEMI = 'gemi'
+SCHEME_GEMI = 'gemi'  # deprecate soon by ipfs+gemini
 SCHEME_GEM = 'gem'
 
 # Torrent stuff
@@ -220,6 +223,18 @@ def initializeSchemes():
         SCHEME_IPNS,
         syntax=QWebEngineUrlScheme.Syntax.Host,
         flags=serviceWorkersFlags
+    )
+
+    declareUrlScheme(
+        SCHEME_IPFS_P_HTTP,
+        syntax=QWebEngineUrlScheme.Syntax.HostPortAndUserInformation,
+        defaultPort=80  # qtwe will complain if the default port is unspecified
+    )
+
+    declareUrlScheme(
+        SCHEME_IPFS_P_HTTPS,
+        syntax=QWebEngineUrlScheme.Syntax.HostPortAndUserInformation,
+        defaultPort=443
     )
 
     declareUrlScheme(

@@ -2219,6 +2219,19 @@ class BrowserTab(GalacteekTab):
                     else:
                         return messageBox(iInvalidCID(rootcid))
 
+        # ipfs+http CIDv0 => CIDv1 upgrade if necessary
+        if inputStr.startswith('ipfs+http://'):
+            match = cidhelpers.ipfsHttpSearch(inputStr)
+            if match:
+                peerId = match.group('peerid')
+                peerIdV1 = cidhelpers.peerIdBase36(peerId)
+
+                if peerId and re.search('[A-Z]', peerId) and peerIdV1:
+                    inputStr = re.sub(peerId,
+                                      peerIdV1,
+                                      inputStr,
+                                      count=1)
+
         url = QUrl(inputStr)
         # if not url.isValid() or not url.scheme():
         if not url.isValid() and 0:

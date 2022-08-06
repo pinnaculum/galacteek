@@ -1,3 +1,4 @@
+.. _browsing:
 
 Browsing
 ========
@@ -84,6 +85,37 @@ its base32 representation at the following URL::
 
 *Note*: the scheme handler for these URL schemes does not
 use the *go-ipfs* daemon's HTTP gateway
+
+ipfs+http://
+^^^^^^^^^^^^
+
+This scheme allows access to HTTP/HTTPs websites hosted behind an IPFS P2P
+service. The PeerID should be a CIDv1 encoded in base36 (if you use
+a CIDv0 PeerId in the URL however it will be automatically converted to
+a base36 CIDv1)::
+
+    ipfs+http://{peerid-base36}/{path}
+    ipfs+http://{peerid-base36}:port/{path}
+    ipfs+https://{peerid-base36}/{path}
+    ipfs+https://{peerid-base36}:port/{path}
+
+URL examples::
+
+    ipfs+http://k51qzi5uqu5dlrzbwjh4r0lmlvt08pr4knff0km34psvojiwojnbic9z0z6n44/
+    ipfs+http://k51qzi5uqu5dlrzbwjh4r0lmlvt08pr4knff0km34psvojiwojnbic9z0z6n44:8000/
+    ipfs+https://k51qzi5uqu5dlrzbwjh4r0lmlvt08pr4knff0km34psvojiwojnbic9z0z6n44/docs
+
+The P2P services should use the following protocol address format when
+registering the P2P listener on the IPFS daemon::
+
+    /x/ipfs-http/{public-port}/1.0
+
+Example::
+
+    ipfs p2p listen /x/ipfs-http/80/1.0 /ip4/127.0.0.1/tcp/8080
+
+*Note*: the browser will automatically convert the PeerID to base32 if a
+base58-encoded PeerID (CIDv0) is used.
 
 ipid://
 ^^^^^^^

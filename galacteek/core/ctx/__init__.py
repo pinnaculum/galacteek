@@ -30,6 +30,7 @@ from galacteek.ipfs.paths import posixIpfsPath
 from galacteek.ipfs.cidhelpers import joinIpns
 from galacteek.ipfs.cidhelpers import stripIpfs
 from galacteek.ipfs.cidhelpers import IPFSPath
+from galacteek.ipfs.cidhelpers import peerIdBase36
 from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs.wrappers import ipfsOp
 
@@ -899,6 +900,10 @@ class Node(QObject):
     @property
     def id(self):
         return self._id
+
+    @property
+    def idBase36(self):
+        return peerIdBase36(self._id)
 
     @property
     def idAll(self):

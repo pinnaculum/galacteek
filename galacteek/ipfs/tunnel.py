@@ -1,6 +1,8 @@
 import aioipfs
 import asyncio
 
+from multiaddr.multiaddr import Multiaddr
+
 from galacteek import log
 from galacteek.ipfs.wrappers import *  # noqa
 from galacteek.ipfs.multi import multiAddrTcp4
@@ -109,10 +111,13 @@ class P2PListener(object):
                 log.debug('P2PListener: failed to create server')
                 return None
 
-            listenAddress = '/ip4/{addr}/tcp/{port}'.format(
-                addr=addrSrv[0],
-                port=addrSrv[1]
-            )
+            if isinstance(addrSrv, Multiaddr):
+                listenAddress = str(addrSrv)
+            else:
+                listenAddress = '/ip4/{addr}/tcp/{port}'.format(
+                    addr=addrSrv[0],
+                    port=addrSrv[1]
+                )
 
             try:
                 protocol = await self.protocol()

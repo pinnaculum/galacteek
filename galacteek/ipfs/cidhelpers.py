@@ -10,11 +10,13 @@ from PyQt5.QtCore import QUrl
 from galacteek import log
 from galacteek.ipfs.paths import posixIpfsPath
 from galacteek.ipfs.cid import CIDv1
+from galacteek.ipfs.cid import CIDv0
 from galacteek.ipfs.cid import make_cid
 from galacteek.ipfs.cid import BaseCID
 from galacteek.ipfs.stat import StatInfo
 
 import multihash
+import functools
 
 
 def normp(path):
@@ -149,7 +151,7 @@ def cidUpgrade(cid):
         return None
 
 
-def cidDowngrade(cid):
+def cidDowngrade(cid: CIDv1):
     """
     Converts a cid.CIDv1 instance to a cid.CIDv0
     """
@@ -161,7 +163,7 @@ def cidDowngrade(cid):
         return None
 
 
-def cidConvertBase32(cid):
+def cidConvertBase32(cid: str):
     """
     Convert a base58-encoded CID to a base32 string
 
@@ -187,7 +189,7 @@ def cidConvertBase32(cid):
     return cid.encode('base32').decode()
 
 
-def ipnsKeyCidV1(ipnsKey: str):
+def ipnsKeyCidV1(ipnsKey: str, multicodec='libp2p-key'):
     """
     Converts a base58 IPNS key to a CIDv1 in base36 with the
     'libp2p-key' multicodec. If it's already a CIDv1
@@ -205,10 +207,54 @@ def ipnsKeyCidV1(ipnsKey: str):
         # Return it encoded in base36
         return cid.encode('base36').decode()
 
-    # Need to use the libp2p-key multicodec
-    cidV1 = CIDv1('libp2p-key', cid.multihash)
-    # return cidV1.encode('base32').decode()
+    # Create the CIDv1 with the requested multicodec
+    cidV1 = CIDv1(multicodec, cid.multihash)
+
     return cidV1.encode('base36').decode()
+
+
+@functools.lru_cache(maxsize=128)
+def peerIdReencode(peerId: str,
+                   base: str = 'base36',
+                   multicodec: str = 'libp2p-key'):
+    """
+    Encode a PeerId to a specific base
+    """
+
+    cid = getCID(peerId)
+    if not cid:
+        return None
+
+    if base in ['base32', 'base36']:
+        cidV1 = CIDv1(multicodec, cid.multihash)
+        return cidV1.encode(base).decode()
+    elif base in ['base58']:
+        # asssume CIDv0
+        cidV0 = CIDv0(cid.multihash)
+        return str(cidV0)
+
+    return None
+
+
+def peerIdBase32(peerId: str):
+    """
+    Convert any PeerId to a CIDv1 (base32)
+    """
+    return peerIdReencode(peerId, base='base32')
+
+
+def peerIdBase36(peerId: str):
+    """
+    Convert any PeerId to a CIDv1 (base36)
+    """
+    return peerIdReencode(peerId, base='base36')
+
+
+def peerIdBase58(peerId: str):
+    """
+    Convert any PeerId to a CIDv0 (base58)
+    """
+    return peerIdReencode(peerId, base='base58')
 
 
 def cidValid(cid):
@@ -276,6 +322,11 @@ ipfsPathDedRe = re.compile(
 # For rewriting (unlawful) ipfs://<cidv0> or ipfs://<cidv1-base58> to base32
 ipfsPathDedRe58 = re.compile(
     r'^(\s*)?(?:ipfs://)(?P<fullpath>(?P<rootcid>[a-zA-Z0-9]{46,113})/?(?P<subpath>[' + pathChars + ']{1,1024})?)' + query + fragment,  # noqa
+    flags=re.UNICODE)
+
+# For rewriting (unlawful) ipfs+http://<cidv0>
+ipfsHttpPathRe = re.compile(
+    r'^(\s*)?(?:ipfs\+http://)((?P<username>[\w\-\.]+)@)?(?P<fullpath>(?P<peerid>[a-zA-Z0-9]{1,62})/?(?P<subpath>[' + pathChars + ']{1,1024})?)' + query + fragment,  # noqa
     flags=re.UNICODE)
 
 ipnsPathDedRe = re.compile(
@@ -807,6 +858,10 @@ def ipfsDedSearchPath58(text):
     # CIDv0) as root CID. Only used to be able to extract the root CID
     # and replace it with the base32 version
     return ipfsPathDedRe58.match(text)
+
+
+def ipfsHttpSearch(text):
+    return ipfsHttpPathRe.match(text)
 
 
 def ipfsRegSearchCid(text):

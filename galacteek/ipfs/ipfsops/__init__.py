@@ -152,12 +152,14 @@ class TunnelDialerContext(object):
     def failed(self):
         return self.maddr is None
 
-    def httpUrl(self, path):
+    def httpUrl(self, path, query=None, fragment=None, scheme='http'):
         return str(URL.build(
             host=self.maddrHost,
             port=self.maddrPort,
-            scheme='http',
-            path=path
+            scheme=scheme,
+            path=path,
+            query=query,
+            fragment=fragment
         ))
 
     async def __aenter__(self):

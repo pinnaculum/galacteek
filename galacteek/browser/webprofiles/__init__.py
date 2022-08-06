@@ -14,6 +14,8 @@ from galacteek.browser.schemes import SCHEME_ENSR
 from galacteek.browser.schemes import SCHEME_FS
 from galacteek.browser.schemes import SCHEME_I
 from galacteek.browser.schemes import SCHEME_IPFS
+from galacteek.browser.schemes import SCHEME_IPFS_P_HTTP
+from galacteek.browser.schemes import SCHEME_IPFS_P_HTTPS
 from galacteek.browser.schemes import SCHEME_IPNS
 from galacteek.browser.schemes import SCHEME_IPID
 from galacteek.browser.schemes import SCHEME_QMAP
@@ -158,6 +160,10 @@ class BaseProfile(QWebEngineProfile, KeyListener):
         self.installHandler(SCHEME_QMAP, self.app.qSchemeHandler)
         self.installHandler(SCHEME_IPID, self.app.ipidSchemeHandler)
         self.installHandler(SCHEME_I, self.app.iSchemeHandler)
+        self.installHandler(SCHEME_IPFS_P_HTTP,
+                            self.app.ipfsHttpSchemeHandler)
+        self.installHandler(SCHEME_IPFS_P_HTTPS,
+                            self.app.ipfsHttpSchemeHandler)
 
         self.installHandler(SCHEME_GEMINI, self.app.geminiSchemeHandler)
         self.installHandler(SCHEME_GEMI, self.app.gemIpfsSchemeHandler)

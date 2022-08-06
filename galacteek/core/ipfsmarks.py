@@ -205,6 +205,7 @@ class MultihashPyramid(collections.UserDict):
 
     TYPE_WEBSITE_MKDOCS = 3
     TYPE_GEMINI = 4
+    TYPE_HTTP_SERVICE_FORWARD = 5
 
     # Flags
     FLAG_MODIFIABLE_BYUSER = 0x01

@@ -963,7 +963,7 @@ class WorkspaceMisc(TabbedWorkspace):
     def __init__(self, stack):
         super(WorkspaceMisc, self).__init__(
             stack, WS_MISC, icon=getIcon('settings.png'),
-            description='Misc'
+            description='Settings/Tools'
         )
 
     @cached_property

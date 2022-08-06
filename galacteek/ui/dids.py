@@ -5,13 +5,20 @@ from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QMenu
 
 from galacteek import ensure
+from galacteek import partialEnsure
 from galacteek import log
+from galacteek.ipfs import ipfsOpFn
 from galacteek.did.ipid import IPIdentifier
 from galacteek.did.ipid import IPService
+from galacteek.did.ipid import IPIDServiceException
 
 from .dialogs import GenericTextInputDialog
+from .dialogs import HTTPForwardDIDServiceAddDialog
 from .helpers import getIcon
 from .helpers import runDialog
+from .helpers import messageBoxAsync
+from .i18n import iOpen
+from .i18n import iDelete
 
 
 class DIDExplorer:
@@ -49,6 +56,41 @@ def addIpServiceCollection(ipid: IPIdentifier):
     )
 
 
+def addHttpForwardService(ipid: IPIdentifier):
+    @ipfsOpFn
+    async def addHttpService(ipfsop, dlg):
+        try:
+            url = dlg.getAccessUrl(ipfsop.ctx)
+
+            await ipid.addServiceRaw({
+                'id': ipid.didUrl(path=f'/www/{dlg.name}'),
+                'type': IPService.SRV_TYPE_HTTP_SERVICE,
+                'serviceEndpoint': {
+                    '@type': 'HttpForwardServiceEndpoint',
+                    '@id': url,
+
+                    'accessUrl': url,
+                    'url': url,
+                    'httpAdvertisePort': dlg.httpAdvertisePort,
+                    'targetMultiAddr': dlg.targetMultiAddr
+                }
+            })
+        except IPIDServiceException as err:
+            await messageBoxAsync(str(err))
+        except Exception as err:
+            await messageBoxAsync(str(err))
+        else:
+            await ipid.refresh()
+
+    def addService(dlg):
+        ensure(addHttpService(dlg))
+
+    runDialog(
+        HTTPForwardDIDServiceAddDialog,
+        accepted=addService
+    )
+
+
 def addIpServiceVideoCall(ipid: IPIdentifier):
     def addService(dlg):
         name = dlg.enteredText()
@@ -63,6 +105,42 @@ def addIpServiceVideoCall(ipid: IPIdentifier):
     )
 
 
+async def addIpServicesCreationActions(ipid: IPIdentifier,
+                                       menu):
+    action = QAction(
+        getIcon('blocks-cluster.png'),
+        'Add collection service',
+        menu)
+
+    action.triggered.connect(functools.partial(
+        addIpServiceCollection, ipid
+    ))
+
+    menu.addAction(action)
+    menu.addSeparator()
+
+    action = QAction(
+        getIcon('blocks-cluster.png'),
+        'Add HTTP forward service',
+        menu)
+
+    action.triggered.connect(functools.partial(
+        addHttpForwardService, ipid
+    ))
+
+    menu.addAction(action)
+    menu.addSeparator()
+
+
+async def deleteIpService(ipid: IPIdentifier, serviceId: str, *args):
+    try:
+        await ipid.removeServiceById(serviceId)
+    except Exception as err:
+        await messageBoxAsync(str(err))
+    else:
+        await messageBoxAsync(f'Service {serviceId}: removed')
+
+
 async def buildIpServicesMenu(ipid: IPIdentifier,
                               sMenu,
                               parent=None):
@@ -70,30 +148,7 @@ async def buildIpServicesMenu(ipid: IPIdentifier,
     didTower = app.towers['did']
 
     if ipid.local:
-        action = QAction(
-            getIcon('blocks-cluster.png'),
-            'Add collection service',
-            sMenu)
-
-        action.triggered.connect(functools.partial(
-            addIpServiceCollection, ipid
-        ))
-
-        sMenu.addAction(action)
-        sMenu.addSeparator()
-
-        if 0:
-            action = QAction(
-                getIcon('blocks-cluster.png'),
-                'Add video call service',
-                sMenu)
-
-            action.triggered.connect(functools.partial(
-                addIpServiceVideoCall, ipid
-            ))
-
-            sMenu.addAction(action)
-            sMenu.addSeparator()
+        await addIpServicesCreationActions(ipid, sMenu)
 
     async for service in ipid.discoverServices():
         if service.type == IPService.SRV_TYPE_COLLECTION:
@@ -128,27 +183,46 @@ async def buildIpServicesMenu(ipid: IPIdentifier,
 
             sMenu.addMenu(menu)
         else:
-            action = QAction(
+            menu = QMenu(str(service), sMenu)
+            menu.setIcon(getIcon('ipservice.png'))
+
+            actionOpen = QAction(
                 getIcon('ipservice.png'),
-                str(service),
-                sMenu)
-            action.setData({
+                iOpen(),
+                menu)
+            actionOpen.setData({
                 'service': service,
                 'ctx': {}
             })
+            actionDelete = QAction(
+                getIcon('cancel.png'),
+                iDelete(),
+                menu)
+
+            if service.type not in [IPService.SRV_TYPE_HTTP_FORWARD_SERVICE,
+                                    IPService.SRV_TYPE_HTTP_SERVICE,
+                                    IPService.SRV_TYPE_GEMINI_CAPSULE]:
+                actionDelete.setEnabled(False)
+
+            menu.addAction(actionOpen)
+            menu.addAction(actionDelete)
+            sMenu.addMenu(menu)
 
             def emitOpen(tower, did, serviceId):
                 ensure(tower.didServiceOpenRequest.emit(
                     did, serviceId, {})
                 )
 
-            action.triggered.connect(
+            actionOpen.triggered.connect(
                 functools.partial(emitOpen, didTower, ipid.did, service.id)
             )
 
-            action.setToolTip(service.id)
-            sMenu.addAction(action)
-            sMenu.addSeparator()
+            actionDelete.triggered.connect(
+                partialEnsure(deleteIpService, ipid, service.id)
+            )
+
+            actionOpen.setToolTip(service.id)
+            menu.setToolTip(service.id)
 
     return sMenu
 

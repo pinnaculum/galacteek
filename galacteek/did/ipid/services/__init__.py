@@ -74,13 +74,16 @@ class IPService(metaclass=IPServiceRegistry):
 
     SRV_TYPE_GEMINI_CAPSULE = 'GeminiIpfsCapsuleService'
 
+    SRV_TYPE_HTTP_SERVICE = 'HttpWebsiteService'
+    SRV_TYPE_HTTP_FORWARD_SERVICE = 'HttpForwardWebsiteService'
+
     forTypes = []
     container = False
 
     def __init__(self, dagNode: dict, ipid):
         self._srv = dagNode
         self._didEx = didExplode(self.id)
-        self._ipid = ipid
+        self._ipid = ipid  # TODO: get rid of the ref
         self._p2pServices = []
 
         self.sChanged = AsyncSignal()

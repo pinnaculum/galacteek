@@ -33,6 +33,7 @@ from galacteek import AsyncSignal
 
 from galacteek.browser.schemes import SCHEME_GEM
 from galacteek.browser.schemes import SCHEME_GEMI
+from galacteek.browser.schemes import SCHEME_IPFS_P_HTTP
 
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import joinIpns
@@ -141,6 +142,20 @@ def iCreateGem():
     )
 
 
+def iCreateHttpForwardService():
+    return QCoreApplication.translate(
+        'PyramidMaster',
+        'Create: http forward service (forward to an existing HTTP service)'
+    )
+
+
+def iAccessHttpForwardService():
+    return QCoreApplication.translate(
+        'PyramidMaster',
+        'Access ipfs+http website'
+    )
+
+
 def iCreateWebsiteMkdocsToolTip():
     return QCoreApplication.translate(
         'PyramidMaster',
@@ -196,14 +211,14 @@ def iRewindDAG():
 def iProfilePublishToDID():
     return QCoreApplication.translate(
         'PyramidMaster',
-        'Publish'
+        'Publish (DID service)'
     )
 
 
 def iProfileUnpublishFromDID():
     return QCoreApplication.translate(
         'PyramidMaster',
-        'Unpublish'
+        'Unpublish (DID service)'
     )
 
 
@@ -372,9 +387,15 @@ class MultihashPyramidsToolBar(SmartToolBar):
             iCreateGem(),
             self.onAddPyramidGem
         )
-        ac.setToolTip(iCreateWebsiteMkdocsToolTip())
-
         self.pyramidsControlButton.menu.addSeparator()
+
+        if 0:
+            self.pyramidsControlButton.menu.addAction(
+                getMimeIcon('text/html'),
+                iCreateHttpForwardService(),
+                self.onAddPyramidHttpService
+            )
+            self.pyramidsControlButton.menu.addSeparator()
 
         self.pyramidsControlButton.menu.addAction(
             pyrIcon, iHelp(), self.pyramidHelpMessage)
@@ -489,6 +510,8 @@ class MultihashPyramidsToolBar(SmartToolBar):
             button = WebsiteMkdocsPyramidButton(pyramid, parent=self)
         elif pyramid.type == MultihashPyramid.TYPE_GEMINI:
             button = GemPyramidButton(pyramid, parent=self)
+        elif pyramid.type == MultihashPyramid.TYPE_HTTP_SERVICE_FORWARD:
+            button = HttpForwardServicePyramidButton(pyramid, parent=self)
         else:
             # TODO
             return
@@ -594,6 +617,13 @@ class MultihashPyramidsToolBar(SmartToolBar):
                               MultihashPyramid.TYPE_GEMINI,
                               category='gems',
                               title='New gem (gemini capsule)',
+                              parent=self))
+
+    def onAddPyramidHttpService(self):
+        ensure(runDialogAsync(AddMultihashPyramidDialog, self.app.marksLocal,
+                              MultihashPyramid.TYPE_HTTP_SERVICE_FORWARD,
+                              category='http',
+                              title=iCreateHttpForwardService(),
                               parent=self))
 
 
@@ -1383,6 +1413,11 @@ class ContinuousPyramid(MultihashPyramidToolButton):
 
         self.markAdded.connectTo(self.onMarkAdded)
 
+    async def onObjectDropped(self, ipfsPath):
+        await self.cancelPublishJob()
+        async with self.lock:
+            await self.pyramidInputNewObject(str(ipfsPath))
+
     async def onMarkAdded(self, mark, mtype):
         pass
 
@@ -1409,7 +1444,7 @@ class ContinuousPyramid(MultihashPyramidToolButton):
 
         async with ipfsop.getContexted(ipfsPath, tmpdir) as get:
             if get.finaldir:
-                await self. pyramidInputNew(str(get.finaldir))
+                await self.pyramidInputNew(str(get.finaldir))
 
     @ipfsOp
     async def pyramidOutputNew(self, ipfsop, fspath):
@@ -1606,6 +1641,118 @@ class GemPyramidButton(ContinuousPyramid):
         self.setToolTip(self.pyrToolTip)
 
 
+class HttpForwardServicePyramidButton(MultihashPyramidToolButton):
+    """
+    HTTP forward
+    """
+
+    didServicesSection = 'http'
+    didServiceType = IPService.SRV_TYPE_HTTP_SERVICE
+
+    @property
+    def ipversion(self):
+        return self.pyramid.extra.get('ipv', 'ip4')
+
+    @property
+    def httpHost(self):
+        return self.pyramid.extra.get('httpHost', '127.0.0.1')
+
+    @property
+    def httpListenPort(self):
+        return self.pyramid.extra.get('httpListenPort', 8080)
+
+    @property
+    def httpAdvertisePort(self):
+        return self.pyramid.extra.get('httpAdvertisePort', 80)
+
+    @property
+    def targetMultiAddr(self):
+        return f'/{self.ipversion}/{self.httpHost}/tcp/{self.httpListenPort}'
+
+    @property
+    def accessUrl(self):
+        # Service's access URL. If the port number is the default (80), the
+        # port number is not included in the URL, as the URL scheme handler
+        # will assume it's 80
+        if self.httpAdvertisePort == 80:
+            return f'{SCHEME_IPFS_P_HTTP}://{self.app.ipfsCtx.node.idBase36}'
+        else:
+            return f'{SCHEME_IPFS_P_HTTP}://{self.app.ipfsCtx.node.idBase36}:{self.httpAdvertisePort}'  # noqa
+
+    @property
+    def p2pEndpointAddress(self):
+        return f'/p2p/{self.app.ipfsCtx.node.id}/x/ipfs-http/{self.pyramid.name}/1.0'  # noqa
+
+    def openService(self):
+        ensure(self.app.resourceOpener.open(self.accessUrl))
+
+    def buildMenu(self):
+        self.httpAccessAction = self.menu.addAction(
+            getMimeIcon('text/html'),
+            iAccessHttpForwardService(),
+            self.openService
+        )
+
+        self.buildMenuWithActions([
+            self.httpAccessAction,
+            self.didPublishAction,
+            self.didUnpublishAction,
+            self.deleteAction
+        ])
+
+    @ipfsOp
+    async def didPublishService(self, ipfsop, url=None):
+        profile = ipfsop.ctx.currentProfile
+        ipid = await profile.userInfo.ipIdentifier()
+
+        try:
+            descr = self.pyramid.description
+
+            await ipid.addServiceRaw({
+                'id': url if url else self.didPyramidUrl(ipid),
+                'type': self.didServiceType,
+                'description': descr if descr else 'No description',
+                'serviceEndpoint': {
+                    '@type': 'HttpForwardServiceEndpoint',
+                    '@id': self.accessUrl,
+
+                    'accessUrl': self.accessUrl,
+                    'httpAdvertisePort': self.httpAdvertisePort,
+                    'targetMultiAddr': self.targetMultiAddr
+                }
+            })
+        except IPIDServiceException as err:
+            await messageBoxAsync(
+                f'IP Service error: {err}'
+            )
+        else:
+            await ipid.refresh()
+
+    def updateToolTip(self):
+        self._pyrToolTip = '''
+            <p>
+                <img width='64' height='64'
+                    src=':/share/icons/mimetypes/text-html.png'/>
+            </p>
+            <p>
+                HTTP forward service: <b>{path}</b>
+            </p>
+            <p>
+                Target multiaddr: <b>{target}</b>
+            </p>
+            <p>
+                Host: <b>{httpHost}</b>
+                Public port: <b>{publicPort}</b>
+            </p>
+        '''.format(
+            path=self.pyramid.path,
+            target=self.targetMultiAddr,
+            publicPort=self.httpAdvertisePort,
+            httpHost=self.httpHost
+        )
+        self.setToolTip(self.pyrToolTip)
+
+
 class WebsiteMkdocsPyramidButton(ContinuousPyramid):
     """
     This pyramid generates websites with the great MKDocs.
@@ -1636,11 +1783,6 @@ class WebsiteMkdocsPyramidButton(ContinuousPyramid):
             iHelp(),
             self.dwebSiteHelpMessage
         )
-
-    async def onObjectDropped(self, ipfsPath):
-        await self.cancelPublishJob()
-        async with self.lock:
-            await self.pyramidInputNewObject(str(ipfsPath))
 
     async def onMarkAdded(self, mark, mtype):
         if mtype == 'inputmark':

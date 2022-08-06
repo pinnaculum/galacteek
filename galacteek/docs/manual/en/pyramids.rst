@@ -193,9 +193,9 @@ and hit Publish.**
 The capsule will appear in the gems section**
 
 Gemini IPFS capsules in *galacteek* are accessed via a specific URL
-scheme called **gem**, URLS use this format (*PeerID* and *capsule name*)::
+scheme called **gemi**, URLS use this format (*PeerID* and *capsule name*)::
 
-    gem:/12D3KooWQWcGx8jrWNPFRPpmd1ywXu612ShBkFGvmr7UBexzKTSk/mygem
+    gemi:/12D3KooWQWcGx8jrWNPFRPpmd1ywXu612ShBkFGvmr7UBexzKTSk/mygem
 
 Syntax
 ------

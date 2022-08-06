@@ -59,7 +59,6 @@ class IPIDSchemeHandler(NativeIPFSSchemeHandler,
             return self.urlInvalid(request)
 
         if path == '/':
-            print('Summary')
             return await self.ipidRenderSummary(
                 request,
                 uid,

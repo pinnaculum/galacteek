@@ -100,5 +100,36 @@ You can search the IP services of a peer from the main menu,
 or by typing **Mod + i**. Typing a Space handle will autocomplete
 and show you the IP services for that peer.
 
+Creating DID services
+---------------------
+
+From the profile menu you can create new services. Click on the helmet
+and go to the *IP services* menu.
+
+Object collections service
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This type of service is a simple container of IPFS files. You can publish
+files to a collection from the filemanager.
+
+HTTP forwarding service
+^^^^^^^^^^^^^^^^^^^^^^^
+
+This DID service allows you to serve an existing HTTP website over IPFS
+(via libp2p tunnels). It will be accessible through the *ipfs+http*
+protocol. The *ipfs+http* protocol doesn't use domain names, but
+base36-encoded IPFS PeerIDs (this makes it pretty secure, as there is
+no DNS resolving involved, the URL origin being the PeerID which is
+dialed directly through IPFS).
+
+From the menu select *Add HTTP forward service*. The dialog form will ask
+you for the IP address and listening port of the HTTP website you want to
+use. The *public TCP port* (by default 80) is the port number for the
+*ipfs+http* DID service, and is included in the URL. This means that
+you can serve as many websites as you want on a single IPFS node, by using
+different *public ports*.
+
+For more infos on the *ipfs+http* protocol, look at the :ref:`browsing`
+section.
 
 .. _IPID: https://github.com/jonnycrunch/ipid

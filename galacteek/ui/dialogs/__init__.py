@@ -65,6 +65,7 @@ from galacteek import AsyncSignal
 from galacteek.browser.schemes import isEnsUrl
 from galacteek.browser.schemes import isHttpUrl
 from galacteek.browser.schemes import isGeminiUrl
+from galacteek.browser.schemes import SCHEME_IPFS_P_HTTP
 
 from galacteek.ipfs import cidhelpers
 from galacteek.ipfs.ipfsops import *
@@ -91,6 +92,7 @@ from ..forms import ui_captchachallengedialog
 from ..forms import ui_videochatackwaitdialog
 from ..forms import ui_videochatackwait
 from ..forms import ui_donatecryptodialog
+from ..forms import ui_httpforwardservicedialog
 
 from ..helpers import *
 from ..widgets import ImageWidget
@@ -736,6 +738,12 @@ class AddMultihashPyramidDialog(QDialog):
             extraLayout.addWidget(self.checkBoxStartupSync)
             extraLayout.addLayout(layout1)
             extraLayout.addLayout(layout2)
+        elif pyramidType == MultihashPyramid.TYPE_HTTP_SERVICE_FORWARD:
+            # TODO: purge this (unused, was moved to a simple DID service)
+            self.httpServiceForm = QWidget()
+            self.httpServiceUi = ui_httpforwardservicedialog.Ui_Form()
+            self.httpServiceUi.setupUi(self.httpServiceForm)
+            extraLayout.addWidget(self.httpServiceForm)
 
         self.iconSelector = IconSelector()
         self.iconSelector.iconSelected.connect(self.onIconSelected)
@@ -826,6 +834,13 @@ class AddMultihashPyramidDialog(QDialog):
             extra['startupsync'] = self.checkBoxStartupSync.isChecked()
         elif self.pyramidType == MultihashPyramid.TYPE_GEMINI:
             extra['gemId'] = secrets.token_hex(32)
+        elif self.pyramidType == MultihashPyramid.TYPE_HTTP_SERVICE_FORWARD:
+            extra['protocol'] = self.httpServiceUi.protocol.currentText()
+            extra['ipv'] = self.httpServiceUi.ipVersion.currentText()
+            extra['httpHost'] = self.httpServiceUi.httpHost.text()
+            extra['httpListenPort'] = self.httpServiceUi.httpListenPort.value()
+            extra['httpAdvertisePort'] = \
+                self.httpServiceUi.httpAdvertisePort.value()
 
         ipnsKeyName = 'galacteek.pyramids.{cat}.{name}'.format(
             cat=category.replace('/', '_'), name=pyramidName)
@@ -2288,3 +2303,64 @@ class TextBrowserDialog(QDialog):
     def setHtml(self, html: str):
         self.textBrowser.setHtml(html)
         self.textBrowser.moveCursor(QTextCursor.Start)
+
+
+class HTTPForwardDIDServiceAddDialog(BaseDialog):
+    uiClass = ui_httpforwardservicedialog.Ui_Form
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setMinimumSize(
+            self.app.desktopGeometry.width() / 2,
+            self.app.desktopGeometry.height() / 3
+        )
+
+        self.ui.didServiceName.setValidator(
+            QRegExpValidator(QRegExp(r"[\w/\-_]{1,16}"))
+        )
+
+        self.ui.buttonBox.accepted.connect(self.accept)
+        self.ui.buttonBox.rejected.connect(self.reject)
+
+    @property
+    def targetMultiAddr(self):
+        return f'/{self.ipVersion}/{self.httpHost}/tcp/{self.httpListenPort}'
+
+    @property
+    def name(self):
+        return self.ui.didServiceName.text()
+
+    @property
+    def httpHost(self):
+        return self.ui.httpHost.text()
+
+    @property
+    def httpListenPort(self):
+        return self.ui.httpListenPort.value()
+
+    @property
+    def httpAdvertisePort(self):
+        return self.ui.httpAdvertisePort.value()
+
+    @property
+    def ipVersion(self):
+        return self.ui.ipVersion.currentText()
+
+    def getAccessUrl(self, ipfsCtx):
+        # Service's access URL. If the port number is the default (80), the
+        # port number is not included in the URL, as the URL scheme handler
+        # will assume it's 80
+        if self.httpAdvertisePort == 80:
+            return f'{SCHEME_IPFS_P_HTTP}://{ipfsCtx.node.idBase36}'
+        else:
+            return f'{SCHEME_IPFS_P_HTTP}://{ipfsCtx.node.idBase36}:{self.httpAdvertisePort}'  # noqa
+
+    def reject(self):
+        self.done(0)
+
+    def accept(self):
+        if len(self.name) not in range(3, 16):
+            messageBox('DID service name: invalid length (3 to 16 characters)')
+        else:
+            self.done(1)

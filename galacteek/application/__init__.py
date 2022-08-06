@@ -90,6 +90,7 @@ from galacteek.browser.schemes import ObjectProxySchemeHandler
 from galacteek.browser.schemes import MultiObjectHostSchemeHandler
 from galacteek.browser.schemes.ipid import IPIDSchemeHandler
 from galacteek.browser.schemes.i import ISchemeHandler
+from galacteek.browser.schemes.ipfshttp import IpfsHttpSchemeHandler
 from galacteek.browser.schemes.gemini import GeminiSchemeHandler
 from galacteek.browser.schemes.gemini import GemIpfsSchemeHandler
 from galacteek.browser.schemes.pronto import ProntoGraphsSchemeHandler
@@ -1640,6 +1641,7 @@ class GalacteekApplication(QApplication):
         self.gemIpfsSchemeHandler = GemIpfsSchemeHandler(self)
         self.prontoGSchemeHandler = ProntoGraphsSchemeHandler(self)
         self.webTorrentSchemeHandler = WebTorrentSchemeHandler(self)
+        self.ipfsHttpSchemeHandler = IpfsHttpSchemeHandler(self)
 
     def subUrl(self, path):
         """ Joins the gatewayUrl and path to form a new URL """

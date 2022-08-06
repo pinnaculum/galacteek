@@ -55,6 +55,7 @@ from galacteek.did.ipid.services import IPServiceEditor
 from galacteek.did.ipid.services import IPIDServiceException
 from galacteek.did.ipid.services import passport  # noqa
 from galacteek.did.ipid.services import gem  # noqa
+from galacteek.did.ipid.services import http  # noqa
 
 
 def ipidFormatValid(did):
@@ -75,6 +76,7 @@ class IPIdentifier(DAGOperations):
     def __init__(self, did, localId=False, ldCache=None):
         self._did = did
         self._p2pServices = weakref.WeakValueDictionary()
+        self._didServiceInstances = {}
         self._document = {}
         self._docCid = None
         self._localId = localId
@@ -766,11 +768,18 @@ class IPIdentifier(DAGOperations):
         return node if node else []
 
     def _serviceInst(self, srv):
+        sid = srv.get('id')
+        cached = self._didServiceInstances.get(sid)
+
+        if cached:
+            return cached
+
         stype = srv.get('type')
 
         for cname, sclass in IPServiceRegistry.IPSREGISTRY.items():
             if stype in sclass.forTypes:
-                return sclass(srv, self)
+                self._didServiceInstances[sid] = sclass(srv, self)
+                return self._didServiceInstances[sid]
 
     async def discoverServices(self):
         for srv in await self.getServices():
@@ -817,6 +826,10 @@ class IPIdentifier(DAGOperations):
                         await sInst.serviceStop()
 
                     self._document['service'].remove(srv)
+
+                    if _id in self._didServiceInstances:
+                        self._didServiceInstances.pop(_id)
+
                     await self.flush()
         except Exception as err:
             log.debug(str(err))
