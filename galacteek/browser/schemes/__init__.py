@@ -444,6 +444,20 @@ class BaseURLSchemeHandler(QWebEngineUrlSchemeHandler):
             log.debug('Error buffering request data')
             request.fail(QWebEngineUrlRequestJob.RequestFailed)
 
+    async def getMimeType(self, data, ipfsPath: IPFSPath):
+        cType = await detectMimeTypeFromBuffer(data[0:512])
+
+        if not cType:
+            cType = MIMEType('application/octet-stream')
+
+        if cType and cType.isText:
+            if ipfsPath.objPath.endswith('.css'):
+                # TODO: add CSS rules in libmagic
+                # QtWebEngine really wants 'text/css'
+                cType = MIMEType('text/css')
+
+        return cType
+
 
 class IPFSObjectProxyScheme:
     """
@@ -864,7 +878,8 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
 
             return self.reqFailed(request)
 
-    async def fetchFromPath(self, ipfsop, request, ipfsPath, uid, **kw):
+    async def fetchFromPathNonChunked(self, ipfsop, request,
+                                      ipfsPath, uid, **kw):
         try:
             data = await ipfsop.catObject(ipfsPath.objPath)
         except aioipfs.APIError as exc:
@@ -904,6 +919,60 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
         else:
             if data:
                 return await self.renderData(request, ipfsPath, data, uid)
+
+    async def fetchFromPath(self, ipfsop, request, ipfsPath, uid, **kw):
+        buf = self.requests[uid]['iodev']
+
+        try:
+            mType = None
+
+            buf.open(QIODevice.WriteOnly)
+
+            async for cnum, chunk in ipfsop.catChunked(ipfsPath.objPath):
+                if cnum == 0:
+                    mType = await self.getMimeType(chunk, ipfsPath)
+
+                buf.write(chunk)
+
+            buf.close()
+
+            request.reply(mType.type.encode('ascii'), buf)
+        except aioipfs.APIError as exc:
+            await asyncio.sleep(0)
+
+            self.info('API error ({path}): {err}'.format(
+                path=str(ipfsPath), err=exc.message)
+            )
+
+            dec = APIErrorDecoder(exc)
+
+            if dec.errNoSuchLink():
+                return self.urlNotFound(request)
+
+            if dec.errIsDirectory():
+                data = await self.renderDirectory(
+                    request,
+                    ipfsop,
+                    str(ipfsPath)
+                )
+                if data:
+                    return await self.renderData(request, ipfsPath,
+                                                 data, uid)
+
+            if dec.errUnknownNode():
+                # DAG / TODO
+                data = await self.renderDagNode(
+                    request,
+                    uid,
+                    ipfsop,
+                    ipfsPath
+                )
+                if data:
+                    return await self.renderData(request, ipfsPath,
+                                                 data, uid)
+        except Exception as gerr:
+            log.debug(f'fetchFromPath, unknown error: {gerr}')
+            return None
 
 
 class ObjectProxySchemeHandler(NativeIPFSSchemeHandler, IPFSObjectProxyScheme):

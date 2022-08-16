@@ -1617,6 +1617,46 @@ class IPFSOperator(RemotePinningOps,
             ), timeout if timeout else cfg.timeout
         )
 
+    async def catChunked(self, path: str, chunkSize=262144,
+                         incrementFactor=0):
+        """
+        async generator that reads an IPFS file by chunks
+
+        For each chunk read it yields a tuple (chunk_number, chunk_bytes)
+        """
+
+        offset, cnum = 0, 0
+
+        async def getChunk(offset, length):
+            # Using wait_for for each chunk read is too costly, let the caller
+            # use a wait_for wrapper if needed on the whole coroutine call
+
+            return await self.client.cat(
+                path,
+                offset=offset, length=length
+            )
+
+        try:
+            buff = await getChunk(offset, chunkSize)
+            assert buff is not None
+
+            while buff:
+                yield cnum, buff
+
+                offset += chunkSize
+                buff = await getChunk(offset, chunkSize)
+
+                assert buff is not None
+
+                cnum += 1
+
+                await self.sleep(0)
+        except aioipfs.APIError as err:
+            raise err
+        except Exception as err:
+            self.debug(f'catChunked({path}): error at offset {offset}: {err}')
+            raise err
+
     async def listObject(self, path, timeout=None):
         cfg = self.opConfig('listObject')
         try:

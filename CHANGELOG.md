@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for the ipfs+http(s):// protocol
 - UI: add actions to create HTTP forward DID services
 
+### Changed
+- ipfs URL scheme handler: use chunking algorithm for downloading objects
+
 ## [0.5.5] - 2022-04-23
 
 ### Added
