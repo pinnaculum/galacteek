@@ -377,7 +377,7 @@ class IPIdentifier(DAGOperations):
         await self.updateDocument(self.doc, publish=publish)
         await self.sServicesChanged.emit()
 
-        sInst = self._serviceInst(service)
+        sInst = self.__serviceInstantiate(service)
         await self.servicePropagate(sInst)
 
         return sInst
@@ -415,7 +415,7 @@ class IPIdentifier(DAGOperations):
         await self.updateDocument(self.doc, publish=publish)
         await self.sServicesChanged.emit()
 
-        sInst = self._serviceInst(service)
+        sInst = self.__serviceInstantiate(service)
         await self.servicePropagate(sInst)
 
         return sInst
@@ -767,23 +767,41 @@ class IPIdentifier(DAGOperations):
         node = await self.dagGet('service')
         return node if node else []
 
-    def _serviceInst(self, srv):
+    def serviceInstance(self, serviceId: str):
+        return self._didServiceInstances.get(serviceId)
+
+    def servicePurgeInstance(self, serviceId: str):
+        if serviceId in self._didServiceInstances:
+            self._didServiceInstances.pop(serviceId)
+
+    def __serviceInstantiate(self, srv: dict):
+        # TODO: We need to instantiate services based on what happens in the
+        # DIDs graph (trigger a refresh when a DID gets reexpanded and written
+        # to the RDF graph). Services will then read from the RDF graph and
+        # not from the DID document
+
         sid = srv.get('id')
-        cached = self._didServiceInstances.get(sid)
-
-        if cached:
-            return cached
-
         stype = srv.get('type')
+        sendpoint = srv.get('serviceEndpoint')
+        cached = self.serviceInstance(sid)
+        cconds = self.local is True and isinstance(sendpoint, dict)
+
+        if cached and cconds:
+            return cached
 
         for cname, sclass in IPServiceRegistry.IPSREGISTRY.items():
             if stype in sclass.forTypes:
-                self._didServiceInstances[sid] = sclass(srv, self)
-                return self._didServiceInstances[sid]
+                srv = sclass(srv, self)
+
+                if cconds:
+                    self._didServiceInstances[sid] = srv
+                    return self.serviceInstance(sid)
+                else:
+                    return srv
 
     async def discoverServices(self):
         for srv in await self.getServices():
-            _inst = self._serviceInst(srv)
+            _inst = self.__serviceInstantiate(srv)
             if _inst:
                 yield _inst
 
@@ -808,7 +826,7 @@ class IPIdentifier(DAGOperations):
     async def searchServiceById(self, _id: str):
         for srvNode in await self.getServices():
             if srvNode['id'] == _id:
-                _inst = self._serviceInst(srvNode)
+                _inst = self.__serviceInstantiate(srvNode)
                 if _inst:
                     return _inst
 
@@ -821,7 +839,7 @@ class IPIdentifier(DAGOperations):
         try:
             for srv in self._document['service']:
                 if srv['id'] == _id:
-                    sInst = self._serviceInst(srv)
+                    sInst = self.__serviceInstantiate(srv)
                     if sInst:
                         await sInst.serviceStop()
 
@@ -835,8 +853,7 @@ class IPIdentifier(DAGOperations):
             log.debug(str(err))
 
     async def avatarService(self):
-        avatarServiceId = self.didUrl(path='/avatar')
-        return await self.searchServiceById(avatarServiceId)
+        return await self.searchServiceById(self.didUrl(path='/avatar'))
 
     async def avatarSet(self, ipfsPath: IPFSPath):
         avatarServiceId = self.didUrl(path='/avatar')

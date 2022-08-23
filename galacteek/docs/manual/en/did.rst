@@ -17,12 +17,8 @@ dying, so-called Web 2.0), brought tremendous
 innovations, but it has failed to give netizens of the world
 a true sense of control over their digital identity, leaving us in the
 current state: weak control over our digital identities,
-and no control over what we publish. The dweb, thanks to
-the power of its protocols, erases the slavery model of
-the ancient client-server paradigm.
-
-Your thoughts matter and have value, stop being a slave,
-and express yourself on the dweb freely.
+and no control over what we publish. The dweb has the potential to fix
+the power imbalance of the old client-server paradigm.
 
 Enter IPID
 ----------
@@ -72,13 +68,8 @@ IP Profile
 Your profile in **galacteek** can have as many decentralized
 identities attached to it as you like.
 
-Each identity is represented by an IP handle (Space handle) and a DID.
+Each identity is represented by an IP handle (Space handle) and a DID::
 
-Your IP handle will be tied to your peer ID if you don't register
-it on the blockchain, otherwise it's not peer-specific.
-Examples::
-
-    alchemist@Saturn
     noname#156@Mars/QmXcBFXy5XA5qELL8Z8GeJdeD9LWa2cWVVnkStK6Jxtvas
     dwebartist@Earth/QmVrLyye1bByJT3ktj9gRFvxibBVpxk7vXvcwEXF9hhdku
 
@@ -92,13 +83,8 @@ An IP service attached to an IPID has a DID URL, for example::
 
     did:ipid:QmXcBFXy5XA5qELL8Z8GeJdeD9LWa2cWVVnkStK6Jxtvas/blog
 
-This same IP service can be searched using the Space handle
-of the peer, for example **macfly@Mars@...** (this service
-would be represented as **macfly@Mars@VVnkStK6Jxtvas/blog**)
-
-You can search the IP services of a peer from the main menu,
-or by typing **Mod + i**. Typing a Space handle will autocomplete
-and show you the IP services for that peer.
+From the Peers workspace you can browse the DID services for each
+authenticated peer.
 
 Creating DID services
 ---------------------

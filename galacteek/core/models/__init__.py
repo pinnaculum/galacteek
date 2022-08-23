@@ -39,7 +39,7 @@ class BaseAbstractItem(object):
         except IndexError:
             return None
 
-    def userData(self, column):
+    def userData(self, column, role):
         return None
 
     def parent(self):
@@ -85,8 +85,8 @@ class AbstractModel(QAbstractItemModel):
         if role in specRoles:
             return item.data(index.column(), role)
 
-        elif role == Qt.UserRole:
-            return item.userData(index.column())
+        elif role in range(Qt.UserRole, Qt.UserRole + 16):
+            return item.userData(index.column(), role)
 
         elif role == Qt.DecorationRole:
             return item.icon(index.column())
@@ -159,7 +159,6 @@ class AbstractModel(QAbstractItemModel):
         if parentItem:
             return parentItem.childCount()
         else:
-            print('NO PAREMT ITEM')
             return 0
 
     def removeRows(self, position, rows, parent=QModelIndex()):

@@ -1,25 +1,26 @@
+import asyncio
+
 from rdflib.plugins.sparql import prepareQuery
 
 from PyQt5.QtCore import QAbstractListModel
-from PyQt5.QtCore import QVariant
 
 from galacteek import log
-from galacteek.core import runningApp
+from galacteek import ensure
 from galacteek import services
+from galacteek.core.models import AbstractModel
+from galacteek.core.models import BaseAbstractItem
 from galacteek.dweb.channels import GAsyncObject
 
 
-class SparQLListModel(QAbstractListModel,
-                      GAsyncObject):
+class SparQLQueryRunner(GAsyncObject):
     def __init__(self, graphUri='urn:ipg:i', graph=None):
         super().__init__()
-
-        self.app = runningApp()
 
         self.graphUri = graphUri
         self._graph = graph
         self._results = []
         self._qprepared = {}
+        self._varsCount = 0
 
     @property
     def rdf(self):
@@ -49,28 +50,29 @@ class SparQLListModel(QAbstractListModel,
         else:
             self._qprepared[name] = q
 
-    def graphQuery(self, query):
-        results = self.tc(self.a_graphQuery, query)
+    def graphQuery(self, query, bindings=None):
+        ensure(self.graphQueryAsync(query, bindings=bindings))
 
-        if results:
-            self.beginResetModel()
-            self._results = results
-            self.endResetModel()
+    async def graphQueryAsync(self, query, bindings=None, setResults=True):
+        self._varsCount = 0
 
-    async def graphQueryAsync(self, query, bindings=None):
         try:
-            results = list(
-                await self.graph.queryAsync(
-                    query,
-                    initBindings=bindings
-                ))
+            results = await self.graph.queryAsync(
+                query,
+                initBindings=bindings
+            )
         except Exception as err:
             log.debug(f'Graph query error: {err}')
             return
 
+        if not setResults:
+            return list(results) if results else []
+
         if results:
+            self._varsCount = len(results.vars)
+
             self.beginResetModel()
-            self._results = results
+            self._results = list(results)
             self.endResetModel()
 
     def runPreparedQuery(self, queryName, bindings):
@@ -90,22 +92,6 @@ class SparQLListModel(QAbstractListModel,
         except Exception:
             return None
 
-    def rowCount(self, parent=None):
-        try:
-            return len(self._results)
-        except Exception:
-            return 0
-
-    def columnCount(self, parent=None):
-        return QVariant(None)
-
-    def roleNames(self):
-        return {}
-
-    @property
-    def roles(self):
-        return {}
-
     async def a_graphQuery(self, app, loop, query):
         """
         Since this coroutines already runs in a separate thread,
@@ -113,7 +99,7 @@ class SparQLListModel(QAbstractListModel,
         """
 
         try:
-            return list(self.graph.query(query))
+            return self.graph.query(query)
         except Exception as err:
             log.debug(f'Graph query error: {err}')
 
@@ -123,3 +109,73 @@ class SparQLListModel(QAbstractListModel,
                 query, initBindings=bindings))
         except Exception as err:
             log.debug(f'Graph prepared query error: {err}')
+
+
+class SparQLListModel(QAbstractListModel,
+                      SparQLQueryRunner):
+    def rowCount(self, parent=None):
+        try:
+            return len(self._results)
+        except Exception:
+            return 0
+
+    def columnCount(self, parent=None):
+        return 1
+
+
+class SparQLBaseItem(BaseAbstractItem):
+    def data(self, column, role):
+        try:
+            idata = list(self.itemData)[column]
+
+            # TODO: handle rdflib Literals
+            return str(idata)
+        except Exception:
+            return None
+
+
+class SparQLItemModel(AbstractModel,
+                      SparQLQueryRunner):
+    def __init__(self, graphUri='urn:ipg:i', graph=None):
+        AbstractModel.__init__(self)
+        SparQLQueryRunner.__init__(self, graphUri=graphUri, graph=graph)
+
+    async def itemFromResult(self, result, parent):
+        return SparQLBaseItem(data=list(result), parent=parent)
+
+    def queryForParent(self, parent):
+        # Return the SparQL query + bindings to run for the given parent item
+        return None, None
+
+    async def graphBuild(self, query, bindings=None, parentItem=None):
+        # Main API: build the tree recursively, asking which sparql
+        # query to run for each inserted item
+
+        parent = parentItem if parentItem else self.rootItem
+
+        results = await self.graphQueryAsync(query, bindings=bindings,
+                                             setResults=False)
+        await asyncio.sleep(0)
+
+        for result in list(results):
+            item = await self.itemFromResult(result, parent)
+
+            if item:
+                self.beginInsertRows(
+                    self.createIndex(parent.row(), 0),
+                    parent.childCount(),
+                    parent.childCount()
+                )
+                parent.appendChild(item)
+                self.endInsertRows()
+
+                try:
+                    q, bds = self.queryForParent(item)
+                    if q:
+                        await self.graphBuild(q, bindings=bds,
+                                              parentItem=item)
+                except Exception as err:
+                    log.debug(f'graphBuild error: {err}')
+                    continue
+
+            await asyncio.sleep(0)

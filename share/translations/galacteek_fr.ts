@@ -1499,53 +1499,6 @@ Path: {0}, nodes processed: {1}</source>
         <source>Right-click/double-click on a peer to discover IP services</source>
         <translation type="unfinished"></translation>
     </message>
-    <message>
-        <location filename="../../galacteek/ui/peers.py" line="58"/>
-        <source>Username</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/peers.py" line="62"/>
-        <source>Peer ID</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/peers.py" line="66"/>
-        <source>Ping Average (ms)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/peers.py" line="70"/>
-        <source>Location</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/peers.py" line="74"/>
-        <source>Invalid DAG CID: {0}</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/peers.py" line="79"/>
-        <source>
-            &lt;p&gt;Type the IP handle of a peer to search for services&lt;/p&gt;
-            &lt;p&gt;Using &lt;b&gt;/&lt;/b&gt; after the handle will popup the services
-            list. Hit enter to enter the service&lt;/p&gt;
-        </source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/peers.py" line="90"/>
-        <source>
-        &lt;p&gt;&lt;img src=&quot;{0}&quot;/&gt;&lt;/p&gt;
-        &lt;p&gt;Handle: {2}&lt;/p&gt;
-        &lt;p&gt;DID: &lt;b&gt;{3}&lt;/b&gt;&lt;/p&gt;
-        &lt;p&gt;{4}&lt;/p&gt;
-        &lt;p&gt;{5}&lt;/p&gt;
-        &lt;p&gt;Average ping: {6}&lt;/p&gt;
-        &lt;/p&gt;
-        </source>
-        <translation type="unfinished"></translation>
-    </message>
 </context>
 <context>
     <name>PinStatusWidget</name>

@@ -365,6 +365,7 @@ class Peers(GService):
         self.lock = aiorwlock.RWLock()
         self.evStopWatcher = asyncio.Event()
         self._byPeerId = collections.OrderedDict()
+        self._byDid = collections.OrderedDict()
         self._byHandle = collections.OrderedDict()
         self._didGraphLStatus = []
         self._didAuthInp = {}
@@ -383,6 +384,10 @@ class Peers(GService):
     @property
     def byPeerId(self):
         return self._byPeerId
+
+    @property
+    def byDid(self):
+        return self._byDid
 
     @property
     def byHandle(self):
@@ -440,11 +445,8 @@ class Peers(GService):
                     log.debug(
                         f'scanNetworkGraph: processing {handle} ({did})')
 
-                    if not sHandle.valid:
-                        continue
-
                     # Is it in the model already ?
-                    if self.app.peersTracker.model.didRegistered(did):
+                    if not sHandle.valid or did in self.byDid:
                         continue
 
                     if did in self._didGraphLStatus:
@@ -503,10 +505,14 @@ class Peers(GService):
             self.peerModified.emit, piCtx))
 
         async with self.lock.writer_lock:
+            # TODO: get rid of tracking by iphandle
             self._byHandle[str(sHandle)] = piCtx
 
             if piCtx.peerId not in self._byPeerId:
                 self._byPeerId[piCtx.peerId] = piCtx
+
+            if piCtx.ipid.did not in self._byDid:
+                self._byDid[piCtx.ipid.did] = piCtx
 
         log.debug(f'Loaded IPID from graph: {did}')
 
@@ -657,6 +663,7 @@ class Peers(GService):
 
                 if piCtx:
                     self._byPeerId[piCtx.peerId] = piCtx
+                    self._byDid[piCtx.ipid.did] = piCtx
 
                     piCtx.ident = iMsg
                     await piCtx.ipid.refresh()

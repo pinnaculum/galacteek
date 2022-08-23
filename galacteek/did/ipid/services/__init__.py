@@ -45,6 +45,7 @@ class IPServiceEditor(object):
             await self.ipid.flush()
 
         await self.ipid.sServicesChanged.emit()
+        self.ipid.servicePurgeInstance(self.service.get('id'))
 
 
 class IPService(metaclass=IPServiceRegistry):

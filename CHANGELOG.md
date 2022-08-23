@@ -12,9 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Functions to reencode PeerIDs into different base encodings
 - Support for the ipfs+http(s):// protocol
 - UI: add actions to create HTTP forward DID services
+- Implement list-based and item-based Qt SparQL models
 
 ### Changed
 - ipfs URL scheme handler: use chunking algorithm for downloading objects
+- Use SparQL models for the various peers, DID, and DID services models
 
 ## [0.5.5] - 2022-04-23
 
