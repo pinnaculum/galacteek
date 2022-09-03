@@ -87,35 +87,35 @@ def iFsRepoMigrateNotFound():
 def iGoIpfsNotFound():
     return QCoreApplication.translate(
         'Galacteek',
-        'Error: Could not find go-ipfs on your system')
+        'Error: Could not find kubo on your system')
 
 
 def iGoIpfsTooOld():
     return QCoreApplication.translate(
         'Galacteek',
-        'Error: go-ipfs version found on your system is too old')
+        'Error: kubo version found on your system is too old')
 
 
 def iGoIpfsFetchAsk():
     return QCoreApplication.translate(
         'Galacteek',
-        'go-ipfs was not found on your system: download '
-        'binary from IPFS distributions website (https://dist.ipfs.io) ?')
+        'kubo was not found on your system: download '
+        'binary from the IPFS distributions website (https://dist.ipfs.io) ?')
 
 
 def iGoIpfsFetchTimeout():
     return QCoreApplication.translate(
         'Galacteek',
-        'Timeout while fetching go-ipfs distribution')
+        'Timeout while fetching kubo distribution')
 
 
 def iGoIpfsFetchSuccess():
     return QCoreApplication.translate(
         'Galacteek',
-        'go-ipfs was installed successfully')
+        'kubo was installed successfully')
 
 
 def iGoIpfsFetchError():
     return QCoreApplication.translate(
         'Galacteek',
-        'Error while fetching go-ipfs distribution')
+        'Error while fetching kubo distribution')

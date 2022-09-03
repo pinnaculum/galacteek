@@ -1705,7 +1705,7 @@ class IPFSOperator(RemotePinningOps,
             dagFile.seek(0, 0)
             try:
                 output = await self.client.dag.put(
-                    dagFile.name, pin=pin, offline=offline)
+                    dagFile.name, pin=pin)
 
                 if isinstance(output, dict) and 'Cid' in output:
                     return output['Cid'].get('/', None)
@@ -1715,12 +1715,6 @@ class IPFSOperator(RemotePinningOps,
             except aioipfs.APIError as err:
                 self.debug(f'dagPut error: {err.message}')
                 return None
-
-    async def dagPutOffline(self, data, pin=False):
-        """
-        Offline DAG put operation
-        """
-        return await self.dagPut(data, pin=pin, offline=True)
 
     async def dagGet(self, dagPath, timeout=30):
         """

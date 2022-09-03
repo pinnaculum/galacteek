@@ -161,7 +161,7 @@ def ipfsVersion():
 async def fetchGoIpfsWrapper(app, timeout=60 * 10):
     try:
         await asyncio.wait_for(fetchIpfsSoft(
-            app, 'go-ipfs', 'ipfs', '0.8.0'), timeout)
+            app, 'kubo', 'ipfs', '0.15.0'), timeout)
     except asyncio.TimeoutError:
         app.mainWindow.statusMessage(iGoIpfsFetchTimeout())
         return None
@@ -1020,13 +1020,13 @@ class GalacteekApplication(QApplication):
                 goIpfsBin = f'ipfs-{version}'
 
                 if self.which(goIpfsBin):
-                    log.debug(f'Found suitable go-ipfs binary: {goIpfsBin}')
+                    log.debug(f'Found suitable kubo binary: {goIpfsBin}')
                     return goIpfsBin
 
         if self.which('ipfs'):
             return 'ipfs'
         else:
-            log.debug('No suitable go-ipfs binary found')
+            log.debug('No suitable kubo binary found')
 
     async def setupIpfsConnection(self, reconfigure=False):
         sManager = self.settingsMgr
@@ -1043,7 +1043,7 @@ class GalacteekApplication(QApplication):
 
         if sManager.isTrue(CFG_SECTION_IPFSD, CFG_KEY_ENABLED):
             if not self.goIpfsBinPath:
-                await messageBoxAsync('go-ipfs could not be found')
+                await messageBoxAsync('kubo could not be found')
                 return await self.exitApp()
 
             fsMigratePath = shutil.which('fs-repo-migrations')
@@ -1530,7 +1530,7 @@ class GalacteekApplication(QApplication):
                 pDialog.log(msg)
                 pDialog.progress(pct)
         except Exception as err:
-            pDialog.log(f'Error starting go-ipfs! {err}')
+            pDialog.log(f'Error starting kubo! {err}')
             self.systemTrayMessage('IPFS', iIpfsDaemonProblem())
 
             return await self.startIpfsDaemon(

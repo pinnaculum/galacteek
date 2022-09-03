@@ -14,11 +14,11 @@ import shutil
 
 
 @async_generator
-async def distIpfsExtract(dstdir='.', software='go-ipfs', executable='ipfs',
-                          site='dist.ipfs.io', version='0.7.0', loop=None,
+async def distIpfsExtract(dstdir='.', software='kubo', executable='ipfs',
+                          site='dist.ipfs.tech', version='0.15.0', loop=None,
                           sslverify=True):
 
-    """ Fetch a distribution archive from dist.ipfs.io and extracts the
+    """ Fetch a distribution archive from dist.ipfs.tech and extracts the
         wanted executable to dstdir. Yields progress messages """
 
     arch = None
@@ -57,12 +57,8 @@ async def distIpfsExtract(dstdir='.', software='go-ipfs', executable='ipfs',
     if not tmpDst:
         return False
 
-    fileName = '{software}_v{version}_{os}-{arch}{ext}'.format(
-        software=software, version=version, arch=arch, os=osType, ext=arExt)
-
-    url = 'https://{site}/{software}/v{version}/{filename}'.format(
-        software=software, site=site, version=version,
-        filename=fileName)
+    fileName = f'{software}_v{version}_{osType}-{arch}{arExt}'
+    url = f'https://{site}/{software}/v{version}/{fileName}'
 
     tmpFile = tempfile.NamedTemporaryFile(suffix=arExt, delete=False)
     arPath = tmpFile.name
