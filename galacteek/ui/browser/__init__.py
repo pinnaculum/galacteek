@@ -2039,11 +2039,11 @@ class BrowserTab(GalacteekTab):
         if len(pageTitle) > lenMax:
             pageTitle = '{0} ...'.format(pageTitle[0:lenMax])
 
-        idx = self.tabPageIdx
-
-        if idx:
-            self.workspace.tabWidget.setTabText(idx, pageTitle)
-            self.workspace.tabWidget.setTabToolTip(idx, self.currentPageTitle)
+        if self.tabPageIdx >= 0:
+            self.workspace.tabWidget.setTabText(self.tabPageIdx,
+                                                pageTitle)
+            self.workspace.tabWidget.setTabToolTip(self.tabPageIdx,
+                                                   self.currentPageTitle)
 
     def currentUrlHistoryRecord(self):
         if not self.currentPageTitle:

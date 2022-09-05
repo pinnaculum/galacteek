@@ -3,6 +3,10 @@ from io import StringIO
 from io import BytesIO
 from rdflib.tools.rdf2dot import rdf2dot
 
+from pygments import highlight
+from pygments.lexers import TurtleLexer
+from pygments.formatters import HtmlFormatter
+
 from galacteek import log
 from galacteek.ipfs import ipfsOp
 
@@ -25,12 +29,37 @@ class ProntoGraphsSchemeHandler(BaseURLSchemeHandler):
     def prontoService(self):
         return getByDotName('ld.pronto')
 
+    async def ttlPygmentedRender(self, request, graphUri, graph):
+        """
+        Render a pronto graph as TTL, highlighted with
+        the TurtleLexer pygments lexer
+        """
+        try:
+            htmlfmt = HtmlFormatter()
+
+            return await self.serveTemplate(
+                request,
+                'prontog_ttl_highlight.html',
+                title=f'pronto graph: {graphUri} (ttl, highlighted)',
+                pygment_css=htmlfmt.get_style_defs('.highlight'),
+                ttl_highlighted=highlight(
+                    (await graph.ttlize()).decode(),
+                    TurtleLexer(), htmlfmt
+                )
+            )
+        except Exception as err:
+            log.info(f'{graphUri}: TTL highlighting error: {err}')
+
+            return self.reqFailed(request)
+
     @ipfsOp
     async def handleRequest(self, ipfsop, request, uid):
         rUrl = request.requestUrl()
         path = rUrl.path()
         q = QUrlQuery(rUrl.query())
         fmt = q.queryItemValue('format')
+        style = str(q.queryItemValue('style')) if \
+            q.hasQueryItem('style') else 'pygments'
 
         comps = path.lstrip('/').split('/')
 
@@ -42,12 +71,21 @@ class ProntoGraphsSchemeHandler(BaseURLSchemeHandler):
             assert graph is not None
 
             if not fmt or fmt in ['ttl', 'turtle']:
-                return self.serveContent(
-                    request.reqUid,
-                    request,
-                    'text/plain',
-                    await graph.ttlize()
-                )
+                if style == 'pygments':
+                    return await self.ttlPygmentedRender(
+                        request,
+                        graphUri,
+                        graph
+                    )
+                elif not style or style.lower() in ['raw', 'plain']:
+                    return self.serveContent(
+                        request.reqUid,
+                        request,
+                        'text/plain',
+                        await graph.ttlize()
+                    )
+                else:
+                    return self.urlInvalid(request)
             elif fmt in ['dot', 'image']:
                 # Render with pydotplus
 

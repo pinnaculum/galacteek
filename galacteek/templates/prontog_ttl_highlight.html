@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>{{ title }} </title>
+    <style>
+      {{ pygment_css }}
+
+      body {
+        font: 12pt "Symbola";
+      }
+
+      .highlight {
+        margin: 2px;
+      }
+
+      pre {
+        white-space: pre-wrap;
+        white-space: -moz-pre-wrap;
+        white-space: -pre-wrap;
+        white-space: -o-pre-wrap;
+        word-wrap: break-word;
+        overflow-x: auto;
+        tab-width: 4;
+        font-size: 1.0em;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    {{ ttl_highlighted }}
+  </body>
+</html>
