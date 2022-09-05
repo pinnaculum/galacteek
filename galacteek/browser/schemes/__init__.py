@@ -8,6 +8,7 @@ import collections
 import time
 import traceback
 import aiohttp
+from aiohttp.web_exceptions import HTTPOk
 from yarl import URL
 from datetime import datetime
 from cachetools import TTLCache
@@ -556,25 +557,37 @@ class EthDNSResolver:
         """
         TTL-cached EthDNS resolver
 
-        This uses the DNS-over-HTTPS eth.link JSON API
+        This uses the DNS-over-HTTPS eth.limo JSON API
         """
 
-        url = 'https://eth.link/dns-query'
-        dnsJsonCtype = 'application/dns-json'
-        headers = {'content-type': dnsJsonCtype}
+        url = 'https://dns.eth.limo/dns-query'
+        xJsCtype = 'application/x-javascript'
         reply = None
 
         try:
-            async with aiohttp.ClientSession(headers=headers) as sess:
+            async with aiohttp.ClientSession() as sess:
                 async with sess.get(url,
                                     verify_ssl=self.verify_ssl,
                                     params={
                                         'type': 'TXT',
                                         'name': domain
                                     }) as resp:
-                    reply = await resp.json(
-                        content_type=dnsJsonCtype
-                    )
+                    if resp.status != HTTPOk.status_code:
+                        raise Exception(
+                            f'EthDNS query for domain {domain}: '
+                            f'HTTP status code is {resp.status}'
+                        )
+
+                    # eth.link used to return a Content-Type of
+                    # application/dns-json, while eth.limo will
+                    # return application/x-javascript no matter what ^_^
+                    # Pass the ctype returned in the headers to
+                    # resp.json() so that it always ignores the ctype
+
+                    ctype = resp.headers.get('Content-Type',
+                                             xJsCtype)
+
+                    reply = await resp.json(content_type=ctype)
         except Exception as e:
             raise EthDNSError(
                 f'Could not resolve eth domain: {domain}: {e}')
