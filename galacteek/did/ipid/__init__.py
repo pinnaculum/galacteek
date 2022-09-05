@@ -152,7 +152,7 @@ class IPIdentifier(DAGOperations):
     def latestModified(self):
         return self._latestModified
 
-    def contextUrl(self, path, fragment=None):
+    def contextUrl(self, path, fragment=''):
         return str(
             URL.build(
                 host='galacteek.ld',

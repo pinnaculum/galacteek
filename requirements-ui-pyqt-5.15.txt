@@ -1,4 +1,4 @@
 pyqt5>=5.15.7
 pyqtchart>=5.15.5
 pyqtwebengine>=5.15.6
-PyQt5-sip==12.9.0
+PyQt5-sip>=12.11.0

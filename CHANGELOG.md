@@ -16,7 +16,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - ipfs URL scheme handler: use chunking algorithm for downloading objects
+- ipfs URL scheme handler: use QIODevice.Append as the default QBuffer open mode
 - Use SparQL models for the various peers, DID, and DID services models
+
+### Fixed
+- ipfs:// URL scheme handler
+  - Don't preinstantiate QBuffer for each request
+  - Fix a bug with relative URLs when cat() tells us a DAG is a unixfs
+    directory: use a redirect with a trailing / so that QtWebEngine can
+    properly compute relative URLs
 
 ## [0.5.5] - 2022-04-23
 

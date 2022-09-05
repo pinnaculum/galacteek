@@ -375,7 +375,6 @@ class BaseURLSchemeHandler(QWebEngineUrlSchemeHandler):
 
         self.requests[uid] = {
             'request': req,
-            'iodev': QBuffer(parent=req),
             'mutex': QMutex() if not self.noMutexes else None
         }
 
@@ -425,7 +424,9 @@ class BaseURLSchemeHandler(QWebEngineUrlSchemeHandler):
             mutex.lock()
 
         try:
-            buf = self.requests[uid]['iodev']
+            buf = QBuffer(parent=request)
+            request.destroyed.connect(buf.deleteLater)
+
             buf.open(QIODevice.WriteOnly)
             buf.write(data)
             buf.close()
@@ -711,7 +712,7 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
         log.warning(f'Native scheme handler (WARNING): {msg}')
 
     def info(self, msg):
-        log.warning(f'Native scheme handler (INFO): {msg}')
+        log.info(f'Native scheme handler (INFO): {msg}')
 
     async def directoryListing(self, request, ipfsop, path):
         currentIpfsPath = IPFSPath(path)
@@ -753,6 +754,8 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
             return data.encode()
 
     async def renderDirectory(self, request, ipfsop, path):
+        # TODO: use catChunked instead of catObject
+
         ipfsPath = IPFSPath(path)
         indexPath = ipfsPath.child('index.html')
 
@@ -880,6 +883,7 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
 
     async def fetchFromPathNonChunked(self, ipfsop, request,
                                       ipfsPath, uid, **kw):
+        # TODO: get rid of this if chunked transfer works well
         try:
             data = await ipfsop.catObject(ipfsPath.objPath)
         except aioipfs.APIError as exc:
@@ -921,18 +925,24 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
                 return await self.renderData(request, ipfsPath, data, uid)
 
     async def fetchFromPath(self, ipfsop, request, ipfsPath, uid, **kw):
-        buf = self.requests[uid]['iodev']
-
         try:
             mType = None
 
-            buf.open(QIODevice.WriteOnly)
+            buf = QBuffer(parent=request)
+            buf.open(QIODevice.Append)
+
+            request.destroyed.connect(buf.deleteLater)
 
             async for cnum, chunk in ipfsop.catChunked(ipfsPath.objPath):
-                if cnum == 0:
+                if cnum == 0 or not mType:
                     mType = await self.getMimeType(chunk, ipfsPath)
 
                 buf.write(chunk)
+
+                await asyncio.sleep(0)
+
+            if not mType:
+                mType = MIMEType('application/octet-stream')
 
             buf.close()
 
@@ -940,7 +950,7 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
         except aioipfs.APIError as exc:
             await asyncio.sleep(0)
 
-            self.info('API error ({path}): {err}'.format(
+            self.warning('API error ({path}): {err}'.format(
                 path=str(ipfsPath), err=exc.message)
             )
 
@@ -950,6 +960,21 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
                 return self.urlNotFound(request)
 
             if dec.errIsDirectory():
+                url = request.requestUrl()
+
+                if not url.path().endswith('/'):
+                    # Critical: we tried a cat() on an object which
+                    # turns out to be a UnixFS directory and the
+                    # URL path() doesn't have a trailing '/'. We need
+                    # to create a new request cycle by redirecting
+                    # to a QUrl which does have the trailing /, otherwise
+                    # qtwebengine won't correctly resolve relative URLs
+
+                    redirUrl = QUrl(url.toString())
+                    redirUrl.setPath(redirUrl.path() + '/')
+
+                    return request.redirect(redirUrl)
+
                 data = await self.renderDirectory(
                     request,
                     ipfsop,
@@ -970,9 +995,13 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
                 if data:
                     return await self.renderData(request, ipfsPath,
                                                  data, uid)
+        except RuntimeError:
+            # Wrapped C++ QBuffer object deleted or something ..
+            pass
         except Exception as gerr:
-            log.debug(f'fetchFromPath, unknown error: {gerr}')
-            return None
+            log.debug(f'fetchFromPath({ipfsPath}), unknown error: {gerr}')
+
+            return self.reqFailed(request)
 
 
 class ObjectProxySchemeHandler(NativeIPFSSchemeHandler, IPFSObjectProxyScheme):

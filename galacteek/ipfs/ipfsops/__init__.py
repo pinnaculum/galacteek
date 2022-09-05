@@ -152,7 +152,7 @@ class TunnelDialerContext(object):
     def failed(self):
         return self.maddr is None
 
-    def httpUrl(self, path, query=None, fragment=None, scheme='http'):
+    def httpUrl(self, path, query='', fragment='', scheme='http'):
         return str(URL.build(
             host=self.maddrHost,
             port=self.maddrPort,
@@ -1617,7 +1617,7 @@ class IPFSOperator(RemotePinningOps,
             ), timeout if timeout else cfg.timeout
         )
 
-    async def catChunked(self, path: str, chunkSize=262144,
+    async def catChunked(self, path: str, chunkSize=65535,
                          incrementFactor=0):
         """
         async generator that reads an IPFS file by chunks

@@ -350,8 +350,8 @@ class WebView(IPFSWebView):
 
         self.changeWebProfile(webProfile)
 
-        actionVSource = self.pageAction(QWebEnginePage.ViewSource)
-        actionVSource.triggered.connect(self.onViewSource)
+        # actionVSource = self.pageAction(QWebEnginePage.ViewSource)
+        # actionVSource.triggered.connect(self.onViewSource)
 
         self.webSettings = self.settings()
         if 0:

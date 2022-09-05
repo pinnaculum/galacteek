@@ -101,7 +101,7 @@ class IPService(metaclass=IPServiceRegistry):
                 scheme='ipid',
                 host=self.srvIpId,
                 path=self.srvPath,
-                fragment=self.srvFragment
+                fragment=self.srvFragment if self.srvFragment else ''
             )
         except Exception:
             return None

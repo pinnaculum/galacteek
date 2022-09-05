@@ -855,7 +855,8 @@ class GalacteekApplication(QApplication):
     def ipfsClientForLoop(self, loop):
         connParams = self.getIpfsConnectionParams()
         return aioipfs.AsyncIPFS(host=connParams.host,
-                                 port=connParams.apiPort, loop=loop)
+                                 port=int(connParams.apiPort),
+                                 loop=loop)
 
     def ipfsOperatorForLoop(self, loop=None):
         if not loop:
@@ -896,7 +897,8 @@ class GalacteekApplication(QApplication):
             log.debug(f'updateIpfsClient: host {connParams.host}, '
                       f'API port: {connParams.apiPort}')
             client = aioipfs.AsyncIPFS(host=connParams.host,
-                                       port=connParams.apiPort, loop=self.loop)
+                                       port=int(connParams.apiPort),
+                                       loop=self.loop)
 
         if self.ipfsClient is not client:
             changed = True
