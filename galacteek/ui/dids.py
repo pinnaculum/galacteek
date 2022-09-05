@@ -66,6 +66,8 @@ def addHttpForwardService(ipid: IPIdentifier):
                 'id': ipid.didUrl(path=f'/www/{dlg.name}'),
                 'type': IPService.SRV_TYPE_HTTP_SERVICE,
                 'serviceEndpoint': {
+                    '@context':
+                        'ips://galacteek.ld/HttpForwardServiceEndpoint',
                     '@type': 'HttpForwardServiceEndpoint',
                     '@id': url,
 

@@ -22,8 +22,8 @@ but also distribute. This is where :term:`pinning`
 comes into play.
 
 **Pinning** some content means to **actually keep it**
-(*don't* let it be recycled), so that you can always *access it*
-unconditionally. This implies that you'll *distribute* this
+(never let it be recycled), so that you can always
+**access it unconditionally**. This implies that you'll distribute this
 content to the peers around you, as long as it's pinned
 on your machine.
 
@@ -49,7 +49,6 @@ This can be done, at the moment, in two different ways:
   machines that have high-availability on the network and
   can serve the content to many peers.
 
-
 At any moment you can decide to unpin
 something, by visiting this content, and selecting *Unpin*.
 
@@ -57,7 +56,7 @@ Pinning in the browser
 ----------------------
 
 Anywhere in the interface where there's something that can
-be pinned, you'll see an active pin icon, red or blue
+be pinned, you'll see an active **pin button**, red or blue
 (choose your pill).
 
 Locally (here)

@@ -342,6 +342,11 @@ class BaseURLSchemeHandler(QWebEngineUrlSchemeHandler):
             # can't instantiate this before the hub is created ..
             self.psListener = self.psListenerClass()
 
+    def getBuffer(self, request: QWebEngineUrlRequestJob):
+        buf = QBuffer(parent=request)
+        request.destroyed.connect(buf.deleteLater)
+        return buf
+
     def reqFailedCall(self, request, code):
         try:
             return request.fail(code)
@@ -354,6 +359,10 @@ class BaseURLSchemeHandler(QWebEngineUrlSchemeHandler):
     def reqFailed(self, request):
         return self.reqFailedCall(
             request, QWebEngineUrlRequestJob.RequestFailed)
+
+    def reqDenied(self, request):
+        return self.reqFailedCall(
+            request, QWebEngineUrlRequestJob.RequestDenied)
 
     def urlInvalid(self, request):
         return self.reqFailedCall(
