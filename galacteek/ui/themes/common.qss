@@ -112,11 +112,22 @@ QMenu#hashmarksMgrMenu {
     font: 14pt "Segoe UI";
 }
 
+QWidget#urlZone {
+    min-height: 48px;
+    max-height: 80px;
+}
+
+QStackedWidget#urlZoneStack {
+    min-height: 64px;
+    max-height: 96px;
+}
+
 QLineEdit#urlZone {
     margin-left: 8px;
     padding: 5px;
     font: 14pt "Segoe UI";
-    min-height: 40x;
+    min-height: 48px;
+    max-height: 64px;
 }
 
 QLabel#rpsPinataInstructions {

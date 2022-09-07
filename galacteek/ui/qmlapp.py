@@ -25,6 +25,7 @@ from galacteek.dweb.channels.ipfs import IpfsObjectInterface
 from galacteek.dweb.channels.ontolochain import OntoloChainHandler
 from galacteek.dweb.channels.graphs import *
 from galacteek.dweb.channels.unixfs import UnixFsDirModel
+from galacteek.dweb.channels.urls import URLCloudQuickItem
 
 from galacteek.services import getByDotName
 
@@ -212,4 +213,10 @@ def qmlRegisterCustomTypes():
         'Galacteek',
         1, 0,
         'IpfsObject'
+    )
+    qmlRegisterType(
+        URLCloudQuickItem,
+        'Galacteek',
+        1, 0,
+        'URLCloud'
     )

@@ -25,6 +25,14 @@ search engines:
 - Use the **i** or **ip** prefix to run a search on the IPFS
   network. Example: **i distributed web**
 
+URL clouding
+^^^^^^^^^^^^
+
+When browsing dweb or https pages, the URL address bar will be obscured
+by an animation with a color generated from the URL.
+
+**Clicking on the animation will bring you back to the address bar**.
+
 CID status icon
 ^^^^^^^^^^^^^^^
 
@@ -264,10 +272,8 @@ You can change the default web profile that will be used when opening
 a browser tab by changing the *Default web profile* setting in the *UI*
 section of the application settings.
 
-Anomymus profile
-^^^^^^^^^^^^^^^^
-
-Anonymous profile:
+Anomymous profile
+^^^^^^^^^^^^^^^^^
 
 - Javascript is disabled
 - Caching is disabled

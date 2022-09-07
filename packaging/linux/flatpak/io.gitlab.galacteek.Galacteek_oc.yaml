@@ -1,6 +1,6 @@
 app-id: io.gitlab.galacteek.Galacteek
 runtime: org.freedesktop.Platform
-runtime-version: '20.08'
+runtime-version: '21.08'
 sdk: org.freedesktop.Sdk
 command: galacteek-flatpak-runner
 finish-args:
@@ -50,33 +50,33 @@ modules:
         url: "https://dist.torproject.org/tor-0.4.5.6.tar.gz"
         sha256: "22cba3794fedd5fa87afc1e512c6ce2c21bc20b4e1c6f8079d832dc1e545e733"
 
-  # Fetch and extract go-ipfs 0.9.1
-  - name: fetch-go-ipfs
+  # Fetch and extract kubo 0.15.0
+  - name: fetch-kubo
     buildsystem: simple
     build-commands:
-      - tar -xvf go-ipfs_v0.9.1_linux-amd64.tar.gz
-      - cp go-ipfs/ipfs $FLATPAK_DEST/bin
+      - tar -xvf kubo_v0.15.0_linux-amd64.tar.gz
+      - cp kubo/ipfs $FLATPAK_DEST/bin
     build-options:
       build-args:
         - --share=network
     sources:
       - type: file
-        url: "https://dist.ipfs.io/go-ipfs/v0.9.1/go-ipfs_v0.9.1_linux-amd64.tar.gz"
-        sha256: "aff633d271f642e1c57ce7d1fb3cbf11e50e7e05b35ee17f7373cbb06e519133"
+        url: "https://dist.ipfs.tech/kubo/v0.15.0/kubo_v0.15.0_linux-amd64.tar.gz"
+        sha256: "c5ef6c393df26007e10e48e009d427f5bdbab14cbc82461c927529a3b840924d"
 
-  # Fetch and extract fs-repo-migrations 2.0.1
+  # Fetch and extract fs-repo-migrations 2.0.2
   - name: fetch-fs-repo-migrations
     buildsystem: simple
     build-commands:
-      - tar -xvf fs-repo-migrations_v2.0.1_linux-amd64.tar.gz
+      - tar -xvf fs-repo-migrations_v2.0.2_linux-amd64.tar.gz
       - cp fs-repo-migrations/fs-repo-migrations $FLATPAK_DEST/bin
     build-options:
       build-args:
         - --share=network
     sources:
       - type: file
-        url: "https://dist.ipfs.io/fs-repo-migrations/v2.0.1/fs-repo-migrations_v2.0.1_linux-amd64.tar.gz"
-        sha256: "1dbdab90a4fe81fa6384ce3b9f8fd9f15db7be3430525367cdfeb2e19cca4a42"
+        url: "https://dist.ipfs.tech/fs-repo-migrations/v2.0.2/fs-repo-migrations_v2.0.2_linux-amd64.tar.gz"
+        sha256: "2d5bd160d098a409a160573bddd41ac04bc3376a34d135c786b43b85143fd00a"
 
   # Fetch and extract notbit
   - name: fetch-notbit

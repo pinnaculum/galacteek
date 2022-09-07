@@ -1473,11 +1473,6 @@ QLabel#statusProgressLabel {
 }
 
 QLineEdit#urlZone {
-    margin-left: 8px;
-    padding: 5px;
-    font: 14pt "Segoe UI";
-    min-height: 40x;
-    max-height: 64px;
     background-color: black;
 }
 

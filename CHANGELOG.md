@@ -5,6 +5,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.7] - 2022-09-08
+
+### Added
+
+- prontog:/ Implement RDF ttl graph highlighting with pygments
+
+### Changed
+
+- Use kubo v0.15.0 and fs-repo-migrations v2.0.2 in the runtime images
+- Add galacteek.ipfs.asyncipfsd.ipfsMigrationLatest
+  (to get the latest available migration version with fs-repo-migrations)
+- Use aioipfs==0.5.7 (works with the latest kubo)
+- Put the browser tab URL address bar code in a separate module
+- Implement the URL clouding widget in a QML QuickItem component
+- Pin all major pypi requirements
+
+### Fixed
+
+- Fix a bug when the first browser tab in a workspace wouldn't
+  get its tab title updated when the page's title changes
+
 ## [0.5.6] - 2022-08-08
 
 ### Added

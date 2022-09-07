@@ -238,6 +238,11 @@ class GalacteekTab(QWidget):
         return True
 
     async def onTabChanged(self):
+        # Called when the tab is now the active tab
+        return True
+
+    async def onTabHidden(self):
+        # Called when the tab is hidden
         return True
 
     async def onTabDoubleClicked(self):

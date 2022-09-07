@@ -266,6 +266,10 @@
   </qresource>
 
   <qresource>
+    <file>../../share/icons/particles/star.png</file>
+  </qresource>
+
+  <qresource>
     <file>../../share/icons/linked-data/chain-link.png</file>
   </qresource>
 

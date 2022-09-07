@@ -434,7 +434,8 @@ class TabbedWorkspace(BaseWorkspace):
                  description=None,
                  section='default',
                  icon=None,
-                 acceptsDrops=False):
+                 acceptsDrops=False,
+                 inactiveTabsNotify=False):
         super(TabbedWorkspace, self).__init__(
             stack, name, description=description,
             section=section, icon=icon,
@@ -445,6 +446,7 @@ class TabbedWorkspace(BaseWorkspace):
         self.wsActions = {}
 
         self.previousOpenedTabIdx = -1
+        self.inactiveTabsNotify = inactiveTabsNotify
 
         self.toolBarCtrl = QToolBar()
         self.toolBarActions = QToolBar()
@@ -549,6 +551,16 @@ class TabbedWorkspace(BaseWorkspace):
         tab = self.tabWidget.widget(tabidx)
         if tab:
             await tab.onTabChanged()
+
+        if self.inactiveTabsNotify:
+            # notify other tabs that they aren't active now
+
+            for idx in range(self.tabWidget.count()):
+                if idx == tabidx:
+                    continue
+                itab = self.tabWidget.widget(idx)
+                if itab:
+                    await itab.onTabHidden()
 
     async def wsTabRemoved(self, tabidx):
         await self.triggerDefaultActionIfEmpty()

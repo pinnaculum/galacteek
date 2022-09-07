@@ -120,6 +120,23 @@ async def ipfsMigrateRepo():
     return await shell("fs-repo-migrations -y")
 
 
+async def ipfsMigrationLatest():
+    """
+    Return the latest available migration with fs-repo-migrations,
+    or 0 if it can't be determined
+
+    :rtype: int
+    """
+
+    try:
+        ok, out, err = await shell('fs-repo-migrations -v')
+        assert ok is True
+
+        return int(out.split('\n')[0].strip())
+    except Exception:
+        return 0
+
+
 class IPFSDProtocol(asyncio.SubprocessProtocol):
     """
     IPFS daemon process protocol
@@ -345,8 +362,7 @@ class AsyncIPFSDaemon(object):
         if self.repoVersionPath.is_file():
             try:
                 with open(str(self.repoVersionPath), 'rt') as fdv:
-                    version = fdv.readline()
-                    return int(version)
+                    return int(fdv.readline())
             except Exception:
                 log.debug(
                     f'Could not read version from {self.repoVersionPath}')
@@ -426,9 +442,11 @@ class AsyncIPFSDaemon(object):
 
             yield 20, 'Repository initialized'
 
+        latestMigrationV = await ipfsMigrationLatest()
         repoV = self.repoVersion()
 
-        if isinstance(repoV, int) and repoV < 11:
+        if isinstance(repoV, int) and latestMigrationV > 0 and \
+           repoV < latestMigrationV:
             # Migrate
             self.message('Detected repository version {repoV}, migrating')
 

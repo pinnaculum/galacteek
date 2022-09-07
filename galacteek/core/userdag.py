@@ -330,7 +330,7 @@ class UserWebsite:
 
         feed = FeedGenerator()
         feed.id(self.siteUrl)
-        feed.title("{0}'s dweb space".format(sHandle.short))
+        feed.title(f"dfeed: {sHandle.human}")
         feed.author({
             'name': self.profile.userInfo.iphandle
         })

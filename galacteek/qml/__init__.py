@@ -1,9 +1,12 @@
+from pathlib import Path
+
 from PyQt5.QtCore import QUrl
 from PyQt5.QtQuick import QQuickView
 from PyQt5.QtQuickWidgets import QQuickWidget
 
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.core import runningApp
+from galacteek.core import pkgResourcesRscFilename
 
 
 def quickWidget(url, parent=None):
@@ -36,6 +39,21 @@ def quickWidgetFromFile(fp: str, parent=None):
     qWidget.setSource(QUrl.fromLocalFile(fp))
     qWidget.show()
     return qWidget
+
+
+def quickWidgetFromLibrary(rel: str, parent=None):
+    """
+    Load a QML file from the common library
+
+    :param str rel: Relative path to the QML file inside the library dir
+    """
+
+    libraryRoot = Path(pkgResourcesRscFilename('galacteek.qml', 'dweb_lib'))
+
+    return quickWidgetFromFile(str(
+        libraryRoot.joinpath(rel)),
+        parent=parent
+    )
 
 
 def quickView(url: str, parent=None):

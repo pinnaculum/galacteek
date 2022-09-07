@@ -92,7 +92,7 @@ cp "$OLD_CWD"/share/icons/galacteek.icns galacteek.app/Contents/Resources/share/
 
 # copy go-ipfs
 mkdir -p galacteek.app/Contents/Resources/bin
-cp $GITHUB_WORKSPACE/go-ipfs/ipfs-${GO_IPFS_VERSION} galacteek.app/Contents/Resources/bin
+cp $GITHUB_WORKSPACE/kubo/ipfs-${KUBO_VERSION} galacteek.app/Contents/Resources/bin
 cp $GITHUB_WORKSPACE/fs-repo-migrations/fs-repo-migrations galacteek.app/Contents/Resources/bin
 
 # copy tor
@@ -106,7 +106,7 @@ wget -O galacteek.app/Contents/Resources/share/file/magic-galacteek.mgc \
     https://gitlab.com/galacteek/file/-/releases/continuous-galacteek/downloads/magic.mgc
 
 pushd galacteek.app/Contents/Resources/bin
-ln -s ipfs-${GO_IPFS_VERSION} ipfs
+ln -s ipfs-${KUBO_VERSION} ipfs
 ln -s notbit notbit-keygen
 ln -s notbit notbit-sendmail
 popd

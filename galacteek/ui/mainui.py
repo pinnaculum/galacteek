@@ -842,8 +842,11 @@ class MainWindow(QMainWindow, KeyListener):
         menu.addAction(settingsIcon, iConfigurationEditor(),
                        self.onRunConfigEditor)
         menu.addSeparator()
-        menu.addAction(settingsIcon, iEventLog(),
-                       self.onOpenEventLog)
+
+        if self.app.debugEnabled:
+            menu.addAction(settingsIcon, iEventLog(),
+                           self.onOpenEventLog)
+
         menu.addAction(getIcon('lock-and-key.png'), iKeys(),
                        self.onIpfsKeysClicked)
         menu.addSeparator()
@@ -1468,8 +1471,7 @@ class MainWindow(QMainWindow, KeyListener):
         tooltip = 'CID explorer: {0}'.format(cid)
         view = unixfs.IPFSHashExplorerStack(self, cid)
         self.registerTab(view, tabName, current=True,
-                         icon=getIcon('hash.png'), tooltip=tooltip,
-                         workspace=WS_FILES)
+                         icon=getIcon('hash.png'), tooltip=tooltip)
 
     def getMediaPlayer(self):
         with self.stack.workspaceCtx(WS_MULTIMEDIA) as ws:

@@ -14,7 +14,6 @@ from PyQt5.QtWidgets import QInputDialog
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtWidgets import QTextBrowser
-from PyQt5.QtWidgets import QLineEdit
 from PyQt5.QtWidgets import QTextEdit
 from PyQt5.QtWidgets import QVBoxLayout
 
@@ -26,11 +25,9 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtCore import QTimer
-from PyQt5.QtCore import QPoint
 from PyQt5.QtCore import QSize
 from PyQt5.QtCore import QEvent
 
-from PyQt5.QtGui import QPalette
 from PyQt5.QtGui import QColor
 
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
@@ -91,6 +88,8 @@ from galacteek.dweb.render import renderTemplate
 from galacteek.dweb.htmlparsers import IPFSLinksParser
 
 from ..pronto import buildProntoGraphsMenu
+
+from .urlzone import URLInputWidget
 
 from ..forms import ui_browsertab
 from ..dag import DAGViewer
@@ -344,6 +343,8 @@ class WebView(IPFSWebView):
         # self.linkInfoTimer = QTimer()
         # self.linkInfoTimer.timeout.connect(self.onLinkInfoTimeout)
         # self.setMouseTracking(True)
+
+        self.pageLoading = False
 
         self.webPage = None
         self.altSearchPage = None
@@ -760,165 +761,6 @@ class BrowserKeyFilter(QObject):
         return False
 
 
-class URLInputWidget(QLineEdit):
-    def __init__(self, history, historyView, parent):
-        super(URLInputWidget, self).__init__(parent)
-
-        self.setClearButtonEnabled(True)
-
-        self.app = QCoreApplication.instance()
-        self.history = history
-        self.historyMatches = historyView
-        self.browser = parent
-
-        self.setObjectName('urlZone')
-        self.setMinimumWidth(400)
-        self.setDragEnabled(True)
-        self.setMaxLength(1024)
-
-        self.urlEditing = False
-        self.urlInput = None
-
-        self.editTimer = QTimer(self)
-        self.editTimer.timeout.connect(self.onTimeoutUrlEdit)
-        self.editTimer.setSingleShot(True)
-
-        self.returnPressed.connect(partialEnsure(self.onReturnPressed))
-        self.historyMatches.historyItemSelected.connect(
-            self.onHistoryItemSelected)
-        self.historyMatches.collapsed.connect(
-            self.onHistoryCollapse)
-        self.textEdited.connect(self.onUrlUserEdit)
-
-    @property
-    def editTimeoutMs(self):
-        return 400
-
-    @property
-    def matchesVisible(self):
-        return self.historyMatches.isVisible()
-
-    def setupPalette(self):
-        palette = self.palette()
-        palette.setColor(QPalette.HighlightedText, ipfsColor1)
-        palette.setColor(QPalette.Highlight, QColor('transparent'))
-        self.setPalette(palette)
-
-    def keyPressEvent(self, ev):
-        if ev.key() == Qt.Key_Up:
-            self.historyMatches.activateWindow()
-            self.historyMatches.setFocus(Qt.OtherFocusReason)
-        elif ev.key() == Qt.Key_Down:
-            self.historyMatches.activateWindow()
-            self.historyMatches.setFocus(Qt.OtherFocusReason)
-        elif ev.key() == Qt.Key_Escape:
-            self.hideMatches()
-        else:
-            super().keyPressEvent(ev)
-
-    def unfocus(self):
-        self.urlEditing = False
-        self.clearFocus()
-
-    def cancelTimer(self):
-        self.editTimer.stop()
-
-    def hideMatches(self):
-        self.historyMatches.hide()
-
-    async def onReturnPressed(self):
-        self.urlEditing = False
-        self.unfocus()
-
-        # ensureSafe(self.browser.handleEditedUrl(self.text()))
-        await self.browser.handleEditedUrl(self.text())
-
-    def onHistoryCollapse(self):
-        self.setFocus(Qt.PopupFocusReason)
-        self.deselect()
-
-    def focusInEvent(self, event):
-        if event.reason() in [Qt.ShortcutFocusReason, Qt.MouseFocusReason,
-                              Qt.PopupFocusReason, Qt.ActiveWindowFocusReason,
-                              Qt.TabFocusReason]:
-            self.urlEditing = True
-
-        super(URLInputWidget, self).focusInEvent(event)
-
-    def focusOutEvent(self, event):
-        if event.reason() not in [
-                Qt.ActiveWindowFocusReason,
-                Qt.PopupFocusReason,
-                Qt.TabFocusReason,
-                Qt.OtherFocusReason]:
-            self.urlEditing = False
-            self.editTimer.stop()
-
-        super(URLInputWidget, self).focusOutEvent(event)
-
-    def onUrlTextChanged(self, text):
-        pass
-
-    def onUrlUserEdit(self, text):
-        self.urlInput = text
-
-        if not self.hasFocus():
-            return
-
-        self.startEditTimer()
-
-    def startEditTimer(self):
-        if not self.editTimer.isActive():
-            self.editTimer.start(self.editTimeoutMs)
-        else:
-            self.editTimer.stop()
-            self.editTimer.start(self.editTimeoutMs)
-
-    def onTimeoutUrlEdit(self):
-        ensure(self.historyLookup())
-
-    def historyMatchesPopup(self):
-        lEditPos = self.mapToGlobal(QPoint(0, 0))
-        lEditPos.setY(lEditPos.y() + self.height())
-        self.historyMatches.move(lEditPos)
-        self.historyMatches.resize(QSize(
-            self.app.desktopGeometry.width() - self.pos().x() - 64,
-            self.height() * 8
-        ))
-        self.historyMatches.show()
-        # Refocus
-        # self.setFocus(Qt.PopupFocusReason)
-
-    async def historyLookup(self):
-        if self.urlInput:
-            markMatches = []
-
-            markMatches = await database.hashmarksSearch(
-                query=self.urlInput
-            )
-
-            hMatches = await self.history.match(self.urlInput)
-
-            if len(markMatches) > 0 or len(hMatches) > 0:
-                await self.historyMatches.showMatches(markMatches, hMatches)
-                self.historyMatchesPopup()
-            else:
-                self.hideMatches()
-
-            self.editTimer.stop()
-        else:
-            self.hideMatches()
-
-    def onHistoryItemSelected(self, urlStr):
-        self.historyMatches.hide()
-        self.urlEditing = False
-
-        url = QUrl(urlStr)
-
-        if url.isValid():
-            self.browser.enterUrl(url)
-
-
 class CurrentObjectController(PopupToolButton):
     objectVisited = pyqtSignal(IPFSPath)
 
@@ -1106,7 +948,10 @@ class BrowserTab(GalacteekTab):
         self.historySearches.setMinimumHeight(160)
         self.historySearches.hide()
 
-        self.urlZone = URLInputWidget(self.history, self.historySearches, self)
+        self.urlZone = URLInputWidget(
+            self.history, self.historySearches, self,
+            parent=self.browserWidget
+        )
         self.ui.layoutUrl.addWidget(self.urlZone)
 
         # Search
@@ -1153,6 +998,7 @@ class BrowserTab(GalacteekTab):
         self.webEngineView.loadFinished.connect(self.onLoadFinished)
         self.webEngineView.iconChanged.connect(
             partialEnsure(self.onIconChanged))
+        self.webEngineView.loadStarted.connect(self.onLoadStarted)
         self.webEngineView.loadProgress.connect(self.onLoadProgress)
         self.webEngineView.titleChanged.connect(self.onTitleChanged)
 
@@ -1417,6 +1263,8 @@ class BrowserTab(GalacteekTab):
     def onTabVisibility(self, visible):
         if not visible:
             self.urlZone.hideMatches()
+
+        self.urlZone.startStopUrlAnimation(visible)
 
     def displayHoveredUrl(self, url: QUrl):
         self.app.mainWindow.contextMessage(
@@ -1705,13 +1553,15 @@ class BrowserTab(GalacteekTab):
         pass
 
     def onFocusUrl(self):
+        if self.webEngineView.pageLoading:
+            # TODO: something nicer, or add another loadInterrupted var
+            self.urlZone.loadInterruptedByEdit = True
+
         self.focusUrlZone(True, reason=Qt.ShortcutFocusReason)
 
     def focusUrlZone(self, select=False, reason=Qt.ActiveWindowFocusReason):
-        self.urlZone.setFocus(reason)
-
-        if select:
-            self.urlZone.setSelection(0, len(self.urlZone.text()))
+        self.urlZone.unobfuscate(selectUrl=select)
+        self.urlZone.bar.setFocus(reason)
 
     def onReloadPage(self):
         self.reloadPage()
@@ -1721,6 +1571,7 @@ class BrowserTab(GalacteekTab):
 
     def reloadPage(self, bypassCache=False):
         self.urlZone.unfocus()
+        self.urlZone.resetState()
         self.webEngineView.triggerPageAction(
             QWebEnginePage.ReloadAndBypassCache if bypassCache is True else
             QWebEnginePage.Reload
@@ -1917,6 +1768,8 @@ class BrowserTab(GalacteekTab):
         self.webEngineView.reload()
 
     def stopButtonClicked(self):
+        self.setLoadingStatus(False)
+        self.urlZone.resetState()
         self.webEngineView.stop()
         self.ui.pBarBrowser.setValue(0)
         self.ui.stopButton.setEnabled(False)
@@ -1931,10 +1784,8 @@ class BrowserTab(GalacteekTab):
         currentPage = self.webEngineView.page()
         currentPage.history().forward()
 
-    def urlZoneInsert(self, text):
-        self.urlZone.clear()
-        self.urlZone.insert(text)
-        self.urlZone.setCursorPosition(0)
+    def urlZoneInsert(self, url: QUrl):
+        ensure(self.urlZone.setUrl(url))
 
     @asyncify
     async def onUrlChanged(self, url):
@@ -1956,7 +1807,7 @@ class BrowserTab(GalacteekTab):
                         background-color: #C3D7DF;
                     }''')
 
-            self.urlZoneInsert(url.toString())
+            self.urlZoneInsert(url)
 
             self._currentIpfsObject = IPFSPath(url.toString())
             self._currentUrl = url
@@ -1985,7 +1836,7 @@ class BrowserTab(GalacteekTab):
                 if url.hasQuery():
                     nurl.setQuery(url.query())
 
-                self.urlZoneInsert(nurl.toString())
+                self.urlZoneInsert(nurl)
 
                 self.pinToolButton.setEnabled(True)
                 self.pinToolButton.changeObject(self.currentIpfsObject)
@@ -2015,7 +1866,7 @@ class BrowserTab(GalacteekTab):
                 self._currentIpfsObject = None
                 self.curObjectCtrl.hide()
 
-            self.urlZoneInsert(url.toString())
+            self.urlZoneInsert(url)
             self._currentUrl = url
             self.followIpnsAction.setEnabled(False)
 
@@ -2061,6 +1912,8 @@ class BrowserTab(GalacteekTab):
         self.ui.stopButton.setEnabled(False)
         self.currentUrlHistoryRecord()
 
+        self.urlZoneInsert(self.currentUrl)
+
         if 0:
             text, curUrl = self.urlZone.text(), self.currentUrl.toString()
             if text != curUrl:
@@ -2069,11 +1922,18 @@ class BrowserTab(GalacteekTab):
     async def onIconChanged(self, icon):
         self.workspace.tabWidget.setTabIcon(self.tabPageIdx, icon)
 
+    def setLoadingStatus(self, loading: bool):
+        self.webEngineView.pageLoading = loading
+
+    def onLoadStarted(self):
+        self.setLoadingStatus(True)
+
     def onLoadProgress(self, progress):
         self.ui.pBarBrowser.setValue(progress)
         self.ui.stopButton.setEnabled(progress >= 0 and progress < 100)
 
         if progress == 100:
+            self.setLoadingStatus(False)
             self.loop.call_later(
                 1,
                 self.ui.pBarBrowser.setStyleSheet,
@@ -2083,6 +1943,7 @@ class BrowserTab(GalacteekTab):
             self.ui.stopButton.hide()
             self.ui.reloadPageButton.show()
         else:
+            self.setLoadingStatus(True)
             self.ui.pBarBrowser.setStyleSheet(
                 '''QProgressBar::chunk#pBarBrowser {
                     background-color: #4b9fa2;
@@ -2153,7 +2014,8 @@ class BrowserTab(GalacteekTab):
                         wpName in self.app.webProfiles:
                     self.changeWebProfileByName(wpName)
 
-        self.urlZoneInsert(url.toString())
+        self.urlZoneInsert(url)
+
         self.webEngineView.load(url)
         self.webEngineView.setFocus(Qt.OtherFocusReason)
 

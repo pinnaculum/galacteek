@@ -12,7 +12,7 @@ import multiaddr
 from multiaddr.codecs import *
 
 
-goIpfsVersion = os.getenv('GO_IPFS_VERSION')
+goIpfsVersion = os.getenv('KUBO_VERSION')
 block_cipher = None
 
 
@@ -81,7 +81,7 @@ a = Analysis(['galacteek_win.py'],
      'bin'),
     ('./notbit-cygwin/cygz.dll',
      'bin'),
-    ('./go-ipfs/ipfs.exe',
+    ('./kubo/ipfs.exe',
      '.'),
     ('./fs-repo-migrations/fs-repo-migrations.exe',
      '.'),
