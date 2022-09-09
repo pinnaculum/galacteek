@@ -1,5 +1,9 @@
 __pycache__/
+*.pyc
 tmp/
 build/
 dist/
+flatpak*
+.flatpak-builder
+.pytest_cache
 venv*

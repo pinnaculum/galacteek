@@ -4,6 +4,10 @@ EXPOSE 5900-5904
 EXPOSE 4001
 EXPOSE 8080
 
+ENV FS_MIGRATE_VERSION "2.0.2"
+ENV KUBO_VERSION "0.15.0"
+ENV IPFS_DIST_OS "linux"
+
 ENV NOTBIT_DIST_URL="https://gitlab.com/api/v4/projects/27627112/packages/generic/notbit/0.7/notbit.tar.gz"
 ENV X11VNC_PASSWORD="galacteek"
 ENV DEBIAN_FRONTEND="noninteractive"
@@ -27,10 +31,21 @@ RUN apt-get update && apt-get install -q -y --force-yes \
 
 WORKDIR /usr/local
 
-# Get ipfs binary
-RUN wget http://dist.ipfs.io/go-ipfs/v0.9.1/go-ipfs_v0.9.1_linux-amd64.tar.gz && \
-	tar -xvf go-ipfs_v0.9.1_linux-amd64.tar.gz && \
-	cp go-ipfs/ipfs /usr/local/bin && rm go-ipfs_v0.9.1_linux-amd64.tar.gz
+# Get ipfs binary and fs-repo-migrations
+RUN wget https://dist.ipfs.tech/kubo/v0.15.0/kubo_v0.15.0_linux-amd64.tar.gz && \
+	tar -xvf kubo_v0.15.0_linux-amd64.tar.gz && \
+	cp kubo/ipfs /usr/local/bin && rm kubo_v0.15.0_linux-amd64.tar.gz
+
+RUN wget https://dist.ipfs.tech/kubo/v${KUBO_VERSION}/kubo_v${KUBO_VERSION}_${IPFS_DIST_OS}-amd64.tar.gz && \
+	tar -xvf kubo_v${KUBO_VERSION}_${IPFS_DIST_OS}-amd64.tar.gz && \
+	cp kubo/ipfs /usr/local/bin && \
+	rm kubo_v${KUBO_VERSION}_${IPFS_DIST_OS}-amd64.tar.gz
+
+RUN wget https://dist.ipfs.tech/fs-repo-migrations/v${FS_MIGRATE_VERSION}/fs-repo-migrations_v${FS_MIGRATE_VERSION}_${IPFS_DIST_OS}-amd64.tar.gz
+
+RUN tar -xzvf \
+	fs-repo-migrations_v${FS_MIGRATE_VERSION}_${IPFS_DIST_OS}-amd64.tar.gz && \
+	cp fs-repo-migrations/fs-repo-migrations /usr/bin
 
 # Add source code.
 COPY README.rst COPYING LICENSE LICENSE.go-ipfs \
