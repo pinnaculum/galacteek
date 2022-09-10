@@ -75,8 +75,7 @@ tortoise-orm==0.17.6
 urnparse==0.2.0
 validators==0.20.0
 yarl==1.5.1
-aiogeminipfs @ git+https://gitlab.com/galacteek/aiogeminipfs.git@ipfs#egg=aiogeminipfs
-rdflib @ git+https://gitlab.com/galacteek/rdflib.git@ipfs#egg=rdflib
-rdflib-jsonld @ git+https://gitlab.com/galacteek/rdflib-jsonld.git@galacteek#egg=rdflib-jsonld
-galacteek-ld-web4 @ git+https://gitlab.com/galacteek/galacteek-ld-web4.git@master
-SPARQL-Burger @ git+https://gitlab.com/galacteek/SPARQL-Burger.git@master#egg=SPARQL-Burger
+https://gitlab.com/galacteek/aiogeminipfs/-/releases/0.2.1/downloads/aiogeminipfs-0.2.1-py3-none-any.whl
+https://gitlab.com/galacteek/rdflib/-/releases/5.0.0/downloads/rdflib-5.0.0-py3-none-any.whl
+https://gitlab.com/galacteek/rdflib-jsonld/-/releases/0.6.0-dev/downloads/rdflib_jsonld-0.6.0.dev0-py2.py3-none-any.whl
+https://gitlab.com/galacteek/SPARQL-Burger/-/releases/1.0.2/downloads/SparQL_Burger-1.0.2-py3-none-any.whl
