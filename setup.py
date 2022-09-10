@@ -254,6 +254,7 @@ install_reqs_extra_matplotlib = reqs_parse('requirements-extra-matplotlib.txt')
 install_reqs_docs = reqs_parse('requirements-docs.txt')
 install_reqs_ui_pyqt_513 = reqs_parse('requirements-ui-pyqt-5.13.txt')
 install_reqs_ui_pyqt_515 = reqs_parse('requirements-ui-pyqt-5.15.txt')
+install_reqs_ld_schemas = reqs_parse('requirements-ld-schemas.txt')
 install_reqs_rdf_bsddb = reqs_parse('requirements-rdf-bsddb.txt')
 install_reqs_trafficshaping = reqs_parse('requirements-trafficshaping.txt')
 
@@ -279,6 +280,7 @@ setup(
     packages=found_packages,
     install_requires=install_reqs,
     extras_require={
+        'ld-schemas': install_reqs_ld_schemas,
         'markdown-extensions': install_reqs_extra_markdown,
         'ui-pyqt-5.13': install_reqs_ui_pyqt_513,
         'ui-pyqt-5.15': install_reqs_ui_pyqt_515,

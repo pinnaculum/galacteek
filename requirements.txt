@@ -1,4 +1,4 @@
-aiodns>=2.0.0
+aiodns==3.0.0
 aiofiles==0.8.0
 aiohttp==3.7.4
 aiohttp-socks==0.7.1
@@ -42,7 +42,7 @@ mkdocs-bootswatch==1.1
 mode==4.4.0
 multiaddr>=0.0.8
 omegaconf==2.1.1
-orjson>=3,<3.4
+orjson>=3
 otsrdflib==0.5.0
 pillow==9.0.1
 protobuf==3.6.1
@@ -63,7 +63,7 @@ pyparsing==2.4.7
 pyzbar==0.1.9
 qrcode==7.3.1
 qasync==0.22.0
-qtawesome>=0.7.2
+qtawesome==1.1.1
 random-username==1.0.2
 rdfextras==0.4
 rdflib-pyld-compat==0.1.0

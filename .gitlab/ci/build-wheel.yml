@@ -25,6 +25,8 @@ prepare:
     - devel
     - pimp-my-dweb
     - /^feature/
+    - /^fix/
+    - /^misc/
     - /^pronto/
     - /^ipid/
     - /^rdf/
@@ -70,6 +72,8 @@ build:
     - devel
     - pimp-my-dweb
     - /^feature/
+    - /^fix/
+    - /^misc/
     - /^pronto/
     - /^ipid/
     - /^rdf/
