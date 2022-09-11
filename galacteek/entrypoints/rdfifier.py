@@ -51,7 +51,7 @@ async def rdfifyInput(app, ipfsop, args):
         for path in args.yldpaths:
             for root, dirs, files in os.walk(path):
                 for inputf in files:
-                    fullp = Path(root).joinpath(inputf)
+                    graph, fullp = None, Path(root).joinpath(inputf)
 
                     if inputf.endswith('yaml-ld'):
                         graph = await yamlLdProcess(fullp)
