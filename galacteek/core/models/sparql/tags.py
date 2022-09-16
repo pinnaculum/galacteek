@@ -13,6 +13,20 @@ class TagsSparQLModel(SparQLListModel):
 
     rq = 'TagsSearch'
 
+    def tagNames(self):
+        for ri in range(0, self.rowCount()):
+            yield self.data(
+                self.createIndex(ri, 0),
+                role=Qt.DisplayRole
+            )
+
+    def tagUris(self):
+        for ri in range(0, self.rowCount()):
+            yield self.data(
+                self.createIndex(ri, 0),
+                role=SubjectUriRole
+            )
+
     def data(self, index, role=None):
         try:
             item = self._results[index.row()]
@@ -20,14 +34,12 @@ class TagsSparQLModel(SparQLListModel):
             if role == Qt.DisplayRole:
                 return str(item['tagName'])
             elif role == SubjectUriRole:
-                return str(item['uri'])
+                return item['uri']
             elif role == Qt.ToolTipRole:
                 return str(item['uri'])
             elif role == Qt.FontRole:
-                return QFont('Montserrat', 18)
+                return QFont('Montserrat', 16)
         except Exception:
-            import traceback
-            traceback.print_exc()
             return QVariant(None)
 
 

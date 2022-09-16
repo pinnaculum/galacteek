@@ -357,7 +357,7 @@ class BaseWorkspace(QWidget):
     def wsSwitch(self, soundNotify=False):
         self.stack.setCurrentIndex(self.workspaceIdx())
 
-    def wsTagRulesMatchesHashmark(self, hashmark):
+    async def wsTagRulesMatchesHashmark(self, hashmark):
         return False
 
 
@@ -624,11 +624,14 @@ class TabbedWorkspace(BaseWorkspace):
         if soundNotify and 0:
             playSound('wsswitch.wav')
 
-    def wsTagRulesMatchesHashmark(self, hashmark):
+    async def wsTagRulesMatchesHashmark(self, hashmark):
+        from galacteek.ld.rdf.hashmarks import tagsForHashmark
+
+        result = await tagsForHashmark(hashmark['uri'])
         tags = [
             {
-                'tag': tag.name
-            } for tag in hashmark.iptags
+                'tag': str(r['tagName'])
+            } for r in result
         ]
 
         for rule in self.wsTagRules:

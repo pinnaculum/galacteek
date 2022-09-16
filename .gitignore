@@ -1,4 +1,6 @@
 __pycache__/
+*.bkp
+*.old
 *.swp
 *.swo
 *.orig

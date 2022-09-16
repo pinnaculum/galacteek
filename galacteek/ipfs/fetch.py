@@ -4,7 +4,7 @@ import random
 
 from galacteek import log
 from galacteek.config import cGet
-from galacteek.core.asynclib import httpFetch
+from galacteek.core.asynclib.fetch import httpFetch
 from galacteek.ipfs.cidhelpers import IPFSPath
 
 
@@ -43,6 +43,13 @@ def pickGateway(network='main', skim=5):
 
 
 async def checkGateway(gatewayUrl: str):
+    """
+    Check if an HTTP gateway is responding
+
+    :param str gatewayUrl: base gateway URL
+    :rtype: bool
+    """
+
     iPath = IPFSPath(
         'bafybeifx7yeb55armcsxwwitkymga5xf53dxiarykms3ygqic223w5sk3m'
     )

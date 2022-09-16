@@ -78,7 +78,8 @@ class IPFSResourceOpener(QObject):
         self.app.mainWindow.addBrowserTab().enterUrl(url)
 
     @ipfsOp
-    async def openHashmark(self, ipfsop, hashmark):
+    async def openDbHashmark(self, ipfsop, hashmark):
+        # deprecated
         await hashmark._fetch_all()
         workspace = self.app.mainWindow.stack.wsHashmarkTagRulesRun(
             hashmark
@@ -89,6 +90,22 @@ class IPFSResourceOpener(QObject):
             schemePreferred=hashmark.schemepreferred,
             pin=True if hashmark.pin != 0 else False,
             useWorkspace=workspace
+        )
+
+    @ipfsOp
+    async def openHashmark(self, ipfsop, hashmark):
+        """
+        :param RowResult hashmark: hashmark returned by rdflib
+        """
+
+        workspace = await self.app.mainWindow.stack.wsHashmarkTagRulesRun(
+            hashmark
+        )
+
+        await self.app.resourceOpener.open(
+            str(hashmark['uri']),
+            useWorkspace=workspace,
+            # schemePreferred=hashmark.schemepreferred,
         )
 
     @ipfsOp

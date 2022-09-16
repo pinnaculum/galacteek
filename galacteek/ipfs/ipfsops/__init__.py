@@ -3,6 +3,7 @@ import io
 import os.path
 import os
 import orjson
+import hashlib
 import uuid
 import aiofiles
 import asyncio
@@ -1656,6 +1657,22 @@ class IPFSOperator(RemotePinningOps,
         except Exception as err:
             self.debug(f'catChunked({path}): error at offset {offset}: {err}')
             raise err
+
+    async def catChunkedToTmpFile(self,
+                                  path: str,
+                                  **kw):
+        h = hashlib.sha512()
+        try:
+            with TmpFile(mode='wb', delete=False) as file:
+                async for cno, data in self.catChunked(path):
+                    file.write(data)
+                    h.update(data)
+
+            return Path(file.name), h.hexdigest()
+        except aioipfs.APIError as err:
+            raise err
+        except Exception:
+            return None, None
 
     async def listObject(self, path, timeout=None):
         cfg = self.opConfig('listObject')

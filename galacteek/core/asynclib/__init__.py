@@ -1,10 +1,7 @@
 import os.path
-import hashlib
-from pathlib import Path
 from collections import UserList
 from collections import deque
 from typing import Deque
-from yarl import URL
 
 import concurrent.futures
 import threading
@@ -529,71 +526,3 @@ def threadedCoro(loop, coro, *args):
             return future.result()
         except Exception:
             traceback.print_exc()
-
-
-async def httpFetch(u,
-                    dst: Path = None,
-                    timeout=60,
-                    chunkSize=8192,
-                    maxSize=0,
-                    impatient=False,
-                    firstChunkTimeout=8):
-    from aiohttp.web_exceptions import HTTPOk
-    from galacteek import log
-    from galacteek.core import runningApp
-    from galacteek.core.tmpf import TmpFile
-
-    h = hashlib.sha512()
-    url = u if isinstance(u, URL) else URL(u)
-
-    try:
-        app = runningApp()
-        size = 0
-
-        with TmpFile(mode='w+b', delete=False,
-                     suffix=url.name) as file:
-            async with aiohttp.ClientSession() as sess:
-                async with sess.get(str(url),
-                                    verify_ssl=app.sslverify) as resp:
-                    if resp.status != HTTPOk.status_code:
-                        raise Exception(
-                            f'httpFetch: {url}: '
-                            f'Invalid reply code: {resp.status}'
-                        )
-
-                    if impatient is True:
-                        # impatient mode (used when fetching objects
-                        # from ipfs http gateways to discard unresponsive gws)
-
-                        firstc = await asyncio.wait_for(
-                            resp.content.read(chunkSize),
-                            firstChunkTimeout
-                        )
-
-                        if not firstc:
-                            raise Exception(
-                                "Enough is enough: "
-                                f"(waited {firstChunkTimeout} secs "
-                                "for first crumbs)"
-                            )
-
-                        file.write(firstc)
-                        h.update(firstc)
-
-                    async for chunk in resp.content.iter_chunked(
-                            chunkSize):
-                        file.write(chunk)
-                        h.update(chunk)
-
-                        size += len(chunk)
-
-                        if maxSize > 0 and size > maxSize:
-                            raise Exception(
-                                f'{url}: capsule size exceeds maxsize')
-
-            file.seek(0, 0)
-
-        return Path(file.name), h.hexdigest()
-    except Exception as err:
-        log.info(f'httpFetch ({url}): fetch error: {err}')
-        return None, None

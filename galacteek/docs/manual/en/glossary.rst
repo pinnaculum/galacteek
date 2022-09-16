@@ -237,6 +237,16 @@
 
         See the unixfs_ documentation
 
+    URI
+        
+        Uniform Resource Identifier
+
+        https://www.w3.org/wiki/URI
+
+    URIRef
+
+        A URI reference (this is a class name in rdflib)
+
 
 .. _IPFS: ipns://ipfs.io
 .. _ENS: https://ens.domains/

@@ -18,7 +18,7 @@ from galacteek.core import pkgResourcesListDir
 from galacteek.core import pkgResourcesRscFilename
 from galacteek.core.iptags import ipTagRe
 from galacteek.core.ipfsmarks import IPFSMarks
-from galacteek.core.asynclib import httpFetch
+from galacteek.core.asynclib.fetch import httpFetch
 
 
 try:

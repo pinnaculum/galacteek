@@ -21,6 +21,7 @@ from .util import configFromFile
 from .util import environment
 from .util import empty
 from .util import dictDotLeaves
+from .resolvers import *  # noqa
 
 
 class NestedNamespace(SimpleNamespace):

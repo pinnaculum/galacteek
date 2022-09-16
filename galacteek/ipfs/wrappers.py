@@ -5,7 +5,7 @@ from aiohttp.client_exceptions import ClientConnectorError
 
 from PyQt5.QtWidgets import QApplication
 
-from galacteek import log
+
 from galacteek.ipfs.ipfsops import IPFSOpRegistry
 
 
@@ -26,6 +26,7 @@ def appTask(fn, *args, **kw):
 def ipfsOpFn(func):
     @functools.wraps(func)
     async def wrapper(*args, **kw):
+        from galacteek import log
         op = _getOp()
         if op:
             return await func(op, *args, **kw)
@@ -42,6 +43,7 @@ class ipfsClassW:
         return self.__name__
 
     async def _operation(self, inst, op, *args, **kw):
+        from galacteek import log
         from galacteek.ipfs import ConnectionError
         try:
             resp = await self.wrapped(inst, op, *args, **kw)

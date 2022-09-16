@@ -1,21 +1,17 @@
-import asyncio
 import gc
 import attr
 import functools
 import re
-from datetime import datetime
 from rdflib import URIRef
 
 from PyQt5.QtWidgets import QFrame
 from PyQt5.QtWidgets import QPushButton
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QToolButton
-from PyQt5.QtWidgets import QLineEdit
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtWidgets import QSpacerItem
 from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QVBoxLayout
-from PyQt5.QtWidgets import QWidgetAction
 from PyQt5.QtWidgets import QLabel
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QComboBox
@@ -25,16 +21,12 @@ from PyQt5.QtWidgets import QPlainTextEdit
 from PyQt5.QtWidgets import QHBoxLayout
 from PyQt5.QtWidgets import QSizePolicy
 from PyQt5.QtWidgets import QTextBrowser
-from PyQt5.QtWidgets import QToolTip
 from PyQt5.QtWidgets import QToolBar
 
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
 
-from PyQt5.QtCore import QRect
-from PyQt5.QtCore import QEvent
 from PyQt5.QtCore import QFileInfo
-from PyQt5.QtCore import QRegExp
 from PyQt5.QtCore import QTimer
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import Qt
@@ -44,15 +36,12 @@ from PyQt5.QtCore import QSize
 from PyQt5.QtCore import QFile
 from PyQt5.QtCore import QIODevice
 from PyQt5.QtCore import QVariant
-from PyQt5.QtCore import QPoint
 from PyQt5.QtCore import QByteArray
 from PyQt5.QtCore import QBuffer
 
-from PyQt5.QtGui import QRegExpValidator
 from PyQt5.QtGui import QImage
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtGui import QTextCursor
-from PyQt5.QtGui import QKeySequence
 
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
@@ -67,9 +56,7 @@ from galacteek import ensure
 from galacteek import partialEnsure
 from galacteek import AsyncSignal
 from galacteek import services
-from galacteek.core.asynclib import asyncify
 from galacteek.core.asynclib import asyncReadFile
-from galacteek.core import utcDatetime
 from galacteek.space import allPlanetsNames
 from galacteek.dweb.markdown import markitdown
 from galacteek.config import cWidgetGet
@@ -77,33 +64,19 @@ from galacteek.config import cObjectGet
 from galacteek.config import Configurable
 
 from galacteek import database
-from galacteek.database.models.core import Hashmark
 from galacteek.ld.iri import urnParse
 
 from ..helpers import filesSelectImages
 from ..helpers import getIcon
 from ..helpers import getPlanetIcon
 from ..helpers import getMimeIcon
-from ..helpers import getIconFromIpfs
 from ..helpers import getImageFromIpfs
 from ..helpers import sizeFormat
 from ..helpers import messageBox
-from ..helpers import messageBoxAsync
-from ..helpers import inputTextCustom
 from ..helpers import pixmapAsBase64Url
 
 from ..i18n import iCancel
 from ..i18n import iUnknown
-from ..i18n import iHashmarksDatabase
-from ..i18n import iSearchHashmarks
-from ..i18n import iSearchHashmarksAllAcross
-from ..i18n import iSearchUseShiftReturn
-from ..i18n import iHashmarkInfoToolTip
-from ..i18n import iHashmarkSources
-from ..i18n import iHashmarkSourcesDbSync
-from ..i18n import iHashmarkSourcesAddGitRepo
-from ..i18n import iHashmarkSourcesAddLegacyIpfsMarks
-from ..i18n import iHashmarkSourceAlreadyRegistered
 from ..i18n import iIPFSUrlTypeNative
 from ..i18n import iIPFSUrlTypeHttpGateway
 
@@ -618,505 +591,6 @@ class HashmarkThisButton(GMediumToolButton):
     def onClicked(self):
         from ..hashmarks import addHashmarkAsync
         ensure(addHashmarkAsync(str(self.ipfsPath)))
-
-
-class HashmarkToolButton(GMediumToolButton):
-    """
-    Used in the quickaccess toolbar
-    """
-    deleteRequest = pyqtSignal()
-
-    def __init__(self, mark, icon=None, parent=None):
-        super(HashmarkToolButton, self).__init__(parent=parent)
-        self.setObjectName('qaToolButton')
-        if icon:
-            self.setIcon(icon)
-
-        self._hashmark = mark
-
-    async def hashmark(self):
-        return self._hashmark
-
-    def mousePressEvent(self, event):
-        button = event.button()
-
-        if button == Qt.RightButton:
-            menu = QMenu(self)
-            menu.addAction('Remove', lambda: self.deleteRequest.emit())
-            menu.exec(self.mapToGlobal(event.pos()))
-
-        super().mousePressEvent(event)
-
-
-class _HashmarksCommon:
-    def makeHashmarkAction(self, mark, loadIcon=True):
-        tLenMax = 48
-
-        path = mark.uri
-        title = mark.title
-
-        if title and len(title) > tLenMax:
-            title = '{0} ...'.format(title[0:tLenMax])
-
-        action = QAction(title, self)
-        action.setToolTip(iHashmarkInfoToolTip(mark))
-
-        action.setData({
-            'path': path,
-            'mark': mark,
-            'iconpath': mark.icon.path if mark.icon else None
-        })
-
-        if not mark.icon or not loadIcon:
-            # Default icon
-            action.setIcon(getIcon('cube-blue.png'))
-        else:
-            ensure(self.loadMarkIcon(action, mark.icon.path))
-
-        return action
-
-    @ipfsOp
-    async def loadMarkIcon(self, ipfsop, action, iconCid):
-        data = action.data()
-
-        if isinstance(data, dict) and 'iconloaded' in data:
-            return
-
-        icon = await getIconFromIpfs(ipfsop, iconCid)
-
-        if icon:
-            await ipfsop.sleep()
-
-            action.setIcon(icon)
-            data['iconloaded'] = True
-            action.setData(data)
-
-
-class HashmarkMgrButton(PopupToolButton, _HashmarksCommon):
-    hashmarkClicked = pyqtSignal(Hashmark)
-
-    def __init__(self, marks, iconFile='hashmarks.png',
-                 maxItemsPerCategory=128, parent=None):
-        super(HashmarkMgrButton, self).__init__(parent=parent,
-                                                mode=QToolButton.InstantPopup)
-
-        self.app = QApplication.instance()
-        self.searcher = HashmarksSearcher()
-
-        self.setObjectName('hashmarksMgrButton')
-        self.setIcon(getIcon(iconFile))
-        self.setupMenu()
-
-        self.hCount = 0
-        self.marks = marks
-        self.cMenus = {}
-        self.maxItemsPerCategory = maxItemsPerCategory
-
-        database.HashmarkAdded.connectTo(self.onMarkAdded)
-        database.HashmarkDeleted.connectTo(self.onMarkDeleted)
-
-    def setupMenu(self):
-        self.menu.setObjectName('hashmarksMgrMenu')
-        self.menu.setToolTipsVisible(True)
-
-        self.sourcesMenu = QMenu(iHashmarkSources())
-        self.sourcesMenu.setIcon(self.icon())
-
-        self.menu.addMenu(self.searcher.menu)
-        self.menu.addSeparator()
-
-        self.popularTagsMenu = QMenu('Popular Tags')
-        self.popularTagsMenu.setObjectName('popularTagsMenu')
-        self.popularTagsMenu.setIcon(getIcon('hash.png'))
-        self.popularTagsMenu.aboutToShow.connect(
-            partialEnsure(self.onShowPopularTags))
-
-        self.syncAction = QAction(
-            self.icon(),
-            iHashmarkSourcesDbSync(),
-            self.sourcesMenu,
-            triggered=lambda: ensure(self.onSynchronize())
-        )
-
-        self.addGitSourceAction = QAction(
-            self.icon(),
-            iHashmarkSourcesAddGitRepo(),
-            self.sourcesMenu,
-            triggered=self.onAddGitHashmarkSource
-        )
-
-        self.addIpfsMarksSourceAction = QAction(
-            self.icon(),
-            iHashmarkSourcesAddLegacyIpfsMarks(),
-            self.sourcesMenu,
-            triggered=lambda: ensure(self.onAddIpfsMarksSource())
-        )
-
-        self.sourcesMenu.addAction(self.syncAction)
-        self.sourcesMenu.addSeparator()
-        self.sourcesMenu.addAction(self.addGitSourceAction)
-        self.sourcesMenu.addSeparator()
-        self.sourcesMenu.addAction(self.addIpfsMarksSourceAction)
-
-        self.menu.addMenu(self.sourcesMenu)
-        self.menu.addSeparator()
-        self.menu.addMenu(self.popularTagsMenu)
-        self.menu.addSeparator()
-        self.app.hmSynchronizer.syncing.connectTo(self.onSynchronizing)
-
-    async def onShowPopularTags(self):
-        self.popularTagsMenu.clear()
-
-        tags = await database.hashmarksPopularTags(limit=20)
-
-        for tag in tags:
-            menu = QMenu(tag.name, self.popularTagsMenu)
-            menu.setIcon(getIcon('ipfs-logo-128-white.png'))
-            menu.menuAction().setData(tag)
-            menu.triggered.connect(
-                lambda action: ensure(self.linkActivated(action)))
-            self.popularTagsMenu.addMenu(menu)
-
-            menu.aboutToShow.connect(
-                partialEnsure(self.onShowTagHashmarks, menu))
-
-    async def onFollowTag(self, tagName):
-        tag = await database.ipTagGet(tagName)
-        if tag:
-            tag.follow = True
-            await tag.save()
-
-    async def onShowTagHashmarks(self, menu):
-        menu.clear()
-        menu.setToolTipsVisible(True)
-        tag = menu.menuAction().data()
-
-        if 0:
-            menu.addAction(self.icon(), 'Follow this tag',
-                           lambda: partialEnsure(self.onFollowTag, tag.name))
-
-        hashmarks = await database.hashmarksByTags(
-            [tag.name], strict=True, limit=30)
-
-        for hashmark in hashmarks:
-            await hashmark._fetch_all()
-            menu.addAction(self.makeHashmarkAction(hashmark))
-
-    def onAddGitHashmarkSource(self):
-        url = inputTextCustom(title=iHashmarkSourcesAddGitRepo(),
-                              label='Git repository URL')
-        if url:
-            ensure(self.addGitHashmarkSource(url))
-
-    async def addGitHashmarkSource(self, url):
-        if url:
-            await database.hashmarkSourceAdd(
-                database.HashmarkSource.TYPE_GITREPOS,
-                url
-            )
-
-    async def onAddIpfsMarksSource(self):
-        ex = await database.hashmarkSourceSearch(
-            type=database.HashmarkSource.TYPE_IPFSMARKS_LEGACY
-        )
-
-        if ex:
-            return await messageBoxAsync(iHashmarkSourceAlreadyRegistered())
-
-        try:
-            await database.hashmarkSourceAdd(
-                database.HashmarkSource.TYPE_IPFSMARKS_LEGACY,
-                self.app.marksLocal.path,
-                name='ipfsmarks'
-            )
-        except Exception as err:
-            log.debug(str(err))
-
-    async def onSynchronizing(self, onoff):
-        self.syncAction.setEnabled(not onoff)
-
-    async def onSynchronize(self):
-        await self.app.hmSynchronizer.sync()
-
-    async def onMarkAdded(self, hashmark):
-        await hashmark._fetch_all()
-
-        if not hashmark.category:
-            # Uncategorized, no need then
-            return
-
-        menu = self.categoryMenu(hashmark.category.name)
-        menu.addAction(self.makeHashmarkAction(hashmark))
-
-        await self.updateIcons()
-
-    async def onMarkDeleted(self, mark):
-        await mark.fetch_related('category')
-
-        if mark.category.name in self.cMenus:
-            menu = self.cMenus[mark.category.name]
-
-            for action in menu.actions():
-                data = action.data()
-
-                if data and data['mark'].url == mark.url:
-                    menu.removeAction(action)
-
-            if menu.isEmpty():
-                menu.hide()
-
-    async def updateIcons(self):
-        for mName, menu in self.cMenus.items():
-            await asyncio.sleep(0)
-
-            for action in menu.actions():
-                data = action.data()
-
-                if 'iconloaded' not in data and data['iconpath']:
-                    ensure(self.loadMarkIcon(action, data['iconpath']))
-
-    def categoryMenu(self, category):
-        if category not in self.cMenus:
-            self.cMenus[category] = QMenu(category)
-            self.cMenus[category].setToolTipsVisible(True)
-            self.cMenus[category].triggered.connect(
-                lambda action: ensure(self.linkActivated(action)))
-            self.cMenus[category].setObjectName('hashmarksMgrMenu')
-            self.cMenus[category].setIcon(getIcon('cube-blue.png'))
-            self.menu.addMenu(self.cMenus[category])
-
-        return self.cMenus[category]
-
-    async def updateMenu(self):
-        self.hCount = 0
-        categories = await database.categoriesNames()
-
-        categories.sort()
-
-        for category in categories:
-            marks = await database.hashmarksSearch(category=category)
-
-            menu = self.categoryMenu(category)
-
-            def exists(path):
-                for action in menu.actions():
-                    if action.data()['path'] == path:
-                        return action
-
-            for hashmark in marks:
-                if hashmark.path and exists(hashmark.path):
-                    continue
-
-                await hashmark._fetch_all()
-                menu.addAction(self.makeHashmarkAction(hashmark))
-            else:
-                menu.hide()
-
-        self.setToolTip(iHashmarksDatabase())
-
-    async def linkActivated(self, action):
-        mark = action.data()['mark']
-
-        if mark:
-            mark.visitcount += 1
-            mark.lastvisited = utcDatetime()
-            await mark.save()
-
-            self.hashmarkClicked.emit(mark)
-
-
-class HashmarksSearchWidgetAction(QWidgetAction):
-    pass
-
-
-class HashmarksSearchLine(QLineEdit):
-    """
-    The hashmarks search line edit.
-
-    Run the search when Shift + Return is pressed.
-    """
-    searchRequest = pyqtSignal(str)
-    returnNoModifier = pyqtSignal()
-
-    def mouseDoubleClickEvent(self, event):
-        event.ignore()
-
-    def keyPressEvent(self, event):
-        if event.type() == QEvent.KeyPress:
-            modifiers = event.modifiers()
-            key = event.key()
-
-            if modifiers & Qt.ShiftModifier:
-                if key == Qt.Key_Return:
-                    searchText = self.text().strip()
-                    if searchText:
-                        self.searchRequest.emit(searchText)
-
-                    return
-            else:
-                if event.key() == Qt.Key_Return:
-                    self.returnNoModifier.emit()
-                    return
-
-        return super().keyPressEvent(event)
-
-
-class HashmarksSearcher(PopupToolButton, _HashmarksCommon):
-    hashmarkClicked = pyqtSignal(Hashmark)
-
-    def __init__(self, iconFile='hashmarks-library.png', parent=None,
-                 mode=QToolButton.InstantPopup):
-        super(HashmarksSearcher, self).__init__(parent=parent, mode=mode)
-
-        self.app = QApplication.instance()
-
-        self._catalog = {}
-        self._sMenus = []
-        self.setObjectName('hashmarksSearcher')
-
-        self.setIcon(getIcon(iconFile))
-        self.setShortcut(QKeySequence('Ctrl+Alt+h'))
-
-        self.menu.setTitle(iSearchHashmarks())
-        self.menu.setIcon(getIcon(iconFile))
-        self.menu.setObjectName('hashmarksSearchMenu')
-        self.menu.setToolTipsVisible(True)
-        self.menu.aboutToShow.connect(self.aboutToShowMenu)
-        self.configureMenu()
-
-    @property
-    def searchesCount(self):
-        return len(self.menu.actions()) - len(self.protectedActions)
-
-    @property
-    def protectedActions(self):
-        return [self.searchWAction, self.clearAction]
-
-    def isProtectedAction(self, action):
-        for pAction in self.protectedActions:
-            if action is pAction:
-                return True
-        return False
-
-    def aboutToShowMenu(self):
-        self.searchLine.setFocus(Qt.OtherFocusReason)
-
-    def configureMenu(self):
-        self.clearAction = QAction(
-            getIcon('clear-all.png'),
-            'Clear searches',
-            self.menu,
-            triggered=self.onClearSearches
-        )
-        self.clearAction.setEnabled(False)
-        self.searchLine = HashmarksSearchLine(self.menu)
-        self.searchLine.setObjectName('hLibrarySearch')
-
-        mediumSize = self.fontMetrics().size(0, '*' * (40))
-        self.searchLine.setMinimumSize(QSize(mediumSize.width(), 32))
-        self.searchLine.setFocusPolicy(Qt.StrongFocus)
-
-        self.searchLine.returnNoModifier.connect(self.onReturnNoShift)
-        self.searchLine.searchRequest.connect(self.onSearch)
-        self.searchLine.setToolTip(iSearchHashmarksAllAcross())
-
-        self.searchLine.setValidator(
-            QRegExpValidator(QRegExp(r"[\w\s@\+\-_./?'\"!#]+")))
-        self.searchLine.setMaxLength(96)
-        self.searchLine.setClearButtonEnabled(True)
-
-        self.searchWAction = HashmarksSearchWidgetAction(self.menu)
-        self.searchWAction.setDefaultWidget(self.searchLine)
-        self.menu.addAction(self.searchWAction)
-        self.menu.setDefaultAction(self.searchWAction)
-        self.menu.addAction(self.clearAction)
-
-    def onReturnNoShift(self):
-        QToolTip.showText(self.searchLine.mapToGlobal(
-            QPoint(30, self.searchLine.height())),
-            iSearchUseShiftReturn(),
-            self.searchLine, QRect(0, 0, 0, 0), 1800)
-
-    def onSearch(self, text):
-        for action in self.menu.actions():
-            if self.isProtectedAction(action):
-                continue
-            if action.text() == text:
-                self.menu.removeAction(action)
-
-        ensure(self.searchInCatalog(text))
-
-    @asyncify
-    async def searchInCatalog(self, text):
-        from galacteek.core.iptags import ipTagsRFind
-
-        resultsMenu = QMenu(text, self.menu)
-        resultsMenu.setToolTipsVisible(True)
-        resultsMenu.setObjectName('hashmarksSearchMenu')
-        resultsMenu.triggered.connect(
-            lambda action: ensure(self.linkActivated(
-                action, closeMenu=True)))
-
-        resultsMenu.menuAction().setData({
-            'query': text,
-            'datecreated': datetime.now()
-        })
-
-        showMax = 128
-        added = 0
-
-        tags = ipTagsRFind(text)
-        if len(tags) > 0:
-            hashmarks = await database.hashmarksByTags(
-                tags, defaultPlanet=False
-            )
-        else:
-            hashmarks = await database.hashmarksSearch(text)
-
-        for hashmark in hashmarks:
-            await asyncio.sleep(0)
-            await hashmark._fetch_all()
-
-            resultsMenu.addAction(self.makeHashmarkAction(hashmark))
-
-            if added > showMax:
-                break
-
-            added += 1
-
-        if len(resultsMenu.actions()) > 0:
-            self.menu.addMenu(resultsMenu)
-            resultsMenu.setIcon(getIcon('search-engine.png'))
-
-        self.clearAction.setEnabled(self.searchesCount > 0)
-        self.searchLine.clear()
-
-    def onClearSearches(self):
-        for action in self.menu.actions():
-            if not self.isProtectedAction(action):
-                self.menu.removeAction(action)
-
-        self.clearAction.setEnabled(self.searchesCount > 0)
-
-    def register(self, nodeId, ipfsMarks):
-        if nodeId in self._catalog.keys():
-            del self._catalog[nodeId]
-
-        self._catalog[nodeId] = ipfsMarks
-
-    async def linkActivated(self, action, closeMenu=False):
-        mark = action.data()['mark']
-
-        if mark:
-            mark.visitcount += 1
-            mark.lastvisited = utcDatetime()
-            await mark.save()
-
-            self.hashmarkClicked.emit(mark)
-
-            self.searchLine.clear()
-            if closeMenu:
-                self.menu.hide()
 
 
 class ImageWidget(QLabel):

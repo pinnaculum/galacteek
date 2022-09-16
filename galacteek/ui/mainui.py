@@ -79,7 +79,7 @@ from .helpers import *
 from .pinning.pinstatus import RPSStatusButton
 from .widgets import AtomFeedsToolbarButton
 from .widgets import PopupToolButton
-from .widgets import HashmarkMgrButton
+from .widgets.hashmarks import HashmarkMgrButton
 from .widgets import AnimatedLabel
 from .widgets.netselector import IPFSNetworkSelectorToolButton
 from .widgets.toolbar import BasicToolBar
@@ -520,12 +520,13 @@ class CentralStack(QStackedWidget,
         if wsButton and curWorkspace is not workspace:
             wsButton.styleNotify()
 
-    def wsHashmarkTagRulesRun(self, hashmark):
+    async def wsHashmarkTagRulesRun(self, hashmark):
         for idx, workspace in self.workspaces():
-            if workspace.wsTagRulesMatchesHashmark(hashmark):
-                if idx == -1:
-                    self.__addWorkspace(workspace)
-                    self.__wsDormant.remove(workspace)
+            match = await workspace.wsTagRulesMatchesHashmark(hashmark)
+
+            if match and idx == -1:
+                self.__addWorkspace(workspace)
+                self.__wsDormant.remove(workspace)
 
                 return workspace
 
@@ -812,9 +813,7 @@ class MainWindow(QMainWindow, KeyListener):
         self.ll1.clicked.connect(self.onOpenHashmarksCenter)
 
         self.hashmarkMgrButton = HashmarkMgrButton(
-            marks=self.app.marksLocal)
-
-        self.hashmarkMgrButton.menu.addSeparator()
+            marks=self.app.marksLocal, parent=self)
 
         self.clipboardItemsStack = ClipboardItemsStack()
 

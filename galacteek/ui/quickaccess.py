@@ -22,7 +22,7 @@ from .helpers import getIconFromIpfs
 from .helpers import getIconFromImageData
 from .helpers import getIconFromMimeType
 from .helpers import getFavIconFromDir
-from .widgets import HashmarkToolButton
+from .widgets.hashmarks import HashmarkToolButton
 from .widgets import QAObjTagItemToolButton
 from .widgets import URLDragAndDropProcessor
 

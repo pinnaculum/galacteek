@@ -29,7 +29,7 @@ from galacteek import cached_property
 from galacteek import loopTime
 
 from galacteek.core.asynclib import threadExec
-from galacteek.core.asynclib import httpFetch
+from galacteek.core.asynclib.fetch import httpFetch
 from galacteek.core.tmpf import TmpDir
 
 from . import GAsyncObject

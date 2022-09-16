@@ -185,12 +185,13 @@ async def addLdHashmark(resourceUrl: Union[IPFSPath, str, URIRef],
     return True
 
 
-async def tagsSearch(tagName: str = None,
-                     graphUri: str = TOP_HASHMARKS_GRAPH_URI):
+async def ldHashmarksByTag(tagUri: URIRef = None,
+                           graphUri: str = TOP_HASHMARKS_GRAPH_URI):
     graph = getGraph(graphUri)
 
     return await graph.queryAsync(
-        querydb.get('HashmarkTagsSearch')
+        querydb.get('HashmarkTagsSearch'),
+        initBindings={'taguri': tagUri}
     )
 
 
