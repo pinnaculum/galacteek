@@ -1,12 +1,16 @@
+from omegaconf import DictConfig
+
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWebEngineWidgets import QWebEngineProfile
 from PyQt5.QtWebEngineWidgets import QWebEngineSettings
 
+from PyQt5.QtCore import QUrl
 from PyQt5.QtWebEngine import QQuickWebEngineProfile
 
 from galacteek.dweb.webscripts import ethereumClientScripts
 from galacteek.dweb.webscripts import webTorrentScripts
 from galacteek.dweb.webscripts import scriptFromQFile
+from galacteek.dweb.webscripts import styleSheetScript
 
 from galacteek.browser.schemes import SCHEME_DWEB
 from galacteek.browser.schemes import SCHEME_ENS
@@ -18,6 +22,7 @@ from galacteek.browser.schemes import SCHEME_IPFS_P_HTTP
 from galacteek.browser.schemes import SCHEME_IPFS_P_HTTPS
 from galacteek.browser.schemes import SCHEME_IPNS
 from galacteek.browser.schemes import SCHEME_IPID
+from galacteek.browser.schemes import SCHEME_IPS
 from galacteek.browser.schemes import SCHEME_QMAP
 from galacteek.browser.schemes import SCHEME_MANUAL
 from galacteek.browser.schemes import SCHEME_GEMINI
@@ -58,6 +63,7 @@ class BaseProfile(QWebEngineProfile, KeyListener):
                  name=None,
                  otr=False,
                  storageName=None,
+                 styles: dict = {},
                  parent=None):
         if storageName:
             super(BaseProfile, self).__init__(
@@ -72,6 +78,7 @@ class BaseProfile(QWebEngineProfile, KeyListener):
         self.app = QApplication.instance()
         self.webScripts = self.scripts()
         self.webSettings = self.settings()
+        self.webStyles = styles
 
         self.installIpfsSchemeHandlers()
         self.installScripts()
@@ -107,10 +114,21 @@ class BaseProfile(QWebEngineProfile, KeyListener):
         self.installUrlSchemeHandler(sch, handler)
 
     def installScripts(self):
+        styleConfig = self.config.get('style')
         scriptsList = self.config.get('scripts')
 
         if not scriptsList:
             return
+
+        if styleConfig and isinstance(self.webStyles, dict):
+            # Style
+            # TODO: day/night switching
+
+            styleName = styleConfig.get('day')
+            styleScripts = self.webStyles.get(styleName)
+
+            if styleScripts:
+                [self.webScripts.insert(script) for script in styleScripts]
 
         # Webtorrent
         [self.webScripts.insert(script) for script in webTorrentScripts()]
@@ -159,6 +177,7 @@ class BaseProfile(QWebEngineProfile, KeyListener):
         self.installHandler(SCHEME_ENSR, self.app.ensSchemeHandler)
         self.installHandler(SCHEME_QMAP, self.app.qSchemeHandler)
         self.installHandler(SCHEME_IPID, self.app.ipidSchemeHandler)
+        self.installHandler(SCHEME_IPS, self.app.ipsSchemeHandler)
         self.installHandler(SCHEME_I, self.app.iSchemeHandler)
         self.installHandler(SCHEME_IPFS_P_HTTP,
                             self.app.ipfsHttpSchemeHandler)
@@ -327,10 +346,39 @@ def onProfilesChanged():
         wp.configure()
 
 
+def wpParseStyles(styles: DictConfig):
+    # Parse the 'styles' dictionary
+
+    stl = {}
+    for styleDef in styles:
+        try:
+            src = styleDef.get('src')
+            themeName = styleDef.get('themeName')
+
+            assert isinstance(src, str)
+            assert isinstance(themeName, str)
+
+            script = styleSheetScript(themeName, QUrl(src))
+            assert script is not None  # weak
+
+            # yield themeName, script
+            if themeName not in stl:
+                stl[themeName] = script
+        except Exception:
+            continue
+
+    return stl
+
+
 def wpRegisterFromConfig(app):
     """
     Initialize all the configured web profiles
     """
+
+    # Style Scripts
+    webEngineStyles = wpParseStyles(
+        cGet('styles.webEngine', mod='galacteek.browser.styles')
+    )
 
     cfgWpList = cGet('webProfiles')
 
@@ -348,7 +396,8 @@ def wpRegisterFromConfig(app):
             otr=True if otr else False,
             storageName=sName,
             name=wpName,
-            parent=app
+            parent=app,
+            styles=webEngineStyles
         )
         wp.configure()
 

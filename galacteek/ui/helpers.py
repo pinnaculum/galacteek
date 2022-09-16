@@ -108,12 +108,13 @@ def preloadMimeIcons():
     return icons
 
 
-async def getIconFromIpfs(ipfsop, ipfsPath, scaleWidth=None,
+async def getIconFromIpfs(ipfsop, ipfsPath: str, scaleWidth=None,
                           sizeMax=kilobytes(256), timeout=10):
     """
     We cache the icons that we got out of the IPFS repo by their path
     Max icons cached is set by 'ipfsIconsCacheMax' in the app object
     """
+
     app = QApplication.instance()
     iconsCache = app.ipfsIconsCache
 

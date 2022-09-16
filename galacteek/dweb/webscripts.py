@@ -1,6 +1,8 @@
+import re
 from galacteek.core.asynclib import asyncReadFile
 from PyQt5.QtWebEngineWidgets import QWebEngineScript
 from PyQt5.QtCore import QFile
+from PyQt5.QtCore import QUrl
 
 
 def scriptFromString(name, jsCode):
@@ -17,9 +19,17 @@ async def scriptFromLocalFile(name, filePath):
     return scriptFromString(name, data)
 
 
-def scriptFromQFile(name, rscPath):
-    jsFile = QFile(rscPath)
+def scriptUrl(rscPath: str):
+    if rscPath.startswith('qrc:'):
+        return re.sub(r'^qrc:', ':', rscPath)
+
+    return rscPath
+
+
+def scriptFromQFile(name: str, rscPath: str):
+    jsFile = QFile(scriptUrl(rscPath))
     if not jsFile.open(QFile.ReadOnly):
+        print('Cannot open', rscPath)
         return
 
     try:
@@ -130,4 +140,47 @@ def webTorrentScripts():
     scriptWebTorrent.setInjectionPoint(QWebEngineScript.DocumentCreation)
     scriptWebTorrent.setRunsOnSubFrames(True)
     scripts.append(scriptWebTorrent)
+    return scripts
+
+
+styleScr = """
+(function() {
+
+   css = document.createElement('style');
+   css.type = 'text/css';
+   css.id = '%s';
+
+   document.head.appendChild(css);
+   // document.getElementsByTagName('head')[0].appendChild(css);
+   css.innerText = '%s';
+})()
+"""
+
+
+def styleSheetScript(name: str, url: QUrl):
+    scripts = []
+
+    if url.scheme() == 'qrc':
+        file = QFile(scriptUrl(url.toString()))
+
+        if file.open(QFile.ReadOnly):
+            try:
+                text = file.readAll().data().decode('utf-8')
+                css = text.replace("'", "\\'")
+
+                code = styleScr % (name, ''.join(css.splitlines()))
+                script = scriptFromString(name, code)
+
+                if script is None:
+                    # err
+                    return scripts
+
+                script.setRunsOnSubFrames(True)
+                script.setInjectionPoint(QWebEngineScript.DocumentReady)
+                script.setWorldId(QWebEngineScript.ApplicationWorld)
+
+                scripts.append(script)
+            except Exception:
+                pass
+
     return scripts

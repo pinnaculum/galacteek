@@ -23,6 +23,7 @@ cfgInitTable = [
 
     # browser
     'galacteek.browser.schemes',
+    'galacteek.browser.styles',
     'galacteek.browser.webprofiles',
 
     'galacteek.ui.browser'

@@ -757,9 +757,9 @@ class IPFSOperator(RemotePinningOps,
                     joinIpns(key), path, origin=cacheOrigin)
 
             self.debug(
-                f'Publishing {path} to {key} '
-                f'cache: {cache}/{cacheOrigin}, allowoffline: {aOffline}, '
-                f'TTL: {ttl}, lifetime: {lifetime}'
+                f'publishing {path} to {key} '
+                f'origin: {cacheOrigin}, '
+                f'ttl: {ttl}, lifetime: {lifetime}'
             )
 
             result = await self.waitFor(

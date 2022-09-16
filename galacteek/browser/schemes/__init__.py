@@ -252,6 +252,12 @@ def initializeSchemes():
     )
 
     declareUrlScheme(
+        SCHEME_IPS,
+        syntax=QWebEngineUrlScheme.Syntax.Host,
+        flags=defaultSchemeFlags
+    )
+
+    declareUrlScheme(
         SCHEME_ENS,
         syntax=QWebEngineUrlScheme.Syntax.Host,
         flags=serviceWorkersFlags

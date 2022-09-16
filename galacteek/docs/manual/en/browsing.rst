@@ -20,6 +20,8 @@ will hide the results.
 You can also use specific syntax to search with certain
 search engines:
 
+- Use the **s** or **sx** keyword to search with the Searx_ web search engine.
+  Example: **s distributed web**
 - Use the **d** prefix to search with the DuckDuckGo_ web search engine.
   Example: **d distributed web**
 - Use the **i** or **ip** prefix to run a search on the IPFS
@@ -142,6 +144,26 @@ Examples::
     ipid://k2k4r8jz0dyx3przi8mk1trj1ga0ibgroyhbvwumkbig70uphz7qpnqn/blog
 
 This scheme currently only supports the *GET* method.
+
+ips://
+^^^^^^
+
+The *ips* URL scheme gives access to the JSON-LD schemas
+that are used by the application to give meaning to content.
+The URL scheme is the following::
+
+    ips://{ips-domain}/{context-name}
+
+Where *ips-domain* is the IPS domain name (which is equivalent
+to the name of the IPNS key pointing to the schemas).
+
+Examples::
+
+- `ips://galacteek.ld <ips://galacteek.ld>`_
+- `ips://galacteek.ld/Article <ips://galacteek.ld/Article>`_
+- `ips://galacteek.ld/Tag <ips://galacteek.ld/Article>`_
+
+This scheme only supports the *GET* method.
 
 dweb:/
 ^^^^^^
@@ -300,4 +322,5 @@ a *Web3* instance (from the *web3.js* JS library) available as
 
 .. _ENS: https://ens.domains/
 .. _DuckDuckGo: https://duckduckgo.com
+.. _Searx: https://searx.org
 .. _Gemini: https://gemini.circumlunar.space/

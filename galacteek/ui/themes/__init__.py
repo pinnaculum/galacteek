@@ -143,7 +143,7 @@ class ThemesManager:
     def change(self, theme):
         self.themeApply(theme)
 
-    def themeApply(self, themeName: str):
+    def themeApply(self, themeName: str, watch: bool = False):
         exTheme = self.app.theme
         if exTheme:
             # There's already a theme installed
@@ -183,24 +183,23 @@ class ThemesManager:
         sysName = self.app.system.lower()
         qssPath = f":/galacteek/ui/themes/{themeName}/galacteek.qss"
         qssPlatformPath = \
-            f":/galacteek/ui/themes/{themeName}/galacteek_{sysName}.qss"
+            f":/galacteek/ui/themes/{themeName}/galacteek_{sysName}.qss"  # noqa
 
         fontsQss = self.app.readQSSFile(libCommonPath)
 
         mainQss = self.app.readQSSFile(qssPath)
-        pQss = self.app.readQSSFile(qssPlatformPath)
 
-        qss = fontsQss + mainQss
+        if not fontsQss or not mainQss:
+            log.debug(f'No main QSS for theme: {themeName}')
+            return False
 
-        if pQss:
-            self.app.setStyleSheet(qss + '\n' + pQss)
-        else:
-            self.app.setStyleSheet(qss)
+        self.app.setStyleSheet(fontsQss + mainQss)
 
         if style:
             self.app.setStyle(style)
 
-        # self.fsWatcher.watch(themeDir)
+        if watch:
+            self.fsWatcher.watch(themeDir)
 
         theme.apply(self.app)
 

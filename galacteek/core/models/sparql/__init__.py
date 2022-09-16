@@ -3,17 +3,25 @@ import asyncio
 from rdflib.plugins.sparql import prepareQuery
 
 from PyQt5.QtCore import QAbstractListModel
+from PyQt5.QtCore import Qt
 
 from galacteek import log
 from galacteek import ensure
 from galacteek import services
 from galacteek.core.models import AbstractModel
 from galacteek.core.models import BaseAbstractItem
+from galacteek.ld.sparql import querydb
 from galacteek.dweb.channels import GAsyncObject
 
 
+SubjectUriRole = Qt.UserRole
+
+
 class SparQLQueryRunner(GAsyncObject):
-    def __init__(self, graphUri='urn:ipg:i', graph=None):
+    rq = None
+
+    def __init__(self, graphUri='urn:ipg:i', graph=None,
+                 rq=None, bindings=None, debug=False):
         super().__init__()
 
         self.graphUri = graphUri
@@ -21,10 +29,17 @@ class SparQLQueryRunner(GAsyncObject):
         self._results = []
         self._qprepared = {}
         self._varsCount = 0
+        self._debug = debug
+        self._setup(rqQuery=rq if rq else self.rq,
+                    bindings=bindings)
 
     @property
     def rdf(self):
         return services.getByDotName('ld.pronto')
+
+    @property
+    def q0(self):
+        return self._qprepared.get('q0')
 
     @property
     def graph(self):
@@ -32,6 +47,23 @@ class SparQLQueryRunner(GAsyncObject):
             return self._graph
         elif self.graphUri:
             return self.rdf.graphByUri(self.graphUri)
+
+    def _setup(self, rqQuery: str = None,
+               bindings: dict = None):
+        if rqQuery is None:
+            return
+        self._initBindings = bindings
+
+        q = querydb.get(rqQuery)
+
+        if q:
+            self.prepare('q0', q)
+
+    def update(self):
+        # If a query was already prepared, toast it
+        if self.q0:
+            ensure(self.graphQueryAsync(self.q0,
+                                        bindings=self._initBindings))
 
     def setGraph(self, graph):
         self._graph = graph
@@ -62,8 +94,11 @@ class SparQLQueryRunner(GAsyncObject):
                 initBindings=bindings
             )
         except Exception as err:
-            log.debug(f'Graph query error: {err}')
+            log.debug(f'Graph query error ocurred: {err}')
             return
+
+        if self._debug:
+            log.debug(f'SparQL results: {list(results)}')
 
         if not setResults:
             return list(results) if results else []

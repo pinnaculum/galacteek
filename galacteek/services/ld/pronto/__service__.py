@@ -243,6 +243,11 @@ class RDFStoresService(GService):
                 f'{url}.dsrev'
             )
 
+            upgradeStrategy = setcfg.get(
+                'upgradeStrategy',
+                'mergeReplace'
+            )
+
             if not urnParse(dseturi):
                 continue
 
@@ -256,7 +261,8 @@ class RDFStoresService(GService):
                 source,
                 URL(csUrl) if csUrl else None,
                 URL(dsrevurl) if dsrevurl else None,
-                format=format
+                format=format,
+                upgradeStrategy=upgradeStrategy
             ))
 
     async def graphDataSetPullTask(self, graph,
@@ -264,6 +270,7 @@ class RDFStoresService(GService):
                                    url: URL,
                                    checksumUrl: URL,
                                    revisionUrl: URL,
+                                   upgradeStrategy: str = 'mergeReplace',
                                    format=None):
         async def dsTarProcess(ograph, tarfp: Path):
             lastRevision = ograph.value(
@@ -298,10 +305,19 @@ class RDFStoresService(GService):
                     log.debug(f'Dataset {opSubject}: same revision')
                     return False
 
-                await ograph.guardian.mergeReplace(
-                    g,
-                    ograph
-                )
+                if upgradeStrategy == 'mergeReplace':
+                    await ograph.guardian.mergeReplace(
+                        g,
+                        ograph
+                    )
+                elif upgradeStrategy == 'replace':
+                    for s, p, o in ograph:
+                        ograph.remove((s, p, o))
+
+                    await ograph.guardian.mergeReplace(
+                        g,
+                        ograph
+                    )
             except Exception:
                 traceback.print_exc()
                 pass
@@ -311,6 +327,11 @@ class RDFStoresService(GService):
                     DATASET.processedRevision,
                     thisRevision
                 ))
+
+                log.info(
+                    f'Dataset {opSubject}: upgraded to '
+                    f'revision: {thisRevision}'
+                )
                 return True
 
         while not self.should_stop:

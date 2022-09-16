@@ -2,10 +2,9 @@ from PyQt5.QtCore import QCoreApplication
 
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.cidhelpers import *
-from galacteek.database import hashmarksExists
 
 from ..helpers import *
-from ..dialogs import *
+from ..dialogs.hashmarks import AddHashmarkDialog
 from ..widgets import *
 from ..i18n import *
 
@@ -73,10 +72,6 @@ def addHashmark(hashmarks, path, title, description='', stats={},
 async def addHashmarkAsync(path, title='', description='',
                            pin=False, pinRecursive=False,
                            schemePreferred=None):
-    if await hashmarksExists(path):
-        messageBox(iAlreadyHashmarked())
-        return False
-
     await runDialogAsync(AddHashmarkDialog,
                          path, title, description,
                          pin=pin, pinRecursive=pinRecursive,

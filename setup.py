@@ -297,7 +297,8 @@ setup(
             '*.css',
             '*.qrc',
             '*.qml',
-            '*.jinja2'
+            '*.jinja2',
+            '*.rq'
         ],
         'galacteek': [
             'docs/manual/en/html/*.html',

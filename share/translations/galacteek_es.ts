@@ -27,48 +27,83 @@
 <context>
     <name>AddHashmarkDialog</name>
     <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="26"/>
-        <source>Add new hashmark</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="39"/>
-        <source>New hashmark</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="88"/>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="137"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Title&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="114"/>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="163"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Description&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="134"/>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="183"/>
         <source>Comment</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="167"/>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="216"/>
         <source>Category</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="184"/>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="233"/>
         <source>or create new category, e.g news/world</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="217"/>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="286"/>
         <source>Pinning</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="241"/>
-        <source>Share (public)</source>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="49"/>
+        <source>Linked Data</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="54"/>
+        <source>SQLite database</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="118"/>
+        <source>Language</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="129"/>
+        <source>en</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="253"/>
+        <source>Version</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="266"/>
+        <source>1.0.0</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="26"/>
+        <source>Register LD hashmark</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="105"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select which RDF graph the hashmark will be stored into.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;You can store it in a private graph, or in one of the public graphs available.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="108"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Output graph&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="39"/>
+        <source>Add LD hashmark</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -881,52 +916,52 @@ Path: {0}, nodes processed: {1}</source>
 <context>
     <name>HashmarksViewForm</name>
     <message>
-        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="14"/>
+        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="13"/>
         <source>Path</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="18"/>
+        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="17"/>
         <source>Title</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="22"/>
+        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="21"/>
         <source>Shared</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="26"/>
+        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="25"/>
         <source>Date</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="30"/>
+        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="29"/>
         <source>Timestamp</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="34"/>
+        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="33"/>
         <source>Already Hashmarked</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="39"/>
+        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="38"/>
         <source>Invalid hashmark path</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="44"/>
+        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="43"/>
         <source>Import hashmark to</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="49"/>
+        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="48"/>
         <source>Network hashmarks</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="53"/>
+        <location filename="../../galacteek/ui/hashmarks/__init__.py" line="52"/>
         <source>Feeds</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1050,22 +1085,22 @@ Path: {0}, nodes processed: {1}</source>
 <context>
     <name>IPFSSearchResults</name>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="55"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="57"/>
         <source>Results count: &lt;b&gt;{0}&lt;/b&gt; (max score: &lt;b&gt;{1}&lt;/b&gt;)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="63"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="65"/>
         <source>&lt;b&gt;No results found&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="68"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="70"/>
         <source>&lt;b&gt;Error while fetching results&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="73"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="75"/>
         <source>&lt;b&gt;Searching ...&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1497,6 +1532,53 @@ Path: {0}, nodes processed: {1}</source>
     <message>
         <location filename="../../galacteek/ui/forms/peersmgr.ui" line="24"/>
         <source>Right-click/double-click on a peer to discover IP services</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/peers/__init__.py" line="35"/>
+        <source>Username</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/peers/__init__.py" line="39"/>
+        <source>Peer ID</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/peers/__init__.py" line="43"/>
+        <source>Ping Average (ms)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/peers/__init__.py" line="47"/>
+        <source>Location</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/peers/__init__.py" line="51"/>
+        <source>Invalid DAG CID: {0}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/peers/__init__.py" line="56"/>
+        <source>
+            &lt;p&gt;Type the IP handle of a peer to search for services&lt;/p&gt;
+            &lt;p&gt;Using &lt;b&gt;/&lt;/b&gt; after the handle will popup the services
+            list. Hit enter to enter the service&lt;/p&gt;
+        </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/peers/__init__.py" line="67"/>
+        <source>
+        &lt;p&gt;&lt;img src=&quot;{0}&quot;/&gt;&lt;/p&gt;
+        &lt;p&gt;Handle: {2}&lt;/p&gt;
+        &lt;p&gt;DID: &lt;b&gt;{3}&lt;/b&gt;&lt;/p&gt;
+        &lt;p&gt;{4}&lt;/p&gt;
+        &lt;p&gt;{5}&lt;/p&gt;
+        &lt;p&gt;Average ping: {6}&lt;/p&gt;
+        &lt;/p&gt;
+        </source>
         <translation type="unfinished"></translation>
     </message>
 </context>

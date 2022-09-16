@@ -1,0 +1,29 @@
+PREFIX gs: <ips://galacteek.ld/>
+PREFIX h: <ips://galacteek.ld/Hashmark#>
+
+SELECT ?uri ?mimeType ?mimeCategory ?title
+		 ?dateCreated ?descr ?kwords {
+{
+		SELECT ?descr ?title ?mimeType ?mimeCategory ?dateCreated
+					 ?uri (GROUP_CONCAT(?m) as ?kwords)
+		WHERE {
+				?uri a gs:Hashmark ;
+					h:mimeType ?mimeType ;
+					h:mimeCategory ?mimeCategory ;
+					h:dateCreated ?dateCreated ;
+					h:title ?title ;
+					h:description ?descr ;
+					h:keywordMatch ?m .
+
+				%s
+				%s
+
+				FILTER (langMatches(lang(?title), str(?langTagMatch)) )
+
+		}
+		GROUP BY ?uri
+		ORDER BY DESC(?dateCreated)
+}
+}                                                                     
+
+LIMIT %s

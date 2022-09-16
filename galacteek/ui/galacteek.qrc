@@ -275,9 +275,20 @@
 
   <qresource>
     <file>../../galacteek/ui/themes/common.qss</file>
+  </qresource>
+
+  <qresource>
     <file>../../galacteek/ui/themes/moon3/galacteek.qss</file>
+  </qresource>
+
+  <qresource>
     <file>../../galacteek/ui/themes/chloride/galacteek.qss</file>
   </qresource>
+
+  <qresource prefix="/">
+      <file>../../share/styles/eterna/webengine.css</file>
+  </qresource>
+
   <qresource>
     <file>../../share/crypto/btc/btc-donate.png</file>
     <file>../../share/crypto/btc/btc-donate-001.png</file>

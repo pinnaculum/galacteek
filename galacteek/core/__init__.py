@@ -2,6 +2,7 @@ import uuid
 import socket
 import re
 import hashlib
+import html2text
 import sys
 import os
 import pkg_resources
@@ -261,3 +262,9 @@ def mergeDicts(dict1, dict2):
 def rLimitGetMaxFiles():
     import resource
     return resource.getrlimit(resource.RLIMIT_NOFILE)
+
+
+def html2t(text: str):
+    h2text = html2text.HTML2Text()
+    h2text.emphasis_mark = ''
+    return h2text.handle(text).replace('\n', '').strip()

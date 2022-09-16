@@ -29,7 +29,7 @@ from .helpers import getIcon
 from .helpers import messageBox
 from .helpers import questionBoxAsync
 
-from .dialogs import IPTagsSelectDialog
+from .dialogs.hashmarks import IPTagsSelectDialog
 from .i18n import iNewBlogPost
 
 

@@ -1334,13 +1334,13 @@ class MainWindow(QMainWindow, KeyListener):
                 self.profileButton]:
             btn.setEnabled(flag)
 
-    def statusMessage(self, msg):
+    def statusMessage(self, msg, timeout=2500):
         self.userLogsButton.setToolTip(msg)
 
         if self.userLogsButton.isVisible():
             QToolTip.showText(
                 self.userLogsButton.mapToGlobal(QPoint(0, 0)), msg,
-                None, QRect(0, 0, 0, 0), 2400)
+                None, QRect(0, 0, 0, 0), timeout)
 
     def registerTab(self, tab, name, icon=None, current=True,
                     tooltip=None, workspace=None,
@@ -1616,9 +1616,17 @@ class MainWindow(QMainWindow, KeyListener):
 
     async def event_g_42(self, key, message):
         # Forward IPFS daemon events to the main ToolButton
-        event = message.get('event')
+        eType = message['event'].get('type')
 
-        if event and event.get('type') in ['IpfsDaemonStartedEvent',
-                                           'IpfsDaemonResumeEvent',
-                                           'IpfsDaemonStoppedEvent']:
-            await self.networkSelectorButton.processIpfsDaemonEvent(event)
+        if eType == 'IpfsDaemonGoneEvent':
+            # Daemon crash
+            self.statusMessage(iIpfsDaemonCrashed(),
+                               timeout=5000)
+
+        if eType in ['IpfsDaemonStartedEvent',
+                     'IpfsDaemonResumeEvent',
+                     'IpfsDaemonGoneEvent',
+                     'IpfsDaemonStoppedEvent']:
+            await self.networkSelectorButton.processIpfsDaemonEvent(
+                message['event']
+            )

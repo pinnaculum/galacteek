@@ -1,4 +1,5 @@
 import functools
+from rdflib import Literal
 
 from PyQt5.QtWidgets import QHBoxLayout
 from PyQt5.QtWidgets import QListView
@@ -22,8 +23,10 @@ from galacteek.ui.helpers import getIcon
 
 from galacteek.ui.clipboard import iCopyPathToClipboard
 
-from galacteek.core.models.sparql.hashmarks import LDHashmarksSparQLModel
+from galacteek.core.models.sparql.hashmarks import LDHashmarksSparQLListModel
 from galacteek.core.models.sparql.hashmarks import HashmarkUriRole
+
+from galacteek.ld.sparql import querydb
 
 
 class HashmarksView(QListView):
@@ -38,8 +41,8 @@ class HashmarksCenterWidget(GalacteekTab):
         super(HashmarksCenterWidget, self).__init__(mainW, parent=parent)
 
         self.app = runningApp()
-        self.model = LDHashmarksSparQLModel(
-            graphUri='urn:ipg:hashmarks'
+        self.model = LDHashmarksSparQLListModel(
+            graphUri='urn:ipg:i:love:hashmarks'
         )
 
         self.helpButton = QToolButton()
@@ -132,7 +135,7 @@ class HashmarksCenterWidget(GalacteekTab):
         await self.runQuery()
 
     async def runQuery(self):
-        q = self.hMarksQuery(
+        q, bindings = self.hMarksQuery(
             mimeCategory=self.comboMime.currentText(),
             keywords=self.searchLine.text().split()
         )
@@ -141,7 +144,7 @@ class HashmarksCenterWidget(GalacteekTab):
         self.cube.clip.setSpeed(150)
 
         self.model.clearModel()
-        await self.model.graphQueryAsync(q)
+        await self.model.graphQueryAsync(q, bindings)
 
         self.cube.stopClip()
 
@@ -154,6 +157,8 @@ class HashmarksCenterWidget(GalacteekTab):
             await self.app.resourceOpener.open(path)
 
     def hMarksQuery(self, mimeCategory='*', keywords=[]):
+        bindings = {'langTagMatch': Literal('en')}
+
         titlesf, mimef = '', ''
         titlesc = []
 
@@ -167,72 +172,9 @@ class HashmarksCenterWidget(GalacteekTab):
             mimef += f'FILTER(str(?mimeCategory) = "{mimeCategory}")'
 
         limitn = self.comboResultsLimit.currentText()
+        query = querydb.get(
+            'HashmarksSearchGroup',
+            titlesf, mimef, limitn
+        )
 
-        return '''
-            PREFIX gs: <ips://galacteek.ld/>
-            PREFIX h: <ips://galacteek.ld/Hashmark#>
-
-            SELECT ?uri ?mimeType ?mimeCategory ?title
-                   ?dateCreated ?descr ?kwords {
-              {
-                  SELECT ?descr ?title ?mimeType ?mimeCategory ?dateCreated
-                         ?uri (GROUP_CONCAT(?m) as ?kwords)
-                  WHERE {
-                      ?uri a gs:Hashmark ;
-                        h:mimeType ?mimeType ;
-                        h:mimeCategory ?mimeCategory ;
-                        h:dateCreated ?dateCreated ;
-                        h:title ?title ;
-                        h:description ?descr ;
-                        h:keywordMatch ?m .
-                      %s
-                      %s
-                  }
-                  GROUP BY ?uri
-                  ORDER BY DESC(?dateCreated)
-              }
-            }
-            LIMIT %s
-        ''' % (titlesf, mimef, limitn)
-
-    def hMarksQueryUnion(self, keywords=[]):
-        descrf = ''
-        kwq = ''
-
-        for kw in keywords:
-            kwq += f'FILTER contains(?kwords, "{kw}")\n'
-            descrf += f'FILTER contains(str(?descr), "{kw}")\n'
-
-        return '''
-            PREFIX gs: <ips://galacteek.ld/>
-            PREFIX h: <ips://galacteek.ld/Hashmark#>
-
-            SELECT ?uri ?mimeType ?title ?descr ?kwords {
-              {
-                  SELECT ?descr ?mimeType ?uri (GROUP_CONCAT(?m) as ?kwords)
-                  WHERE {
-                      ?uri a gs:Hashmark ;
-                        h:mimeType ?mimeType ;
-                        h:dateCreated ?dateCreated ;
-                        h:title ?title ;
-                        h:description ?descr ;
-                        h:keywordMatch ?m .
-                      %s
-                  }
-                  GROUP BY ?uri
-                  ORDER BY DESC(?dateCreated)
-              }
-
-            UNION {
-                  SELECT *
-                  WHERE {
-                    ?uri a gs:Hashmark ;
-                      h:mimeType ?mimeType ;
-                      h:dateCreated ?dateCreated ;
-                      h:title ?title ;
-                      h:description ?descr .
-                  %s
-                  }
-              }
-            }
-        ''' % (kwq, descrf)
+        return query, bindings

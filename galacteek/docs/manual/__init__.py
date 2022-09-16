@@ -1,1 +1,1 @@
-__manual_en_version__ = '20220905'
+__manual_en_version__ = '20220914'

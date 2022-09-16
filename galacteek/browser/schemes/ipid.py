@@ -1,8 +1,17 @@
 import re
 
+from rdflib import URIRef
+
+from PyQt5.QtCore import QUrl
+
 from galacteek import log
+
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
+
+from galacteek.ld import ipsContextUri
+from galacteek.ld import ipsTermUri
+from galacteek.ld.sparql import querydb
 
 from galacteek.browser.schemes import NativeIPFSSchemeHandler
 
@@ -13,7 +22,7 @@ class IPIDProtocolCommon(object):
             r'([\w\/\-\+]+)', path, re.IGNORECASE) is not None
 
 
-class IPIDRenderer(object):
+class IPIDTemplatesRenderer(object):
     async def ipidRenderSummary(self,
                                 request,
                                 uid,
@@ -32,11 +41,39 @@ class IPIDRenderer(object):
 
 
 class IPIDSchemeHandler(NativeIPFSSchemeHandler,
-                        IPIDRenderer,
+                        IPIDTemplatesRenderer,
                         IPIDProtocolCommon):
     """
     IPID scheme handler
     """
+
+    @ipfsOp
+    async def handleService(self, ipfsop, request,
+                            reqUid,
+                            ipidGraph,
+                            serviceId: URIRef,
+                            serviceInfo):
+        stype = serviceInfo['srvtype']  # noqa
+        endpoint = serviceInfo['endpoint']
+        eptype = serviceInfo['eptype']
+
+        if not eptype:
+            path = IPFSPath(str(endpoint))
+            if path.valid:
+                return await self.fetchFromPath(ipfsop, request, path, reqUid)
+
+        if eptype == ipsContextUri('HttpForwardServiceEndpoint'):
+            url = ipidGraph.value(
+                endpoint,
+                ipsTermUri('url')
+            )
+
+            if url:
+                return request.redirect(QUrl(str(url)))
+
+            return self.urlInvalid(request)
+        else:
+            return self.urlInvalid(request)
 
     @ipfsOp
     async def handleRequest(self, ipfsop, request, uid):
@@ -58,6 +95,8 @@ class IPIDSchemeHandler(NativeIPFSSchemeHandler,
         if not ipid:
             return self.urlInvalid(request)
 
+        ipidGraph = await ipid.rdfGraph()
+
         if path == '/':
             return await self.ipidRenderSummary(
                 request,
@@ -66,13 +105,29 @@ class IPIDSchemeHandler(NativeIPFSSchemeHandler,
                 rMethod=rMethod
             )
         elif self.ipidUrlPathValid(path):
-            serviceId = ipid.didUrl(path=path)
+            serviceId = URIRef(ipid.didUrl(path=path))
 
-            service = await ipid.searchServiceById(serviceId)
-            if not service:
+            try:
+                serviceInfo = (list(await ipidGraph.queryAsync(
+                    querydb.get('IPIDService'),
+                    initBindings={'uri': serviceId}
+                ))).pop(0)
+            except Exception:
                 return self.urlInvalid(request)
+            else:
+                print(serviceId, 'got', serviceInfo)
 
-            endpoint = service.endpoint
+            if 0:
+                service = await ipid.searchServiceById(serviceId)
+                if not service:
+                    return self.urlInvalid(request)
+
+            # endpoint = service.endpoint
+            return await self.handleService(request,
+                                            uid,
+                                            ipidGraph,
+                                            serviceId,
+                                            serviceInfo)
         else:
             return self.urlInvalid(request)
 

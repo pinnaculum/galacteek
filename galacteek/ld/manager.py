@@ -23,17 +23,26 @@ class LDSchemasImporter:
         self._nsMappings = {}
 
     @ipfsOp
-    async def nsToIpfs(self, ipfsop, ns) -> IPFSPath:
+    async def nsToIpfs(self, ipfsop, ns: str) -> IPFSPath:
+        """
+        Translate an ips host name (for schemas) to a UnixFS
+        object path.
+
+        :param str ns: IPS host key
+        """
         path = self._nsMappings.get(ns, None)
         if path:
             return path
 
-        spath = self._fallbackNs.get(ns, None)
-        if spath:
+        nsLocation = self._fallbackNs.get(ns, None)
+        if nsLocation:
+            dirp = nsLocation['root']
+
             cid = await self.importLdContexts(
                 ipfsop,
                 ns,
-                spath
+                dirp,
+                ipfsIgnorePath=nsLocation['ipfsignore']
             )
 
             self._nsMappings[ns] = IPFSPath(cid)
@@ -54,13 +63,20 @@ class LDSchemasImporter:
                     if ename.startswith('_'):
                         continue
 
-                    epath = pkgResourcesRscFilename(ctxModPath, ename)
-                    if not epath:
+                    ipsRootPath = pkgResourcesRscFilename(ctxModPath, ename)
+                    if not ipsRootPath:
                         continue
 
-                    self._fallbackNs[ename] = Path(epath)
+                    rootp = Path(ipsRootPath)
+                    iip = rootp.joinpath('.ipfsignore')
+
+                    self._fallbackNs[ename] = {
+                        'ipfsignore': iip if iip.is_file() else None,
+                        'root': rootp
+                    }
             except Exception as err:
-                log.debug(f'Could not discover for package: {p}: {err}')
+                log.debug(
+                    f'Error discovering IPS schemas pkg ({p}): {err}')
                 continue
 
     async def update(self, ipfsop):
@@ -69,7 +85,8 @@ class LDSchemasImporter:
     async def importLdContexts(self,
                                ipfsop,
                                distName,
-                               contextsPath):
+                               contextsPath,
+                               ipfsIgnorePath: Path = None):
         """
         Import the JSON-LD contexts and associate the
         directory entry with the 'galacteek.ld' key
@@ -79,10 +96,16 @@ class LDSchemasImporter:
             log.debug('LD contexts not found')
             return
 
+        log.debug(f'ips: LD import: {distName}')
+
+        if ipfsIgnorePath:
+            log.debug(f'ips: ({distName}): ipfsignore {ipfsIgnorePath}')
+
         entry = await ipfsop.addPath(
             str(contextsPath),
             recursive=True,
-            hidden=False
+            hidden=False,
+            ignRulesPath=str(ipfsIgnorePath) if ipfsIgnorePath else None
         )
         if entry:
             ldKeyName = distName

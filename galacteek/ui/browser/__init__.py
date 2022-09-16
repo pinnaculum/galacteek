@@ -2032,7 +2032,7 @@ class BrowserTab(GalacteekTab):
         self.urlZone.cancelTimer()
         self.urlZone.unfocus()
 
-        engineMatch = re.search(r'^(d|s|c|i|ip)\s(.*)$', inputStr)
+        engineMatch = re.search(r'^\s*(d|s|sx|c|i|ip)\s(.*)$', inputStr)
         if engineMatch:
             sUrl = None
             engine = engineMatch.group(1)
@@ -2044,7 +2044,13 @@ class BrowserTab(GalacteekTab):
                 uq.addQueryItem('q', quote(search))
                 sUrl.setQuery(uq)
 
-            if engine in ['i', 'ip', 's']:
+            elif engine in ['s', 'sx']:
+                sUrl = QUrl('https://searx.org/search')
+                uq = QUrlQuery()
+                uq.addQueryItem('q', quote(search))
+                sUrl.setQuery(uq)
+
+            if engine in ['i', 'ip']:
                 return await self.runIpfsSearch(search)
 
             if sUrl:

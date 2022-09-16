@@ -147,7 +147,7 @@ class PeerView(QWidget):
             QHeaderView.ResizeToContents)
         self.ui.servicesView.setItemsExpandable(True)
         self.ui.servicesView.doubleClicked.connect(self.onDoubleClick)
-        self.ui.servicesView.setIconSize(QSize(32, 32))
+        self.ui.servicesView.setIconSize(QSize(48, 48))
 
         ensure(self.updateModel())
 
@@ -195,6 +195,7 @@ class PeersManager(GalacteekTab):
 
         self.ui.peersGraphView.setModel(self.model)
         self.ui.peersGraphView.setViewMode(QListView.IconMode)
+        self.ui.peersGraphView.setIconSize(QSize(64, 64))
 
         self.ui.peersGraphView.doubleClicked.connect(self.onDoubleClick)
 

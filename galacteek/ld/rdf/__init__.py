@@ -6,7 +6,6 @@ from pathlib import Path
 from rdflib import RDF
 from rdflib import Graph
 from rdflib import ConjunctiveGraph
-from rdflib import Literal
 from rdflib import BNode
 from rdflib import Namespace
 
@@ -108,6 +107,11 @@ class Common(object):
         )
 
     @ipfsOp
+    async def rdfifyObject(self, ipfsop, doc: dict):
+        async with ipfsop.ldOps() as ld:
+            return await ld.rdfify(doc)
+
+    @ipfsOp
     async def pullObject(self, ipfsop, doc: dict):
         try:
             if '@context' not in doc:
@@ -165,8 +169,6 @@ class IGraph(BaseGraph):
         self.exportsPath = self.rPath.joinpath('exports')
         self.xmlExportPath = self.exportsPath.joinpath('graph.xml')
 
-        self.dbPath = str(self.rPath.joinpath('g_rdf.db'))
-        self.dbUri = Literal(f"sqlite:///{self.dbPath}")
         self.cid = None
 
         self.sCidChanged = AsyncSignal(str, str)

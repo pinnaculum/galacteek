@@ -21,7 +21,7 @@ SOURCES = galacteek/application/__init__.py \
 	galacteek/ui/keys.py \
 	galacteek/ui/mainui.py \
 	galacteek/ui/mediaplayer/__init__.py \
-	galacteek/ui/peers.py \
+	galacteek/ui/peers/__init__.py \
 	galacteek/ui/pinning/pinstatus.py \
 	galacteek/ui/pyramids.py \
 	galacteek/ui/quickaccess.py \

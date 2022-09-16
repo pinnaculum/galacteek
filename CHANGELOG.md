@@ -5,6 +5,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.8] - 2022-09-14
+
+### Added
+
+- Add the ips:// URL scheme (renders IPS JSON-LD schemas)
+- Add a UI action to view IPS schemas
+- Implement intelligent RDF tags
+- pronto: support for subconjunctive graphs ^^
+- pubsub sniffer: nicer UI (add topic filter and max messages widgets)
+
+### Changed
+
+- Hashmarks: use RDF storage
+
+### Fixed
+
+- Pubsub sniffer UI (bugfix): unhook PS listeners when the widget is destroyed
+
 ## [0.5.7] - 2022-09-08
 
 ### Added

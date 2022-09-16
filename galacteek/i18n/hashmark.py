@@ -19,6 +19,14 @@ def iHashmark():
     return QCoreApplication.translate('GalacteekWindow', 'Hashmark')
 
 
+def iAddHashmark():
+    return QCoreApplication.translate('GalacteekWindow', 'Add hashmark')
+
+
+def iEditHashmark():
+    return QCoreApplication.translate('GalacteekWindow', 'Edit hashmark')
+
+
 def iHashmarkSources():
     return QCoreApplication.translate('GalacteekWindow', 'Hashmark sources')
 

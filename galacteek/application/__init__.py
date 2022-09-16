@@ -89,6 +89,7 @@ from galacteek.browser.schemes import NativeIPFSSchemeHandler
 from galacteek.browser.schemes import ObjectProxySchemeHandler
 from galacteek.browser.schemes import MultiObjectHostSchemeHandler
 from galacteek.browser.schemes.ipid import IPIDSchemeHandler
+from galacteek.browser.schemes.ips import IPSSchemeHandler
 from galacteek.browser.schemes.i import ISchemeHandler
 from galacteek.browser.schemes.ipfshttp import IpfsHttpSchemeHandler
 from galacteek.browser.schemes.gemini import GeminiSchemeHandler
@@ -290,6 +291,7 @@ class GalacteekApplication(QApplication):
         self._ipfsIconsCacheMax = 32
         self._goIpfsBinPath = None
 
+        self.sqliteDb = None
         self.scheduler = None
         self.orbitConnector = None
         self.netProxy = None
@@ -1628,7 +1630,7 @@ class GalacteekApplication(QApplication):
         self.dappsRegistry = DappsRegistry(self.eth, parent=self)
 
     def setupSchemeHandlers(self):
-        # from galacteek.browser.schemes.g import GalacteekSchemeHandler
+        # TODO: register'em automatically cause it's getting heavy
 
         self.dwebSchemeHandler = DWebSchemeHandlerGateway(self)
         self.ensSchemeHandler = EthDNSSchemeHandler(self)
@@ -1638,6 +1640,7 @@ class GalacteekApplication(QApplication):
         )
         self.qSchemeHandler = MultiObjectHostSchemeHandler(self)
         self.ipidSchemeHandler = IPIDSchemeHandler(self)
+        self.ipsSchemeHandler = IPSSchemeHandler(self)
         self.iSchemeHandler = ISchemeHandler(self)
         self.geminiSchemeHandler = GeminiSchemeHandler(self)
         self.gemIpfsSchemeHandler = GemIpfsSchemeHandler(self)
@@ -1759,9 +1762,14 @@ class GalacteekApplication(QApplication):
                 self.ipfsd.stop()
 
         try:
+            if not self.sqliteDb:
+                raise ValueError('sqlite database is not opened')
+
             with async_timeout.timeout(0.5):
                 await self.sqliteDb.close()
                 await database.closeOrm()
+        except ValueError:
+            pass
         except Exception as err:
             self.debug(f'Error while closing database: {err}')
 

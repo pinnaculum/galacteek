@@ -71,6 +71,13 @@ def iIpfsDaemonWaiting(count):
         'IPFS daemon: waiting for connection (try {0})'.format(count))
 
 
+def iIpfsDaemonCrashed():
+    return QCoreApplication.translate(
+        'Galacteek',
+        'The IPFS daemon seems to have crashed ! (restarting)'
+    )
+
+
 def iIpfsDaemonKeepRunningAsk():
     return QCoreApplication.translate(
         'Galacteek',

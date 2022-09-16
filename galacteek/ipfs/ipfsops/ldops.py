@@ -2,6 +2,7 @@ import os.path
 import orjson
 import aioipfs
 import yaml
+import traceback
 from yaml import Loader
 
 import rdflib_jsonld  # noqa
@@ -17,6 +18,7 @@ from galacteek.ld.ldloader import aioipfs_document_loader
 
 from galacteek.ld import asyncjsonld as jsonld
 from galacteek.ld import ldContextsRootPath
+from galacteek.ld import ipsContextUri
 from galacteek.ld import gLdBaseUri
 from galacteek.ld import gLdDefaultContext
 
@@ -133,7 +135,7 @@ class LDOpsContext(object):
                 ldType = dag.get('@type', None)
                 if ldType:
                     options['expandContext'] = {
-                        '@context': f'{gLdBaseUri}/{ldType}'
+                        '@context': ipsContextUri(ldType)
                     }
 
             expanded = await jsonld.expand(
@@ -185,6 +187,8 @@ class LDOpsContext(object):
 
             return graph
         except Exception as err:
+            traceback.print_exc()
+
             log.debug(f'DAG to RDF error for {obj}: {err}')
             return None
 

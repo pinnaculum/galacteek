@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>800</width>
-    <height>491</height>
+    <height>555</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -23,7 +23,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>Add new hashmark</string>
+   <string>Register LD hashmark</string>
   </property>
   <property name="windowIcon">
    <iconset resource="../galacteek.qrc">
@@ -36,9 +36,51 @@
    <item>
     <widget class="QGroupBox" name="groupBox">
      <property name="title">
-      <string>New hashmark</string>
+      <string>Add LD hashmark</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_2">
+      <item>
+       <widget class="QComboBox" name="storageFormat">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <item>
+         <property name="text">
+          <string>Linked Data</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>SQLite database</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="resourceLabel">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>1024</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
       <item>
        <layout class="QFormLayout" name="formLayout">
         <property name="labelAlignment">
@@ -57,39 +99,46 @@
           </property>
          </widget>
         </item>
-        <item row="0" column="1">
-         <widget class="QLabel" name="resourceLabel">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>400</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="font">
-           <font>
-            <weight>75</weight>
-            <bold>true</bold>
-           </font>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_5">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select which RDF graph the hashmark will be stored into.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;You can store it in a private graph, or in one of the public graphs available.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="text">
-           <string/>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Output graph&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
          </widget>
         </item>
-        <item row="1" column="0">
+        <item row="1" column="1">
+         <layout class="QHBoxLayout" name="gSelectorLayout"/>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_9">
+          <property name="text">
+           <string>Language</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QComboBox" name="language">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <item>
+           <property name="text">
+            <string>en</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="4" column="0">
          <widget class="QLabel" name="label">
           <property name="text">
            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Title&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
          </widget>
         </item>
-        <item row="1" column="1">
+        <item row="4" column="1">
          <widget class="QLineEdit" name="title">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -108,14 +157,14 @@
           </property>
          </widget>
         </item>
-        <item row="2" column="0">
+        <item row="5" column="0">
          <widget class="QLabel" name="label_7">
           <property name="text">
            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Description&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
          </widget>
         </item>
-        <item row="2" column="1">
+        <item row="5" column="1">
          <widget class="QTextEdit" name="description">
           <property name="maximumSize">
            <size>
@@ -128,14 +177,14 @@
           </property>
          </widget>
         </item>
-        <item row="3" column="0">
+        <item row="6" column="0">
          <widget class="QLabel" name="label_6">
           <property name="text">
            <string>Comment</string>
           </property>
          </widget>
         </item>
-        <item row="3" column="1">
+        <item row="6" column="1">
          <widget class="QLineEdit" name="comment">
           <property name="maximumSize">
            <size>
@@ -148,7 +197,7 @@
           </property>
          </widget>
         </item>
-        <item row="4" column="1">
+        <item row="7" column="1">
          <spacer name="verticalSpacer">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
@@ -161,14 +210,14 @@
           </property>
          </spacer>
         </item>
-        <item row="5" column="0">
+        <item row="8" column="0">
          <widget class="QLabel" name="label_2">
           <property name="text">
            <string>Category</string>
           </property>
          </widget>
         </item>
-        <item row="5" column="1">
+        <item row="8" column="1">
          <widget class="QComboBox" name="category">
           <property name="maximumSize">
            <size>
@@ -178,14 +227,14 @@
           </property>
          </widget>
         </item>
-        <item row="6" column="0">
+        <item row="9" column="0">
          <widget class="QLabel" name="label_4">
           <property name="text">
            <string>or create new category, e.g news/world</string>
           </property>
          </widget>
         </item>
-        <item row="6" column="1">
+        <item row="9" column="1">
          <widget class="QLineEdit" name="newCategory">
           <property name="maximumSize">
            <size>
@@ -198,7 +247,27 @@
           </property>
          </widget>
         </item>
-        <item row="7" column="1">
+        <item row="10" column="0">
+         <widget class="QLabel" name="label_10">
+          <property name="text">
+           <string>Version</string>
+          </property>
+         </widget>
+        </item>
+        <item row="10" column="1">
+         <widget class="QLineEdit" name="version">
+          <property name="maximumSize">
+           <size>
+            <width>150</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="placeholderText">
+           <string>1.0.0</string>
+          </property>
+         </widget>
+        </item>
+        <item row="11" column="1">
          <spacer name="verticalSpacer_2">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
@@ -211,14 +280,14 @@
           </property>
          </spacer>
         </item>
-        <item row="9" column="0">
+        <item row="13" column="0">
          <widget class="QLabel" name="label_8">
           <property name="text">
            <string>Pinning</string>
           </property>
          </widget>
         </item>
-        <item row="9" column="1">
+        <item row="13" column="1">
          <widget class="QComboBox" name="pinCombo">
           <property name="maximumSize">
            <size>
@@ -228,17 +297,10 @@
           </property>
          </widget>
         </item>
-        <item row="10" column="0">
+        <item row="14" column="0">
          <widget class="QLabel" name="label_3">
           <property name="text">
            <string/>
-          </property>
-         </widget>
-        </item>
-        <item row="10" column="1">
-         <widget class="QCheckBox" name="share">
-          <property name="text">
-           <string>Share (public)</string>
           </property>
          </widget>
         </item>

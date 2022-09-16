@@ -38,7 +38,8 @@ class FileWatcher(QObject):
         return self._watcher.directories() + self._watcher.files()
 
     def clear(self):
-        self._watcher.removePaths(self.watched)
+        if len(self.watched) > 0:
+            self._watcher.removePaths(self.watched)
 
     def watch(self, path):
         self._watcher.addPath(path)

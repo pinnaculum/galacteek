@@ -2,7 +2,9 @@ import asyncio
 import gc
 import attr
 import functools
+import re
 from datetime import datetime
+from rdflib import URIRef
 
 from PyQt5.QtWidgets import QFrame
 from PyQt5.QtWidgets import QPushButton
@@ -64,7 +66,9 @@ from galacteek import log
 from galacteek import ensure
 from galacteek import partialEnsure
 from galacteek import AsyncSignal
+from galacteek import services
 from galacteek.core.asynclib import asyncify
+from galacteek.core.asynclib import asyncReadFile
 from galacteek.core import utcDatetime
 from galacteek.space import allPlanetsNames
 from galacteek.dweb.markdown import markitdown
@@ -74,7 +78,9 @@ from galacteek.config import Configurable
 
 from galacteek import database
 from galacteek.database.models.core import Hashmark
+from galacteek.ld.iri import urnParse
 
+from ..helpers import filesSelectImages
 from ..helpers import getIcon
 from ..helpers import getPlanetIcon
 from ..helpers import getMimeIcon
@@ -1369,6 +1375,44 @@ class IconSelector(QComboBox):
         self.setToolTip(cid)
 
 
+class ImageSelector(QWidget):
+    """
+    Select an image from disk and push it to IPFS
+    """
+
+    imageChanged = pyqtSignal(IPFSPath)
+
+    def __init__(self, parent=None):
+        super(ImageSelector, self).__init__(parent)
+
+        self.app = QApplication.instance()
+        self.hl = QHBoxLayout()
+        self.setLayout(self.hl)
+        self.imgLabel = ImageWidget(parent=self)
+        self.hl.addWidget(self.imgLabel)
+        self.buttonFromFile = QPushButton('Select image from file')
+        self.hl.addWidget(self.buttonFromFile)
+        self.buttonFromFile.clicked.connect(self.onInjectFromFile)
+
+    @property
+    def imageIpfsPath(self):
+        if self.imgLabel.imgPath:
+            return IPFSPath(self.imgLabel.imgPath)
+
+    def onInjectFromFile(self):
+        files = filesSelectImages()
+
+        if files:
+            ensure(self.injectFromFile(files.pop(0)))
+
+    @ipfsOp
+    async def injectFromFile(self, ipfsop, filep: str):
+        entry = await ipfsop.addBytes(await asyncReadFile(filep))
+        if entry:
+            if await self.imgLabel.load(entry['Hash']):
+                self.imageChanged.emit(self.imageIpfsPath)
+
+
 class IPFSWebView(QWebEngineView):
     def __init__(self, webProfile=None, parent=None):
         super(IPFSWebView, self).__init__(parent=parent)
@@ -1834,6 +1878,61 @@ class SpacingHWidget(QWidget):
 
         self.hl.addItem(
             QSpacerItem(width, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
+
+
+class OutputGraphSelectorWidget(QWidget):
+    graphUriSelected = pyqtSignal(URIRef)
+
+    def __init__(self,
+                 uriFilters: list = [],
+                 uriShort: bool = True,
+                 parent=None):
+        super().__init__(parent)
+
+        self.vl = QHBoxLayout()
+        self.setLayout(self.vl)
+        self.uriShort = uriShort
+
+        self.combo = QComboBox(self)
+        self.combo.currentTextChanged.connect(self.onGraphChanged)
+        self.vl.addWidget(self.combo)
+
+        ensure(self.analyze(uriFilters))
+
+    async def analyze(self, uriFilters):
+        for uriRef in self.pronto.graphsUris:
+            uri = str(uriRef)
+
+            if not any(
+                    re.search(regex, uri) for regex in uriFilters):
+                continue
+
+            idx = self.combo.count()
+
+            if self.uriShort:
+                # Only show the last part of the URN
+                urn = urnParse(str(uriRef))
+                if not urn:
+                    continue
+
+                self.combo.addItem(urn.specific_string.parts[-1])
+            else:
+                self.combo.addItem(uri)
+
+            self.combo.setItemData(idx, uri, Qt.UserRole)
+            self.combo.setItemData(idx, uri, Qt.ToolTipRole)
+
+    @property
+    def pronto(self):
+        return services.getByDotName('ld.pronto')
+
+    @property
+    def graphUri(self):
+        return self.combo.itemData(self.combo.currentIndex(),
+                                   Qt.UserRole)
+
+    def onGraphChanged(self, uri: str):
+        self.graphUriSelected.emit(URIRef(uri))
 
 
 class AutoHideToolBar(QToolBar):

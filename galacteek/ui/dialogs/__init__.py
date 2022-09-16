@@ -22,7 +22,6 @@ from PyQt5.QtWidgets import QHBoxLayout
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWidgets import QGridLayout
 from PyQt5.QtWidgets import QFormLayout
-from PyQt5.QtWidgets import QAbstractItemView
 from PyQt5.QtWidgets import QPushButton
 from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtWidgets import QCheckBox
@@ -39,7 +38,6 @@ from PyQt5.QtCore import QRegExp
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QUrl
 from PyQt5.QtCore import QStringListModel
-from PyQt5.QtCore import QSortFilterProxyModel
 from PyQt5.QtCore import QTimer
 
 from PyQt5.QtGui import QClipboard
@@ -57,14 +55,10 @@ from galacteek import database
 
 from galacteek.core.ipfsmarks import *
 from galacteek.core.ipfsmarks import categoryValid
-from galacteek.core.iptags import ipTagsFormat
 from galacteek.core import readQrcFileRaw
 from galacteek.core import runningApp
 from galacteek import AsyncSignal
 
-from galacteek.browser.schemes import isEnsUrl
-from galacteek.browser.schemes import isHttpUrl
-from galacteek.browser.schemes import isGeminiUrl
 from galacteek.browser.schemes import SCHEME_IPFS_P_HTTP
 
 from galacteek.ipfs import cidhelpers
@@ -75,12 +69,10 @@ from galacteek.appsettings import *
 
 from galacteek.crypto.qrcode import ZbarCryptoCurrencyQrDecoder
 
-from ..forms import ui_addhashmarkdialog
 from ..forms import ui_addfeeddialog
 from ..forms import ui_ipfscidinputdialog, ui_ipfsmultiplecidinputdialog
 from ..forms import ui_donatedialog
 from ..forms import ui_qschemecreatemapping
-from ..forms import ui_iptagsmanager
 from ..forms import ui_mfsoptionsdialog
 from ..forms import ui_newseeddialog
 from ..forms import ui_ipfsdaemoninitdialog
@@ -95,7 +87,6 @@ from ..forms import ui_donatecryptodialog
 from ..forms import ui_httpforwardservicedialog
 
 from ..helpers import *
-from ..widgets import ImageWidget
 from ..widgets import HorizontalLine
 from ..widgets import IconSelector
 from ..widgets import PlanetSelector
@@ -105,12 +96,6 @@ from ..clips import BouncingCubeClip1
 from ..colors import *
 
 from ..i18n import iTitle
-from ..i18n import iDoNotPin
-from ..i18n import iPinSingle
-from ..i18n import iPinRecursive
-from ..i18n import iNoTitleProvided
-from ..i18n import iNoCategory
-from ..i18n import iHashmarkIPTagsEdit
 from ..i18n import iDownload
 from ..i18n import iDownloadOpenDialog
 from ..i18n import iOpen
@@ -145,220 +130,16 @@ class BaseDialog(QDialog):
         self.done(0)
 
 
-class AddHashmarkDialog(QDialog):
-    def __init__(
-            self,
-            resource,
-            title,
-            description,
-            pin=False,
-            pinRecursive=False,
-            schemePreferred=None,
-            parent=None):
-        super().__init__(parent)
-
-        self.app = QApplication.instance()
-
-        self.ipfsResource = resource
-        self.ipfsPath = IPFSPath(self.ipfsResource)
-        self.iconCid = None
-        self.schemePreferred = schemePreferred
-
-        self.ui = ui_addhashmarkdialog.Ui_AddHashmarkDialog()
-        self.ui.setupUi(self)
-        self.ui.resourceLabel.setText(self.ipfsResource)
-        self.ui.resourceLabel.setStyleSheet(boldLabelStyle())
-        self.ui.resourceLabel.setToolTip(self.ipfsResource)
-        self.ui.newCategory.textChanged.connect(self.onNewCatChanged)
-        self.ui.title.setText(title)
-
-        pix = QPixmap.fromImage(QImage(':/share/icons/hashmarks.png'))
-        pix = pix.scaledToWidth(32)
-        self.ui.hashmarksIconLabel.setPixmap(pix)
-
-        self.iconWidget = None
-
-        self.ui.pinCombo.addItem(iDoNotPin())
-        self.ui.pinCombo.addItem(iPinSingle())
-        self.ui.pinCombo.addItem(iPinRecursive())
-
-        self.ui.formLayout.setRowWrapPolicy(QFormLayout.DontWrapRows)
-        self.ui.formLayout.setFieldGrowthPolicy(
-            QFormLayout.ExpandingFieldsGrow)
-        self.ui.formLayout.setLabelAlignment(Qt.AlignHCenter | Qt.AlignTop)
-        self.ui.formLayout.setHorizontalSpacing(20)
-
-        self.iconSelector = IconSelector(parent=self, allowEmpty=True)
-        self.iconSelector.iconSelected.connect(self.onIconSelected)
-        self.iconSelector.emptyIconSelected.connect(self.onIconEmpty)
-        self.ui.formLayout.insertRow(7, QLabel('Icon'),
-                                     self.iconSelector)
-
-        regexp1 = QRegExp(r"[A-Za-z0-9/\-]+")  # noqa
-        self.ui.newCategory.setValidator(QRegExpValidator(regexp1))
-        self.ui.newCategory.setMaxLength(64)
-
-        if pin is True:
-            self.ui.pinCombo.setCurrentIndex(1)
-        elif pinRecursive is True:
-            self.ui.pinCombo.setCurrentIndex(2)
-
-        if isinstance(description, str):
-            self.ui.description.insertPlainText(description)
-
-        self.ui.groupBox.setProperty('niceBox', True)
-        self.app.repolishWidget(self.ui.groupBox)
-
-    @ipfsOp
-    async def initDialog(self, ipfsop):
-        await self.fillCategories()
-
-        path = IPFSPath(self.ipfsResource)
-        if not path.valid:
-            # TODO: rename self.ipfsResource
-            # Handle HTTP/ENS URLs
-
-            url = QUrl(self.ipfsResource)
-            if isHttpUrl(url) or isEnsUrl(url) or isGeminiUrl(url):
-                self.ui.pinCombo.setEnabled(False)
-
-            if isHttpUrl(url):
-                ensure(self.fetchFavIcon(url))
-
-    @ipfsOp
-    async def fetchFavIcon(self, ipfsop, qurl):
-        qurl.setPath('/favicon.ico')
-
-        try:
-            async with self.app.webClientSession() as session:
-                _data = bytearray()
-
-                async with session.get(qurl.toString()) as resp:
-                    while True:
-                        b = await resp.content.read(1024)
-                        if not b:
-                            break
-
-                        _data.extend(b)
-                        if len(_data) > 512 * 1024:
-                            raise Exception('Too large, get lost')
-
-                icon = getIconFromImageData(_data)
-                if not icon:
-                    raise Exception('Invalid .ico')
-
-                entry = await ipfsop.addBytes(_data)
-                if entry:
-                    self.iconSelector.injectCustomIcon(
-                        icon, entry['Hash'],
-                        qurl.toString())
-        except Exception as err:
-            log.debug(f'Could not load favicon: {err}')
-
-    async def fillCategories(self):
-        self.ui.category.addItem(iNoCategory())
-        self.ui.category.insertSeparator(0)
-
-        for cat in await database.categoriesNames():
-            self.ui.category.addItem(cat)
-
-    def onIconSelected(self, iconCid):
-        self.iconCid = iconCid
-
-    def onIconEmpty(self):
-        self.iconCid = None
-
-    def onSelectIcon(self):
-        fps = filesSelectImages()
-        if len(fps) > 0:
-            ensure(self.setIcon(fps.pop()))
-
-    @ipfsOp
-    async def setIcon(self, op, fp):
-        entry = await op.addPath(fp, recursive=False)
-        if entry:
-            cid = entry['Hash']
-
-            if self.iconWidget is None:
-                iconWidget = ImageWidget()
-
-                if await iconWidget.load(cid):
-                    self.ui.formLayout.insertRow(7, QLabel(''), iconWidget)
-                    self.iconCid = cid
-                    self.iconWidget = iconWidget
-            else:
-                if await self.iconWidget.load(cid):
-                    self.iconCid = cid
-
-    def onNewCatChanged(self, text):
-        self.ui.category.setEnabled(len(text) == 0)
-
-    def accept(self):
-        ensure(self.process())
-
-    async def process(self):
-        title = self.ui.title.text()
-
-        if len(title) == 0:
-            return await messageBoxAsync(iNoTitleProvided())
-
-        share = self.ui.share.isChecked()
-        newCat = self.ui.newCategory.text()
-        description = self.ui.description.toPlainText()
-
-        if len(description) > 1024:
-            return messageBox('Description is too long')
-
-        if len(newCat) > 0:
-            category = cidhelpers.normp(newCat)
-        elif self.ui.category.currentText() != iNoCategory():
-            category = self.ui.category.currentText()
-        else:
-            category = None
-
-        hashmark = await database.hashmarkAdd(
-            self.ipfsResource,
-            title=title,
-            comment=self.ui.comment.text(),
-            description=description,
-            icon=self.iconCid,
-            category=category,
-            share=share,
-            pin=self.ui.pinCombo.currentIndex(),
-            schemepreferred=self.schemePreferred
-        )
-
-        self.done(0)
-
-        await runDialogAsync(
-            HashmarkIPTagsDialog,
-            hashmark=hashmark
-        )
-
-        if share is True and 0:
-            # Store as RDF
-            await self.app.s.rdfStoreObject({
-                '@type': 'Hashmark',
-                '@id': self.ipfsPath.ipfsUrl,
-                'ipfsPath': str(self.ipfsPath),
-                'ipfsUrl': self.ipfsPath.ipfsUrl,
-                'description': description,
-                'comment': self.ui.comment.text(),
-                'iconCid': self.iconCid,
-                'category': category
-            }, 'urn:ipg:g:hashmarks:main')
-
-
 class AddFeedDialog(QDialog):
     def __init__(self, marks, resource, feedName=None, parent=None):
         super().__init__(parent)
 
         self.marks = marks
-        self.ipfsResource = resource
+        self.resourceUrl = resource
 
         self.ui = ui_addfeeddialog.Ui_AddFeedDialog()
         self.ui.setupUi(self)
-        self.ui.resourceLabel.setText(self.ipfsResource)
+        self.ui.resourceLabel.setText(self.resourceUrl)
         self.ui.resourceLabel.setStyleSheet(boldLabelStyle())
 
         self.ui.formLayout.setRowWrapPolicy(QFormLayout.DontWrapRows)
@@ -381,7 +162,7 @@ class AddFeedDialog(QDialog):
             return messageBox('Please specify a feed name')
 
         mark = await database.hashmarkAdd(
-            self.ipfsResource,
+            self.resourceUrl,
             tags=['#ipnsfeed']
         )
         mark.follow = True
@@ -1141,135 +922,6 @@ class GenericTextInputDialog(QDialog):
 class UneditableStringListModel(QStringListModel):
     def flags(self, index):
         return Qt.ItemFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-
-
-class IPTagsSelectDialog(QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self.app = QApplication.instance()
-
-        self.destTags = []
-
-        self.allTagsModel = UneditableStringListModel(self)
-        self.destTagsModel = UneditableStringListModel(self)
-        self.allTagsProxyModel = QSortFilterProxyModel(self)
-        self.allTagsProxyModel.setSourceModel(self.allTagsModel)
-
-        self.ui = ui_iptagsmanager.Ui_IPTagsDialog()
-        self.ui.setupUi(self)
-
-        self.ui.destTagsView.setModel(self.destTagsModel)
-        self.ui.destTagsView.setEditTriggers(
-            QAbstractItemView.NoEditTriggers
-        )
-        self.ui.destTagsView.doubleClicked.connect(
-            self.onTagDoubleClicked
-        )
-
-        self.ui.addTagButton.clicked.connect(lambda: ensure(self.addTag()))
-        self.ui.lineEditTag.textChanged.connect(self.onTagEditChanged)
-        self.ui.lineEditTag.setValidator(
-            QRegExpValidator(QRegExp(r'[A-Za-z0-9-_@#]+')))
-        self.ui.lineEditTag.setMaxLength(128)
-        self.ui.lineEditTag.setClearButtonEnabled(True)
-
-        self.ui.tagItButton.clicked.connect(self.onTagObject)
-        self.ui.untagItButton.clicked.connect(self.untagObject)
-        self.ui.okButton.clicked.connect(lambda: ensure(self.validate()))
-        self.ui.noTagsButton.clicked.connect(self.reject)
-
-        self.setMinimumSize(
-            self.app.desktopGeometry.width() / 2,
-            (2 * self.app.desktopGeometry.height()) / 3
-        )
-
-    def onTagEditChanged(self, text):
-        self.allTagsProxyModel.setFilterRegExp(text)
-        self.ui.allTagsView.clearSelection()
-
-    def onTagDoubleClicked(self, idx):
-        ensure(self.tagObject([idx]))
-
-    def onTagObject(self):
-        ensure(self.tagObject())
-
-    def untagObject(self):
-        try:
-            for idx in self.ui.destTagsView.selectedIndexes():
-                tag = self.destTagsModel.data(
-                    idx,
-                    Qt.DisplayRole
-                )
-
-                if tag:
-                    tagList = self.destTagsModel.stringList()
-                    tagList.remove(tag)
-                    self.destTagsModel.setStringList(tagList)
-        except Exception:
-            pass
-
-    async def tagObject(self, indexes=None):
-        if indexes is None:
-            indexes = self.ui.allTagsView.selectedIndexes()
-
-        for idx in indexes:
-            tag = self.allTagsProxyModel.data(
-                idx,
-                Qt.DisplayRole
-            )
-
-            if tag and tag not in self.destTagsModel.stringList():
-                self.destTagsModel.setStringList(
-                    self.destTagsModel.stringList() + [tag]
-                )
-
-    async def initDialog(self):
-        await self.updateAllTags()
-
-    async def addTag(self):
-        tagname = self.ui.lineEditTag.text()
-        if not tagname:
-            return
-
-        await database.ipTagAdd(ipTagsFormat(tagname))
-        await self.updateAllTags()
-
-    async def updateAllTags(self):
-        tags = [t.name for t in await database.ipTagsAll()]
-        self.allTagsModel.setStringList(tags)
-        self.ui.allTagsView.setModel(self.allTagsProxyModel)
-        self.allTagsProxyModel.sort(0)
-
-    async def validate(self):
-        self.destTags = self.destTagsModel.stringList()
-        self.done(1)
-
-
-class HashmarkIPTagsDialog(IPTagsSelectDialog):
-    def __init__(
-            self,
-            hashmark,
-            parent=None):
-        super(HashmarkIPTagsDialog, self).__init__(parent)
-
-        self.app = QApplication.instance()
-        self.hashmark = hashmark
-        self.setWindowTitle(iHashmarkIPTagsEdit())
-
-        self.setMinimumSize(
-            self.app.desktopGeometry.width() / 2,
-            (2 * self.app.desktopGeometry.height()) / 3
-        )
-
-    async def initDialog(self):
-        await self.hashmark._fetch_all()
-        await self.updateAllTags()
-
-    async def validate(self):
-        hmTags = self.destTagsModel.stringList()
-        await database.hashmarkTagsUpdate(self.hashmark, hmTags)
-        self.done(1)
 
 
 class DownloadOpenObjectDialog(QDialog):

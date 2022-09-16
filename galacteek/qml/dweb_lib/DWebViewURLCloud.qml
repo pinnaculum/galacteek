@@ -133,7 +133,6 @@ URLCloud {
     }
 
     function onUrlAnimationStartStop(animate) {
-      // console.debug('startstop ' + container.currentUrl +  '=> ' + animate)
       emitter.enabled = animate
 
       if (animate === true) {

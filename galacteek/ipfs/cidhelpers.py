@@ -1,9 +1,11 @@
 import re
 import os
+from typing import Union
 import aioipfs
 
 from rdflib import URIRef
 from urllib.parse import quote
+from urllib.parse import unquote
 
 from PyQt5.QtCore import QUrl
 
@@ -575,6 +577,11 @@ class IPFSPath:
 
     def gwUrlForConnParams(self, params):
         return f'http://{params.host}:{params.gatewayPort}{self.fullPath}'
+
+    @staticmethod
+    def fromUriRef(uri: Union[URIRef, str]):
+        ref = uri if isinstance(uri, URIRef) else URIRef(uri)
+        return IPFSPath(unquote(str(ref)))
 
     def __analyze(self):
         """

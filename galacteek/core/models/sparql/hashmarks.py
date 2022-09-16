@@ -8,6 +8,7 @@ from galacteek.ui.helpers import getIcon
 from galacteek.ui.helpers import getMimeIcon
 
 from . import SparQLListModel
+from . import SubjectUriRole
 
 
 HashmarkUriRole = Qt.UserRole + 1
@@ -20,7 +21,7 @@ def h2t(text):
     return h2text.handle(text).replace('\n', '').strip()
 
 
-class LDHashmarksSparQLModel(SparQLListModel):
+class LDHashmarksSparQLListModel(SparQLListModel):
     def data(self, QModelIndex, role=None):
         row = QModelIndex.row()
 
@@ -32,6 +33,8 @@ class LDHashmarksSparQLModel(SparQLListModel):
         try:
             if role == Qt.DisplayRole:
                 return h2t(str(item['title']))
+            elif role == SubjectUriRole:
+                return str(item['uri'])
             elif role == HashmarkUriRole:
                 return str(item['uri'])
             elif role == Qt.ToolTipRole:

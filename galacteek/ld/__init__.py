@@ -13,8 +13,11 @@ def ipsContextUri(contextName: str, ips='galacteek.ld'):
     return URIRef(f'ips://{ips}/{contextName}')
 
 
-def ipsTermUri(name: str, ips='galacteek.ld'):
-    return URIRef(f'ips://{ips}/{name}')
+def ipsTermUri(name: str, ips='galacteek.ld', fragment=None):
+    if fragment:
+        return URIRef(f'ips://{ips}/{name}#{fragment}')
+    else:
+        return URIRef(f'ips://{ips}/{name}')
 
 
 def uriTermExtract(uri):

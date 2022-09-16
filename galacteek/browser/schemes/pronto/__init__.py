@@ -9,6 +9,7 @@ from pygments.formatters import HtmlFormatter
 
 from galacteek import log
 from galacteek.ipfs import ipfsOp
+from galacteek.core.pygments import LinkedDataStyle
 
 from galacteek.browser.schemes import BaseURLSchemeHandler
 
@@ -35,7 +36,7 @@ class ProntoGraphsSchemeHandler(BaseURLSchemeHandler):
         the TurtleLexer pygments lexer
         """
         try:
-            htmlfmt = HtmlFormatter()
+            htmlfmt = HtmlFormatter(style=LinkedDataStyle)
 
             return await self.serveTemplate(
                 request,
@@ -66,6 +67,8 @@ class ProntoGraphsSchemeHandler(BaseURLSchemeHandler):
         try:
             # Graph's URI is the first component of the path
             graphUri = comps.pop(0)
+            assert len(graphUri) in range(1, 64)
+
             graph = self.prontoService.graphByUri(graphUri)
 
             assert graph is not None

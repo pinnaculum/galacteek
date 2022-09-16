@@ -1,0 +1,11 @@
+envs:
+  default:
+    styles:
+      webEngine:
+        - '@type': 'QtWebEngineTheme'
+
+          themeName: 'eterna'
+          displayName:
+            en: 'eterna'
+
+          src: 'qrc:/share/styles/eterna/webengine.css'

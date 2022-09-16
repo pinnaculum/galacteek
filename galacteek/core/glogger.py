@@ -141,6 +141,12 @@ class LogRecordStyler:
             'green': -0.3
         },
 
+        # ld
+        'galacteek.ld.manager': {
+            'basecolor': 'turquoise',
+            'green': -0.1
+        },
+
         # torrent
         'galacteek.torrent': {
             'basecolor': 'purple'
@@ -229,6 +235,10 @@ class ColorizedHandler(ColorizedStderrHandler):
             return 'turquoise'
         elif record.module.startswith('galacteek.did'):
             return 'turquoise'
+        elif record.module.startswith('galacteek.ld'):
+            return 'teal'
+        elif record.module.startswith('galacteek.services'):
+            return 'yellow'
         elif record.module.startswith('galacteek.dweb.page'):
             return 'brown'
         elif record.module == 'galacteek.user':

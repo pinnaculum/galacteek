@@ -1,0 +1,37 @@
+PREFIX gs: <ips://galacteek.ld/>
+PREFIX h: <ips://galacteek.ld/Hashmark#>
+
+SELECT ?uri ?category ?descr ?title
+       ?comment
+       ?iconUrl ?icon
+       ?mimeType ?mimeCategory ?dateCreated
+WHERE {
+  ?uri a gs:Hashmark .
+
+  ?uri h:dateCreated ?dateCreated .
+  ?uri h:title ?title .
+  ?uri h:description ?descr .
+
+  OPTIONAL { ?uri h:comment ?comment . } .
+  OPTIONAL { ?uri h:category ?category . } .
+  OPTIONAL { ?uri h:mimeType ?mimeType . } .
+  OPTIONAL { ?uri h:mimeCategory ?mimeCategory . } .
+  OPTIONAL { ?uri gs:url ?url . } .
+
+  OPTIONAL { 
+    ?uri h:icon ?icon .
+    ?icon gs:url ?iconUrl .
+  } .
+
+  OPTIONAL { 
+    ?uri h:image ?icon .
+    ?icon gs:url ?iconUrl .
+  } .
+
+
+
+  FILTER regex(str(?title), str(?titleSearch), "i")
+  FILTER (langMatches(lang(?title), "*") )
+}
+
+ORDER BY DESC(?dateCreated)
