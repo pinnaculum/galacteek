@@ -36,6 +36,8 @@ else:
 
 appStarter = None
 
+qtweFlagsVar = 'QTWEBENGINE_CHROMIUM_FLAGS'
+
 
 class ApplicationStarter:
     def __init__(self, args):
@@ -84,6 +86,18 @@ def galacteekGui(args):
 
     if args.debug:
         faulthandler.enable()
+
+    qflags = os.environ.get(qtweFlagsVar)
+    if not qflags:
+        # Set default qtwe flags
+        flags = [
+            '--ignore-gpu-blacklist',
+            '--enable-gpu-rasterization',
+            '--enable-native-gpu-memory-buffers',
+            '--num-raster-threads=8'
+        ]
+
+        os.environ[qtweFlagsVar] = ' '.join(flags)
 
     # QtWebEngine init
     QtWebEngine.initialize()

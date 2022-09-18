@@ -69,6 +69,37 @@ synchronizers:
         contentType: text/turtle
         action: merge
 
+  urn:ipg:sync:sparql:hashmarks:bylibertarian:
+    type: sparql
+    debug: true
+    run:
+      - query: >
+          PREFIX gs: <ips://galacteek.ld/>
+
+          PREFIX hmark: <ips://galacteek.ld/Hashmark#>
+
+          CONSTRUCT {
+            ?hmarkuri ?plp ?plo .
+            ?hmarkuri hmark:tag ?tag .
+            ?tag ?p ?o .
+
+            ?icon ?ip ?io .
+          } WHERE {
+            ?hmarkuri a gs:Hashmark .
+            ?hmarkuri gs:fromLibertarian ?libertarianId .
+            ?hmarkuri ?plp ?plo .
+
+            OPTIONAL {
+              ?hmarkuri gs:icon ?icon .
+              ?icon ?ip ?io .
+            } .
+
+            FILTER(?libertarianId = <@REMOTE_P2P_LIBRARIANID@>)
+          }
+
+        contentType: text/turtle
+        action: merge
+
   urn:ipg:sync:sparql:playlists:bylibertarian:
     type: sparql
     run:

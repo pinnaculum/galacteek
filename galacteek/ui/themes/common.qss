@@ -134,3 +134,35 @@ QLabel#rpsPinataInstructions {
     margin: 10px;
     font: 16pt "Segoe UI";
 }
+
+QPushButton#pinningStatusButton {
+    background-color: transparent;
+}
+
+QPushButton#pinningStatusButton[pinning=true] {
+    background-color: orange;
+}
+
+QPushButton#pinningStatusButton[pinning=false] {
+    background-color: transparent;
+}
+
+QToolButton#clipboardItemButton[onTop=true] {
+    padding: 2px;
+    background-color: #1e90ff;
+}
+
+QToolButton#clipboardItemButton,
+QToolButton#clipboardItemButton[onTop=false] {
+    background-color: transparent;
+    border: 0;
+}
+
+QToolButton#clipboardItemButton::hover {
+    background-color: #778899;
+    border: 1px solid #4a9ea1;
+}
+
+QToolButton#clipboardItemButton::pressed {
+    background-color: #b0c4de;
+}

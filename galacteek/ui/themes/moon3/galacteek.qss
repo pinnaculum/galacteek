@@ -230,11 +230,11 @@ QMenu
 {
     background-color: #323232;
     color: #eff0f1;
+
     margin: 2px;
     border: 1px solid #3a556c;
-    font-size: 14pt;
 
-    font: 14pt "Segoe UI";
+    font: 13pt "Segoe UI";
 }
 
 QMenu::icon
@@ -250,11 +250,11 @@ QMenu::item
     border: 1px solid transparent; /* reserve space for selection border */
 }
 
-QMenu::item:selected
-{
+QMenu::item:selected {
     padding: 5px 25px 5px 20px;
     font-weight: bold;
-    color: black;
+    background-color: #778899;
+    font: 15pt "Segoe UI";
 }
 
 QMenu::separator {
@@ -1489,14 +1489,6 @@ QTextEdit#logsTextWidget {
     font: 12pt "Inter UI";
     margin: 1px;
     padding: 0px;
-}
-
-QMenu::item:selected {
-    background-color: #66a56e;
-}
-
-QMenu {
-    font: 11pt "Inter UI";
 }
 
 QToolButton#qaToolButton::hover {

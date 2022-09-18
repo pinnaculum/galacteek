@@ -500,7 +500,7 @@ class ClipboardItemButton(PopupToolButton):
         self._item = None
         self._animatedOnce = False
         self.app = QApplication.instance()
-        self.setObjectName('currentClipItem')
+        self.setObjectName('clipboardItemButton')
         self.setIcon(getMimeIcon('unknown'))
 
         self.setMinimumSize(QSize(64, 64))
@@ -1067,6 +1067,11 @@ class ClipboardItemButton(PopupToolButton):
         else:
             progButton.downloadFinished.emit()
 
+    def resetProperties(self):
+        self.setProperty('onTop', False)
+        self.setProperty('newInTown', False)
+        self.app.repolishWidget(self)
+
 
 class ClipboardItemsStack(QStackedWidget):
     """
@@ -1115,6 +1120,14 @@ class ClipboardItemsStack(QStackedWidget):
             parent=self
         )
         self.addWidget(button)
+
+        button.setProperty('onTop', True)
+        button.setProperty('newInTown', True)
+        self.setProperty('stackChanged', True)
+
+        self.app.repolishWidget(button)
+        self.app.loop.call_later(2, button.resetProperties)
+
         return button
 
     def activateItem(self, item):

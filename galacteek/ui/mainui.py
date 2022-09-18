@@ -920,6 +920,7 @@ class MainWindow(QMainWindow, KeyListener):
 
         # Status bar setup
         self.pinningStatusButton = QPushButton(self)
+        self.pinningStatusButton.setObjectName('pinningStatusButton')
         self.pinningStatusButton.setShortcut(
             QKeySequence('Ctrl+u'))
         self.pinningStatusButton.setToolTip(iNoStatus())
@@ -1301,8 +1302,12 @@ class MainWindow(QMainWindow, KeyListener):
 
         if count > 0:
             self.pinningStatusButton.setIcon(self.pinIconLoading)
+            self.pinningStatusButton.setProperty('pinning', True)
         else:
             self.pinningStatusButton.setIcon(self.pinIconNormal)
+            self.pinningStatusButton.setProperty('pinning', False)
+
+        self.app.repolishWidget(self.pinningStatusButton)
 
         self.pinningStatusButton.setToolTip(statusMsg)
         self.pinningStatusButton.setStatusTip(statusMsg)

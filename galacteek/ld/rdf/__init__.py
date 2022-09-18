@@ -14,6 +14,8 @@ from galacteek import AsyncSignal
 from galacteek.ipfs import ipfsOp
 from galacteek.core import runningApp
 from galacteek.core.asynclib import asyncWriteFile
+from galacteek.core.ps import hubLdPublish
+from galacteek.core.ps import makeKeyService
 from galacteek.ld import asyncjsonld as jsonld
 from galacteek.ld import gLdDefaultContext
 
@@ -131,6 +133,18 @@ class Common(object):
 
     def typesList(self):
         return list(self.subject_objects(RDF.type))
+
+    def publishEvent(self, event):
+        hubLdPublish(
+            makeKeyService('ld', 'pronto'),
+            event
+        )
+
+    def publishUpdateEvent(self):
+        self.publishEvent({
+            'type': 'GraphUpdateEvent',
+            'graphUri': str(self.identifier)
+        })
 
 
 class BaseGraph(Graph, Common):

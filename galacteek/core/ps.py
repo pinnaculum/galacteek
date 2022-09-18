@@ -83,6 +83,27 @@ def hubPublish(key, message):
     app.loop.call_soon_threadsafe(gHub.publish, key, message)
 
 
+def hubLdPublish(key,
+                 event,
+                 contextName='services/GenericServiceMessage',
+                 **kw):
+    """
+    Publish a JSON-LD service event message on the
+    pubsub hub, to the service's PS key
+    """
+
+    from galacteek.ld import ipsContextUri
+
+    msg = {
+        '@context': str(ipsContextUri(contextName)),
+        'event': event
+    }
+
+    msg.update(**kw)
+
+    hubPublish(key, msg)
+
+
 class KeyListener(object):
     # Default PS keys we'll listen to
     psListenKeysDefault = [
@@ -111,11 +132,18 @@ class KeyListener(object):
             varName = '_'.join([tr(c) for c in key])
 
             coro = getattr(rcv, f'event_{varName}')
+
+            assert coro is not None
             log.debug(f'KeyListener for key {key}: binding to {coro}')
 
             # We use the global subscriber by default
             mSubscriber.add_async_listener(key, coro)
         except AttributeError:
+            pass
+        except KeyError:
+            # TODO: some key errors occur here
+            pass
+        except AssertionError:
             pass
         except Exception as err:
             log.debug(f'KeyListener: could not connect key {key}: {err}')

@@ -14,6 +14,7 @@ from galacteek import AsyncSignal
 from galacteek.core import runningApp
 from galacteek.core.ps import KeyListener
 from galacteek.core.ps import hubPublish
+from galacteek.core.ps import hubLdPublish
 from galacteek.core.ps import makeKeyService
 
 from galacteek.core.pkglister import pkgListPackages
@@ -22,7 +23,6 @@ from galacteek.config import configModRegCallback
 from galacteek.config import configForModule
 from galacteek.config import regConfigFromPyPkg
 
-from galacteek.ld import ipsContextUri
 
 servicesRootPath = Path(os.path.dirname(__file__))
 
@@ -119,13 +119,16 @@ class GService(Service, KeyListener):
         """
         Publish a JSON-LD service event message on the
         pubsub hub, to the service's PS key
+
+        TODO: now that use hubLdPublish, convert to regular fn
         """
 
-        hubPublish(key if key else self.psKey, {
-            '@context': str(ipsContextUri(contextName)),
-            'serviceIdent': self.ident,
-            'event': event
-        })
+        hubLdPublish(
+            key if key else self.psKey,
+            event,
+            contextName=contextName,
+            serviceIdent=self.ident
+        )
 
         await asyncio.sleep(0.05)
 
@@ -184,14 +187,14 @@ class GService(Service, KeyListener):
                 disabled = getattr(srvMod, 'disabled')
                 if disabled is True:
                     raise DisabledServiceException(
-                          'Disabled service: {srvDotPath}')
+                        'Disabled service: {srvDotPath}')
 
             service = srvMod.serviceCreate(
                 srvDotPath, config, parent)
 
             if not service or service.disabled is True:
                 raise DisabledServiceException(
-                      'Disabled service: {srvDotPath}')
+                    'Disabled service: {srvDotPath}')
 
             GService.byDotName[srvDotPath] = service
         except DisabledServiceException:

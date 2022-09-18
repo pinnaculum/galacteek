@@ -1,6 +1,7 @@
 import asyncio
 import async_timeout
 import weakref
+import traceback
 
 from rdflib import RDF
 
@@ -41,8 +42,9 @@ from galacteek.dweb.render import renderTemplate
 from galacteek.core import uid4
 from galacteek.core import runningApp
 from galacteek.core import utcDatetimeIso
-from galacteek.ld.rdf.terms import tUriUsesLibertarianId
-from galacteek.ld.iri import p2pLibertarianGenUrn
+from galacteek.core import html2t
+
+from galacteek.ld.rdf.hashmarks import addLdHashmark
 
 from .colors import *
 from .helpers import *
@@ -256,8 +258,12 @@ class IPFSSearchHandler(QObject):
         return services.getByDotName('ld.pronto')
 
     @property
+    def graphUriSearchMain(self):
+        return 'urn:ipg:i:love:hashmarks:search'
+
+    @property
     def hashmarksGraph(self):
-        return self.prontoService.graphByUri('urn:ipg:hashmarks:search')
+        return self.prontoService.graphByUri(self.graphUriSearchMain)
 
     @property
     def vPageCurrent(self):
@@ -370,7 +376,9 @@ class IPFSSearchHandler(QObject):
         pinRecursive = (type == 'directory')
 
         ensure(addHashmarkAsync(
-            path, title=title, description=descr,
+            path,
+            title=html2t(title),
+            description=descr,
             pin=pinSingle, pinRecursive=pinRecursive))
 
     @pyqtSlot(str)
@@ -411,9 +419,10 @@ class IPFSSearchHandler(QObject):
         return filters
 
     def sendHit(self, hit):
-        hitHash = hit.get('hash', None)
-        mimeType = hit.get('mimetype', None)
-        hitSize = hit.get('size', None)
+        hitHash = hit.get('hash')
+        mimeType = hit.get('mimetype')
+        hitSize = hit.get('size')
+        descr = hit.get('description')
 
         ipfsPath = IPFSPath(hitHash, autoCidConv=True)
         if not ipfsPath.valid:
@@ -426,15 +435,17 @@ class IPFSSearchHandler(QObject):
             'path': str(ipfsPath),
             'url': ipfsPath.ipfsUrl,
             'mimetype': mimeType if mimeType else 'application/unknown',
-            'title': hit.get('title', iUnknown()),
+            'title': html2t(hit.get('title', iUnknown())),
             'size': hitSize if hitSize else 0,
             'sizeformatted': sizeFormatted,
-            'description': hit.get('description', None),
+            'description': html2t(descr) if descr else None,
             'type': hit.get('type', iUnknown()),
             'first-seen': hit.get('first-seen', iUnknown())
         }
 
         self.resultReady.emit('ipfs-search', hitHash, QVariant(pHit))
+
+        return pHit
 
     async def sendCyberHit(self, hit):
         hitHash = hit.get('hash')
@@ -496,38 +507,12 @@ class IPFSSearchHandler(QObject):
                 predicate=RDF.type
             )
 
-        def getLibertarianId(g, nodeId):
-            # Deprecated
-            val = g.value(
-                subject=nodeId,
-                predicate=tUriUsesLibertarianId
-            )
-
-            if not val:
-                lid = p2pLibertarianGenUrn(str(nodeId))
-
-                g.add((
-                    nodeId,
-                    tUriUsesLibertarianId,
-                    lid
-                ))
-
-                return lid
-            else:
-                return val
-
         val = await self.hashmarksGraph.rexec(
             findHashmark, iPath.ipfsUriRef)
 
         if val is not None:
             # Already graphed
             return
-
-        # nodeIdUriRef = await ipfsop.nodeIdUriRef()
-        # libertarianId = await self.hashmarksGraph.rexec(
-        #     getLibertarianId, nodeIdUriRef)
-
-        libertarianId = await self.prontoService.getLibertarianId()
 
         title = hit.get('title')
         descr = hit.get('description')
@@ -546,28 +531,6 @@ class IPFSSearchHandler(QObject):
         # string so that the group_concat() works
         kwm = self.searchQuery.split() + ['']
 
-        hmark = {
-            '@type': 'Hashmark',
-            '@id': iPath.ipfsUrl,
-
-            'ipfsPath': iPath.objPath,
-            'ipfsObjType': 'unixfs',
-            'title': title if title else iNoTitle(),
-            'description': descr if descr else iNoDescription(),
-            'size': hit.get('size', 0),
-            'score': hit.get('score', 0),
-            'unixFsType': hit.get('type', 'unknown'),
-            'mimeType': str(mimeObj),
-            'mimeCategory': mimeCat,
-            'keywordMatch': kwm,
-            'dateCreated': utcDatetimeIso(),
-            'dateFirstSeen': hit.get('first-seen'),
-            'dateLastSeen': hit.get('last-seen')
-        }
-
-        if libertarianId:
-            hmark['fromLibertarian'] = str(libertarianId)
-
         for ref in hit.get('references', []):
             p = IPFSPath(ref['parent_hash'], autoCidConv=True)
 
@@ -576,10 +539,21 @@ class IPFSSearchHandler(QObject):
 
             refs.append(p.ipfsUrl)
 
-        if len(refs) > 0:
-            hmark['referencedBy'] = refs
-
-        await self.hashmarksGraph.pullObject(hmark)
+        return await addLdHashmark(
+            iPath,
+            title=title if title else iNoTitle(),
+            descr=descr if descr else iNoDescription(),
+            size=hit.get('size', 0),
+            score=hit.get('score', 0),
+            mimeType=str(mimeObj),
+            mimeCategory=mimeCat,
+            keywordMatch=kwm,
+            dateCreated=utcDatetimeIso(),
+            referencedBy=refs,
+            graphUri=self.graphUriSearchMain,  # dst graph uri
+            # dateFirstSeen=hit.get('first-seen'),
+            # dateLastSeen=hit.get('last-seen')
+        )
 
     async def fetchObjectStat(self, ipfsop, cid, hit):
         path = joinIpfs(cid)
@@ -590,6 +564,7 @@ class IPFSSearchHandler(QObject):
             if stat:
                 self.objectStatAvailable.emit(cid, stat)
 
+                # Worth graphing
                 await self.graphHashmark(
                     IPFSPath(path, autoCidConv=True),
                     hit,
@@ -631,10 +606,10 @@ class IPFSSearchHandler(QObject):
                     self.searchRunning.emit(searchQuery)
 
                     if engine == 'ipfs-search':
-                        self.sendHit(hit)
+                        tsHit = self.sendHit(hit)
                         self._tasks.append(ensure(
                             self.fetchObjectStat(
-                                ipfsop, hit['hash'], hit)))
+                                ipfsop, hit['hash'], tsHit)))
                     else:
                         self._tasks.append(
                             ensure(self.sendCyberHit(hit)))
@@ -645,10 +620,8 @@ class IPFSSearchHandler(QObject):
         except asyncio.CancelledError:
             log.debug('Search cancelled')
             return False
-        except Exception as e:
-            log.debug(
-                'IPFSSearch: unknown exception while searching: {}'.format(
-                    str(e)))
+        except Exception:
+            traceback.print_exc()
             return False
 
         if gotResults:

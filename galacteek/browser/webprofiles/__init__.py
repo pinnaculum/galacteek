@@ -353,17 +353,16 @@ def wpParseStyles(styles: DictConfig):
     for styleDef in styles:
         try:
             src = styleDef.get('src')
-            themeName = styleDef.get('themeName')
+            styleName = styleDef.get('styleName')
 
             assert isinstance(src, str)
-            assert isinstance(themeName, str)
+            assert isinstance(styleName, str)
 
-            script = styleSheetScript(themeName, QUrl(src))
+            script = styleSheetScript(styleName, QUrl(src))
             assert script is not None  # weak
 
-            # yield themeName, script
-            if themeName not in stl:
-                stl[themeName] = script
+            if styleName not in stl:
+                stl[styleName] = script
         except Exception:
             continue
 

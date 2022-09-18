@@ -1,4 +1,5 @@
 from PyQt5.QtNetwork import QNetworkProxy
+from PyQt5.QtNetwork import QNetworkProxyFactory
 
 
 class Proxy(QNetworkProxy):
@@ -20,6 +21,10 @@ class TorNetworkProxy(QNetworkProxy):
 
     def url(self):
         return f'socks5://{self.torCfg.hostname}:{self.torCfg.socksPort}'
+
+
+def useSystemProxyConfig(use: bool):
+    QNetworkProxyFactory.setUseSystemConfiguration(use)
 
 
 class NullProxy(QNetworkProxy):

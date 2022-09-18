@@ -69,6 +69,7 @@ from galacteek.core import pkgResourcesListDir
 from galacteek.core import pkgResourcesRscFilename
 
 from galacteek.browser.webproxy import NullProxy
+from galacteek.browser.webproxy import useSystemProxyConfig
 
 from galacteek import database
 from galacteek.database import models
@@ -575,6 +576,7 @@ class GalacteekApplication(QApplication):
     def initMisc(self):
         # Start with no proxy
         self.networkProxySet(NullProxy())
+        useSystemProxyConfig(False)
 
         # Discover/preload LD schemas
         self._ldSchemasImporter.discover()

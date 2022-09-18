@@ -270,4 +270,8 @@ class GraphGuardian:
             log.debug('mergeReplace failure !')
             return False
         else:
+            # Hub notification
+
+            dst.publishUpdateEvent()
+
             return True

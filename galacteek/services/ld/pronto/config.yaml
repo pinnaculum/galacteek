@@ -5,8 +5,8 @@ graphEnvs:
     # Pubsub service config
     pubsub:
       heartbeat:
-        intervalMin: 150
-        intervalMax: 280
+        intervalMin: 10
+        intervalMax: 28
 
     mSyncThrottler:
       rateLimit: 12
@@ -35,6 +35,58 @@ graphEnvs:
           urn:ipg:i:articles:
             name: i_articles
 
+          # tags
+          urn:ipg:i:love:itags:
+            name: i_love_itags
+
+            datasets:
+              urn:glk:datasets:dataset-itags-core:
+                url: ${gitlab_asset_url:galacteek/dataset-itags-core/-/releases/continuous-master/downloads/dataset-itags-core.tar.gz}
+
+                upgradeStrategy: replace
+
+          # Hashmarks (conjunctive)
+          urn:ipg:i:love:hashmarks:
+            name: i_love_hashmarks
+            type: conjunctive
+
+            # Use the parent store and set the default URI
+            useParentStore: true
+            defaultBaseGraphUri: urn:ipg:i:love:hashmarks:private
+
+            subgraphs:
+              urn:ipg:i:love:hashmarks:private:
+                name: i_love_hashmarks_private
+
+              urn:ipg:i:love:hashmarks:dwebland:
+                name: i_love_hashmarks_dwebland
+
+                datasets:
+                  urn:glk:datasets:hashmarks-dwebland:
+                    url: ${gitlab_asset_url:galacteek/hashmarks-dwebland/-/releases/continuous-rdfify/downloads/hashmarks-dwebland.tar.gz}
+
+                    upgradeStrategy: replace
+
+              urn:ipg:i:love:hashmarks:search:
+                name: i_love_hashmarks_search
+
+                services:
+                  sparql: {}
+                  sync:
+                    use: urn:ipg:sync:sparql:hashmarks:bylibertarian
+
+              urn:ipg:i:love:hashmarks:public:albator:
+                # Public hashmarks (albator)
+                #
+                name: i_love_hashmarks_public_albator
+
+                services:
+                  sparql: {}
+
+                  sync:
+                    use: urn:ipg:sync:sparql:hashmarks:bylibertarian
+
+
           urn:ipg:i:uni:
             name: i_uni
 
@@ -42,7 +94,7 @@ graphEnvs:
             name: i_uni_mw_ss_earth
             datasets:
               urn:glk:datasets:earth:
-                url: https://gitlab.com/galacteek/dataset-earth/-/releases/continuous-master/downloads/dataset-earth.tar.gz
+                url: ${gitlab_asset_url:galacteek/dataset-earth/-/releases/continuous-master/downloads/dataset-earth.tar.gz}
 
           urn:ipg:i:uni:mw:ss:earth:rings:
             name: i_uni_mw_ss_earth_rings
@@ -99,23 +151,6 @@ graphEnvs:
 
           urn:ipg:icapsules:registries:galacteek:red:local:
             name: icapsules_registries_galacteek_red_local
-
-      # Hashmarks (conjunctive)
-      urn:ipg:hashmarks:
-        name: hashmarks
-        type: conjunctive
-
-        namespace: 'urn:ipg:hashmarks'
-
-        subgraphs:
-          urn:ipg:hashmarks:main:
-            name: hashmarks_main
-
-          urn:ipg:hashmarks:search:
-            name: hashmarks_search
-
-            services:
-              sparql: {}
 
       # User's multimedia (conjunctive)
       urn:ipg:user:multimedia:

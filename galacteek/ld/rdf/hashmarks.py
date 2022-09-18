@@ -16,7 +16,7 @@ from galacteek.ld.rdf.terms import HASHMARK
 
 
 TOP_HASHMARKS_GRAPH_URI = 'urn:ipg:i:love:hashmarks'
-MAIN_HASHMARKS_GRAPH_URI = 'urn:ipg:i:love:hashmarks:main'
+MAIN_HASHMARKS_GRAPH_URI = 'urn:ipg:i:love:hashmarks:private'
 
 
 def getGraph(graphUri: str):
@@ -55,11 +55,13 @@ async def addLdHashmark(resourceUrl: Union[IPFSPath, str, URIRef],
                         descr: str,
                         mimeType: MIMEType = None,
                         objStat: dict = None,
-                        size: int = 0,
-                        score: int = 0,
+                        size: int = None,
+                        score: int = None,
                         comment: str = None,
                         category: str = None,
                         dateCreated: datetime = None,
+                        dateFirstSeen: datetime = None,
+                        dateLastSeen: datetime = None,
                         graphUri: str = MAIN_HASHMARKS_GRAPH_URI,
                         ipfsObjType: str = 'unixfs',
                         iconUrl: Union[str, URL] = None,
@@ -67,7 +69,7 @@ async def addLdHashmark(resourceUrl: Union[IPFSPath, str, URIRef],
                         metaLangTag: str = 'en',
                         schemePreferred: str = None,
                         referencedBy: list = [],
-                        keywordMatch: list = [],
+                        keywordMatch: list = [''],
                         libertarianId: URIRef = None,
                         **extra):
     refs = []
@@ -102,9 +104,8 @@ async def addLdHashmark(resourceUrl: Union[IPFSPath, str, URIRef],
         'description': {
             metaLangTag: descr
         },
+        'keywordMatch': keywordMatch,
 
-
-        # 'keywordMatch': [''],
         'dateCreated': dateCreated if dateCreated else utcDatetimeIso()
     }
 
@@ -162,6 +163,12 @@ async def addLdHashmark(resourceUrl: Union[IPFSPath, str, URIRef],
             'url': str(imageUriRef)
         }
 
+    if isinstance(size, int):
+        hmark['size'] = size
+
+    if type(score) in [int, float]:
+        hmark['score'] = score
+
     if libertarianId:
         hmark['fromLibertarian'] = str(libertarianId)
 
@@ -171,12 +178,16 @@ async def addLdHashmark(resourceUrl: Union[IPFSPath, str, URIRef],
         if p.valid:
             refs.append(p.ipfsUrl)
 
+    if refs:
+        hmark['referencedBy'] = refs
+
+    print(hmark)
+
     for name, v in extra.items():
         hmark[name] = v
 
-    # await graph.pullObject(hmark)
-
     hmg = await graph.rdfifyObject(hmark)
+    print((await hmg.ttlize()).decode())
 
     await graph.guardian.mergeReplace(
         hmg, graph
@@ -229,6 +240,16 @@ def hashmarkTagsUpdate(hashmarkUri: URIRef,
 
     for tag in tags:
         ldHashmarkTag(hashmarkUri, tag, graphUri=graphUri)
+
+
+async def tagsForHashmark(hmUri: URIRef,
+                          graphUri: str = TOP_HASHMARKS_GRAPH_URI):
+    graph = getGraph(graphUri)
+
+    return await graph.queryAsync(
+        querydb.get('HashmarkTags'),
+        initBindings={'hmuri': hmUri}
+    )
 
 
 async def searchLdHashmarks(title: str = None,

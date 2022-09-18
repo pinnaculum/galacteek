@@ -1914,11 +1914,6 @@ class BrowserTab(GalacteekTab):
 
         self.urlZoneInsert(self.currentUrl)
 
-        if 0:
-            text, curUrl = self.urlZone.text(), self.currentUrl.toString()
-            if text != curUrl:
-                self.urlZoneInsert(curUrl)
-
     async def onIconChanged(self, icon):
         self.workspace.tabWidget.setTabIcon(self.tabPageIdx, icon)
 

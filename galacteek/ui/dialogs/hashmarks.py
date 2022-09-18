@@ -109,7 +109,7 @@ class AddHashmarkDialog(QDialog):
 
         self.graphSelector = OutputGraphSelectorWidget(
             uriFilters=[
-                r'urn:ipg:i:love:hashmarks:(main|public.*|search)'
+                r'urn:ipg:i:love:hashmarks:(main|private|public.*|search)'
             ],
             parent=self
         )
@@ -378,7 +378,8 @@ class HashmarkIPTagsDialog(QDialog):
 
         self.destTagsModel = TagsSparQLModel(
             graphUri='urn:ipg:i:love:hashmarks',
-            rq='HashmarkTagsSearch',
+            # graphUri='urn:ipg:i',
+            rq='HashmarkTags',
             bindings={'hmuri': self.hashmarkUri}
         )
 

@@ -19,16 +19,14 @@ WHERE {
   OPTIONAL { ?uri gs:url ?url . } .
 
   OPTIONAL { 
-    ?uri h:icon ?icon .
+    ?uri gs:icon ?icon .
     ?icon gs:url ?iconUrl .
   } .
 
   OPTIONAL { 
-    ?uri h:image ?icon .
+    ?uri gs:image ?icon .
     ?icon gs:url ?iconUrl .
   } .
-
-
 
   FILTER regex(str(?title), str(?titleSearch), "i")
   FILTER (langMatches(lang(?title), "*") )

@@ -17,7 +17,8 @@ from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
 
 from galacteek.core.asynclib import GThrottler
-from galacteek.core.asynclib import httpFetch
+from galacteek.core.asynclib.fetch import assetFetch
+from galacteek.core.asynclib.fetch import httpFetch
 from galacteek.core.asynclib import asyncReadFile
 from galacteek.core.ps import makeKeyService
 from galacteek.core import pkgResourcesRscFilename
@@ -43,8 +44,11 @@ from galacteek.ld.rdf.terms import tUriUsesLibertarianId
 from galacteek.ld.rdf.terms import DATASET
 from galacteek.ld.rdf.sync import *
 
+from .__models__ import ProntoServiceModels
 
-class RDFStoresService(GService):
+
+class RDFStoresService(GService,
+                       ProntoServiceModels):
     name = 'graphs'
     rdfIdent = URIRef('g')
 
@@ -69,21 +73,29 @@ class RDFStoresService(GService):
         return self.app.cmdArgs.prontoChainEnv
 
     @property
+    def graphsUris(self):
+        return [g.identifier for n, g in self._graphs.items()]
+
+    @property
     def graphsUrisStrings(self):
         return sorted(
             [str(g.identifier) for n, g in self._graphs.items()]
         )
 
     def graphByUri(self, uri: str):
+        uriRef = URIRef(uri)
+
         for n, graph in self._graphs.items():
-            if str(graph.identifier) == str(uri):
+            if graph.identifier == uriRef:
                 return graph
 
+    def cGraphByUri(self, uri: str):
+        # Unused
         for cgraph in self._cgraphs:
-            if str(cgraph.identifier) == str(uri):
+            if cgraph.identifier == uriRef:
                 return cgraph
 
-            subg = cgraph.get_context(URIRef(uri))
+            subg = cgraph.get_context(uriRef)
             if subg is not None:
                 return subg
 
@@ -132,14 +144,19 @@ class RDFStoresService(GService):
 
         await self.initializeGraphs()
 
+        await self.initializeSparQLModels()
+
+    def graphRootStoragePath(self, storageName: str):
+        return self.storesPath.joinpath(storageName)
+
     async def registerRegularGraph(self, uri, cfg):
         store = plugin.get("Sleepycat", Store)(
-            identifier=self.rdfIdent
+            identifier=uri
         )
 
-        rootPath = self.storesPath.joinpath(f'igraph_{cfg.name}').joinpath(
-            'bsddb')
-        rootPath.mkdir(parents=True, exist_ok=True)
+        rootPath = self.graphRootStoragePath(f'igraph_{cfg.name}')
+        dbPath = rootPath.joinpath('bsddb')
+        dbPath.mkdir(parents=True, exist_ok=True)
 
         graph = IGraph(
             store,
@@ -148,8 +165,7 @@ class RDFStoresService(GService):
             identifier=uri
         )
 
-        # graph.open(graph.dbUri, create=True)
-        graph.open(str(rootPath), create=True)
+        graph.open(str(dbPath), create=True)
 
         # XXX: NS bind
         graph.iNsBind()
@@ -160,37 +176,51 @@ class RDFStoresService(GService):
 
         self._graphs[cfg.name] = graph
 
-    async def registerConjunctive(self, uri, cfg):
-        store = plugin.get("Sleepycat", Store)(
-            identifier=uri
+    async def registerConjunctive(self,
+                                  uri: str,
+                                  cfg, parentStore=None):
+        subgraphs = cfg.get('subgraphs', {})
+        useParentStore = cfg.get('useParentStore', False)
+        graphBase = cfg.get('defaultBaseGraphUri', None)
+
+        if useParentStore and parentStore:
+            store = parentStore
+        else:
+            store = plugin.get("Sleepycat", Store)(
+                identifier=uri
+            )
+
+        cgraph = IConjunctiveGraph(
+            store=store, identifier=uri,
+            default_graph_base=graphBase
         )
 
-        rootPath = self.storesPath.joinpath(f'ipcg_{cfg.name}').joinpath(
-            'bsddb')
-        rootPath.mkdir(parents=True, exist_ok=True)
-
-        # dbPath = rootPath.joinpath('g_rdf.db')
-        dbPath = rootPath
-
-        cgraph = IConjunctiveGraph(store=store, identifier=uri)
-        # cgraph.open('sqlite:///{}'.format(str(dbPath)), create=True)
-
+        rootPath = self.graphRootStoragePath(f'ipcg_{cfg.name}')
+        dbPath = rootPath.joinpath('bsddb')
+        dbPath.mkdir(parents=True, exist_ok=True)
         cgraph.open(str(dbPath), create=True)
+
         cgraph.iNsBind()
 
-        subgraphs = cfg.get('subgraphs', {})
-
         for guri, gcfg in subgraphs.items():
-            graph = IGraph(
-                store,
-                dbPath,
-                name=gcfg.name,
-                identifier=guri
-            )
-            graph.iNsBind()
+            gtype = gcfg.get('type')
 
-            await self.graphRegServices(gcfg, graph)
-            self._graphs[gcfg.name] = graph
+            if not gtype or gtype == 'regular':
+                graph = IGraph(
+                    store,
+                    rootPath,
+                    name=gcfg.name,
+                    identifier=guri
+                )
+            elif gtype == 'conjunctive':
+                # Recursive
+                graph = await self.registerConjunctive(guri, gcfg,
+                                                       parentStore=store)
+            if graph is not None:
+                graph.iNsBind()
+
+                await self.graphRegServices(gcfg, graph)
+                self._graphs[gcfg.name] = graph
 
         await self.graphRegServices(cfg, cgraph)
 
@@ -265,13 +295,19 @@ class RDFStoresService(GService):
                 upgradeStrategy=upgradeStrategy
             ))
 
-    async def graphDataSetPullTask(self, graph,
+    async def graphDataSetPullTask(self,
+                                   graph,
                                    opSubject: URIRef,
                                    url: URL,
                                    checksumUrl: URL,
                                    revisionUrl: URL,
                                    upgradeStrategy: str = 'mergeReplace',
                                    format=None):
+        sleepAlreadyDone = 60
+        sleepAfterUpdate = 60 * 5
+        sleepInvalidDs = 60 * 10
+        sleepCannotFetch = 60 * 5
+
         async def dsTarProcess(ograph, tarfp: Path):
             lastRevision = ograph.value(
                 subject=opSubject,
@@ -358,7 +394,10 @@ class RDFStoresService(GService):
 
                 if lastProcessedRev and remoteRev == str(lastProcessedRev):
                     # Already processed
-                    await asyncio.sleep(60 * 30)
+                    log.debug(f'Dataset {url}: already processed '
+                              f'revision: {remoteRev}')
+
+                    await asyncio.sleep(sleepAlreadyDone)
                     continue
 
                 if checksumUrl:
@@ -371,33 +410,36 @@ class RDFStoresService(GService):
 
                         cfp.unlink()
 
-                fp, _sum = await httpFetch(url)
+                # Use assetFetch (will pull from IPFS if the redirection
+                # points to an IPFS file)
+                fp, _sum = await assetFetch(url)
                 if not fp:
-                    await asyncio.sleep(60 * 5)
+                    log.warning(f'Dataset {url}: failed to retrieve')
+                    await asyncio.sleep(sleepCannotFetch)
                     continue
 
                 if checksumUrl and _sum != checksum:
-                    log.debug(f'Dataset {url}: checksum mismatch!')
-                    await asyncio.sleep(60 * 3)
+                    log.warning(f'Dataset {url}: checksum mismatch!')
+                    await asyncio.sleep(sleepInvalidDs)
                     continue
 
                 if fp.name.endswith('.tar.gz'):
-                    await dsTarProcess(graph, fp)
+                    if await dsTarProcess(graph, fp):
+                        await sleep(sleepAfterUpdate)
+
+                        if fp and fp.is_file():
+                            fp.unlink()
                 else:
                     log.debug('Unsupported dataset format')
                     await asyncio.sleep(60)
                     continue
-
-                fp.unlink()
-
-                await asyncio.sleep(60 * 5)
             except Exception:
                 traceback.print_exc()
 
-                if fp:
+                if fp and fp.is_file():
                     fp.unlink()
 
-            await asyncio.sleep(60)
+            await asyncio.sleep(30)
 
     async def initializeGraphs(self):
         # syncs = self.serviceConfig.get('synchronizers', {})
