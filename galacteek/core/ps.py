@@ -79,8 +79,12 @@ mSubscriber = psSubscriber('main')
 
 def hubPublish(key, message):
     # Publishing to the hub should now always happen in the main loop
-    app = runningApp()
-    app.loop.call_soon_threadsafe(gHub.publish, key, message)
+
+    try:
+        app = runningApp()
+        app.loop.call_soon_threadsafe(gHub.publish, key, message)
+    except Exception as err:
+        log.warning(f'Hub published failed: {err}')
 
 
 def hubLdPublish(key,

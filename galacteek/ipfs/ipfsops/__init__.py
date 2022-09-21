@@ -30,6 +30,7 @@ from galacteek.ipfs.cidhelpers import IPFSPath
 
 from galacteek.ipfs.multi import multiAddrTcp4
 from galacteek.ipfs.stat import StatInfo
+from galacteek.ipfs.stat import UnixFsStatInfo
 
 from galacteek.config import cGet
 
@@ -399,6 +400,9 @@ class IPFSOperator(RemotePinningOps,
         try:
             with async_timeout.timeout(timeout):
                 return await awaitable
+        except ConnectionRefusedError as cre:
+            self.debug(f'wait ({awaitable}): connection refused '
+                       f'error occured: {cre}')
         except asyncio.TimeoutError:
             self.debug('Timeout waiting for coroutine {0}'.format(awaitable))
             return None
@@ -519,7 +523,7 @@ class IPFSOperator(RemotePinningOps,
 
         return listing['Entries']
 
-    async def filesStat(self, path, timeout=None):
+    async def filesStat(self, path: str, timeout: int = None):
         try:
             cfg = self.opConfig('filesStat')
             return await self.waitFor(
@@ -529,6 +533,9 @@ class IPFSOperator(RemotePinningOps,
         except aioipfs.APIError as err:
             self.debug(err.message)
             return None
+
+    async def filesStatInfo(self, path: str, **kw):
+        return UnixFsStatInfo(await self.filesStat(path, **kw))
 
     async def filesWrite(self, path, data, create=False, truncate=False,
                          offset=-1, count=-1, cidversion=1):

@@ -3,6 +3,7 @@ import tempfile
 import shutil
 import tarfile
 import os
+import traceback
 from pathlib import Path
 from datetime import datetime
 from yaml import load
@@ -16,9 +17,13 @@ from galacteek.core import jsonSchemaValidate
 from galacteek.core import SingletonDecorator
 from galacteek.core import pkgResourcesListDir
 from galacteek.core import pkgResourcesRscFilename
+from galacteek.core import runningApp
 from galacteek.core.iptags import ipTagRe
 from galacteek.core.ipfsmarks import IPFSMarks
 from galacteek.core.asynclib.fetch import httpFetch
+from galacteek.ipfs.mimetype import MIMEType
+from galacteek.ipfs import ipfsOpFn
+from galacteek.ld.rdf.hashmarks import addLdHashmark
 
 
 try:
@@ -133,6 +138,58 @@ async def importHashmark(mark, source):
         source=source,
         schemepreferred=mark.get('schemepreferred')
     )
+
+
+@ipfsOpFn
+async def migrateHashmarksDbToRdf(ipfsop):
+    # Migrate the old hashmarks format to the RDF db
+
+    app = runningApp()
+
+    try:
+        hall = await database.hashmarksAll()
+        assert len(hall) > 0
+
+        for hold in hall:
+            ip, url = None, None
+
+            if hold.path:
+                ip = IPFSPath(hold.path, autoCidConv=True)
+
+                if ip and ip.valid:
+                    url = ip.ipfsUriRef
+            else:
+                url = hold.url
+
+            if url is None:
+                continue
+
+            mType, fStatInfo = MIMEType('application/unknown'), None
+            if ip and ip.valid:
+                mType, fStatInfo = await app.rscAnalyzer(
+                    str(url), statType=['files'])
+
+            result = await addLdHashmark(
+                url,
+                hold.title,
+                descr=hold.description,
+                comment=hold.comment,
+                mimeType=mType,
+                filesStat=fStatInfo,
+                dateCreated=hold.datecreated if hold.datecreated else None
+            )
+
+            if result is False:
+                log.warning(f'Error migrating: {url}')
+            else:
+                await database.hashmarkDelete(
+                    hold.path if hold.path else hold.url
+                )
+    except Exception:
+        log.warning(f'Error migrating hashmarks: {traceback.format_exc()}')
+        return False
+    else:
+        return True
 
 
 class HashmarksCatalogLoader:

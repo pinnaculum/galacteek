@@ -29,6 +29,7 @@ from galacteek.ipfs.pubsub.messages.ld import RDFGraphsExchangeMessage
 from galacteek.ipfs.pubsub.messages.ld import SparQLHeartbeatMessage
 from galacteek.ipfs.p2pservices import smartql as p2psmartql
 
+from galacteek.ld.rdf import GraphURIRef
 from galacteek.ld.rdf import BaseGraph
 from galacteek.ld.rdf import IGraph
 from galacteek.ld.rdf import IConjunctiveGraph
@@ -74,7 +75,8 @@ class RDFStoresService(GService,
 
     @property
     def graphsUris(self):
-        return [g.identifier for n, g in self._graphs.items()]
+        return [GraphURIRef(str(g.identifier))
+                for n, g in self._graphs.items()]
 
     @property
     def graphsUrisStrings(self):
@@ -425,10 +427,10 @@ class RDFStoresService(GService,
 
                 if fp.name.endswith('.tar.gz'):
                     if await dsTarProcess(graph, fp):
-                        await sleep(sleepAfterUpdate)
-
                         if fp and fp.is_file():
                             fp.unlink()
+
+                        await asyncio.sleep(sleepAfterUpdate)
                 else:
                     log.debug('Unsupported dataset format')
                     await asyncio.sleep(60)

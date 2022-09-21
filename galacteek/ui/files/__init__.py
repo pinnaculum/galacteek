@@ -2383,20 +2383,35 @@ class GCRunnerTab(GalacteekTab):
 
     @ipfsOp
     async def runGc(self, ipfsop):
+        """
+        Run the repo garbage collection process
+
+        Returns the number of objects purged from the erpro.
+
+        :rtype: int
+        """
         self.log.append("GC run, start date: {d}\n".format(d=datetimeIsoH()))
         purgedCn = 0
 
-        async for entry in ipfsop.client.repo.gc():
-            try:
-                cid = entry['Key']['/']
-            except Exception:
-                continue
+        try:
+            async for entry in ipfsop.client.repo.gc():
+                try:
+                    cid = entry['Key']['/']
+                except Exception:
+                    continue
 
-            self.log.append(iGCPurgedObject(cid))
+                self.log.append(iGCPurgedObject(cid))
 
-            purgedCn += 1
-            await ipfsop.sleep(0.08)
+                purgedCn += 1
+                await ipfsop.sleep(0.08)
+        except aioipfs.APIError as err:
+            self.log.append(
+                f'The IPFS daemon gave an error: {err.message}'
+            )
+            return -1
 
         self.log.append("\n")
         self.log.append("GC done, end date: {d}\n".format(d=datetimeIsoH()))
         self.log.append(f'Purged {purgedCn} CIDs')
+
+        return purgedCn

@@ -1,3 +1,4 @@
+from typing import Union
 import aioipfs
 
 from PyQt5.QtWidgets import QApplication
@@ -13,7 +14,6 @@ from galacteek.ipfs.cidhelpers import getCID
 from galacteek.ipfs.cidhelpers import cidDowngrade
 from galacteek.ipfs.mimetype import MIMEType
 from galacteek.ipfs.mimetype import detectMimeType
-from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs.ipfssearch import objectMetadata
 
 from galacteek.crypto.qrcode import IPFSQrDecoder
@@ -26,10 +26,14 @@ class ResourceAnalyzer(QObject):
         self.qrDecoder = IPFSQrDecoder()
 
     @ipfsOp
-    async def __call__(self, ipfsop, pathRef, fetchExtraMetadata=False,
-                       mimeTimeout=15):
+    async def __call__(self, ipfsop, pathRef: Union[IPFSPath, str],
+                       fetchExtraMetadata=False,
+                       statType: list = ['object'],
+                       mimeTimeout=10):
         """
-        :param IPFSPath ipfsPath
+        :param IPFSPath pathRef: path of the resource to analyze
+        :param str statType: list of types of stat calls to perform
+            (object or files)
         """
 
         if isinstance(pathRef, IPFSPath):
@@ -55,34 +59,47 @@ class ResourceAnalyzer(QObject):
                 timeout=mimeTimeout
             )
 
-            statInfo = await ipfsop.objStat(path)
-            if not statInfo or not isinstance(statInfo, dict):
-                log.debug('Stat failed for {path}'.format(
-                    path=path))
-                return mimetype, None
+            if 'object' in statType:
+                statInfo = await ipfsop.objStatInfo(path)
+                if not statInfo:
+                    log.debug('Stat failed for {path}'.format(
+                        path=path))
+                    return mimetype, None
+            elif 'files' in statType:
+                statInfo = await ipfsop.filesStatInfo(ipfsPath.objPath)
+            else:
+                raise ValueError('Invalid stat type')
 
             await ipfsop.sleep()
 
             # Store retrieved information in the metadata store
+            # TODO: use an RDF graph (ideally with automatic purge system)
+
             metaMtype = mimetype.type if mimetype and mimetype.valid else None
-            await self.app.multihashDb.store(
-                path,
-                mimetype=metaMtype,
-                stat=statInfo
-            )
+
+            if 'object' in statType:
+                await self.app.multihashDb.store(
+                    path,
+                    mimetype=metaMtype,
+                    stat=statInfo.stat
+                )
+            elif 'files' in statType:
+                await self.app.multihashDb.store(
+                    path,
+                    mimetype=metaMtype,
+                    filesStat=statInfo.stat
+                )
 
             # Fetch additional metadata in another task
 
-            if fetchExtraMetadata:
+            if fetchExtraMetadata and statInfo is not None:
                 ensure(self.fetchMetadata(path, statInfo))
 
-        if mimetype and mimetype.valid:
-            return mimetype, statInfo
+        return mimetype, statInfo
 
-        return None, None
-
-    async def fetchMetadata(self, path, stat):
-        sInfo = StatInfo(stat)
+    async def fetchMetadata(self, path, sInfo):
+        if sInfo is None:
+            return
 
         cidobj = getCID(sInfo.cid)
         cid = cidDowngrade(cidobj)

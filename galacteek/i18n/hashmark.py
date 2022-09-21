@@ -114,7 +114,7 @@ def iHashmarkInfoToolTipShort(mark):
                     )
 
 
-def iHashmarkInfoToolTip(mark):
+def iHashmarkInfoToolTipOld(mark):
     return QCoreApplication.translate(
         'GalacteekWindow',
         '''
@@ -133,6 +133,28 @@ def iHashmarkInfoToolTip(mark):
                     mark.datecreated,
                     str(mark.source) if mark.source else iUnknown()
                     )
+
+
+def iHashmarkInfoToolTip(uri,
+                         iconSrc,
+                         title,
+                         description,
+                         dateCreated):
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        '''
+            <img src='{0}' width='64' height='64' />
+            <p style='font: "Segoe UI" 12pt'>{1}</p>
+
+            <p>Title: <b>{2}</b></p>
+            <p>Description: <b>{3}</b></p>
+
+            <p>Creation date: <b>{4}</b></p>
+        ''').format(iconSrc,
+                    uri,
+                    title,
+                    description,
+                    dateCreated)
 
 
 def iHashmarksLibraryCountAvailable(count):
@@ -163,4 +185,18 @@ def iHashmarksDatabase():
     return QCoreApplication.translate(
         'GalacteekWindow',
         'Hashmarks database'
+    )
+
+
+def iPrivateHashmarks(uri: str):
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Private hashmarks database'
+    )
+
+
+def iPublicHashmarks(uri: str):
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Public hashmarks database'
     )

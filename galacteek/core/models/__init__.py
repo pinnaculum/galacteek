@@ -43,7 +43,10 @@ class BaseAbstractItem(object):
         return None
 
     def parent(self):
-        return self.parentItem
+        try:
+            return self.parentItem
+        except Exception:
+            pass
 
     def tooltip(self, col):
         return ''
@@ -59,8 +62,14 @@ class BaseAbstractItem(object):
 
 
 class AbstractModel(QAbstractItemModel):
-    def __init__(self, parent=None):
+    extraDataTypes = []
+
+    def __init__(self, parent=None,
+                 extraDataTypes=None):
         super(AbstractModel, self).__init__(parent)
+
+        if isinstance(extraDataTypes, list):
+            self.extraDataTypes += extraDataTypes
 
         self.rootItem = BaseAbstractItem([])
 
@@ -79,13 +88,16 @@ class AbstractModel(QAbstractItemModel):
         specRoles = [
             Qt.DisplayRole,
             Qt.BackgroundRole,
-            Qt.EditRole
+            Qt.ForegroundRole,
+            Qt.EditRole,
+            Qt.FontRole
         ]
 
-        if role in specRoles:
+        if role in specRoles or role in self.extraDataTypes:
             return item.data(index.column(), role)
 
         elif role in range(Qt.UserRole, Qt.UserRole + 16):
+            # No overlap here ?
             return item.userData(index.column(), role)
 
         elif role == Qt.DecorationRole:

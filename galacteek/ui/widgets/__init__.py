@@ -2,7 +2,6 @@ import gc
 import attr
 import functools
 import re
-from rdflib import URIRef
 
 from PyQt5.QtWidgets import QFrame
 from PyQt5.QtWidgets import QPushButton
@@ -65,6 +64,7 @@ from galacteek.config import Configurable
 
 from galacteek import database
 from galacteek.ld.iri import urnParse
+from galacteek.ld.rdf import GraphURIRef
 
 from ..helpers import filesSelectImages
 from ..helpers import getIcon
@@ -500,6 +500,15 @@ class PopupToolButton(QToolButton, URLDragAndDropProcessor):
 
     def setupButton(self):
         pass
+
+    def unflashButton(self):
+        self.setProperty('flash', False)
+        self.app.repolishWidget(self)
+
+    def flashButton(self):
+        self.setProperty('flash', True)
+        self.app.repolishWidget(self)
+        self.app.loop.call_later(2, self.unflashButton)
 
     async def populateMenuAsync(self, menu):
         pass
@@ -1355,26 +1364,32 @@ class SpacingHWidget(QWidget):
 
 
 class OutputGraphSelectorWidget(QWidget):
-    graphUriSelected = pyqtSignal(URIRef)
+    graphUriSelected = pyqtSignal(GraphURIRef)
 
     def __init__(self,
                  uriFilters: list = [],
                  uriShort: bool = True,
+                 urnShortenBy: int = 3,
                  parent=None):
         super().__init__(parent)
 
         self.vl = QHBoxLayout()
         self.setLayout(self.vl)
         self.uriShort = uriShort
+        self.urnCutParts = urnShortenBy
 
         self.combo = QComboBox(self)
         self.combo.currentTextChanged.connect(self.onGraphChanged)
+        self.iconLabel = QLabel(self)
         self.vl.addWidget(self.combo)
+        self.vl.addWidget(self.iconLabel)
 
         ensure(self.analyze(uriFilters))
 
     async def analyze(self, uriFilters):
         for uriRef in self.pronto.graphsUris:
+            # uriRef is a: GraphURIRef
+
             uri = str(uriRef)
 
             if not any(
@@ -1389,7 +1404,8 @@ class OutputGraphSelectorWidget(QWidget):
                 if not urn:
                     continue
 
-                self.combo.addItem(urn.specific_string.parts[-1])
+                self.combo.addItem(
+                    ':'.join(uriRef.urnParts[self.urnCutParts:]))
             else:
                 self.combo.addItem(uri)
 
@@ -1406,7 +1422,10 @@ class OutputGraphSelectorWidget(QWidget):
                                    Qt.UserRole)
 
     def onGraphChanged(self, uri: str):
-        self.graphUriSelected.emit(URIRef(uri))
+        if self.graphUri:
+            self.graphUriSelected.emit(
+                GraphURIRef(self.graphUri)
+            )
 
 
 class AutoHideToolBar(QToolBar):

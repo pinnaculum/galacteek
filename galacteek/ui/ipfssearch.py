@@ -224,7 +224,8 @@ class SearchResultsPage(BaseSearchPage):
 
 class IPFSSearchHandler(QObject):
     resultReady = pyqtSignal(str, str, QVariant)
-    objectStatAvailable = pyqtSignal(str, dict)
+    objectStatAvailable = pyqtSignal(str, object)
+    filesStatAvailable = pyqtSignal(str, object)
 
     filtersChanged = pyqtSignal()
     clear = pyqtSignal()
@@ -423,6 +424,7 @@ class IPFSSearchHandler(QObject):
         mimeType = hit.get('mimetype')
         hitSize = hit.get('size')
         descr = hit.get('description')
+        title = hit.get('title')
 
         ipfsPath = IPFSPath(hitHash, autoCidConv=True)
         if not ipfsPath.valid:
@@ -435,7 +437,7 @@ class IPFSSearchHandler(QObject):
             'path': str(ipfsPath),
             'url': ipfsPath.ipfsUrl,
             'mimetype': mimeType if mimeType else 'application/unknown',
-            'title': html2t(hit.get('title', iUnknown())),
+            'title': html2t(title) if title else iUnknown(),
             'size': hitSize if hitSize else 0,
             'sizeformatted': sizeFormatted,
             'description': html2t(descr) if descr else None,
@@ -494,7 +496,7 @@ class IPFSSearchHandler(QObject):
                             iPath: IPFSPath,
                             hit: dict,
                             mType: str,
-                            stat: dict):
+                            filesStat):
         """
         Store the hashmark in the hashmarks RDF graph
         """
@@ -524,8 +526,6 @@ class IPFSSearchHandler(QObject):
             mimeObj = MIMEType(mimetype)
 
         mimeObj = mType
-        mimeCat = mimeObj.category if \
-            mimeObj and mimeObj.category else 'unknown'
 
         # Even if the search query was empty, always store an empty
         # string so that the group_concat() works
@@ -541,12 +541,12 @@ class IPFSSearchHandler(QObject):
 
         return await addLdHashmark(
             iPath,
-            title=title if title else iNoTitle(),
+            title if title else iNoTitle(),
             descr=descr if descr else iNoDescription(),
             size=hit.get('size', 0),
             score=hit.get('score', 0),
-            mimeType=str(mimeObj),
-            mimeCategory=mimeCat,
+            mimeType=mimeObj,
+            filesStat=filesStat,
             keywordMatch=kwm,
             dateCreated=utcDatetimeIso(),
             referencedBy=refs,
@@ -559,17 +559,19 @@ class IPFSSearchHandler(QObject):
         path = joinIpfs(cid)
 
         try:
-            mType, stat = await self.app.rscAnalyzer(
-                path, fetchExtraMetadata=True)
+            mType, filesStat = await self.app.rscAnalyzer(
+                path, fetchExtraMetadata=True,
+                statType=['files']
+            )
             if stat:
-                self.objectStatAvailable.emit(cid, stat)
+                self.filesStatAvailable.emit(cid, stat)
 
                 # Worth graphing
                 await self.graphHashmark(
                     IPFSPath(path, autoCidConv=True),
                     hit,
                     mType,
-                    stat
+                    filesStat
                 )
         except Exception as err:
             log.debug(f'Fetch stat error for {cid}: {err}')

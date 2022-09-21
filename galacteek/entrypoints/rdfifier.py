@@ -3,7 +3,12 @@ import tarfile
 import io
 import time
 import hashlib
+import os.path
 import os
+import sys
+
+from ptpython.repl import embed
+
 from pathlib import Path
 
 from rdflib import RDF
@@ -11,6 +16,7 @@ from rdflib import Literal
 
 from galacteek import application
 
+from galacteek import ensure
 from galacteek import log
 from galacteek.core import glogger
 from galacteek.core.asynclib import asyncReadFile
@@ -21,17 +27,22 @@ from galacteek.ld import ipsContextUri
 from galacteek.ld.rdf import BaseGraph
 from galacteek.ld.rdf.util import literalDtNow
 from galacteek.ld.rdf.terms import DATASET
+from galacteek.ipfs import ipfsOpFn
+
+from galacteek.ui_console import ptconfig
 
 
-async def rdfifyInput(app, ipfsop, args):
-    outp = Path(args.outpath)
-    outg = BaseGraph()
+app = None
+args = None
 
-    async def yamlLdProcess(fullp: Path):
-        fullp = Path(root).joinpath(inputf)
 
-        log.debug(f'Processing {inputf}')
-        try:
+@ipfsOpFn
+async def yamlLdProcess(ipfsop, fullp: Path):
+    inputf = fullp.name
+
+    log.debug(f'Processing {fullp}')
+    try:
+        async with ipfsop.ldOps() as ld:
             data = await asyncReadFile(str(fullp), mode='rt')
             if not data:
                 log.debug(f'Cannot read {inputf}')
@@ -44,11 +55,23 @@ async def rdfifyInput(app, ipfsop, args):
 
             log.debug(f'{inputf}: built graph size: {len(graph)}')
             return graph
-        except Exception:
-            traceback.print_exc()
+    except Exception:
+        traceback.print_exc()
 
-    async with ipfsop.ldOps() as ld:
-        for path in args.yldpaths:
+
+async def scramble(ipfsop, inputFiles: list, outp: Path):
+    outg = BaseGraph()
+
+    async with ipfsop.ldOps():
+        for path in inputFiles:
+            graph = None
+
+            if Path(str(path)).is_file():
+                graph = await yamlLdProcess(path)
+                if graph:
+                    outg += graph
+                continue
+
             for root, dirs, files in os.walk(path):
                 for inputf in files:
                     graph, fullp = None, Path(root).joinpath(inputf)
@@ -94,37 +117,78 @@ async def rdfifyInput(app, ipfsop, args):
     if not nt:
         return None
 
-    if outp.name.endswith('.tar.gz'):
-        h = hashlib.sha512()
-        revfp = f'{outp}.dsrev'
-        digestfp = f'{outp}.sha512'
+    if outp:
+        if outp.name.endswith('.tar.gz'):
+            h = hashlib.sha512()
+            revfp = f'{outp}.dsrev'
+            digestfp = f'{outp}.sha512'
 
-        tar = tarfile.open(str(outp), mode='w:gz')
-        ntf = io.BytesIO(nt)
+            tar = tarfile.open(str(outp), mode='w:gz')
+            ntf = io.BytesIO(nt)
 
-        info = tarfile.TarInfo(f'dataset/{args.datasetname}.nt')
-        info.mtime = time.time()
-        info.size = len(nt)
-        info.gid = 1000
-        info.uid = 1000
-        info.uname = 'galacteek'
-        info.gname = 'galacteek'
+            info = tarfile.TarInfo(f'dataset/{args.datasetname}.nt')
+            info.mtime = time.time()
+            info.size = len(nt)
+            info.gid = 1000
+            info.uid = 1000
+            info.uname = 'galacteek'
+            info.gname = 'galacteek'
 
-        tar.addfile(info, fileobj=ntf)
-        tar.close()
+            tar.addfile(info, fileobj=ntf)
+            tar.close()
 
-        with open(str(outp), 'rb') as fd:
-            h.update(fd.read())
+            with open(str(outp), 'rb') as fd:
+                h.update(fd.read())
 
-        with open(digestfp, 'w+t') as dfd:
-            dfd.write(h.hexdigest())
+            with open(digestfp, 'w+t') as dfd:
+                dfd.write(h.hexdigest())
 
-        with open(revfp, 'w+t') as revfd:
-            revfd.write(str(args.datasetrev))
+            with open(revfp, 'w+t') as revfd:
+                revfd.write(str(args.datasetrev))
 
-    elif outp.name.endswith('.ttl'):
-        await asyncWriteFile(str(outp), await outg.ttlize(),
-                             mode='w+b')
+        elif outp.name.endswith('.ttl'):
+            await asyncWriteFile(str(outp), await outg.ttlize(),
+                                 mode='w+b')
+    else:
+        print((await outg.ttlize()).decode(),
+              file=sys.stdout)
+
+    return outg
+
+
+async def rdfifyInput(app, args, inputFiles: list = []):
+    ipfsop = app.ipfsOperatorForLoop()
+
+    outp = Path(args.outpath) if args.outpath else None
+
+    if not inputFiles:
+        inputFiles = args.yldpaths
+
+    return await scramble(ipfsop, inputFiles, outp)
+
+
+def rdfify(*paths):
+    global app
+
+    ensure(rdfifyInput(app, args,
+                       inputFiles=[Path(p) for p in paths]))
+
+
+async def runCli(app, ipfsop, args):
+    try:
+        hp = os.path.expanduser("~/.eterna_history")
+
+        await embed(
+            globals=globals(),
+            locals=locals(),
+            return_asyncio_coroutine=True,
+            patch_stdout=True,
+            configure=ptconfig.configure,
+            history_filename=hp
+        )
+    except EOFError:
+        # Stop the loop when quitting the repl. (Ctrl-D press.)
+        pass
 
 
 async def run(app, args):
@@ -134,16 +198,22 @@ async def run(app, args):
     except Exception:
         traceback.print_exc()
     else:
-        await rdfifyInput(app, ipfsop, args)
+        if len(args.yldpaths) > 0:
+            return await rdfifyInput(app, args)
+        else:
+            return await runCli(app, ipfsop, args)
 
     await app.exitApp()
 
 
 def rdfifier():
+    global app
+    global args
+
     t = int(time.time())
     parser = buildArgsParser()
     parser.add_argument(
-        nargs='+',
+        nargs='*',
         dest='yldpaths'
     )
     parser.add_argument(

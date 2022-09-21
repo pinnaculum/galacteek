@@ -35,6 +35,7 @@ from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.appsettings import *
 
 from galacteek.ld.rdf import hashmarks as rdf_hashmarks
+from galacteek.ld.rdf import GraphURIRef
 
 from ..forms import ui_addhashmarkdialog
 from ..forms import ui_iptagsmanager
@@ -54,6 +55,9 @@ from ..i18n import iHashmarkIPTagsEdit
 
 from ..i18n import iAddHashmark
 from ..i18n import iEditHashmark
+
+from ..i18n import iPublicHashmarks
+from ..i18n import iPrivateHashmarks
 
 
 def boldLabelStyle():
@@ -78,7 +82,7 @@ class AddHashmarkDialog(QDialog):
         self.resourceUriRef = URIRef(resourceUrl)
         self.ipfsPath = IPFSPath(resourceUrl)
         self.mimeType = None
-        self.objStat = None
+        self.filesStat = None
 
         self.iconCid = None
         self.schemePreferred = schemePreferred
@@ -109,10 +113,12 @@ class AddHashmarkDialog(QDialog):
 
         self.graphSelector = OutputGraphSelectorWidget(
             uriFilters=[
-                r'urn:ipg:i:love:hashmarks:(main|private|public.*|search)'
+                r'urn:ipg:i:love:hashmarks:(private|public.*|search.*)'
             ],
             parent=self
         )
+        self.graphSelector.graphUriSelected.connect(self.onOutGraphSelect)
+
         self.ui.gSelectorLayout.addWidget(self.graphSelector)
 
         # Add icon selector
@@ -151,12 +157,34 @@ class AddHashmarkDialog(QDialog):
 
     @property
     def graphUri(self):
-        # return self.ui.destGraphUri.currentText()
         return self.graphSelector.graphUri
+
+    def onOutGraphSelect(self, graphUri: GraphURIRef):
+        msg, ico = None, None
+
+        if graphUri.urnLastPart:
+            print(graphUri.urnLastPart)
+            if graphUri.urnLastPart == 'private':
+                msg = iPrivateHashmarks(str(graphUri))
+                ico = ':/share/icons/key-diago.png'
+
+            elif graphUri.urnLastPart.startswith('search'):
+                msg = 'Search room'  # TODO
+            elif graphUri.urnLastPart.startswith('public'):
+                msg = iPublicHashmarks(str(graphUri))
+        if msg:
+            self.ui.outputGraphMessage.setText(f'<b>{msg}</b>')
+
+        if ico:
+            pix = QPixmap.fromImage(QImage(ico))
+            pix = pix.scaledToWidth(32)
+            self.graphSelector.iconLabel.setPixmap(pix)
+        else:
+            self.graphSelector.iconLabel.clear()
 
     @ipfsOp
     async def getHashmark(self, ipfsop):
-        # XXX: need to use ipfsUriRef of the resource uri ref if non ipfs
+        # TODO: need to use ipfsUriRef of the resource uri ref if non ipfs
         # would be nice to have a class that can handle IPFSPath or QUrl
 
         if self.ipfsPath.valid:
@@ -191,8 +219,12 @@ class AddHashmarkDialog(QDialog):
 
         if self.ipfsPath.valid and self.ipfsPath.isIpfs:
             # Only for /ipfs/ (immutable)
-            self.mimeType, self.objStat = await self.app.rscAnalyzer(
-                self.ipfsPath)
+            # TODO: check for non-unixfs objects
+
+            self.mimeType, self.filesStat = await self.app.rscAnalyzer(
+                self.ipfsPath,
+                statType=['files']
+            )
 
     @ipfsOp
     async def initDialog(self, ipfsop):
@@ -318,10 +350,10 @@ class AddHashmarkDialog(QDialog):
                 comment=self.ui.comment.text(),
                 descr=description,
                 iconUrl=iconUrl,
-                imageUriRef=imagePath.ipfsUriRef if imagePath else None,
+                thumbnailUriRef=imagePath.ipfsUriRef if imagePath else None,
                 category=category,
                 mimeType=self.mimeType if self.mimeType else None,
-                objStat=self.objStat,
+                filesStat=self.filesStat,
                 schemePreferred=self.schemePreferred,
                 graphUri=self.graphUri
             )

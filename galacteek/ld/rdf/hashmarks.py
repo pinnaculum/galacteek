@@ -9,7 +9,9 @@ from yarl import URL
 from galacteek.core import utcDatetimeIso
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.mimetype import MIMEType
+from galacteek.ipfs.stat import UnixFsStatInfo
 from galacteek import services
+from galacteek import log
 from galacteek.ld import ipsContextUri
 from galacteek.ld.sparql import querydb
 from galacteek.ld.rdf.terms import HASHMARK
@@ -52,9 +54,10 @@ async def getLdHashmark(resourceUri: URIRef,
 
 async def addLdHashmark(resourceUrl: Union[IPFSPath, str, URIRef],
                         title: str,
-                        descr: str,
+                        descr: str = None,
                         mimeType: MIMEType = None,
                         objStat: dict = None,
+                        filesStat: UnixFsStatInfo = None,
                         size: int = None,
                         score: int = None,
                         comment: str = None,
@@ -66,12 +69,14 @@ async def addLdHashmark(resourceUrl: Union[IPFSPath, str, URIRef],
                         ipfsObjType: str = 'unixfs',
                         iconUrl: Union[str, URL] = None,
                         imageUriRef: URIRef = None,
+                        thumbnailUriRef: URIRef = None,
                         metaLangTag: str = 'en',
                         schemePreferred: str = None,
                         referencedBy: list = [],
                         keywordMatch: list = [''],
                         libertarianId: URIRef = None,
                         **extra):
+    debug = extra.get('debug', False)
     refs = []
     iPath, uRef = None, None
     pronto = services.getByDotName('ld.pronto')
@@ -82,8 +87,6 @@ async def addLdHashmark(resourceUrl: Union[IPFSPath, str, URIRef],
 
     libertarianId = libertarianId if libertarianId else \
         await pronto.getLibertarianId()
-
-    mType = MIMEType(mimeType) if isinstance(mimeType, str) else None
 
     if isinstance(resourceUrl, IPFSPath):
         iPath = resourceUrl
@@ -106,21 +109,31 @@ async def addLdHashmark(resourceUrl: Union[IPFSPath, str, URIRef],
         },
         'keywordMatch': keywordMatch,
 
-        'dateCreated': dateCreated if dateCreated else utcDatetimeIso()
+        'dateCreated': dateCreated.isoformat() if dateCreated else
+        utcDatetimeIso()
     }
 
     if iPath and iPath.valid:
         hmark['@id'] = str(iPath.ipfsUriRef)
         hmark['ipfsPath'] = iPath.objPath
-        hmark['ipfsObjType'] = ipfsObjType
+        # hmark['ipfsObjType'] = ipfsObjType
 
         if isinstance(objStat, dict):
+            # Object stat result
             # hmark['size'] = objStat['CumulativeSize']
             hmark['ipfsObjectStat'] = {
                 '@type': 'IpfsObjectStatResult',
                 '@id': hmark['@id'] + '#ipfsObjectStat'
             }
             hmark['ipfsObjectStat'].update(objStat)
+
+        if isinstance(filesStat, UnixFsStatInfo) and filesStat.stat:
+            # Files stat result
+            hmark['ipfsUnixFsStat'] = {
+                '@type': 'UnixFsStatResult',
+                '@id': hmark['@id'] + '#ipfsUnixFsStat'
+            }
+            hmark['ipfsUnixFsStat'].update(filesStat.stat)
 
     elif uRef:
         # Non-IPFS urls
@@ -129,9 +142,9 @@ async def addLdHashmark(resourceUrl: Union[IPFSPath, str, URIRef],
         # Non-IPFS urls
         hmark['@id'] = str(resourceUrl)
 
-    if mType:
-        hmark['mimeType'] = str(mType)
-        hmark['mimeCategory'] = mType.category
+    if isinstance(mimeType, MIMEType):
+        hmark['mimeType'] = str(mimeType)
+        hmark['mimeCategory'] = mimeType.category
 
     if schemePreferred:
         hmark['schemePreferred'] = schemePreferred
@@ -146,21 +159,26 @@ async def addLdHashmark(resourceUrl: Union[IPFSPath, str, URIRef],
             metaLangTag: comment
         }
 
-    if mType:
-        hmark['mimeType'] = str(mType)
-
     if iconUrl:
         hmark['icon'] = {
-            '@id': iconUrl,
             '@type': 'ImageObject',
-            'url': iconUrl
+            '@id': str(iconUrl),
+            'contentUrl': str(iconUrl)
+            # 'url': str(iconUrl)
         }
 
     if imageUriRef:
         hmark['image'] = {
             '@id': str(imageUriRef),
             '@type': 'ImageObject',
-            'url': str(imageUriRef)
+            'contentUrl': str(imageUriRef)
+        }
+
+    if thumbnailUriRef:
+        hmark['thumbnail'] = {
+            '@id': str(thumbnailUriRef),
+            '@type': 'ImageObject',
+            'contentUrl': str(thumbnailUriRef)
         }
 
     if isinstance(size, int):
@@ -181,19 +199,19 @@ async def addLdHashmark(resourceUrl: Union[IPFSPath, str, URIRef],
     if refs:
         hmark['referencedBy'] = refs
 
-    print(hmark)
-
     for name, v in extra.items():
         hmark[name] = v
 
     hmg = await graph.rdfifyObject(hmark)
-    print((await hmg.ttlize()).decode())
 
-    await graph.guardian.mergeReplace(
-        hmg, graph
-    )
+    if hmg:
+        if debug:
+            print((await hmg.ttlize()).decode())
 
-    return True
+        return await graph.guardian.mergeReplace(hmg, graph)
+    else:
+        log.warning(f'Could not graph: {resourceUrl}')
+        return False
 
 
 async def ldHashmarksByTag(tagUri: URIRef = None,

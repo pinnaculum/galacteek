@@ -31,6 +31,7 @@ from galacteek import services
 from galacteek.core.asynclib import asyncify
 from galacteek.core.ps import KeyListener
 from galacteek.core.ps import makeKeyService
+from galacteek.hashmarks import migrateHashmarksDbToRdf
 
 from galacteek import database
 
@@ -39,13 +40,11 @@ from . import PopupToolButton
 
 from ..helpers import getIcon
 from ..helpers import getIconFromIpfs
-from ..helpers import playSound
 
 from ..i18n import iHashmarksDatabase
 from ..i18n import iSearchHashmarks
 from ..i18n import iSearchHashmarksAllAcross
 from ..i18n import iSearchUseShiftReturn
-# from ..i18n import iHashmarkInfoToolTip
 from ..i18n import iHashmarkSources
 
 
@@ -340,12 +339,8 @@ class HashmarksMenu(QMenu):
             action.data()['path'] for action in self.actions()
         ]
 
-    def exists(self, path):
+    def objectIsRegistered(self, path: str):
         return path in self.objectPaths()
-
-        for action in menu.actions():
-            if action.data()['path'] == path:
-                return action
 
 
 class HashmarkMgrButton(PopupToolButton, _HashmarksCommon,
@@ -380,15 +375,25 @@ class HashmarkMgrButton(PopupToolButton, _HashmarksCommon,
         return services.getByDotName('ld.pronto')
 
     async def onNeedUpdate(self, uri: str):
-        print('need update', uri)
+        # Graph was changed, update the menu
         await self.updateMenu()
 
     def setupMenu(self):
         self.menu.setObjectName('hashmarksMgrMenu')
         self.menu.setToolTipsVisible(True)
 
+        self.migrateAction = QAction(
+            getIcon('hashmarks.png'),
+            'Migrate old database',
+            self.menu,
+            triggered=self.onMigrate
+        )
+
         self.sourcesMenu = QMenu(iHashmarkSources())
         self.sourcesMenu.setIcon(self.icon())
+
+        self.menu.addAction(self.migrateAction)
+        self.menu.addSeparator()
 
         self.menu.addMenu(self.searcher.menu)
         self.menu.addSeparator()
@@ -399,9 +404,12 @@ class HashmarkMgrButton(PopupToolButton, _HashmarksCommon,
         self.popularTagsMenu.aboutToShow.connect(
             partialEnsure(self.onShowPopularTags))
 
-        self.menu.addMenu(self.popularTagsMenu)
-        self.menu.addSeparator()
-        self.app.hmSynchronizer.syncing.connectTo(self.onSynchronizing)
+        # self.menu.addMenu(self.popularTagsMenu)
+        # self.menu.addSeparator()
+        # self.app.hmSynchronizer.syncing.connectTo(self.onSynchronizing)
+
+    def onMigrate(self):
+        ensure(migrateHashmarksDbToRdf())
 
     async def onShowPopularTags(self):
         self.popularTagsMenu.clear()
@@ -483,7 +491,7 @@ class HashmarkMgrButton(PopupToolButton, _HashmarksCommon,
         self.setToolTip(iHashmarksDatabase())
 
         if countAdded > 0:
-            playSound('mime-detected.wav')
+            self.flashButton()
 
     async def linkActivated(self, action):
         try:

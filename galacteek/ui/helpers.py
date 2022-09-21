@@ -74,7 +74,7 @@ def getIcon(iconName):
     return icon
 
 
-def getMimeIcon(mType):
+def getMimeIcon(mType: str):
     app = QApplication.instance()
     mObj = MIMEType(mType)
 
@@ -650,7 +650,7 @@ def objectDiffSummaryShort(changes):
     return markup
 
 
-def pixmapAsBase64Url(pixmap):
+def pixmapAsBase64Url(pixmap, justUrl=False):
     try:
         data = QByteArray()
         buffer = QBuffer(data)
@@ -664,4 +664,7 @@ def pixmapAsBase64Url(pixmap):
     except Exception:
         return None
     else:
-        return f'<img src="{avatarUrl}"></img>'
+        if justUrl is True:
+            return avatarUrl
+        else:
+            return f'<img src="{avatarUrl}"></img>'

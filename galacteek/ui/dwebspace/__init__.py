@@ -844,12 +844,13 @@ class WorkspaceSearch(TabbedWorkspace):
                                         self.onAddSearchTab, default=True)
         action.setShortcut(QKeySequence('Ctrl+s'))
 
-        self.hCenterAction = self.wsAddCustomAction(
-            'hashmarkscenter',
-            getIcon('hashmarks-library.png'),
-            iHashmarksDatabase(),
-            self.onOpenHashmarksCenter
-        )
+        if 0:
+            self.hCenterAction = self.wsAddCustomAction(
+                'hashmarkscenter',
+                getIcon('hashmarks-library.png'),
+                iHashmarksDatabase(),
+                self.onOpenHashmarksCenter
+            )
 
     def onOpenHashmarksCenter(self):
         hashmarksLdCenter = HashmarksCenterWidget(

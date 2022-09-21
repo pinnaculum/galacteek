@@ -77,6 +77,7 @@ from .daemonstats import PeersCountGraphView
 from .camera import CameraController
 from .helpers import *
 from .pinning.pinstatus import RPSStatusButton
+from .hashmarks.search import HashmarksCenterWidget
 from .widgets import AtomFeedsToolbarButton
 from .widgets import PopupToolButton
 from .widgets.hashmarks import HashmarkMgrButton
@@ -749,6 +750,12 @@ class MainWindow(QMainWindow, KeyListener):
                                         pinBrowsed=True))
         self.browseAutopinAction.setShortcutVisibleInContextMenu(True)
 
+        self.hashmarksCenterAction = QAction(
+            getIcon('hashmarks-library.png'),
+            iHashmarksDatabase(),
+            triggered=self.onOpenHashmarksCenter
+        )
+
         self.seedAppImageAction = QAction(
             getIcon('appimage.png'),
             'Seed AppImage',
@@ -1141,6 +1148,7 @@ class MainWindow(QMainWindow, KeyListener):
         self.stack.addWorkspace(self.wspaceMisc)
 
         self.stack.wsAddGlobalAction(self.browseAction, default=True)
+        self.stack.wsAddGlobalAction(self.hashmarksCenterAction, default=False)
         self.stack.activateWorkspaces(False)
 
     def onSeedAppImage(self):
@@ -1148,9 +1156,6 @@ class MainWindow(QMainWindow, KeyListener):
 
     def onClearHistory(self):
         self.app.urlHistory.clear()
-
-    def onOpenHashmarksCenter(self):
-        self.wspaceSearch.hCenterAction.trigger()
 
     def onHashmarkClicked(self, hashmark):
         ensure(self.app.resourceOpener.openHashmark(hashmark))
@@ -1556,6 +1561,22 @@ class MainWindow(QMainWindow, KeyListener):
     def onHelpDonatePatreon(self):
         tab = self.app.mainWindow.addBrowserTab(workspace='@Earth')
         tab.enterUrl(QUrl('https://patreon.com/galacteek'))
+
+    def onOpenHashmarksCenter(self):
+        # TODO: move to a method in TabbedWorkspace ?
+
+        idx, ws = self.stack.currentWorkspace()
+
+        hashmarksLdCenter = HashmarksCenterWidget(self.app.mainWindow)
+
+        ws.wsRegisterTab(
+            hashmarksLdCenter,
+            iHashmarks(),
+            current=True,
+            icon=getIcon('hashmarks-library.png')
+        )
+
+        hashmarksLdCenter.refresh()
 
     def addBrowserTab(self, label='No page loaded', pinBrowsed=False,
                       minProfile=None, current=True,

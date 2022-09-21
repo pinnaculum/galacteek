@@ -104,6 +104,26 @@
           </widget>
          </item>
          <item>
+          <widget class="QToolButton" name="pinAllButton">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Automatically pins visited pages&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="../galacteek.qrc">
+             <normaloff>:/share/icons/pin-curve.png</normaloff>:/share/icons/pin-curve.png</iconset>
+           </property>
+           <property name="iconSize">
+            <size>
+             <width>32</width>
+             <height>32</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item>
           <layout class="QHBoxLayout" name="layoutObjectInfo"/>
          </item>
          <item>
@@ -165,8 +185,8 @@
            </property>
            <property name="minimumSize">
             <size>
-             <width>48</width>
-             <height>48</height>
+             <width>32</width>
+             <height>32</height>
             </size>
            </property>
            <property name="maximumSize">
@@ -203,8 +223,8 @@
            </property>
            <property name="minimumSize">
             <size>
-             <width>48</width>
-             <height>48</height>
+             <width>32</width>
+             <height>32</height>
             </size>
            </property>
            <property name="maximumSize">
@@ -343,26 +363,6 @@
               </size>
              </property>
             </spacer>
-           </item>
-           <item>
-            <widget class="QToolButton" name="pinAllButton">
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Automatically pins visited pages&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="icon">
-              <iconset resource="../galacteek.qrc">
-               <normaloff>:/share/icons/pin-curve.png</normaloff>:/share/icons/pin-curve.png</iconset>
-             </property>
-             <property name="iconSize">
-              <size>
-               <width>32</width>
-               <height>32</height>
-              </size>
-             </property>
-            </widget>
            </item>
           </layout>
          </item>

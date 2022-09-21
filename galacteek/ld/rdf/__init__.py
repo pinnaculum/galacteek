@@ -8,6 +8,7 @@ from rdflib import Graph
 from rdflib import ConjunctiveGraph
 from rdflib import BNode
 from rdflib import Namespace
+from rdflib import URIRef
 
 from galacteek import log
 from galacteek import AsyncSignal
@@ -18,6 +19,7 @@ from galacteek.core.ps import hubLdPublish
 from galacteek.core.ps import makeKeyService
 from galacteek.ld import asyncjsonld as jsonld
 from galacteek.ld import gLdDefaultContext
+from galacteek.ld.iri import urnParse
 
 
 # Default NS bindings used by BaseGraph
@@ -46,6 +48,30 @@ def purgeBlank(graph: Graph):
             log.debug(f'BNode purge object: {s}:{o} ({p})')
 
     return cn
+
+
+class GraphURIRef(URIRef):
+    """
+    Add some methods to analyze the urn associated with the a graph
+    """
+
+    @property
+    def urn(self):
+        return urnParse(str(self))
+
+    @property
+    def urnParts(self):
+        try:
+            return str(self.urn.specific_string).split(':')
+        except Exception:
+            pass
+
+    @property
+    def urnLastPart(self):
+        try:
+            return self.urnParts[-1]
+        except Exception:
+            pass
 
 
 class Common(object):

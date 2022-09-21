@@ -29,36 +29,33 @@ the sponsor page. Thanks!
 How to use
 ----------
 
-The toolbar at the top has the main controls.
-In the statusbar at the bottom, clicking on the
+The toolbar at the bottom has the main controls.
+
+In the left toolbar, clicking on the
 *pyramid* icon will open a toolbar that can be used
 to create dynamic content.
 
-**galacteek** uses different workspaces:
+The first button in the bottom toolbar controls access to the
+various workspace (clicking on that button will make the workspaces
+toolbar stay visible):
 
-- **Files**: this workspace is for things related to
-file management, import, sharing, and browsing (using
+- **Files**: Import, share, and browse files (using
 the UnixFS browser). The filemanager allows you to import
 files in the IPFS repository from your local filesystem.
-For sharing files, check out the
-[filesharing page in the manual](manual:/filesharing.html).
 
-- **Earth** workspace: dedicated to browsing. All content
-tagged with @Earth is automatically opened here.
-
-- **Messenger** workspace: allows you to send messages with the
-BitMessage protocol.
+- **Earth** workspace: dedicated to browsing.
 
 - **Peers**: lists the peers you're connected with, and contains
 tools to communicate, like the encrypted chat and the Atom
 feeds reader
 
-- **Search**: this workspace is dedicated to searching content
-on the dweb.
+- **Search**: this workspace is for searching content on the dweb
 
-- **Editing**: from this workspace you can edit files and write
-blog posts
+- **Editing**: Edit files and write blog posts
 
 - **Multimedia**: workspace for the multimedia player
+
+- **Messenger** workspace: allows you to send messages with the
+BitMessage protocol.
 
 Be sure to check the [manual](manual:/) for more information.

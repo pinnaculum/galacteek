@@ -1,6 +1,6 @@
 envs:
   default:
-    defaultWebProfile: 'ipfs'
+    defaultWebProfile: 'anonymous'
 
     # Web profiles definition
     webProfiles:

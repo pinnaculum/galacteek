@@ -120,7 +120,7 @@ class BaseProfile(QWebEngineProfile, KeyListener):
         if not scriptsList:
             return
 
-        if styleConfig and isinstance(self.webStyles, dict):
+        if isinstance(styleConfig, DictConfig) and self.webStyles:
             # Style
             # TODO: day/night switching
 

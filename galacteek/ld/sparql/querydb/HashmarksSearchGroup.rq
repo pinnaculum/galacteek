@@ -2,21 +2,35 @@ PREFIX gs: <ips://galacteek.ld/>
 PREFIX h: <ips://galacteek.ld/Hashmark#>
 
 SELECT ?uri ?mimeType ?mimeCategory ?title
-		 ?dateCreated ?descr ?kwords {
+		 ?dateCreated ?descr ?kwords
+		 ?thumbnailUrl {
 {
 		SELECT ?descr ?title ?mimeType ?mimeCategory ?dateCreated
+					 ?thumbnailUrl
 					 ?uri (GROUP_CONCAT(?m) as ?kwords)
 		WHERE {
-				?uri a gs:Hashmark ;
-					h:mimeType ?mimeType ;
-					h:mimeCategory ?mimeCategory ;
-					h:dateCreated ?dateCreated ;
-					h:title ?title ;
-					h:description ?descr ;
-					h:keywordMatch ?m .
+				?uri a gs:Hashmark .
 
-				%s
-				%s
+				?uri h:dateCreated ?dateCreated .
+				?uri h:title ?title .
+
+				?uri h:keywordMatch ?m .
+
+				OPTIONAL { ?uri h:description ?descr . } .
+				OPTIONAL { ?uri h:mimeType ?mimeType . } .
+				OPTIONAL { ?uri h:mimeCategory ?mimeCategory . } .
+
+				OPTIONAL {
+					?uri gs:icon ?icon .
+					?icon gs:contentUrl ?iconUrl .
+				} .
+				OPTIONAL {
+					?uri gs:thumbnail ?thumbnail .
+					?thumbnail gs:contentUrl ?thumbnailUrl .
+				} .
+
+				FILTER regex(str(?title), str(?searchQuery), "i")
+				FILTER regex(str(?mimeCategory), str(?mimeCategoryQuery), "i")
 
 				FILTER (langMatches(lang(?title), str(?langTagMatch)) )
 
@@ -24,6 +38,5 @@ SELECT ?uri ?mimeType ?mimeCategory ?title
 		GROUP BY ?uri
 		ORDER BY DESC(?dateCreated)
 }
-}                                                                     
+}
 
-LIMIT %s

@@ -2,10 +2,18 @@ envs:
   default:
     styles:
       webEngine:
-        - '@type': 'QtWebEngineTheme'
+        - '@type': 'QtWebEngineStyle'
 
-          themeName: 'eterna'
+          styleName: 'eterna'
           displayName:
             en: 'eterna'
 
           src: 'qrc:/share/styles/eterna/webengine.css'
+
+        - '@type': 'QtWebEngineStyle'
+
+          styleName: 'mercury'
+          displayName:
+            en: 'Mercury'
+
+          src: 'qrc:/share/styles/mercury/webengine.css'

@@ -27,7 +27,6 @@ from galacteek import logUser
 from galacteek.crypto.qrcode import IPFSQrDecoder
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
-from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs.mimetype import MIMEType
 
 from .widgets.pinwidgets import PinObjectButton
@@ -301,10 +300,8 @@ class ImageView(QScrollArea):
             if mimeType is None:
                 raise Exception('Failed to load image')
 
-            stat = StatInfo(statInfo)
-
-            if mimeType.isAnimation:
-                fp = self.app.tempDir.filePath(stat.cid)
+            if statInfo and mimeType.isAnimation:
+                fp = self.app.tempDir.filePath(statInfo.cid)
                 tmpFile = QFile(fp)
 
                 if not tmpFile.exists() and tmpFile.open(QFile.ReadWrite):
@@ -333,7 +330,6 @@ class ImageView(QScrollArea):
 
             self.currentImgPath = IPFSPath(imgPath)
             self.imageLoaded.emit(self.currentImgPath, mimeType)
-
         except Exception:
             logUser.debug('Failed to load image: {path}'.format(
                 path=imgPath))

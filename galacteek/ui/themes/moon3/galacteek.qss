@@ -1149,6 +1149,11 @@ QToolButton {
     margin-right: 5px;
 }
 
+QToolButton[flash=true] {
+    background-color: lightsteelblue;
+}
+    
+
 QToolButton[popupMode="1"] { /* only for MenuButtonPopup */
  padding-right: 20px; /* make way for the popup button */
  border: 1px #76797C;

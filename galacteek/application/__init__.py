@@ -685,7 +685,7 @@ class GalacteekApplication(QApplication):
         # By starting the top service, all subservices will be started
 
         async with asyncSigWait(self.s.sServiceStarted,
-                                timeout=10.0):
+                                timeout=12.0):
             await self.s.start()
 
         log.debug('Application service is started now')

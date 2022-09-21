@@ -171,9 +171,18 @@ class SparQLBaseItem(BaseAbstractItem):
 
 class SparQLItemModel(AbstractModel,
                       SparQLQueryRunner):
-    def __init__(self, graphUri='urn:ipg:i', graph=None):
+    def __init__(self, graphUri='urn:ipg:i', graph=None,
+                 columns=['uri']):
         AbstractModel.__init__(self)
         SparQLQueryRunner.__init__(self, graphUri=graphUri, graph=graph)
+
+        self.colList = columns
+
+        self.rootItem = SparQLBaseItem(self.colList)
+
+    def clearModel(self):
+        self.rootItem = SparQLBaseItem(self.colList)
+        self.modelReset.emit()
 
     async def itemFromResult(self, result, parent):
         return SparQLBaseItem(data=list(result), parent=parent)
