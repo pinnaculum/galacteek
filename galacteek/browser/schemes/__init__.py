@@ -46,8 +46,6 @@ from galacteek.config import cGet
 
 from galacteek.ipdapps import dappsRegisterSchemes
 
-from galacteek.qt.webengine import webEngine515
-
 
 # Core schemes (the URL schemes your children will soon teach you how to use)
 SCHEME_DWEB = 'dweb'
@@ -101,13 +99,8 @@ SCHEME_CHROMIUM = 'chromium'
 
 # Default flags used by declareUrlScheme()
 
-if webEngine515() is True:
-    defaultSchemeFlags = QWebEngineUrlScheme.SecureScheme | \
-        QWebEngineUrlScheme.ViewSourceAllowed | \
-        QWebEngineUrlScheme.CorsEnabled
-else:
-    defaultSchemeFlags = QWebEngineUrlScheme.SecureScheme | \
-        QWebEngineUrlScheme.ViewSourceAllowed
+defaultSchemeFlags = QWebEngineUrlScheme.SecureScheme | \
+    QWebEngineUrlScheme.ViewSourceAllowed
 
 
 defaultLocalSchemeFlags = defaultSchemeFlags | QWebEngineUrlScheme.LocalScheme
@@ -199,7 +192,7 @@ def initializeSchemes():
     declareUrlScheme(
         SCHEME_DWEB,
         syntax=QWebEngineUrlScheme.Syntax.Path,
-        flags=serviceWorkersFlags
+        flags=serviceWorkersFlags | QWebEngineUrlScheme.CorsEnabled
     )
 
     declareUrlScheme(
@@ -217,13 +210,13 @@ def initializeSchemes():
     declareUrlScheme(
         SCHEME_IPFS,
         syntax=QWebEngineUrlScheme.Syntax.Host,
-        flags=serviceWorkersFlags
+        flags=serviceWorkersFlags | QWebEngineUrlScheme.CorsEnabled
     )
 
     declareUrlScheme(
         SCHEME_IPNS,
         syntax=QWebEngineUrlScheme.Syntax.Host,
-        flags=serviceWorkersFlags
+        flags=serviceWorkersFlags | QWebEngineUrlScheme.CorsEnabled
     )
 
     declareUrlScheme(
@@ -242,13 +235,14 @@ def initializeSchemes():
         SCHEME_IPID,
         syntax=QWebEngineUrlScheme.Syntax.Host,
         flags=defaultSchemeFlags |
-        QWebEngineUrlScheme.ContentSecurityPolicyIgnored
+        QWebEngineUrlScheme.ContentSecurityPolicyIgnored |
+        QWebEngineUrlScheme.CorsEnabled
     )
 
     declareUrlScheme(
         SCHEME_I,
         syntax=QWebEngineUrlScheme.Syntax.Path,
-        flags=defaultSchemeFlags
+        flags=defaultSchemeFlags | QWebEngineUrlScheme.CorsEnabled
     )
 
     declareUrlScheme(

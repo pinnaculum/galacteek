@@ -7,6 +7,7 @@ import traceback
 from pathlib import Path
 from datetime import datetime
 from yaml import load
+from rdflib import URIRef
 
 from galacteek import log
 from galacteek import AsyncSignal
@@ -23,6 +24,7 @@ from galacteek.core.ipfsmarks import IPFSMarks
 from galacteek.core.asynclib.fetch import httpFetch
 from galacteek.ipfs.mimetype import MIMEType
 from galacteek.ipfs import ipfsOpFn
+from galacteek.ld.rdf.hashmarks import getLdHashmark
 from galacteek.ld.rdf.hashmarks import addLdHashmark
 
 
@@ -168,6 +170,10 @@ async def migrateHashmarksDbToRdf(ipfsop):
             if ip and ip.valid:
                 mType, fStatInfo = await app.rscAnalyzer(
                     str(url), statType=['files'])
+
+            exists = await getLdHashmark(URIRef(str(url)))
+            if exists:
+                continue
 
             result = await addLdHashmark(
                 url,

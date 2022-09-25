@@ -5,19 +5,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.5.8] - 2022-09-14
+## [0.5.8] - 2022-09-24
 
 ### Added
 
+- browser: Monkeypatch fetch() to support loading IPFS objects natively
+  without any JS requirements
+- Interceptor: add http://domain.eth to ens://domain.eth redirection
 - Add the ips:// URL scheme (renders IPS JSON-LD schemas)
 - Add a UI action to view IPS schemas
 - Implement intelligent RDF tags
-- pronto: support for subconjunctive graphs ^^
+- pronto: support for subconjunctive graphs (parent store)
 - pubsub sniffer: nicer UI (add topic filter and max messages widgets)
 
 ### Changed
 
-- Hashmarks: use RDF storage
+- Hashmarks: use RDF storage (old hashmarks db is deprecated)
+- js-ipfs-http-client: upgrade to v49.0.2
 
 ### Fixed
 

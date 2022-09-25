@@ -14,11 +14,16 @@ SELECT ?uri ?mimeType ?mimeCategory ?title
 				?uri h:dateCreated ?dateCreated .
 				?uri h:title ?title .
 
-				?uri h:keywordMatch ?m .
+				OPTIONAL {
+					?uri h:keywordMatch ?m .
+				} .
 
 				OPTIONAL { ?uri h:description ?descr . } .
 				OPTIONAL { ?uri h:mimeType ?mimeType . } .
-				OPTIONAL { ?uri h:mimeCategory ?mimeCategory . } .
+				OPTIONAL {
+					?uri h:mimeCategory ?mimeCategory .
+					FILTER regex(str(?mimeCategory), str(?mimeCategoryQuery), "i")
+				} .
 
 				OPTIONAL {
 					?uri gs:icon ?icon .
@@ -30,10 +35,8 @@ SELECT ?uri ?mimeType ?mimeCategory ?title
 				} .
 
 				FILTER regex(str(?title), str(?searchQuery), "i")
-				FILTER regex(str(?mimeCategory), str(?mimeCategoryQuery), "i")
 
 				FILTER (langMatches(lang(?title), str(?langTagMatch)) )
-
 		}
 		GROUP BY ?uri
 		ORDER BY DESC(?dateCreated)

@@ -1,15 +1,20 @@
 PREFIX gs: <ips://galacteek.ld/>
 PREFIX h: <ips://galacteek.ld/Hashmark#>
+PREFIX rprefs: <ips://galacteek.ld/ResourcePreferences#>
 
 SELECT ?uri ?category ?descr ?title
        ?comment
        ?schemePreferred
        ?iconUrl ?icon
        ?mimeType ?mimeCategory ?dateCreated
+       ?prefsWebProfile
+       ?prefsSchemePreferred
+       ?prefsInQuickAccessDock
 WHERE {
   ?uri a gs:Hashmark .
 
-  ?uri h:dateCreated ?dateCreated .
+  OPTIONAL { ?uri h:dateCreated ?dateCreated . } .
+
   ?uri h:title ?title .
   ?uri h:description ?descr .
 
@@ -20,17 +25,27 @@ WHERE {
   OPTIONAL { ?uri h:schemePreferred ?schemePreferred . } .
   OPTIONAL { ?uri gs:url ?url . } .
 
+  # Icon
   OPTIONAL { 
     ?uri gs:icon ?icon .
-    ?icon gs:url ?iconUrl .
+    ?icon gs:contentUrl ?iconUrl .
   } .
 
+  # Resource preferences
+  ?uri h:resourcePrefs ?prefs .
+  ?prefs rprefs:inQuickAccessDock ?prefsInQuickAccessDock .
+
+  OPTIONAL {
+    ?prefs rprefs:useWebProfile ?prefsWebProfile .
+    ?prefs rprefs:schemePreferred ?prefsSchemePreferred .
+  } .
+
+  # Thumbnail
   OPTIONAL { 
-    ?uri gs:image ?icon .
-    ?icon gs:url ?iconUrl .
+    ?uri gs:thumbnail ?icon .
+    ?icon gs:contentUrl ?thumbnailUrl .
   } .
 
-  FILTER regex(str(?title), str(?titleSearch), "i")
   FILTER (langMatches(lang(?title), "*") )
 }
 

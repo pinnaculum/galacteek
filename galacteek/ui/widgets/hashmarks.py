@@ -26,17 +26,17 @@ from PyQt5.QtGui import QKeySequence
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek import ensure
 from galacteek import partialEnsure
-from galacteek import AsyncSignal
 from galacteek import services
 from galacteek.core.asynclib import asyncify
 from galacteek.core.ps import KeyListener
-from galacteek.core.ps import makeKeyService
 from galacteek.hashmarks import migrateHashmarksDbToRdf
 
 from galacteek import database
 
 from . import GMediumToolButton
 from . import PopupToolButton
+
+from galacteek.ld.rdf.watch import GraphActivityListener
 
 from ..helpers import getIcon
 from ..helpers import getIconFromIpfs
@@ -62,8 +62,8 @@ class HashmarkToolButton(GMediumToolButton):
 
         self._hashmark = mark
 
-    async def hashmark(self):
-        # ??
+    @property
+    def hashmark(self):
         return self._hashmark
 
     def mousePressEvent(self, event):
@@ -245,8 +245,6 @@ class HashmarksSearcher(PopupToolButton, _HashmarksCommon):
 
     @asyncify
     async def searchInCatalog(self, text):
-        from galacteek.core.iptags import ipTagsRFind
-
         resultsMenu = QMenu(text, self.menu)
         resultsMenu.setToolTipsVisible(True)
         resultsMenu.setObjectName('hashmarksSearchMenu')
@@ -261,13 +259,6 @@ class HashmarksSearcher(PopupToolButton, _HashmarksCommon):
 
         showMax = 128
         added = 0
-
-        tags = ipTagsRFind(text)
-        if 0:
-            if len(tags) > 0:
-                await database.hashmarksByTags(
-                    tags, defaultPlanet=False
-                )
 
         for hashmark in await searchLdHashmarks(text):
             await asyncio.sleep(0)
@@ -311,26 +302,8 @@ class HashmarksSearcher(PopupToolButton, _HashmarksCommon):
             traceback.print_exc()
 
 
-class HashmarksGraphListener(KeyListener):
-    psListenKeys = [
-        makeKeyService('ld', 'pronto')
-    ]
-
-    def __init__(self):
-        super().__init__()
-
-        self.asNeedUpdate = AsyncSignal(str)
-
-    async def event_g_services_ld_pronto(self, key, message):
-        event = message['event']
-
-        if event['type'] == 'GraphUpdateEvent':
-            graphUri = event.get('graphUri')
-
-            if not graphUri.startswith('urn:ipg:i:love:hashmarks'):
-                return
-
-            await self.asNeedUpdate.emit(graphUri)
+class HashmarksGraphListener(GraphActivityListener):
+    urisWatchList = ['urn:ipg:i:love:hashmarks']
 
 
 class HashmarksMenu(QMenu):
@@ -359,6 +332,7 @@ class HashmarkMgrButton(PopupToolButton, _HashmarksCommon,
         self.lock = aiorwlock.RWLock()
 
         self.gListener = HashmarksGraphListener()
+
         self.gListener.asNeedUpdate.connectTo(self.onNeedUpdate)
 
         self.setObjectName('hashmarksMgrButton')
@@ -376,6 +350,7 @@ class HashmarkMgrButton(PopupToolButton, _HashmarksCommon,
 
     async def onNeedUpdate(self, uri: str):
         # Graph was changed, update the menu
+
         await self.updateMenu()
 
     def setupMenu(self):
@@ -492,6 +467,8 @@ class HashmarkMgrButton(PopupToolButton, _HashmarksCommon,
 
         if countAdded > 0:
             self.flashButton()
+
+        self.flashButton()
 
     async def linkActivated(self, action):
         try:

@@ -76,7 +76,9 @@ class HashmarkItem(SparQLBaseItem):
 
     @property
     def dateCreated(self):
-        return self.itemData.get('dateCreated').toPython()
+        dc = self.itemData.get('dateCreated')
+        if dc:
+            return dc.toPython()
 
     @property
     def description(self):
@@ -117,12 +119,14 @@ class HashmarkItem(SparQLBaseItem):
                         justUrl=True
                     )
 
+            dc = self.dateCreated
+
             return iHashmarkInfoToolTip(
                 self.uri,
                 icon,
                 self.title,
                 self.description,
-                self.dateCreated.isoformat(sep=' ', timespec='seconds')
+                dc.isoformat(sep=' ', timespec='seconds') if dc else ''
             )
 
     def data(self, column: int, role):

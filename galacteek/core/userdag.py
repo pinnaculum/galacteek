@@ -11,7 +11,6 @@ from galacteek import ensure
 from galacteek import AsyncSignal
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.paths import posixIpfsPath
-from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs.cidhelpers import ipnsKeyCidV1
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import joinIpns
@@ -271,11 +270,10 @@ class UserWebsite:
                     continue
 
                 try:
-                    mType, stat = await self._rscAnalyzer(path)
+                    mType, statInfo = await self._rscAnalyzer(path)
                 except:
                     continue
 
-                statInfo = StatInfo(stat)
                 if not statInfo.valid:
                     continue
 

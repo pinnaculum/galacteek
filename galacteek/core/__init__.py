@@ -78,7 +78,7 @@ def pkgResourcesRscFilename(pkg, rscName):
         return pkg_resources.resource_filename(pkg, rscName)
 
 
-def readQrcTextFile(path):
+def readQrcTextFile(path: str):
     try:
         qFile = QFile(path)
         qFile.open(QFile.ReadOnly)
@@ -88,7 +88,7 @@ def readQrcTextFile(path):
         pass
 
 
-def readQrcFileRaw(path):
+def readQrcFileRaw(path: str):
     try:
         qFile = QFile(path)
         qFile.open(QFile.ReadOnly)

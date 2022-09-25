@@ -131,7 +131,7 @@ class AddHashmarkDialog(QDialog):
         # Img
         self.imageSelector = ImageSelector(parent=self)
 
-        self.ui.formLayout.insertRow(8, QLabel('Image'),
+        self.ui.formLayout.insertRow(8, QLabel('Thumbnail'),
                                      self.imageSelector)
 
         regexp1 = QRegExp(r"[A-Za-z0-9/\-]+")  # noqa
@@ -228,7 +228,7 @@ class AddHashmarkDialog(QDialog):
 
     @ipfsOp
     async def initDialog(self, ipfsop):
-        await self.fillCategories()
+        # await self.fillCategories()
 
         if not self.ipfsPath.valid:
             # TODO: rename self.resourceUrl
@@ -351,7 +351,6 @@ class AddHashmarkDialog(QDialog):
                 descr=description,
                 iconUrl=iconUrl,
                 thumbnailUriRef=imagePath.ipfsUriRef if imagePath else None,
-                category=category,
                 mimeType=self.mimeType if self.mimeType else None,
                 filesStat=self.filesStat,
                 schemePreferred=self.schemePreferred,

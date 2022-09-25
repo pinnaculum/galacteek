@@ -157,9 +157,9 @@ The URL scheme is the following::
 Where *ips-domain* is the IPS domain name (which is equivalent
 to the name of the IPNS key pointing to the schemas).
 
-Examples::
+Examples:
 
-- `ips://galacteek.ld <ips://galacteek.ld>`_
+- `ips://galacteek.ld/ <ips://galacteek.ld/>`_
 - `ips://galacteek.ld/Article <ips://galacteek.ld/Article>`_
 - `ips://galacteek.ld/Tag <ips://galacteek.ld/Article>`_
 
@@ -252,7 +252,7 @@ prontog:/
 ^^^^^^^^^
 
 The *prontog* URL scheme gives you access to the *pronto* RDF
-graph exports (in *turtle* (ttl) or *XML* formats)::
+graph exports (in *turtle* (ttl) or *XML* formats):
 
 - `prontog:/urn:ipg:i <prontog:/urn:ipg:i>`_
 - `prontog:/urn:ipg:h0 <prontog:/urn:ipg:h0>`_

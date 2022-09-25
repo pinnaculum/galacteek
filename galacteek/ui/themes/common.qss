@@ -76,6 +76,10 @@ QToolBar#qaToolBar QToolButton::hover {
     padding: 5px;
 }
 
+QToolBar#workspacesToolBar {
+    spacing: 0px;
+}
+
 QToolButton#pinObjectButton {
     qproperty-iconSize: 48px;
 }

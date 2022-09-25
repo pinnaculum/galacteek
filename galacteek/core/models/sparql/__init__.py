@@ -4,6 +4,8 @@ from rdflib.plugins.sparql import prepareQuery
 
 from PyQt5.QtCore import QAbstractListModel
 from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QMimeData
+from PyQt5.QtCore import QUrl
 
 from galacteek import log
 from galacteek import ensure
@@ -15,6 +17,7 @@ from galacteek.dweb.channels import GAsyncObject
 
 
 SubjectUriRole = Qt.UserRole
+SubjectRawUriRefRole = Qt.UserRole + 1
 
 
 class SparQLQueryRunner(GAsyncObject):
@@ -164,7 +167,8 @@ class SparQLBaseItem(BaseAbstractItem):
             idata = list(self.itemData)[column]
 
             # TODO: handle rdflib Literals
-            return str(idata)
+            if role == Qt.DisplayRole:
+                return str(idata)
         except Exception:
             return None
 
@@ -183,6 +187,38 @@ class SparQLItemModel(AbstractModel,
     def clearModel(self):
         self.rootItem = SparQLBaseItem(self.colList)
         self.modelReset.emit()
+
+    def flags(self, index):
+        if not index.isValid():
+            return Qt.NoItemFlags
+
+        return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsDragEnabled
+
+    def mimeData(self, indexes):
+        # Feed the first URI we find
+
+        mimedata = QMimeData()
+
+        for idx in indexes:
+            item = self.getItem(idx)
+            if not item:
+                continue
+
+            main = item.data(0, SubjectUriRole)
+
+            if isinstance(main, str):
+                url = QUrl(main)
+
+                if url.isValid():
+                    mimedata.setUrls([url])
+
+                    # Remove if we want to look at sibling indexes
+                    break
+
+        return mimedata
+
+    def supportedDragActions(self):
+        return Qt.CopyAction | Qt.LinkAction | Qt.MoveAction
 
     async def itemFromResult(self, result, parent):
         return SparQLBaseItem(data=list(result), parent=parent)

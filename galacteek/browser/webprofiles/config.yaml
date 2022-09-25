@@ -82,7 +82,7 @@ envs:
 
         scripts:
           - type: 'qrc'
-            path: ':/share/js/jquery-3.6.0.js'
+            path: ':/share/js/jquery-3.6.0.min.js'
             name: 'jquery'
 
         fonts:

@@ -155,12 +155,13 @@ class DwebCraftingWidget(QWidget, Configurable):
         self.setMaximumHeight(72)
 
         self.toolbarWs.setSizePolicy(
-            QSizePolicy.Maximum,
+            QSizePolicy.MinimumExpanding,
             QSizePolicy.Expanding
         )
 
         self.toolbarMisc.setSizePolicy(
-            QSizePolicy.Maximum,
+            # QSizePolicy.Maximum,
+            QSizePolicy.Minimum,
             QSizePolicy.Expanding
         )
 

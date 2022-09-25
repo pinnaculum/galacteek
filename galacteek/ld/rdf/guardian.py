@@ -11,6 +11,7 @@ from galacteek import log
 from galacteek import cached_property
 
 from galacteek.ipfs import ipfsOp
+from galacteek.ld.rdf import BaseGraph
 
 
 @attr.s(auto_attribs=True)
@@ -259,7 +260,7 @@ class GraphGuardian:
 
         return residue
 
-    async def mergeReplace(self, graph: Graph, dst: Graph, debug=False):
+    async def mergeReplace(self, graph: Graph, dst: BaseGraph, debug=False):
         try:
             for s, p, o in graph:
                 dst.remove((s, p, None))

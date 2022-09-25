@@ -1,5 +1,6 @@
 import re
 from galacteek.core.asynclib import asyncReadFile
+from galacteek.core import readQrcTextFile
 from PyQt5.QtWebEngineWidgets import QWebEngineScript
 from PyQt5.QtCore import QFile
 from PyQt5.QtCore import QUrl
@@ -39,32 +40,46 @@ def scriptFromQFile(name: str, rscPath: str):
         return None
 
 
-ipfsInjScript = '''
-window.ipfs = window.IpfsHttpClient('{host}', '{port}');
-'''
-
-
 def ipfsClientScripts(connParams):
-    scripts = []
     jsFile = QFile(':/share/js/ipfs-http-client/index.min.js')
     if not jsFile.open(QFile.ReadOnly):
-        return
+        return []
+
+    ipfsInjTemplate = readQrcTextFile(':/share/js/ipfs/window-ipfs.js')
+
+    ipfsInjTemplate = re.sub(
+        '@HOST@',
+        connParams.host,
+        ipfsInjTemplate
+    )
+
+    ipfsInjTemplate = re.sub(
+        '@API_PORT@',
+        connParams.apiPort,
+        ipfsInjTemplate
+
+    )
+
+    ipfsInjTemplate = re.sub(
+        '@GATEWAY_URL@',
+        str(connParams.gatewayUrl).rstrip('/'),
+        ipfsInjTemplate
+    )
 
     scriptJsIpfs = QWebEngineScript()
     scriptJsIpfs.setName('ipfs-http-client')
 
     libCode = jsFile.readAll().data().decode('utf-8')
     libCode += "\n"
-    libCode += ipfsInjScript.format(
-        host=connParams.host,
-        port=connParams.apiPort)
+    libCode += ipfsInjTemplate
+    libCode += "\n"
 
     scriptJsIpfs.setSourceCode(libCode)
     scriptJsIpfs.setWorldId(QWebEngineScript.MainWorld)
     scriptJsIpfs.setInjectionPoint(QWebEngineScript.DocumentCreation)
     scriptJsIpfs.setRunsOnSubFrames(True)
-    scripts.append(scriptJsIpfs)
-    return scripts
+
+    return [scriptJsIpfs]
 
 
 w3ScriptHttp = '''

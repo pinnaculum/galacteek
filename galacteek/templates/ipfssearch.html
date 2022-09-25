@@ -160,7 +160,7 @@
           document.getElementById('statusmessage').innerHTML = ""
         })
 
-        window.ipfssearch.objectStatAvailable.connect(function(cid, stat) {
+        window.ipfssearch.filesStatAvailable.connect(function(cid, stat) {
           var element = document.getElementById(cid)
           if (element) {
             element.style.display = 'block'

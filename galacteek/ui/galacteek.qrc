@@ -154,6 +154,7 @@
     <file>../../share/icons/pin-zoom.png</file>
     <file>../../share/icons/zoom-in.png</file>
     <file>../../share/icons/zoom-out.png</file>
+    <file>../../share/js/ipfs/window-ipfs.js</file>
     <file>../../share/js/ipfs-http-client/index.min.js</file>
     <file>../../share/static/fonts/Montserrat-Regular.woff2</file>
     <file>../../share/icons/quit.png</file>
@@ -283,10 +284,6 @@
 
   <qresource>
     <file>../../galacteek/ui/themes/chloride/galacteek.qss</file>
-  </qresource>
-
-  <qresource prefix="/">
-      <file>../../share/styles/eterna/webengine.css</file>
   </qresource>
 
   <qresource>

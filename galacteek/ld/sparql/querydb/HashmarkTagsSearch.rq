@@ -14,4 +14,6 @@ WHERE {
     ?uri gs:icon ?icon .
     ?icon gs:url ?iconUrl .
   } .
+
+  OPTIONAL { ?uri h:schemePreferred ?schemePreferred . } .
 }

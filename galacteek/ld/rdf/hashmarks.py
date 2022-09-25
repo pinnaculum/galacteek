@@ -26,13 +26,15 @@ def getGraph(graphUri: str):
     return pronto.graphByUri(graphUri)
 
 
-async def getLdHashmark(resourceUri: URIRef,
+async def getLdHashmark(resourceUri: Union[URIRef, str],
                         graphUri: str = TOP_HASHMARKS_GRAPH_URI):
     graph = getGraph(graphUri)
+    subj = resourceUri if isinstance(resourceUri, URIRef) else\
+        URIRef(str(resourceUri))
 
     # TODO: async
     obj = graph.value(
-        subject=resourceUri,
+        subject=subj,
         predicate=RDF.type
     )
 
@@ -43,8 +45,8 @@ async def getLdHashmark(resourceUri: URIRef,
     result = list(await graph.queryAsync(
         querydb.get('HashmarksSearch'),
         initBindings={
-            'uri': resourceUri,
-            'titleSearch': Literal('')
+            'uri': subj,
+            'searchQuery': Literal('')
         }
     ))
 
@@ -234,6 +236,8 @@ def ldHashmarkTag(hashmarkUri: URIRef,
         tag
     ))
 
+    graph.publishUpdateEvent()
+
 
 def ldHashmarkUntag(hashmarkUri: URIRef,
                     tag: URIRef,
@@ -244,6 +248,8 @@ def ldHashmarkUntag(hashmarkUri: URIRef,
         HASHMARK.tag,
         tag
     ))
+
+    graph.publishUpdateEvent()
 
 
 def hashmarkTagsUpdate(hashmarkUri: URIRef,
@@ -259,6 +265,8 @@ def hashmarkTagsUpdate(hashmarkUri: URIRef,
     for tag in tags:
         ldHashmarkTag(hashmarkUri, tag, graphUri=graphUri)
 
+    graph.publishUpdateEvent()
+
 
 async def tagsForHashmark(hmUri: URIRef,
                           graphUri: str = TOP_HASHMARKS_GRAPH_URI):
@@ -270,8 +278,10 @@ async def tagsForHashmark(hmUri: URIRef,
     )
 
 
-async def searchLdHashmarks(title: str = None,
+async def searchLdHashmarks(title: str = '',
                             langTag: str = 'en',
+                            extraBindings: dict = {},
+                            rq: str = 'HashmarksSearch',
                             graphUri: str = 'urn:ipg:i:love:hashmarks'):
     """
     Search for hashmarks in the RDF graph
@@ -279,18 +289,21 @@ async def searchLdHashmarks(title: str = None,
     :param str title: title to look for
     :param str langTag: language tag filter
     :param str graphUri: Pronto RDF graph URI
+    :param dict extraBindings: a dictionary of extra SparQL bindings
+        to pass in the query
     """
     pronto = services.getByDotName('ld.pronto')
     graph = pronto.graphByUri(graphUri)
-    query = querydb.get('HashmarksSearch')
+    query = querydb.get(rq)
 
     if graph is None or not query:
         return None
 
     bindings = {}
-    if title:
-        bindings['titleSearch'] = Literal(title)
+    bindings['searchQuery'] = Literal(title)
+    bindings['langTagMatch'] = Literal(langTag)
 
-    bindings['langtag'] = Literal(langTag)
+    if extraBindings:
+        bindings.update(extraBindings)
 
     return await graph.queryAsync(query, initBindings=bindings)

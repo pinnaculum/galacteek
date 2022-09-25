@@ -109,9 +109,10 @@ def iHashmarkInfoToolTipShort(mark):
             <img src=':/share/icons/hashmarks.png' width='16' height='16' />
             <p>Title: <b>{0}</b></p>
             <p>Description: <b>{1}</b></p>
-        ''').format(mark.title if mark.title else iNoTitle(),
-                    mark.description if mark.description else iNoDescription(),
-                    )
+        ''').format(
+            str(mark['title']) if mark['title'] else iNoTitle(),
+            str(mark['descr']) if mark['descr'] else iNoDescription(),
+    )
 
 
 def iHashmarkInfoToolTipOld(mark):
