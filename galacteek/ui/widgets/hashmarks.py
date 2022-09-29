@@ -423,30 +423,33 @@ class HashmarkMgrButton(PopupToolButton, _HashmarksCommon,
     async def updateIcons(self):
         pass
 
-    def tagMenu(self, category):
-        if category not in self.cMenus:
-            self.cMenus[category] = HashmarksMenu(category)
-            self.cMenus[category].setToolTipsVisible(True)
-            self.cMenus[category].triggered.connect(
+    def tagMenu(self, tagUri: str,
+                tagName: str,
+                tagDisplayName: str):
+        if tagUri not in self.cMenus:
+            self.cMenus[tagUri] = HashmarksMenu(
+                tagDisplayName if tagDisplayName else tagName
+            )
+            self.cMenus[tagUri].setToolTipsVisible(True)
+            self.cMenus[tagUri].triggered.connect(
                 lambda action: ensure(self.linkActivated(action)))
-            self.cMenus[category].setObjectName('hashmarksMgrMenu')
-            self.cMenus[category].setIcon(getIcon('cube-orange.png'))
-            self.menu.addMenu(self.cMenus[category])
+            self.cMenus[tagUri].setObjectName('hashmarksMgrMenu')
+            self.cMenus[tagUri].setIcon(getIcon('cube-orange.png'))
+            self.menu.addMenu(self.cMenus[tagUri])
 
-        return self.cMenus[category]
+        return self.cMenus[tagUri]
 
     async def updateMenu(self):
         countAdded = 0
         self.hCount = 0
 
         async with self.lock.writer_lock:
-            # self.pronto.allTagsModel.update()
-            tagUris = list(self.pronto.allTagsModel.tagUris())
+            tagsAll = list(self.pronto.allTagsModel.tagsDetails())
 
-            for tag in tagUris:
-                marks = list(await ldHashmarksByTag(tag))
+            for tagUri, tagName, tagDisplayName in tagsAll:
+                marks = list(await ldHashmarksByTag(tagUri))
 
-                menu = self.tagMenu(tag)
+                menu = self.tagMenu(tagUri, tagName, tagDisplayName)
                 new, initialPaths = [], menu.objectPaths()
 
                 def exists(path):

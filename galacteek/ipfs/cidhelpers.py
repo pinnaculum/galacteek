@@ -10,6 +10,8 @@ from urllib.parse import unquote
 from PyQt5.QtCore import QUrl
 
 from galacteek import log
+from galacteek.core.ps import hubLdPublish
+from galacteek.core.ps import key42
 from galacteek.ipfs.paths import posixIpfsPath
 from galacteek.ipfs.cid import CIDv1
 from galacteek.ipfs.cid import CIDv0
@@ -362,6 +364,7 @@ class IPFSPath:
     maxLength = 1024
 
     def __init__(self, input, autoCidConv=False, enableBase32=True):
+        self._valid = False
         self._enableBase32 = enableBase32
         self._autoCidConv = autoCidConv
         self._rootCid = None
@@ -375,6 +378,7 @@ class IPFSPath:
         self._resolvedCid = None
         self._ipnsId = None
         self._query = None
+
         self._valid = self.__analyze()
 
     @property
@@ -631,6 +635,9 @@ class IPFSPath:
             self._subPath = subpath
             self._scheme = scheme
             self._fragment = gdict.get('fragment')
+
+            self.hubNotify()
+
             return True
 
         ma = ipfsDedSearchPath(self.input)
@@ -658,6 +665,9 @@ class IPFSPath:
             self._fragment = gdict.get('fragment')
             self._subPath = subpath
             self._scheme = 'ipfs'
+
+            self.hubNotify()
+
             return True
 
         ma = ipfsRegSearchPath(self.input)
@@ -684,6 +694,9 @@ class IPFSPath:
             self._fragment = gdict.get('fragment')
             self._subPath = gdict.get('subpath')
             self._scheme = 'ipfs'
+
+            self.hubNotify()
+
             return True
 
         ma = ipnsRegSearchPath(self.input)
@@ -707,6 +720,9 @@ class IPFSPath:
             self._fragment = gdict.get('fragment')
             self._subPath = gdict.get('subpath')
             self._scheme = 'ipns'
+
+            self.hubNotify()
+
             return True
 
         ma = ipfsRegSearchCid(self.input)
@@ -718,9 +734,26 @@ class IPFSPath:
 
             self._rscPath = joinIpfs(self.rootCidRepr)
             self._scheme = 'ipfs'
+
+            self.hubNotify()
+
             return True
 
         return False
+
+    def hubNotify(self):
+        pass
+
+    def hubRealNotify(self):
+        hubLdPublish(
+            key42, {
+                'type': 'IPFSObjectDetailsEvent',
+
+                'url': self.ipfsUrl,
+                'rootCid': self.rootCidRepr,
+                'objPath': self.objPath
+            }
+        )
 
     def pathjoin(self, path1, path2):
         return posixIpfsPath.join(path1, path2.lstrip('/'))

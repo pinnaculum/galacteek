@@ -6,14 +6,11 @@ from galacteek.services import GService
 from galacteek.blockchain.ethereum import MockEthereumController
 from galacteek.blockchain.ethereum import ethConnConfigParams
 
-# from galacteek.services.ethereum import PS_EVENT_CONTRACTLOADED
+# from galacteek.services.dweb.ethereum import PS_EVENT_CONTRACTLOADED
 
 
 class EthereumService(GService):
     ident = 'ethereum'
-
-    def __init__(self, *args, **kw):
-        super().__init__(*args, **kw)
 
     @cached_property
     def ctrl(self):
@@ -47,3 +44,7 @@ class EthereumService(GService):
 
     async def on_stop(self) -> None:
         log.debug('Stopping eth service')
+
+
+def serviceCreate(dotPath, config, parent: GService):
+    return EthereumService(dotPath=dotPath, config=config)

@@ -41,7 +41,6 @@ from galacteek.ipfs.mimetype import MIMEType
 from galacteek.dweb.render import renderTemplate
 from galacteek.core import uid4
 from galacteek.core import runningApp
-from galacteek.core import utcDatetimeIso
 from galacteek.core import html2t
 
 from galacteek.ld.rdf.hashmarks import addLdHashmark
@@ -548,7 +547,6 @@ class IPFSSearchHandler(QObject):
             mimeType=mimeObj,
             filesStat=filesStat,
             keywordMatch=kwm,
-            dateCreated=utcDatetimeIso(),
             referencedBy=refs,
             graphUri=self.graphUriSearchMain,  # dst graph uri
             # dateFirstSeen=hit.get('first-seen'),
@@ -563,8 +561,8 @@ class IPFSSearchHandler(QObject):
                 path, fetchExtraMetadata=True,
                 statType=['files']
             )
-            if stat:
-                self.filesStatAvailable.emit(cid, stat)
+            if filesStat:
+                self.filesStatAvailable.emit(cid, filesStat.stat)
 
                 # Worth graphing
                 await self.graphHashmark(

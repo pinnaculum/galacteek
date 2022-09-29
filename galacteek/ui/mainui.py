@@ -341,6 +341,9 @@ class WorkspacesToolBar(BasicToolBar):
         self.setOrientation(Qt.Horizontal)
         self.setObjectName('workspacesToolBar')
 
+        self.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Expanding)
+
     def dragEnterEvent(self, ev):
         ev.accept()
 

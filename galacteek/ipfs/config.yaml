@@ -73,10 +73,14 @@ envs:
 
       networks:
         # Gateways for the main IPFS network
+        # Lowest numbers = higher priority (0 is the highest)
+
         main:
-          gateway.pinata.cloud:
-            priority: 0
+          cf-ipfs.com:
+            priority: 2
           dweb.link:
+            priority: 1
+          jorropo.net:
             priority: 1
           gateway.ipfs.io:
             priority: 1
@@ -89,6 +93,10 @@ envs:
           ipfs.infura.io:
             priority: 5
           ipfs.eth.aragon.network:
+            priority: 5
+
+          # The main pinata gw understandably has some rate limiting
+          gateway.pinata.cloud:
             priority: 5
 
     peering:

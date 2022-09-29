@@ -194,12 +194,12 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/browsertab.ui" line="190"/>
+        <location filename="../../galacteek/ui/forms/browsertab.ui" line="228"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Reload page&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/browsertab.ui" line="228"/>
+        <location filename="../../galacteek/ui/forms/browsertab.ui" line="208"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Previous&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1090,22 +1090,22 @@ Path: {0}, nodes processed: {1}</source>
 <context>
     <name>IPFSSearchResults</name>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="57"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="56"/>
         <source>Results count: &lt;b&gt;{0}&lt;/b&gt; (max score: &lt;b&gt;{1}&lt;/b&gt;)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="65"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="64"/>
         <source>&lt;b&gt;No results found&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="70"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="69"/>
         <source>&lt;b&gt;Error while fetching results&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="75"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="74"/>
         <source>&lt;b&gt;Searching ...&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2199,9 +2199,9 @@ Path: {0}, nodes processed: {1}</source>
 <context>
     <name>toolbarQa</name>
     <message>
-        <location filename="../../galacteek/ui/quickaccess.py" line="38"/>
+        <location filename="../../galacteek/ui/quickaccess.py" line="42"/>
         <source>&lt;p&gt;&lt;b&gt;Quick Access&lt;/b&gt; toolbar&lt;/p&gt;
-           &lt;p&gt;Drag and drop hashmarks and IPFS objects that
+           &lt;p&gt;Drag and drop any IPFS content here that
            you want to have easy access to&lt;/p&gt;
         </source>
         <translation type="unfinished"></translation>

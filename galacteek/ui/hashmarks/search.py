@@ -1,6 +1,7 @@
 import functools
 from rdflib import Literal
 
+from PyQt5.QtWidgets import QAbstractItemView
 from PyQt5.QtWidgets import QHeaderView
 from PyQt5.QtWidgets import QHBoxLayout
 from PyQt5.QtWidgets import QTreeView
@@ -53,10 +54,21 @@ class HashmarksView(QTreeView):
         self.evFilter.returnPressed.connect(self.onReturnPressed)
         # self.installEventFilter(self.evFilter)
 
+        self.setDragEnabled(True)
+        self.setDragDropMode(QAbstractItemView.DragDrop)
+        self.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.setHeaderHidden(True)
+
         # self.setObjectName('hashmarksTreeView')
 
     def onReturnPressed(self):
         pass
+
+    def dragMoveEvent(self, event):
+        event.accept()
+
+    def dragEnterEvent(self, event):
+        event.accept()
 
 
 class SearchLine(QLineEdit):
@@ -190,7 +202,7 @@ class HashmarksCenterWidget(GalacteekTab):
 
     async def runQuery(self):
         q, bindings = self.getSparQlQuery(
-            query=self.searchLine.text(),
+            query=self.searchLine.text().strip(),
             mimeCategory=self.comboMime.currentText(),
             keywords=self.searchLine.text().split()
         )

@@ -26,6 +26,8 @@ from galacteek import database
 from galacteek.browser.schemes import SCHEME_FTP
 from galacteek.browser.schemes import SCHEME_HTTP
 
+from galacteek.ld.rdf.hashmarks import searchLdHashmarks
+
 from galacteek.qml import quickWidgetFromLibrary
 
 from galacteek.ipfs.wrappers import *
@@ -327,6 +329,11 @@ class URLInputWidget(QWidget):
         # Refocus
         # self.setFocus(Qt.PopupFocusReason)
 
+    async def historyLookupStraight(self):
+        if self.urlInput:
+            await self.historyMatches.lookup(self.urlInput)
+            self.historyMatchesPopup()
+
     async def historyLookup(self):
         if self.urlInput:
             markMatches = []
@@ -335,10 +342,16 @@ class URLInputWidget(QWidget):
                 query=self.urlInput
             )
 
+            ldMarkMatches = await searchLdHashmarks(
+                title=self.urlInput
+            )
+
             hMatches = await self.history.match(self.urlInput)
 
-            if len(markMatches) > 0 or len(hMatches) > 0:
-                await self.historyMatches.showMatches(markMatches, hMatches)
+            if len(markMatches) > 0 or len(hMatches) > 0 or ldMarkMatches:
+                await self.historyMatches.showMatches(markMatches, hMatches,
+                                                      ldMarkMatches)
+
                 self.historyMatchesPopup()
             else:
                 self.hideMatches()

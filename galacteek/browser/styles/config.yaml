@@ -2,18 +2,20 @@ envs:
   default:
     styles:
       webEngine:
-        - '@type': 'QtWebEngineStyle'
+        sakura:
+          '@type': 'QtWebEngineStyle'
 
-          styleName: 'eterna'
+          styleName: 'sakura'
           displayName:
-            en: 'eterna'
+            en: 'sakura'
 
-          src: 'qrc:/share/styles/eterna/webengine.css'
+          src: 'qrc:/share/styles/sakura/sakura.css'
 
-        - '@type': 'QtWebEngineStyle'
+        sakura-dark:
+          '@type': 'QtWebEngineStyle'
 
-          styleName: 'mercury'
+          styleName: 'sakura-dark'
           displayName:
-            en: 'Mercury'
+            en: 'sakura-dark'
 
-          src: 'qrc:/share/styles/mercury/webengine.css'
+          src: 'qrc:/share/styles/sakura-dark/sakura-dark.css'

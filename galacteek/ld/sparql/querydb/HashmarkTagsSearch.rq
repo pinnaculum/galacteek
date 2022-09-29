@@ -1,8 +1,13 @@
 PREFIX gs: <ips://galacteek.ld/>
 PREFIX h: <ips://galacteek.ld/Hashmark#>
 PREFIX tag: <ips://galacteek.ld/Tag#>
+PREFIX rprefs: <ips://galacteek.ld/ResourcePreferences#>
 
-SELECT *
+SELECT ?uri ?taguri ?title ?descr
+       ?iconUrl
+       ?prefs
+       ?prefsWebProfile
+       ?prefsSchemePreferred
 WHERE {
   ?uri a gs:Hashmark .
   ?uri h:tag ?taguri .
@@ -13,6 +18,12 @@ WHERE {
   OPTIONAL { 
     ?uri gs:icon ?icon .
     ?icon gs:url ?iconUrl .
+  } .
+
+  OPTIONAL { 
+    ?uri h:resourcePrefs ?prefs .
+    ?prefs rprefs:useWebProfile ?prefsWebProfile .
+    ?prefs rprefs:schemePreferred ?prefsSchemePreferred .
   } .
 
   OPTIONAL { ?uri h:schemePreferred ?schemePreferred . } .

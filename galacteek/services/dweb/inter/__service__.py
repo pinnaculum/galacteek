@@ -1,5 +1,7 @@
 import asyncio
+import traceback
 
+from galacteek import log
 from galacteek import cached_property
 from galacteek.services import GService
 from galacteek.browser.interceptor import IPFSRequestInterceptor
@@ -20,6 +22,7 @@ class InterceptorService(GService):
         return IPFSRequestInterceptor(
             self.serviceConfig,
             self.queue,
+            self.rootPath,
             parent=self.app
         )
 
@@ -34,12 +37,15 @@ class InterceptorService(GService):
 
     @GService.task
     async def processQueue(self):
-        return
+        while not self.should_stop:
+            try:
+                lastSetupRes = await self.interceptor.reconfigure()
+            except Exception:
+                log.debug(traceback.format_exc())
 
-        while True:
-            url, info = await self.queue.get()
-
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(
+                60 * 5 if lastSetupRes is False else 60 * 60 * 3
+            )
 
 
 def serviceCreate(dotPath, config, parent: GService):

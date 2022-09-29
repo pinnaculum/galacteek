@@ -694,7 +694,7 @@ class AsyncIPFSDaemon(object):
 
     async def watchProcess(self):
         while True:
-            await asyncio.sleep(30)
+            await asyncio.sleep(10)
 
             try:
                 status = self.process.status()

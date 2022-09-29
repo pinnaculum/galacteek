@@ -584,14 +584,16 @@ class Peers(GService):
             self._didAuthInp[personDid] = True
 
             try:
-                mType, stat = await self.app.rscAnalyzer(iMsg.iphandleqrpngcid)
+                mType, statInfo = await self.app.rscAnalyzer(
+                    iMsg.iphandleqrpngcid)
+
+                assert mType is not None
+                assert statInfo is not None
             except Exception:
                 log.debug('Cannot stat QR: {}'.format(iMsg.iphandleqrpngcid))
                 self._didAuthInp[personDid] = False
                 return
             else:
-                statInfo = StatInfo(stat)
-
                 if not statInfo.valid or statInfo.dataLargerThan(
                         kilobytes(512)) or not mType or not mType.isImage:
                     log.debug('Invalid stat for QR: {}'.format(

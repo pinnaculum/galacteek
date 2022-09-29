@@ -16,6 +16,6 @@ class ProntoServiceModels:
         self.allHashmarksModel = LDHashmarksSparQLListModel(
             graphUri='urn:ipg:i:love:hashmarks',
             rq='HashmarksSearch',
-            bindings={'titleSearch': Literal('')}
+            bindings={'searchQuery': Literal('')}
         )
         self.allHashmarksModel.update()

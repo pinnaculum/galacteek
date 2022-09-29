@@ -1,7 +1,11 @@
 envs:
   default:
-    services:
+    resourceBlocker:
+      enabled: true
 
+      blockListsMasterUrl: ${gitlab_easy_asset_url:galacteek,dweb-blocklists,continuous-master,dweb-blocklists.yaml}
+
+    services:
       g/core/peers/ident:
         psKeysListen:
           - 'g/services/app'

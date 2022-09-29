@@ -34,6 +34,7 @@ from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWebEngineWidgets import QWebEngineDownloadItem
 from PyQt5.QtWebEngineWidgets import QWebEngineSettings
 from PyQt5.QtWebEngineWidgets import QWebEngineContextMenuData
+from PyQt5.QtWebEngineWidgets import QWebEngineScript
 from PyQt5.QtWebChannel import QWebChannel
 
 from PyQt5.QtGui import QKeySequence
@@ -248,7 +249,7 @@ class DefaultBrowserWebPage (QWebEnginePage):
     def javaScriptConsoleMessage(self, level, message, lineNumber, sourceId):
         self.jsConsoleMessage.emit(level, message, lineNumber, sourceId)
 
-    def registerProtocolHandlerRequestedDisabled(self, request):
+    def registerProtocolHandlerRequested(self, request):
         """
         registerProtocolHandlerRequested(request) can be used to
         handle JS 'navigator.registerProtocolHandler()' calls. If
@@ -1060,6 +1061,8 @@ class BrowserTab(GalacteekTab):
 
         self.checkWebProfileByName(initialProfileName)
 
+        self.ui.webProfileSelector.setMenu(self.webProfilesMenu)
+
         self.browserHelpAction = QAction(getIcon('help.png'),
                                          iHelp(), self,
                                          triggered=self.onShowBrowserHelp)
@@ -1103,8 +1106,8 @@ class BrowserTab(GalacteekTab):
 
         self.ipfsControlMenu.addAction(self.browserHelpAction)
         self.ipfsControlMenu.addSeparator()
-        self.ipfsControlMenu.addMenu(self.webProfilesMenu)
-        self.ipfsControlMenu.addSeparator()
+        # self.ipfsControlMenu.addMenu(self.webProfilesMenu)
+        # self.ipfsControlMenu.addSeparator()
 
         self.ipfsControlMenu.addMenu(self.pageOpsButton.menu)
         self.ipfsControlMenu.addSeparator()
@@ -1608,17 +1611,16 @@ class BrowserTab(GalacteekTab):
         page.save(path, QWebEngineDownloadItem.CompleteHtmlSaveFormat)
 
     def onHashmarkPage(self):
-        if self.currentIpfsObject and self.currentIpfsObject.valid:
+        if self.currentUrl and isUrlSupported(self.currentUrl):
+            ensure(addHashmarkAsync(
+                self.currentUrl.toString(),
+                title=self.currentPageTitle))
+        elif self.currentIpfsObject and self.currentIpfsObject.valid:
             scheme = self.currentUrl.scheme()
             ensure(addHashmarkAsync(
                 self.currentIpfsObject.fullPath,
                 title=self.currentPageTitle,
                 schemePreferred=scheme
-            ))
-        elif self.currentUrl and isUrlSupported(self.currentUrl):
-            ensure(addHashmarkAsync(
-                self.currentUrl.toString(),
-                title=self.currentPageTitle
             ))
         else:
             messageBox(iUnsupportedUrl())
@@ -1922,6 +1924,19 @@ class BrowserTab(GalacteekTab):
 
     def onLoadStarted(self):
         self.setLoadingStatus(True)
+
+    def applyStyleSheet(self, styleName: str):
+        # Apply stylesheets
+        webProfile = self.webEngineView.webProfile
+
+        styleScripts = webProfile.webStyles.get(styleName)
+
+        if styleScripts:
+            for script in styleScripts:
+                self.webEngineView.page().runJavaScript(
+                    script.sourceCode(),
+                    QWebEngineScript.ApplicationWorld
+                )
 
     def onLoadProgress(self, progress):
         self.ui.pBarBrowser.setValue(progress)

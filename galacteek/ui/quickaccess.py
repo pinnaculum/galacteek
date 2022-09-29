@@ -1,4 +1,5 @@
 import asyncio
+from rdflib import URIRef
 
 from PyQt5.QtWidgets import QWidgetAction
 
@@ -9,12 +10,14 @@ from PyQt5.Qt import QSizePolicy
 
 from galacteek import ensure
 from galacteek import log
-from galacteek import database
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs import kilobytes
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.core.ps import KeyListener
+from galacteek.ld.rdf.watch import GraphActivityListener
+
+from galacteek.ld.rdf import hashmarks as rdf_hashmarks
 
 from .helpers import getIcon
 from .helpers import getMimeIcon
@@ -23,7 +26,6 @@ from .helpers import getIconFromImageData
 from .helpers import getIconFromMimeType
 from .helpers import getFavIconFromDir
 from .widgets.hashmarks import HashmarkToolButton
-from .widgets import QAObjTagItemToolButton
 from .widgets import URLDragAndDropProcessor
 
 from .widgets.toolbar import SmartToolBar
@@ -36,7 +38,7 @@ def iQuickAccess():
     return QCoreApplication.translate(
         'toolbarQa',
         '''<p><b>Quick Access</b> toolbar</p>
-           <p>Drag and drop hashmarks and IPFS objects that
+           <p>Drag and drop any IPFS content here that
            you want to have easy access to</p>
         ''')
 
@@ -53,10 +55,19 @@ class QuickAccessToolBar(SmartToolBar,
         URLDragAndDropProcessor.__init__(self)
         KeyListener.__init__(self)
 
+        self.qaActions = []
+
         self.toolbarPyramids = None
         self.app = QCoreApplication.instance()
         self.analyzer = self.app.rscAnalyzer
         self.lock = asyncio.Lock(loop=self.app.loop)
+
+        self.graphsListener = GraphActivityListener(
+            watch=['urn:ipg:i:love:hashmarks']
+        )
+        self.graphsListener.asNeedUpdate.connectTo(
+            self.onGraphUpdated
+        )
 
         self.setMovable(True)
         self.setObjectName('qaToolBar')
@@ -66,8 +77,6 @@ class QuickAccessToolBar(SmartToolBar,
 
         self.setOrientation(Qt.Vertical)
         self.orientationChanged.connect(self.onReoriented)
-
-        database.QATagItemConfigured.connectTo(self.qaTagItemConfigured)
 
         self.ipfsObjectDropped.connect(self.onIpfsDrop)
 
@@ -79,6 +88,20 @@ class QuickAccessToolBar(SmartToolBar,
     def largeIcons(self):
         return QSize(64, 64)
 
+    def objectUris(self):
+        """
+        :rtype: list of uri strings of objects registered
+        """
+        for action in self.qaActions:
+            widget = self.widgetForAction(action)
+            if not widget:
+                continue
+
+            yield str(widget.hashmark['uri'])
+
+    async def onGraphUpdated(self, graphUri: str):
+        await self.load()
+
     def onReoriented(self, orientation):
         if self.toolbarPyramids:
             self.toolbarPyramids.setOrientation(orientation)
@@ -89,67 +112,56 @@ class QuickAccessToolBar(SmartToolBar,
             QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.addWidget(self.toolbarPyramids)
 
-    def sizeHintUnused(self):
-        try:
-            actionsCount = len(self.actions())
-            pages = actionsCount / 12
-        except Exception:
-            pass
-
-        return QSize(
-            max(3, pages) * (self.iconSize().width()),
-            self.height()
-        )
-
     async def save(self):
         pass
 
     async def load(self):
         try:
-            for item in await database.qaHashmarkItems():
-                ensure(self.registerHashmark(item.ithashmark))
-        except Exception as err:
-            log.debug(str(err))
+            qah = await rdf_hashmarks.searchLdHashmarks(
+                extraBindings={
+                    'inQADock': URIRef(
+                        'urn:glk:ui:docks:qa0'
+                    )
+                },
+                rq='HashmarksSearchForDock'
+            )
 
-    async def registerDefaults(self):
-        # Register some default hashmarks using object tags
-        await self.registerFromObjTag('#dapp-hardbin')
-        await self.registerFromObjTag('#dapp-ipfessay')
-        await self.registerFromObjTag('#wikipedia-en')
+            uris = list(self.objectUris())
+
+            for hashmark in qah:
+                if str(hashmark['uri']) in uris:
+                    continue
+
+                ensure(self.registerHashmark(hashmark))
+        except Exception as err:
+            log.debug(f'Error loading hashmarks: {err}')
 
     def onIpfsDrop(self, ipfsPath):
         ensure(self.processObject(ipfsPath))
 
-    async def processObject(self, ipfsPath):
-        path = str(ipfsPath)
-
+    async def processObject(self, ipfsPath: IPFSPath):
         try:
-            mark = await database.hashmarksByPath(path)
+            mark = await rdf_hashmarks.getLdHashmark(ipfsPath.ipfsUriRef)
+
             if not mark:
+                # todo
                 title = ipfsPath.basename if not \
                     ipfsPath.isRoot else iUnknown()
-                mark = await database.hashmarkAdd(
-                    path, title=title,
-                    tags=['#quickaccess']
+
+                result = await rdf_hashmarks.addLdHashmark(
+                    ipfsPath.ipfsUriRef,
+                    title=title
                 )
 
-            res = await database.QAHashmarkItem.filter(
-                ithashmark__id=mark.id).first()
-            if not res:
-                item = database.QAHashmarkItem(ithashmark=mark)
-                await item.save()
+                assert result is True
 
-            await self.registerHashmark(mark)
+                mark = await rdf_hashmarks.getLdHashmark(ipfsPath.ipfsUriRef)
+
+            if mark:
+                await self.registerHashmark(mark)
         except Exception as err:
             log.debug('Error while processing object: {0} {1}'.format(
                 ipfsPath, str(err)))
-
-    async def registerFromObjTag(self, tag):
-        try:
-            await database.qaTagItemAdd(tag)
-        except Exception:
-            log.debug('Could not register hashmark with tag: {}'.format(
-                tag))
 
     async def findIcon(self, ipfsop, ipfsPath, rscStat, mimeType,
                        maxIconSize=kilobytes(512)):
@@ -181,90 +193,62 @@ class QuickAccessToolBar(SmartToolBar,
         return icon
 
     @ipfsOp
-    async def registerHashmark(self, ipfsop, mark,
+    async def registerHashmark(self, ipfsop,
+                               mark,
                                button=None, maxIconSize=512 * 1024):
-        """
-        Register an object in the toolbar with an associated hashmark
-        """
-
-        await mark._fetch_all()
-
-        ipfsPath = IPFSPath(mark.path)
-        if not ipfsPath.valid:
-            return
-
-        result = await self.analyzer(ipfsPath, mimeTimeout=5)
-        if result is None:
-            return
-
-        mimeType, rscStat = result
-
-        mIcon = mark.icon.path if mark.icon else None
+        markPath = IPFSPath(str(mark['uri']))
+        mIcon = IPFSPath(str(mark['iconUrl'])) if mark['iconUrl'] else None
         icon = None
+        mimeType, rscStat = None, None
 
-        if mIcon and IPFSPath(mIcon).valid:
-            stat = await ipfsop.objStat(mIcon)
+        if markPath.valid:
+            mimeType, rscStat = await self.analyzer(str(markPath),
+                                                    mimeTimeout=3)
 
-            statInfo = StatInfo(stat)
+        if mIcon and mIcon.valid:
+            icon = await getIconFromIpfs(ipfsop, mIcon.objPath)
 
-            # Check filesize from the stat on the object
-            if statInfo.valid and statInfo.dataSmallerThan(maxIconSize):
-                icon = await getIconFromIpfs(ipfsop, mIcon)
+            if icon:
+                if not await ipfsop.isPinned(mIcon.objPath):
+                    log.debug(f'Pinning icon: {mIcon}')
 
-                if icon is None:
-                    icon = getIcon('unknown-file.png')
-                else:
-                    if not await ipfsop.isPinned(mIcon):
-                        log.debug('Pinning icon {0}'.format(mIcon))
-                        await ipfsop.ctx.pin(mIcon)
-        elif mimeType:
-            icon = await self.findIcon(ipfsop, ipfsPath, rscStat, mimeType)
-        else:
-            icon = getIcon('unknown-file.png')
+                    await ipfsop.ctx.pin(mIcon.objPath)
+
+        if icon is None:
+            if mimeType:
+                icon = await self.findIcon(ipfsop, markPath,
+                                           rscStat, mimeType)
+            else:
+                icon = getIcon('unknown-file.png')
 
         if not button:
-            button = HashmarkToolButton(mark, parent=self, icon=icon)
+            button = HashmarkToolButton(mark, parent=self)
             action = self.addWidget(button)
+
             button.setToolTip(iHashmarkInfoToolTipShort(mark))
+
             button.clicked.connect(
                 lambda: ensure(self.app.resourceOpener.open(
-                    str(ipfsPath), openingFrom='qa')))
+                    str(mark['uri']), openingFrom='qa')))
             button.deleteRequest.connect(
                 lambda: ensure(self.onDelete(button, action)))
-        else:
+
             if icon:
                 button.setIcon(icon)
+
+            # reg
+            self.qaActions.append(action)
 
             button.setToolTip(iHashmarkInfoToolTipShort(mark))
 
     async def onDelete(self, button, action):
+        # TODO: set RDF show attribute
         try:
             self.removeAction(action)
-        except:
-            pass
-        else:
-            hashmark = await button.hashmark()
-
-            res = await database.QAHashmarkItem.filter(
-                ithashmark__id=hashmark.id).first()
-            if res:
-                await res.delete()
 
             del button
-
-    @ipfsOp
-    async def qaTagItemConfigured(self, ipfsop, qaItem):
-        icon = getIcon('unknown-file.png')
-        button = QAObjTagItemToolButton(qaItem, parent=self, icon=icon)
-        action = self.addWidget(button)
-        button.deleteRequest.connect(
-            lambda: ensure(self.onDelete(button, action)))
-
-        hashmark = await button.hashmark()
-
-        if hashmark:
-            await hashmark._fetch_all()
-            ensure(self.registerHashmark(hashmark, button=button))
+        except:
+            pass
 
     async def event_g_services_app(self, key, message):
         event = message['event']
@@ -277,7 +261,6 @@ class QuickAccessToolBar(SmartToolBar,
         Add some apps and links to the quickaccess bar
         """
 
-        await self.registerDefaults()
         await self.load()
 
         self.setEnabled(True)

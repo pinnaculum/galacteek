@@ -16,7 +16,7 @@ from galacteek.services import cached_property
 from galacteek.services.net.bitmessage.service import BitMessageClientService
 from galacteek.services.net.tor.service import TorService
 from galacteek.services.net.tor.service import TorServiceRuntimeConfig
-from galacteek.services.ethereum.service import EthereumService
+from galacteek.services.dweb.ethereum.__service__ import EthereumService
 
 from mode.utils.graphs.formatter import *  # noqa
 from mode.utils.objects import _label

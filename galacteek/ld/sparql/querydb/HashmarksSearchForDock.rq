@@ -2,7 +2,7 @@ PREFIX gs: <ips://galacteek.ld/>
 PREFIX h: <ips://galacteek.ld/Hashmark#>
 PREFIX rprefs: <ips://galacteek.ld/ResourcePreferences#>
 
-SELECT ?uri ?category ?descr ?title
+SELECT ?uri ?descr ?title
        ?comment
        ?schemePreferred
        ?iconUrl ?icon
@@ -12,24 +12,23 @@ SELECT ?uri ?category ?descr ?title
        ?prefsInQuickAccessDock
 WHERE {
   ?uri a gs:Hashmark .
+  ?uri h:title ?title .
 
   OPTIONAL { ?uri h:dateCreated ?dateCreated . } .
+  OPTIONAL {
+    ?uri h:description ?descr .
+    FILTER (langMatches(lang(?descr), str(?langTagMatch)) )
+  } .
+  OPTIONAL {
+    ?uri h:comment ?comment .
+    FILTER (langMatches(lang(?comment), str(?langTagMatch)) )
+  } .
 
-  ?uri h:title ?title .
-  ?uri h:description ?descr .
-
-  OPTIONAL { ?uri h:comment ?comment . } .
   OPTIONAL { ?uri h:category ?category . } .
   OPTIONAL { ?uri h:mimeType ?mimeType . } .
   OPTIONAL { ?uri h:mimeCategory ?mimeCategory . } .
   OPTIONAL { ?uri h:schemePreferred ?schemePreferred . } .
   OPTIONAL { ?uri gs:url ?url . } .
-
-  # Icon
-  OPTIONAL { 
-    ?uri gs:icon ?icon .
-    ?icon gs:contentUrl ?iconUrl .
-  } .
 
   # Resource preferences
   ?uri h:resourcePrefs ?prefs .
@@ -40,13 +39,23 @@ WHERE {
     ?prefs rprefs:schemePreferred ?prefsSchemePreferred .
   } .
 
+  # Icon
+  OPTIONAL { 
+    ?uri gs:icon ?icon .
+    ?icon gs:contentUrl ?iconUrl .
+  } .
+
   # Thumbnail
   OPTIONAL { 
     ?uri gs:thumbnail ?icon .
     ?icon gs:contentUrl ?thumbnailUrl .
   } .
 
-  FILTER (langMatches(lang(?title), "*") )
+  FILTER (?prefsInQuickAccessDock = ?inQADock)
+  FILTER (langMatches(lang(?title), str(?langTagMatch)) )
+
+
 }
 
+GROUP BY ?uri
 ORDER BY DESC(?dateCreated)

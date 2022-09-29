@@ -16,6 +16,9 @@ from galacteek.ipfs.mimetype import MIMEType
 from galacteek.ipfs.mimetype import detectMimeType
 from galacteek.ipfs.ipfssearch import objectMetadata
 
+from galacteek.ipfs.stat import StatInfo
+from galacteek.ipfs.stat import UnixFsStatInfo
+
 from galacteek.crypto.qrcode import IPFSQrDecoder
 
 
@@ -52,7 +55,11 @@ class ResourceAnalyzer(QObject):
             typeStr = mHashMeta.get('mimetype')
             mimetype = MIMEType(typeStr) if typeStr else None
             statInfo = mHashMeta.get('stat')
-            return mimetype, statInfo
+            filesStatInfo = mHashMeta.get('filesStat')
+            if 'object' in statType:
+                return mimetype, StatInfo(statInfo)
+            elif 'files' in statType:
+                return mimetype, UnixFsStatInfo(filesStatInfo)
         else:
             mimetype = await detectMimeType(
                 path,
@@ -92,7 +99,7 @@ class ResourceAnalyzer(QObject):
 
             # Fetch additional metadata in another task
 
-            if fetchExtraMetadata and statInfo is not None:
+            if fetchExtraMetadata and statInfo and statInfo.valid:
                 ensure(self.fetchMetadata(path, statInfo))
 
         return mimetype, statInfo

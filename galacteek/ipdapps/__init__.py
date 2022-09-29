@@ -18,7 +18,7 @@ from galacteek.core.fswatcher import FileWatcher
 
 from galacteek.browser.web3channels import Web3Channel
 
-from galacteek.services.ethereum import PS_EVENT_CONTRACTLOADED
+from galacteek.services.dweb.ethereum import PS_EVENT_CONTRACTLOADED
 
 dappsPkg = __name__
 

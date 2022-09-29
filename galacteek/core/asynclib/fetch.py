@@ -1,4 +1,5 @@
 import hashlib
+from typing import Union
 from pathlib import Path
 from yarl import URL
 
@@ -80,9 +81,9 @@ async def httpFetch(u,
         return None, None
 
 
-async def assetFetch(u, **kw):
+async def assetFetch(u: Union[URL, str], **kw):
     from galacteek import log
-    from galacteek.ipfs.fetch import fetchWithRandomGateway
+    from galacteek.ipfs.fetch import fetchWithDedicatedGateway
 
     location = None
     url = u if isinstance(u, URL) else URL(u)
@@ -97,19 +98,11 @@ async def assetFetch(u, **kw):
 
         if aPath.valid:
             # Pull from gateway
-            return await fetchWithRandomGateway(
+
+            return await fetchWithDedicatedGateway(
                 aPath,
-                maxSize=megabytes(512)
+                maxSize=megabytes(8)
             )
-
-        if aPath.valid and 0:
-            # Pull from IPFS if the redirection points to an IPFS file
-            # file, csum = await ipfsop.catChunkedToTmpFile(aPath.objPath)
-            file, csum = None, None
-            if not file:
-                raise Exception(f'Invalid IPFS asset: {aPath.objPath}')
-
-            return file, csum
         else:
             return await httpFetch(url, **kw)
     except Exception as err:

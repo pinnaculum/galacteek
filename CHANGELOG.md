@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - browser: Monkeypatch fetch() to support loading IPFS objects natively
   without any JS requirements
 - Interceptor: add http://domain.eth to ens://domain.eth redirection
+- Add a resource blocking system (with python-adblock; block lists are
+  pulled from IPFS)
 - Add the ips:// URL scheme (renders IPS JSON-LD schemas)
 - Add a UI action to view IPS schemas
 - Implement intelligent RDF tags

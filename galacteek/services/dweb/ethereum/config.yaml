@@ -1,7 +1,8 @@
-ethEnvs:
+envs:
   default:
     providerType: http
     mode: infura
+    network: mainnet
 
     infura:
       projectId: ???

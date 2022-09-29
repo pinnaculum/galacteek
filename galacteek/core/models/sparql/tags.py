@@ -6,6 +6,10 @@ from . import SparQLListModel
 from . import SubjectUriRole
 
 
+TagNameRole = Qt.UserRole + 4
+TagDisplayNameRole = Qt.UserRole + 5
+
+
 class TagsSparQLModel(SparQLListModel):
     """
     Tags model
@@ -27,12 +31,34 @@ class TagsSparQLModel(SparQLListModel):
                 role=SubjectUriRole
             )
 
+    def tagsDetails(self):
+        for ri in range(0, self.rowCount()):
+            idx = self.createIndex(ri, 0)
+            yield self.data(
+                idx,
+                role=SubjectUriRole
+            ), self.data(
+                idx,
+                role=TagNameRole
+            ), self.data(
+                idx,
+                role=TagDisplayNameRole
+            )
+
     def data(self, index, role=None):
         try:
             item = self._results[index.row()]
 
             if role == Qt.DisplayRole:
                 return str(item['tagName'])
+            elif role == TagNameRole:
+                var = item['tagName']
+                if var:
+                    return str(var)
+            elif role == TagDisplayNameRole:
+                var = item['tagDisplayName']
+                if var:
+                    return str(var)
             elif role == SubjectUriRole:
                 return item['uri']
             elif role == Qt.ToolTipRole:

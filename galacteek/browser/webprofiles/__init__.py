@@ -11,6 +11,7 @@ from galacteek.dweb.webscripts import ethereumClientScripts
 from galacteek.dweb.webscripts import webTorrentScripts
 from galacteek.dweb.webscripts import scriptFromQFile
 from galacteek.dweb.webscripts import styleSheetScript
+from galacteek.dweb.webscripts import ipfsFetchScript
 
 from galacteek.browser.schemes import SCHEME_DWEB
 from galacteek.browser.schemes import SCHEME_ENS
@@ -79,6 +80,7 @@ class BaseProfile(QWebEngineProfile, KeyListener):
         self.webScripts = self.scripts()
         self.webSettings = self.settings()
         self.webStyles = styles
+        self.webStyleScripts = []
 
         self.installIpfsSchemeHandlers()
         self.installScripts()
@@ -115,7 +117,7 @@ class BaseProfile(QWebEngineProfile, KeyListener):
 
     def installScripts(self):
         styleConfig = self.config.get('style')
-        scriptsList = self.config.get('scripts')
+        scriptsList = self.config.get('jsScripts')
 
         if not scriptsList:
             return
@@ -130,25 +132,39 @@ class BaseProfile(QWebEngineProfile, KeyListener):
             if styleScripts:
                 [self.webScripts.insert(script) for script in styleScripts]
 
+                self.webStyleScripts = styleScripts
+
         # Webtorrent
         [self.webScripts.insert(script) for script in webTorrentScripts()]
 
-        for script in scriptsList:
-            _type = script.get('type')
+        def scPrioFilter(sitem):
+            try:
+                name, sdef = sitem
+                return sdef.get('priority', 100)
+            except Exception:
+                return 100
+
+        oscList = sorted(
+            scriptsList.items(),
+            key=scPrioFilter
+        )
+
+        for scriptName, scriptDef in oscList:
+            _type = scriptDef.get('type')
+            _path = scriptDef.get('path')
 
             if _type == 'builtin':
-                if script.get('name') == 'js-ipfs-client':
+                if scriptName == 'js-ipfs-client':
                     self.installIpfsClientScript()
-                elif script.get('name') == 'ethereum-web3':
-                    self.installIpfsClientScript()
+                elif scriptName == 'ipfs-fetch':
+                    self.installIpfsFetchScript()
+                elif scriptName == 'ethereum-web3':
+                    self.installWeb3Scripts()
             elif _type == 'qrc':
-                _name = script.get('name')
-                _path = script.get('path')
-
-                if not _name or not _path:
+                if not _path:
                     continue
 
-                script = scriptFromQFile(_name, _path)
+                script = scriptFromQFile(scriptName, _path)
                 if script:
                     self.webScripts.insert(script)
 
@@ -157,6 +173,14 @@ class BaseProfile(QWebEngineProfile, KeyListener):
         if exSc.isNull():
             for script in self.app.scriptsIpfs:
                 self.webScripts.insert(script)
+
+    def installIpfsFetchScript(self):
+        exSc = self.webScripts.findScript('ipfs-fetch')
+
+        if exSc.isNull():
+            self.webScripts.insert(
+                ipfsFetchScript(self.app.getIpfsConnectionParams())
+            )
 
     def installWeb3Scripts(self):
         ethereumScripts = ethereumClientScripts(
@@ -350,7 +374,7 @@ def wpParseStyles(styles: DictConfig):
     # Parse the 'styles' dictionary
 
     stl = {}
-    for styleDef in styles:
+    for styleName, styleDef in styles.items():
         try:
             src = styleDef.get('src')
             styleName = styleDef.get('styleName')

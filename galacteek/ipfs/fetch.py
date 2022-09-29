@@ -67,6 +67,14 @@ async def checkGateway(gatewayUrl: str):
     return False
 
 
+async def fetchWithDedicatedGateway(iPath: IPFSPath,
+                                    maxSize=0):
+    return await httpFetch(
+        URL('https://galacteek.mypinata.cloud').with_path(iPath.objPath),
+        maxSize=maxSize, impatient=True
+    )
+
+
 async def fetchWithRandomGateway(iPath: IPFSPath,
                                  network='main',
                                  maxSize=0):

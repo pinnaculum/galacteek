@@ -58,6 +58,7 @@ from galacteek.config import cSetDefault
 
 from galacteek.core.asynclib import asyncify
 from galacteek.core.asynclib import cancelAllTasks
+from galacteek.core.asynclib import SignalNotEmittedError
 
 from galacteek.services import cached_property
 from galacteek.core.ctx import IPFSContext
@@ -485,7 +486,7 @@ class GalacteekApplication(QApplication):
     @property
     def gatewayAuthority(self):
         params = self.getIpfsConnectionParams()
-        return '{0}:{1}'.format(params.host, params.gatewayPort)
+        return f'{params.host}:{params.gatewayPort}'
 
     @property
     def gatewayUrl(self):
@@ -684,9 +685,19 @@ class GalacteekApplication(QApplication):
     async def startCoreServices(self):
         # By starting the top service, all subservices will be started
 
-        async with asyncSigWait(self.s.sServiceStarted,
-                                timeout=12.0):
-            await self.s.start()
+        try:
+            async with asyncSigWait(self.s.sServiceStarted,
+                                    timeout=12.0):
+                await self.s.start()
+        except (SignalNotEmittedError, BaseException) as sneef:
+            # TODO: GUI message box
+            log.warning(f'Application service could not start: {sneef}')
+
+            self.systemTrayMessage(
+                'Error starting application',
+                'Error starting application',
+                timeout=5000
+            )
 
         log.debug('Application service is started now')
 

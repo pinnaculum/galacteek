@@ -40,30 +40,51 @@ def scriptFromQFile(name: str, rscPath: str):
         return None
 
 
-def ipfsClientScripts(connParams):
+def _scriptReplaceIpfsVars(connParams, template: str) -> str:
+    template = re.sub(
+        '@IPFS_HOST@',
+        connParams.host,
+        template
+    )
+
+    template = re.sub(
+        '@API_PORT@',
+        connParams.apiPort,
+        template
+
+    )
+
+    template = re.sub(
+        '@GATEWAY_URL@',
+        str(connParams.gatewayUrl).rstrip('/'),
+        template
+    )
+
+    return template
+
+
+def ipfsFetchScript(connParams,
+                    name: str = 'ipfs-fetch') -> QWebEngineScript:
+    script = scriptFromQFile(name, ':/share/js/ipfs/fetch-ipfs.js')
+    script.setSourceCode(
+        _scriptReplaceIpfsVars(
+            connParams,
+            script.sourceCode())
+    )
+    script.setWorldId(QWebEngineScript.MainWorld)
+    script.setInjectionPoint(QWebEngineScript.DocumentCreation)
+
+    return script
+
+
+def ipfsClientScripts(connParams) -> list:
     jsFile = QFile(':/share/js/ipfs-http-client/index.min.js')
     if not jsFile.open(QFile.ReadOnly):
         return []
 
-    ipfsInjTemplate = readQrcTextFile(':/share/js/ipfs/window-ipfs.js')
-
-    ipfsInjTemplate = re.sub(
-        '@HOST@',
-        connParams.host,
-        ipfsInjTemplate
-    )
-
-    ipfsInjTemplate = re.sub(
-        '@API_PORT@',
-        connParams.apiPort,
-        ipfsInjTemplate
-
-    )
-
-    ipfsInjTemplate = re.sub(
-        '@GATEWAY_URL@',
-        str(connParams.gatewayUrl).rstrip('/'),
-        ipfsInjTemplate
+    ipfsInjTemplate = _scriptReplaceIpfsVars(
+        connParams,
+        readQrcTextFile(':/share/js/ipfs/window-ipfs.js')
     )
 
     scriptJsIpfs = QWebEngineScript()
@@ -82,34 +103,16 @@ def ipfsClientScripts(connParams):
     return [scriptJsIpfs]
 
 
-w3ScriptHttp = '''
-window.web3 = new Web3(
-    new Web3.providers.HttpProvider('{rpcurl}')
-);
-window.web3.eth.defaultAccount = window.web3.eth.accounts[0];
-'''
-
-w3ScriptWs = '''
-window.web3 = new Web3(
-    new Web3.providers.WebsocketProvider('{rpcurl}')
-);
-window.web3.eth.defaultAccount = window.web3.eth.accounts[0];
-'''
-
-
 def ethereumClientScripts(connParams):
     scripts = []
-    jsFile = QFile(':/share/js/web3.min.js')
-    if not jsFile.open(QFile.ReadOnly):
-        return None
 
-    libCode = jsFile.readAll().data().decode('utf-8')
+    libCode = readQrcTextFile(':/share/js/web3.min.js')
     libCode += "\n"
 
+    injScript = readQrcTextFile(':/share/js/ethereum/web3-inject.js')
+
     if connParams.provType == 'http':
-        libCode += w3ScriptHttp.format(rpcurl=connParams.rpcUrl)
-    elif connParams.provType == 'websocket':
-        libCode += w3ScriptWs.format(rpcurl=connParams.rpcUrl)
+        libCode += injScript.replace('@RPCURL@', connParams.rpcUrl)
 
     scriptWeb3 = QWebEngineScript()
     scriptWeb3.setName('web3.js')

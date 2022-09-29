@@ -1,8 +1,8 @@
 envs:
   default:
-    defaultWebProfile: 'anonymous'
+    defaultWebProfile: 'minimal'
 
-    # Web profiles definition
+    # Web profiles definitions
     webProfiles:
       anonymous:
         descr: Anonymous profile
@@ -28,6 +28,11 @@ envs:
         settings:
           plugins: False
 
+        jsScripts:
+          ipfs-fetch:
+            type: 'builtin'
+            priority: 0
+
       ipfs:
         descr: IPFS profile
         storageName: 'ipfs'
@@ -35,9 +40,17 @@ envs:
         settings:
           accelerated2dCanvas: True
 
-        scripts:
-          - type: 'builtin'
-            name: 'js-ipfs-client'
+        jsScripts:
+          jquery:
+            type: 'qrc'
+            path: ':/share/js/jquery-3.6.0.min.js'
+          js-ipfs-client:
+            type: 'builtin'
+          ipfs-fetch:
+            type: 'builtin'
+
+            # Always added first
+            priority: 0
 
       web3:
         descr: Web3 profile
@@ -46,11 +59,17 @@ envs:
         settings:
           accelerated2dCanvas: True
 
-        scripts:
-          - type: 'builtin'
-            name: 'js-ipfs-client'
-          - type: 'builtin'
-            name: 'ethereum-web3'
+        jsScripts:
+          ipfs-fetch:
+            type: 'builtin'
+            priority: 0
+          jquery:
+            type: 'qrc'
+            path: ':/share/js/jquery-3.6.0.min.js'
+          js-ipfs-client:
+            type: 'builtin'
+          ethereum-web3:
+            type: 'builtin'
 
       defaultProfile:
         descr: Default profile
@@ -80,10 +99,10 @@ envs:
             canAccessClipboard: False
             allowWindowActivation: False
 
-        scripts:
-          - type: 'qrc'
+        jsScripts:
+          jquery:
+            type: 'qrc'
             path: ':/share/js/jquery-3.6.0.min.js'
-            name: 'jquery'
 
         fonts:
           standard: 'Inter UI'

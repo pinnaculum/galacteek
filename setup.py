@@ -328,7 +328,8 @@ setup(
         ],
         'console_scripts': [
             'galacteek-eth-master = galacteek.entrypoints.ethtool:ethTool',
-            'galacteek-rdfifier = galacteek.entrypoints.rdfifier:rdfifier'
+            'galacteek-rdfifier = galacteek.entrypoints.rdfifier:rdfifier',
+            'galacteek-eterna = galacteek.entrypoints.rdfifier:rdfifier'
         ]
     },
     classifiers=[

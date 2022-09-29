@@ -6,12 +6,12 @@ SELECT ?uri ?mimeType ?mimeCategory ?title
 		 ?thumbnailUrl {
 {
 		SELECT ?descr ?title ?mimeType ?mimeCategory ?dateCreated
-					 ?thumbnailUrl
+					 ?thumbnailUrl ?iconUrl
 					 ?uri (GROUP_CONCAT(?m) as ?kwords)
 		WHERE {
 				?uri a gs:Hashmark .
 
-				?uri h:dateCreated ?dateCreated .
+				OPTIONAL { ?uri h:dateCreated ?dateCreated . } .
 				?uri h:title ?title .
 
 				OPTIONAL {
@@ -19,11 +19,15 @@ SELECT ?uri ?mimeType ?mimeCategory ?title
 				} .
 
 				OPTIONAL { ?uri h:description ?descr . } .
-				OPTIONAL { ?uri h:mimeType ?mimeType . } .
 				OPTIONAL {
 					?uri h:mimeCategory ?mimeCategory .
-					FILTER regex(str(?mimeCategory), str(?mimeCategoryQuery), "i")
 				} .
+
+				OPTIONAL {
+					?uri h:mimeType ?mimeType .
+
+				} .
+				FILTER regex(str(?mimeType), str(?mimeCategoryQuery), "i")
 
 				OPTIONAL {
 					?uri gs:icon ?icon .

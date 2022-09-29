@@ -3,6 +3,10 @@ import os.path
 import asyncio
 import aioipfs
 
+from typing import Union
+
+from rdflib import URIRef
+
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import pyqtSignal
@@ -13,7 +17,6 @@ from galacteek import logUser
 from galacteek import ensure
 from galacteek import partialEnsure
 from galacteek import AsyncSignal
-from galacteek.database import hashmarksByPath
 from galacteek.config import cGet
 
 from galacteek.core.ps import keyLdObjects
@@ -102,14 +105,19 @@ class IPFSResourceOpener(QObject):
             hashmark
         )
 
-        await self.app.resourceOpener.open(
-            str(hashmark['uri']),
+        sPreferred = hashmark.get('prefsSchemePreferred', None)
+        webProfile = hashmark.get('prefsWebProfile', None)
+
+        await self.open(
+            hashmark['uri'],  # URIRef
             useWorkspace=workspace,
-            # schemePreferred=hashmark.schemepreferred,
+            schemePreferred=str(sPreferred) if sPreferred else None,
+            minWebProfile=str(webProfile) if webProfile else None
         )
 
     @ipfsOp
-    async def open(self, ipfsop, pathRef,
+    async def open(self, ipfsop,
+                   pathRef: Union[str, IPFSPath, URIRef],
                    mimeType=None,
                    rdfGraph=None,
                    openingFrom=None,
@@ -137,15 +145,25 @@ class IPFSResourceOpener(QObject):
         ipfsPath = None
         statInfo = None
 
-        if isinstance(pathRef, IPFSPath):
+        if isinstance(pathRef, URIRef):
+            ipath = IPFSPath(str(pathRef), autoCidConv=True)
+            if ipath.valid:
+                ipfsPath = ipath
+            else:
+                url = QUrl(str(pathRef))
+
+                if isEnsUrl(url):
+                    return self.openEnsUrl(url, pin=pin)
+
+                if isUrlSupported(url):
+                    return self.openUrl(url)
+        elif isinstance(pathRef, IPFSPath):
             ipfsPath = pathRef
         elif isinstance(pathRef, str):
             url = QUrl(pathRef)
 
             if isEnsUrl(url):
                 return self.openEnsUrl(url, pin=pin)
-            if isUrlSupported(url):
-                return self.openUrl(url)
 
             ipfsPath = IPFSPath(pathRef, autoCidConv=True)
         else:
@@ -192,13 +210,6 @@ class IPFSResourceOpener(QObject):
         else:
             logUser.info(iResourceCannotOpen(rscPath))
             return
-
-        hashmark = await hashmarksByPath(rscPath)
-        if hashmark and not useWorkspace:
-            await hashmark._fetch_all()
-            useWorkspace = self.app.mainWindow.stack.wsHashmarkTagRulesRun(
-                hashmark
-            )
 
         if mimeType == mimeTypeDagUnknown or rdfGraph is not None:
             if rdfGraph is None:

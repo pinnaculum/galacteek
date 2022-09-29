@@ -1,3 +1,5 @@
+from urllib.parse import unquote
+
 from PyQt5.QtWidgets import QTreeView
 from PyQt5.QtWidgets import QApplication
 
@@ -11,9 +13,11 @@ from PyQt5.QtGui import QColor
 from PyQt5.QtGui import QFont
 
 from galacteek import ensure
+from galacteek import services
 from galacteek.core.modelhelpers import UneditableItem
 from galacteek import database
 from galacteek.config import cGet
+
 
 from ..i18n import iUnknown
 from ..i18n import iHashmarks
@@ -63,6 +67,7 @@ class HistoryMatchesWidget(QTreeView):
         self.clicked.connect(self.onItemActivated)
 
         self.hModel = QStandardItemModel()
+
         self.fontCategory = QFont('Times', 16, QFont.Bold)
         self.fontItems = QFont('Inter UI', 14)
         self.fontItemsTitle = QFont('Inter UI', 14, italic=True)
@@ -71,6 +76,14 @@ class HistoryMatchesWidget(QTreeView):
 
         self.idxSelCount = 0
         self.selectionModel().currentChanged.connect(self.onIndexChanged)
+
+    @property
+    def pronto(self):
+        return services.getByDotName('ld.pronto')
+
+    @property
+    def hAllModel(self):
+        return self.pronto.allHashmarksModel
 
     @property
     def itemRoot(self):
@@ -96,7 +109,11 @@ class HistoryMatchesWidget(QTreeView):
         if isinstance(data, str) and data:
             self.historyItemSelected.emit(data)
 
-    async def showMatches(self, marks, hMatches):
+    async def lookup(self, text: str):
+        self.expandAll()
+        self.resizeColumnToContents(0)
+
+    async def showMatches(self, marks, hMatches, hLdMatches):
         self.hModel.clear()
         brush = QBrush(QColor('#508cac'))
 
@@ -129,9 +146,10 @@ class HistoryMatchesWidget(QTreeView):
         hItem.setBackground(brush)
         hItemE.setBackground(brush)
 
-        if len(hMatches) > 0:
+        if len(hMatches) > 0 and 0:  # XXX
             for match in hMatches:
-                title = match['title'][0:64] if match['title'] else iUnknown()
+
+                title = str(match['title'])[0:64]
                 itemT = UneditableItem(title)
                 itemT.setFont(self.fontItemsTitle)
 
@@ -143,6 +161,26 @@ class HistoryMatchesWidget(QTreeView):
                 hItem.appendRow([itemT, item])
 
             self.hModel.invisibleRootItem().appendRow([hItem, hItemE])
+
+        if len(hLdMatches) > 0:
+            # Show RDF hashmarks
+
+            for match in hLdMatches:
+                # URI ref is urlencoded
+                uri = unquote(str(match['uri']))
+
+                title = str(match['title'])[0:64]
+                itemT = UneditableItem(title)
+                itemT.setFont(self.fontItemsTitle)
+
+                item = UneditableItem(uri)
+                item.setToolTip(uri)
+                item.setData(uri, Qt.EditRole)
+                item.setFont(self.fontItems)
+
+                mItem.appendRow([itemT, item])
+
+            self.hModel.invisibleRootItem().appendRow([mItem, mItemE])
 
         self.expandAll()
         self.resizeColumnToContents(0)
