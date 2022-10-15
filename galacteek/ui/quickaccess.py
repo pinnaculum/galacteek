@@ -31,16 +31,8 @@ from .widgets import URLDragAndDropProcessor
 from .widgets.toolbar import SmartToolBar
 
 from .i18n import iUnknown
-from .i18n import iHashmarkInfoToolTipShort
-
-
-def iQuickAccess():
-    return QCoreApplication.translate(
-        'toolbarQa',
-        '''<p><b>Quick Access</b> toolbar</p>
-           <p>Drag and drop any IPFS content here that
-           you want to have easy access to</p>
-        ''')
+from .i18n import iHashmarkInfoToolTip
+from .i18n import iQuickAccessDockToolTip
 
 
 class QuickAccessToolBar(SmartToolBar,
@@ -65,13 +57,13 @@ class QuickAccessToolBar(SmartToolBar,
         self.graphsListener = GraphActivityListener(
             watch=['urn:ipg:i:love:hashmarks']
         )
-        self.graphsListener.asNeedUpdate.connectTo(
+        self.graphsListener.graphChanged.connectTo(
             self.onGraphUpdated
         )
 
         self.setMovable(True)
         self.setObjectName('qaToolBar')
-        self.setToolTip(iQuickAccess())
+        self.setToolTip(iQuickAccessDockToolTip())
 
         self.setAcceptDrops(True)
 
@@ -83,6 +75,10 @@ class QuickAccessToolBar(SmartToolBar,
     @property
     def smallIcons(self):
         return QSize(32, 32)
+
+    @property
+    def dockUriRef(self):
+        return URIRef('urn:glk:ui:docks:qa0')
 
     @property
     def largeIcons(self):
@@ -119,9 +115,7 @@ class QuickAccessToolBar(SmartToolBar,
         try:
             qah = await rdf_hashmarks.searchLdHashmarks(
                 extraBindings={
-                    'inQADock': URIRef(
-                        'urn:glk:ui:docks:qa0'
-                    )
+                    'inQADock': self.dockUriRef
                 },
                 rq='HashmarksSearchForDock'
             )
@@ -144,7 +138,7 @@ class QuickAccessToolBar(SmartToolBar,
             mark = await rdf_hashmarks.getLdHashmark(ipfsPath.ipfsUriRef)
 
             if not mark:
-                # todo
+                # todo: better discovery, or popup hashmark dialog ?
                 title = ipfsPath.basename if not \
                     ipfsPath.isRoot else iUnknown()
 
@@ -155,11 +149,19 @@ class QuickAccessToolBar(SmartToolBar,
 
                 assert result is True
 
+                await rdf_hashmarks.ldHashmarkPrefsSet(
+                    ipfsPath.ipfsUriRef,
+                    inQuickAccessDock=self.dockUriRef,
+                    showInDock=True
+                )
+
                 mark = await rdf_hashmarks.getLdHashmark(ipfsPath.ipfsUriRef)
 
             if mark:
                 await self.registerHashmark(mark)
         except Exception as err:
+            import traceback
+            traceback.print_exc()
             log.debug('Error while processing object: {0} {1}'.format(
                 ipfsPath, str(err)))
 
@@ -225,11 +227,9 @@ class QuickAccessToolBar(SmartToolBar,
             button = HashmarkToolButton(mark, parent=self)
             action = self.addWidget(button)
 
-            button.setToolTip(iHashmarkInfoToolTipShort(mark))
-
             button.clicked.connect(
-                lambda: ensure(self.app.resourceOpener.open(
-                    str(mark['uri']), openingFrom='qa')))
+                lambda: ensure(self.app.resourceOpener.openHashmark(mark))
+            )
             button.deleteRequest.connect(
                 lambda: ensure(self.onDelete(button, action)))
 
@@ -239,11 +239,25 @@ class QuickAccessToolBar(SmartToolBar,
             # reg
             self.qaActions.append(action)
 
-            button.setToolTip(iHashmarkInfoToolTipShort(mark))
+            button.setToolTip(
+                iHashmarkInfoToolTip(
+                    mark['uri'],
+                    str(mark.get('iconUrl', '')),
+                    mark['title'],
+                    mark.get('descr'),
+                    mark.get('dateCreated')
+                )
+            )
 
     async def onDelete(self, button, action):
-        # TODO: set RDF show attribute
         try:
+            # TODO: add a way to undock it
+            await rdf_hashmarks.ldHashmarkPrefsSet(
+                button.hashmark['uri'],
+                inQuickAccessDock=self.dockUriRef,
+                showInDock=False
+            )
+
             self.removeAction(action)
 
             del button

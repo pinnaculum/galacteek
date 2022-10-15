@@ -1,5 +1,7 @@
-import json
+import asyncio
 import feedparser
+import json
+
 from dateutil import parser
 
 import aioipfs
@@ -218,5 +220,7 @@ class IPFSAtomFeedParser:
                 raise AtomParseFeedError()
         except aioipfs.APIError:
             raise AtomParseFeedError()
+        except asyncio.CancelledError:
+            pass
         except Exception:
             raise AtomParseFeedError()

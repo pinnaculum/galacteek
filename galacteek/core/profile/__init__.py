@@ -905,7 +905,7 @@ class UserProfile(QObject):
 
         await ipid.upgrade()
 
-        return True
+        return ipid
 
     def ipIdentifierKeyName(self, idx: int):
         return 'galacteek.{0}.dids.{1}'.format(self.name, idx)

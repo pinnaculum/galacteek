@@ -161,11 +161,15 @@ def iPinataInstructions():
         'GalacteekWindow',
         '''
         <p>
-            Please first <a href="https://pinata.cloud/signup">
-            sign up for an account at Pinata</a>.
+            Please first sign up for an account at
+            <a href="https://pinata.cloud/signup">Pinata</a>,
+            <a href="https://api.web3.storage/">Web3.storage</a>,
+            <a href="https://api.estuary.tech/pinning/">Estuary</a>,
+            <a href="https://nft.storage/api">NFT Storage</a>,
+            or any other IPFS remote pinning service.
         </p>
         <p>
-            Once registered, paste the API key in the
+            Once registered, copy-paste the API key in the
             form field below named <i>Key</i>.
         </p>
         '''
@@ -326,6 +330,19 @@ def iPinToAllRpsToolTip():
     )
 
 
+def iRpsRegisterHelpMessage():
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        '''
+        <b>
+        Register a <b>remote pinning service</b> to keep your
+        content available !
+        <a href="manual:/pinning.html#remote">Check the manual</a> !
+        </b>
+        '''
+    )
+
+
 def iRpsStatusSummary(service, status, pinned, pinning, queued, failed):
     return QCoreApplication.translate(
         'GalacteekWindow',
@@ -342,6 +359,13 @@ def iRpsStatusSummary(service, status, pinned, pinning, queued, failed):
         </div>
         '''
     ).format(service, status, pinned, pinning, queued, failed)
+
+
+def iRemotePinning():
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Remote Pinning'
+    )
 
 
 def iRpsStatusOk():

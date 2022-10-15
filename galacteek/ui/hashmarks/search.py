@@ -109,7 +109,7 @@ class HashmarksCenterWidget(GalacteekTab):
         self.vLayout.addLayout(self.cLayout)
 
         self.comboMime = QComboBox()
-        self.comboMime.addItem('.*')
+        self.comboMime.addItem('*')
         self.comboMime.addItem('application')
         self.comboMime.addItem('audio')
         self.comboMime.addItem('image')
@@ -130,8 +130,6 @@ class HashmarksCenterWidget(GalacteekTab):
             partialEnsure(self.onSearch))
 
         self.searchLine = SearchLine()
-        # self.searchLine.returnPressed.connect(partialEnsure(self.onSearch))
-        # self.searchLine.textEdited.connect(partialEnsure(self.onSearch))
         self.searchLine.textEdited.connect(self.onSearchEdit)
         self.searchLine.downPressed.connect(self.onDownKey)
 
@@ -231,10 +229,11 @@ class HashmarksCenterWidget(GalacteekTab):
         if path.valid:
             await self.app.resourceOpener.open(path)
 
-    def getSparQlQuery(self, query='', mimeCategory='.*', keywords=[]):
+    def getSparQlQuery(self, query='', mimeCategory='', keywords=[]):
         return (querydb.get('HashmarksSearchGroup'), {
             'searchQuery': Literal(query),
-            'mimeCategoryQuery': Literal(mimeCategory),
+            'mimeCategoryQuery':
+                Literal(mimeCategory if mimeCategory != '*' else ''),
             'limitn': int(self.comboResultsLimit.currentText()),
             'langTagMatch': Literal('en')
         })

@@ -281,8 +281,8 @@ class BaseProfile(QWebEngineProfile, KeyListener):
             QWebEngineSettings.DisallowUnknownUrlSchemes
         )
 
-        # cacheType = self.profileSetting(defaults, 'cacheType', 'nocache')
         cacheType = profileSetting('cacheType', 'nocache')
+        cacheMaxSizeMb = profileSetting('cacheMaxSizeMb', 0)
 
         if cacheType == 'nocache':
             self.setHttpCacheType(QWebEngineProfile.NoCache)
@@ -293,15 +293,19 @@ class BaseProfile(QWebEngineProfile, KeyListener):
         else:
             self.setHttpCacheType(QWebEngineProfile.NoCache)
 
+        if isinstance(cacheMaxSizeMb, int) and cacheMaxSizeMb > 0:
+            self.setHttpCacheMaximumSize(cacheMaxSizeMb * (1024 * 1024))
+
         cookiesPolicy = profileSetting('cookiesPolicy', 'none')
 
-        if cookiesPolicy == 'none':
+        if cookiesPolicy in ['none', 'deny'] or not cookiesPolicy:
             self.setPersistentCookiesPolicy(
                 QWebEngineProfile.NoPersistentCookies)
         elif cookiesPolicy == 'allow':
             self.setPersistentCookiesPolicy(
                 QWebEngineProfile.AllowPersistentCookies)
-        elif cookiesPolicy == 'force':
+        elif cookiesPolicy in ['force',
+                               'force-persistent']:
             self.setPersistentCookiesPolicy(
                 QWebEngineProfile.ForcePersistentCookies)
 
@@ -338,6 +342,9 @@ class BaseProfile(QWebEngineProfile, KeyListener):
             QWebEngineSettings.JavascriptCanAccessClipboard,
             profileJsSetting('canAccessClipboard')
         )
+
+        log.debug(f'Configured profile: {self.profileName}: '
+                  f'Storage path: {self.persistentStoragePath()}')
 
     def quickClone(self):
         # Clone the profile for usage in QML

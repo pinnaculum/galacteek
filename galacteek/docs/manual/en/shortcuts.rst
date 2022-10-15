@@ -2,28 +2,26 @@
 Keyboard shortcuts
 ==================
 
-*Mod* is the *Control* key on Linux and the *Command* key on MacOS X.
+*Mod* is the *Left Control* key on Linux and the *Command* key on MacOS X.
 
 Main window keyboard shortcuts
 ------------------------------
 
 - **Mod + t**: Open a new browser tab
-- **Mod + Alt + t**: Open a new browser tab with automatic pinning enabled
-- **Mod + Alt + s**: Search with ipfs-search
-- **Mod + Alt + h**: Search hashmarks
+- **Mod + s**: Search with ipfs-search
+- **Mod + h**: Search hashmarks
 - **Mod + w**: Close current tab
-- **Mod + m**: Open the hashmarks manager
 - **Mod + u**: Show pinning status
 - **Mod + Shift + r**: Restart
 - **Mod + q**: Quit
 
-Browser keyboard shortcuts
---------------------------
+Browser tab keyboard shortcuts
+------------------------------
 
 - **Mod + f**: Find text in page
 - **Mod + b**: Bookmark current page
 - **Mod + j**: Show/hide javascript output console
-- **Mod + l**: Focus the URL zone
+- **Mod + l**: Focus the address bar (edit URL)
 - **Mod + r** or **F5**: Reload the current page
 - **Mod + F5**: Fully reload the current page (discards any cache)
 - **Mod + +**: Zoom in

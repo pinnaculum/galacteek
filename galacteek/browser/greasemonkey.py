@@ -1,0 +1,538 @@
+# vim: ft=python fileencoding=utf-8 sts=4 sw=4 et:
+
+# Copyright 2017-2021 Florian Bruhin (The Compiler) <mail@qutebrowser.org>
+#
+# This file is part of qutebrowser.
+#
+# qutebrowser is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# qutebrowser is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with qutebrowser.  If not, see <https://www.gnu.org/licenses/>.
+
+"""
+Load, parse and make available Greasemonkey scripts.
+
+Adapted from qutebrowser's greasemonkey module to load greasemonkey
+scripts and dependencies asynchronously (with aiohttp).
+"""
+
+import asyncio
+import re
+import os
+import json
+import fnmatch
+import functools
+import glob
+import textwrap
+import dataclasses
+from pathlib import Path
+from typing import cast, List, Sequence, Tuple, Optional
+
+from PyQt5.QtCore import pyqtSignal, QObject, QUrl
+
+from galacteek import log
+from galacteek import ensure
+from galacteek.core.asynclib.fetch import httpFetchTo
+from galacteek.dweb.render import defaultJinjaEnv
+
+
+gm_manager = cast('GreasemonkeyManager', None)
+
+
+def _scripts_dirs():
+    """Get the directory of the scripts."""
+
+    return [
+        os.path.join(os.getenv('HOME'), 'greasemonkey')
+    ]
+
+
+def sanitize_filename(filename: str, removestring=" %:/,.\\[]<>*?") -> str:
+    return ''.join([c for c in filename if c not in removestring])
+
+
+def string_escape(text: str) -> str:
+    """Escape values special to javascript in strings.
+
+    With this we should be able to use something like:
+      elem.evaluateJavaScript("this.value='{}'".format(string_escape(...)))
+    And all values should work.
+    """
+    # This is a list of tuples because order matters, and using OrderedDict
+    # makes no sense because we don't actually need dict-like properties.
+    replacements = (
+        ('\\', r'\\'),  # First escape all literal \ signs as \\.
+        ("'", r"\'"),   # Then escape ' and " as \' and \".
+        ('"', r'\"'),   # (note it won't hurt when we escape the wrong one).
+        ('\n', r'\n'),  # We also need to escape newlines for some reason.
+        ('\r', r'\r'),
+        ('\x00', r'\x00'),
+        ('\ufeff', r'\ufeff'),
+        # https://stackoverflow.com/questions/2965293/
+        ('\u2028', r'\u2028'),
+        ('\u2029', r'\u2029'),
+    )
+    for orig, repl in replacements:
+        text = text.replace(orig, repl)
+    return text
+
+
+class GreasemonkeyScript:
+
+    """Container class for userscripts, parses metadata blocks."""
+
+    def __init__(self, properties, code,  # noqa: C901 pragma: no mccabe
+                 filename=None):
+        self._code = code
+        self.includes: Sequence[str] = []
+        self.matches: Sequence[str] = []
+        self.excludes: Sequence[str] = []
+        self.requires: Sequence[str] = []
+        self.description = None
+        self.namespace = None
+        self.run_at = None
+        self.script_meta = None
+        self.runs_on_sub_frames = True
+        self.jsworld = "main"
+        self.name = ''
+        self.dedup_suffix = 1
+
+        for name, value in properties:
+            if name == 'name':
+                self.name = value
+            elif name == 'namespace':
+                self.namespace = value
+            elif name == 'description':
+                self.description = value
+            elif name == 'include':
+                self.includes.append(value)
+            elif name == 'match':
+                self.matches.append(value)
+            elif name in ['exclude', 'exclude_match']:
+                self.excludes.append(value)
+            elif name == 'run-at':
+                self.run_at = value
+            elif name == 'noframes':
+                self.runs_on_sub_frames = False
+            elif name == 'require':
+                self.requires.append(value)
+            elif name == 'qute-js-world':
+                self.jsworld = value
+
+        if not self.name:
+            if filename:
+                self.name = filename
+            else:
+                raise ValueError(
+                    "@name key required or pass filename to init."
+                )
+
+    HEADER_REGEX = r'// ==UserScript==|\n+// ==/UserScript==\n'
+    PROPS_REGEX = r'// @(?P<prop>[^\s]+)\s*(?P<val>.*)'
+
+    def __str__(self):
+        return self.name
+
+    def full_name(self) -> str:
+        """Get the full name of this script.
+
+        This includes a GM- prefix, its namespace (if any) and deduplication
+        counter suffix, if set.
+        """
+        parts = ['GM-']
+        if self.namespace is not None:
+            parts += [self.namespace, '/']
+        parts.append(self.name)
+        if self.dedup_suffix > 1:
+            parts.append(f"-{self.dedup_suffix}")
+        return ''.join(parts)
+
+    @classmethod
+    def parse(cls, source, filename=None):
+        """GreasemonkeyScript factory.
+
+        Takes a userscript source and returns a GreasemonkeyScript.
+        Parses the Greasemonkey metadata block, if present, to fill out
+        attributes.
+        """
+        matches = re.split(cls.HEADER_REGEX, source, maxsplit=2)
+        try:
+            _head, props, _code = matches
+        except ValueError:
+            props = ""
+        script = cls(
+            re.findall(cls.PROPS_REGEX, props),
+            source,
+            filename=filename
+        )
+        script.script_meta = props
+        if not script.includes and not script.matches:
+            script.includes = ['*']
+        return script
+
+    def needs_document_end_workaround(self):
+        """Check whether to force @run-at document-end.
+
+        This needs to be done on QtWebEngine (since Qt 5.12) for
+        known-broken scripts.
+
+        On Qt 5.12, accessing the DOM isn't possible with "@run-at
+        document-start". It was documented to be impossible before, but seems
+        to work fine.
+
+        However, some scripts do DOM access with "@run-at document-start". Fix
+        those by forcing them to use document-end instead.
+        """
+
+        broken_scripts = [
+            ('http://userstyles.org', None),
+            ('https://github.com/ParticleCore', 'Iridium'),
+        ]
+        return any(self._matches_id(namespace=namespace, name=name)
+                   for namespace, name in broken_scripts)
+
+    def _matches_id(self, *, namespace, name):
+        """Check if this script matches the given namespace/name.
+
+        Both namespace and name can be None in order to match any script.
+        """
+        matches_namespace = namespace is None or self.namespace == namespace
+        matches_name = name is None or self.name == name
+        return matches_namespace and matches_name
+
+    async def code(self):
+        """Return the processed JavaScript code of this script.
+
+        Adorns the source code with GM_* methods for Greasemonkey
+        compatibility and wraps it in an IIFE to hide it within a
+        lexical scope. Note that this means line numbers in your
+        browser's debugger/inspector will not match up to the line
+        numbers in the source script directly.
+        """
+
+        use_proxy = False
+
+        template = defaultJinjaEnv().get_template('greasemonkey_wrapper.js')
+        return await template.render_async(
+            scriptName=string_escape(
+                "/".join([self.namespace or '', self.name])),
+            scriptInfo=self._meta_json(),
+            scriptMeta=string_escape(self.script_meta or ''),
+            scriptSource=self._code,
+            use_proxy=use_proxy
+        )
+
+    def _meta_json(self):
+        return json.dumps({
+            'name': self.name,
+            'description': self.description,
+            'matches': self.matches,
+            'includes': self.includes,
+            'excludes': self.excludes,
+            'run-at': self.run_at,
+        })
+
+    def add_required_script(self, source):
+        """Add the source of a required script to this script."""
+        # The additional source is indented in case it also contains a
+        # metadata block. Because we pass everything at once to
+        # QWebEngineScript and that would parse the first metadata block
+        # found as the valid one.
+        self._code = "\n".join([textwrap.indent(source, "    "), self._code])
+
+
+@dataclasses.dataclass
+class MatchingScripts:
+
+    """All userscripts registered to run on a particular url."""
+
+    url: QUrl
+    start: List[GreasemonkeyScript] = dataclasses.field(default_factory=list)
+    end: List[GreasemonkeyScript] = dataclasses.field(default_factory=list)
+    idle: List[GreasemonkeyScript] = dataclasses.field(default_factory=list)
+
+
+@dataclasses.dataclass
+class LoadResults:
+
+    """The results of loading all Greasemonkey scripts."""
+
+    successful: List[GreasemonkeyScript] = dataclasses.field(
+        default_factory=list)
+    errors: List[Tuple[str, str]] = dataclasses.field(default_factory=list)
+
+    def successful_str(self) -> str:
+        """Get a string with all successfully loaded scripts.
+
+        This can be used e.g. for a message.info() call.
+        """
+        if not self.successful:
+            return "No Greasemonkey scripts loaded"
+
+        names = '\n'.join(str(script)
+                          for script in sorted(self.successful, key=str))
+        return f"Loaded Greasemonkey scripts:\n\n{names}"
+
+    def error_str(self) -> Optional[str]:
+        """Get a string with all errors during script loading.
+
+        This can be used e.g. for a message.error() call.
+        If there were no errors, None is returned.
+        """
+        if not self.errors:
+            return None
+
+        lines = '\n'.join(
+            f"{script}: {error}" for script,
+            error in sorted(
+                self.errors))
+        return f"Greasemonkey scripts failed to load:\n\n{lines}"
+
+
+class GreasemonkeyMatcher:
+
+    """Check whether scripts should be loaded for a given URL."""
+
+    # https://wiki.greasespot.net/Include_and_exclude_rules#Greaseable_schemes
+    # Limit the schemes scripts can run on due to unreasonable levels of
+    # exploitability
+    GREASEABLE_SCHEMES = ['http', 'https', 'ftp', 'file']
+
+    def __init__(self, url):
+        self._url = url
+        self._url_string = url.toString(QUrl.FullyEncoded)
+        self.is_greaseable = url.scheme() in self.GREASEABLE_SCHEMES
+
+    def _match_pattern(self, pattern):
+        # For include and exclude rules if they start and end with '/' they
+        # should be treated as a (ecma syntax) regular expression.
+        if pattern.startswith('/') and pattern.endswith('/'):
+            matches = re.search(pattern[1:-1], self._url_string, flags=re.I)
+            return matches is not None
+
+        # Otherwise they are glob expressions.
+        return fnmatch.fnmatch(self._url_string, pattern)
+
+    def matches(self, script):
+        """Check whether the URL matches filtering rules of the script."""
+        assert self.is_greaseable
+        matching_includes = any(self._match_pattern(pat)
+                                for pat in script.includes)
+        # matching_match = any(urlmatch.UrlPattern(pat).matches(self._url)
+        #                      for pat in script.matches)
+        matching_match = None
+        matching_excludes = any(self._match_pattern(pat)
+                                for pat in script.excludes)
+        return (matching_includes or matching_match) and not matching_excludes
+
+
+class GreasemonkeyManager(QObject):
+
+    """Manager of userscripts and a Greasemonkey compatible environment.
+
+    Signals:
+        scripts_reloaded: Emitted when scripts are reloaded from disk.
+            Any cached or already-injected scripts should be
+            considered obsolete.
+    """
+
+    scripts_reloaded = pyqtSignal()
+
+    def __init__(self, scripts_dirs, parent=None):
+        super().__init__(parent)
+        self._run_start: List[GreasemonkeyScript] = []
+        self._run_end: List[GreasemonkeyScript] = []
+        self._run_idle: List[GreasemonkeyScript] = []
+        self._in_progress_dls: List[asyncio.Future] = []
+
+        self._scripts_dirs = scripts_dirs
+
+    async def load_scripts(self, *, force: bool = False) -> LoadResults:
+        """Re-read Greasemonkey scripts from disk.
+
+        The scripts are read from a 'greasemonkey' subdirectory in
+        qutebrowser's data directory (see `:version`).
+
+        Args:
+            force: For any scripts that have required dependencies,
+                   re-download them.
+
+        Return:
+            A LoadResults object describing the outcome.
+        """
+        self._run_start = []
+        self._run_end = []
+        self._run_idle = []
+
+        successful = []
+        errors = []
+        for scripts_dir in self._scripts_dirs:
+            scripts_dir = os.path.abspath(scripts_dir)
+            # log.debug("Reading scripts from: {}".format(scripts_dir))
+
+            for script_filename in glob.glob(
+                    os.path.join(scripts_dir, '*.js')):
+                script_path = os.path.join(scripts_dir, script_filename)
+                try:
+                    with open(script_path,
+                              encoding='utf-8-sig') as script_file:
+                        script = GreasemonkeyScript.parse(
+                            script_file.read(), script_filename)
+                        assert script.name, script
+                        await self.add_script(script, force)
+                        successful.append(script)
+                except OSError as e:
+                    errors.append((os.path.basename(script_filename), str(e)))
+
+        self.scripts_reloaded.emit()
+        return LoadResults(successful=successful, errors=errors)
+
+    async def add_script(self, script, force=False):
+        """Add a GreasemonkeyScript to this manager.
+
+        Args:
+            script: The GreasemonkeyScript to add.
+            force: Fetch and overwrite any dependencies which are
+                   already locally cached.
+        """
+        if script.requires:
+            log.debug(
+                f"Deferring script until requirements are fulfilled: {script}")
+            await self._get_required_scripts(script, force)
+        else:
+            self._add_script(script)
+
+    def _add_script(self, script):
+        if script.run_at == 'document-start':
+            self._run_start.append(script)
+        elif script.run_at == 'document-end':
+            self._run_end.append(script)
+        elif script.run_at == 'document-idle':
+            self._run_idle.append(script)
+        else:
+            if script.run_at:
+                log.warning(
+                    f"Script {script} has invalid run-at defined, "
+                    "defaulting to document-end")
+                # Default as per
+                # https://wiki.greasespot.net/Metadata_Block#.40run-at
+            self._run_end.append(script)
+        log.debug(f"Loaded script: {script}")
+
+    def _required_url_to_file_path(self, url):
+        requires_dir = os.path.join(self._scripts_dirs[0], 'requires')
+        if not os.path.exists(requires_dir):
+            os.mkdir(requires_dir)
+        return os.path.join(requires_dir, sanitize_filename(url))
+
+    def _on_required_download_finished(self, script,
+                                       downloadUrl: str,
+                                       future: asyncio.Future):
+        if downloadUrl in self._in_progress_dls:
+            self._in_progress_dls.remove(downloadUrl)
+
+        if not self._add_script_with_requires(script):
+            log.debug(
+                f"Finished download {downloadUrl} for script {script} "
+                "but some requirements are still pending")
+
+    def _add_script_with_requires(self, script, quiet=False):
+        """Add a script with pending downloads to this GreasemonkeyManager.
+
+        Specifically a script that has dependencies specified via an
+        `@require` rule.
+
+        Args:
+            script: The GreasemonkeyScript to add.
+            quiet: True to suppress the scripts_reloaded signal after
+                   adding `script`.
+        Returns: True if the script was added, False if there are still
+                 dependencies being downloaded.
+        """
+        # See if we are still waiting on any required scripts for this one
+        for dlurl in self._in_progress_dls:
+            # type: ignore[attr-defined]
+            if dlurl in script.requires:
+                return False
+
+        # Need to add the required scripts to the IIFE now
+        for url in reversed(script.requires):
+            target_path = self._required_url_to_file_path(url)
+            if not os.path.exists(target_path):
+                return False
+
+            log.debug(
+                f"Adding required script for {script} to IIFE: {url}")
+            with open(target_path, encoding='utf8') as f:
+                script.add_required_script(f.read())
+
+        self._add_script(script)
+        if not quiet:
+            self.scripts_reloaded.emit()
+        return True
+
+    async def _get_required_scripts(self, script, force=False):
+        required_dls = [(url, self._required_url_to_file_path(url))
+                        for url in script.requires]
+        if not force:
+            required_dls = [(url, path) for (url, path) in required_dls
+                            if not os.path.exists(path)]
+        if not required_dls:
+            # All the required files exist already
+            self._add_script_with_requires(script, quiet=True)
+            return
+
+        tasks = []
+        for url, target_path in required_dls:
+            future = ensure(httpFetchTo(url, Path(target_path)))
+            self._in_progress_dls.append(url)
+
+            future.add_done_callback(
+                functools.partial(self._on_required_download_finished,
+                                  script, url))
+            tasks.append(future)
+
+        return await asyncio.gather(*tasks)
+
+    def scripts_for(self, url):
+        """Fetch scripts that are registered to run for url.
+
+        returns a tuple of lists of scripts meant to run at (document-start,
+        document-end, document-idle)
+        """
+        matcher = GreasemonkeyMatcher(url)
+        if not matcher.is_greaseable:
+            return MatchingScripts(url, [], [], [])
+        return MatchingScripts(
+            url=url,
+            start=[script for script in self._run_start
+                   if matcher.matches(script)],
+            end=[script for script in self._run_end
+                 if matcher.matches(script)],
+            idle=[script for script in self._run_idle
+                  if matcher.matches(script)]
+        )
+
+    def all_scripts(self):
+        """Return all scripts found in the configured script directory."""
+        return self._run_start + self._run_end + self._run_idle
+
+
+async def init(dirs: list):
+    """Initialize Greasemonkey support."""
+    global gm_manager
+
+    gm_manager = GreasemonkeyManager(dirs if dirs else _scripts_dirs())
+
+    result = await gm_manager.load_scripts()
+    errors = result.error_str()
+    if errors is not None:
+        print(errors)

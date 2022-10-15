@@ -1,3 +1,4 @@
+from PyQt5.QtCore import QStringListModel
 from rdflib import URIRef
 
 from PyQt5.QtWidgets import QApplication
@@ -15,7 +16,6 @@ from PyQt5.QtGui import QRegExpValidator
 
 from galacteek import ensure
 from galacteek import partialEnsure
-from galacteek import database
 from galacteek import services
 
 from galacteek.core.ipfsmarks import *
@@ -28,7 +28,6 @@ from galacteek.browser.schemes import isEnsUrl
 from galacteek.browser.schemes import isHttpUrl
 from galacteek.browser.schemes import isGeminiUrl
 
-from galacteek.ipfs import cidhelpers
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
@@ -50,7 +49,6 @@ from ..i18n import iDoNotPin
 from ..i18n import iPinSingle
 from ..i18n import iPinRecursive
 from ..i18n import iNoTitleProvided
-from ..i18n import iNoCategory
 from ..i18n import iHashmarkIPTagsEdit
 
 from ..i18n import iAddHashmark
@@ -58,6 +56,7 @@ from ..i18n import iEditHashmark
 
 from ..i18n import iPublicHashmarks
 from ..i18n import iPrivateHashmarks
+from ..i18n import trTodo
 
 
 def boldLabelStyle():
@@ -70,6 +69,7 @@ class AddHashmarkDialog(QDialog):
             resourceUrl: str,
             title: str,
             description: str,
+            langTag: str = None,
             pin=False,
             pinRecursive=False,
             schemePreferred=None,
@@ -92,8 +92,10 @@ class AddHashmarkDialog(QDialog):
         self.ui.resourceLabel.setText(self.resourceUrl)
         self.ui.resourceLabel.setStyleSheet(boldLabelStyle())
         self.ui.resourceLabel.setToolTip(self.resourceUrl)
-        self.ui.newCategory.textChanged.connect(self.onNewCatChanged)
+        # self.ui.newCategory.textChanged.connect(self.onNewCatChanged)
         self.ui.title.setText(title)
+
+        langTagComboBoxInit(self.ui.langtag, default=langTag)
 
         # pix = QPixmap.fromImage(QImage(':/share/icons/hashmarks.png'))
         # pix = pix.scaledToWidth(32)
@@ -135,8 +137,8 @@ class AddHashmarkDialog(QDialog):
                                      self.imageSelector)
 
         regexp1 = QRegExp(r"[A-Za-z0-9/\-]+")  # noqa
-        self.ui.newCategory.setValidator(QRegExpValidator(regexp1))
-        self.ui.newCategory.setMaxLength(64)
+        # self.ui.newCategory.setValidator(QRegExpValidator(regexp1))
+        # self.ui.newCategory.setMaxLength(64)
 
         if pin is True:
             self.ui.pinCombo.setCurrentIndex(1)
@@ -159,11 +161,14 @@ class AddHashmarkDialog(QDialog):
     def graphUri(self):
         return self.graphSelector.graphUri
 
+    @property
+    def selectedLangTag(self):
+        return langTagComboBoxGetTag(self.ui.langtag)
+
     def onOutGraphSelect(self, graphUri: GraphURIRef):
         msg, ico = None, None
 
         if graphUri.urnLastPart:
-            print(graphUri.urnLastPart)
             if graphUri.urnLastPart == 'private':
                 msg = iPrivateHashmarks(str(graphUri))
                 ico = ':/share/icons/key-diago.png'
@@ -228,8 +233,6 @@ class AddHashmarkDialog(QDialog):
 
     @ipfsOp
     async def initDialog(self, ipfsop):
-        # await self.fillCategories()
-
         if not self.ipfsPath.valid:
             # TODO: rename self.resourceUrl
             # Handle HTTP/ENS URLs
@@ -271,13 +274,6 @@ class AddHashmarkDialog(QDialog):
         except Exception as err:
             log.debug(f'Could not load favicon: {err}')
 
-    async def fillCategories(self):
-        self.ui.category.addItem(iNoCategory())
-        self.ui.category.insertSeparator(0)
-
-        for cat in await database.categoriesNames():
-            self.ui.category.addItem(cat)
-
     def onIconSelected(self, iconCid):
         self.iconCid = iconCid
 
@@ -306,87 +302,55 @@ class AddHashmarkDialog(QDialog):
                 if await self.iconWidget.load(cid):
                     self.iconCid = cid
 
-    def onNewCatChanged(self, text):
-        self.ui.category.setEnabled(len(text) == 0)
-
     def accept(self):
         ensure(self.process())
 
     async def process(self):
         # storageFormatIdx = self.ui.storageFormat.currentIndex()
-        storageFormatIdx = 0
         title = self.ui.title.text()
 
         if len(title) == 0:
             return await messageBoxAsync(iNoTitleProvided())
 
-        # share = self.ui.share.isChecked()
-        newCat = self.ui.newCategory.text()
         description = self.ui.description.toPlainText()
 
         if len(description) > 1024:
             return messageBox('Description is too long')
 
-        if len(newCat) > 0:
-            category = cidhelpers.normp(newCat)
-        elif self.ui.category.currentText() != iNoCategory():
-            category = self.ui.category.currentText()
+        if self.ipfsPath.valid:
+            uref = self.ipfsPath.ipfsUriRef
         else:
-            category = None
+            uref = self.resourceUriRef
 
-        if storageFormatIdx == 0:  # LD hashmarks
-            if self.ipfsPath.valid:
-                uref = self.ipfsPath.ipfsUriRef
-            else:
-                uref = self.resourceUriRef
+        iconUrl = IPFSPath(self.iconCid).ipfsUrl if self.iconCid else None
 
-            iconUrl = IPFSPath(self.iconCid).ipfsUrl if self.iconCid else None
+        imagePath = self.imageSelector.imageIpfsPath
 
-            imagePath = self.imageSelector.imageIpfsPath
+        result = await rdf_hashmarks.addLdHashmark(
+            self.ipfsPath if self.ipfsPath.valid else uref,
+            title,
+            comment=self.ui.comment.text(),
+            descr=description,
+            metaLangTag=self.selectedLangTag,
+            iconUrl=iconUrl,
+            thumbnailUriRef=imagePath.ipfsUriRef if imagePath else None,
+            mimeType=self.mimeType if self.mimeType else None,
+            filesStat=self.filesStat,
+            schemePreferred=self.schemePreferred,
+            graphUri=self.graphUri
+        )
 
-            result = await rdf_hashmarks.addLdHashmark(
-                self.ipfsPath if self.ipfsPath.valid else uref,
-                title,
-                comment=self.ui.comment.text(),
-                descr=description,
-                iconUrl=iconUrl,
-                thumbnailUriRef=imagePath.ipfsUriRef if imagePath else None,
-                mimeType=self.mimeType if self.mimeType else None,
-                filesStat=self.filesStat,
-                schemePreferred=self.schemePreferred,
-                graphUri=self.graphUri
-            )
-
-            if result is True:
-                self.done(0)
-
-                await runDialogAsync(
-                    HashmarkIPTagsDialog,
-                    uref,
-                    graphUri=self.graphUri
-                )
-            else:
-                # TODO. handle error
-                pass
-        elif storageFormatIdx == 1:  # unused now (old database)
-            hashmark = await database.hashmarkAdd(
-                self.resourceUrl,
-                title=title,
-                comment=self.ui.comment.text(),
-                description=description,
-                icon=self.iconCid,
-                category=category,
-                share=False,
-                pin=self.ui.pinCombo.currentIndex(),
-                schemepreferred=self.schemePreferred
-            )
-
+        if result is True:
             self.done(0)
 
             await runDialogAsync(
                 HashmarkIPTagsDialog,
-                hashmark=hashmark
+                uref,
+                graphUri=self.graphUri
             )
+        else:
+            # TODO. handle error
+            await messageBoxAsync(trTodo('Error adding hashmark'))
 
 
 class HashmarkIPTagsDialog(QDialog):
@@ -543,9 +507,99 @@ class HashmarkIPTagsDialog(QDialog):
 
 
 class IPTagsSelectDialog(QDialog):
-    def __init__(
-            self,
-            parent=None):
-        super().__init__(parent)
+    def __init__(self,
+                 parent=None):
+        super(IPTagsSelectDialog, self).__init__(parent)
 
         self.app = QApplication.instance()
+
+        self.allTagsModel = self.pronto.allTagsModel
+        self.destTagsModel = QStringListModel([])
+
+        self.allTagsProxyModel = QSortFilterProxyModel(self)
+        self.allTagsProxyModel.setSourceModel(self.allTagsModel)
+
+        self.ui = ui_iptagsmanager.Ui_IPTagsDialog()
+        self.ui.setupUi(self)
+
+        self.ui.destTagsView.setModel(self.destTagsModel)
+        self.ui.destTagsView.setEditTriggers(
+            QAbstractItemView.NoEditTriggers
+        )
+        self.ui.allTagsView.setModel(self.allTagsModel)
+        self.ui.allTagsView.doubleClicked.connect(
+            self.onTagDoubleClicked
+        )
+
+        # self.ui.addTagButton.clicked.connect(lambda: ensure(self.addTag()))
+        self.ui.lineEditTag.textChanged.connect(self.onTagEditChanged)
+        self.ui.lineEditTag.setValidator(
+            QRegExpValidator(QRegExp(r'[A-Za-z0-9-_@#]+')))
+        self.ui.lineEditTag.setMaxLength(128)
+        self.ui.lineEditTag.setClearButtonEnabled(True)
+
+        self.ui.tagItButton.clicked.connect(self.onTagObject)
+        self.ui.untagItButton.clicked.connect(partialEnsure(self.untagObject))
+        self.ui.okButton.clicked.connect(self.validate)
+        self.ui.noTagsButton.clicked.connect(self.reject)
+
+        self.setMinimumSize(
+            self.app.desktopGeometry.width() / 2,
+            (2 * self.app.desktopGeometry.height()) / 3
+        )
+
+    @property
+    def pronto(self):
+        return services.getByDotName('ld.pronto')
+
+    @property
+    def selectedTagsList(self):
+        return self.destTagsModel.stringList()
+
+    def onTagEditChanged(self, text):
+        self.allTagsProxyModel.setFilterRegExp(text)
+        self.ui.allTagsView.clearSelection()
+
+    def onTagDoubleClicked(self, idx):
+        ensure(self.tagObject([idx]))
+
+    def onTagObject(self, idx):
+        ensure(self.tagObject())
+
+    async def untagObject(self, *args):
+        try:
+            for idx in self.ui.destTagsView.selectedIndexes():
+                tag = self.destTagsModel.data(
+                    idx,
+                    Qt.DisplayRole
+                )
+
+                if tag:
+                    newList = self.destTagsModel.stringList()
+                    newList.remove(tag)
+                    self.destTagsModel.setStringList(newList)
+        except Exception:
+            pass
+
+    async def tagObject(self, indexes=None):
+        indexes = indexes if indexes else self.ui.allTagsView.selectedIndexes()
+
+        for idx in indexes:
+            tagUri = self.allTagsModel.data(
+                idx,
+                SubjectUriRole
+            )
+
+            if tagUri and tagUri not in self.destTagsModel.stringList():
+                self.destTagsModel.setStringList(
+                    self.destTagsModel.stringList() + [tagUri]
+                )
+
+    async def refreshModels(self):
+        self.allTagsModel.update()
+
+    async def initDialog(self):
+        await self.refreshModels()
+
+    def validate(self):
+        self.done(1)

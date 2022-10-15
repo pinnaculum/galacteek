@@ -11,6 +11,7 @@ class RDFBazaarService(Curve25519JSONPubsubService):
         super().__init__(*args,
                          runPeriodic=False,
                          peered=True,
+                         minMsgTsDiff=1,
                          filterSelfMessages=True, **kw)
 
         self.sExch = AsyncSignal(RDFGraphsExchangeMessage)

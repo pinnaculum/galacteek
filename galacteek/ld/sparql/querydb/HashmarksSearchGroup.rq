@@ -25,9 +25,10 @@ SELECT ?uri ?mimeType ?mimeCategory ?title
 
 				OPTIONAL {
 					?uri h:mimeType ?mimeType .
-
-				} .
-				FILTER regex(str(?mimeType), str(?mimeCategoryQuery), "i")
+				}
+				# Filter by MIME type if the MIME is set and the filter isn't empty
+				FILTER ((!bound(?mimeType) && (STRLEN(?mimeCategoryQuery) = 0)) ||
+								strStarts(?mimeType, str(?mimeCategoryQuery)))
 
 				OPTIONAL {
 					?uri gs:icon ?icon .
@@ -38,7 +39,9 @@ SELECT ?uri ?mimeType ?mimeCategory ?title
 					?thumbnail gs:contentUrl ?thumbnailUrl .
 				} .
 
-				FILTER regex(str(?title), str(?searchQuery), "i")
+				# title/description filter
+				FILTER (contains(?title, ?searchQuery) ||
+							  contains(?descr, ?searchQuery))
 
 				FILTER (langMatches(lang(?title), str(?langTagMatch)) )
 		}
@@ -46,4 +49,3 @@ SELECT ?uri ?mimeType ?mimeCategory ?title
 		ORDER BY DESC(?dateCreated)
 }
 }
-

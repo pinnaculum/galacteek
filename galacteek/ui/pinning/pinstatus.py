@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import QHBoxLayout
 from PyQt5.QtWidgets import QLabel
 from PyQt5.QtWidgets import QHeaderView
 from PyQt5.QtWidgets import QToolButton
+from PyQt5.QtWidgets import QWidget
 
 from PyQt5.QtGui import QStandardItemModel
 from PyQt5.QtGui import QBrush
@@ -21,13 +22,13 @@ from galacteek import ensure
 from galacteek import partialEnsure
 
 from galacteek.ipfs.cidhelpers import IPFSPath
+from galacteek.core import runningApp
 from galacteek.core.modelhelpers import UneditableItem
 from galacteek.core.modelhelpers import modelSearch
 from galacteek.core.ps import KeyListener
 from galacteek.core.ps import makeKeyService
 from galacteek.core.asynclib import loopTime
 
-from ..widgets import GalacteekTab
 from ..widgets import GMediumToolButton
 
 from ..helpers import messageBox
@@ -60,7 +61,7 @@ def iNodesProcessed():
 PinObjectPathRole = Qt.UserRole + 1
 
 
-class PinStatusWidget(GalacteekTab):
+class PinStatusWidget(QWidget):
     COL_TS = 0
     COL_QUEUE = 1
     COL_PATH = 2
@@ -69,7 +70,14 @@ class PinStatusWidget(GalacteekTab):
     COL_CTRL = 5
 
     def __init__(self, gWindow, **kw):
-        super(PinStatusWidget, self).__init__(gWindow, **kw)
+        super(PinStatusWidget, self).__init__(
+            gWindow,
+            Qt.Popup | Qt.FramelessWindowHint,
+        )
+
+        self.app = runningApp()
+        self.vLayout = QVBoxLayout()
+        self.setLayout(self.vLayout)
 
         self.tree = QTreeView()
         self.tree.setObjectName('pinStatusWidget')
@@ -83,6 +91,7 @@ class PinStatusWidget(GalacteekTab):
         self.ctrlLayout.addWidget(self.pathLabel)
         self.ctrlLayout.addWidget(self.pathEdit)
         self.ctrlLayout.addWidget(self.btnPin)
+
         self.vLayout.addLayout(self.ctrlLayout)
         self.vLayout.addLayout(self.boxLayout)
 
@@ -105,6 +114,22 @@ class PinStatusWidget(GalacteekTab):
                 col, QHeaderView.ResizeToContents)
 
         self.tree.hideColumn(self.COL_TS)
+
+        self.calibrate()
+
+    def resizeEvent(self, ev):
+        self.calibrate()
+
+    def calibrate(self):
+        self.setMinimumSize(
+            0.7 * self.app.desktopGeometry.width(),
+            0.5 * self.app.desktopGeometry.height()
+        )
+
+        self.setMaximumSize(
+            0.8 * self.app.desktopGeometry.width(),
+            0.6 * self.app.desktopGeometry.height()
+        )
 
     def resort(self):
         self.model.sort(self.COL_TS, Qt.DescendingOrder)
@@ -237,11 +262,16 @@ class PinStatusWidget(GalacteekTab):
             except:
                 pass
 
-    async def onCancel(self, qname, path, *a):
+    async def onCancel(self, qname: str,
+                       path: str, *a):
         self.removeItem(path)
         await self.app.ipfsCtx.pinner.cancel(qname, path)
 
-    def onPinStatusChanged(self, qname, path, statusInfo):
+    def onPinStatusChanged(self,
+                           qname: str,
+                           path: str,
+                           statusInfo: dict):
+        iPath = IPFSPath(path)
         nodesProcessed = statusInfo['status'].get('Progress', iUnknown())
 
         idx = self.getIndexFromPath(path)
@@ -255,13 +285,9 @@ class PinStatusWidget(GalacteekTab):
                 partialEnsure(self.onCancel, qname, path))
             btnCancel.setFixedWidth(140)
 
-            displayPath = path
-            if len(displayPath) > 64:
-                displayPath = displayPath[0:64] + ' ..'
-
             itemTs = UneditableItem(str(statusInfo['ts_queued']))
             itemQ = UneditableItem(qname)
-            itemP = UneditableItem(displayPath)
+            itemP = UneditableItem(iPath.objPathShort)
             itemP.setData(path, PinObjectPathRole)
             itemP.setToolTip(path)
             itemP.lastProgressUpdate = time.time()

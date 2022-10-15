@@ -1,25 +1,29 @@
 import asyncio
 import aiorwlock
+
 from cachetools import TTLCache
+from typing import Union
 
 from async_generator import async_generator, yield_, yield_from_
 
 from PyQt5.QtCore import (pyqtSignal, QObject)
 
 from galacteek import log
-from galacteek import ensure
+from galacteek import partialEnsure
 from galacteek import AsyncSignal
+
+from galacteek.core.asynccache import selfcachedcoromethod
+from galacteek.core.asynclib import async_enterable
+from galacteek.core.jtraverse import traverseParser
+from galacteek.core import utcDatetimeIso
 from galacteek.ipfs.paths import posixIpfsPath
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.ipfsops import *  # noqa
 from galacteek.ipfs import pb
-from galacteek.core.asynclib import async_enterable
-from galacteek.core.jtraverse import traverseParser
-from galacteek.core import utcDatetimeIso
 
-from galacteek.core.asynccache import selfcachedcoromethod
+from galacteek.ld import ipsContextUri
 
 
 class DAGObj:
@@ -171,11 +175,24 @@ class DAGOperations:
         elif isinstance(data, str):
             await yield_((path, DAGObj(data)))
 
-    def mkLink(self, cid):
+    def mkLink(self, cid: Union[str, dict]):
+        # IPLD link (raw)
         if isinstance(cid, str):
             return {"/": cid}
         elif isinstance(cid, dict) and 'Hash' in cid:
             return {"/": cid['Hash']}
+
+    def mkContextedLink(self, cid: Union[str, dict]):
+        #
+        # IPLD link (context: ips://galacteek.ld/ipfs/IPLDLink)
+        # This allows us to graph IPLD links
+        #
+
+        link = self.mkLink(cid)
+        link['@context'] = ipsContextUri('ipfs/IPLDLink')
+        link['@type'] = 'IPLDLink'
+        link['@id'] = f'ipfs://{cid}'  # BC, always convert to base32/36
+        return link
 
     @ipfsOp
     async def inline(self, ipfsop):
@@ -211,11 +228,13 @@ class DAGPortal(QObject, DAGOperations):
     loaded = pyqtSignal(str)
 
     def __init__(self, dagCid=None, dagRoot=None, offline=False,
+                 edag=None,
                  parent=None, lock=None, timeoutLoad=10):
         super().__init__(parent)
         self._dagCid = dagCid
         self._dagRoot = dagRoot
         self._dagPath = IPFSPath(self._dagCid)
+        self._edag = edag
         self.lock = lock if lock else asyncio.Lock()
         self.evLoaded = asyncio.Event()
         self.offline = offline
@@ -224,6 +243,10 @@ class DAGPortal(QObject, DAGOperations):
     @property
     def d(self):
         return self._dagRoot
+
+    @property
+    def edag(self):
+        return self._edag
 
     @property
     def root(self):
@@ -315,7 +338,14 @@ class EvolvingDAG(QObject, DAGOperations):
         describing this DAG
     """
 
+    # TODO: use AsyncSignal() for all the EDAG core signals
+
+    # Emitted by the async context manager
     changed = pyqtSignal()
+
+    # Emitted by ipfsSave (the actual DAG data has changed)
+    dagDataChanged = pyqtSignal()
+
     dagCidChanged = pyqtSignal(str)
     metadataEntryChanged = pyqtSignal()
 
@@ -348,7 +378,7 @@ class EvolvingDAG(QObject, DAGOperations):
         self.dagUpdated = AsyncSignal(str)
         self.available = AsyncSignal(object)
 
-        self.changed.connect(lambda: ensure(self.ipfsSave()))
+        self.changed.connect(partialEnsure(self.ipfsSave))
 
     @property
     def wLock(self):
@@ -454,7 +484,7 @@ class EvolvingDAG(QObject, DAGOperations):
         await self.available.emit(self.dagRoot)
 
     @ipfsOp
-    async def ipfsSave(self, op):
+    async def ipfsSave(self, op, emitDataChanged=True):
         self.debug('Saving (acquiring lock)')
 
         async with self.wLock:
@@ -497,6 +527,9 @@ class EvolvingDAG(QObject, DAGOperations):
                 # Bummer
                 self.debug('DAG could not be built')
                 return False
+
+        if emitDataChanged:
+            self.dagDataChanged.emit()
 
         self.debug('Saved (wlock released)')
         return True

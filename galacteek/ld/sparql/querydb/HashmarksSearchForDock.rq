@@ -33,6 +33,7 @@ WHERE {
   # Resource preferences
   ?uri h:resourcePrefs ?prefs .
   ?prefs rprefs:inQuickAccessDock ?prefsInQuickAccessDock .
+  ?prefs rprefs:showInQuickAccessDock true .
 
   OPTIONAL {
     ?prefs rprefs:useWebProfile ?prefsWebProfile .

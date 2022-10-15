@@ -130,15 +130,15 @@ class ICRQuerier:
         return await self.graph.queryAsync(self.qAllManifests)
 
     async def latestCapsule(self, manifestUri: URIRef):
-        results = list(await self.graph.queryAsync(
+        results = await self.graph.queryAsync(
             self.qLatestCapsuleFromManifest,
             initBindings={
                 'manuri': manifestUri
             }
-        ))
+        )
 
         if results:
-            return results.pop(0).latest
+            return list(results).pop(0).latest
 
     async def _old_capsuleComponents(self, capsuleUri: URIRef):
         comps = await self.graph.queryAsync(

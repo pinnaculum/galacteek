@@ -29,6 +29,15 @@ from galacteek import ensure
 from galacteek import ensureSafe
 from galacteek import database
 from galacteek import AsyncSignal
+
+from galacteek.core import runningApp
+from galacteek.core.asynccache import cachedcoromethod
+
+from galacteek.config import cGet
+
+from galacteek.dweb.render import renderTemplate
+from galacteek.dweb.enswhois import ensContentHash
+
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.mimetype import detectMimeTypeFromBuffer
 from galacteek.ipfs.mimetype import MIMEType
@@ -38,11 +47,6 @@ from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import ipfsRegSearchCid32
 from galacteek.ipfs.cidhelpers import domainValid
 from galacteek.ipfs.ipfsops import APIErrorDecoder
-from galacteek.dweb.render import renderTemplate
-from galacteek.dweb.enswhois import ensContentHash
-from galacteek.core.asynccache import cachedcoromethod
-from galacteek.core import runningApp
-from galacteek.config import cGet
 
 from galacteek.ipdapps import dappsRegisterSchemes
 
@@ -235,8 +239,7 @@ def initializeSchemes():
         SCHEME_IPID,
         syntax=QWebEngineUrlScheme.Syntax.Host,
         flags=defaultSchemeFlags |
-        QWebEngineUrlScheme.ContentSecurityPolicyIgnored |
-        QWebEngineUrlScheme.CorsEnabled
+        QWebEngineUrlScheme.ContentSecurityPolicyIgnored
     )
 
     declareUrlScheme(
@@ -254,7 +257,7 @@ def initializeSchemes():
     declareUrlScheme(
         SCHEME_ENS,
         syntax=QWebEngineUrlScheme.Syntax.Host,
-        flags=serviceWorkersFlags
+        flags=serviceWorkersFlags | QWebEngineUrlScheme.CorsEnabled
     )
 
     declareUrlScheme(
@@ -331,6 +334,8 @@ class BaseURLSchemeHandler(QWebEngineUrlSchemeHandler):
     psListener = None
     psListenerClass = None
 
+    schemeConfigName: str = 'default'
+
     def __init__(self, parent=None, noMutexes=False):
         super(BaseURLSchemeHandler, self).__init__(parent)
 
@@ -341,6 +346,13 @@ class BaseURLSchemeHandler(QWebEngineUrlSchemeHandler):
         if self.psListenerClass:
             # can't instantiate this before the hub is created ..
             self.psListener = self.psListenerClass()
+
+    @property
+    def schemeConfig(self):
+        try:
+            return cGet(f'byScheme.{self.schemeConfigName}')
+        except Exception:
+            return cGet('byScheme.default')
 
     def getBuffer(self, request: QWebEngineUrlRequestJob):
         buf = QBuffer(parent=request)
@@ -593,36 +605,36 @@ class EthDNSResolver:
                     # Pass the ctype returned in the headers to
                     # resp.json() so that it always ignores the ctype
 
-                    ctype = resp.headers.get('Content-Type',
-                                             xJsCtype)
-
-                    reply = await resp.json(content_type=ctype)
+                    reply = await resp.json(
+                        content_type=resp.headers.get('Content-Type',
+                                                      xJsCtype)
+                    )
         except Exception as e:
             raise EthDNSError(
                 f'Could not resolve eth domain: {domain}: {e}')
 
-        if reply:
-            try:
-                for ans in reply['Answer']:
-                    if 'data' not in ans:
-                        continue
-
-                    match = re.search('^\"*?dnslink=(.*?)\"*?$', ans['data'])
-                    if not match:
-                        continue
-
-                    return match.group(1).lstrip()
-
-                raise EthDNSError(
-                    f'Could not resolve eth domain: {domain}: '
-                    'No dnslink found'
-                )
-            except Exception as e:
-                raise EthDNSError(
-                    f'Could not resolve eth domain: {domain}: {e}')
-        else:
+        if not reply:
             raise EthDNSError(
                 f'Could not resolve eth domain: {domain}: Empty reply')
+
+        try:
+            for ans in reply['Answer']:
+                if 'data' not in ans:
+                    continue
+
+                match = re.search('^\"*?dnslink=(.*?)\"*?$', ans['data'])
+                if not match:
+                    continue
+
+                return match.group(1).lstrip()
+
+            raise EthDNSError(
+                f'Could not resolve eth domain: {domain}: '
+                'No dnslink found'
+            )
+        except Exception as e:
+            raise EthDNSError(
+                f'Could not resolve eth domain: {domain}: {e}')
 
     async def resolveEnsDomain(self, domain, timeout=20):
         """
@@ -707,6 +719,8 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
     by the 'serveContent' callback.
     """
 
+    schemeConfigName: str = SCHEME_IPFS
+
     # contentReady signal (handled by onContent())
     # Unused now
     contentReady = pyqtSignal(
@@ -725,7 +739,10 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
         self.app = app
         self.validCids = collections.deque([], validCidQSize)
 
-        self.requestTimeout = cGet('schemes.ipfsNative.reqTimeout')
+        self.contentCache = TTLCache(
+            self.schemeConfig.contentCacheMaxItems,
+            self.schemeConfig.contentCacheTTL
+        )
 
     def debug(self, msg):
         log.debug(f'Native scheme handler (DEBUG): {msg}')
@@ -776,13 +793,18 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
             return data.encode()
 
     async def renderDirectory(self, request, ipfsop, path):
-        # TODO: use catChunked instead of catObject
-
         ipfsPath = IPFSPath(path)
         indexPath = ipfsPath.child('index.html')
+        data = bytearray()
 
         try:
-            data = await ipfsop.catObject(str(indexPath))
+            async for cnum, chunk in ipfsop.catChunked(
+                    indexPath.objPath,
+                    chunkSize=self.schemeConfig.chunkSizeDefault,
+                    chunkTimeout=self.schemeConfig.chunkReadTimeout):
+                data.extend(chunk)
+        except asyncio.TimeoutError:
+            return self.reqFailed(request)
         except aioipfs.APIError as exc:
             dec = APIErrorDecoder(exc)
 
@@ -792,7 +814,7 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
 
             return self.urlInvalid(request)
         else:
-            return data
+            return bytes(data)
 
     async def renderDagListing(self, request, client, path, **kw):
         return b'ENOTIMPLEMENTED'
@@ -857,9 +879,12 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
 
     @ipfsOp
     async def handleRequest(self, ipfsop, request, uid):
-        rUrl = request.requestUrl()
-        scheme = rUrl.scheme()
-        host = rUrl.host()
+        try:
+            rUrl = request.requestUrl()
+            scheme = rUrl.scheme()
+            host = rUrl.host()
+        except RuntimeError:
+            return self.reqFailed(request)
 
         if not host:
             return self.urlInvalid(request)
@@ -891,8 +916,7 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
             return self.urlInvalid(request)
 
         try:
-            with async_timeout.timeout(self.requestTimeout):
-                return await self.fetchFromPath(ipfsop, request, ipfsPath, uid)
+            return await self.fetchFromPath(ipfsop, request, ipfsPath, uid)
         except asyncio.TimeoutError:
             return self.reqFailed(request)
         except Exception as err:
@@ -947,6 +971,19 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
                 return await self.renderData(request, ipfsPath, data, uid)
 
     async def fetchFromPath(self, ipfsop, request, ipfsPath, uid, **kw):
+        if self.schemeConfig.contentCacheEnable:
+            cached = self.contentCache.get(ipfsPath.objPath)
+
+            if cached:
+                # Serve from cache
+
+                buf = self.getBuffer(request)
+                buf.open(QIODevice.WriteOnly)
+                buf.write(cached[1])
+                buf.close()
+
+                return request.reply(cached[0].encode('ascii'), buf)
+
         try:
             mType = None
 
@@ -955,7 +992,10 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
 
             request.destroyed.connect(buf.deleteLater)
 
-            async for cnum, chunk in ipfsop.catChunked(ipfsPath.objPath):
+            async for cnum, chunk in ipfsop.catChunked(
+                    ipfsPath.objPath,
+                    chunkTimeout=self.schemeConfig.chunkReadTimeout,
+                    chunkSize=self.schemeConfig.chunkSizeDefault):
                 if cnum == 0 or not mType:
                     mType = await self.getMimeType(chunk, ipfsPath)
 
@@ -966,9 +1006,20 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
             if not mType:
                 mType = MIMEType('application/octet-stream')
 
+            if self.schemeConfig.contentCacheEnable and \
+               ipfsPath.objPath not in self.contentCache and \
+               mType.type in self.schemeConfig.cacheMimeTypes.keys() and \
+               buf.size() < self.schemeConfig.contentCacheMaxObjectSize:
+                # Cache object
+                self.contentCache[ipfsPath.objPath] = (mType.type,
+                                                       bytes(buf.data()))
+
             buf.close()
 
             request.reply(mType.type.encode('ascii'), buf)
+        except asyncio.TimeoutError:
+            # Let handleRequest take care of the timeout
+            raise
         except aioipfs.APIError as exc:
             await asyncio.sleep(0)
 
@@ -1474,12 +1525,15 @@ class MultiDAGProxySchemeHandler(NativeIPFSSchemeHandler):
             return await self.renderData(request, ipfsPath, data, uid)
 
 
-class EthDNSProxySchemeHandler(NativeIPFSSchemeHandler, IPFSObjectProxyScheme):
+class EthDNSProxySchemeHandler(NativeIPFSSchemeHandler,
+                               IPFSObjectProxyScheme):
     """
     ENS scheme handler (resolves ENS domains through EthDNS with aiodns)
 
     This does not redirect to the IPFS object, but rather acts as a proxy.
     """
+
+    schemeConfigName: str = SCHEME_ENS
 
     def __init__(self, app, resolver=None, parent=None):
         super(EthDNSProxySchemeHandler, self).__init__(app, parent)
@@ -1497,8 +1551,10 @@ class EthDNSProxySchemeHandler(NativeIPFSSchemeHandler, IPFSObjectProxyScheme):
         if not domain or len(domain) > 512 or not domainValid(domain):
             return None
 
-        pathRaw = await self.ethResolver.resolveEnsDomain(domain)
-        path = IPFSPath(pathRaw, autoCidConv=True)
+        path = IPFSPath(
+            await self.ethResolver.resolveEnsDomain(domain),
+            autoCidConv=True
+        )
 
         if path and path.valid:
             return path.child(uPath) if uPath else path
@@ -1517,6 +1573,6 @@ class EthDNSProxySchemeHandler(NativeIPFSSchemeHandler, IPFSObjectProxyScheme):
         if path and path.valid:
             return await self.fetchFromPath(ipfsop, request, path, uid)
         else:
-            logUser.info('EthDNS: {domain} resolve failed'.format(
-                domain=domain))
+            logUser.info(f'EthDNS: {domain} resolve failed')
+
             return self.urlNotFound(request)

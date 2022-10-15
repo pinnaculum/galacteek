@@ -1083,6 +1083,10 @@ class IPFSContext(QObject):
         self.ipfsRepositoryReady = AsyncSignal()
         self.ipfsDaemonStarted = AsyncSignal()
 
+        # DIDs
+        self.didChanged = AsyncSignal(str)
+        self.didInfosChanged = AsyncSignal(str)
+
         self.peers = Peers(self)
         self.node = Node(self)
         self.p2p = P2PServices(self)

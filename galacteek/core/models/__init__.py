@@ -75,7 +75,11 @@ class AbstractModel(QAbstractItemModel):
 
     def columnCount(self, parent):
         if parent.isValid():
-            return parent.internalPointer().columnCount()
+            internal = parent.internalPointer()
+            if internal is not None:
+                return internal.columnCount()
+            else:
+                return 0
         else:
             return self.rootItem.columnCount()
 

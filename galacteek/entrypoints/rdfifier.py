@@ -28,6 +28,7 @@ from galacteek.ld.rdf import BaseGraph
 from galacteek.ld.rdf.util import literalDtNow
 from galacteek.ld.rdf.terms import DATASET
 from galacteek.ipfs import ipfsOpFn
+from galacteek.ipfs.cidhelpers import IPFSPath
 
 from galacteek.ui_console import ptconfig
 
@@ -167,11 +168,25 @@ async def rdfifyInput(app, args, inputFiles: list = []):
     return await scramble(ipfsop, inputFiles, outp)
 
 
+async def rdfifyIpfsPath(app, args, ipfsPath: str):
+    ipfsop = app.ipfsOperatorForLoop()
+
+    async with ipfsop.ldOps() as ld:
+        g = await ld.rdfify(IPFSPath(ipfsPath))
+        print((await g.ttlize()).decode())
+
+
 def rdfify(*paths):
     global app
 
     ensure(rdfifyInput(app, args,
                        inputFiles=[Path(p) for p in paths]))
+
+
+def rdfifyIpfs(ipfsPath: str):
+    global app
+
+    ensure(rdfifyIpfsPath(app, args, ipfsPath))
 
 
 async def runCli(app, ipfsop, args):

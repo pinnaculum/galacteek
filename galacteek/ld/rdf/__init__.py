@@ -1,12 +1,15 @@
-import orjson
 import asyncio
+import attr
 import io
+import time
+import traceback
+
+from bsddb3.db import DBError
 from pathlib import Path
 
 from rdflib import RDF
 from rdflib import Graph
 from rdflib import ConjunctiveGraph
-from rdflib import BNode
 from rdflib import Namespace
 from rdflib import URIRef
 
@@ -16,8 +19,8 @@ from galacteek.ipfs import ipfsOp
 from galacteek.core import runningApp
 from galacteek.core.asynclib import asyncWriteFile
 from galacteek.core.ps import hubLdPublish
+from galacteek.core.ps import hubPublish
 from galacteek.core.ps import makeKeyService
-from galacteek.ld import asyncjsonld as jsonld
 from galacteek.ld import gLdDefaultContext
 from galacteek.ld.iri import urnParse
 
@@ -37,17 +40,11 @@ nsBindings = {
 }
 
 
-def purgeBlank(graph: Graph):
-    cn = 0
-
-    for s, p, o in graph:
-        if isinstance(s, BNode) or isinstance(o, BNode):
-            graph.remove((s, p, o))
-            cn += 1
-
-            log.debug(f'BNode purge object: {s}:{o} ({p})')
-
-    return cn
+@attr.s(auto_attribs=True)
+class GraphUpdateEvent:
+    graphUri: str
+    srcGraph: Graph
+    subjectsUris: list
 
 
 class GraphURIRef(URIRef):
@@ -74,7 +71,7 @@ class GraphURIRef(URIRef):
             pass
 
 
-class Common(object):
+class GraphCommonMixin(object):
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
         self.loop = asyncio.get_event_loop()
@@ -86,6 +83,10 @@ class Common(object):
     @property
     def guardian(self):
         return self._guardian
+
+    @property
+    def nameSpaces(self):
+        return [n for n in self.iNs.namespaces()]
 
     def setGuardian(self, g):
         self._guardian = g
@@ -99,10 +100,6 @@ class Common(object):
             else:
                 self.namespace_manager.bind(
                     ns, Namespace(uri), override=True)
-
-    @property
-    def nameSpaces(self):
-        return [n for n in self.iNs.namespaces()]
 
     def _serial(self, fmt):
         buff = io.BytesIO()
@@ -125,9 +122,30 @@ class Common(object):
         return await self.loop.run_in_executor(
             None, self._serial, 'pretty-xml')
 
+    def queryProcessTime(self, q):
+        """
+        Run a query on the graph and return the results plus
+        the process time spent on the task in nanoseconds
+
+        This is used by the P2P sparql service to do basic rate-limiting
+        """
+
+        start_time = time.perf_counter_ns()
+
+        try:
+            results = self.query(q)
+        except Exception:
+            traceback.print_exc()
+            return None, None
+        else:
+            return results, time.perf_counter_ns() - start_time
+
     async def queryAsync(self, query, initBindings=None):
         def runQuery(q, bindings):
-            return self.query(q, initBindings=bindings)
+            try:
+                return self.query(q, initBindings=bindings)
+            except DBError:
+                return None
 
         return await self.loop.run_in_executor(
             runningApp().executor,
@@ -160,41 +178,41 @@ class Common(object):
     def typesList(self):
         return list(self.subject_objects(RDF.type))
 
-    def publishEvent(self, event):
+    def publishLdEvent(self, event):
         hubLdPublish(
             makeKeyService('ld', 'pronto'),
             event
         )
 
-    def publishUpdateEvent(self):
-        self.publishEvent({
+    def publishUpdateEvent(self, srcGraph: Graph):
+        """
+        Publish a graph update notification: this graph
+        was updated with the contents of srcGraph
+        """
+
+        suris = list(set([str(subj) for subj in srcGraph.subjects()]))
+
+        log.warning(f'Publish GraphUpdateEvent for graph: {self.identifier}')
+
+        self.publishLdEvent({
             'type': 'GraphUpdateEvent',
-            'graphUri': str(self.identifier)
+            'graphUri': str(self.identifier),
+            'subjectsUris': suris
         })
 
-
-class BaseGraph(Graph, Common):
-    def __init__(self, *args, **kw):
-        super().__init__(*args, **kw)
-
-    async def pullObjectOld(self, doc: dict):
-        try:
-            if '@context' not in doc:
-                doc.update(gLdDefaultContext)
-
-            ex = await jsonld.expand(doc)
-
-            graph = BaseGraph()
-
-            graph.parse(
-                data=orjson.dumps(ex).decode(),
-                format='json-ld'
+        # Post pointer to merged graph as a separate GraphUpdateEvent instance
+        hubPublish(
+            makeKeyService('ld', 'pronto'),
+            GraphUpdateEvent(
+                graphUri=str(self.identifier),
+                srcGraph=srcGraph,
+                subjectsUris=suris
             )
+        )
 
-            # Could be optimized using another rdflib method
-            self.parse(await graph.ttlize())
-        except Exception as err:
-            log.debug(f'Error pulling object {doc}: {err}')
+
+class BaseGraph(GraphCommonMixin, Graph):
+    pass
 
 
 class IGraph(BaseGraph):
@@ -254,5 +272,5 @@ class IGraph(BaseGraph):
             self.parse(obj, format=format)
 
 
-class IConjunctiveGraph(Common, ConjunctiveGraph):
+class IConjunctiveGraph(GraphCommonMixin, ConjunctiveGraph):
     pass

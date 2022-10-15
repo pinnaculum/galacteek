@@ -7,6 +7,7 @@
     <file>../../share/icons/article.png</file>
     <file>../../share/icons/cyber.png</file>
     <file>../../share/icons/clock.png</file>
+    <file>../../share/icons/feather-pen.png</file>
     <file>../../share/icons/printer.png</file>
     <file>../../share/icons/blocks-cluster.png</file>
     <file>../../share/icons/helmet.png</file>
@@ -18,6 +19,7 @@
     <file>../../share/icons/tor.png</file>
     <file>../../share/icons/graph-link.png</file>
     <file>../../share/icons/markdown.png</file>
+    <file>../../share/icons/planets/globe-grid.png</file>
     <file>../../share/icons/planets/mercury.png</file>
     <file>../../share/icons/planets/jupiter.png</file>
     <file>../../share/icons/planets/earth.png</file>
@@ -37,6 +39,7 @@
     <file>../../share/icons/dmessenger/dmessenger-inbox-newmessages.png</file>
     <file>../../share/icons/blockchain1.png</file>
     <file>../../share/icons/blockchain2.png</file>
+    <file>../../share/js/rdfstore.min.js</file>
     <file>../../share/js/web3.min.js</file>
     <file>../../share/js/webtorrent.min.js</file>
     <file>../../share/js/rxjs.umd.min.js</file>
@@ -240,7 +243,6 @@
     <file>../../share/icons/ipfs-favicon.ico</file>
     <file>../../share/icons/dweb/dweb-arrow-next.png</file>
     <file>../../share/icons/dweb/dweb-arrow-back.png</file>
-    <file>../../share/static/sounds/mime-detected.wav</file>
     <file>../../share/static/misc/welcome.md</file>
   </qresource>
 
@@ -289,12 +291,18 @@
     <file>../../galacteek/ui/themes/chloride/galacteek.qss</file>
   </qresource>
 
-
   <qresource>
     <file>../../share/styles/sakura/sakura.css</file>
   </qresource>
   <qresource>
     <file>../../share/styles/sakura-dark/sakura-dark.css</file>
+  </qresource>
+
+  <qresource>
+    <file>../../share/static/sounds/space.wav</file>
+    <file>../../share/static/sounds/space2.wav</file>
+    <file>../../share/static/sounds/space3.wav</file>
+    <file>../../share/static/sounds/mime-detected.wav</file>
   </qresource>
 
   <qresource>

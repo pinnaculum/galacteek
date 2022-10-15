@@ -190,8 +190,7 @@ class PeersManager(GalacteekTab):
         self.ui = ui_peersgraph.Ui_PeersManager()
         self.ui.setupUi(self.peersWidget)
 
-        self.model = PeersSparQLModel(graphUri='urn:ipg:i:am',
-                                      peersTracker=self.peersTracker)
+        self.model = PeersSparQLModel(peersTracker=self.peersTracker)
 
         self.ui.peersGraphView.setModel(self.model)
         self.ui.peersGraphView.setViewMode(QListView.IconMode)
@@ -204,7 +203,6 @@ class PeersManager(GalacteekTab):
 
         self.showHideBackButton()
         self.ui.backButton.clicked.connect(self.onBackClicked)
-        self.refreshModel()
 
     def refreshModel(self):
         self.model.graphQuery(self.model.peersQuery())

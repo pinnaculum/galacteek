@@ -49,15 +49,15 @@ from galacteek.ui import files
 from galacteek.ui import ipfssearch
 from galacteek.ui import textedit
 from galacteek.ui import mediaplayer
-from galacteek.ui.pinning import pinstatus
 from galacteek.ui import seeds
+
 
 from galacteek.ui.helpers import getIcon
 from galacteek.ui.helpers import getIconFromIpfs
 from galacteek.ui.helpers import getPlanetIcon
-from galacteek.ui.helpers import playSound
 from galacteek.ui.helpers import questionBoxAsync
 from galacteek.ui.helpers import runDialogAsync
+from galacteek.ui.notify import playSound
 
 from galacteek.ui.dialogs import DefaultProgressDialog
 
@@ -65,6 +65,8 @@ from galacteek.ui.settings.cfgeditor import ConfigManager
 from galacteek.ui.settings import SettingsCenterTab
 
 from galacteek.ui.messenger import MessengerWidget
+
+from galacteek.ui.userwebsite import WebsiteAddPostTab
 
 from galacteek.ui.feeds import AtomFeedsViewTab
 from galacteek.ui.qmlapp import QMLApplicationWidget
@@ -428,7 +430,22 @@ class WorkspaceDapps(SingleWidgetWorkspace):
         return WsDappsSwitchButton(self, parent=parent)
 
 
-class TabbedWorkspace(BaseWorkspace):
+class LinkedDataWsMixin:
+    def openHashmarks(self, parent=None):
+        hashmarksLdCenter = HashmarksCenterWidget(parent)
+
+        self.wsRegisterTab(
+            hashmarksLdCenter,
+            iHashmarks(),
+            current=True,
+            icon=getIcon('hashmarks-library.png')
+        )
+
+        hashmarksLdCenter.refresh()
+
+
+class TabbedWorkspace(LinkedDataWsMixin,
+                      BaseWorkspace):
     def __init__(self, stack,
                  name,
                  description=None,
@@ -448,7 +465,6 @@ class TabbedWorkspace(BaseWorkspace):
         self.previousOpenedTabIdx = -1
         self.inactiveTabsNotify = inactiveTabsNotify
 
-        self.toolBarCtrl = QToolBar()
         self.toolBarActions = QToolBar()
         self.toolBarActions.setObjectName('wsActionsToolBar')
 
@@ -500,11 +516,26 @@ class TabbedWorkspace(BaseWorkspace):
         # Set the corner widgets
         # Workspace actions on the left, the right toolbar is unused for now
 
-        self.setCornerRight(self.toolBarCtrl)
         self.setCornerLeft(self.toolBarActions)
 
+        # Pinned actions
+
+        self.actionPostBlog = self.wsAddCustomAction(
+            'blogpost', getIcon('feather-pen.png'),
+            iNewBlogPost(), self.onAddBlogPost
+        )
+
+    def onAddBlogPost(self):
+        self.wsRegisterTab(
+            WebsiteAddPostTab(self.app.mainWindow),
+            iNewBlogPost(),
+            current=True,
+            icon=self.actionPostBlog.icon()
+        )
+
     async def workspaceShutDown(self):
-        pass
+        for tabIdx, tab in self.wsTabs():
+            await tab.onClose()
 
     def setCornerLeft(self, pButton):
         self.tabWidget.setCornerWidget(pButton, Qt.TopLeftCorner)
@@ -570,11 +601,15 @@ class TabbedWorkspace(BaseWorkspace):
             self.defaultAction.trigger()
 
     def wsAddCustomAction(self, actionName: str, icon, name,
-                          func, default=False):
+                          func, default=False,
+                          shortcut=None):
         action = self.toolBarActions.addAction(
             icon, name, func
         )
         self.wsActions[actionName] = action
+
+        if shortcut:
+            action.setShortcut(shortcut)
 
         if default is True and not self.defaultAction:
             self.defaultAction = action
@@ -642,6 +677,44 @@ class TabbedWorkspace(BaseWorkspace):
         return False
 
 
+class WorkspaceCore(TabbedWorkspace):
+    def __init__(self, stack):
+        super().__init__(stack,
+                         '@Earth',
+                         icon=getIcon('planets/globe-grid.png'))
+
+        self.wsTagRules.append(rule_engine.Rule('tag =~ ".*"'))
+
+    def wsToolTip(self):
+        return 'Main workspace'
+
+    def onHelpBrowsing(self):
+        self.app.manuals.browseManualPage('browsing.html')
+
+    async def loadDapps(self):
+        pass
+
+    def setupWorkspace(self):
+        super().setupWorkspace()
+
+        self.wsAddCustomAction(
+            'help-browsing', getIcon('help.png'),
+            iHelp(), self.onHelpBrowsing)
+
+        action = self.wsAddCustomAction('search',
+                                        getIcon('search-engine.png'),
+                                        iIpfsSearch(),
+                                        self.onAddSearchTab,
+                                        default=False)
+        action.setShortcut(QKeySequence('Ctrl+s'))
+
+    def onAddSearchTab(self):
+        tab = ipfssearch.IPFSSearchTab(self.app.mainWindow)
+        self.wsRegisterTab(tab, iIpfsSearch(), current=True,
+                           icon=getIcon('search-engine.png'))
+        tab.view.browser.setFocus(Qt.OtherFocusReason)
+
+
 class PlanetWorkspace(TabbedWorkspace):
     def __init__(self, stack,
                  planetName,
@@ -687,12 +760,6 @@ class PlanetWorkspace(TabbedWorkspace):
         self.wsAddCustomAction(
             'help-browsing', getIcon('help.png'),
             iHelp(), self.onHelpBrowsing)
-
-
-class WorkspaceCore(TabbedWorkspace):
-    def __init__(self, stack):
-        super().__init__(stack, WS_MAIN, icon=getIcon('atom.png'),
-                         description='Main')
 
 
 class WorkspaceFiles(TabbedWorkspace):
@@ -876,7 +943,7 @@ class WorkspaceSearch(TabbedWorkspace):
 
 class WorkspaceEdition(TabbedWorkspace):
     def __init__(self, stack):
-        super().__init__(stack, WS_EDIT, icon=getIcon('blog.png'),
+        super().__init__(stack, WS_EDIT, icon=getIcon('feather-pen.png'),
                          description='Edition')
 
     def setupWorkspace(self):
@@ -892,7 +959,7 @@ class WorkspaceEdition(TabbedWorkspace):
             self.onHelpMarkdown)
 
         self.actionPostBlog = self.wsAddCustomAction(
-            'blogpost', getIcon('blog.png'),
+            'blogpost', getIcon('feather-pen.png'),
             iNewBlogPost(), self.onAddBlogPost)
 
         self.actionTextEdit = self.wsAddCustomAction(
@@ -904,13 +971,6 @@ class WorkspaceEdition(TabbedWorkspace):
 
     def onHelpMarkdown(self):
         self.app.manuals.browseManualPage('markdown.html')
-
-        if 0:
-            ref = self.app.ipfsCtx.resources.get('markdown-reference')
-            if ref:
-                self.app.mainWindow.addBrowserTab().browseIpfsHash(
-                    ref['Hash']
-                )
 
     def onAddTextEditorTab(self):
         tab = textedit.TextEditorTab(editing=True, parent=self)
@@ -988,13 +1048,6 @@ class WorkspaceMisc(TabbedWorkspace):
 
     def setupWorkspace(self):
         super().setupWorkspace()
-
-        self.pinStatusTab = pinstatus.PinStatusWidget(
-            self.app.mainWindow, sticky=True)
-
-        self.wsRegisterTab(
-            self.pinStatusTab, iPinningStatus(),
-            icon=getIcon('pin-zoom.png'))
 
         self.wsRegisterTab(
             self.settingsCenter,

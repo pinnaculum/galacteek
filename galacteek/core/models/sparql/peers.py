@@ -139,7 +139,7 @@ class PeerServiceItem(SparQLBaseItem):
 
     def icon(self, column):
         if self.srvType == IPService.SRV_TYPE_DWEBBLOG:
-            return getIcon('blog.png')
+            return getIcon('feather-pen.png')
         elif self.srvType == IPService.SRV_TYPE_AVATAR:
             return getMimeIcon('image/generic')
         elif self.srvType in [IPService.SRV_TYPE_DWEBSITE_GENERIC,

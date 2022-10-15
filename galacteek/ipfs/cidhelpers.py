@@ -112,7 +112,7 @@ def shortPathRepr(path):
             cid = getCID(basename)
             return shortCidRepr(cid)
         else:
-            return basename
+            return basename[0:64]
     else:
         cid = getCID(path)
         if cid:
@@ -292,9 +292,11 @@ def cidValid(cid):
     return False
 
 
+domainRe = re.compile(r'^([A-Za-z0-9]\.|[A-Za-z0-9][A-Za-z0-9-]{0,61}[A-Za-z0-9]\.){1,3}[A-Za-z]{2,6}$')  # noqa
+
+
 def domainValid(domain):
-    domainP = r'^([A-Za-z0-9]\.|[A-Za-z0-9][A-Za-z0-9-]{0,61}[A-Za-z0-9]\.){1,3}[A-Za-z]{2,6}$'  # noqa
-    return re.match(domainP, domain)
+    return domainRe.match(domain)
 
 
 # Regexps
@@ -570,6 +572,14 @@ class IPFSPath:
             return URIRef(self.ipfsUrlEncoded + '/')
         else:
             return URIRef(self.ipfsUrlEncoded)
+
+    @property
+    def rPrefsUriRef(self):
+        """
+        Resource Preferences URI Reference for this object
+        """
+
+        return URIRef(f'{self.ipfsUriRef}#prefs')
 
     @property
     def dwebQtUrl(self):

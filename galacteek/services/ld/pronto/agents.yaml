@@ -69,9 +69,33 @@ synchronizers:
         contentType: text/turtle
         action: merge
 
+  urn:ipg:sync:sparql:blogposts:
+    type: sparql
+    run:
+      - query: >
+          PREFIX gs: <ips://galacteek.ld/>
+
+          PREFIX post: <ips://galacteek.ld/DwebBlogPost#>
+
+          CONSTRUCT {
+            ?posturi ?p ?o .
+          } WHERE {
+            ?posturi a gs:DwebBlogPost .
+            ?posturi ?p ?o .
+
+            OPTIONAL {
+              ?posturi post:tag ?tag .
+              ?tag ?tp ?to .
+            } .
+
+            FILTER(?posturi IN @SUBJECTS_LIST@ )
+          }
+
+        contentType: text/turtle
+        action: merge
+
   urn:ipg:sync:sparql:hashmarks:bylibertarian:
     type: sparql
-    debug: true
     run:
       - query: >
           PREFIX gs: <ips://galacteek.ld/>
@@ -80,8 +104,6 @@ synchronizers:
 
           CONSTRUCT {
             ?hmarkuri ?plp ?plo .
-            ?hmarkuri hmark:tag ?tag .
-            ?tag ?p ?o .
 
             ?icon ?ip ?io .
           } WHERE {
@@ -94,7 +116,13 @@ synchronizers:
               ?icon ?ip ?io .
             } .
 
+            OPTIONAL {
+              ?hmarkuri hmark:tag ?tag .
+              ?tag ?p ?o .
+            } .
+
             FILTER(?libertarianId = <@REMOTE_P2P_LIBRARIANID@>)
+            FILTER(?hmarkuri IN @SUBJECTS_LIST@ )
           }
 
         contentType: text/turtle

@@ -11,6 +11,7 @@ header nav ul {
     padding: 0;
     overflow: hidden;
     background-color: #4a9ea1;
+    background-color: #008b8b;
 }
 
 header nav ul li {
@@ -44,11 +45,11 @@ h2.blog-title {
 }
 
 a {
-    color: black;
+    color: darkgoldenrod;
 }
 
 a:hover {
-    color: blue;
+    color: goldenrod;
 }
 
 a:visited {

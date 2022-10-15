@@ -3,16 +3,15 @@
 <html>
     <head>
         <meta charset="UTF-8">
-        <title>
-            dblog: {{ profile.userInfo.spaceHandle.human }}
-        </title>
+        <title>{{ title }}</title>
+
         <link rel="stylesheet" type="text/css"
-                   href="{{ site_ipns_url(siteIpns, 'assets/css/style.css') }}" />
+            href="{{ site_ipns_url(siteIpns, 'assets/css/style.css') }}" />
         <link rel="stylesheet" type="text/css"
-                   href="{{ site_ipns_url(siteIpns, 'assets/css/pygments.css') }}" />
+            href="{{ site_ipns_url(siteIpns, 'assets/css/pygments.css') }}" />
         <link rel="alternate" type="application/atom+xml"
-             title="Atom feed"
-             href="{{ site_ipns_url(siteIpns, 'dfeed.atom') }}"/>
+            title="Atom feed"
+            href="{{ site_ipns_url(siteIpns, 'dfeed.atom') }}"/>
     </head>
     <body>
         <header>

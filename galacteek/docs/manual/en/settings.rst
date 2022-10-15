@@ -51,6 +51,25 @@ lose access to the content that you might have published using the previous
 settings, so use with care. Use separate *application profiles* with the
 **--profile** command-line switch to keep multiple separate profiles.
 
+Browser settings
+----------------
+
+Native GPU memory buffers
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Native video card memory buffers.
+
+GPU rasterization
+^^^^^^^^^^^^^^^^^
+
+Enables the use of the video card processor for rasterization.
+
+Dark Mode
+^^^^^^^^^
+
+This setting enables or disables the use of a dark theme in all
+browsing tabs.
+
 BitMessage settings
 -------------------
 

@@ -10,6 +10,12 @@
     <height>554</height>
    </rect>
   </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
   <property name="windowTitle">
    <string>Configure a new remote pinning service</string>
   </property>
@@ -22,9 +28,6 @@
         <number>32</number>
        </property>
       </widget>
-     </item>
-     <item row="0" column="1">
-      <layout class="QHBoxLayout" name="hLayoutInfo"/>
      </item>
      <item row="1" column="1">
       <widget class="QComboBox" name="provider">
@@ -116,18 +119,7 @@
     </widget>
    </item>
    <item row="0" column="0">
-    <widget class="QLabel" name="label_5">
-     <property name="styleSheet">
-      <string notr="true">color: #4a9ea1;
-padding: 20px;</string>
-     </property>
-     <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:16pt;&quot;&gt;Register a remote pinning service to keep your content available ! Check &lt;/span&gt;&lt;a href=&quot;manual:/pinning.html#remote&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;the manual &lt;/span&gt;&lt;/a&gt;&lt;span style=&quot; font-size:16pt;&quot;&gt;for more details.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="wordWrap">
-      <bool>true</bool>
-     </property>
-    </widget>
+    <layout class="QVBoxLayout" name="vLayoutInfo"/>
    </item>
   </layout>
  </widget>

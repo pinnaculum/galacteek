@@ -3,9 +3,11 @@ import asyncio
 import re
 import traceback
 import json
+import time
 
 from rdflib import Graph
 from rdflib import URIRef
+from rdflib import BNode
 
 from galacteek import log
 from galacteek import cached_property
@@ -260,19 +262,47 @@ class GraphGuardian:
 
         return residue
 
-    async def mergeReplace(self, graph: Graph, dst: BaseGraph, debug=False):
-        try:
-            for s, p, o in graph:
-                dst.remove((s, p, None))
-                await asyncio.sleep(0)
+    async def mergeReplace(self,
+                           graph: Graph,
+                           dst: BaseGraph,
+                           notify=True,
+                           bnodes=False,
+                           debug=False) -> bool:
+        """
+        Merge the first graph in the second graph
 
-            dst += graph
-        except Exception:
-            log.debug('mergeReplace failure !')
-            return False
-        else:
-            # Hub notification
+        :param Graph graph: input graph
+        :param Graph dst: destination graph
+        :param bool notify: Emit PS notify event
+        :param bool bnodes: Allow BNodes
+        """
 
-            dst.publishUpdateEvent()
+        def mergeReplaceRun(gsrc: Graph, gdst: Graph) -> bool:
+            try:
+                for s, p, o in gsrc:
+                    # No BNodes allowed by default
+                    if isinstance(s, BNode) and not bnodes:
+                        gsrc.remove((s, p, o))
+                    elif isinstance(o, BNode) and not bnodes:
+                        gsrc.remove((s, p, o))
 
-            return True
+                    gdst.remove((s, p, None))
+                    time.sleep(0.05)
+
+                # Should lock here
+                gdst += gsrc
+            except Exception:
+                log.warning(f'mergeReplace failure ! {traceback.format_exc()}')
+                return False
+            else:
+                # Hub notification
+
+                if notify:
+                    dst.publishUpdateEvent(gsrc)
+
+                log.debug(f'mergeReplace success: {len(graph)} triples')
+                return True
+
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, mergeReplaceRun,
+                                          graph, dst)

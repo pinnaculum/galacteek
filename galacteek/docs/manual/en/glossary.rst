@@ -81,6 +81,17 @@
             to prove control of the DID. Service endpoints enable trusted
             interactions with the DID subject.
 
+    DID services
+
+        A list of services registered on a specific
+        decentralized digital identity (see :term:`DID`).
+
+        Means of communicating or interacting with the DID subject
+        or associated entities via one or more service endpoints.
+        Examples include discovery services, agent services, social
+        networking services, file storage services, and verifiable
+        credential repository services. (source: W3C DID spec)
+
     dweb
 
         The distributed web
@@ -241,11 +252,20 @@
         
         Uniform Resource Identifier
 
+        The standard identifier format for all resources on the
+        World Wide Web as defined by RFC3986
+
         https://www.w3.org/wiki/URI
 
     URIRef
 
         A URI reference (this is a class name in rdflib)
+
+    Verifiable Credential
+
+        A standard data model and representation format for
+        cryptographically-verifiable digital credentials as defined
+        by the W3C Verifiable Credentials specification
 
 
 .. _IPFS: ipns://ipfs.io

@@ -1,0 +1,16 @@
+envs:
+  default:
+    qtWebEngine:
+      numRasterThreads: 4
+
+      ignoreGpuBlacklist: false
+      enableGpuRasterization: true
+      enableNativeGpuMemoryBuffers: true
+
+      blink:
+        darkMode: true
+        darkModeContrast: 0.0
+        darkModePagePolicy: 0
+        darkModeImagePolicy: 0
+        darkModeTextBrightnessThreshold: 150
+        darkModeBackgroundBrightnessThreshold: 200

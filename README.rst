@@ -229,6 +229,7 @@ This software incudes icons made by the following FlatIcon authors:
 - `FreePik <https://www.flaticon.com/authors/freepik>`_
 - `Pixel perfect <https://www.flaticon.com/authors/pixel-perfect>`_
 - `Kiranshastry <https://www.flaticon.com/authors/Kiranshastry>`_
+- `Ilham <https://www.flaticon.com/authors/ilham-fitrotul-hayat>`_
 - `Smashicons <https://smashicons.com>`_
 - `Pause08 <https://www.flaticon.com/authors/pause08>`_
 - `DinosoftLabs <https://www.flaticon.com/authors/DinosoftLabs>`_

@@ -63,7 +63,7 @@ class PSChatService(JSONPubsubService):
 
     async def onTokenStatus(self, tokenCid, channel, status):
         key = makeKeyPubChatTokens(channel)
-        await self.gHubPublish(
+        self.gHubPublish(
             key,
             (tokenCid, status)
         )
@@ -95,7 +95,7 @@ class PSChatService(JSONPubsubService):
     async def chatChanUserListPub(self, chan):
         pList = [p async for p in self.peersByChannel(chan)]
 
-        await self.gHubPublish(
+        self.gHubPublish(
             keyChatChanUserList,
             (chan, pList)
         )
@@ -198,7 +198,7 @@ class PSChatService(JSONPubsubService):
             return
 
         # Publish to the hub
-        await self.gHubPublish(keyChatChannels, cMsg)
+        self.gHubPublish(keyChatChannels, cMsg)
 
     @ipfsOp
     async def periodic(self, ipfsop):
@@ -256,7 +256,7 @@ class RSAPSEncryptedChatChannelService(RSAEncryptedJSONPubsubService):
             return
 
         cMsg.peerCtx = peerCtx
-        await self.gHubPublish(self.psKey, (sender, cMsg))
+        self.gHubPublish(self.psKey, (sender, cMsg))
 
     async def peersToSend(self):
         async for peer, token in self.mChatService.peersByChannel(
@@ -279,7 +279,7 @@ class RSAPSEncryptedChatChannelService(RSAEncryptedJSONPubsubService):
             return
 
         sMsg.peerCtx = peerCtx
-        await self.gHubPublish(self.psKey, sMsg)
+        self.gHubPublish(self.psKey, sMsg)
 
     async def shutdown(self):
         await super().shutdown()
@@ -337,7 +337,7 @@ class PSEncryptedChatChannelService(Curve25519JSONPubsubService):
             return
 
         cMsg.peerCtx = peerCtx
-        await self.gHubPublish(self.psKey, (sender, cMsg))
+        self.gHubPublish(self.psKey, (sender, cMsg))
 
     async def peersToSend(self):
         async for peer, token in self.mChatService.peersByChannel(
@@ -355,7 +355,7 @@ class PSEncryptedChatChannelService(Curve25519JSONPubsubService):
             return
 
         sMsg.peerCtx = peerCtx
-        await self.gHubPublish(self.psKey, sMsg)
+        self.gHubPublish(self.psKey, sMsg)
 
     async def shutdown(self):
         await super().shutdown()

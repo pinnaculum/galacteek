@@ -103,7 +103,7 @@ class LDPlayListModel(SparQLListModel):
         except Exception:
             return QVariant(None)
 
-    async def update(self):
+    async def trackUpdate(self):
         await self.queryTrack()
 
     async def queryTrack(self):

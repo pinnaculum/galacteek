@@ -181,11 +181,11 @@ class PSDAGExchangeService(RSAEncryptedJSONPubsubService):
 
         oil = secrets.token_hex(64)
 
-        await self.gHubPublish(
+        self.gHubPublish(
             keyTokensDagExchange, {'token': self.__serviceToken})
         await ipfsop.sleep(0.5)
 
-        await self.gHubPublish(
+        self.gHubPublish(
             keySnakeDagExchange, {
                 'snakeoil': oil,
                 'cids': [

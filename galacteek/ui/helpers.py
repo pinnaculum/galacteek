@@ -5,6 +5,7 @@ import multihash
 import multibase
 import asyncio
 import inspect
+import typing
 
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtGui import QImage
@@ -21,8 +22,10 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import QBuffer
 from PyQt5.QtCore import QByteArray
 from PyQt5.QtCore import QIODevice
+from PyQt5.QtCore import QRect
 
-
+from PyQt5.QtWidgets import QComboBox
+from PyQt5.QtWidgets import QToolTip
 from PyQt5.QtWidgets import QStyle
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtWidgets import QApplication
@@ -35,11 +38,14 @@ from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWidgets import QDialogButtonBox
 
-from PyQt5.QtMultimedia import QSound
-
 from galacteek import ensure
 from galacteek import partialEnsure
 from galacteek import threadExec
+
+from galacteek.config import cGet
+from galacteek.core import runningApp
+from galacteek.core.langtags import mainLangTags
+
 from galacteek.ipfs.mimetype import mimeTypeDagUnknown
 from galacteek.ipfs.mimetype import mimeTypeDagPb
 from galacteek.ipfs.mimetype import MIMEType
@@ -327,8 +333,14 @@ def questionBoxCreate(message, title=None):
     return msgBox
 
 
-async def messageBoxAsync(message, title=None):
-    mBox = messageBoxCreate(message, title=title)
+async def messageBoxAsync(message: typing.Union[str, Exception],
+                          title=None):
+    if isinstance(message, Exception):
+        text = str(message)
+    else:
+        text = message
+
+    mBox = messageBoxCreate(text, title=title)
     mBox.show()
     return await threadExec(mBox.exec_)
 
@@ -475,10 +487,6 @@ def qrcFileData(path):
         return qrcFile.readAll().data()
     except BaseException:
         pass
-
-
-def playSound(filename):
-    QSound.play(f':/share/static/sounds/{filename}')
 
 
 class IPFSTreeKeyFilter(QObject):
@@ -668,3 +676,35 @@ def pixmapAsBase64Url(pixmap, justUrl=False):
             return avatarUrl
         else:
             return f'<img src="{avatarUrl}"></img>'
+
+
+def easyToolTip(tooltip: str, pos, widget, timeout: int):
+    runningApp().loop.call_later(
+        0.1,
+        QToolTip.showText,
+        pos,
+        tooltip,
+        widget,
+        QRect(0, 0, 0, 0),
+        timeout
+    )
+
+
+def langTagComboBoxInit(combobox: QComboBox,
+                        default: str = None):
+    tags = mainLangTags()
+    for tag, name in tags.items():
+        combobox.addItem(name, tag)
+
+    if default and default in tags:
+        combobox.setCurrentText(tags[default])
+    else:
+        defTag = cGet('defaultContentLanguage',
+                      mod='galacteek.application')
+
+        if defTag in tags:
+            combobox.setCurrentText(tags[defTag])
+
+
+def langTagComboBoxGetTag(combobox: QComboBox):
+    return combobox.itemData(combobox.currentIndex())

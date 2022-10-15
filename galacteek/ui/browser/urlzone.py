@@ -5,8 +5,6 @@ from PyQt5.QtWidgets import QHBoxLayout
 from PyQt5.QtWidgets import QStackedWidget
 from PyQt5.QtQuickWidgets import QQuickWidget
 
-from PyQt5.QtPrintSupport import *
-
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import QEvent
 from PyQt5.QtCore import QUrl
@@ -21,22 +19,18 @@ from PyQt5.QtGui import QColor
 
 from galacteek import ensure
 from galacteek import partialEnsure
-from galacteek import database
 
 from galacteek.browser.schemes import SCHEME_FTP
 from galacteek.browser.schemes import SCHEME_HTTP
 
-from galacteek.ld.rdf.hashmarks import searchLdHashmarks
-
 from galacteek.qml import quickWidgetFromLibrary
 
-from galacteek.ipfs.wrappers import *
+from .graphsearch import ContentSearchResultsTree
 
+from ..notify import uiNotify
 from ..helpers import *
-from ..i18n import *
 from ..widgets import *
 
-from galacteek.appsettings import *
 from galacteek.ui.urls import urlColor
 
 
@@ -68,6 +62,9 @@ class URLBeclouderWidget(QWidget):
     def onUrlChanged(self, url: QUrl):
         pass
 
+    def onUrlHovered(self, url: QUrl):
+        self.rootObject.urlHoveredAnimate(url, True)
+
     def setAnimationStatus(self, active: bool):
         # Show or interrupt the URL particles animation
         self.rootObject.urlAnimate(active)
@@ -86,7 +83,12 @@ class URLInputWidget(QWidget):
     maxHeight = 128
     urlChanged = pyqtSignal(QUrl)
 
-    def __init__(self, history, historyView, browserTab, parent=None):
+    pageUrlHovered = pyqtSignal(QUrl)
+
+    def __init__(self, history,
+                 contentSearch: ContentSearchResultsTree,
+                 browserTab,
+                 parent=None):
         super(URLInputWidget, self).__init__(parent=parent)
 
         self.setAttribute(Qt.WA_DeleteOnClose)
@@ -107,13 +109,14 @@ class URLInputWidget(QWidget):
         self.obs.rootObject.cloudClicked.connect(self.handleMouseClick)
 
         self.urlChanged.connect(self.obs.onUrlChanged)
+        self.pageUrlHovered.connect(self.obs.onUrlHovered)
 
         self.stack.addWidget(self.urlBar)
         self.stack.addWidget(self.obs)
         self.stack.setCurrentIndex(0)
 
         self.history = history
-        self.historyMatches = historyView
+        self.contentSearch = contentSearch
         self.browserTab = browserTab
 
         self.setObjectName('urlZone')
@@ -131,9 +134,9 @@ class URLInputWidget(QWidget):
         self.editTimer.setSingleShot(True)
 
         self.urlBar.returnPressed.connect(partialEnsure(self.onReturnPressed))
-        self.historyMatches.historyItemSelected.connect(
+        self.contentSearch.historyItemSelected.connect(
             self.onHistoryItemSelected)
-        self.historyMatches.collapsed.connect(
+        self.contentSearch.collapsed.connect(
             self.onHistoryCollapse)
         self.urlBar.textEdited.connect(self.onUrlUserEdit)
 
@@ -148,8 +151,12 @@ class URLInputWidget(QWidget):
         return self.urlBar
 
     @property
+    def currentUrl(self):
+        return QUrl(self.bar.text())
+
+    @property
     def matchesVisible(self):
-        return self.historyMatches.isVisible()
+        return self.contentSearch.isVisible()
 
     def onDestroyed(self):
         self.obs.deleteLater()
@@ -227,17 +234,25 @@ class URLInputWidget(QWidget):
         palette.setColor(QPalette.Highlight, QColor('transparent'))
         self.setPalette(palette)
 
+    def enterContentSearch(self):
+        self.contentSearch.selectFirstItem()
+        self.contentSearch.activateWindow()
+        self.contentSearch.setFocus(Qt.OtherFocusReason)
+
     def keyPressEvent(self, ev):
         if ev.key() == Qt.Key_Up:
-            self.historyMatches.activateWindow()
-            self.historyMatches.setFocus(Qt.OtherFocusReason)
+            self.contentSearch.activateWindow()
+            self.contentSearch.setFocus(Qt.OtherFocusReason)
         elif ev.key() == Qt.Key_Down:
-            self.historyMatches.activateWindow()
-            self.historyMatches.setFocus(Qt.OtherFocusReason)
+            if not self.contentSearch.hasFocus():
+                self.enterContentSearch()
         elif ev.key() == Qt.Key_Escape:
             self.hideMatches()
-        else:
-            super().keyPressEvent(ev)
+
+            if self.currentUrl.isValid() and self.currentUrl.scheme():
+                ensure(self.obfuscate(self.currentUrl))
+
+        super().keyPressEvent(ev)
 
     def unfocus(self):
         self.urlEditing = False
@@ -247,7 +262,7 @@ class URLInputWidget(QWidget):
         self.editTimer.stop()
 
     def hideMatches(self):
-        self.historyMatches.hide()
+        self.contentSearch.hide()
 
     def startStopUrlAnimation(self, active: bool):
         self.obs.setAnimationStatus(
@@ -263,8 +278,7 @@ class URLInputWidget(QWidget):
         await self.browserTab.handleEditedUrl(self.bar.text())
 
     def onHistoryCollapse(self):
-        self.setFocus(Qt.PopupFocusReason)
-        self.bar.deselect()
+        self.bar.setFocus(Qt.PopupFocusReason)
 
     def changeEvent(self, event: QEvent):
         super().changeEvent(event)
@@ -315,53 +329,59 @@ class URLInputWidget(QWidget):
             self.editTimer.start(self.editTimeoutMs)
 
     def onTimeoutUrlEdit(self):
-        ensure(self.historyLookup())
+        ensure(self.graphSearchForContent())
 
-    def historyMatchesPopup(self):
+    def resizeEvent(self, event):
+        self.setBoundaries()
+
+    def setBoundaries(self):
+        self.contentSearch.setMinimumSize(
+            self.width(),
+            0.3 * self.app.desktopGeometry.height()
+        )
+
+        self.contentSearch.setMaximumSize(
+            self.width(),
+            max(
+                max(self.contentSearch.resultsCount, 12) * 32,
+                self.height() * 0.8
+            )
+        )
+
+    def contentSearchPopup(self):
         lEditPos = self.mapToGlobal(QPoint(0, 0))
         lEditPos.setY(lEditPos.y() + self.height())
-        self.historyMatches.move(lEditPos)
-        self.historyMatches.resize(QSize(
-            self.app.desktopGeometry.width() - self.pos().x() - 64,
-            self.height() * 8
+
+        self.contentSearch.resize(QSize(
+            self.bar.width(),
+            self.contentSearch.resultsCount * 16
         ))
-        self.historyMatches.show()
-        # Refocus
-        # self.setFocus(Qt.PopupFocusReason)
 
-    async def historyLookupStraight(self):
+        self.contentSearch.move(lEditPos)
+        self.contentSearch.show()
+
+    async def graphSearchForContent(self):
         if self.urlInput:
-            await self.historyMatches.lookup(self.urlInput)
-            self.historyMatchesPopup()
+            self.editTimer.stop()
 
-    async def historyLookup(self):
-        if self.urlInput:
-            markMatches = []
+            self.contentSearch.lookup(self.urlInput)
 
-            markMatches = await database.hashmarksSearch(
-                query=self.urlInput
-            )
+            if self.contentSearch.resultsCount > 0:
+                self.contentSearchPopup()
 
-            ldMarkMatches = await searchLdHashmarks(
-                title=self.urlInput
-            )
+                if self.contentSearch.resultsCount == 1:
+                    # Lucky day
 
-            hMatches = await self.history.match(self.urlInput)
+                    self.enterContentSearch()
 
-            if len(markMatches) > 0 or len(hMatches) > 0 or ldMarkMatches:
-                await self.historyMatches.showMatches(markMatches, hMatches,
-                                                      ldMarkMatches)
-
-                self.historyMatchesPopup()
+                    uiNotify('luckySearch')
             else:
                 self.hideMatches()
-
-            self.editTimer.stop()
         else:
             self.hideMatches()
 
     def onHistoryItemSelected(self, urlStr):
-        self.historyMatches.hide()
+        self.contentSearch.hide()
         self.urlEditing = False
 
         url = QUrl(urlStr)

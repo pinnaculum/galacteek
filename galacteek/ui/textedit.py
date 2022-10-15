@@ -62,7 +62,6 @@ from galacteek.core.asynclib import asyncReadTextFileChunked
 from galacteek.core.asynclib import threadExec
 from galacteek.appsettings import *
 from galacteek.ipfs import ipfsOp
-from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.mimetype import detectMimeType
 from galacteek.ipfs.mimetype import detectMimeTypeFromFile
@@ -1323,10 +1322,15 @@ class TextEditorWidget(QWidget):
 
             urlLabel = IPFSUrlLabel(path)
             clipButton = IPFSPathClipboardButton(path)
+
             pyrDropButton = self.app.mainWindow.getPyrDropButtonFor(
                 path, origin=self.pyramidOrigin
             )
             pyrDropButton.setIconSize(QSize(48, 48))
+
+            if self.pyramidOrigin:
+                # Auto-activate to trigger publish
+                pass
 
             now = QDateTime.currentDateTime()
             date = QLabel()
@@ -1351,7 +1355,7 @@ class TextEditorWidget(QWidget):
             layout.addItem(QSpacerItem(10, 10, QSizePolicy.Expanding,
                                        QSizePolicy.Minimum))
 
-            if self.offlineModeButton.isChecked():
+            if self.offlineModeButton.isChecked() and 0:
                 layout.addWidget(publishButton)
 
             self.copiesLayout.insertLayout(0, layout)
@@ -1387,6 +1391,7 @@ class TextEditorWidget(QWidget):
                 pButton.setText('ERR')
 
         ensure(self.publishEntry(entry), futcallback=finished)
+
         pButton.setEnabled(False)
         pButton.setText('Publishing ..')
 
@@ -1402,14 +1407,12 @@ class TextEditorWidget(QWidget):
 
         try:
             dstdir = self.sessionNew()
-            mimeType, stat = await self.app.rscAnalyzer(ipfsPath)
+            mimeType, sInfo = await self.app.rscAnalyzer(ipfsPath)
 
-            if not stat:
+            if not sInfo.valid:
                 self.busy(False)
                 messageBox('Object stat failed')
                 return
-
-            sInfo = StatInfo(stat)
 
             if not await ipfsop.client.get(
                 ipfsPath.objPath,

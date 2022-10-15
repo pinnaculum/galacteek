@@ -2,6 +2,40 @@ envs:
   default:
 
     # URL schemes configuration
-    schemes:
-      ipfsNative:
+    byScheme:
+      ipfs:
+        # deprecated
+        # reqTimeout: 240
+
+        chunkSizeDefault: 262140
+        chunkReadTimeout: 30
+
+        contentCacheEnable: false
+        contentCacheMaxItems: 64
+        contentCacheMaxObjectSize: 32768
+        contentCacheTTL: 240
+
+        cacheMimeTypes:
+          text/plain: {}
+          text/html: {}
+
+      ens:
+        # deprecated
+        # reqTimeout: 240
+
+        chunkSizeDefault: 262140
+        chunkReadTimeout: 30
+
+        contentCacheEnable: false
+        contentCacheMaxItems: 64
+        contentCacheMaxObjectSize: 32768
+        contentCacheTTL: 240
+
+        cacheMimeTypes:
+          text/css: {}
+          text/plain: {}
+          text/html: {}
+          application/json: {}
+
+      default:
         reqTimeout: 240

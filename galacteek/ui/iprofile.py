@@ -21,6 +21,8 @@ from PyQt5.QtGui import QImage
 from galacteek import ensure
 from galacteek import partialEnsure
 from galacteek import log
+
+from galacteek.did.ipid import ipidUrlFromDid
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import joinIpns
 from galacteek.ipfs.cidhelpers import IPFSPath
@@ -209,9 +211,6 @@ class ProfileEditDialog(QDialog):
             self.onLabelAnchorClicked
         )
 
-        self.ui.profileDid.setText('<b>{0}</b>'.format(
-            self.profile.userInfo.personDid))
-
         self.ui.lockButton.toggled.connect(self.onLockChange)
         self.ui.lockButton.setChecked(True)
         self.ui.changeIconButton.clicked.connect(self.changeIcon)
@@ -248,6 +247,7 @@ class ProfileEditDialog(QDialog):
 
     @ipfsOp
     async def createIdentity(self, ipfsop, options):
+        ipid = None
         curProfile = ipfsop.ctx.currentProfile
         curProfile._initOptions = options
 
@@ -265,13 +265,17 @@ class ProfileEditDialog(QDialog):
             if avail:
                 await self.ipHandleLockIpfs(ipfsop, iphandle, qrRaw, qrPng)
 
-                await self.profile.createIpIdentifier(
+                ipid = await self.profile.createIpIdentifier(
                     iphandle=iphandle,
                     updateProfile=True,
                     peered=True
                 )
 
-                break
+                if ipid:
+                    break
+
+        if ipid is None:
+            raise Exception('Cannot create IPID')
 
         async with self.profile.userInfo as dag:
             dag.curIdentity['username'] = username
@@ -280,7 +284,11 @@ class ProfileEditDialog(QDialog):
 
         self.infoMessage('Your IP handle and DID were updated')
         self.updateProfile()
-        curProfile._initOptions = {}
+
+        curProfile._initOptions = {}  # BC
+
+        await ipfsop.ctx.didChanged.emit(ipid.did)
+
         return True
 
     def enableDialog(self, toggle=True):
@@ -299,12 +307,14 @@ class ProfileEditDialog(QDialog):
     def updateProfile(self):
         spaceHandle = SpaceHandle(self.profile.userInfo.iphandle)
 
-        if spaceHandle.valid:
-            self.ui.ipHandle.setText(
-                '<b>{0}</b>'.format(str(spaceHandle)))
+        if spaceHandle.valid and self.profile.userInfo:
+            ipidUrl = ipidUrlFromDid(self.profile.userInfo.personDid)
 
-            self.ui.profileDid.setText('<b>{0}</b>'.format(
-                self.profile.userInfo.personDid))
+            self.ui.ipHandle.setText(f'<b>{spaceHandle.human}</b>')
+
+            self.ui.profileDid.setText(
+                f'<a href="{ipidUrl}">{self.profile.userInfo.personDid}</a>'
+            )
         else:
             self.ui.ipHandle.setText(iUnknown())
             self.ui.profileDid.setText('<b>{0}</b>'.format(iUnknown()))
@@ -366,7 +376,9 @@ class ProfileEditDialog(QDialog):
             await ipfsop.ctx.pubsub.send(TOPIC_PEERS, msg)
 
     @ipfsOp
-    async def encodeIpHandleQr(self, ipfsop, iphandle, format='raw',
+    async def encodeIpHandleQr(self, ipfsop,
+                               iphandle: str,
+                               format='raw',
                                filename=None):
         encoder = IPFSQrEncoder()
 
@@ -486,6 +498,7 @@ class ProfileEditDialog(QDialog):
             await ipfsop.ctx.pubsub.services[TOPIC_PEERS].sendLogoutMessage()
 
         self.ui.updateButton.setEnabled(False)
+
         self.infoMessage('Your IP handle and DID were updated')
         self.updateProfile()
 

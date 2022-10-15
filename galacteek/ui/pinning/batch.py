@@ -37,7 +37,8 @@ class PinBatchWidget(QWidget):
         self.ui.setupUi(self)
 
         self.ui.labelBasePath.setText(
-            'Base IPFS path: <b>{p}</b>'.format(p=str(self.basePath)))
+            f'Base IPFS path: <b>{self.basePath}</b>'
+        )
 
         horizHeader = self.ui.tableWidget.horizontalHeader()
         horizHeader.sectionClicked.connect(self.onHorizSectionClicked)
@@ -61,12 +62,7 @@ class PinBatchWidget(QWidget):
 
             curRow = len(added)
 
-            if len(path.objPath) > 92:
-                text = path.objPath[0:92] + '...'
-            else:
-                text = path.objPath
-
-            pItem = QTableWidgetItem(text)
+            pItem = QTableWidgetItem(path.objPathShort)
 
             pItem.setData(Qt.UserRole, path.objPath)
             pItem.setToolTip(path.objPath)
@@ -129,6 +125,7 @@ class PinBatchWidget(QWidget):
         try:
             self.ui.cancelButton.hide()
             self.ui.proceedButton.setText('Done')
+            self.parentWidget().tabRemove()
         except:
             pass
 
@@ -136,17 +133,25 @@ class PinBatchWidget(QWidget):
         if self._pinTask:
             self._pinTask.cancel()
 
+        self.parentWidget().tabRemove()
         self.parentWidget().close()
 
     @ipfsOp
     async def pinSelectedObjects(self, ipfsop):
-        def disableRow(pItem, *boxes):
-            pItem.setFlags(Qt.NoItemFlags)
-            [box.setEnabled(False) for box in boxes]
+        pinRows: list = []
 
-        for row in range(self.ui.tableWidget.rowCount()):
+        try:
+            for row in range(self.ui.tableWidget.rowCount()):
+                if self.ui.tableWidget.cellWidget(
+                        row, self.COL_NOPIN).isChecked():
+                    continue
+
+                pinRows.append(row)
+        except Exception:
+            pass
+
+        for row in pinRows:
             pItem = self.ui.tableWidget.item(row, self.COL_PATH)
-            noPinBox = self.ui.tableWidget.cellWidget(row, self.COL_NOPIN)
             pSingleBox = self.ui.tableWidget.cellWidget(row, self.COL_SPIN)
             pRecBox = self.ui.tableWidget.cellWidget(row, self.COL_RPIN)
 
@@ -154,15 +159,15 @@ class PinBatchWidget(QWidget):
                 pItem, QAbstractItemView.PositionAtCenter)
 
             path = pItem.data(Qt.UserRole)
-            if not path or noPinBox.isChecked():
-                await ipfsop.sleep(0.3)
-                disableRow(pItem, noPinBox, pSingleBox, pRecBox)
-                continue
 
             if pSingleBox.isChecked() or pRecBox.isChecked():
                 await ipfsop.ctx.pin(
                     path, recursive=pRecBox.isChecked(),
-                    qname='browser-batch')
-                disableRow(pItem, noPinBox, pSingleBox, pRecBox)
+                    qname='browser-batch'
+                )
 
-            await ipfsop.sleep(0.3)
+                self.ui.tableWidget.setRowHidden(row, True)
+
+                await ipfsop.sleep(0.2)
+            else:
+                await ipfsop.sleep(0)

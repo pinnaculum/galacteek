@@ -19,6 +19,7 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QSize
 from PyQt5.QtCore import QPoint
+from PyQt5.QtCore import QUrl
 
 from PyQt5.QtGui import QRegExpValidator
 from PyQt5.QtGui import QKeySequence
@@ -27,11 +28,15 @@ from galacteek.ipfs.wrappers import ipfsOp
 from galacteek import ensure
 from galacteek import partialEnsure
 from galacteek import services
+from galacteek.browser.schemes import isIpfsUrl
 from galacteek.core.asynclib import asyncify
 from galacteek.core.ps import KeyListener
+from galacteek.core.ps import makeKeyService
 from galacteek.hashmarks import migrateHashmarksDbToRdf
+from galacteek.ui.hashmarks import addHashmarkAsync
 
 from galacteek import database
+from galacteek import ensureSafe
 
 from . import GMediumToolButton
 from . import PopupToolButton
@@ -41,11 +46,14 @@ from galacteek.ld.rdf.watch import GraphActivityListener
 from ..helpers import getIcon
 from ..helpers import getIconFromIpfs
 
+from ..i18n import iEditHashmark
 from ..i18n import iHashmarksDatabase
 from ..i18n import iSearchHashmarks
 from ..i18n import iSearchHashmarksAllAcross
 from ..i18n import iSearchUseShiftReturn
 from ..i18n import iHashmarkSources
+from ..i18n import iRemove
+from ..i18n import trTodo
 
 
 class HashmarkToolButton(GMediumToolButton):
@@ -70,14 +78,35 @@ class HashmarkToolButton(GMediumToolButton):
         button = event.button()
 
         if button == Qt.RightButton:
-            menu = QMenu(self)
-            menu.addAction('Remove', lambda: self.deleteRequest.emit())
-            menu.exec(self.mapToGlobal(event.pos()))
+            self.showHashmarkMenu(event)
 
         super().mousePressEvent(event)
 
+    async def refetchHashmark(self):
+        hashmark = await rdf_hashmarks.getLdHashmark(self.hashmark['uri'])
 
-class _HashmarksCommon:
+        if hashmark:
+            self._hashmark = hashmark
+
+    def showHashmarkMenu(self, event):
+        menu = QMenu(self)
+        menu.addAction(getIcon('hashmarks.png'),
+                       iEditHashmark(),
+                       self.editHashmark)
+        menu.addSeparator()
+        menu.addAction(getIcon('clear-all.png'),
+                       iRemove(),
+                       lambda: self.deleteRequest.emit())
+        menu.exec(self.mapToGlobal(event.pos()))
+
+    def editHashmark(self):
+        ensureSafe(addHashmarkAsync(self.hashmark['uri']))
+
+    def setHashmarkPriority(self):
+        pass
+
+
+class HashmarkActionCreator:
     def makeHashmarkAction(self, mark, loadIcon=True):
         tLenMax = 48
 
@@ -87,39 +116,43 @@ class _HashmarksCommon:
         if title and len(title) > tLenMax:
             title = '{0} ...'.format(title[0:tLenMax])
 
+        iconUrl = QUrl(str(mark['iconUrl'])) if mark['iconUrl'] else None
+
         action = QAction(title, self)
-        # action.setToolTip(iHashmarkInfoToolTip(mark))
 
         action.setData({
             'path': path,
             'mark': mark,
-            'iconpath': str(mark['iconUrl'])
+            'iconpath': iconUrl.toString() if iconUrl else None
         })
 
-        if not mark['iconUrl'] or not loadIcon:
+        if not iconUrl or not loadIcon:
             # Default icon
             action.setIcon(getIcon('cube-blue.png'))
         else:
             # ensure(self.loadMarkIcon(action, mark.icon.path))
-            pass
+            ensure(self.loadMarkIcon(action, iconUrl))
 
         return action
 
     @ipfsOp
-    async def loadMarkIcon(self, ipfsop, action, iconCid):
+    async def loadMarkIcon(self, ipfsop,
+                           action: QAction,
+                           iconUrl: QUrl):
         data = action.data()
 
         if isinstance(data, dict) and 'iconloaded' in data:
             return
 
-        icon = await getIconFromIpfs(ipfsop, iconCid)
+        if isIpfsUrl(iconUrl):
+            icon = await getIconFromIpfs(ipfsop, iconUrl.toString())
 
-        if icon:
-            await ipfsop.sleep()
+            if icon:
+                await ipfsop.sleep()
 
-            action.setIcon(icon)
-            data['iconloaded'] = True
-            action.setData(data)
+                action.setIcon(icon)
+                data['iconloaded'] = True
+                action.setData(data)
 
 
 class HashmarksSearchWidgetAction(QWidgetAction):
@@ -158,7 +191,7 @@ class HashmarksSearchLine(QLineEdit):
         return super().keyPressEvent(event)
 
 
-class HashmarksSearcher(PopupToolButton, _HashmarksCommon):
+class HashmarksSearcher(PopupToolButton, HashmarkActionCreator):
     hashmarkClicked = pyqtSignal(object)
 
     def __init__(self, iconFile='hashmarks-library.png', parent=None,
@@ -303,7 +336,7 @@ class HashmarksSearcher(PopupToolButton, _HashmarksCommon):
 
 
 class HashmarksGraphListener(GraphActivityListener):
-    urisWatchList = ['urn:ipg:i:love:hashmarks']
+    urisWatchList = ['urn:ipg:i:love:hashmarks:*']
 
 
 class HashmarksMenu(QMenu):
@@ -316,13 +349,13 @@ class HashmarksMenu(QMenu):
         return path in self.objectPaths()
 
 
-class HashmarkMgrButton(PopupToolButton, _HashmarksCommon,
+class HashmarkMgrButton(PopupToolButton, HashmarkActionCreator,
                         KeyListener):
     hashmarkClicked = pyqtSignal(object)
 
     def __init__(self, marks, iconFile='hashmarks.png',
-                 maxItemsPerCategory=128, parent=None):
-        super(HashmarkMgrButton, self).__init__(
+                 maxItemsPerTag=92, parent=None):
+        super().__init__(
             parent=parent,
             mode=QToolButton.InstantPopup
         )
@@ -332,8 +365,7 @@ class HashmarkMgrButton(PopupToolButton, _HashmarksCommon,
         self.lock = aiorwlock.RWLock()
 
         self.gListener = HashmarksGraphListener()
-
-        self.gListener.asNeedUpdate.connectTo(self.onNeedUpdate)
+        self.gListener.graphChanged.connectTo(self.onNeedUpdate)
 
         self.setObjectName('hashmarksMgrButton')
         self.setIcon(getIcon(iconFile))
@@ -342,11 +374,18 @@ class HashmarkMgrButton(PopupToolButton, _HashmarksCommon,
         self.hCount = 0
         self.marks = marks
         self.cMenus = {}
-        self.maxItemsPerCategory = maxItemsPerCategory
+        self.maxItemsPerTag = maxItemsPerTag
+
+        self.psListen(makeKeyService('ld', 'pronto'))
 
     @property
     def pronto(self):
         return services.getByDotName('ld.pronto')
+
+    async def event_g_services_ld_pronto(self, key, message):
+        if isinstance(message, dict):
+            if message['event']['type'] == 'ProntoModelsReady':
+                ensure(self.updateMenu())
 
     async def onNeedUpdate(self, uri: str):
         # Graph was changed, update the menu
@@ -359,7 +398,7 @@ class HashmarkMgrButton(PopupToolButton, _HashmarksCommon,
 
         self.migrateAction = QAction(
             getIcon('hashmarks.png'),
-            'Migrate old database',
+            trTodo('Migrate old database'),
             self.menu,
             triggered=self.onMigrate
         )
@@ -381,7 +420,6 @@ class HashmarkMgrButton(PopupToolButton, _HashmarksCommon,
 
         # self.menu.addMenu(self.popularTagsMenu)
         # self.menu.addSeparator()
-        # self.app.hmSynchronizer.syncing.connectTo(self.onSynchronizing)
 
     def onMigrate(self):
         ensure(migrateHashmarksDbToRdf())
@@ -414,12 +452,6 @@ class HashmarkMgrButton(PopupToolButton, _HashmarksCommon,
             await hashmark._fetch_all()
             menu.addAction(self.makeHashmarkAction(hashmark))
 
-    async def onSynchronizing(self, onoff):
-        pass
-
-    async def onSynchronize(self):
-        pass
-
     async def updateIcons(self):
         pass
 
@@ -444,10 +476,13 @@ class HashmarkMgrButton(PopupToolButton, _HashmarksCommon,
         self.hCount = 0
 
         async with self.lock.writer_lock:
-            tagsAll = list(self.pronto.allTagsModel.tagsDetails())
+            tagsWatching = self.pronto.tagsPrefsModel.tagsWatching()
 
-            for tagUri, tagName, tagDisplayName in tagsAll:
+            for tagName, tagDisplayName, tagUri in tagsWatching:
                 marks = list(await ldHashmarksByTag(tagUri))
+
+                if len(marks) == 0:
+                    continue
 
                 menu = self.tagMenu(tagUri, tagName, tagDisplayName)
                 new, initialPaths = [], menu.objectPaths()
@@ -472,6 +507,10 @@ class HashmarkMgrButton(PopupToolButton, _HashmarksCommon,
             self.flashButton()
 
         self.flashButton()
+
+    @property
+    def hmModel(self):
+        return self.pronto.allHashmarksItemModel
 
     async def linkActivated(self, action):
         try:

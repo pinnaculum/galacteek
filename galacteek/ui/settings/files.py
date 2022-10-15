@@ -3,6 +3,7 @@ from . import SettingsFormController
 
 class SettingsController(SettingsFormController):
     configModuleName = 'galacteek.ui.files'
+    qrcIcon = 'folder-open.png'
 
     async def settingsInit(self):
         self.cfgWatch(

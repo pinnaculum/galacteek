@@ -1,3 +1,5 @@
+import asyncio
+
 from datetime import datetime
 from datetime import timedelta
 
@@ -15,10 +17,13 @@ class PSTopicManager:
     async def recordMessage(self, sender, size, **kw):
         rec = PubSubMsgRecord(channel=self.channel, sizeRaw=size,
                               senderPeerId=sender, **kw)
-        await rec.save()
+        try:
+            await rec.save()
 
-        await self.active()
-        return rec
+            await self.active()
+            return rec
+        except asyncio.CancelledError:
+            pass
 
     async def recordMsgAttribute(self, msgrecord, msgType, attrName, value):
         try:

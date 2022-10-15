@@ -81,6 +81,32 @@ async def httpFetch(u,
         return None, None
 
 
+async def httpFetchTo(u,
+                      dst: Path):
+    from . import asyncWriteFile
+
+    url = u if isinstance(u, URL) else URL(u)
+
+    try:
+        async with aiohttp.ClientSession() as sess:
+            async with sess.get(str(url)) as resp:
+                if resp.status != HTTPOk.status_code:
+                    raise Exception(
+                        f'httpFetchTo: {url}: '
+                        f'Invalid reply code: {resp.status}'
+                    )
+
+                await asyncWriteFile(
+                    str(dst),
+                    await resp.read(),
+                    'wb'
+                )
+
+        return True
+    except Exception:
+        return False
+
+
 async def assetFetch(u: Union[URL, str], **kw):
     from galacteek import log
     from galacteek.ipfs.fetch import fetchWithDedicatedGateway

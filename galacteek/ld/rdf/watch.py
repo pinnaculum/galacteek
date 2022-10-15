@@ -1,38 +1,135 @@
+import asyncio
 import re
 
-from galacteek.core.ps import KeyListener
+from collections import deque
+from datetime import timedelta
+from typing import Union
+
 from galacteek import AsyncSignal
+from galacteek import ensure
+from galacteek import services
+
+from galacteek.config import DictConfig
+
+from galacteek.core import utcDatetime
+
+from galacteek.core.ps import KeyListener
 from galacteek.core.ps import makeKeyService
+
+from galacteek.ld.rdf import BaseGraph
+from galacteek.ld.rdf import GraphUpdateEvent
 
 
 class GraphActivityListener(KeyListener):
+    """
+    Pubsub activity listener for pronto graphs
+    """
+
     psListenKeys = [
         makeKeyService('ld', 'pronto')
     ]
 
     urisWatchList = []
+    reading: bool = False
 
-    def __init__(self, watch: list = []):
+    def __init__(self, watch: list = [],
+                 minChangesInterval: int = 2):
         super().__init__()
+
+        self.sbuffers = {}
+        self.evflushd = {}
+        self.eventsq = asyncio.Queue()
 
         if isinstance(watch, list):
             self.urisWatchList += watch
 
-        self.asNeedUpdate = AsyncSignal(str)
+        self.graphChanged = AsyncSignal(str,
+                                        minInterval=minChangesInterval)
 
-    async def event_g_services_ld_pronto(self, key, message):
-        deliver = False
+        self.subjectsChanged = AsyncSignal(str, list)
+
+        self.graphGotMerged = AsyncSignal(str, BaseGraph)
+
+        ensure(self.readQueue())
+
+    @property
+    def pronto(self):
+        return services.getByDotName('ld.pronto')
+
+    @property
+    def configDef(self):
+        return self.config()
+
+    def config(self, graphUri: str = 'default') -> DictConfig:
+        return self.pronto.serviceConfig.graphWatcher.get(graphUri)
+
+    async def readQueue(self) -> None:
+        try:
+            self.reading = True
+
+            while self.reading:
+                graphUri, subjects = await self.eventsq.get()
+
+                if not graphUri or not subjects:
+                    await asyncio.sleep(0)
+                    continue
+
+                await self.subjectsChanged.emit(graphUri, subjects)
+
+                await asyncio.sleep(self.config().eventReadInterval)
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            pass
+
+    async def flush(self, graphUri: str, subjects: deque) -> None:
+        lastf = self.evflushd.get(graphUri, None)
+
+        cond = not lastf or (lastf and (utcDatetime() - lastf) > timedelta(
+            seconds=self.configDef.get('flushSubjectsInactiveSecs', 60)
+        ))
+
+        if len(subjects) > self.configDef.minSubjectsPerFlush and cond:
+            await self.eventsq.put((graphUri, list(subjects)))
+
+            # Reset
+            subjects.clear()
+
+            self.evflushd[graphUri] = utcDatetime()
+
+    async def event_g_services_ld_pronto(self,
+                                         key,
+                                         message: Union[GraphUpdateEvent,
+                                                        dict]) -> None:
+        if isinstance(message, GraphUpdateEvent):
+            # Emit graphGotMerged
+            return await self.graphGotMerged.emit(
+                message.graphUri,
+                message.srcGraph
+            )
+
+        # LD event
         event = message['event']
 
         if event['type'] == 'GraphUpdateEvent':
             graphUri = event.get('graphUri')
+            subjects = event.get('subjectsUris')
+
             if not graphUri:
                 return
 
             for uriReg in self.urisWatchList:
                 if re.search(uriReg, graphUri):
-                    deliver = True
-                    break
+                    await self.graphChanged.emit(graphUri)
 
-            if deliver is True:
-                await self.asNeedUpdate.emit(graphUri)
+                    if isinstance(subjects, list):
+                        esubs = self.sbuffers.setdefault(
+                            graphUri,
+                            deque([],
+                                  maxlen=self.config().maxEventSubjects)
+                        )
+                        esubs += subjects
+
+                        await self.flush(graphUri, esubs)
+
+                    break

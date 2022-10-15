@@ -64,7 +64,8 @@ class GraphSemChainSynchronizer:
                              iri: str,
                              p2pEndpoint: str,
                              graphDescr=None,
-                             p2pLibertarianId=None):
+                             p2pLibertarianId=None,
+                             **kw):
         async with ipfsop.p2pDialerFromAddr(p2pEndpoint) as dial:
             if dial.failed:
                 return False

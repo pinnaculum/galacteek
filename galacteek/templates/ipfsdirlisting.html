@@ -4,7 +4,15 @@
     <meta charset="utf-8" />
     <style>
       body {
-        background-color: lightgrey;
+        background-color: #323232;
+      }
+
+      pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        font-family: monospace;
+        font-size: 0.8em;
+        margin: 0;
       }
 
       .narrow {
@@ -17,6 +25,7 @@
 
       .listing {
         background-color: #bfbfbf;
+        background-color: lightsteelblue;
         border-radius: 4px;
         border: 1px solid grey;
         margin-top: 5px;
@@ -36,6 +45,10 @@
       #logo {
         height: 25px;
         margin: 10px;
+      }
+
+      .ipfs-entry-size {
+        padding-left: 20px;
       }
 
       .ipfs-entry {
@@ -81,7 +94,7 @@
     <div class="listing">
       <div class="panel panel-default">
         <div class="panel-heading">
-          <strong>Index of {{ path }}</strong>
+          <pre>Index of <b>{{ path }}</b></pre>
         </div>
         <table class="table table-striped">
           <tr>
@@ -104,11 +117,13 @@
   {% endif %}
             </td>
 
-            <td>
+            <td class="ipfs-entry-name">
                 <a href="{{ lnk['href'] }}">{{ lnk['Name'] }}</a>
             </td>
   {% if lnk['Type'] == 2 %}
-            <td>{{ lnk['Size'] |filesizeformat(true) }}</td>
+            <td class="ipfs-entry-size">
+              {{ lnk['Size'] |filesizeformat(true) }}
+            </td>
   {% endif %}
           </tr>
   {% endfor %}

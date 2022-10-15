@@ -7,6 +7,9 @@ class SettingsController(SettingsFormController):
     """
     Last remaining form that uses the old appsettings.
     """
+
+    qrcIcon = 'ipfs-cube-64.png'
+
     async def settingsInit(self):
         self.sManager = self.app.settingsMgr
         self.ui.pubsubRoutingMode.insertItem(0, ROUTER_TYPE_FLOOD)

@@ -1,4 +1,3 @@
-
 from galacteek import log
 from galacteek.core.asynclib import clientSessionWithProxy
 from galacteek.config import cParentGet
@@ -8,6 +7,10 @@ import async_timeout
 
 
 ipfsSearchApiHost = 'api.ipfs-search.com'
+
+
+class IPFSSearchAPIError(Exception):
+    pass
 
 
 class IPFSSearchResults:
@@ -66,6 +69,10 @@ async def getPageResults(query, page, filters={}, sslverify=True,
             results = await searchPage(query, page, filters=filters,
                                        proxyUrl=proxyUrl,
                                        sslverify=sslverify)
+            assert isinstance(results, dict)
+            if 'error' in results:
+                raise IPFSSearchAPIError(results['error'])
+
             return IPFSSearchResults(page, results)
     except Exception as err:
         log.debug(f'ipfs-search error ({query}, page {page}): {err}')

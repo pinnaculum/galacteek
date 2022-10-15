@@ -59,9 +59,9 @@ from .helpers import getIconFromImageData
 from .helpers import runDialog
 from .helpers import disconnectSig
 from .helpers import sizeFormat
-from .helpers import playSound
 from .helpers import inputText
 from .helpers import inputTextLong
+from .notify import playSound
 from .widgets import PopupToolButton
 from .widgets import DownloadProgressButton
 from .widgets.pinwidgets import PinObjectAction

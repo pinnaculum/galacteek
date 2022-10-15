@@ -69,11 +69,15 @@ def addHashmark(hashmarks, path, title, description='', stats={},
     return True
 
 
-async def addHashmarkAsync(path, title='', description='',
+async def addHashmarkAsync(path,
+                           title: str = '',
+                           description: str = '',
+                           langTag: str = None,
                            pin=False, pinRecursive=False,
                            schemePreferred=None):
     await runDialogAsync(AddHashmarkDialog,
                          path, title, description,
+                         langTag=langTag,
                          pin=pin, pinRecursive=pinRecursive,
                          schemePreferred=schemePreferred)
     return True

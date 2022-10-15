@@ -1,5 +1,6 @@
 import functools
 import asyncio
+import traceback
 
 from aiohttp.client_exceptions import ClientConnectorError
 
@@ -60,6 +61,9 @@ class ipfsClassW:
         except ClientConnectorError as e:
             raise ConnectionError(
                 'Client connection error: {}'.format(str(e)))
+        except Exception:
+            traceback.print_exc()
+            log.debug(f'IPFSOp exception: {traceback.format_exc()}')
         else:
             return resp
 

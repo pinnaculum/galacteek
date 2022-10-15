@@ -1,13 +1,18 @@
+import functools
 import importlib
+import traceback
 
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QListWidgetItem
 from PyQt5.QtWidgets import QWidget
 
+from PyQt5.QtWidgets import QFontComboBox
 from PyQt5.QtWidgets import QComboBox
 from PyQt5.QtWidgets import QCheckBox
 from PyQt5.QtWidgets import QSpinBox
 from PyQt5.QtWidgets import QLineEdit
+from PyQt5.QtWidgets import QSizePolicy
+from PyQt5.QtWidgets import QScrollArea
 
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import Qt
@@ -23,15 +28,10 @@ from galacteek.core.ps import KeyListener
 from galacteek import ensure
 from galacteek.appsettings import *
 
-from galacteek.ui.forms import ui_settings_ui
-from galacteek.ui.forms import ui_settings_files
-from galacteek.ui.forms import ui_settings_general
-from galacteek.ui.forms import ui_settings_pinning
-from galacteek.ui.forms import ui_settings_ipfs
-from galacteek.ui.forms import ui_settings_center
-from galacteek.ui.forms import ui_settings_bitmessage
+from galacteek.browser.schemes import SCHEME_IPFS
+from galacteek.browser.schemes import SCHEME_ENS
 
-from . import *
+from galacteek.ui.forms import ui_settings_center
 
 from ..widgets import GalacteekTab
 from ..forms import ui_settings
@@ -288,9 +288,10 @@ class SettingsDialog(QDialog):
              self.ui.comboDefaultWebProfile.currentText(),
              mod='galacteek.browser.webprofiles')
 
-        section = CFG_SECTION_HISTORY
-        cSet('enabled', self.isChecked(self.ui.urlHistoryEnable),
-             mod='galacteek.ui.history')
+        if 0:
+            section = CFG_SECTION_HISTORY
+            cSet('enabled', self.isChecked(self.ui.urlHistoryEnable),
+                 mod='galacteek.ui.history')
 
         cSet('zoom.default', self.ui.webEngineDefaultZoom.value(),
              mod='galacteek.ui.browser')
@@ -352,63 +353,87 @@ SettingsModControllerRole = Qt.UserRole + 3
 
 
 class SettingsCenterTab(GalacteekTab):
+    modules = {}
+
     def tabSetup(self):
         widget = QWidget()
 
-        self.modules = {}
         self.ui = ui_settings_center.Ui_SettingsCenter()
         self.ui.setupUi(widget)
 
         self.ui.sModules.itemClicked.connect(self.onModuleClicked)
 
-        self.load('General',
-                  'general', ui_settings_general)
-        self.load('IPFS',
-                  'ipfs', ui_settings_ipfs)
-        self.load('User Interface',
-                  'ui', ui_settings_ui)
-        self.load('Files',
-                  'files', ui_settings_files)
-        self.load(iPinningSettings(),
-                  'pinning', ui_settings_pinning)
-        self.load(iBitMessage(),
-                  'bitmessage', ui_settings_bitmessage)
+        self.load('General', 'general')
+        self.load('IPFS', 'ipfs')
+        self.load('Browser', 'browser')
+        self.load('User Interface', 'ui')
+        self.load('Ethereum', 'ethereum')
+        self.load('Files', 'files')
+        self.load(iRemotePinning(), 'pinning')
+        self.load(iBitMessage(), 'bitmessage')
+
+        for pName, profile in self.app.webProfiles.items():
+            self.load(
+                iWebProfileLabel(pName),
+                'webprofile',
+                webProfileName=pName,
+                webProfile=profile
+            )
+
+        for scheme in [SCHEME_IPFS, SCHEME_ENS]:
+            self.load(f'URL Scheme: {scheme}',
+                      'urlscheme',
+                      schemeName=scheme)
 
         self.addToLayout(widget)
 
     def resizeEvent(self, event):
-        self.ui.sModules.setFixedWidth(event.size().width() / 3)
+        self.ui.sModules.setFixedWidth(0.25 * event.size().width())
 
     def onModuleClicked(self, item):
         widget = item.data(SettingsModWidgetRole)
         if widget:
             self.ui.stack.setCurrentWidget(widget)
 
-    def load(self, displayName: str, modname: str, uimod):
+    def load(self, displayName: str, modname: str,
+             **data):
         try:
+            uiFormModule = importlib.import_module(
+                f'galacteek.ui.forms.ui_settings_{modname}')
             ctrlMod = importlib.import_module(
                 f'galacteek.ui.settings.{modname}')
 
-            form = uimod.Ui_SettingsForm()
+            form = uiFormModule.Ui_SettingsForm()
 
             widget = QWidget()
             widget.ui = form
             form.setupUi(widget)
 
-            controller = ctrlMod.SettingsController(widget)
+            controller = ctrlMod.SettingsController(widget,
+                                                    parent=self.ui.stack,
+                                                    **data)
+            controller._map()
 
             # settingsInit() ought to be a regular function really..
             ensure(controller.settingsInit())
         except Exception:
-            return
+            traceback.print_exc()
         else:
-            self.ui.stack.addWidget(widget)
+            scroll = QScrollArea()
+            scroll.setWidgetResizable(True)
+            scroll.setWidget(widget)
+            scroll.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+            widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+            self.ui.stack.addWidget(scroll)
 
             item = QListWidgetItem(displayName)
-            item.setData(SettingsModWidgetRole, widget)
+            item.setData(SettingsModWidgetRole, scroll)
             item.setData(SettingsModNameRole, modname)
             item.setData(SettingsModControllerRole, controller)
-            item.setIcon(getIcon('settings.png'))
+
+            item.setIcon(getIcon(controller.qrcIcon))
 
             self.ui.sModules.addItem(item)
             self.modules[modname] = item
@@ -418,10 +443,13 @@ class SettingsCenterTab(GalacteekTab):
                     item,
                     QItemSelectionModel.SelectCurrent
                 )
-                self.ui.stack.setCurrentWidget(widget)
+                self.ui.stack.setCurrentWidget(scroll)
 
 
 class SettingsBaseController(QObject, Configurable, KeyListener):
+    def cfgValueTranslate(self, cAttr, value):
+        pass
+
     def cfgWatch(self, widget, cAttr, cMod):
         def valueChanged(value, attr, mod):
             cSet(attr, value, mod=mod)
@@ -429,10 +457,24 @@ class SettingsBaseController(QObject, Configurable, KeyListener):
         val = cGet(cAttr, mod=cMod)
 
         if isinstance(widget, QComboBox):
+            def comboTextChanged(text: str):
+                data = widget.itemData(widget.currentIndex())
+
+                if isinstance(data, str):
+                    valueChanged(data, cAttr, cMod)
+                else:
+                    valueChanged(text, cAttr, cMod)
+
             widget.currentTextChanged.connect(
-                lambda text: valueChanged(text, cAttr, cMod)
+                functools.partial(comboTextChanged)
             )
-            widget.setCurrentText(val)
+
+            widget.setCurrentText(str(val))
+        elif isinstance(widget, QFontComboBox):
+            widget.currentFontChanged.connect(
+                lambda font: valueChanged(font.family(), cAttr, cMod)
+            )
+            widget.setCurrentText(str(val))
 
         elif isinstance(widget, QSpinBox):
             widget.valueChanged.connect(
@@ -453,11 +495,47 @@ class SettingsBaseController(QObject, Configurable, KeyListener):
 
 
 class SettingsFormController(SettingsBaseController):
-    def __init__(self, sWidget, parent=None):
+    qrcIcon: str = 'settings.png'
+
+    def __init__(self, sWidget, parent=None, **extra):
         super().__init__(sWidget)
 
         self.app = runningApp()
         self.sWidget = sWidget
+        self.extra = extra
+        self.prepare()
+
+    @property
+    def mapping(self) -> dict:
+        return {}
+
+    def prepare(self) -> None:
+        pass
+
+    def _map(self) -> None:
+        for cfgmod, cfg in self.mapping.items():
+            for mcfg in cfg:
+                try:
+                    if isinstance(mcfg, tuple):
+                        # First element in the tuple  is the attribute name
+                        # Second element in tuple is the UI object's name
+                        self.cfgWatch(
+                            getattr(self.ui, mcfg[1]),
+                            mcfg[0],
+                            cfgmod
+                        )
+                    elif isinstance(mcfg, str):
+                        self.cfgWatch(
+                            getattr(self.ui, mcfg.split('.')[-1]),
+                            mcfg,
+                            cfgmod
+                        )
+                except Exception:
+                    traceback.print_exc()
+                    continue
+
+    async def settingsInit(self) -> None:
+        pass
 
     @property
     def ui(self):

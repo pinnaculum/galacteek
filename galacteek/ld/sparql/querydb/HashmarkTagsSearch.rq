@@ -10,10 +10,13 @@ SELECT ?uri ?taguri ?title ?descr
        ?prefsSchemePreferred
 WHERE {
   ?uri a gs:Hashmark .
-  ?uri h:tag ?taguri .
+  ?uri gs:tag ?taguri .
 
   ?uri h:title ?title .
-  ?uri h:description ?descr .
+
+  OPTIONAL {
+    ?uri h:description ?descr .
+  } .
 
   OPTIONAL { 
     ?uri gs:icon ?icon .
@@ -26,5 +29,5 @@ WHERE {
     ?prefs rprefs:schemePreferred ?prefsSchemePreferred .
   } .
 
-  OPTIONAL { ?uri h:schemePreferred ?schemePreferred . } .
+  # OPTIONAL { ?uri h:schemePreferred ?schemePreferred . } .
 }

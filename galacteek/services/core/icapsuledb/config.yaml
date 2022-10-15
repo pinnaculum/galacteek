@@ -32,4 +32,4 @@ envs:
           install: latest
           autoload: true
 
-          wsSwitchOnLoad: true
+          wsSwitchOnLoad: false

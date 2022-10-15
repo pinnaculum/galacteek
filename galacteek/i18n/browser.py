@@ -15,6 +15,11 @@ def iOpenLinkInTab():
                                       'Open link in new tab')
 
 
+def iOpenLinkInBgTab():
+    return QCoreApplication.translate('BrowserTabForm',
+                                      'Open link in background tab')
+
+
 def iOpenWith():
     return QCoreApplication.translate('BrowserTabForm', 'Open with')
 
@@ -55,11 +60,6 @@ def iJsConsole():
 def iSaveSelectedText():
     return QCoreApplication.translate(
         'BrowserTabForm', 'Save selected text to IPFS')
-
-
-def iLinkToQaToolbar():
-    return QCoreApplication.translate(
-        'BrowserTabForm', 'Link to Quick Access toolbar')
 
 
 def iFollowIpns():
@@ -114,11 +114,6 @@ def iEnterIpns():
 def iEnterIpnsDialog():
     return QCoreApplication.translate('BrowserTabForm',
                                       'Load IPNS key dialog')
-
-
-def iCreateQaMapping():
-    return QCoreApplication.translate('BrowserTabForm',
-                                      'Create quick-access mapping')
 
 
 def iHashmarked(path):
@@ -176,6 +171,20 @@ def iWebProfileWeb3():
     return QCoreApplication.translate(
         'BrowserTabForm',
         'Web3 profile')
+
+
+def iWebProfileLabel(name: str):
+    return QCoreApplication.translate(
+        'BrowserTabForm',
+        'Web profile: {0}'
+    ).format(name)
+
+
+def iUrlSchemeLabel(name: str):
+    return QCoreApplication.translate(
+        'BrowserTabForm',
+        'URL scheme: {0}'
+    ).format(name)
 
 
 def iCidTooltipMessage(icon, rootCidV, more, rootCid, thisCid):

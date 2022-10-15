@@ -36,6 +36,10 @@ MIME_RDFXML = 'application/rdf+xml'
 MIME_JSONLD = 'application/ld+json'
 
 
+class ProcessTimeLimitException(Exception):
+    pass
+
+
 @attr.s(auto_attribs=True)
 class SparQLServiceConfig:
     uri: str = ''
@@ -60,10 +64,39 @@ class SparQLSiteHandler:
         )
         self.service = service
         self.app = runningApp()
+        self.processTime = {}
 
     @property
     def cfg(self):
         return self.service.config
+
+    def ptimeDataForLogin(self, login):
+        return self.processTime.setdefault(login,
+                                           collections.deque([], 8))
+
+    def recentProcessTime(self, log: collections.deque) -> float:
+        if len(log) < 3:
+            return None
+
+        try:
+            totalms = 0
+            tfirst, tlast = None, None
+
+            for x in reversed(range(0, len(log))):
+                lt, opt = log[x]
+                if not tfirst:
+                    tfirst = lt
+
+                # ns => ms
+                totalms += opt / 1000000
+
+            tlast = lt
+
+            return ((totalms * 60) / (tlast - tfirst))
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            return None
 
     async def msgError(self, error='Invalid request', status=500):
         return web.json_response({
@@ -71,7 +104,19 @@ class SparQLSiteHandler:
         }, status=status)
 
     async def peerAuthorized(self, request, auth: BasicAuth, loopTime: float):
-        # TODO: filter based on peer activity
+        udata = self.ptimeDataForLogin(auth.login)
+
+        recent = self.recentProcessTime(udata)
+
+        if recent and recent > 5000:  # 5 secs out of 60 secs CPU time
+            log.debug(f'Rate-limiting peer: {auth.login}')
+
+            # should use maxlen
+            for x in range(0, int(len(udata) / 5)):
+                udata.pop()
+
+            raise ProcessTimeLimitException(f'{recent}')
+
         return True
 
     async def resource(self, request):
@@ -206,6 +251,10 @@ class SparQLSiteHandler:
                     auth,
                     loopTime()
                 ) is True
+            except ProcessTimeLimitException:
+                # rate limit (HTTP 429)
+                return await self.msgError(error='Too many requests',
+                                           status=429)
             except (BaseException, ValueError):
                 return await self.msgError(error='Invalid auth',
                                            status=401)
@@ -213,19 +262,26 @@ class SparQLSiteHandler:
             try:
                 post = await request.post()
                 q = post['query']
+                opid = post['operation_id']
             except Exception:
                 q = request.query.get('query')
+                opid = request.query.get('operation_id')  # noqa
 
             try:
                 assert isinstance(q, str)
                 # assert self.isAllowedSparqlQuery(q) is True
 
-                r = await self.app.loop.run_in_executor(
+                r, ptime = await self.app.loop.run_in_executor(
                     self.app.executor,
-                    self.service.graph.query,
+                    self.service.graph.queryProcessTime,
                     q
                 )
                 assert r is not None
+
+                udata = self.ptimeDataForLogin(auth.login)
+
+                if ptime:
+                    udata.appendleft((loopTime(), ptime))
 
                 if 'application/json' in acceptl:
                     return web.json_response(
@@ -362,7 +418,7 @@ class P2PSmartQLService(P2PService):
             description='SmartQL service',
             protocolName=f'smartql/{chainEnv}/{graph.identifier}',
             protocolVersion='1.1',
-            listenRange=('127.0.0.1', range(49462, 49482)),
+            listenRange=('127.0.0.1', range(49662, 49792)),
         )
 
 

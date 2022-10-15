@@ -82,10 +82,6 @@ class HistoryMatchesWidget(QTreeView):
         return services.getByDotName('ld.pronto')
 
     @property
-    def hAllModel(self):
-        return self.pronto.allHashmarksModel
-
-    @property
     def itemRoot(self):
         return self.hModel.invisibleRootItem()
 

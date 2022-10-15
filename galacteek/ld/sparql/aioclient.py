@@ -1,3 +1,5 @@
+import traceback
+
 from aiosparql.client import SPARQLClient
 from aiosparql.client import SPARQLRequestFailed
 
@@ -9,12 +11,20 @@ class Sparkie(SPARQLClient):
     async def query(self, query: str, *args,
                     **keywords) -> dict:
         ctype = keywords.get('content_type', 'application/json')
+        opid = keywords.get('operation_id', None)
+
         headers = {"Accept": ctype}
         full_query = self._prepare_query(query, *args, **keywords)
+        params = {
+            'query': full_query
+        }
+
+        if opid:
+            params['operation_id'] = opid
 
         try:
             async with self.session.post(
-                self.endpoint, data={"query": full_query}, headers=headers
+                self.endpoint, data=params, headers=headers
             ) as resp:
                 await self._raise_for_status(resp)
 
@@ -25,6 +35,7 @@ class Sparkie(SPARQLClient):
         except SPARQLRequestFailed as rerr:
             log.debug(f'{self.endpoint}: Request failed: {rerr}')
         except Exception as err:
+            traceback.print_exc()
             log.debug(f'{self.endpoint}: unknown error: {err}')
 
     async def qBindings(self, query: str, *args,

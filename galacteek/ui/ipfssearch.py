@@ -1,12 +1,15 @@
 import asyncio
 import async_timeout
+import functools
+import mimetypes
 import weakref
 import traceback
-
+from datetime import datetime
 from rdflib import RDF
 
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWebEngineWidgets import QWebEngineView
+from PyQt5.QtWebEngineWidgets import QWebEngineSettings
 from PyQt5.QtWebChannel import QWebChannel
 
 from PyQt5.QtCore import QObject
@@ -29,13 +32,14 @@ from PyQt5.QtGui import QFont
 from galacteek import ensure
 from galacteek import log
 from galacteek import services
-from galacteek.ipfs.cidhelpers import joinIpfs
+from galacteek.config.cmods import ipfs as config_ipfs
+from galacteek.ipfs.stat import UnixFsStatInfo
 from galacteek.ipfs.cidhelpers import stripIpfs
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import cidConvertBase32
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.wrappers import ipfsOp
-from galacteek.ipfs.search import multiSearch
+from galacteek.ipfs.search import ipfsSearchGen
 from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs.mimetype import MIMEType
 from galacteek.dweb.render import renderTemplate
@@ -43,6 +47,7 @@ from galacteek.core import uid4
 from galacteek.core import runningApp
 from galacteek.core import html2t
 
+from galacteek.ld.rdf import BaseGraph
 from galacteek.ld.rdf.hashmarks import addLdHashmark
 
 from .colors import *
@@ -196,6 +201,12 @@ class SearchResultsPage(BaseSearchPage):
         self.setBackgroundColor(
             QColor(self.app.theme.colors.webEngineBackground))
 
+        self.settings().setAttribute(
+            QWebEngineSettings.FullScreenSupportEnabled,
+            True
+        )
+        self.fullScreenRequested.connect(self.onFullScreenRequest)
+
         self.app = QApplication.instance()
 
         self.searchMode = searchMode
@@ -203,13 +214,13 @@ class SearchResultsPage(BaseSearchPage):
         self.ipfsConnParams = ipfsConnParams
         ensure(self.render())
 
+    def onFullScreenRequest(self, req):
+        req.accept()
+
     def javaScriptConsoleMessage(self, level, message, lineNumber, sourceId):
         log.debug(
-            'JS: level: {0}, source: {1}, line: {2}, message: {3}'.format(
-                level,
-                sourceId,
-                lineNumber,
-                message))
+            f'JS: level: {level}, line: {lineNumber}, message: {message}'
+        )
 
     async def render(self):
         html = await renderTemplate(self.template,
@@ -226,6 +237,12 @@ class IPFSSearchHandler(QObject):
     objectStatAvailable = pyqtSignal(str, object)
     filesStatAvailable = pyqtSignal(str, object)
 
+    # IPFS gateways signals
+    availableIpfsGateways = pyqtSignal(QVariant)
+
+    # MIME-types list
+    availableMimeTypes = pyqtSignal(QVariant)
+
     filtersChanged = pyqtSignal()
     clear = pyqtSignal()
     resetForm = pyqtSignal()
@@ -237,6 +254,9 @@ class IPFSSearchHandler(QObject):
     searchComplete = pyqtSignal()
     searchRunning = pyqtSignal(str)
     searchQueryTextChanged = pyqtSignal(str)
+
+    # Minimum triples count to trigger a flush of the buffer graph
+    hBufferMinTriplesFlush: int = 512
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -252,18 +272,41 @@ class IPFSSearchHandler(QObject):
         self._tasks = []
         self._taskSearch = None
         self._cResults = []
+        self._hBufferGraph = BaseGraph()
+        self._lock = asyncio.Lock()
+        self._destroyed = False
+        self._outputGraphUri = self.graphUriHashmarksPrivate
+
+        self.app.loop.call_later(
+            0.5,
+            self._searcherConfigure
+        )
+
+        self._bgwTask = ensure(
+            self.bufferGraphWatchTask()
+        )
+
+        self.destroyed.connect(functools.partial(self.onDestroyed))
 
     @property
     def prontoService(self):
         return services.getByDotName('ld.pronto')
 
     @property
-    def graphUriSearchMain(self):
-        return 'urn:ipg:i:love:hashmarks:search'
+    def graphUriHashmarksPrivate(self):
+        return 'urn:ipg:i:love:hashmarks:private'
 
     @property
-    def hashmarksGraph(self):
-        return self.prontoService.graphByUri(self.graphUriSearchMain)
+    def graphUriHashmarksSearchMain(self):
+        return 'urn:ipg:i:love:hashmarks:search:main'
+
+    @property
+    def outputGraphUri(self):
+        return self._outputGraphUri
+
+    @property
+    def outputHashmarksGraph(self):
+        return self.prontoService.graphByUri(self.outputGraphUri)
 
     @property
     def vPageCurrent(self):
@@ -272,6 +315,52 @@ class IPFSSearchHandler(QObject):
     @vPageCurrent.setter
     def vPageCurrent(self, page):
         self._vPageCurrent = page
+
+    def onDestroyed(self):
+        self._destroyed = True
+        self._bgwTask.cancel()
+
+    async def bufferGraphWatchTask(self):
+        try:
+            while not self._destroyed:
+                await asyncio.sleep(10)
+
+                if len(self._hBufferGraph) > self.hBufferMinTriplesFlush:
+                    # Flush it to the search graph
+
+                    async with self._lock:
+                        await self.outputHashmarksGraph.guardian.mergeReplace(
+                            self._hBufferGraph,
+                            self.outputHashmarksGraph
+                        )
+
+                        # Reset
+                        self._hBufferGraph = BaseGraph()
+
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            traceback.print_exc()
+
+    def _searcherConfigure(self):
+        """
+        Configure the searcher via the web channel
+
+        Send the available IPFS gateways list via the web channel
+
+        Send the MIME types list
+        """
+
+        try:
+            gwUrls = config_ipfs.ipfsHttpGatewaysAvailable()
+            if gwUrls:
+                self.availableIpfsGateways.emit(QVariant(gwUrls))
+
+            self.availableMimeTypes.emit(QVariant(
+                sorted(list(mimetypes.types_map.values()))
+            ))
+        except Exception:
+            traceback.print_exc()
 
     def setSearchWidget(self, widget):
         self.searchW = widget
@@ -370,6 +459,10 @@ class IPFSSearchHandler(QObject):
         hit = self.findByHash(hashV)
 
         title = hit.get('title', iUnknown()) if hit else hashV
+
+        if not title:
+            return
+
         descr = hit.get('description', iUnknown()) if hit else ''
         type = hit.get('type') if hit else None
         pinSingle = (type == 'file')
@@ -391,43 +484,67 @@ class IPFSSearchHandler(QObject):
         if hashV:
             self.app.mainWindow.explore(hashV)
 
-    @pyqtSlot(str, str)
-    def search(self, searchQuery: str, cType: str):
+    @pyqtSlot(str, str, str, str)
+    def search(self,
+               searchQuery: str,
+               lastSeenPeriod: str,
+               cType: str,
+               mimeType: str):
         self.cleanup()
-        self.searchQuery = searchQuery
+        self.searchQuery = searchQuery.strip()
         self.searchStarted.emit(self.searchQuery)
-        self.filters = self.getFilters(cType)
+        self.filters = self.getFilters(lastSeenPeriod, cType, mimeType)
 
         self.spawnSearchTask()
 
-    def getFilters(self, cTypeS):
+    def getFilters(self,
+                   lastSeenPeriod: str,
+                   cTypeS: str, mimeType: str) -> dict:
+        """
+        Create the ipfs-search filters based on the UI selectors
+
+        :param str lastSeenPeriod: Last-seen period (e.g: 1M)
+        :param str cTypeS: global content filter (e.g: 'images')
+        :param str mimeType: exact MIME tyype filter (e.g: 'image/png')
+        :rtype: dict
+        """
         filters = {}
 
         cType = cTypeS.lower()
 
-        if cType == 'images':
+        def exactmt(mtype: str):
+            # Exact MIME type filter (use double quotes here)
+            return f'"{mtype}"'
+
+        if mimeType != '*':
+            # Exact MIME type filter
+            filters['metadata.Content-Type'] = exactmt(mimeType)
+        elif cType == 'images':
             filters['metadata.Content-Type'] = 'image*'
         elif cType == 'videos':
             filters['metadata.Content-Type'] = 'video*'
-        elif cType == 'music':
+        elif cType in ['music', 'audio']:
             filters['metadata.Content-Type'] = 'audio*'
         elif cType == 'text':
             filters['metadata.Content-Type'] = 'text*'
-        elif cType == 'web':
-            filters['metadata.Content-Type'] = 'text/html'
+        elif cType == 'webpages':
+            filters['metadata.Content-Type'] = 'text/html*'
+        elif cType == 'pdf':
+            filters['metadata.Content-Type'] = exactmt('application/pdf')
+
+        filters['last-seen'] = f'>now-{lastSeenPeriod}'
+
+        log.debug(f'IPFS search filters: {filters}')
 
         return filters
 
-    def sendHit(self, hit):
+    def channelSendIpfsSearchHit(self, ipfsPath: IPFSPath, hit: dict) -> dict:
         hitHash = hit.get('hash')
         mimeType = hit.get('mimetype')
         hitSize = hit.get('size')
         descr = hit.get('description')
         title = hit.get('title')
-
-        ipfsPath = IPFSPath(hitHash, autoCidConv=True)
-        if not ipfsPath.valid:
-            return
+        score = hit.get('score', 0)
 
         sizeFormatted = sizeFormat(hitSize if hitSize else 0)
 
@@ -435,14 +552,22 @@ class IPFSSearchHandler(QObject):
             'hash': hitHash,
             'path': str(ipfsPath),
             'url': ipfsPath.ipfsUrl,
-            'mimetype': mimeType if mimeType else 'application/unknown',
             'title': html2t(title) if title else iUnknown(),
             'size': hitSize if hitSize else 0,
             'sizeformatted': sizeFormatted,
+            'score': score,
             'description': html2t(descr) if descr else None,
             'type': hit.get('type', iUnknown()),
-            'first-seen': hit.get('first-seen', iUnknown())
+            'first-seen': hit.get('first-seen', None),
+            'last-seen': hit.get('last-seen', None)
         }
+
+        if mimeType:
+            pHit['mimetype'] = mimeType
+        elif pHit['type'] == 'directory':
+            pHit['mimetype'] = 'inode/directory'
+        else:
+            pHit['mimetype'] = 'application/unknown'
 
         self.resultReady.emit('ipfs-search', hitHash, QVariant(pHit))
 
@@ -502,19 +627,6 @@ class IPFSSearchHandler(QObject):
 
         refs = []
 
-        def findHashmark(g, ref):
-            return g.value(
-                subject=ref,
-                predicate=RDF.type
-            )
-
-        val = await self.hashmarksGraph.rexec(
-            findHashmark, iPath.ipfsUriRef)
-
-        if val is not None:
-            # Already graphed
-            return
-
         title = hit.get('title')
         descr = hit.get('description')
         mimetype = hit.get('mimetype')
@@ -538,41 +650,86 @@ class IPFSSearchHandler(QObject):
 
             refs.append(p.ipfsUrl)
 
+        try:
+            dateLastSeen = datetime.strptime(
+                hit.get('last-seen'),
+                '%Y-%m-%dT%H:%M:%S%z'
+            )
+        except (TypeError, ValueError):
+            dateLastSeen = None
+
         return await addLdHashmark(
             iPath,
             title if title else iNoTitle(),
-            descr=descr if descr else iNoDescription(),
+            descr=descr,
             size=hit.get('size', 0),
             score=hit.get('score', 0),
             mimeType=mimeObj,
             filesStat=filesStat,
             keywordMatch=kwm,
             referencedBy=refs,
-            graphUri=self.graphUriSearchMain,  # dst graph uri
-            # dateFirstSeen=hit.get('first-seen'),
-            # dateLastSeen=hit.get('last-seen')
+            dateLastSeen=dateLastSeen,
+            customOutputGraph=self._hBufferGraph  # write in buffer graph
         )
 
-    async def fetchObjectStat(self, ipfsop, cid, hit):
-        path = joinIpfs(cid)
-
+    async def processIpfsSearchHit(self, ipfsop,
+                                   ipfsPath: IPFSPath,
+                                   cid: str,
+                                   hit: dict,
+                                   forceDiscovery=False) -> bool:
         try:
-            mType, filesStat = await self.app.rscAnalyzer(
-                path, fetchExtraMetadata=True,
-                statType=['files']
-            )
-            if filesStat:
-                self.filesStatAvailable.emit(cid, filesStat.stat)
+            if forceDiscovery:
+                mType, filesStat = await self.app.rscAnalyzer(
+                    ipfsPath, fetchExtraMetadata=True,
+                    statType=['files']
+                )
+            else:
+                #
+                # Fake the unixfs stat (avoids a costly files stat call)
+                # running files/stat on every object ultimately just takes
+                # too much resources
+                #
+                if hit['type'] == 'file':
+                    filesStat = UnixFsStatInfo({
+                        'Hash': hit['hash'],
+                        'Type': hit['type'],
+                        'Size': hit['size'],
+                        'CumulativeSize': hit['size'] + 11  # BC: get rid of it
+                    })
+                elif hit['type'] == 'directory':
+                    filesStat = UnixFsStatInfo({
+                        'Hash': hit['hash'],
+                        'Type': hit['type'],
+                        'Size': 0
+                    })
+                else:
+                    raise ValueError('Unknown hit type')
 
-                # Worth graphing
+            self.filesStatAvailable.emit(cid, filesStat.stat)
+
+            await asyncio.sleep(0)
+
+            # could be run in threadpool ?
+            stype = self.outputHashmarksGraph.value(
+                subject=ipfsPath.ipfsUriRef,
+                predicate=RDF.type
+            )
+
+            if not stype:
+                # Graph it
                 await self.graphHashmark(
-                    IPFSPath(path, autoCidConv=True),
+                    ipfsPath,
                     hit,
-                    mType,
+                    MIMEType(hit['mimetype']),
                     filesStat
                 )
+
+                await asyncio.sleep(0.2)
+
+            return True
         except Exception as err:
-            log.debug(f'Fetch stat error for {cid}: {err}')
+            log.debug(f'Process error for {cid}: {err}')
+            return False
 
     @ipfsOp
     async def runSearch(self, ipfsop, searchQuery, timeout=30):
@@ -584,13 +741,14 @@ class IPFSSearchHandler(QObject):
 
         try:
             with async_timeout.timeout(timeout):
-                async for pageCount, result in multiSearch(
+                async for pageCount, result in ipfsSearchGen(
                         searchQuery,
                         page=pageStart,
                         filters=self.filters,
                         proxyUrl=proxy.url() if proxy else None,
                         sslverify=self.app.sslverify):
                     await asyncio.sleep(0)
+
                     gotResults = True
 
                     if not statusEmitted:
@@ -600,19 +758,26 @@ class IPFSSearchHandler(QObject):
                         statusEmitted = True
 
                     hit = result['hit']
-                    engine = result['engine']
 
                     self._cResults.append(result)
                     self.searchRunning.emit(searchQuery)
 
-                    if engine == 'ipfs-search':
-                        tsHit = self.sendHit(hit)
-                        self._tasks.append(ensure(
-                            self.fetchObjectStat(
-                                ipfsop, hit['hash'], tsHit)))
-                    else:
-                        self._tasks.append(
-                            ensure(self.sendCyberHit(hit)))
+                    if result['engine'] == 'ipfs-search':
+                        ipfsPath = IPFSPath(hit['hash'],
+                                            autoCidConv=True)
+                        if not ipfsPath.valid:
+                            continue
+
+                        tsHit = self.channelSendIpfsSearchHit(ipfsPath, hit)
+
+                        await self.processIpfsSearchHit(
+                            ipfsop,
+                            ipfsPath,
+                            hit['hash'],
+                            tsHit
+                        )
+
+                    await asyncio.sleep(0.1)
         except asyncio.TimeoutError:
             log.debug('Search timeout')
             self.searchTimeout.emit(timeout)
@@ -649,8 +814,6 @@ class IPFSSearchView(QWidget):
 
         # Templates
         self.resultsTemplate = self.app.getJinjaTemplate('ipfssearch.html')
-        self.loadingTemplate = self.app.getJinjaTemplate(
-            'ipfssearch-loading.html')
 
         self.browser = QWebEngineView(parent=self)
         self.layout().addWidget(self.browser)

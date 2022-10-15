@@ -69,3 +69,22 @@ def ipfsNetworkSwarmKey(network):
 
     if lines and swarmKeyValid(copy.copy(lines)) is True:
         return "\n".join(line.strip() for line in lines if len(line) > 0)
+
+
+def ipfsHttpGatewaysAvailable(network: str = 'main') -> list:
+    cfg = cGet(f'ipfsHttpGateways.networks.{network}',
+               mod='galacteek.ipfs')
+
+    if not cfg:
+        return []
+
+    def gfilter(gitem):
+        # Sort filter, returns the priority as an integer
+        try:
+            host, gwcfg = gitem
+            return gwcfg.priority
+        except Exception:
+            return 100
+
+    gws = sorted(cfg.items(), key=gfilter)
+    return [gwc.get('url', f'https://{gwhost}') for gwhost, gwc in gws]

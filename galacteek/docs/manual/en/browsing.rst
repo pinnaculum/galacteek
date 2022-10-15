@@ -3,8 +3,8 @@
 Browsing
 ========
 
-URL bar
--------
+Address bar
+-----------
 
 In the address bar you can type (or paste) a full URL, an
 IPFS :term:`CID` or a full :term:`IPFS path` (they will be
@@ -30,8 +30,9 @@ search engines:
 URL clouding
 ^^^^^^^^^^^^
 
-When browsing dweb or https pages, the URL address bar will be obscured
-by an animation with a color generated from the URL.
+When browsing the distributed web, **the URL address bar will be obscured
+by an animation** with a color that is bound to the address of the page
+that you're visiting (unless you're requesting an insecure URL scheme).
 
 **Clicking on the animation will bring you back to the address bar**.
 

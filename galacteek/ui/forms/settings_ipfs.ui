@@ -7,8 +7,14 @@
     <x>0</x>
     <y>0</y>
     <width>636</width>
-    <height>503</height>
+    <height>611</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
   </property>
   <property name="windowTitle">
    <string>Form</string>
@@ -31,82 +37,7 @@
         <bool>true</bool>
        </property>
        <layout class="QGridLayout" name="gridLayout_6">
-        <item row="10" column="2">
-         <widget class="QLabel" name="label_11">
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="3">
-         <widget class="QSpinBox" name="ipfsdGwPort">
-          <property name="maximumSize">
-           <size>
-            <width>100</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="minimum">
-           <number>1024</number>
-          </property>
-          <property name="maximum">
-           <number>32768</number>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QCheckBox" name="checkBoxQuic">
-          <property name="text">
-           <string>Swarm: enable QUIC</string>
-          </property>
-         </widget>
-        </item>
-        <item row="7" column="2">
-         <widget class="QCheckBox" name="namesysPubsub">
-          <property name="toolTip">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enable IPNS over pubsub (updating of IPNS records over pubsub channels)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-          </property>
-          <property name="text">
-           <string>Enable IPNS over Pubsub</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_21">
-          <property name="text">
-           <string>Swarm port (QUIC)</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="2">
-         <widget class="QLabel" name="label_27">
-          <property name="text">
-           <string>API port</string>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="2">
-         <widget class="QCheckBox" name="writableHttpGw">
-          <property name="text">
-           <string>Writable HTTP gateway</string>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="0">
-         <widget class="QLabel" name="label_25">
-          <property name="text">
-           <string>Maximum swarm connections</string>
-          </property>
-         </widget>
-        </item>
-        <item row="8" column="0">
-         <widget class="QLabel" name="label_23">
-          <property name="text">
-           <string>Pubsub routing</string>
-          </property>
-         </widget>
-        </item>
-        <item row="7" column="1">
+        <item row="11" column="1">
          <widget class="QComboBox" name="routingMode">
           <property name="toolTip">
            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Routing mode (dht is the default, dhtclient does not act as a full node on the DHT)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -123,8 +54,76 @@
           </item>
          </widget>
         </item>
+        <item row="12" column="0">
+         <widget class="QLabel" name="label_23">
+          <property name="text">
+           <string>Pubsub routing</string>
+          </property>
+         </widget>
+        </item>
+        <item row="11" column="2">
+         <widget class="QCheckBox" name="namesysPubsub">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enable IPNS over pubsub (updating of IPNS records over pubsub channels)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="text">
+           <string>Enable IPNS over Pubsub</string>
+          </property>
+         </widget>
+        </item>
         <item row="0" column="1">
          <widget class="QSpinBox" name="ipfsdSwarmPort">
+          <property name="minimum">
+           <number>1024</number>
+          </property>
+          <property name="maximum">
+           <number>32768</number>
+          </property>
+         </widget>
+        </item>
+        <item row="12" column="2">
+         <widget class="QCheckBox" name="fileStore">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use the IPFS Filestore system (avoids file duplication)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="text">
+           <string>Enable Filestore</string>
+          </property>
+         </widget>
+        </item>
+        <item row="9" column="0">
+         <widget class="QLabel" name="label_25">
+          <property name="text">
+           <string>Maximum swarm connections</string>
+          </property>
+         </widget>
+        </item>
+        <item row="14" column="2">
+         <widget class="QLabel" name="label_11">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item row="12" column="1">
+         <widget class="QComboBox" name="pubsubRoutingMode">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pusub routing mode (gossipsub is more bandwidth-efficient)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QSpinBox" name="ipfsdApiPort">
+          <property name="minimum">
+           <number>1024</number>
+          </property>
+          <property name="maximum">
+           <number>32768</number>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QSpinBox" name="ipfsdGwPort">
           <property name="maximumSize">
            <size>
             <width>100</width>
@@ -139,21 +138,56 @@
           </property>
          </widget>
         </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_26">
-          <property name="text">
-           <string>Swarm port</string>
+        <item row="5" column="0" colspan="4">
+         <widget class="Line" name="line_2">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
           </property>
          </widget>
         </item>
-        <item row="4" column="0">
+        <item row="11" column="0">
+         <widget class="QLabel" name="label_10">
+          <property name="text">
+           <string>Routing mode</string>
+          </property>
+         </widget>
+        </item>
+        <item row="9" column="2">
+         <widget class="QCheckBox" name="writableHttpGw">
+          <property name="text">
+           <string>Writable HTTP gateway</string>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="0">
          <widget class="QLabel" name="label_24">
           <property name="text">
            <string>Minimum swarm connections</string>
           </property>
          </widget>
         </item>
-        <item row="1" column="1">
+        <item row="4" column="0">
+         <widget class="QCheckBox" name="checkBoxQuic">
+          <property name="text">
+           <string>Swarm: enable QUIC</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_21">
+          <property name="text">
+           <string>Swarm port (QUIC)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_27">
+          <property name="text">
+           <string>API port</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
          <widget class="QSpinBox" name="ipfsdSwarmPortQuic">
           <property name="minimum">
            <number>1024</number>
@@ -163,14 +197,7 @@
           </property>
          </widget>
         </item>
-        <item row="4" column="2">
-         <widget class="QLabel" name="label_6">
-          <property name="text">
-           <string>Maximum storage (Gb)</string>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="1">
+        <item row="8" column="1">
          <widget class="QSpinBox" name="swarmMinConns">
           <property name="minimum">
            <number>20</number>
@@ -183,7 +210,14 @@
           </property>
          </widget>
         </item>
-        <item row="5" column="1">
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_26">
+          <property name="text">
+           <string>Swarm port</string>
+          </property>
+         </widget>
+        </item>
+        <item row="9" column="1">
          <widget class="QSpinBox" name="swarmMaxConns">
           <property name="minimum">
            <number>150</number>
@@ -196,17 +230,21 @@
           </property>
          </widget>
         </item>
-        <item row="10" column="0">
-         <widget class="QCheckBox" name="keepDaemonRunning">
-          <property name="toolTip">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Always keep the IPFS daemon running.&lt;/p&gt;&lt;p&gt;This ensures that your files are still accessible even when galacteek is not running.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-          </property>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_22">
           <property name="text">
-           <string>Keep IPFS daemon running</string>
+           <string>HTTP gateway port</string>
           </property>
          </widget>
         </item>
-        <item row="4" column="3">
+        <item row="7" column="0">
+         <widget class="QLabel" name="label_6">
+          <property name="text">
+           <string>Maximum storage (Gb)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="7" column="1">
          <widget class="QSpinBox" name="storageMax">
           <property name="minimum">
            <number>5</number>
@@ -216,67 +254,23 @@
           </property>
          </widget>
         </item>
-        <item row="8" column="1">
-         <widget class="QComboBox" name="pubsubRoutingMode">
-          <property name="toolTip">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pusub routing mode (gossipsub is more bandwidth-efficient)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="2">
-         <widget class="QLabel" name="label_22">
-          <property name="text">
-           <string>HTTP gateway port</string>
-          </property>
-         </widget>
-        </item>
-        <item row="7" column="0">
-         <widget class="QLabel" name="label_10">
-          <property name="text">
-           <string>Routing mode</string>
-          </property>
-         </widget>
-        </item>
-        <item row="8" column="2">
-         <widget class="QCheckBox" name="fileStore">
-          <property name="toolTip">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use the IPFS Filestore system (avoids file duplication)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-          </property>
-          <property name="text">
-           <string>Enable Filestore</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="0" colspan="4">
-         <widget class="Line" name="line_2">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="3">
-         <widget class="QSpinBox" name="ipfsdApiPort">
-          <property name="maximumSize">
-           <size>
-            <width>100</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="minimum">
-           <number>1024</number>
-          </property>
-          <property name="maximum">
-           <number>32768</number>
-          </property>
-         </widget>
-        </item>
-        <item row="9" column="0">
+        <item row="7" column="2">
          <widget class="QCheckBox" name="acceleratedDht">
           <property name="toolTip">
            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a name=&quot;🕸-experimental-dht-client-and-provider-system&quot;/&gt;&lt;span style=&quot; font-size:16pt; font-weight:600;&quot;&gt;E&lt;/span&gt;&lt;span style=&quot; font-size:16pt; font-weight:600;&quot;&gt;xperimental DHT Client and Provider System&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:14pt; font-weight:600;&quot;&gt;Warning: Enabling this setting will make go-ipfs use more resources&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:14pt;&quot;&gt;DHT queries will not be usable (i.e. finding which peers have some data, finding where a particular peer is, etc.) for the first 5-10 minutes of operation depending on your network conditions&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="text">
            <string>Enable Accelerated DHT client</string>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="2">
+         <widget class="QCheckBox" name="keepDaemonRunning">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Always keep the IPFS daemon running.&lt;/p&gt;&lt;p&gt;This ensures that your files are still accessible even when galacteek is not running.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="text">
+           <string>Keep IPFS daemon running</string>
           </property>
          </widget>
         </item>

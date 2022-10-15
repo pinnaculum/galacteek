@@ -66,8 +66,7 @@ async def addLdHashmark(resourceUrl: Union[IPFSPath, str, URIRef],
                         category: str = None,
                         dateCreated: datetime = None,
                         dateFirstSeen: datetime = None,
-                        dateLastSeen: datetime = None,
-                        graphUri: str = MAIN_HASHMARKS_GRAPH_URI,
+                        dateLastSeen: Union[datetime, str] = None,
                         ipfsObjType: str = 'unixfs',
                         iconUrl: Union[str, URL] = None,
                         imageUriRef: URIRef = None,
@@ -77,12 +76,15 @@ async def addLdHashmark(resourceUrl: Union[IPFSPath, str, URIRef],
                         referencedBy: list = [],
                         keywordMatch: list = [''],
                         libertarianId: URIRef = None,
+                        graphUri: str = MAIN_HASHMARKS_GRAPH_URI,
+                        customOutputGraph=None,  # Custom output graph
                         **extra):
     debug = extra.get('debug', False)
     refs = []
     iPath, uRef = None, None
     pronto = services.getByDotName('ld.pronto')
-    graph = getGraph(graphUri)
+    graph = customOutputGraph if customOutputGraph is not None else \
+        getGraph(graphUri)
 
     if graph is None:
         return False
@@ -106,14 +108,17 @@ async def addLdHashmark(resourceUrl: Union[IPFSPath, str, URIRef],
         'title': {
             metaLangTag: title
         },
-        'description': {
-            metaLangTag: descr
-        },
+
         'keywordMatch': keywordMatch,
 
         'dateCreated': dateCreated.isoformat() if dateCreated else
         utcDatetimeIso()
     }
+
+    if descr:
+        hmark['description'] = {
+            metaLangTag: descr
+        }
 
     if iPath and iPath.valid:
         hmark['@id'] = str(iPath.ipfsUriRef)
@@ -156,6 +161,13 @@ async def addLdHashmark(resourceUrl: Union[IPFSPath, str, URIRef],
             metaLangTag: category
         }
 
+    # Assume that dateLastSeen comes from a search engine
+    if isinstance(dateLastSeen, datetime):
+        hmark['dateSearchEngineLastSeen'] = dateLastSeen.isoformat(
+            timespec='microseconds')
+    elif isinstance(dateLastSeen, str):
+        hmark['dateSearchEngineLastSeen'] = dateLastSeen
+
     if comment:
         hmark['comment'] = {
             metaLangTag: comment
@@ -186,8 +198,9 @@ async def addLdHashmark(resourceUrl: Union[IPFSPath, str, URIRef],
     if isinstance(size, int):
         hmark['size'] = size
 
+    # ipfs-search score (elasticsearch score)
     if type(score) in [int, float]:
-        hmark['score'] = score
+        hmark['ipfsSearchScore'] = score
 
     if libertarianId:
         hmark['fromLibertarian'] = str(libertarianId)
@@ -210,7 +223,11 @@ async def addLdHashmark(resourceUrl: Union[IPFSPath, str, URIRef],
         if debug:
             print((await hmg.ttlize()).decode())
 
-        return await graph.guardian.mergeReplace(hmg, graph)
+        if graph.guardian:
+            return await graph.guardian.mergeReplace(hmg, graph)
+        else:
+            graph += hmg
+            return True
     else:
         log.warning(f'Could not graph: {resourceUrl}')
         return False
@@ -228,7 +245,7 @@ async def ldHashmarksByTag(tagUri: URIRef = None,
 
 def ldHashmarkTag(hashmarkUri: URIRef,
                   tag: URIRef,
-                  graphUri: str = MAIN_HASHMARKS_GRAPH_URI):
+                  graphUri: str = MAIN_HASHMARKS_GRAPH_URI) -> None:
     graph = getGraph(graphUri)
     graph.add((
         hashmarkUri,
@@ -236,12 +253,12 @@ def ldHashmarkTag(hashmarkUri: URIRef,
         tag
     ))
 
-    graph.publishUpdateEvent()
+    graph.publishUpdateEvent(graph)
 
 
 def ldHashmarkUntag(hashmarkUri: URIRef,
                     tag: URIRef,
-                    graphUri: str = MAIN_HASHMARKS_GRAPH_URI):
+                    graphUri: str = MAIN_HASHMARKS_GRAPH_URI) -> None:
     graph = getGraph(graphUri)
     graph.remove((
         hashmarkUri,
@@ -249,12 +266,10 @@ def ldHashmarkUntag(hashmarkUri: URIRef,
         tag
     ))
 
-    graph.publishUpdateEvent()
-
 
 def hashmarkTagsUpdate(hashmarkUri: URIRef,
                        tags: list = [],
-                       graphUri: str = MAIN_HASHMARKS_GRAPH_URI):
+                       graphUri: str = MAIN_HASHMARKS_GRAPH_URI) -> None:
     graph = getGraph(graphUri)
     graph.remove((
         hashmarkUri,
@@ -265,7 +280,7 @@ def hashmarkTagsUpdate(hashmarkUri: URIRef,
     for tag in tags:
         ldHashmarkTag(hashmarkUri, tag, graphUri=graphUri)
 
-    graph.publishUpdateEvent()
+    # graph.publishUpdateEvent(graph)
 
 
 async def tagsForHashmark(hmUri: URIRef,
@@ -307,3 +322,64 @@ async def searchLdHashmarks(title: str = '',
         bindings.update(extraBindings)
 
     return await graph.queryAsync(query, initBindings=bindings)
+
+
+async def ldHashmarkPrefsGet(resourceUrl: Union[IPFSPath, str, URIRef],
+                             graphUri: str = TOP_HASHMARKS_GRAPH_URI):
+    return await getGraph(graphUri).queryAsync(
+        querydb.get('HashmarksSearch'), initBindings={}
+    )
+
+
+async def ldHashmarkPrefsSet(resourceUrl: Union[IPFSPath, str, URIRef],
+                             showInDock: bool = True,
+                             inQuickAccessDock: URIRef = None,
+                             graphUri: str = TOP_HASHMARKS_GRAPH_URI) -> bool:
+    graph = getGraph(graphUri)
+
+    # TODO: write a universal method that appends the #prefs fragment
+    # for any kind of URL type
+
+    if isinstance(resourceUrl, IPFSPath):
+        uri = resourceUrl.ipfsUriRef
+        rPrefsUri = resourceUrl.rPrefsUriRef
+    elif isinstance(resourceUrl, URIRef):
+        uri = resourceUrl
+        rPrefsUri = URIRef(str(resourceUrl) + '#prefs')
+    else:
+        return False
+
+    prefs = {
+        '@type': 'ResourcePreferences',
+        '@id': str(rPrefsUri),
+
+        'showInQuickAccessDock': showInDock
+    }
+
+    if inQuickAccessDock:
+        prefs['inQuickAccessDock'] = str(inQuickAccessDock)
+
+    pg = await graph.rdfifyObject(prefs)
+
+    if pg:
+        await graph.guardian.mergeReplace(pg, graph)
+
+        rprefs = graph.value(
+            subject=uri,
+            predicate=HASHMARK.prefs
+        )
+
+        if not rprefs:
+            # Link the prefs in the graph
+            graph.add((
+                uri,
+                HASHMARK.prefs,
+                rPrefsUri
+            ))
+        else:
+            # Already tied to some prefs. Check that the uri is the same here ?
+            pass
+
+        return True
+
+    return False

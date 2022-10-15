@@ -13,7 +13,8 @@ class BaseGraphSynchronizer:
                              iri: str,
                              p2pEndpoint: str,
                              graphDescr=None,
-                             p2pLibertarianId=None):
+                             p2pLibertarianId=None,
+                             **kw):
         creds = graphDescr.get('smartqlCredentials', {})
         auth = aiohttp.BasicAuth(
             creds.get('user', 'smartql'),
@@ -30,7 +31,8 @@ class BaseGraphSynchronizer:
                 iri,
                 dial,
                 auth,
-                p2pLibertarianId=p2pLibertarianId
+                p2pLibertarianId=p2pLibertarianId,
+                **kw
             )
 
     async def sync(self, ipfsop,
@@ -38,5 +40,6 @@ class BaseGraphSynchronizer:
                    iri: str,
                    dial,
                    auth,
-                   p2pLibertarianId=None):
+                   p2pLibertarianId=None,
+                   **kw):
         pass

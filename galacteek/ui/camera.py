@@ -25,6 +25,7 @@ from PyQt5.QtMultimedia import QMediaRecorder
 
 from galacteek import log
 from galacteek import ensure
+from galacteek import AsyncSignal
 from galacteek.ui.widgets import PopupToolButton
 from galacteek.ui.helpers import getIcon
 from galacteek.ui.helpers import messageBox
@@ -60,6 +61,8 @@ class CameraController(PopupToolButton):
             parent=parent
         )
 
+        self.cameraReady = AsyncSignal(str)
+
         self.setToolTip(iWebcamIpfsCapture())
 
         self.menuDevices = QMenu(iDevices())
@@ -94,6 +97,7 @@ class CameraController(PopupToolButton):
             deviceAction.setData(name)
 
             if cameraDevice.isEmpty():
+                # TODO: Handle config here
                 cameraDevice = name
                 deviceAction.setChecked(True)
 
@@ -102,19 +106,24 @@ class CameraController(PopupToolButton):
         self.videoDevicesGroup.triggered.connect(self.changeCameraDevice)
         self.setCamera(cameraDevice)
 
-    def changeCameraDevice(self, action):
+    def changeCameraDevice(self, action) -> None:
         cameraName = action.data()
+
         log.debug(f'Using camera: {cameraName}')
 
-        self.setCamera(cameraName)
+        return self.setCamera(cameraName)
 
-    def setCamera(self, cameraDevice):
+    def setCamera(self, cameraDevice: bytes) -> None:
         if cameraDevice.isEmpty():
             self.camera = QCamera()
         else:
             self.camera = QCamera(cameraDevice)
 
         self.captureAction.setEnabled(True)
+
+        name = bytes(cameraDevice).decode()
+        if name:
+            ensure(self.cameraReady.emit(name))
 
     def onCameraView(self):
         if self.camView and self.camView.isVisible():

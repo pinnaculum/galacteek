@@ -49,9 +49,8 @@ def _scriptReplaceIpfsVars(connParams, template: str) -> str:
 
     template = re.sub(
         '@API_PORT@',
-        connParams.apiPort,
+        str(connParams.apiPort),
         template
-
     )
 
     template = re.sub(

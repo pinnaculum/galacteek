@@ -57,6 +57,10 @@ def iImageCannotLoad(path):
         'Cannot load image {}').format(path)
 
 
+class ImageReadDataError(Exception):
+    pass
+
+
 class ImageViewerTab(GalacteekTab):
     def __init__(self, mainW):
         super().__init__(mainW)
@@ -292,7 +296,7 @@ class ImageView(QScrollArea):
                 )
 
             if not imgData:
-                raise Exception('Failed to load image')
+                raise ImageReadDataError('Failed to load image')
 
             mimeType, statInfo = await self.app.rscAnalyzer(
                 IPFSPath(imgPath))
@@ -330,9 +334,10 @@ class ImageView(QScrollArea):
 
             self.currentImgPath = IPFSPath(imgPath)
             self.imageLoaded.emit(self.currentImgPath, mimeType)
+        except ImageReadDataError:
+            pass
         except Exception:
-            logUser.debug('Failed to load image: {path}'.format(
-                path=imgPath))
+            logUser.debug(f'Failed to load image: {imgPath}')
             messageBox(iImageCannotLoad(imgPath))
 
     def onMovieFrameChanged(self, num):

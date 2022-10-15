@@ -3,42 +3,29 @@ import asyncio
 from PyQt5.QtWidgets import QListWidgetItem
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtCore import QObject
 
 from galacteek.config.cmods import pinning as cfgpinning
 
 from galacteek.ipfs import ipfsOp
 from galacteek import ensure
 from galacteek import partialEnsure
-from galacteek.core import runningApp
-from galacteek.core.ps import KeyListener
-from galacteek.config import Configurable
 from galacteek.ui.dialogs.pinning import PinningServiceAddDialog
 from galacteek.ui.helpers import runDialogAsync
 from galacteek.ui.helpers import messageBoxAsync
-from galacteek.ui.widgets import LabelWithURLOpener
 from galacteek.ui.widgets import IconSelector
 
+from . import SettingsFormController
 
-class SettingsController(QObject, Configurable, KeyListener):
+
+# class SettingsController(QObject, Configurable, KeyListener):
+class SettingsController(SettingsFormController):
     configModuleName = 'galacteek.ipfs.pinning'
+    qrcIcon = 'pin/pin-diago-red.png'
 
-    def __init__(self, sWidget, parent=None):
-        super().__init__(sWidget)
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
 
-        self.app = runningApp()
         self.currentServiceItem = None
-        self.sWidget = sWidget
-
-        if 0:
-            self.sWidget.ui.vLayout.insertWidget(
-                0,
-                LabelWithURLOpener(
-                    '<a href="manual:/pinning.html#remote">'
-                    'Remote pinning manual'
-                    '</a>'
-                )
-            )
 
         self.sWidget.ui.removeService.setEnabled(False)
         self.sWidget.ui.rServiceConfigGroup.setEnabled(False)

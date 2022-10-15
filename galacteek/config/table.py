@@ -1,5 +1,15 @@
 cfgInitTable = [
     'galacteek.application',
+
+    # browser
+    'galacteek.browser',
+    'galacteek.browser.schemes',
+    'galacteek.browser.styles',
+    'galacteek.browser.webprofiles',
+
+    # browser UI
+    'galacteek.ui.browser',
+
     'galacteek.core.ctx',
 
     'galacteek.did.ipid',
@@ -10,22 +20,15 @@ cfgInitTable = [
     'galacteek.ipfs.pubsub',
     'galacteek.ipfs.pubsub.srvs',
 
-    'galacteek.tshaping.ttroll',
+    # 'galacteek.tshaping.ttroll',
 
     'galacteek.services.dweb.ethereum',
     'galacteek.services.net.bitmessage',
     'galacteek.services.net.tor',
 
+    # UI
     'galacteek.ui',
     'galacteek.ui.files',
-    'galacteek.ui.history',
     'galacteek.ui.messenger',
-    'galacteek.ui.widgets',
-
-    # browser
-    'galacteek.browser.schemes',
-    'galacteek.browser.styles',
-    'galacteek.browser.webprofiles',
-
-    'galacteek.ui.browser'
+    'galacteek.ui.widgets'
 ]

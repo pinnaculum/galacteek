@@ -6,12 +6,19 @@ graphEnvs:
     pubsub:
       heartbeat:
         intervalMin: 10
-        intervalMax: 28
+        intervalMax: 30
 
     mSyncThrottler:
       rateLimit: 12
       period: 60
       retryInterval: 2.0
+
+    graphWatcher:
+      default:
+        eventReadInterval: 60
+        maxEventSubjects: 128
+        minSubjectsPerFlush: 8
+        flushSubjectsInactiveSecs: 20
 
     graphs:
       # i (conjunctive)
@@ -29,11 +36,20 @@ graphEnvs:
           urn:ipg:i:i1:
             name: i_i1
 
+          # Identities (i am)
           urn:ipg:i:am:
             name: i_am
 
           urn:ipg:i:articles:
             name: i_articles
+
+          # blogs
+          urn:ipg:i:love:blogs:
+            name: i_love_blogs
+            services:
+              sparql: {}
+              sync:
+                use: urn:ipg:sync:sparql:blogposts
 
           # tags
           urn:ipg:i:love:itags:
@@ -41,7 +57,7 @@ graphEnvs:
 
             datasets:
               urn:glk:datasets:dataset-itags-core:
-                url: ${gitlab_asset_url:galacteek/dataset-itags-core/-/releases/continuous-master/downloads/dataset-itags-core.tar.gz}
+                url: ${gitlab_easy_asset_url:galacteek,dataset-itags-core,continuous-master,dataset-itags-core.tar.gz}
 
                 upgradeStrategy: replace
 
@@ -50,7 +66,8 @@ graphEnvs:
             name: i_love_hashmarks
             type: conjunctive
 
-            # Use the parent store and set the default URI
+            # Use the parent store and set the default graph URI
+            # inside the conjunctive graph
             useParentStore: true
             defaultBaseGraphUri: urn:ipg:i:love:hashmarks:private
 
@@ -63,12 +80,20 @@ graphEnvs:
 
                 datasets:
                   urn:glk:datasets:hashmarks-dwebland:
-                    url: ${gitlab_asset_url:galacteek/hashmarks-dwebland/-/releases/continuous-rdfify/downloads/hashmarks-dwebland.tar.gz}
+                    url: ${gitlab_easy_asset_url:galacteek,hashmarks-dwebland,continuous-master,hashmarks-dwebland.tar.gz}
 
                     upgradeStrategy: replace
 
-              urn:ipg:i:love:hashmarks:search:
-                name: i_love_hashmarks_search
+              urn:ipg:i:love:hashmarks:search:main:
+                name: i_love_hashmarks_search_main
+
+                services:
+                  sparql: {}
+                  sync:
+                    use: urn:ipg:sync:sparql:hashmarks:bylibertarian
+
+              urn:ipg:i:love:hashmarks:search:music:
+                name: i_love_hashmarks_search_music
 
                 services:
                   sparql: {}
@@ -94,7 +119,7 @@ graphEnvs:
             name: i_uni_mw_ss_earth
             datasets:
               urn:glk:datasets:earth:
-                url: ${gitlab_asset_url:galacteek/dataset-earth/-/releases/continuous-master/downloads/dataset-earth.tar.gz}
+                url: ${gitlab_easy_asset_url:galacteek,dataset-earth,continuous-master,dataset-earth.tar.gz}
 
           urn:ipg:i:uni:mw:ss:earth:rings:
             name: i_uni_mw_ss_earth_rings

@@ -1,4 +1,5 @@
 import asyncio
+import ipaddress
 import traceback
 from pathlib import Path
 from omegaconf import OmegaConf
@@ -224,7 +225,16 @@ class IPFSRequestInterceptor(QWebEngineUrlRequestInterceptor,
             not firstPartyUrl.isValid() or \
             firstPartyUrl.scheme() == "file"
 
-        if self._urlblocker and not firstPartyInvalid:
+        # Don't try to block IPs or localhost
+        try:
+            ipaddress.ip_address(url.host())
+            assert url.host() != 'localhost'
+        except Exception:
+            blockable = True
+        else:
+            blockable = False
+
+        if self._urlblocker and not firstPartyInvalid and blockable:
             check = self._urlblocker._engine.check_network_urls(
                 url.toString(),
                 firstPartyUrl.toString(),

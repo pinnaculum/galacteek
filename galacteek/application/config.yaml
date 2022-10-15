@@ -6,6 +6,8 @@ envs:
       - code: en
         displayName: 'English'
 
+    defaultContentLanguage: en
+
     asyncio:
       # aiojobs schedulers
       aioSchedulers:

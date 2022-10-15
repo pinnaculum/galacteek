@@ -7,5 +7,5 @@ class Moon3Theme(Theme):
 
 theme = Moon3Theme(name='moon3')
 theme.colors.webEngineBackground = '#323232'
-theme.colors.paletteLink = '#FF6633'
-theme.colors.paletteLinkVisited = '#3DE4FC'
+theme.colors.paletteLink = '#6088b1'
+theme.colors.paletteLinkVisited = '#449c96'

@@ -8,6 +8,7 @@ from . import SubjectUriRole
 
 TagNameRole = Qt.UserRole + 4
 TagDisplayNameRole = Qt.UserRole + 5
+TagWatchedRole = Qt.UserRole + 6
 
 
 class TagsSparQLModel(SparQLListModel):
@@ -47,7 +48,7 @@ class TagsSparQLModel(SparQLListModel):
 
     def data(self, index, role=None):
         try:
-            item = self._results[index.row()]
+            item = self.resultGet(index)
 
             if role == Qt.DisplayRole:
                 return str(item['tagName'])
@@ -69,6 +70,35 @@ class TagsSparQLModel(SparQLListModel):
             return QVariant(None)
 
 
+class TagsPreferencesModel(SparQLListModel):
+    """
+    Tags preferences model
+    """
+
+    rq = 'TagsManager'
+
+    def tagsWatching(self):
+        yield from self.rgen(
+            Qt.DisplayRole,
+            TagDisplayNameRole,
+            TagWatchedRole
+        )
+
+    def data(self, index, role=None):
+        item = self.resultGet(index)
+
+        if role == Qt.DisplayRole:
+            return str(item['tagName'])
+        elif role == SubjectUriRole:
+            return str(item['uri'])
+        elif role == TagWatchedRole:
+            return item['tagWatched']
+        elif role == TagDisplayNameRole:
+            var = item.get('tagDisplayName')
+            if var:
+                return str(var)
+
+
 class TagInfosSparQLModel(SparQLListModel):
     """
     Informations about a tag
@@ -84,5 +114,7 @@ class TagInfosSparQLModel(SparQLListModel):
                 return str(item['uri'])
             elif role == Qt.FontRole:
                 return QFont('Montserrat', 18)
+            else:
+                return super().data(index, role)
         except Exception:
             return QVariant(None)

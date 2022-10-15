@@ -525,6 +525,8 @@ class MultihashPyramidsToolBar(SmartToolBar):
         else:
             button.setIcon(getMimeIcon('unknown'))
 
+        button.flashButton()
+
         self.pyramids[pyramidPath] = button
 
     def pyramidsIdsList(self):

@@ -69,6 +69,8 @@ class AsyncSignal(UserList):
         self.eventFired = asyncio.Event()
 
         self._id = kw.pop('_id', 'No ID')
+        self._lastFired = None
+        self._minInterval = kw.pop('minInterval', 0)
         self._sig = signature
         self._loop = asyncio.get_event_loop()  # loop attached to this signal
         self._emitCount = 0
@@ -105,11 +107,17 @@ class AsyncSignal(UserList):
         try:
             self.eventFired.clear()
             self.eventFired.set()
+            self._lastFired = self._loop.time()
         except Exception as err:
             log.debug(f'Could not fire signal event: {err}')
 
     async def emit(self, *args, **kwargs):
         from galacteek import log
+
+        if self._lastFired and self._minInterval > 0 and \
+                (self._loop.time() - self._lastFired) < self._minInterval:
+            # ignore this one (specified minimum interval not reached)
+            return
 
         app = QApplication.instance()
 
@@ -154,8 +162,12 @@ def loopTime():
 
 
 def ensureGenericCallback(future):
+    from galacteek import log
+
     try:
         future.result()
+    except asyncio.CancelledError:
+        log.debug(f'Future {future}: cancelled')
     except Exception:
         traceback.print_exc()
 
@@ -236,7 +248,9 @@ class asyncify:
 
     def __get__(self, inst, owner):
         def wrapper(*args, **kw):
-            return asyncio.ensure_future(self.wrapped(inst, *args, **kw))
+            if asyncio.get_event_loop().is_running():
+                return asyncio.ensure_future(self.wrapped(inst, *args, **kw))
+
         return wrapper
 
 

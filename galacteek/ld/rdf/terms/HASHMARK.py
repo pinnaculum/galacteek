@@ -1,5 +1,6 @@
 from galacteek.ld import ipsTermUri
 
 
-tags = ipsTermUri('Hashmark', fragment='tags')
-tag = ipsTermUri('Hashmark', fragment='tag')
+tags = ipsTermUri('tags')
+tag = ipsTermUri('tag')
+prefs = ipsTermUri('Hashmark', fragment='resourcePrefs')

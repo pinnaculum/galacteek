@@ -309,6 +309,8 @@ setup(
             'ld/contexts/messages/*',
             'ld/contexts/services/*',
             'templates/*.html',
+            'templates/assets/js/*.js',
+            'templates/assets/css/*.css',
             'templates/ipid/*.html',
             'templates/layouts/*',
             'templates/ld/*.jinja2',

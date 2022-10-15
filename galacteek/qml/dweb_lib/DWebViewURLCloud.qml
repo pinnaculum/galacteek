@@ -15,6 +15,7 @@ URLCloud {
     color: '#323232'
 
     property string currentUrl
+    property string hoveredtUrl
     property color previousColor
 
     states: [
@@ -23,6 +24,14 @@ URLCloud {
         PropertyChanges { target: container; color: container.color }
       }
     ]
+
+    Text {
+      id: hoveredUrlText
+      anchors.fill: parent
+      font.family: 'Segoe UI'
+      font.pointSize: 16
+      color: 'lightblue'
+    }
 
     Rectangle {
       id: rcenter
@@ -130,6 +139,10 @@ URLCloud {
       container.currentUrl = cururl
 
       emitter.burst(emitter.mediumBurst)
+    }
+
+    function onUrlHovered(hovUrl, animate) {
+      emitter.burst(emitter.smallBurst)
     }
 
     function onUrlAnimationStartStop(animate) {

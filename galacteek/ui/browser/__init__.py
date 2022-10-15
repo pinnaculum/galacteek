@@ -1,3 +1,4 @@
+import asyncio
 import functools
 import os.path
 import re
@@ -6,16 +7,17 @@ import validators
 from yarl import URL
 from urllib.parse import quote
 
-from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QActionGroup
-from PyQt5.QtWidgets import QMenu
+from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QInputDialog
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QMenu
 from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtWidgets import QTextBrowser
 from PyQt5.QtWidgets import QTextEdit
 from PyQt5.QtWidgets import QVBoxLayout
+from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QGraphicsBlurEffect
 
 from PyQt5.QtPrintSupport import *
 
@@ -27,23 +29,20 @@ from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtCore import QTimer
 from PyQt5.QtCore import QSize
 from PyQt5.QtCore import QEvent
-
-from PyQt5.QtGui import QColor
+from PyQt5.QtCore import QPoint
 
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWebEngineWidgets import QWebEngineDownloadItem
-from PyQt5.QtWebEngineWidgets import QWebEngineSettings
 from PyQt5.QtWebEngineWidgets import QWebEngineContextMenuData
 from PyQt5.QtWebEngineWidgets import QWebEngineScript
-from PyQt5.QtWebChannel import QWebChannel
 
 from PyQt5.QtGui import QKeySequence
+from PyQt5.QtGui import QCursor
 
 from galacteek import log
 from galacteek import logUser
 from galacteek import ensure
 from galacteek import partialEnsure
-from galacteek import database
 from galacteek import services
 from galacteek.config import cGet
 from galacteek.config import configModRegCallback
@@ -58,6 +57,7 @@ from galacteek.ipfs.cidhelpers import joinIpns
 from galacteek.ipfs.cidhelpers import cidValid
 from galacteek.core.asynclib import asyncify
 
+from galacteek.browser import greasemonkey
 from galacteek.browser.schemes import isSchemeRegistered
 from galacteek.browser.schemes import SCHEME_ENS
 from galacteek.browser.schemes import SCHEME_IPFS
@@ -90,7 +90,9 @@ from galacteek.dweb.htmlparsers import IPFSLinksParser
 
 from ..pronto import buildProntoGraphsMenu
 
+from .page import BrowserDwebPage
 from .urlzone import URLInputWidget
+from .graphsearch import ContentSearchResultsTree
 
 from ..forms import ui_browsertab
 from ..dag import DAGViewer
@@ -102,8 +104,9 @@ from ..colors import *
 from ..clipboard import iCopyPathToClipboard
 from ..clipboard import iCopyPubGwUrlToClipboard
 from ..clipboard import iClipboardEmpty
-from ..history import HistoryMatchesWidget
 from ..widgets import *
+from ..widgets.overlay import OverlayWidget
+from ..clips import *
 
 from galacteek.ui.pinning.pinstatus import PinBatchWidget, PinBatchTab
 from galacteek.ui.widgets.pinwidgets import PinObjectButton
@@ -120,163 +123,6 @@ class CurrentPageHandler(BaseHandler):
     @pyqtSlot()
     def getRootCid(self):
         return self.rootCid
-
-
-class DefaultBrowserWebPage (QWebEnginePage):
-    jsConsoleMessage = pyqtSignal(int, str, int, str)
-
-    def __init__(self, webProfile, parent):
-        super(DefaultBrowserWebPage, self).__init__(webProfile, parent)
-        self.app = QCoreApplication.instance()
-        self.fullScreenRequested.connect(self.onFullScreenRequest)
-        self.featurePermissionRequested.connect(
-            partialEnsure(self.onPermissionRequest))
-        self.featurePermissionRequestCanceled.connect(
-            partialEnsure(self.onPermissionRequestCanceled))
-        self.setBgColor(self.app.theme.colors.webEngineBackground)
-
-        # self.changeWebChannel(QWebChannel(self))
-
-    @property
-    def channel(self):
-        return self.webChannel()
-
-    def setBgColor(self, col):
-        self.setBackgroundColor(QColor(col))
-
-    def setBgActive(self):
-        self.setBgColor(self.app.theme.colors.webEngineBackgroundActive)
-
-    def onRenderProcessPid(self, pid):
-        log.debug(f'{self.url().toString()}: renderer process has PID: {pid}')
-
-    def certificateError(self, error):
-        return questionBox(
-            error.url().toString(),
-            f'Certificate error: {error.errorDescription()}.'
-            '<b>Continue</b> ?')
-
-    async def onPermissionRequestCanceled(self, originUrl, feature):
-        pass
-
-    async def onPermissionRequest(self, originUrl, feature):
-        url = originUrl.toString().rstrip('/')
-
-        def allow():
-            self.setFeaturePermission(originUrl, feature,
-                                      QWebEnginePage.PermissionGrantedByUser)
-
-        def deny():
-            self.setFeaturePermission(originUrl, feature,
-                                      QWebEnginePage.PermissionDeniedByUser)
-
-        log.debug(f'Permission request ({url}): {feature}')
-
-        fMapping = {
-            QWebEnginePage.Geolocation: ("Geolocation", 1),
-            QWebEnginePage.MouseLock: ("Mouse lock", 2),
-            QWebEnginePage.DesktopVideoCapture:
-            ("Desktop video capture", 3),
-            QWebEnginePage.DesktopAudioVideoCapture:
-                ("Desktop audio and video capture", 4),
-            QWebEnginePage.MediaAudioVideoCapture:
-                ("Audio and video capture", 5),
-            QWebEnginePage.MediaAudioCapture:
-                ("Audio capture", 6),
-            QWebEnginePage.MediaVideoCapture:
-                ("Video capture", 7)
-        }
-
-        fmap = fMapping.get(feature, None)
-
-        if not fmap:
-            log.debug(f'Unknown feature requested: {feature}')
-            deny()
-            return
-
-        featureS, fCode = fmap
-
-        rule = await database.browserFeaturePermissionFilter(
-            url, fCode)
-
-        if rule:
-            if rule.permission == database.BrowserFeaturePermission.PERM_ALLOW:
-                allow()
-                return
-            if rule.permission == database.BrowserFeaturePermission.PERM_DENY:
-                deny()
-                return
-
-        dlg = BrowserFeatureRequestDialog(url, featureS)
-        await runDialogAsync(dlg)
-
-        result = dlg.result()
-        if result in [1, 2]:
-            allow()
-
-            if result == 2:
-                # Add a rule to always allow this feature
-                await database.browserFeaturePermissionAdd(
-                    url, fCode,
-                    database.BrowserFeaturePermission.PERM_ALLOW
-                )
-        elif result == 0:
-            deny()
-        else:
-            log.debug(f'Unknown result from dialog: {result}')
-
-    def onFullScreenRequest(self, req):
-        # Accept fullscreen requests unconditionally
-        req.accept()
-
-    def changeWebChannel(self, channel):
-        self.setWebChannel(channel)
-
-    def registerPageHandler(self):
-        # self.channel = QWebChannel(self)
-        # self.changeWebChannel(self.channel)
-
-        self.changeWebChannel(QWebChannel(self))
-        self.pageHandler = CurrentPageHandler(self)
-        self.channel.registerObject('gpage', self.pageHandler)
-
-    def registerChannelHandler(self, name, handler):
-        if not self.channel:
-            self.changeWebChannel(QWebChannel(self))
-
-        self.channel.registerObject(name, handler)
-
-    def javaScriptConsoleMessage(self, level, message, lineNumber, sourceId):
-        self.jsConsoleMessage.emit(level, message, lineNumber, sourceId)
-
-    def registerProtocolHandlerRequested(self, request):
-        """
-        registerProtocolHandlerRequested(request) can be used to
-        handle JS 'navigator.registerProtocolHandler()' calls. If
-        we want to enable that in the future it'll be done here.
-        """
-
-        scheme = request.scheme()
-        origin = request.origin()
-
-        qRet = questionBox(
-            'registerProtocolHandler',
-            'Allow {origin} to register procotol handler for: {h} ?'.format(
-                origin=origin.toString(),
-                h=scheme
-            )
-        )
-
-        if qRet is True:
-            request.accept()
-        else:
-            request.reject()
-
-    async def render(self, tmpl, url=None, **ctx):
-        if url:
-            self.setHtml(await renderTemplate(tmpl, **ctx), url)
-        else:
-            self.setHtml(await renderTemplate(tmpl, **ctx))
 
 
 class JSConsoleWidget(QWidget):
@@ -341,9 +187,9 @@ class WebView(IPFSWebView):
 
         self.app = QCoreApplication.instance()
         self.browserTab = browserTab
-        # self.linkInfoTimer = QTimer()
-        # self.linkInfoTimer.timeout.connect(self.onLinkInfoTimeout)
-        # self.setMouseTracking(True)
+        self.linkInfoTimer = QTimer()
+        self.linkInfoTimer.timeout.connect(self.onLinkInfoTimeout)
+        self.setMouseTracking(True)
 
         self.pageLoading = False
 
@@ -352,21 +198,32 @@ class WebView(IPFSWebView):
 
         self.changeWebProfile(webProfile)
 
-        # actionVSource = self.pageAction(QWebEnginePage.ViewSource)
-        # actionVSource.triggered.connect(self.onViewSource)
+    def resizeEvent(self, event):
+        for child in self.children():
+            if isinstance(child, OverlayWidget):
+                child.resize(event.size())
 
-        self.webSettings = self.settings()
-        if 0:
-            self.webSettings.setAttribute(QWebEngineSettings.PluginsEnabled,
-                                          enablePlugins)
-            self.webSettings.setAttribute(
-                QWebEngineSettings.LocalStorageEnabled, True)
-            self.webSettings.setAttribute(QWebEngineSettings.PdfViewerEnabled,
-                                          False)
-            self.webSettings.setAttribute(
-                QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
-            self.webSettings.setAttribute(
-                QWebEngineSettings.FocusOnNavigationEnabled, True)
+        super().resizeEvent(event)
+
+    def blur(self) -> None:
+        """
+        Apply a blur graphics effect on this webengine view
+        """
+
+        if self.graphicsEffect() is not None:
+            return
+
+        blurEffect = QGraphicsBlurEffect(self)
+        blurEffect.setBlurHints(QGraphicsBlurEffect.PerformanceHint)
+        blurEffect.setBlurRadius(2)
+
+        self.setGraphicsEffect(blurEffect)
+
+    def noGraphicsEffect(self):
+        """
+        Remove any graphics effect on this webengine view
+        """
+        self.setGraphicsEffect(None)
 
     def web3ChangeChannel(self, channel: Web3Channel):
         self.installDefaultPage(web3Channel=channel)
@@ -407,7 +264,7 @@ class WebView(IPFSWebView):
         self.browserTab.jsConsole.showMessage(level, message, lineNo, sourceId)
 
     def onLinkInfoTimeout(self):
-        self.browserTab.ui.linkInfosLabel.setText('')
+        self.browserTab.hoveredUrlTimeout()
 
     def onFollowTheAtom(self, path):
         log.debug('Following atom feed: {}'.format(path))
@@ -431,6 +288,8 @@ class WebView(IPFSWebView):
             self.browserTab.displayHoveredUrl(ipfsPath.asQtUrl)
         else:
             self.browserTab.displayHoveredUrl(url)
+
+        self.linkInfoTimer.start(2000)
 
     def contextMenuCreateDefault(self):
         """
@@ -505,8 +364,11 @@ class WebView(IPFSWebView):
             menu.addAction(getIcon('open.png'), iOpen(), functools.partial(
                 ensure, self.app.resourceOpener.open(ipfsPath)))
             menu.addAction(getIcon('ipfs-logo-128-black.png'),
-                           iOpenInTab(),
+                           iOpenLinkInTab(),
                            functools.partial(self.openInTab, ipfsPath))
+            menu.addAction(getIcon('ipfs-logo-128-black.png'),
+                           iOpenLinkInBgTab(),
+                           functools.partial(self.openInTab, ipfsPath, False))
             menu.addSeparator()
             menu.addAction(getIcon('hashmarks.png'),
                            iHashmark(),
@@ -530,7 +392,7 @@ class WebView(IPFSWebView):
             menu.addSeparator()
             menu.addAction(pinObjectAction)
 
-            def rscAnalyzed(fut, path, iMenu):
+            def rscAnalyzed(path: str, iMenu, fut: asyncio.Future):
                 try:
                     mimeType, stat = fut.result()
                 except Exception:
@@ -545,8 +407,8 @@ class WebView(IPFSWebView):
                         )
             ensure(
                 analyzer(ipfsPath),
-                futcallback=lambda fut: rscAnalyzed(
-                    fut,
+                futcallback=functools.partial(
+                    rscAnalyzed,
                     ipfsPath,
                     menu
                 )
@@ -617,8 +479,8 @@ class WebView(IPFSWebView):
 
             ensure(
                 analyzer(mediaIpfsPath),
-                futcallback=lambda fut: rscAnalyzed(
-                    fut,
+                futcallback=functools.partial(
+                    rscAnalyzed,
                     mediaIpfsPath,
                     mediaType,
                     analyzer
@@ -630,18 +492,16 @@ class WebView(IPFSWebView):
             # Non-IPFS URL
 
             menu = QMenu(self)
-            scheme = url.scheme()
 
-            if scheme in [SCHEME_HTTP, SCHEME_HTTPS]:
-                menu.addAction(
-                    iOpenHttpInTab(),
-                    functools.partial(self.openUrlInTab, url)
-                )
-            elif isSchemeRegistered(scheme):
+            if isUrlSupported(url):
                 # Non-IPFS URL but a scheme we know
                 menu.addAction(
                     iOpenLinkInTab(),
-                    functools.partial(self.openUrlInTab, url)
+                    functools.partial(self.openUrlInTab, url, True)
+                )
+                menu.addAction(
+                    iOpenLinkInBgTab(),
+                    functools.partial(self.openUrlInTab, url, False)
                 )
 
             menu.exec(event.globalPos())
@@ -670,12 +530,18 @@ class WebView(IPFSWebView):
                 title=ipfsPath.basename if ipfsPath.basename else
                 iUnknown()))
 
-    def openInTab(self, path):
-        tab = self.browserTab.gWindow.addBrowserTab(position='nextcurrent')
+    def openInTab(self, path, current=True):
+        tab = self.browserTab.gWindow.addBrowserTab(
+            position='nextcurrent',
+            current=current
+        )
         tab.browseFsPath(path)
 
-    def openUrlInTab(self, url):
-        tab = self.browserTab.gWindow.addBrowserTab(position='nextcurrent')
+    def openUrlInTab(self, url, switch=False):
+        tab = self.browserTab.gWindow.addBrowserTab(
+            position='nextcurrent',
+            current=switch
+        )
         tab.enterUrl(url)
 
     def downloadLink(self, menudata):
@@ -684,10 +550,9 @@ class WebView(IPFSWebView):
 
     def installDefaultPage(self, web3Channel: Web3Channel = None):
         if self.webPage:
-            # del self.webPage
             self.webPage.deleteLater()
 
-        self.webPage = DefaultBrowserWebPage(self.webProfile, self)
+        self.webPage = BrowserDwebPage(self.webProfile, self.browserTab)
         self.webPage.jsConsoleMessage.connect(self.onJsMessage)
         self.webPage.linkHovered.connect(self.onLinkHovered)
 
@@ -823,7 +688,7 @@ class CurrentObjectController(PopupToolButton):
         self.menu.addAction(self.hashmarkObjectAction)
         self.menu.addSeparator()
 
-        self.setIconSize(QSize(32, 32))
+        self.setIconSize(QSize(24, 24))
 
     def onQaLink(self):
         if self.currentPath and self.currentPath.valid:
@@ -926,15 +791,54 @@ class CurrentObjectController(PopupToolButton):
                 )
 
 
+class BrowserLoadingWidget(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+
+        self.vl = QVBoxLayout(self)
+        self.setLayout(self.vl)
+
+        self.animation = AnimatedLabel(BouncingCubeClip2(),
+                                       parent=self)
+        self.vl.addWidget(self.animation, 1, Qt.AlignCenter)
+
+    def loading(self, progress: int = 100):
+        self.animation.startClip()
+        self.animation.clip.setSpeed(max(progress * 3, 200))
+
+    def hideEvent(self, ev):
+        self.animation.stopClip()
+
+
+class PageResourceNotLoadingWidget(OverlayWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+
+        self.animation = AnimatedLabel(BouncingCubeClip1(),
+                                       parent=self)
+        if parent:
+            self.resize(parent.size())
+
+        self.loading()
+
+    def loading(self, progress: int = 100):
+        self.animation.startClip()
+        self.animation.clip.setSpeed(max(progress * 2, 150))
+
+
 class BrowserTab(GalacteekTab):
     # signals
     ipfsObjectVisited = pyqtSignal(IPFSPath)
+
+    resolveTimerEnsMs = 7000
 
     def __init__(self, gWindow, minProfile=None, pinBrowsed=False,
                  parent=None):
         super(BrowserTab, self).__init__(gWindow, parent=parent)
 
-        self.browserWidget = QWidget(self)
+        self.urlInput = None
+
+        self.browserWidget = QWidget(parent=self)
         self.browserWidget.setAttribute(Qt.WA_DeleteOnClose)
 
         self.jsConsoleWidget = JSConsoleWidget()
@@ -944,9 +848,8 @@ class BrowserTab(GalacteekTab):
 
         self.vLayout.addWidget(self.browserWidget)
 
-        # URL zone
-        self.historySearches = HistoryMatchesWidget(parent=self)
-        self.historySearches.setMinimumHeight(160)
+        # Content search tree
+        self.historySearches = ContentSearchResultsTree(parent=self)
         self.historySearches.hide()
 
         self.urlZone = URLInputWidget(
@@ -964,7 +867,6 @@ class BrowserTab(GalacteekTab):
         self.ui.searchCancel.clicked.connect(self.onSearchCancel)
         self.ui.findToolButton.setCheckable(True)
         self.ui.findToolButton.toggled.connect(self.searchControlsSetVisible)
-        self.searchControlsSetVisible(False)
 
         # Current object controller
         self.curObjectCtrl = CurrentObjectController(self)
@@ -991,9 +893,15 @@ class BrowserTab(GalacteekTab):
 
         self.webEngineView = WebView(
             self, webProfile,
-            parent=self
+            parent=self.stack
         )
-        self.ui.vLayoutBrowser.addWidget(self.webEngineView)
+
+        self.webLoadingWidget = BrowserLoadingWidget(parent=self.stack)
+
+        self.stack.addWidget(self.webLoadingWidget)
+        self.stack.addWidget(self.webEngineView)
+
+        self.stackShowWebEngine()
 
         self.webEngineView.urlChanged.connect(self.onUrlChanged)
         self.webEngineView.loadFinished.connect(self.onLoadFinished)
@@ -1021,10 +929,13 @@ class BrowserTab(GalacteekTab):
         # Page ops button
         self.createPageOpsButton()
 
-        self.hashmarkPageAction = QAction(getIcon('hashmark-black.png'),
-                                          iHashmarkThisPage(), self,
-                                          shortcut=QKeySequence('Ctrl+b'),
-                                          triggered=self.onHashmarkPage)
+        self.hashmarkPageAction = QAction(
+            getIcon('hashmark-black.png'),
+            iHashmarkThisPage(),
+            self,
+            shortcut=QKeySequence('Ctrl+b'),
+            triggered=partialEnsure(self.onHashmarkPage)
+        )
         self.ui.hashmarkThisPage.setDefaultAction(self.hashmarkPageAction)
         self.ui.hashmarkThisPage.setEnabled(False)
         self.ui.hashmarkThisPage.setAutoRaise(True)
@@ -1134,6 +1045,8 @@ class BrowserTab(GalacteekTab):
         self.ui.pinAllButton.setCheckable(True)
         self.ui.pinAllButton.setAutoRaise(True)
 
+        self.ui.contentDetailsLabel.setVisible(False)
+
         if pinBrowsed:
             self.ui.pinAllButton.setChecked(True)
         else:
@@ -1142,22 +1055,6 @@ class BrowserTab(GalacteekTab):
         self.ui.pinAllButton.toggled.connect(self.onToggledPinAll)
 
         # PIN tool button
-        iconPin = getIcon('pin.png')
-
-        if 0:
-            # Unused now
-            pinMenu = QMenu(self)
-            pinMenu.addAction(iconPin, iPinThisPage(), self.onPinSingle)
-            pinMenu.addAction(iconPin, iPinRecursive(), self.onPinRecursive)
-            pinMenu.addSeparator()
-            pinMenu.addAction(iconPin, iPinRecursiveParent(),
-                              self.onPinRecursiveParent)
-            pinMenu.addSeparator()
-            pinMenu.addAction(iconPin, iPinPageLinks(), self.onPinPageLinks)
-            pinMenu.addSeparator()
-            pinMenu.addAction(getIcon('help.png'), iHelp(), functools.partial(
-                self.app.manuals.browseManualPage, 'pinning.html'))
-
         self.pinToolButton = PinObjectButton(
             mode=QToolButton.InstantPopup)
         self.pinToolButton.pinQueueName = 'browser'
@@ -1172,7 +1069,7 @@ class BrowserTab(GalacteekTab):
 
         # Event filter
         evfilter = BrowserKeyFilter(self)
-        evfilter.hashmarkPressed.connect(self.onHashmarkPage)
+        evfilter.hashmarkPressed.connect(partialEnsure(self.onHashmarkPage))
         evfilter.reloadPressed.connect(self.onReloadPage)
         evfilter.reloadFullPressed.connect(self.onReloadPageNoCache)
         evfilter.zoominPressed.connect(self.onZoomIn)
@@ -1182,8 +1079,8 @@ class BrowserTab(GalacteekTab):
         self.installEventFilter(evfilter)
 
         self.resolveTimer = QTimer(self)
-        self.resolveTimerEnsMs = 7000
-        self.urlInput = None
+
+        self.searchControlsSetVisible(False)
 
         self.app.clipTracker.clipboardPathProcessed.connect(
             self.onClipboardIpfs)
@@ -1206,6 +1103,10 @@ class BrowserTab(GalacteekTab):
     @property
     def history(self):
         return self.gWindow.app.urlHistory
+
+    @property
+    def stack(self):
+        return self.ui.browserContentStack
 
     @property
     def webView(self):
@@ -1251,10 +1152,19 @@ class BrowserTab(GalacteekTab):
     def tabDestroyedPost(self):
         # Reparent
 
+        self.webEngineView.deleteLater()
+
         self.urlZone.setParent(None)
         self.urlZone.deleteLater()
         self.browserWidget.setParent(None)
         self.browserWidget.deleteLater()
+
+    def stackShowWebEngine(self):
+        self.stack.setCurrentWidget(self.webEngineView)
+
+    def stackShowLoading(self):
+        self.stack.setCurrentWidget(self.webLoadingWidget)
+        self.webLoadingWidget.loading(0)
 
     def configApply(self):
         zoom = cGet('zoom.default')
@@ -1269,11 +1179,23 @@ class BrowserTab(GalacteekTab):
 
         self.urlZone.startStopUrlAnimation(visible)
 
+    def hoveredUrlTimeout(self):
+        self.ui.contentDetailsLabel.setVisible(False)
+
     def displayHoveredUrl(self, url: QUrl):
-        self.app.mainWindow.contextMessage(
-            f"<p>[<span color='blue'>{url.scheme()}</span>] "
-            f"<span color='green'>{url.toString()}</span></p>"
+        pos = QCursor.pos()
+
+        easyToolTip(
+            url.toString(),
+            self.mapFromGlobal(QPoint(
+                pos.x(),
+                pos.y() + 8,
+            )),
+            self.webEngineView,
+            10000
         )
+
+        self.urlZone.pageUrlHovered.emit(url)
 
     async def onTabDoubleClicked(self):
         log.debug('Browser Tab double clicked')
@@ -1282,6 +1204,12 @@ class BrowserTab(GalacteekTab):
     def focusOutEvent(self, event):
         self.urlZone.hideMatches()
         super().focusOutEvent(event)
+
+    def showEvent(self, event):
+        if not self.currentUrl:
+            self.focusUrlZone(True)
+
+        super().showEvent(event)
 
     def fromGateway(self, authority):
         return authority.endswith(self.gatewayAuthority) or \
@@ -1394,10 +1322,41 @@ class BrowserTab(GalacteekTab):
             '''.format(cid=rootCid))
 
             existing = scripts.findScript('rootcid')
-            if existing:
+            if existing.isNull():
                 scripts.remove(existing)
 
             scripts.insert(script)
+
+    async def installGreaseMonkeyScripts(self, handler, url):
+        # Chimpanzee that
+
+        pageScripts = self.webEngineView.webPage.scripts()
+
+        if not greasemonkey.gm_manager:
+            return
+
+        for gms in greasemonkey.gm_manager.all_scripts():
+            fn = gms.full_name()
+
+            if not pageScripts.findScript(fn).isNull():
+                continue
+
+            script = QWebEngineScript()
+            script.setRunsOnSubFrames(gms.runs_on_sub_frames)
+            script.setInjectionPoint(QWebEngineScript.DocumentReady)
+            script.setSourceCode(await gms.code())
+            script.setName(fn)
+
+            try:
+                world = int(gms.jsworld)
+                script.setWorldId(world)
+            except ValueError:
+                pass
+
+            if gms.needs_document_end_workaround():
+                script.setInjectionPoint(QWebEngineScript.DocumentReady)
+
+            pageScripts.insert(script)
 
     def onDagViewRequested(self, ipfsPath):
         view = DAGViewer(ipfsPath.objPath, self.app.mainWindow)
@@ -1494,10 +1453,12 @@ class BrowserTab(GalacteekTab):
                   self.ui.searchNext]:
             w.setVisible(view)
 
+        self.ui.findToolButton.setChecked(view)
+
         if view is True:
             self.ui.searchInPage.setFocus(Qt.OtherFocusReason)
-
-        self.ui.findToolButton.setChecked(view)
+        else:
+            self.webEngineView.setFocus(Qt.OtherFocusReason)
 
     def onToggleSearchControls(self):
         self.searchControlsSetVisible(not self.ui.searchInPage.isVisible())
@@ -1610,16 +1571,24 @@ class BrowserTab(GalacteekTab):
         path = os.path.join(tmpd, filename)
         page.save(path, QWebEngineDownloadItem.CompleteHtmlSaveFormat)
 
-    def onHashmarkPage(self):
+    async def onHashmarkPage(self, *qta):
+        try:
+            langTag = await self.webEngineView.page().getPageLanguage()
+        except Exception:
+            pass
+
         if self.currentUrl and isUrlSupported(self.currentUrl):
             ensure(addHashmarkAsync(
                 self.currentUrl.toString(),
-                title=self.currentPageTitle))
+                title=self.currentPageTitle,
+                langTag=langTag
+            ))
         elif self.currentIpfsObject and self.currentIpfsObject.valid:
             scheme = self.currentUrl.scheme()
             ensure(addHashmarkAsync(
                 self.currentIpfsObject.fullPath,
                 title=self.currentPageTitle,
+                langTag=langTag,
                 schemePreferred=scheme
             ))
         else:
@@ -1794,7 +1763,7 @@ class BrowserTab(GalacteekTab):
         if not url.isValid() or url.scheme() in ['data', SCHEME_Z]:
             return
 
-        self.webEngineView.webPage.setBgActive()
+        # self.webEngineView.webPage.setBgActive()
 
         sHandler = self.webEngineView.webProfile.urlSchemeHandler(
             url.scheme().encode())
@@ -1925,6 +1894,9 @@ class BrowserTab(GalacteekTab):
     def onLoadStarted(self):
         self.setLoadingStatus(True)
 
+        if not self.currentUrl:
+            self.stackShowLoading()
+
     def applyStyleSheet(self, styleName: str):
         # Apply stylesheets
         webProfile = self.webEngineView.webProfile
@@ -1952,8 +1924,18 @@ class BrowserTab(GalacteekTab):
                 }''')
             self.ui.stopButton.hide()
             self.ui.reloadPageButton.show()
+
+            # Show the webengine and remove any graphics effect
+            self.stackShowWebEngine()
+            self.webLoadingWidget.hide()
+            self.webEngineView.noGraphicsEffect()
         else:
             self.setLoadingStatus(True)
+
+            if progress in range(0, 85):
+                self.webLoadingWidget.loading(progress)
+                self.webEngineView.blur()
+
             self.ui.pBarBrowser.setStyleSheet(
                 '''QProgressBar::chunk#pBarBrowser {
                     background-color: #4b9fa2;
@@ -2029,6 +2011,8 @@ class BrowserTab(GalacteekTab):
         self.webEngineView.load(url)
         self.webEngineView.setFocus(Qt.OtherFocusReason)
 
+        ensure(self.installGreaseMonkeyScripts(handler, url))
+
         self.jsConsole.log(f'URL changed: <b>{url.toString()}</b>')
 
     async def runIpfsSearch(self, queryStr):
@@ -2038,8 +2022,8 @@ class BrowserTab(GalacteekTab):
         page.handler.search(queryStr, 'all')
 
     async def handleEditedUrl(self, inputStr):
-        self.urlZone.hideMatches()
         self.urlZone.cancelTimer()
+        self.urlZone.hideMatches()
         self.urlZone.unfocus()
 
         engineMatch = re.search(r'^\s*(d|s|sx|c|i|ip)\s(.*)$', inputStr)
@@ -2154,7 +2138,7 @@ class BrowserTab(GalacteekTab):
             if iPath.valid:
                 return self.browseFsPath(iPath)
 
-            if not validators.domain(inputStr):
+            if not validators.domain(inputStr) and 0:
                 # Search
                 await self.runIpfsSearch(inputStr)
                 return
@@ -2163,8 +2147,8 @@ class BrowserTab(GalacteekTab):
 
             if tld == 'eth':
                 self.enterUrl(QUrl(f'{SCHEME_ENS}://{inputStr}'))
-            else:
-                self.enterUrl(QUrl(f'http://{inputStr}'))
+            elif len(tld) in range(2, 4):
+                self.enterUrl(QUrl(f'{SCHEME_HTTPS}://{inputStr}'))
 
     def onEnsResolved(self, domain, path):
         logUser.info('ENS: {0} maps to {1}'.format(domain, path))

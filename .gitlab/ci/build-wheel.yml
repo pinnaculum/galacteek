@@ -31,6 +31,7 @@ prepare:
     - /^ipid/
     - /^rdf/
     - /^ld/
+    - /^misc/
   script:
     - export GALACTEEK_VERSION=$(cat galacteek/VERSION)
 
@@ -78,6 +79,7 @@ build:
     - /^ipid/
     - /^rdf/
     - /^ld/
+    - /^misc/
   script:
     - source $GALACTEEK_ENV_FILE
     - mkdir -p $ASSETS_ROOT

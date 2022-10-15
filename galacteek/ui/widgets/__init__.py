@@ -46,23 +46,29 @@ from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import get_lexer_by_name
 
-from galacteek.ipfs.stat import StatInfo
-from galacteek.ipfs.wrappers import ipfsOp
-from galacteek.ipfs.cidhelpers import IPFSPath
-from galacteek.ipfs.mimetype import detectMimeType
+from galacteek import database
 from galacteek import log
 from galacteek import ensure
 from galacteek import partialEnsure
 from galacteek import AsyncSignal
 from galacteek import services
-from galacteek.core.asynclib import asyncReadFile
-from galacteek.space import allPlanetsNames
-from galacteek.dweb.markdown import markitdown
+
+from galacteek.browser.schemes import isUrlSupported
+
+from galacteek.config import cGet
 from galacteek.config import cWidgetGet
 from galacteek.config import cObjectGet
 from galacteek.config import Configurable
 
-from galacteek import database
+from galacteek.ipfs.stat import StatInfo
+from galacteek.ipfs.wrappers import ipfsOp
+from galacteek.ipfs.cidhelpers import IPFSPath
+from galacteek.ipfs.mimetype import detectMimeType
+
+from galacteek.core.asynclib import asyncReadFile
+from galacteek.space import allPlanetsNames
+from galacteek.dweb.markdown import markitdown
+
 from galacteek.ld.iri import urnParse
 from galacteek.ld.rdf import GraphURIRef
 
@@ -249,7 +255,6 @@ class GToolButton(QToolButton, Configurable):
 
     def __init__(self, parent=None, **kw):
         super(GToolButton, self).__init__(parent=parent, **kw)
-        self.app = QApplication.instance()
         self.setObjectName(self.gObjName)
         self.cApply()
 
@@ -445,7 +450,7 @@ class LabelWithURLOpener(QLabel):
     Used by the 'About' dialog
     """
 
-    def __init__(self, text, parent=None):
+    def __init__(self, text='', parent=None):
         super(LabelWithURLOpener, self).__init__(text, parent)
         self.app = QApplication.instance()
         self.linkActivated.connect(self.onLinkClicked)
@@ -459,9 +464,8 @@ class LabelWithURLOpener(QLabel):
         if not url.isValid():
             return
 
-        if url.scheme() in ['http', 'https']:
-            tab = self.app.mainWindow.addBrowserTab()
-            tab.enterUrl(url)
+        if isUrlSupported(url):
+            self.app.mainWindow.addBrowserTab().enterUrl(url)
 
         elif url.scheme() == 'mailto':
             # We only care about BM
@@ -901,8 +905,15 @@ class IPFSWebView(QWebEngineView):
         super(IPFSWebView, self).__init__(parent=parent)
 
         self.app = QApplication.instance()
-        self.webProfile = webProfile if webProfile else \
-            self.app.webProfiles['ipfs']
+
+        defaultProfileName = cGet(
+            'defaultWebProfile',
+            mod='galacteek.browser.webprofiles'
+        )
+
+        self.webProfile = self.app.webProfiles.get(
+            webProfile if webProfile else defaultProfileName
+        )
         self.setPage(QWebEnginePage(self.webProfile, self))
         self.setMinimumSize(QSize(
             self.app.desktopGeometry.width() / 8,
@@ -1139,6 +1150,10 @@ class MarkdownInputWidget(QWidget):
 
         self.setLayout(mainLayout)
         self.setMinSize()
+
+    def setMarkdownText(self, mText: str):
+        self.textEditUser.clear()
+        self.textEditUser.insertPlainText(mText)
 
     def onMarkdownHelp(self):
         ref = self.app.ipfsCtx.resources.get('markdown-reference')

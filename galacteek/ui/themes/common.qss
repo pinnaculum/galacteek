@@ -72,7 +72,7 @@ QToolBar#qaToolBar QToolButton {
     padding: 2px;
 }
 
-QToolBar#qaToolBar QToolButton::hover {
+QToolBar#qaToolBar QToolButton:hover {
     padding: 5px;
 }
 
@@ -101,7 +101,7 @@ QToolButton#pinObjectButton QMenu::item {
 }
 */
 
-QToolButton#pinObjectButton::hover {
+QToolButton#pinObjectButton:hover {
     qproperty-iconSize: 64px;
     min-width: 64px;
     min-height: 64px;
@@ -139,16 +139,13 @@ QLabel#rpsPinataInstructions {
     font: 16pt "Segoe UI";
 }
 
-QPushButton#pinningStatusButton {
+QPushButton#pinningStatusButton,
+QPushButton#pinningStatusButton[pinning=false] {
     background-color: transparent;
 }
 
 QPushButton#pinningStatusButton[pinning=true] {
     background-color: orange;
-}
-
-QPushButton#pinningStatusButton[pinning=false] {
-    background-color: transparent;
 }
 
 QToolButton#clipboardItemButton[onTop=true] {
@@ -162,12 +159,12 @@ QToolButton#clipboardItemButton[onTop=false] {
     border: 0;
 }
 
-QToolButton#clipboardItemButton::hover {
+QToolButton#clipboardItemButton:hover {
     background-color: #778899;
     border: 1px solid #4a9ea1;
 }
 
-QToolButton#clipboardItemButton::pressed {
+QToolButton#clipboardItemButton:pressed {
     background-color: #b0c4de;
 }
 
@@ -186,4 +183,11 @@ QTreeView::item:selected#hashmarksTreeView {
     color: white;
     padding-left: 900px;
     padding-right: 40px;
+}
+
+QToolButton#blogPostsMgrButton {
+    min-width: 64;
+    min-height: 64;
+    background-color: lightblue;
+    qproperty-iconSize: 64px;
 }

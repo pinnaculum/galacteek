@@ -8,6 +8,8 @@ from PyQt5.QtGui import QFont
 from galacteek.ui.helpers import getIcon
 
 from galacteek.ui.i18n import iHashmarkInfoToolTip
+from galacteek.ui.i18n import iUnknown
+
 from galacteek.ui.helpers import getMimeIcon
 from galacteek.ui.helpers import pixmapAsBase64Url
 
@@ -86,9 +88,10 @@ class HashmarkItem(SparQLBaseItem):
 
     @property
     def mimeType(self):
-        return str(self.itemData.get('mimeType'))
+        mt = self.itemData.get('mimeType')
+        return str(mt) if mt is not None else iUnknown()
 
-    def icon(self, col):
+    def icon(self, col: int):
         if col == 0:
             thumbnailUrl = self.itemData['thumbnailUrl']
             if thumbnailUrl:
@@ -107,14 +110,14 @@ class HashmarkItem(SparQLBaseItem):
             else:
                 return getIcon('unknown-file.png')
 
-    def tooltip(self, column: int):
+    def tooltip(self, column: int) -> str:
         if column == 0:
-            icon = ':/share/icons/mimetypes/unknown.png'
+            iconUrl = ':/share/iconUrls/mimetypes/unknown.png'
 
             if self.mimeType:
                 qti = getMimeIcon(self.mimeType)
                 if qti:
-                    icon = pixmapAsBase64Url(
+                    iconUrl = pixmapAsBase64Url(
                         qti.pixmap(QSize(64, 64)),
                         justUrl=True
                     )
@@ -123,7 +126,7 @@ class HashmarkItem(SparQLBaseItem):
 
             return iHashmarkInfoToolTip(
                 self.uri,
-                icon,
+                iconUrl,
                 self.title,
                 self.description,
                 dc.isoformat(sep=' ', timespec='seconds') if dc else ''
@@ -135,6 +138,8 @@ class HashmarkItem(SparQLBaseItem):
                 return self.title[0:64]
             elif column == 1:
                 return self.mimeType
+        elif role == Qt.ToolTipRole:
+            return self.tooltip(column)
         elif role in [SubjectUriRole, HashmarkUriRole]:
             return str(self.uri)
         elif role == Qt.FontRole:
@@ -148,6 +153,17 @@ class HashmarkItem(SparQLBaseItem):
         return super().data(column, role)
 
 
+class HashmarkSummaryItem(SparQLBaseItem):
+    def displayHashmark(self):
+        return '''Uri: {self.itemData["uri"]}'''
+
+    def data(self, column: int, role):
+        if role == Qt.DisplayRole and column == 0:
+            return self.displayHashmark()
+
+        return super().data(column, role)
+
+
 class LDHashmarksSparQLItemModel(SparQLItemModel):
     extraDataTypes = [
         HashmarkUriRole,
@@ -156,3 +172,37 @@ class LDHashmarksSparQLItemModel(SparQLItemModel):
 
     async def itemFromResult(self, result, parent):
         return HashmarkItem(result, parent=parent)
+
+
+class LDHashmarksItemModel(LDHashmarksSparQLItemModel):
+    def queryForParent(self, parent: SparQLBaseItem):
+        if parent is self.rootItem:
+            return self.hashmarkQuery(), {
+                'uri': parent.itemData['uri']
+            }
+
+        return None, None
+
+    def hashmarkQuery(self):
+        return self.rqGet('HashmarksSearch')
+
+    def searchHashmark(self, uri: str) -> list:
+        """
+        Search a hashmark by uri in the model and return
+        a list of matching indexes
+        """
+        return self.match(
+            self.createIndex(self.rootItem.row(), 0),
+            SubjectUriRole,
+            uri
+        )
+
+    async def handleItem(self,
+                         item: SparQLBaseItem,
+                         parent: SparQLBaseItem):
+        if isinstance(item, HashmarkItem):
+            # Add a summary item (wrapping the parent item's data)
+
+            self.insertItem(
+                HashmarkSummaryItem(item.itemData, parent=item)
+            )

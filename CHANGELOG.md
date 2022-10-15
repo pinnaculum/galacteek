@@ -16,18 +16,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pulled from IPFS)
 - Add the ips:// URL scheme (renders IPS JSON-LD schemas)
 - Add a UI action to view IPS schemas
-- Implement intelligent RDF tags
+- Implement intelligent RDF tags (inspired from "Meaning of a tag")
 - pronto: support for subconjunctive graphs (parent store)
 - pubsub sniffer: nicer UI (add topic filter and max messages widgets)
+- Add UI elements in the settings to configure the various webprofiles
+- Add support for Greasemonkey scripts
+- Use a popup (vs a tab previously) for the pinning status widget
+- Add support for configurable dark theme inside QtWebEngine widgets
+- browser: Detect page's language from lang tag and pass it to addHashmark
 
 ### Changed
 
-- Hashmarks: use RDF storage (old hashmarks db is deprecated)
+- Hashmarks: use RDF storage (old hashmarks db is deprecated,
+  possible to migrate from the UI)
 - js-ipfs-http-client: upgrade to v49.0.2
+- IPFS search UI
+  - Add an IPFS gateway UI selector
+  - Add an exact MIME type filter
+  - Add a filter for "last seen period" (helps to filter out dead content)
+  - Search results are buffered in a RDF graph and periodically flushed
+  - Embed audio and video content in the search results
 
 ### Fixed
 
 - Pubsub sniffer UI (bugfix): unhook PS listeners when the widget is destroyed
+- Fix "Repeated subscription to key" aiopubsub message warnings
 
 ## [0.5.7] - 2022-09-08
 

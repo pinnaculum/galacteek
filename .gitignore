@@ -27,6 +27,7 @@ tmp/
 .pytest_cache/
 .buildinfo
 .doctrees/
-Pipfile.lock
-Miniconda3*
-go-ipfs*.tar.gz
+*.tar.gz
+venv*
+html/
+*.qmlc

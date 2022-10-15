@@ -3,6 +3,7 @@ import os.path
 import asyncio
 import aioipfs
 
+from urllib.parse import unquote
 from typing import Union
 
 from rdflib import URIRef
@@ -109,7 +110,7 @@ class IPFSResourceOpener(QObject):
         webProfile = hashmark.get('prefsWebProfile', None)
 
         await self.open(
-            hashmark['uri'],  # URIRef
+            unquote(hashmark['uri']),  # URIRef, unquoted
             useWorkspace=workspace,
             schemePreferred=str(sPreferred) if sPreferred else None,
             minWebProfile=str(webProfile) if webProfile else None
@@ -122,7 +123,7 @@ class IPFSResourceOpener(QObject):
                    rdfGraph=None,
                    openingFrom=None,
                    pyramidOrigin=None,
-                   minWebProfile='ipfs',
+                   minWebProfile='minimal',
                    schemePreferred=None,
                    tryDecrypt=False,
                    fromEncrypted=False,
@@ -205,8 +206,7 @@ class IPFSResourceOpener(QObject):
                 wsSwitch = False
 
         if mimeType and mimeType.valid:
-            logUser.info('{path} ({type}): opening'.format(
-                path=rscPath, type=str(mimeType)))
+            log.debug(f'{rscPath} ({mimeType}): opening')
         else:
             logUser.info(iResourceCannotOpen(rscPath))
             return
@@ -489,7 +489,8 @@ class IPFSResourceOpener(QObject):
             os.unlink(filePath)
             log.debug(str(err))
         else:
-            os.unlink(filePath)
+            if os.path.isfile(filePath):
+                os.unlink(filePath)
 
     async def openWithSystemDefault(self, rscPath):
         # Use xdg-open or open depending on the platform

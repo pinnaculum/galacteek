@@ -27,32 +27,22 @@
 <context>
     <name>AddHashmarkDialog</name>
     <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="137"/>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="156"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Title&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="163"/>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="182"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Description&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="183"/>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="202"/>
         <source>Comment</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="216"/>
-        <source>Category</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="233"/>
-        <source>or create new category, e.g news/world</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="286"/>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="235"/>
         <source>Pinning</source>
         <translation type="unfinished"></translation>
     </message>
@@ -67,22 +57,17 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="118"/>
-        <source>Language</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="129"/>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="148"/>
         <source>en</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="253"/>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="259"/>
         <source>Version</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="266"/>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="272"/>
         <source>1.0.0</source>
         <translation type="unfinished"></translation>
     </message>
@@ -104,6 +89,16 @@
     <message>
         <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="39"/>
         <source>Add LD hashmark</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="128"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt;The metadata language tag (@language in JSON-LD)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="131"/>
+        <source>Metadata language</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -194,12 +189,12 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/browsertab.ui" line="228"/>
+        <location filename="../../galacteek/ui/forms/browsertab.ui" line="190"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Reload page&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/browsertab.ui" line="208"/>
+        <location filename="../../galacteek/ui/forms/browsertab.ui" line="228"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Previous&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
@@ -229,12 +224,12 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/browsertab.ui" line="466"/>
+        <location filename="../../galacteek/ui/forms/browsertab.ui" line="454"/>
         <source>Find in page:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/browsertab.ui" line="486"/>
+        <location filename="../../galacteek/ui/forms/browsertab.ui" line="474"/>
         <source>Search</source>
         <translation type="unfinished"></translation>
     </message>
@@ -865,28 +860,28 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>GalacteekWindow</name>
     <message>
-        <location filename="../../galacteek/ui/camera.py" line="39"/>
+        <location filename="../../galacteek/ui/camera.py" line="40"/>
         <source>Capture images and record videos to IPFS</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/camera.py" line="46"/>
+        <location filename="../../galacteek/ui/camera.py" line="47"/>
         <source>Capture</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/camera.py" line="51"/>
+        <location filename="../../galacteek/ui/camera.py" line="52"/>
         <source>Devices</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="103"/>
+        <location filename="../../galacteek/ui/mainui.py" line="102"/>
         <source>
 Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/mainui.py" line="112"/>
+        <location filename="../../galacteek/ui/mainui.py" line="111"/>
         <source>
         &lt;p&gt;
         &lt;b&gt;galacteek&lt;/b&gt; is a multi-platform Qt5-based browser
@@ -1090,22 +1085,22 @@ Path: {0}, nodes processed: {1}</source>
 <context>
     <name>IPFSSearchResults</name>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="56"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="61"/>
         <source>Results count: &lt;b&gt;{0}&lt;/b&gt; (max score: &lt;b&gt;{1}&lt;/b&gt;)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="64"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="69"/>
         <source>&lt;b&gt;No results found&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="69"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="74"/>
         <source>&lt;b&gt;Error while fetching results&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="74"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="79"/>
         <source>&lt;b&gt;Searching ...&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1590,17 +1585,17 @@ Path: {0}, nodes processed: {1}</source>
 <context>
     <name>PinStatusWidget</name>
     <message>
-        <location filename="../../galacteek/ui/pinning/pinstatus.py" line="49"/>
+        <location filename="../../galacteek/ui/pinning/pinstatus.py" line="50"/>
         <source>Queue</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pinning/pinstatus.py" line="53"/>
+        <location filename="../../galacteek/ui/pinning/pinstatus.py" line="54"/>
         <source>Status</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/pinning/pinstatus.py" line="57"/>
+        <location filename="../../galacteek/ui/pinning/pinstatus.py" line="58"/>
         <source>Nodes</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2098,67 +2093,67 @@ Path: {0}, nodes processed: {1}</source>
 <context>
     <name>TextEditor</name>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="88"/>
+        <location filename="../../galacteek/ui/textedit.py" line="87"/>
         <source>Save</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="93"/>
+        <location filename="../../galacteek/ui/textedit.py" line="92"/>
         <source>Create new file</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="98"/>
+        <location filename="../../galacteek/ui/textedit.py" line="97"/>
         <source>Import file</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="103"/>
+        <location filename="../../galacteek/ui/textedit.py" line="102"/>
         <source>Import error</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="108"/>
+        <location filename="../../galacteek/ui/textedit.py" line="107"/>
         <source>Import directory</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="113"/>
+        <location filename="../../galacteek/ui/textedit.py" line="112"/>
         <source>Create new directory</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="118"/>
+        <location filename="../../galacteek/ui/textedit.py" line="117"/>
         <source>Edit</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="123"/>
+        <location filename="../../galacteek/ui/textedit.py" line="122"/>
         <source>Filesystem view</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="128"/>
+        <location filename="../../galacteek/ui/textedit.py" line="127"/>
         <source>Editor view</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="133"/>
+        <location filename="../../galacteek/ui/textedit.py" line="132"/>
         <source>Preview</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="138"/>
+        <location filename="../../galacteek/ui/textedit.py" line="137"/>
         <source>Object diff</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="143"/>
+        <location filename="../../galacteek/ui/textedit.py" line="142"/>
         <source>Automatic markdown to HTML saving</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/textedit.py" line="150"/>
+        <location filename="../../galacteek/ui/textedit.py" line="149"/>
         <source>Offline mode (announce your content manually later)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2193,17 +2188,6 @@ Path: {0}, nodes processed: {1}</source>
     <message>
         <location filename="../../galacteek/ui/forms/timeframeselector.ui" line="69"/>
         <source>to</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>toolbarQa</name>
-    <message>
-        <location filename="../../galacteek/ui/quickaccess.py" line="42"/>
-        <source>&lt;p&gt;&lt;b&gt;Quick Access&lt;/b&gt; toolbar&lt;/p&gt;
-           &lt;p&gt;Drag and drop any IPFS content here that
-           you want to have easy access to&lt;/p&gt;
-        </source>
         <translation type="unfinished"></translation>
     </message>
 </context>

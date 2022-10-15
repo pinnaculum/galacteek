@@ -155,22 +155,26 @@ class GraphingHistoryService(GService):
         rsaAgent = await ipid.rsaAgentGet(ipfsop)
         privKey = await rsaAgent._privateKey()
 
+        if privKey is None:
+            log.warning('Private RSA key not loaded yet')
+            return None
+
         # Graph where we store the ontolorecord
         # dstGraph = self.rdfService.graphByUri(graphUri)
         dstGraph = self.rdfService.graphHistory
 
         if dstGraph is None:
             log.debug(f'trace: graph with URI {graphUri} was not found')
-            return
+            return None
 
         if not ipid:
             log.debug('No IPID found')
-            return
+            return None
 
         dagraw = await ipfsop.dagGet(str(iPath), timeout=15)
         if not dagraw:
             log.debug(f'trace: object {iPath} could not be retrieved')
-            return
+            return None
 
         h = hashlib.sha1()
         h.update(iPath.ipfsUrl.encode())
@@ -181,7 +185,7 @@ class GraphingHistoryService(GService):
             nodeId = f'urn:ontolovcrecord:{h.hexdigest()}'
         else:
             log.debug(f'Invalid record type {recordType}')
-            return
+            return None
 
         chainId = chainUri if chainUri else ontolochain.didMainChainUri(ipid)
 
@@ -228,7 +232,7 @@ class GraphingHistoryService(GService):
         result = list(dstGraph.predicate_objects(nodeId))
 
         if result:
-            return
+            return None
 
         doc = {
             '@context': gLdDefaultContext,

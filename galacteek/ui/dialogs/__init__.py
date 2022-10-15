@@ -69,6 +69,7 @@ from galacteek.appsettings import *
 
 from galacteek.crypto.qrcode import ZbarCryptoCurrencyQrDecoder
 
+from ..notify import uiNotify
 from ..forms import ui_addfeeddialog
 from ..forms import ui_ipfscidinputdialog, ui_ipfsmultiplecidinputdialog
 from ..forms import ui_donatedialog
@@ -657,6 +658,8 @@ class AddMultihashPyramidDialog(QDialog):
                 err.message))
         except Exception as err:
             messageBox('Error creating pyramid: {}'.format(str(err)))
+        else:
+            uiNotify('pyramidCreated')
 
     @ipfsOp
     async def injectQrcIcon(self, op, iconPath):

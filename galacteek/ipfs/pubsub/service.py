@@ -429,10 +429,8 @@ class PubsubService(Configurable, GService):
         else:
             return status
 
-    async def gHubPublish(self, key, msg):
+    def gHubPublish(self, key, msg):
         gHub.publish(key, msg)
-
-        await asyncio.sleep(0.05)
 
     @async_enterable
     async def msgSpy(self, dbRecord, msgType, attrName, value):

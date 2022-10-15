@@ -1,297 +1,54 @@
 <html>
   <head>
     <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+    <script src="qrc:/share/js/jquery-3.6.0.min.js"></script>
+
+    <!--
     <link rel="stylesheet" type="text/css"
       href="qrc:///theme/css/search.css"></script>
+    -->
+
+    <style>
+      {% include "assets/css/ipfs-search.css" %}
+    </style>
 
     <script type="text/javascript">
-      function renderHit(engine, hit, div) {
-        markup = `
-    <p style="text-align: left">
-      <img src="qrc:///share/icons/${ engine }.png"
-        width="32" height="auto"
-        title="Search engine: ${ engine }"/>
-
-      <a class="hitlink" style="margin-right: 15px" href="${hit.url}" onclick='event.preventDefault(); window.openIpfs("${hit.path}")' >${hit.title}</a>
-      <a href="#" title="Hashmaek" onclick='event.preventDefault(); window.hashmark("${hit.path}")'><img src="qrc:///share/icons/hashmarks.png" width="32" height="auto"/></a>
-      <a href="#" title="Pin object" onclick='event.preventDefault(); window.ipfssearch.pinObject("${hit.path }")'><img src="qrc:///share/icons/pin.png" width="32" height="auto"/></a>
-      <a href="#" title="Copy address to clipboard" onclick='event.preventDefault(); window.ipfssearch.clipboardInput("${hit.path}")'><img src="qrc:///share/icons/clipboard.png" width="32" height="auto"/></a>
-      `;
-
-        if (hit['mimetype'].startsWith('audio') || hit['mimetype'].startsWith('video')) {
-          markup += `
-        <a href="#" title="Open in mediaplayer" onclick='event.preventDefault(); window.ipfssearch.mplayerQueue("${hit.path}")'>
-        <img src="qrc:/share/icons/multimedia/mplayer1.png" width="32" height="auto" />
-        </a>`;
-        }
-
-        if (engine == 'cyber') {
-          markup += `
-          <img src="qrc:///share/icons/${ engine }.png"
-            width="32" height="auto"
-            title="Cyberlink ${hit.cyberlink.source} => ${hit.cyberlink.target}"/>
-            `;
-        }
-
-        if (hit['type'] == 'directory' || hit['mimetype'] == 'inode/directory') {
-          markup += `
-        <a href="#" onclick='event.preventDefault(); window.exploreIpfs("${hit.path}")'><img src="qrc:///share/icons/folder-open-black.png" width="32" height="auto"/></a>
-        `;
-        }
-
-        markup += `
-        <span style="float: right; width: 30%">
-          Content type: <b>${ hit.mimetype }</b> Size: <b>${ hit.sizeformatted }</b>
-        </span>`;
-
-        markup += '</p>';
-
-        /* Description */
-        markup += `<div id="${hit.hash}_description" class="hitdescr">`;
-
-        if (hit['description']) {
-          markup += `<p>${hit.description}</p>`;
-        } else {
-          markup += `<p>No description available for this result</p>`;
-        }
-
-        markup += '</div>';
-
-        if (hit['mimetype'].startsWith('image')) {
-          markup += `
-        <a href="#" onclick='event.preventDefault(); window.openIpfs("${hit.path}")'>
-        <img id="img" src="{{ ipfsConnParams.gatewayUrl }}/${hit.path}" width="20%"></img>
-        </a>`;
-        }
-
-        if (hit['mimetype'].startsWith('text')) {
-          if (hit['mimetype'] === 'text/html') {
-              markup += `
-                <button onclick="previewFile('${hit.hash}');">Preview</button>
-                <div id="${hit.hash}_preview" class="textpreview">
-                  <embed type="text/html"
-                  src="{{ ipfsConnParams.gatewayUrl }}/${hit.path}"
-                  width="100%" height="300">
-                </div>
-              `;
-
-          } else {
-          markup += `
-            <button onclick="previewFile('${hit.hash}');">Preview</button>
-            <div id="${hit.hash}_preview" class="textpreview">
-              <pre id="${hit.hash}_text"></pre>
-            </div>
-          `;
-          }
-        }
-
-        div.innerHTML = markup;
-      }
-
-      function previewFile(hash) {
-        preview = document.getElementById(hash + "_preview")
-        raw = document.getElementById(hash + "_text")
-        fetched = document.getElementById(hash + "_fetched")
-
-        if (!fetched) {
-          window.ipfs.cat(hash, function (err, file) {
-            if (!raw || err) {
-              raw.innerHTML = 'IPFS fetch error'
-              throw err
-            } else {
-              document.createElement("p", hash + "_fetched")
-              raw.innerHTML = ''
-              try {
-                var tNode = document.createTextNode(file.toString('utf8'))
-                raw.appendChild(tNode)
-              } catch(err) {
-                raw.innerHTML = 'Decoding error'
-                throw err
-              }
-            }
-          })
-        }
-
-        if (preview.style.display === 'none' || !(preview.style.display)) {
-          preview.style.display = 'block'
-        } else {
-          preview.style.display = 'none'
-        }
-      }
-
-      function statusSearching() {
-          document.getElementById('searchquery').setAttribute(
-            'class', 'searching')
-      }
-
-      function statusWaiting() {
-          document.getElementById('searchquery').setAttribute(
-            'class', 'waitinput')
-      }
-
-      new QWebChannel(qt.webChannelTransport, function (channel) {
-        window.galacteek = channel.objects.galacteek;
-        window.ipfssearch = channel.objects.ipfssearch;
-
-        query = document.getElementById('searchquery')
-        if (query) {
-            query.focus()
-        }
-
-        window.ipfssearch.filtersChanged.connect(function() {
-          document.getElementById('results').innerHTML = ''
-          channel.objects.ipfssearch.search()
-        })
-
-        window.ipfssearch.resultReady.connect(function(engine, cid, hit) {
-          var resDiv = document.getElementById('results')
-          var elem = document.createElement("div", cid);
-          elem.setAttribute('id', cid);
-          elem.setAttribute('class', 'grayout');
-          renderHit(engine, hit, elem);
-          resDiv.appendChild(elem);
-        });
-
-        window.ipfssearch.clear.connect(function() {
-          var div = document.getElementById('results')
-          while(div.firstChild){
-            div.removeChild(div.firstChild);
-          }
-          document.getElementById('statusmessage').innerHTML = ""
-        })
-
-        window.ipfssearch.filesStatAvailable.connect(function(cid, stat) {
-          var element = document.getElementById(cid)
-          if (element) {
-            element.style.display = 'block'
-            element.setAttribute('class', 'hit')
-          }
-          document.getElementById('controls_b').style.display = 'flex'
-        });
-
-        window.ipfssearch.searchTimeout.connect(function(timeout) {
-          document.getElementById('statusmessage').innerHTML = '<b>Search timeout</b><a href="#" onclick="event.preventDefault(); window.ipfssearch.searchRetry();">Retry</a>'
-          statusWaiting()
-        })
-
-        window.ipfssearch.searchError.connect(function() {
-          document.getElementById('statusmessage').innerHTML = '<b>Search error</b><a href="#" onclick="event.preventDefault(); window.ipfssearch.searchRetry();">Retry</a>'
-          statusWaiting()
-        })
-
-        window.ipfssearch.searchComplete.connect(function() {
-          statusWaiting()
-        })
-
-        window.ipfssearch.searchRunning.connect(function(query) {
-          document.getElementById('searchquery').value = query
-          statusSearching()
-        })
-
-        window.ipfssearch.searchStarted.connect(function(query) {
-          document.getElementById('searchquery').value = query
-          statusSearching()
-        })
-
-        window.ipfssearch.resetForm.connect(function() {
-          document.getElementById('searchquery').value = ''
-          document.getElementById('contenttype').value = 'all'
-          document.getElementById('controls').style.display = 'none'
-          document.getElementById('controls_b').style.display = 'none'
-          document.getElementById('statusmessage').innerHTML = ""
-
-          query = document.getElementById('searchquery')
-          if (query) {
-              query.focus()
-          }
-        })
-
-        window.ipfssearch.vPageStatus.connect(function(vPageCur, vPageLast) {
-          var ctrl = document.getElementById('controls')
-          var ctrlb = document.getElementById('controls_b')
-          var prev = document.getElementById('pageprev')
-          var prevb = document.getElementById('pageprev_b')
-          var next = document.getElementById('pagenext')
-          var nextb = document.getElementById('pagenext_b')
-          var pageinfo = document.getElementById('pageinfo')
-
-          pageinfo.innerHTML = `Page ${vPageCur} / ${vPageLast}`
-          pageinfo.style.display = 'block'
-
-          ctrl.style.display = 'flex'
-
-          if (vPageCur == 1) {
-            prev.style.display = 'none'
-            prevb.style.display = 'none'
-          } else {
-            prev.style.display = 'block'
-            prevb.style.display = 'block'
-          }
-          if (vPageCur < vPageLast) {
-            next.style.display = 'block'
-            nextb.style.display = 'block'
-          } else {
-            next.style.display = 'none'
-            nextb.style.display = 'none'
-          }
-        })
-      })
-
-      window.openIpfs = function (path) {
-        window.ipfssearch.openLink(path);
-      }
-
-      window.hashmark = function (path) {
-        window.ipfssearch.hashmark(path);
-      }
-
-      window.exploreIpfs = function (path) {
-        window.ipfssearch.explore(path);
-      }
-
-      window.runSearch = function () {
-        window.ipfssearch.cancelSearchTasks()
-
-        document.getElementById('controls').style.display = 'none'
-        document.getElementById('controls_b').style.display = 'none'
-        query = document.getElementById('searchquery').value
-        type = document.getElementById('contenttype').value
-
-        // statusSearching()
-        window.ipfssearch.search(query, type)
-      }
-
-      window.previousPage = function () {
-        // statusSearching()
-        document.getElementById('controls_b').style.display = 'none'
-        document.getElementById('controls').style.display = 'none'
-        window.ipfssearch.previousPage()
-      }
-
-      window.nextPage = function () {
-        // statusSearching()
-        document.getElementById('controls_b').style.display = 'none'
-        document.getElementById('controls').style.display = 'none'
-        window.ipfssearch.nextPage()
-      }
+      {% include "assets/js/ipfs-search-ui.js" %}
     </script>
   </head>
   <body>
 
 {% if searchMode == 'classic' %}
     <div width="100%" class="container" id="searchcontrols">
-      <div style="float: left; width='80%'">
-        <form onsubmit="event.preventDefault(); window.runSearch();">
+      <div style="float: left; width='90%'">
+        <form id="searchform" onsubmit="event.preventDefault(); window.runSearch();">
           <input type="text" class="waitinput" name="query" id="searchquery" />
-          <select name="contenttype" id="contenttype">
-            <option value="all">All</option>
+          <select style="max-width: 100px" id="contenttype">
+            <option value="*">All</option>
             <option value="images">Images</option>
-            <option value="music">Music</option>
+            <option value="audio">Audio</option>
             <option value="videos">Videos</option>
             <option value="text">Text</option>
+            <option value="webpages">Web pages</option>
+            <option value="pdf">PDF documents</option>
           </select>
+
+          <select id="mimetype_selector">
+          </select>
+
+          <select id="last-seen-period">
+          </select>
+
           <input type="submit" name="searchbtn" value="Search" width="300"/>
         </form>
+      </div>
+
+      <div style="float: right; width='20%'">
+        <p>
+        IPFS Gateway
+        </p>
+        <select name="gateway" id="gateway_selector" form="searchform">
+        </select>
       </div>
     </div>
 
@@ -308,7 +65,8 @@
       <p id="statusmessage"/>
     </div>
 
-    <div width="100%" id="controls" style="margin-left: 20px; display: none">
+    <div width="100%" id="controls"
+        style="margin-left: 100px; display: none">
       <a class="pagecontrol" style="margin-right: 10px" href="#"
         id="pageprev" onclick="window.previousPage();">Previous page</a>
       <span id="pageinfo"></span>
@@ -319,7 +77,7 @@
     <div id="results">
     </div>
 
-    <div width="100%" id="controls_b" style="display: none">
+    <div width="100%" id="controls_b" style="margin-left: 100px; display: none">
       <a class="pagecontrol" style="margin-right: 10px" href="#"
         id="pageprev_b" onclick="window.previousPage();">Previous page</a>
       <a class="pagecontrol" style="margin-left: 10px" href="#"

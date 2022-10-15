@@ -112,17 +112,36 @@
         <item row="1" column="1">
          <layout class="QHBoxLayout" name="gSelectorLayout"/>
         </item>
+        <item row="2" column="1">
+         <widget class="QLabel" name="outputGraphMessage">
+          <property name="styleSheet">
+           <string notr="true">font: &quot;Segoe UI&quot; 14pt;</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
         <item row="3" column="0">
          <widget class="QLabel" name="label_9">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt;The metadata language tag (@language in JSON-LD)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
           <property name="text">
-           <string>Language</string>
+           <string>Metadata language</string>
           </property>
          </widget>
         </item>
         <item row="3" column="1">
-         <widget class="QComboBox" name="language">
+         <widget class="QComboBox" name="langtag">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>100</width>
+            <height>16777215</height>
+           </size>
           </property>
           <item>
            <property name="text">
@@ -148,7 +167,7 @@
           </property>
           <property name="maximumSize">
            <size>
-            <width>300</width>
+            <width>500</width>
             <height>16777215</height>
            </size>
           </property>
@@ -168,8 +187,8 @@
          <widget class="QTextEdit" name="description">
           <property name="maximumSize">
            <size>
-            <width>300</width>
-            <height>50</height>
+            <width>500</width>
+            <height>70</height>
            </size>
           </property>
           <property name="acceptRichText">
@@ -188,7 +207,7 @@
          <widget class="QLineEdit" name="comment">
           <property name="maximumSize">
            <size>
-            <width>300</width>
+            <width>400</width>
             <height>16777215</height>
            </size>
           </property>
@@ -197,53 +216,40 @@
           </property>
          </widget>
         </item>
-        <item row="7" column="1">
-         <spacer name="verticalSpacer">
+        <item row="8" column="1">
+         <spacer name="verticalSpacer_2">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
             <width>20</width>
-            <height>40</height>
+            <height>10</height>
            </size>
           </property>
          </spacer>
         </item>
-        <item row="8" column="0">
-         <widget class="QLabel" name="label_2">
+        <item row="11" column="0">
+         <widget class="QLabel" name="label_8">
           <property name="text">
-           <string>Category</string>
+           <string>Pinning</string>
           </property>
          </widget>
         </item>
-        <item row="8" column="1">
-         <widget class="QComboBox" name="category">
+        <item row="11" column="1">
+         <widget class="QComboBox" name="pinCombo">
           <property name="maximumSize">
            <size>
-            <width>300</width>
+            <width>200</width>
             <height>16777215</height>
            </size>
           </property>
          </widget>
         </item>
-        <item row="9" column="0">
-         <widget class="QLabel" name="label_4">
+        <item row="12" column="0">
+         <widget class="QLabel" name="label_3">
           <property name="text">
-           <string>or create new category, e.g news/world</string>
-          </property>
-         </widget>
-        </item>
-        <item row="9" column="1">
-         <widget class="QLineEdit" name="newCategory">
-          <property name="maximumSize">
-           <size>
-            <width>300</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="maxLength">
-           <number>128</number>
+           <string/>
           </property>
          </widget>
         </item>
@@ -264,53 +270,6 @@
           </property>
           <property name="placeholderText">
            <string>1.0.0</string>
-          </property>
-         </widget>
-        </item>
-        <item row="11" column="1">
-         <spacer name="verticalSpacer_2">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item row="13" column="0">
-         <widget class="QLabel" name="label_8">
-          <property name="text">
-           <string>Pinning</string>
-          </property>
-         </widget>
-        </item>
-        <item row="13" column="1">
-         <widget class="QComboBox" name="pinCombo">
-          <property name="maximumSize">
-           <size>
-            <width>250</width>
-            <height>16777215</height>
-           </size>
-          </property>
-         </widget>
-        </item>
-        <item row="14" column="0">
-         <widget class="QLabel" name="label_3">
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="1">
-         <widget class="QLabel" name="outputGraphMessage">
-          <property name="styleSheet">
-           <string notr="true">font: &quot;Segoe UI&quot; 14pt;</string>
-          </property>
-          <property name="text">
-           <string/>
           </property>
          </widget>
         </item>

@@ -16,6 +16,8 @@ import aiojobs
 import shutil
 import signal
 import psutil
+import traceback
+
 from pathlib import Path
 from filelock import FileLock
 
@@ -71,11 +73,9 @@ from galacteek.core import pkgResourcesRscFilename
 
 from galacteek.browser.webproxy import NullProxy
 from galacteek.browser.webproxy import useSystemProxyConfig
+from galacteek.browser import greasemonkey
 
 from galacteek import database
-from galacteek.database import models
-
-from galacteek.hashmarks import HashmarksSynchronizer
 
 from galacteek.core.models.atomfeeds import AtomFeedsModel
 from galacteek.core.signaltowers import DAGSignalsTower
@@ -306,6 +306,7 @@ class GalacteekApplication(QApplication):
 
         self.desktopWidget = QDesktopWidget()
         self.desktopGeometry = self.desktopWidget.screenGeometry()
+        self.systemTray = QSystemTrayIcon(self)
 
         self.setWindowIcon(getIcon('galacteek.png'))
 
@@ -555,7 +556,6 @@ class GalacteekApplication(QApplication):
         self.networkProxySet(NullProxy())
 
     def initSystemTray(self):
-        self.systemTray = QSystemTrayIcon(self)
         self.systemTray.setIcon(getIcon('galacteek.png'))
         self.systemTray.show()
         self.systemTray.activated.connect(self.onSystemTrayIconClicked)
@@ -617,36 +617,6 @@ class GalacteekApplication(QApplication):
         path = tmpdir.absoluteFilePath(uid)
         if tmpdir.mkpath(path):
             return path
-
-    async def setupHashmarks(self):
-        pkg = 'galacteek.hashmarks.default'
-
-        res = await database.hashmarkSourceSearch(
-            name='core',
-            url=pkg,
-            type=models.HashmarkSource.TYPE_PYMODULE
-        )
-
-        if not res:
-            await database.hashmarkSourceAdd(
-                type=models.HashmarkSource.TYPE_PYMODULE,
-                url=pkg,
-                name='core'
-            )
-            await self.hmSynchronizer.sync()
-
-        if 0:
-            await database.hashmarkSourceAdd(
-                type=models.HashmarkSource.TYPE_GITREPOS,
-                url='https://gitlab.com/galacteek/hashmarks-dwebland'
-            )
-
-        await database.hashmarkSourceAdd(
-            type=models.HashmarkSource.TYPE_YAML_ARCHIVE,
-            url='https://gitlab.com/galacteek/hashmarks-dwebland/-/releases/continuous-master/downloads/hashmarks-dwebland.tar.gz'  # noqa
-        )
-
-        await self.scheduler.spawn(self.hmSynchronizer.syncTask())
 
     def setupTranslator(self):
         if self.translator:
@@ -988,8 +958,6 @@ class GalacteekApplication(QApplication):
             await self.dbConfigured.emit(False)
             return
 
-        await self.setupHashmarks()
-
         if emitConfigured:
             await self.dbConfigured.emit(True)
 
@@ -1007,6 +975,9 @@ class GalacteekApplication(QApplication):
         self.initSystemTray()
 
         await browserSetup(self, self.browserRuntime)
+
+        # greasemonkey init
+        await greasemonkey.init([self._gmScriptsLocation])
 
         self.initWebProfiles()
 
@@ -1087,7 +1058,6 @@ class GalacteekApplication(QApplication):
         self.jinjaEnv = defaultJinjaEnv()
         self.solarSystem = SolarSystem()
         self.mimeTypeIcons = preloadMimeIcons()
-        self.hmSynchronizer = HashmarksSynchronizer()
         self.ipidManager = IPIDManager()
 
         self.towers = {
@@ -1192,6 +1162,9 @@ class GalacteekApplication(QApplication):
 
         qtDataLocation = Path(locr)
 
+        # greasemonkey scripts
+        self._gmScriptsLocation = qtDataLocation.joinpath('greasemonkey')
+
         self._dataLocation = qtDataLocation.joinpath(self._appProfile)
         self._logsLocation = self.dataLocation.joinpath('logs')
         self.mainLogFileLocation = self._logsLocation.joinpath('galacteek.log')
@@ -1245,6 +1218,7 @@ class GalacteekApplication(QApplication):
 
         for dir in [self._mHashDbLocation,
                     self._logsLocation,
+                    self._gmScriptsLocation,
                     self.ipfsBinLocation,
                     self._torDataDirLocation,
                     self.marksDataLocation,
@@ -1286,6 +1260,7 @@ class GalacteekApplication(QApplication):
 
     def initSettings(self):
         from galacteek.config import initFromTable
+
         if not os.path.isfile(self.settingsFileLocation):
             self._freshInstall = True
 
@@ -1488,7 +1463,6 @@ class GalacteekApplication(QApplication):
                         pDialog.log(msg)
                         pDialog.progress(pct)
                 except Exception as err:
-                    import traceback
                     traceback.print_exc()
                     pDialog.log(f'Error: {err}')
                     return
@@ -1510,7 +1484,6 @@ class GalacteekApplication(QApplication):
         except RecursionError as err:
             print(str(err))
         except Exception:
-            import traceback
             traceback.print_exc()
             # await self.setupIpfsConnection(reconfigure=True)
         else:
@@ -1698,6 +1671,7 @@ class GalacteekApplication(QApplication):
         pArgs = self.arguments()
 
         await self.exitApp()
+
         time.sleep(1)
         appStarter.startProcess(pArgs)
 
@@ -1745,13 +1719,15 @@ class GalacteekApplication(QApplication):
 
         if self.mainWindow:
             self.mainWindow.stopTimers()
+            self.mainWindow.close()
+
             await self.mainWindow.stack.shutdown()
 
-        if 0:
-            try:
-                self.systemTray.hide()
-            except:
-                pass
+        try:
+            self.systemTray.hide()
+            self.systemTray.deleteLater()
+        except Exception:
+            pass
 
         await self.stopIpfsServices()
 
@@ -1778,13 +1754,14 @@ class GalacteekApplication(QApplication):
             if not self.sqliteDb:
                 raise ValueError('sqlite database is not opened')
 
-            with async_timeout.timeout(0.5):
+            with async_timeout.timeout(1):
                 await self.sqliteDb.close()
                 await database.closeOrm()
         except ValueError:
             pass
-        except Exception as err:
-            self.debug(f'Error while closing database: {err}')
+        except Exception:
+            self.debug(
+                f'Error while closing database: {traceback.format_exc()}')
 
         if self.debug:
             self.showTasks()

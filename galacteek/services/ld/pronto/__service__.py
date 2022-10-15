@@ -2,10 +2,8 @@ import asyncio
 import otsrdflib
 import io
 import random
-import tarfile
 import traceback
 
-from pathlib import Path
 from yarl import URL
 from omegaconf import OmegaConf
 
@@ -17,11 +15,9 @@ from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
 
 from galacteek.core.asynclib import GThrottler
-from galacteek.core.asynclib.fetch import assetFetch
-from galacteek.core.asynclib.fetch import httpFetch
-from galacteek.core.asynclib import asyncReadFile
 from galacteek.core.ps import makeKeyService
 from galacteek.core import pkgResourcesRscFilename
+from galacteek.core import uid4
 
 from galacteek.ipfs.pubsub import TOPIC_LD_PRONTO
 from galacteek.ipfs.pubsub.srvs import graphs as pubsub_graphs
@@ -30,10 +26,10 @@ from galacteek.ipfs.pubsub.messages.ld import SparQLHeartbeatMessage
 from galacteek.ipfs.p2pservices import smartql as p2psmartql
 
 from galacteek.ld.rdf import GraphURIRef
-from galacteek.ld.rdf import BaseGraph
 from galacteek.ld.rdf import IGraph
 from galacteek.ld.rdf import IConjunctiveGraph
 from galacteek.ld.rdf.guardian import GraphGuardian
+from galacteek.ld.rdf.watch import GraphActivityListener
 
 from rdflib import plugin
 from rdflib import URIRef
@@ -42,14 +38,15 @@ from rdflib.store import Store
 from galacteek.ld.iri import p2pLibertarianGenUrn
 from galacteek.ld.iri import urnParse
 from galacteek.ld.rdf.terms import tUriUsesLibertarianId
-from galacteek.ld.rdf.terms import DATASET
 from galacteek.ld.rdf.sync import *
 
+from .__datasets__ import ProntoDataSetsManagerMixin
 from .__models__ import ProntoServiceModels
 
 
-class RDFStoresService(GService,
-                       ProntoServiceModels):
+class RDFStoresService(ProntoServiceModels,
+                       ProntoDataSetsManagerMixin,
+                       GService):
     name = 'graphs'
     rdfIdent = URIRef('g')
 
@@ -91,16 +88,6 @@ class RDFStoresService(GService,
             if graph.identifier == uriRef:
                 return graph
 
-    def cGraphByUri(self, uri: str):
-        # Unused
-        for cgraph in self._cgraphs:
-            if cgraph.identifier == uriRef:
-                return cgraph
-
-            subg = cgraph.get_context(uriRef)
-            if subg is not None:
-                return subg
-
     def on_init(self):
         self._mThrottler = None
         self._mQueue = asyncio.Queue(maxsize=196)
@@ -108,7 +95,16 @@ class RDFStoresService(GService,
         self._synchros = {}
         self._guardians = {}
         self._cgraphs = []
-        self._cgMain = None
+
+        # Graph activity listener (listens for graph events)
+        self._gaListener = GraphActivityListener([
+            'urn:ipg:i:*',
+            'urn:ipg:i:love:hashmarks:public:.*',
+            'urn:ipg:i:love:hashmarks:search:.*'
+        ])
+
+        self._gaListener.subjectsChanged.connectTo(
+            self.onGraphSubjectsChange)
 
         self._cfgAgentsPath = pkgResourcesRscFilename(
             __package__,
@@ -171,8 +167,6 @@ class RDFStoresService(GService,
 
         # XXX: NS bind
         graph.iNsBind()
-
-        graph.sCidChanged.connectTo(self.onGraphCidChanged)
 
         await self.graphRegServices(cfg, graph)
 
@@ -297,154 +291,7 @@ class RDFStoresService(GService,
                 upgradeStrategy=upgradeStrategy
             ))
 
-    async def graphDataSetPullTask(self,
-                                   graph,
-                                   opSubject: URIRef,
-                                   url: URL,
-                                   checksumUrl: URL,
-                                   revisionUrl: URL,
-                                   upgradeStrategy: str = 'mergeReplace',
-                                   format=None):
-        sleepAlreadyDone = 60
-        sleepAfterUpdate = 60 * 5
-        sleepInvalidDs = 60 * 10
-        sleepCannotFetch = 60 * 5
-
-        async def dsTarProcess(ograph, tarfp: Path):
-            lastRevision = ograph.value(
-                subject=opSubject,
-                predicate=DATASET.revision
-            )
-
-            try:
-                tar = tarfile.open(str(tarfp))
-                names = tar.getnames()
-                g = BaseGraph()
-
-                for name in names:
-                    if not name.endswith('.nt'):
-                        continue
-
-                    try:
-                        file = tar.extractfile(name)
-                        g.parse(file)
-                    except Exception as err:
-                        log.debug(f'dsProcess: {name} failed: {err}')
-                        continue
-
-                tar.close()
-
-                thisRevision = g.value(
-                    subject=opSubject,
-                    predicate=DATASET.revision
-                )
-
-                if lastRevision and thisRevision == lastRevision and 0:
-                    log.debug(f'Dataset {opSubject}: same revision')
-                    return False
-
-                if upgradeStrategy == 'mergeReplace':
-                    await ograph.guardian.mergeReplace(
-                        g,
-                        ograph
-                    )
-                elif upgradeStrategy == 'replace':
-                    for s, p, o in ograph:
-                        ograph.remove((s, p, o))
-
-                    await ograph.guardian.mergeReplace(
-                        g,
-                        ograph
-                    )
-            except Exception:
-                traceback.print_exc()
-                pass
-            else:
-                ograph.add((
-                    opSubject,
-                    DATASET.processedRevision,
-                    thisRevision
-                ))
-
-                log.info(
-                    f'Dataset {opSubject}: upgraded to '
-                    f'revision: {thisRevision}'
-                )
-                return True
-
-        while not self.should_stop:
-            fp = None
-
-            try:
-                checksum = None
-                remoteRev = None
-
-                lastProcessedRev = graph.value(
-                    subject=opSubject,
-                    predicate=DATASET.processedRevision
-                )
-
-                if revisionUrl:
-                    rfp, _s = await httpFetch(revisionUrl)
-                    if rfp:
-                        contents = await asyncReadFile(
-                            str(rfp), mode='rt')
-                        if contents:
-                            remoteRev = contents.split()[0]
-
-                        rfp.unlink()
-
-                if lastProcessedRev and remoteRev == str(lastProcessedRev):
-                    # Already processed
-                    log.debug(f'Dataset {url}: already processed '
-                              f'revision: {remoteRev}')
-
-                    await asyncio.sleep(sleepAlreadyDone)
-                    continue
-
-                if checksumUrl:
-                    cfp, _s = await httpFetch(checksumUrl)
-                    if cfp:
-                        contents = await asyncReadFile(
-                            str(cfp), mode='rt')
-                        if contents:
-                            checksum = contents.split()[0]
-
-                        cfp.unlink()
-
-                # Use assetFetch (will pull from IPFS if the redirection
-                # points to an IPFS file)
-                fp, _sum = await assetFetch(url)
-                if not fp:
-                    log.warning(f'Dataset {url}: failed to retrieve')
-                    await asyncio.sleep(sleepCannotFetch)
-                    continue
-
-                if checksumUrl and _sum != checksum:
-                    log.warning(f'Dataset {url}: checksum mismatch!')
-                    await asyncio.sleep(sleepInvalidDs)
-                    continue
-
-                if fp.name.endswith('.tar.gz'):
-                    if await dsTarProcess(graph, fp):
-                        if fp and fp.is_file():
-                            fp.unlink()
-
-                        await asyncio.sleep(sleepAfterUpdate)
-                else:
-                    log.debug('Unsupported dataset format')
-                    await asyncio.sleep(60)
-                    continue
-            except Exception:
-                traceback.print_exc()
-
-                if fp and fp.is_file():
-                    fp.unlink()
-
-            await asyncio.sleep(30)
-
     async def initializeGraphs(self):
-        # syncs = self.serviceConfig.get('synchronizers', {})
         syncs = self._cfgAgents.get('synchronizers', {})
 
         for uri, cfg in syncs.items():
@@ -522,10 +369,41 @@ class RDFStoresService(GService,
             scheduler=self.app.scheduler
         )
 
-        self.psService.sExch.connectTo(self.onNewExchange)
+        # self.psService.sExch.connectTo(self.onNewExchange)
         self.psService.sSparql.connectTo(self.onSparqlHeartBeat)
 
         await self.ipfsPubsubService(self.psService)
+
+    async def onGraphSubjectsChange(self, graphUri: str, subjUris: list):
+        service = self.p2pSmartQLServiceByUri(URIRef(graphUri))
+
+        if not service:
+            return
+
+        msg = SparQLHeartbeatMessage.make(
+            self.chainEnv,
+            await self.getLibertarianId()
+        )
+
+        # Add definition for graph
+        # SmartQL http credentials are set by the curve pubsub service
+
+        msg.graphs.append({
+            'graphIri': service.graph.identifier,
+
+            'subjectsOfInterest': subjUris,
+            'smartqlOperationId': uid4(),
+
+            'smartqlEndpointAddr': service.endpointAddr(),
+            'smartqlCredentials': {
+                'user': 'smartql',
+                'password': ''
+            }
+        })
+
+        print(str(msg))
+
+        await self.psService.send(msg)
 
     async def onSparqlHeartBeat(self, sender: str,
                                 message: SparQLHeartbeatMessage):
@@ -540,11 +418,13 @@ class RDFStoresService(GService,
 
         for gn, graph in self._graphs.items():
             try:
+                log.debug(f'RDF stores: closing {graph.identifier}')
+
                 graph.close()
             except Exception as err:
-                log.debug(f'RDF graphs close error: {err}')
+                log.debug(f'RDF graph close error: {err}')
             else:
-                log.debug('RDF graphs closed')
+                log.debug('RDF graph closed')
 
     @ipfsOp
     async def event_g_services_ld(self, ipfsop, key, message):
@@ -624,21 +504,9 @@ class RDFStoresService(GService,
         return ttl.getvalue().decode()
 
     async def gQuery(self, query, initBindings=None):
-        try:
-            return await self.app.loop.run_in_executor(
-                None,
-                self.graphG.query,
-                query
-            )
-        except Exception as err:
-            print('query error', str(err))
-            pass
-
-    async def onGraphCidChanged(self, name, cid):
-        return
-
-        msg = RDFGraphsExchangeMessage.make(self._graphs)
-        await self.psService.send(msg)
+        return await self.graphG.queryAsync(
+            query, initBindings=initBindings
+        )
 
     async def onNewExchange(self, eMsg: RDFGraphsExchangeMessage):
         for gd in eMsg.graphs:
@@ -654,6 +522,7 @@ class RDFStoresService(GService,
             for graphdef in msg.graphs:
                 p2pEndpointRaw = graphdef.get('smartqlEndpointAddr')
                 iri = graphdef.get('graphIri')
+                subjectsOfInterest = graphdef.get('subjectsOfInterest')
 
                 if not p2pEndpointRaw or not iri:
                     continue
@@ -668,7 +537,10 @@ class RDFStoresService(GService,
                     iri,
                     p2pEndpointRaw,
                     graphDescr=graphdef,
-                    p2pLibertarianId=msg.p2pLibertarianId
+                    p2pLibertarianId=msg.p2pLibertarianId,
+                    subjectsOfInterest=subjectsOfInterest,
+                    smartqlOperationId=graphdef.get('smartqlOperationId')
+
                 )
         except Exception:
             traceback.print_exc()
@@ -695,8 +567,10 @@ class RDFStoresService(GService,
             if service.graph.identifier == uri:
                 return service
 
-    @GService.task
     async def heartbeatTask(self):
+        # @GService.task
+        # Deprecated
+
         r = random.Random()
 
         while not self.should_stop:

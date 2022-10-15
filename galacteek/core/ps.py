@@ -10,38 +10,41 @@ publisher = aiopubsub.Publisher(gHub, prefix=aiopubsub.Key('g'))
 
 
 @functools.lru_cache(maxsize=256)
-def makeKey(*args):
+def makeKey(*args) -> aiopubsub.Key:
     if isinstance(args, str):
         return aiopubsub.Key(args)
     elif isinstance(args, tuple):
         return aiopubsub.Key(*args)
 
 
-def makeKeyChatChannel(channel):
+def makeKeyChatChannel(channel) -> aiopubsub.Key:
     return makeKey('g', 'chat', 'channels', channel)
 
 
-def makeKeyChatUsersList(channel):
+def makeKeyChatUsersList(channel) -> aiopubsub.Key:
     return makeKey('g', 'pubsub', 'chatuserslist', channel)
 
 
-def makeKeyPubChatTokens(channel):
+def makeKeyPubChatTokens(channel) -> aiopubsub.Key:
     return makeKey('g', 'pubsub', 'tokens', 'pubchat', channel)
 
 
-def makeKeyService(*names):
+def makeKeyService(*names) -> aiopubsub.Key:
+    """
+    Create a PS key for a galacteek service
+    """
     return makeKey(*(('g', 'services') + tuple(names)))
 
 
-def makeKeyServiceAll(*names):
+def makeKeyServiceAll(*names) -> aiopubsub.Key:
     return makeKey(*(('g', 'services') + tuple(names) + tuple('*')))
 
 
-def makeKeySmartContract(cname: str, address: str):
+def makeKeySmartContract(cname: str, address: str) -> aiopubsub.Key:
     return makeKey('g', 'smartcontracts', cname, address)
 
 
-def psSubscriber(sid):
+def psSubscriber(sid) -> aiopubsub.Subscriber:
     return aiopubsub.Subscriber(gHub, sid)
 
 
@@ -77,7 +80,7 @@ key42 = makeKey('g', '42')
 mSubscriber = psSubscriber('main')
 
 
-def hubPublish(key, message):
+def hubPublish(key, message) -> None:
     # Publishing to the hub should now always happen in the main loop
 
     try:
@@ -90,7 +93,7 @@ def hubPublish(key, message):
 def hubLdPublish(key,
                  event,
                  contextName='services/GenericServiceMessage',
-                 **kw):
+                 **kw) -> None:
     """
     Publish a JSON-LD service event message on the
     pubsub hub, to the service's PS key
@@ -119,26 +122,25 @@ class KeyListener(object):
     psListenKeys = []
 
     def __init__(self):
-        # self.subscriberR = psSubscriber(uid4())
-
         self.psListenL(self.psListenKeysDefault)
-        self.psListenL(self.psListenKeys)
+
+        if len(self.psListenKeys) > 0:
+            self.psListenL(self.psListenKeys)
+
+    def trkeyc(self, comp: str):
+        return 'all' if comp == '*' else comp
 
     def psListen(self, key, receiver=None):
         rcv = receiver if receiver else self
         try:
-            def tr(comp):
-                if comp == '*':
-                    return 'all'
-
-                return comp
-
-            varName = '_'.join([tr(c) for c in key])
-
-            coro = getattr(rcv, f'event_{varName}')
+            coro = getattr(
+                rcv,
+                'event_{varName}'.format(
+                    varName='_'.join([self.trkeyc(c) for c in key])
+                )
+            )
 
             assert coro is not None
-            log.debug(f'KeyListener for key {key}: binding to {coro}')
 
             # We use the global subscriber by default
             mSubscriber.add_async_listener(key, coro)

@@ -114,6 +114,12 @@ hbSchema = {
                         "type": "string",
                         "pattern": r"\w{2,512}"
                     },
+                    "subjectsOfInterest": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                        }
+                    },
                     "smartqlEndpointAddr": {
                         "type": "string",
                         "pattern": r"\w{2,512}"

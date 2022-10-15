@@ -2,23 +2,32 @@ import attr
 from yarl import URL
 from galacteek import AsyncSignal
 from galacteek.config import cModuleContext
-from galacteek.config import dictconfig
+from galacteek.config import DictConfig
 
 
 @attr.s(auto_attribs=True)
 class EthereumConnectionParams:
-    provType: str
+
+    provType: str = 'http'
     mode: str = 'auto'
     network: str = 'mainnet'
 
-    infura: dictconfig.DictConfig = None
+    infura: DictConfig = None
+    defaultRpcUrl: str = 'http://localhost:7545'
+
+    @property
+    def validCredentials(self):
+        # todo
+        return isinstance(self.infura.get('projectId'), str)
 
     @property
     def rpcUrl(self):
-        if self.mode == 'infura' and self.infura:
+        if self.mode == 'infura' and self.infura and self.validCredentials:
             return str(URL(
                 f'https://{self.network}.infura.io'
             ).with_path('/v3/' + self.infura['projectId']))
+        else:
+            return self.defaultRpcUrl
 
     @property
     def rpcUrlBeacon(self):
@@ -36,14 +45,16 @@ def ethConnConfigParams(network='mainnet'):
             provType = cfg['providerType']
             mode = cfg.get('mode', 'infura')
 
-            return EthereumConnectionParams(
+            params = EthereumConnectionParams(
                 provType=provType,
                 infura=cfg.get('infura', {}),
                 mode=mode
             )
+
+            assert params.validCredentials is True
+            return params
     except Exception:
-        return EthereumConnectionParams(rpcUrl='http://localhost:7545',
-                                        provType='http')
+        return EthereumConnectionParams()
 
 
 class MockEthereumController:

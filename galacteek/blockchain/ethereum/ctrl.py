@@ -19,7 +19,7 @@ from galacteek import log
 from galacteek import logUser
 from galacteek import ensure
 from galacteek import AsyncSignal
-from galacteek.config import dictconfig
+from galacteek.config import DictConfig
 
 from .contract import ContractOperator
 from .account import createWithMnemonic
@@ -36,7 +36,7 @@ class EthBlock:
         self._block = block
 
 
-def web3Connect(params: dictconfig.DictConfig):
+def web3Connect(params: DictConfig):
     from galacteek.blockchain.ethereum.infura import endpoints
 
     if params.provType in ['http', 'https']:

@@ -90,6 +90,7 @@ envs:
 
           xssAuditing: False
           cacheType: 'nocache'
+          cacheMaxSizeMb: 0
           cookiesPolicy: 'allow'
           offTheRecord: False
 
@@ -103,6 +104,9 @@ envs:
           jquery:
             type: 'qrc'
             path: ':/share/js/jquery-3.6.0.min.js'
+          rdfstore:
+            type: 'qrc'
+            path: ':/share/js/rdfstore.min.js'
 
         fonts:
           standard: 'Inter UI'

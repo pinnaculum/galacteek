@@ -591,7 +591,7 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
         r = self.model.rsc.findByPath(iPath)
         if r:
             self.model.rsc.removeTrack(r)
-            ensure(self.model.update())
+            ensure(self.model.trackUpdate())
 
     def playlistMousePressEvent(self, event):
         if event.button() == Qt.RightButton:
@@ -728,7 +728,7 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
             self.player.setMedia(media)
             await asyncio.sleep(1)
 
-        await self.model.update()
+        await self.model.trackUpdate()
 
         self.pListView.setEnabled(True)
         self.uipList.scanMetadataButton.setEnabled(True)
@@ -1078,7 +1078,7 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
             except Exception:
                 continue
 
-        await self.model.update()
+        await self.model.trackUpdate()
         self.pListView.setEnabled(True)
 
         if playLast or play:
@@ -1191,7 +1191,7 @@ class MediaPlayerTab(GalacteekTab, KeyListener):
             else:
                 continue
 
-        await self.model.update()
+        await self.model.trackUpdate()
 
         self.togglePList.setChecked(True)
         self.app.mainWindow.wspaceMultimedia.wsSwitch()

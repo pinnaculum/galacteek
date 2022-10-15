@@ -2,6 +2,7 @@ import jinja2
 import aiofiles
 import jinja2.exceptions
 import os.path
+import traceback
 from datetime import datetime
 from dateutil import parser as dateparser
 from tempfile import TemporaryDirectory
@@ -96,15 +97,14 @@ def defaultJinjaEnv():
 def renderWrapper(tmpl, **kw):
     try:
         data = tmpl.render(**kw)
-    except Exception as err:
-        log.debug('Error rendering jinja template',
-                  exc_info=err)
+    except Exception:
+        log.debug(f'Error rendering jinja template: {traceback.print_exc()}')
         return None
     else:
         return data
 
 
-templatesCache = TTLCache(64, 60)
+templatesCache = TTLCache(16, 30)
 
 
 async def renderTemplate(tmplname, loop=None, env=None,

@@ -4,7 +4,7 @@
 
 <div>
 {% if profile.userInfo.spaceHandle.valid %}
-    <h2>{{ profile.userInfo.spaceHandle.short }}</h2>
+    <h2>{{ profile.userInfo.spaceHandle.human }}</h2>
 {% else %}
     <h2>No valid IP handle assigned yet</h2>
 {% endif %}

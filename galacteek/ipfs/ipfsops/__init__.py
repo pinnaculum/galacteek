@@ -11,6 +11,8 @@ import aiohttp
 import re
 import multiaddr
 
+from concurrent.futures import TimeoutError
+
 from aiohttp.web_exceptions import HTTPOk
 from yarl import URL
 from pathlib import Path
@@ -396,6 +398,7 @@ class IPFSOperator(RemotePinningOps,
         return await self.waitFor(self.evReady.wait(), timeout)
 
     async def waitFor(self, awaitable, timeout,
+                      raiseTimeout=False,
                       raiseCancelled=True):
         try:
             with async_timeout.timeout(timeout):
@@ -403,9 +406,12 @@ class IPFSOperator(RemotePinningOps,
         except ConnectionRefusedError as cre:
             self.debug(f'wait ({awaitable}): connection refused '
                        f'error occured: {cre}')
-        except asyncio.TimeoutError:
+        except (asyncio.TimeoutError,
+                TimeoutError) as terr:
             self.debug('Timeout waiting for coroutine {0}'.format(awaitable))
-            return None
+
+            if raiseTimeout is True:
+                raise terr
         except asyncio.CancelledError:
             self.debug('Cancelled coroutine {0}'.format(awaitable))
 
@@ -1625,23 +1631,29 @@ class IPFSOperator(RemotePinningOps,
             ), timeout if timeout else cfg.timeout
         )
 
-    async def catChunked(self, path: str, chunkSize=65535,
+    async def catChunked(self, path: str,
+                         chunkSize: int = 65535,
+                         chunkTimeout: int = 30,
                          incrementFactor=0):
         """
         async generator that reads an IPFS file by chunks
 
         For each chunk read it yields a tuple (chunk_number, chunk_bytes)
+
+        :param str path: IPFS path of the object to read
+        :param int chunkTimeout: timeout to read a chunk
+        :param int chunkSize: chunk size in bytes
         """
 
         offset, cnum = 0, 0
 
         async def getChunk(offset, length):
-            # Using wait_for for each chunk read is too costly, let the caller
-            # use a wait_for wrapper if needed on the whole coroutine call
-
-            return await self.client.cat(
-                path,
-                offset=offset, length=length
+            return await asyncio.wait_for(
+                self.client.cat(
+                    path,
+                    offset=offset, length=length
+                ),
+                chunkTimeout
             )
 
         try:
@@ -1659,8 +1671,10 @@ class IPFSOperator(RemotePinningOps,
                 cnum += 1
 
                 await self.sleep(0)
-        except aioipfs.APIError as err:
-            raise err
+        except aioipfs.APIError:
+            raise
+        except asyncio.TimeoutError:
+            raise
         except Exception as err:
             self.debug(f'catChunked({path}): error at offset {offset}: {err}')
             raise err

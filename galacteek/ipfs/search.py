@@ -35,3 +35,18 @@ async def multiSearch(query, page=0,
         maxPcount = max(r.pageCount for r in results)
         for res in alternate(results[0], results[1]):
             yield maxPcount, res
+
+
+async def ipfsSearchGen(query, page=0,
+                        filters=None, sslverify=True,
+                        proxyUrl=None):
+    sResults = await ipfssearch.getPageResults(
+        query, page,
+        filters=filters if filters else {},
+        sslverify=sslverify,
+        proxyUrl=proxyUrl
+    )
+
+    if sResults:
+        for res in sResults.hits:
+            yield sResults.pageCount, res

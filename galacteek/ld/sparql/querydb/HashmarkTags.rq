@@ -5,7 +5,7 @@ PREFIX tag: <ips://galacteek.ld/Tag#>
 SELECT DISTINCT ?uri ?tagName
 WHERE {
   ?hmuri a gs:Hashmark .
-  ?hmuri h:tag ?uri .
+  ?hmuri gs:tag ?uri .
 
   ?uri tag:name ?tagName .
   FILTER (langMatches(lang(?tagName), "*") )

@@ -1,7 +1,5 @@
 from PyQt5.QtCore import QCoreApplication
 
-from .misc import iUnknown
-
 
 def iNoTitle():
     return QCoreApplication.translate('GalacteekWindow', 'No title')
@@ -113,27 +111,6 @@ def iHashmarkInfoToolTipShort(mark):
             str(mark['title']) if mark['title'] else iNoTitle(),
             str(mark['descr']) if mark['descr'] else iNoDescription(),
     )
-
-
-def iHashmarkInfoToolTipOld(mark):
-    return QCoreApplication.translate(
-        'GalacteekWindow',
-        '''
-            <img src=':/share/icons/hashmarks.png' width='16' height='16' />
-            <p style='font: Courier 12pt'>{0}</p>
-
-            <p>Title: <b>{1}</b></p>
-            <p>Description: <b>{2}</b></p>
-
-            <p>Creation date: <b>{3}</b></p>
-
-            <p>Hashmark source: {4}</p>
-        ''').format(mark.uri,
-                    mark.title if mark.title else iNoTitle(),
-                    mark.description if mark.description else iNoDescription(),
-                    mark.datecreated,
-                    str(mark.source) if mark.source else iUnknown()
-                    )
 
 
 def iHashmarkInfoToolTip(uri,

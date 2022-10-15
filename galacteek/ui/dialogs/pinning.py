@@ -2,18 +2,20 @@ import validators
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QRegExp
+from PyQt5.QtWidgets import QSizePolicy
 
 from PyQt5.QtGui import QRegExpValidator
 
 from galacteek.ui.dialogs import BaseDialog
 from galacteek.ui.widgets import LabelWithURLOpener
-from galacteek.ui.forms.ui_rps_adddialog import *
+from galacteek.ui.forms.ui_rps_adddialog import Ui_PinningServiceAddDialog
 
 from galacteek.ui.i18n import iPinataInstructions
 from galacteek.ui.i18n import iWeb3StorageInstructions
 from galacteek.ui.i18n import iEstuaryTechInstructions
 from galacteek.ui.i18n import iNftStorageInstructions
 from galacteek.ui.i18n import iCustomRpsInstructions
+from galacteek.ui.i18n import iRpsRegisterHelpMessage
 
 
 class PinningServiceAddDialog(BaseDialog):
@@ -27,10 +29,17 @@ class PinningServiceAddDialog(BaseDialog):
         self.ui.endpointCustom.stateChanged.connect(
             lambda checked: self.ui.endpoint.setEnabled(checked))
 
-        self.infoLabel = LabelWithURLOpener('')
+        self.helpLabel = LabelWithURLOpener(parent=self)
+        self.helpLabel.setAlignment(Qt.AlignCenter)
+        self.helpLabel.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.helpLabel.setText(iRpsRegisterHelpMessage())
+
+        self.infoLabel = LabelWithURLOpener(parent=self)
         self.infoLabel.setObjectName('rpsInstructions')
 
-        self.ui.hLayoutInfo.addWidget(self.infoLabel, 0, Qt.AlignCenter)
+        self.ui.vLayoutInfo.addWidget(self.helpLabel, 1, Qt.AlignLeft)
+        self.ui.vLayoutInfo.addWidget(self.infoLabel, 1, Qt.AlignLeft)
 
         self.ui.name.setValidator(
             QRegExpValidator(QRegExp(r"[\w\-\_]{1,32}"))
@@ -38,6 +47,10 @@ class PinningServiceAddDialog(BaseDialog):
 
         self.ui.provider.currentTextChanged.connect(self.onProviderChanged)
         self.providerReact(self.ui.provider.currentText())
+
+        self.setMaximumWidth(
+            0.7 * self.app.desktopGeometry.width()
+        )
 
     def onProviderChanged(self, provName):
         self.providerReact(provName)

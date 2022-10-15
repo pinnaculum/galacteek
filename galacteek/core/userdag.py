@@ -1,14 +1,19 @@
+import asyncio
 import uuid
 import re
+import traceback
 from datetime import datetime
 from datetime import timezone
 
 from feedgen.feed import FeedGenerator
 
+from galacteek import AsyncSignal
+from galacteek import asyncSigWait
+from galacteek import ensure
 from galacteek import log
 from galacteek import logUser
-from galacteek import ensure
-from galacteek import AsyncSignal
+from galacteek import partialEnsure
+from galacteek import services
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.paths import posixIpfsPath
 from galacteek.ipfs.cidhelpers import ipnsKeyCidV1
@@ -18,17 +23,19 @@ from galacteek.ipfs.cidhelpers import stripIpfs
 from galacteek.core.analyzer import ResourceAnalyzer
 from galacteek.core import isoformat
 from galacteek.core import pkgResourcesRscFilename
+from galacteek.core import utcDatetimeIso
+from galacteek.core.asynclib import SignalNotEmittedError
 from galacteek.dweb import render
 from galacteek.dweb.markdown import markitdown
 from galacteek.dweb.atom import DWEB_ATOM_FEEDFN
 from galacteek.dweb.atom import DWEB_ATOM_FEEDGWFN
 
 from galacteek.ipfs.dag import EvolvingDAG
+from galacteek.ld import ipsContextUri
 
 
-POST_NODEKEY = '_post'
-CATEGORIES_NODEKEY = '_categories'
-TAGS_NODEKEY = '_tags'
+POSTS_NODEKEY = 'posts'
+BYTAG_NODEKEY = 'bytag'
 METADATA_NODEKEY = '_metadata'
 BLOG_NODEKEY = 'blog'
 PINREQS_NODEKEY = 'pinrequests'
@@ -40,9 +47,28 @@ class UserDAG(EvolvingDAG):
 
         if BLOG_NODEKEY not in root:
             root[BLOG_NODEKEY] = {
-                TAGS_NODEKEY: {}
+                '@type': 'DwebBlog',
+                'title': {
+                    'en': 'dblog'
+                },
+                'dateCreated': utcDatetimeIso(),
+
+                POSTS_NODEKEY: {},
+                BYTAG_NODEKEY: {}
             }
             changed = True
+
+        if POSTS_NODEKEY not in root[BLOG_NODEKEY]:
+            root[BLOG_NODEKEY][POSTS_NODEKEY] = {}
+            changed = True
+
+        if BYTAG_NODEKEY not in root[BLOG_NODEKEY]:
+            root[BLOG_NODEKEY][BYTAG_NODEKEY] = {}
+            changed = True
+
+        root[BLOG_NODEKEY].update({
+            '@type': 'DwebBlog',
+        })
 
         if PINREQS_NODEKEY not in root:
             root[PINREQS_NODEKEY] = []
@@ -50,9 +76,9 @@ class UserDAG(EvolvingDAG):
 
         if METADATA_NODEKEY not in root:
             root[METADATA_NODEKEY] = {
-                'site_name': None,
-                'site_description': None,
-                'date_updated': None
+                'site_name': '',
+                'site_description': '',
+                'dateUpdated': utcDatetimeIso()
             }
             changed = True
 
@@ -61,8 +87,9 @@ class UserDAG(EvolvingDAG):
     async def initDag(self, ipfsop):
         return {
             'index.html': 'Blank',
+
             'media': {
-                'images': {},
+                'images': {}
             }
         }
 
@@ -71,7 +98,10 @@ class UserDAG(EvolvingDAG):
 
     async def neverUpdated(self):
         metadata = await self.siteMetadata()
-        return metadata['date_updated'] is None
+        if not metadata:
+            return False
+
+        return metadata.get('dateModified') is None
 
 
 def titleToPostName(title: str):
@@ -93,19 +123,24 @@ class UserWebsite:
     Later on this should become more generic to create all kinds of apps
     """
 
-    websiteUpdated = AsyncSignal()
-
     def __init__(self, edag, profile, ipnsKeyId, jinjaEnv, parent=None):
         self._profile = profile
         self._ipnsKeyId = ipnsKeyId
         self._edag = edag
         self._jinjaEnv = jinjaEnv
+        self._assetsEntry = None
 
         self._atomFeedFn = DWEB_ATOM_FEEDFN
         self._atomFeedGwFn = DWEB_ATOM_FEEDGWFN
 
         self._rscAnalyzer = ResourceAnalyzer(None)
         self._updating = False
+
+        # Signal for then user website was rebuilt from the user dag
+        self.websiteUpdated = AsyncSignal()
+
+        self.dagUser.dagDataChanged.connect(
+            partialEnsure(self.onDagUserChanged))
 
     @property
     def edag(self):
@@ -114,6 +149,14 @@ class UserWebsite:
     @property
     def profile(self):
         return self._profile
+
+    @property
+    def pronto(self):
+        return services.getByDotName('ld.pronto')
+
+    @property
+    def iSchemeService(self):
+        return services.getByDotName('dweb.schemes.i')
 
     @property
     def updating(self):
@@ -155,99 +198,196 @@ class UserWebsite:
     def dagBlog(self):
         return self.dagRoot[BLOG_NODEKEY]
 
+    @property
+    def dagBlogPosts(self):
+        return self.dagRoot[BLOG_NODEKEY]['posts']
+
+    @property
+    def defaultTitle(self):
+        return f'dblog: {self.profile.userInfo.spaceHandle.human}'
+
     def debug(self, msg):
         return self.profile.debug(msg)
 
-    @ipfsOp
-    async def blogEntries(self, op):
-        listing = await self.edag.list(path=BLOG_NODEKEY)
+    def blogPostsCount(self):
+        if self.dagBlogPosts:
+            return len(self.dagBlogPosts.keys())
+
+        return 0
+
+    def pathToPost(self, postName: str) -> str:
+        return posixIpfsPath.join(BLOG_NODEKEY,
+                                  POSTS_NODEKEY,
+                                  postName)
+
+    def pathToPostView(self, postName: str) -> str:
+        return posixIpfsPath.join(self.pathToPost(postName), 'view')
+
+    @ ipfsOp
+    async def graph(self, ipfsop):
+        async with ipfsop.ldOps() as ld:
+            return await ld.rdfify(self.dagBlog)
+
+    @ ipfsOp
+    async def postGraph(self, ipfsop, postName: str):
+        async with ipfsop.ldOps() as ld:
+            return await ld.rdfify(self.dagBlogPosts[postName])
+
+    async def blogEntries(self):
+        """
+        Return the list of names of blog posts in the DAG
+        """
+
+        listing = await self.edag.list(path=f'{BLOG_NODEKEY}/posts')
+
         return [entry for entry in listing if entry != 'index.html' and
-                not entry.startswith('_')]
+                not entry.startswith('_') and not entry.startswith('@')]
 
-    @ipfsOp
-    async def blogPost(self, ipfsop, title, msg, category=None,
-                       tags=None, author=None):
-        async with self.edag:
-            sHandle = self.profile.userInfo.spaceHandle
+    async def blogPostRemove(self, postName: str):
+        """
+        Remove the blog post from the DAG with the given postName
+        """
 
-            username = sHandle.human
-            uid = str(uuid.uuid4())
-            postName = titleToPostName(title.strip().lower())
+        async with self.edag as dag:
+            blogPosts = dag.root[BLOG_NODEKEY][POSTS_NODEKEY]
 
-            exEntries = await self.blogEntries()
-            if not postName or postName in exEntries:
-                raise Exception(
-                    'A blog post with this name already exists')
+            if postName in blogPosts:
+                del blogPosts[postName]
+            else:
+                raise ValueError(f'No post with name {postName}')
 
-            now = datetime.now(timezone.utc)
+        return True
 
-            postObject = {
-                'blogpost': {
-                    'authordid': self.profile.userInfo.personDid,
-                    'body': msg,
-                    'title': title,
+    async def blogPostGet(self, postName: str):
+        """
+        Get the blog post from the DAG with the given postName
+        """
+        if postName in self.dagBlogPosts:
+            return self.dagBlogPosts[postName]
+        else:
+            raise ValueError(f'No post with name {postName}')
+
+    async def blogPostChange(self,
+                             postName: str,
+                             body: str,
+                             title: str,
+                             langTag: str = 'en') -> bool:
+        async with self.edag as dag:
+            blog = dag.root[BLOG_NODEKEY][POSTS_NODEKEY]
+
+            if postName in blog:
+                post = blog[postName]
+
+                post['body'][langTag] = body
+                post['title'][langTag] = title
+                post['dateModified'] = utcDatetimeIso()
+            else:
+                raise ValueError(f'No post with name {postName}')
+
+        return True
+
+    @ ipfsOp
+    async def blogPost(self, ipfsop,
+                       title: str,
+                       msg: str,
+                       category: str = None,
+                       tags: list = [],
+                       author=None,
+                       langTag: str = 'en',
+                       ldContextName='DwebBlogPost') -> IPFSPath:
+        """
+        Post to the blog
+        """
+
+        sHandle = self.profile.userInfo.spaceHandle
+        username = sHandle.human
+        uid = str(uuid.uuid4())
+        postName = titleToPostName(title.strip().lower())
+
+        async def create():
+            async with self.edag:
+                exEntries = await self.blogEntries()
+                if not postName or postName in exEntries:
+                    raise Exception(
+                        'A blog post with this name already exists')
+
+                now = datetime.now(timezone.utc)
+
+                # Create the DAG node for this post
+                # Its view will be rendered later on
+
+                self.dagBlogPosts[postName] = {
+                    '@context': ipsContextUri(ldContextName),
+                    '@type': ldContextName,
+
+                    '@id': self.iSchemeService.iriGenObject(ldContextName),
+
+                    'didAuthor': self.profile.userInfo.personDid,
+                    'didCreator': self.profile.userInfo.personDid,
+
+                    'body': {
+                        langTag: msg
+                    },
+                    'title': {
+                        langTag: title
+                    },
                     'uuid': uid,
-                    'postname': postName,  # name of the post's DAG node
-                    'tags': tags if tags else [],
-                    'category': None,
+                    'postName': postName,  # name of the post's DAG node
+                    'tags': tags,
                     'author': author if author else username,
-                    'date_published': isoformat(now),
-                    'date_modified': isoformat(now)
+                    'datePublished': isoformat(now),
+                    'dateModified': isoformat(now)
                 }
-            }
 
-            # Create the DAG node for this post
-            # Its view will be rendered later on
+        # Wait for update() to rebuild and watch out for websiteUpdated
+        try:
+            async with asyncSigWait(self.websiteUpdated,
+                                    timeout=8.0):
+                await create()
+                await asyncio.sleep(5)
+        except (SignalNotEmittedError, BaseException) as err:
+            log.info(f'websiteUpdated signal was not fired: {err}')
+            return None
+        else:
+            log.debug('websiteUpdated signal was fired')
 
-            self.dagBlog[postName] = {
-                POST_NODEKEY: postObject
-            }
+        # Get the ipfs path to the post's view page
+        resolved = IPFSPath(
+            await self.dagUser.resolve(self.pathToPostView(postName)),
+            autoCidConv=True
+        )
 
-        await ipfsop.sleep(2)
-        await self.update()
-        await ipfsop.sleep(1)
-
-        result = await self.dagUser.resolve(
-            posixIpfsPath.join(BLOG_NODEKEY, postName, 'view'))
-        resolved = IPFSPath(result, autoCidConv=True)
-
-        if isinstance(tags, list) and resolved.isIpfsRoot and resolved.valid:
+        if resolved.isIpfsRoot and resolved.valid:
             # Register the post by tag
 
             async with self.edag as dag:
-                byTags = dag.root[BLOG_NODEKEY][TAGS_NODEKEY]
+                byTags = dag.root[BLOG_NODEKEY][BYTAG_NODEKEY]
 
                 for tag in tags:
                     if tag is None:
                         continue
 
-                    planet, ptag = tag.split('#')
-                    if not planet or not ptag:
-                        continue
-
-                    planet = planet.replace('@', '')
-
-                    byTags.setdefault(planet, {})
-                    byTags[planet].setdefault(ptag, {
-                        '_posts': []
-                    })
-
-                    byTags[planet][ptag]['_posts'].append({
+                    tagged = byTags.setdefault(tag, {'@graph': []})
+                    tagged['@graph'].append({
                         'name': postName,
                         'title': title,
                         'view': {
                             '/': stripIpfs(str(resolved))
                         }
                     })
-                    byTags[planet][ptag]['index.html'] = await self.renderLink(
+                    byTags[tag]['index.html'] = await self.renderLink(
                         'usersite/bytag.html',
                         contained=True,
                         tag=tag,
-                        tagposts=byTags[planet][ptag]['_posts']
+                        tagposts=tagged['@graph'],
+                        title=f'Posts with tag: {tag}'
                     )
+        else:
+            logUser.info('Empty blog post')
+            return None
 
         logUser.info('Your blog post is online')
-        return True
+        return resolved
 
     @ipfsOp
     async def makePinRequest(self, op, title, descr, objects,
@@ -258,9 +398,9 @@ class UserWebsite:
             if not isinstance(objects, list):
                 return False
 
-            username = self.profile.userInfo.iphandle
+            username = self.profile.userInfo.spaceHandle.human
             uid = str(uuid.uuid4())
-            now = datetime.now(timezone.utc)
+            now = utcDatetimeIso()
 
             objsReq = []
 
@@ -293,23 +433,26 @@ class UserWebsite:
                     'tags': tags if tags else [],
                     'author': username,
                     'priority': priority,
-                    'date_published': isoformat(now),
+                    'datePublished': isoformat(now),
                     'version': 1
                 }
             }
 
             dag.dagRoot[PINREQS_NODEKEY].append(pinRequest)
 
-        await self.update()
         return True
+
+    @ipfsOp
+    async def importAssets(self, ipfsop) -> None:
+        assetsPath = pkgResourcesRscFilename('galacteek.templates',
+                                             'usersite/assets')
+        self._assetsEntry = await ipfsop.addPath(assetsPath, recursive=True)
 
     @ipfsOp
     async def init(self, ipfsop):
         # Import the assets
 
-        assetsPath = pkgResourcesRscFilename('galacteek.templates',
-                                             'usersite/assets')
-        self.assetsEntry = await ipfsop.addPath(assetsPath, recursive=True)
+        await self.importAssets()
 
         if self.profile.ctx.hasRsc('ipfs-cube-64'):
             self.edag.root['media']['images']['ipfs-cube.png'] = \
@@ -319,7 +462,14 @@ class UserWebsite:
                 self.edag.mkLink(self.profile.ctx.resources['atom-feed'])
 
         self.edag.root['about.html'] = await self.renderLink(
-            'usersite/about.html')
+            'usersite/about.html',
+            title=self.defaultTitle
+        )
+
+        if self.blogPostsCount() == 0:
+            await self.blogPost('Hello',
+                                'Your dblog is up',
+                                langTag='en')
 
     def createFeed(self, ftype='ipfs'):
         # Create the feed
@@ -329,147 +479,171 @@ class UserWebsite:
         feed = FeedGenerator()
         feed.id(self.siteUrl)
         feed.title(f"dfeed: {sHandle.human}")
-        feed.author({
-            'name': self.profile.userInfo.iphandle
-        })
+        feed.author({'name': sHandle.human})
 
         if ftype == 'ipfs':
             feed.link(href=self.atomFeedPath.ipfsUrl, rel='self')
         elif ftype == 'publicgw':
             feed.link(href=self.atomFeedPath.publicGwUrl, rel='self')
 
-        feed.language('en')
+        feed.language('en')  # BC
         return feed
 
     async def updateAboutPage(self):
         async with self.profile.dagUser as dag:
             dag.root['about.html'] = await self.renderLink(
-                'usersite/about.html')
+                'usersite/about.html',
+                title=self.defaultTitle
+            )
             dag.root['media']['images']['avatar'] = \
                 self.profile.userInfo.avatar
 
-        await self.websiteUpdated.emit()
+    async def onDagUserChanged(self):
+        try:
+            async with self.dagUser.wLock:
+                await self.update()
+        except Exception:
+            traceback.print_exc()
 
     @ipfsOp
     async def update(self, op):
         if self.dagRoot is None or self.updating is True:
             return
 
-        now = datetime.now(timezone.utc)
+        dag = self.profile.dagUser
+
         self._updating = True
 
         assetsChanged = False
         blogPosts = []
 
+        if '@id' not in self.dagBlog:
+            # Gen an @id for the blog
+            self.dagBlog['@id'] = self.iSchemeService.iriGenObject(
+                'DwebBlog'
+            )
+            self.dagBlogPosts['@id'] = self.iSchemeService.iriGenObject(
+                'DwebBlogPosts'
+            )
+
         feed = self.createFeed()
         feedgw = self.createFeed(ftype='publicgw')
 
-        async with self.profile.dagUser as dag:
-            if self.assetsEntry:
-                resolved = await dag.resolve('assets')
-                if resolved and self.assetsEntry.get('Hash') != resolved:
-                    # The assets were modified (will need to fully regen)
-                    assetsChanged = True
+        if self._assetsEntry:
+            resolved = await dag.resolve('assets')
+            if resolved and self._assetsEntry.get('Hash') != resolved:
+                # The assets were modified (will need to fully regen)
+                assetsChanged = True
 
-                dag.root['assets'] = dag.mkLink(self.assetsEntry)
+            dag.root['assets'] = dag.mkLink(self._assetsEntry)
 
-            entries = await dag.list(path='blog')
-            bEntries = entries if isinstance(entries, list) else []
-
-            for entry in bEntries:
-                await op.sleep()
-
-                if entry == TAGS_NODEKEY:
-                    continue
-
-                nList = await dag.list(path='blog/{}'.format(entry))
-
-                postObj = await dag.get('blog/{0}/{1}'.format(
-                    entry, POST_NODEKEY))
-
-                if not isinstance(postObj, dict):
-                    continue
-
-                post = postObj['blogpost']
-
-                blogPosts.append(post)
-
-                if 'view' in nList and assetsChanged is False:
-                    continue
-
-                self.dagBlog[entry]['view'] = await self.renderLink(
-                    'usersite/blog_post.html',
-                    contained=True,
-                    post=post,
-                )
-
-            blogPosts = sorted(blogPosts,
-                               key=lambda post: post['date_published'],
-                               reverse=True)
-
-            self.feedAddPosts(blogPosts, feed)
-            self.feedAddPosts(blogPosts, feedgw, ftype='publicgw')
-
-            requests = await dag.get(PINREQS_NODEKEY)
-
-            if requests:
-                for idx, request in enumerate(requests):
-                    path = '{0}/{1}'.format(PINREQS_NODEKEY, idx)
-                    if not await dag.get(
-                            '{path}/view'.format(path=path)):
-                        self.dagRequests[idx]['view'] = \
-                            await self.renderLink(
-                                'usersite/pinrequest.html',
-                                request=request
-                        )
-
-                self.feedAddPinRequests(requests, feed)
-
-            dag.root['pinrequests.html'] = await self.renderLink(
-                'usersite/pinrequests.html',
-                pinrequests=requests if requests else []
+        # Graph
+        siteGraph = await self.graph()
+        if siteGraph:
+            blogs = self.pronto.graphByUri(
+                'urn:ipg:i:love:blogs'
             )
 
-            dag.root['index.html'] = await self.renderLink(
-                'usersite/home.html'
+            if blogs:
+                await blogs.guardian.mergeReplace(siteGraph, blogs)
+
+        bEntries = await self.blogEntries()
+
+        for entry in bEntries:
+            await op.sleep()
+
+            if entry == BYTAG_NODEKEY or entry not in self.dagBlogPosts:
+                continue
+
+            # nList = await dag.list(path=f'{BLOG_NODEKEY}/{entry}')
+            nList = await dag.list(path=f'{BLOG_NODEKEY}/posts/{entry}')
+
+            post = await dag.get(
+                f'{BLOG_NODEKEY}/{POSTS_NODEKEY}/{entry}'
             )
 
-            self.dagBlog['index.html'] = await self.renderLink(
-                'usersite/blog.html',
-                posts=blogPosts
+            # Don't use anything that's not typed
+            if not isinstance(post, dict) or '@type' not in post:
+                continue
+
+            blogPosts.append(post)
+
+            if 'view' in nList and assetsChanged is False:
+                continue
+
+            self.dagBlogPosts[entry]['view'] = await self.renderLink(
+                'usersite/blog_post.html',
+                contained=True,
+                post=post,
+                title=post['title']['en']
             )
 
-            dag.root['about.html'] = await self.renderLink(
-                'usersite/about.html')
-
-            # Finally, generate the Atom feed and put it in the graph
+        def postOrder(post: dict):
             try:
-                atomFeed = feed.atom_str(pretty=True)
-                entry = await op.addBytes(atomFeed)
-                atomFeedGw = feedgw.atom_str(pretty=True)
-                entryGw = await op.addBytes(atomFeedGw)
+                if 'datePublished' in post:
+                    return post['datePublished']
+                elif 'date_published' in post:
+                    # Old field name
+                    return post['date_published']
+            except Exception:
+                return None
 
-                if entry:
-                    # Unpin the old feed (disabled for now)
-                    if self._atomFeedFn in dag.root and 0:
-                        resolved = await dag.resolve(
-                            path=self._atomFeedFn)
-                        if resolved:
-                            ensure(op.unpin(resolved))
+        blogPosts = sorted(blogPosts,
+                           key=postOrder,
+                           reverse=True)
 
-                    dag.root[self._atomFeedFn] = dag.mkLink(entry)
+        self.feedAddPosts(blogPosts, feed)
+        self.feedAddPosts(blogPosts, feedgw, ftype='publicgw')
 
-                if entryGw:
-                    dag.root[self._atomFeedGwFn] = dag.mkLink(entryGw)
-            except Exception as err:
-                log.debug('Error generating Atom feed: {}'.format(
-                    str(err)))
+        dag.root['index.html'] = await self.renderLink(
+            'usersite/home.html',
+            blogUri=self.dagBlog['@id']
+        )
 
-            metadata = await dag.siteMetadata()
-            metadata['date_updated'] = now.isoformat()
-            dag.root[METADATA_NODEKEY] = metadata
+        self.dagBlog['index.html'] = await self.renderLink(
+            'usersite/blog.html',
+            posts=blogPosts,
+            siteGraph=siteGraph,
+            siteGraphTtl=(await siteGraph.ttlize()).decode(),
+            title=self.defaultTitle
+        )
+
+        dag.root['about.html'] = await self.renderLink(
+            'usersite/about.html',
+            title=self.defaultTitle
+        )
+
+        # Finally, generate the Atom feed and put it in the graph
+        try:
+            atomFeed = feed.atom_str(pretty=True)
+            entry = await op.addBytes(atomFeed)
+            atomFeedGw = feedgw.atom_str(pretty=True)
+            entryGw = await op.addBytes(atomFeedGw)
+
+            if entry:
+                # Unpin the old feed (disabled for now)
+                if self._atomFeedFn in dag.root and 0:
+                    resolved = await dag.resolve(
+                        path=self._atomFeedFn)
+                    if resolved:
+                        ensure(op.unpin(resolved))
+
+                dag.root[self._atomFeedFn] = dag.mkLink(entry)
+
+            if entryGw:
+                dag.root[self._atomFeedGwFn] = dag.mkLink(entryGw)
+        except Exception as err:
+            log.debug('Error generating Atom feed: {}'.format(
+                str(err)))
+
+        metadata = await dag.siteMetadata()
+        metadata['dateModified'] = utcDatetimeIso()
+        dag.root[METADATA_NODEKEY] = metadata
+
+        await dag.ipfsSave(emitDataChanged=False)
 
         await self.websiteUpdated.emit()
+
         self._updating = False
 
     def feedAddPinRequests(self, requests, feed):
@@ -482,16 +656,15 @@ class UserWebsite:
             fEntry.title('Pin request: {}'.format(req['title']))
             fEntry.id(rpath.ipfsUrl)
             fEntry.link(href=rpath.ipfsUrl, rel='alternate')
-            fEntry.published(req['date_published'])
+            fEntry.published(req['datePublished'])
             fEntry.author({'name': self.profile.userInfo.iphandle})
 
     def feedAddPosts(self, blogPosts, feed, ftype='ipfs'):
         for post in blogPosts:
-            ppath = self.sitePath.child(posixIpfsPath.join(
-                'blog', post['postname'], 'view'))
+            ppath = self.sitePath.child(self.pathToPostView(post['postName']))
 
             fEntry = feed.add_entry()
-            fEntry.title(post['title'])
+            fEntry.title(post['title']['en'])  # BC
 
             if ftype == 'ipfs':
                 url = ppath.ipfsUrl
@@ -500,10 +673,10 @@ class UserWebsite:
 
             fEntry.id(url)
             fEntry.link(href=url, rel='alternate')
-            fEntry.updated(post['date_modified'])
-            fEntry.published(post['date_published'])
+            fEntry.updated(post['dateModified'])
+            fEntry.published(post['datePublished'])
             fEntry.content(
-                content=markitdown(post['body']),
+                content=markitdown(post['body']['en']),  # BC: hard-coded lang
                 type='html'
             )
 
@@ -528,5 +701,10 @@ class UserWebsite:
 
     async def renderLink(self, tmpl, contained=False, **kw):
         # Render and link in the dag
+
         result = await self.tmplRender(tmpl, contained=contained, **kw)
-        return self.edag.mkLink(result)
+
+        if result:
+            return self.edag.mkLink(result)
+        else:
+            raise Exception(f'Could not render {tmpl} with args {kw}')

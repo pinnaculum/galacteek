@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>843</width>
-    <height>444</height>
+    <height>482</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -35,7 +35,7 @@
    <item>
     <layout class="QVBoxLayout" name="verticalLayout_17">
      <property name="spacing">
-      <number>6</number>
+      <number>0</number>
      </property>
      <property name="bottomMargin">
       <number>0</number>
@@ -75,8 +75,8 @@
              </property>
              <property name="iconSize">
               <size>
-               <width>32</width>
-               <height>32</height>
+               <width>24</width>
+               <height>24</height>
               </size>
              </property>
              <property name="popupMode">
@@ -101,8 +101,8 @@
              </property>
              <property name="iconSize">
               <size>
-               <width>32</width>
-               <height>32</height>
+               <width>24</width>
+               <height>24</height>
               </size>
              </property>
              <property name="popupMode">
@@ -146,8 +146,8 @@
            </property>
            <property name="iconSize">
             <size>
-             <width>32</width>
-             <height>32</height>
+             <width>24</width>
+             <height>24</height>
             </size>
            </property>
           </widget>
@@ -180,6 +180,26 @@
             <size>
              <width>32</width>
              <height>32</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QToolButton" name="reloadPageButton">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Reload page&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="../galacteek.qrc">
+             <normaloff>:/share/icons/refresh.png</normaloff>:/share/icons/refresh.png</iconset>
+           </property>
+           <property name="iconSize">
+            <size>
+             <width>24</width>
+             <height>24</height>
             </size>
            </property>
           </widget>
@@ -218,26 +238,6 @@
             <size>
              <width>48</width>
              <height>48</height>
-            </size>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QToolButton" name="reloadPageButton">
-           <property name="toolTip">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Reload page&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-           <property name="icon">
-            <iconset resource="../galacteek.qrc">
-             <normaloff>:/share/icons/refresh.png</normaloff>:/share/icons/refresh.png</iconset>
-           </property>
-           <property name="iconSize">
-            <size>
-             <width>32</width>
-             <height>32</height>
             </size>
            </property>
           </widget>
@@ -425,6 +425,114 @@
       </widget>
      </item>
      <item>
+      <layout class="QHBoxLayout" name="hLayoutSearch">
+       <item>
+        <spacer name="horizontalSpacer_4">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeType">
+          <enum>QSizePolicy::Expanding</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>200</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QLabel" name="searchLabel">
+         <property name="maximumSize">
+          <size>
+           <width>200</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>Find in page:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="searchInPage">
+         <property name="maximumSize">
+          <size>
+           <width>250</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="maxLength">
+          <number>256</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="searchButton">
+         <property name="text">
+          <string>Search</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../galacteek.qrc">
+           <normaloff>:/share/icons/search-engine.png</normaloff>:/share/icons/search-engine.png</iconset>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="searchPrev">
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../galacteek.qrc">
+           <normaloff>:/share/icons/dweb/dweb-arrow-back.png</normaloff>:/share/icons/dweb/dweb-arrow-back.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>32</width>
+           <height>32</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="searchNext">
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../galacteek.qrc">
+           <normaloff>:/share/icons/dweb/dweb-arrow-next.png</normaloff>:/share/icons/dweb/dweb-arrow-next.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>32</width>
+           <height>32</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="searchCancel">
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../galacteek.qrc">
+           <normaloff>:/share/icons/cancel.png</normaloff>:/share/icons/cancel.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>32</width>
+           <height>32</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
       <layout class="QVBoxLayout" name="vLayoutBrowser">
        <property name="spacing">
         <number>0</number>
@@ -432,113 +540,24 @@
        <property name="sizeConstraint">
         <enum>QLayout::SetMaximumSize</enum>
        </property>
+       <item>
+        <widget class="QStackedWidget" name="browserContentStack">
+         <widget class="QWidget" name="page"/>
+         <widget class="QWidget" name="page_2"/>
+        </widget>
+       </item>
       </layout>
      </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="hLayoutSearch">
      <item>
-      <spacer name="horizontalSpacer_4">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
+      <widget class="QLabel" name="contentDetailsLabel">
+       <property name="font">
+        <font>
+         <family>Roboto</family>
+         <pointsize>14</pointsize>
+        </font>
        </property>
-       <property name="sizeType">
-        <enum>QSizePolicy::Expanding</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>200</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QLabel" name="searchLabel">
-       <property name="maximumSize">
-        <size>
-         <width>200</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>Find in page:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLineEdit" name="searchInPage">
-       <property name="maximumSize">
-        <size>
-         <width>250</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="maxLength">
-        <number>256</number>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="searchButton">
-       <property name="text">
-        <string>Search</string>
-       </property>
-       <property name="icon">
-        <iconset resource="../galacteek.qrc">
-         <normaloff>:/share/icons/search-engine.png</normaloff>:/share/icons/search-engine.png</iconset>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="searchPrev">
        <property name="text">
         <string/>
-       </property>
-       <property name="icon">
-        <iconset resource="../galacteek.qrc">
-         <normaloff>:/share/icons/dweb/dweb-arrow-back.png</normaloff>:/share/icons/dweb/dweb-arrow-back.png</iconset>
-       </property>
-       <property name="iconSize">
-        <size>
-         <width>32</width>
-         <height>32</height>
-        </size>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="searchNext">
-       <property name="text">
-        <string/>
-       </property>
-       <property name="icon">
-        <iconset resource="../galacteek.qrc">
-         <normaloff>:/share/icons/dweb/dweb-arrow-next.png</normaloff>:/share/icons/dweb/dweb-arrow-next.png</iconset>
-       </property>
-       <property name="iconSize">
-        <size>
-         <width>32</width>
-         <height>32</height>
-        </size>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="searchCancel">
-       <property name="text">
-        <string/>
-       </property>
-       <property name="icon">
-        <iconset resource="../galacteek.qrc">
-         <normaloff>:/share/icons/cancel.png</normaloff>:/share/icons/cancel.png</iconset>
-       </property>
-       <property name="iconSize">
-        <size>
-         <width>32</width>
-         <height>32</height>
-        </size>
        </property>
       </widget>
      </item>

@@ -35,6 +35,8 @@ class PSPeersService(JSONPubsubService):
 
         self._curProfile = None
         self.ipfsCtx.profileChanged.connect(self.onProfileChanged)
+
+        self.ipfsCtx.didChanged.connectTo(self.onDidChanged)
         self.__identToken = secrets.token_hex(64)
 
     @property
@@ -56,7 +58,12 @@ class PSPeersService(JSONPubsubService):
 
     @asyncify
     async def onProfileChanged(self, pName, profile):
+        # User changed the current profile: send the ident
         await profile.userInfo.loaded
+        await self.sendIdent(self.curProfile)
+
+    async def onDidChanged(self, did: str):
+        # User created a new DID or switched DID: send the ident
         await self.sendIdent(self.curProfile)
 
     @asyncify
@@ -82,7 +89,7 @@ class PSPeersService(JSONPubsubService):
             logger.debug('Profile not initialized, ident message not sent')
             return
 
-        await self.gHubPublish(keyTokensIdent, {'token': self.__identToken})
+        self.gHubPublish(keyTokensIdent, {'token': self.__identToken})
 
         nodeId = op.ctx.node.id
         uInfo = profile.userInfo
@@ -151,7 +158,7 @@ class PSPeersService(JSONPubsubService):
         elif msgType == IpidServiceExposureMessage.TYPE:
             eMsg = IpidServiceExposureMessage(msg)
             if eMsg.valid():
-                await self.gHubPublish(keyIpidServExposure, (sender, eMsg))
+                self.gHubPublish(keyIpidServExposure, (sender, eMsg))
 
         await asyncio.sleep(0)
 

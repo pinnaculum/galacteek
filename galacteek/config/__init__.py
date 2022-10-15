@@ -7,6 +7,7 @@ from pathlib import Path
 
 from omegaconf import OmegaConf
 from omegaconf import dictconfig  # noqa
+from omegaconf.dictconfig import DictConfig  # noqa
 
 from PyQt5.QtCore import QTimer
 
@@ -363,11 +364,10 @@ def initFromTable():
     return True
 
 
-class Configurable(object):
+class Configurable:
     configModuleName = None
 
     def __init__(self, parent=None, applyNow=False):
-        super(Configurable, self).__init__()
         self.parent = parent
 
         if applyNow:

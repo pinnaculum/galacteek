@@ -10,7 +10,7 @@ class BaseClip(QMovie):
 
     def __init__(self, cache=True, speed=None):
         super(BaseClip, self).__init__(
-            ':share/clips/{}'.format(self.clipname))
+            ':/share/clips/{}'.format(self.clipname))
         self.setSpeed(speed if speed else self.speedStart)
 
         self.setCacheMode(

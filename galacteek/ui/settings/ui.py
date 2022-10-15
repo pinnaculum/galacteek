@@ -2,6 +2,7 @@ from galacteek.config import cGet
 
 from . import SettingsFormController
 
+from ..helpers import langTagComboBoxInit
 from ..themes import themesList
 
 
@@ -23,15 +24,17 @@ class SettingsController(SettingsFormController):
             langCode = langEntry.get('code')
             langDisplayName = langEntry.get('displayName')
 
-            self.ui.language.addItem(
+            self.ui.uiLangTag.addItem(
                 langDisplayName,
                 langCode
             )
 
-        for idx in range(self.ui.language.count()):
-            code = self.ui.language.itemData(idx)
+        for idx in range(self.ui.uiLangTag.count()):
+            code = self.ui.uiLangTag.itemData(idx)
             if code == langCodeCurrent:
-                self.ui.language.setCurrentIndex(idx)
+                self.ui.uiLangTag.setCurrentIndex(idx)
+
+        langTagComboBoxInit(self.ui.contentLangTag)
 
         # Theme
         self.ui.themeCombo.clear()
@@ -39,37 +42,22 @@ class SettingsController(SettingsFormController):
         for themeName, tPath in themesList():
             self.ui.themeCombo.addItem(themeName)
 
-        pNameList = self.app.availableWebProfilesNames()
-
-        for pName in pNameList:
-            self.ui.comboDefaultWebProfile.insertItem(
-                self.ui.comboDefaultWebProfile.count(),
-                pName
-            )
         self.cfgWatch(
-            self.ui.language,
+            self.ui.uiLangTag,
             'language',
             'galacteek.application'
         )
+
         self.cfgWatch(
-            self.ui.comboDefaultWebProfile,
-            'defaultWebProfile',
-            'galacteek.browser.webprofiles'
+            self.ui.contentLangTag,
+            'defaultContentLanguage',
+            'galacteek.application'
         )
-        self.cfgWatch(
-            self.ui.webEngineDefaultZoom,
-            'zoom.default',
-            'galacteek.ui.browser'
-        )
+
         self.cfgWatch(
             self.ui.themeCombo,
             'theme',
             'galacteek.ui'
-        )
-        self.cfgWatch(
-            self.ui.urlHistoryEnable,
-            'enabled',
-            'galacteek.ui.history'
         )
         self.cfgWatch(
             self.ui.toolbarsIconSize,

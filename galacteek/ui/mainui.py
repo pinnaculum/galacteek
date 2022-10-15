@@ -68,7 +68,6 @@ from .clips import RotatingCubeRedFlash140d
 from .textedit import TextEditorTab
 from .iprofile import ProfileEditDialog
 from .iprofile import ProfileButton
-# from .peers import PeersServiceSearchDock
 from .pubsub import PubsubSnifferWidget
 from .pyramids import MultihashPyramidsToolBar
 from .quickaccess import QuickAccessToolBar
@@ -77,7 +76,7 @@ from .daemonstats import PeersCountGraphView
 from .camera import CameraController
 from .helpers import *
 from .pinning.pinstatus import RPSStatusButton
-from .hashmarks.search import HashmarksCenterWidget
+from .pinning.pinstatus import PinStatusWidget
 from .widgets import AtomFeedsToolbarButton
 from .widgets import PopupToolButton
 from .widgets.hashmarks import HashmarkMgrButton
@@ -756,6 +755,7 @@ class MainWindow(QMainWindow, KeyListener):
         self.hashmarksCenterAction = QAction(
             getIcon('hashmarks-library.png'),
             iHashmarksDatabase(),
+            shortcut=QKeySequence('Ctrl+h'),
             triggered=self.onOpenHashmarksCenter
         )
 
@@ -791,11 +791,17 @@ class MainWindow(QMainWindow, KeyListener):
             ]
             self.browseButton.rotateCube()
 
+        # Pin status
+        self.pinStatusWidget = PinStatusWidget(self, sticky=True)
+        self.pinStatusWidget.hide()
+
         # File manager
         self.fileManagerWidget = files.FileManager(parent=self)
 
         # Camera controller
         self.cameraController = CameraController(parent=self)
+        self.cameraController.setVisible(False)
+        self.cameraController.cameraReady.connectTo(self.onCameraReady)
 
         # Edit-Profile button
         self.menuUserProfile = QMenu(self)
@@ -824,6 +830,9 @@ class MainWindow(QMainWindow, KeyListener):
 
         self.hashmarkMgrButton = HashmarkMgrButton(
             marks=self.app.marksLocal, parent=self)
+        self.hashmarkMgrButton.setShortcut(
+            QKeySequence('Super_L')
+        )
 
         self.clipboardItemsStack = ClipboardItemsStack()
 
@@ -906,25 +915,17 @@ class MainWindow(QMainWindow, KeyListener):
 
         self.stack = CentralStack(self, self.toolbarWs)
 
+        # Core workspace
+        self.wspaceCore = WorkspaceCore(self.stack)
+
         self.wspaceStatus = WorkspaceStatus(self.stack, 'status')
         self.wspaceDapps = WorkspaceDapps(self.stack)
         self.wspacePeers = WorkspacePeers(self.stack)
         self.wspaceFs = WorkspaceFiles(self.stack)
         self.wspaceMessenger = WorkspaceMessenger(self.stack)
-        self.wspaceSearch = WorkspaceSearch(self.stack)
         self.wspaceMultimedia = WorkspaceMultimedia(self.stack)
         self.wspaceEdit = WorkspaceEdition(self.stack)
-        self.wspaceMisc = WorkspaceMisc(self.stack)
-
-        # Planet workspaces
-        self.wspaceEarth = PlanetWorkspace(self.stack, 'Earth')
-
-        if 0:
-            self.wspaceMars = PlanetWorkspace(self.stack, 'Mars')
-            self.wspaceJupiter = PlanetWorkspace(self.stack, 'Jupiter')
-            self.wspaceMercury = PlanetWorkspace(self.stack, 'Mercury')
-            self.wspaceNeptune = PlanetWorkspace(self.stack, 'Neptune')
-            self.wspacePluto = PlanetWorkspace(self.stack, 'Pluto')
+        self.wspaceManage = WorkspaceMisc(self.stack)
 
         self.webProfile = QtWebEngineWidgets.QWebEngineProfile.defaultProfile()
 
@@ -1124,22 +1125,9 @@ class MainWindow(QMainWindow, KeyListener):
     def setupWorkspaces(self):
         self.stack.addWorkspace(self.wspaceStatus)
 
-        self.stack.addWorkspace(
-            self.wspaceEarth, section='planets')
-        self.stack.addWorkspace(self.wspaceSearch)
+        self.stack.addWorkspace(self.wspaceCore)
+        self.stack.addWorkspace(self.wspaceManage)
         self.stack.addWorkspace(self.wspaceFs)
-
-        if 0:
-            self.stack.addWorkspace(
-                self.wspaceMars, section='planets', dormant=True)
-            self.stack.addWorkspace(
-                self.wspaceJupiter, section='planets', dormant=True)
-            self.stack.addWorkspace(
-                self.wspaceMercury, section='planets', dormant=True)
-            self.stack.addWorkspace(
-                self.wspaceNeptune, section='planets', dormant=True)
-            self.stack.addWorkspace(
-                self.wspacePluto, section='planets', dormant=True)
 
         self.stack.addWorkspace(self.wspaceMultimedia)
 
@@ -1148,7 +1136,6 @@ class MainWindow(QMainWindow, KeyListener):
         self.stack.addWorkspace(self.wspaceMessenger)
 
         self.stack.addWorkspace(self.wspaceDapps)
-        self.stack.addWorkspace(self.wspaceMisc)
 
         self.stack.wsAddGlobalAction(self.browseAction, default=True)
         self.stack.wsAddGlobalAction(self.hashmarksCenterAction, default=False)
@@ -1290,20 +1277,16 @@ class MainWindow(QMainWindow, KeyListener):
     async def onConnReady(self):
         pass
 
-    def onPubsubRx(self):
-        # now = QDateTime.currentDateTime()
-        # self.pubsubStatusButton.setIcon(getIcon('network-transmit.png'))
-        # self.pubsubStatusButton.setToolTip(
-        #     'Pubsub: last message received {}'.format(now.toString()))
-        pass
-
-    def onPubsubTx(self):
-        pass
-
     def showPinningStatusWidget(self):
-        with self.stack.workspaceCtx(WS_MISC) as ws:
-            return ws.tabWidget.setCurrentWidget(
-                ws.pinStatusTab)
+        pos = self.pinningStatusButton.mapToGlobal(QPoint(0, 0))
+
+        popupPoint = QPoint(
+            pos.x() - self.pinStatusWidget.width(),
+            pos.y() - self.pinStatusWidget.height()
+        )
+
+        self.pinStatusWidget.move(popupPoint)
+        self.pinStatusWidget.show()
 
     def onPinItemsCount(self, count):
         statusMsg = iItemsInPinningQueue(count)
@@ -1527,6 +1510,9 @@ class MainWindow(QMainWindow, KeyListener):
                          icon=getIcon('search-engine.png'))
         tab.view.browser.setFocus(Qt.OtherFocusReason)
 
+    async def onCameraReady(self, device: str):
+        self.cameraController.setVisible(len(device) > 0)
+
     def onOpenMediaPlayer(self):
         self.getMediaPlayer()
 
@@ -1570,16 +1556,8 @@ class MainWindow(QMainWindow, KeyListener):
 
         idx, ws = self.stack.currentWorkspace()
 
-        hashmarksLdCenter = HashmarksCenterWidget(self.app.mainWindow)
-
-        ws.wsRegisterTab(
-            hashmarksLdCenter,
-            iHashmarks(),
-            current=True,
-            icon=getIcon('hashmarks-library.png')
-        )
-
-        hashmarksLdCenter.refresh()
+        if isinstance(ws, TabbedWorkspace):
+            ws.openHashmarks(parent=self)
 
     def addBrowserTab(self, label='No page loaded', pinBrowsed=False,
                       minProfile=None, current=True,

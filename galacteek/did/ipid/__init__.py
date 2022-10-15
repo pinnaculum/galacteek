@@ -24,6 +24,8 @@ from galacteek import ensure
 from galacteek import ensureLater
 from galacteek import log
 from galacteek import loopTime
+
+from galacteek.browser.schemes import SCHEME_IPID
 from galacteek.core import SingletonDecorator
 from galacteek.config import cGet
 
@@ -60,6 +62,15 @@ from galacteek.did.ipid.services import http  # noqa
 
 def ipidFormatValid(did):
     return ipidIdentRe.match(did)
+
+
+def ipidUrlFromDid(did: str) -> URL:
+    exploded = didExplode(did)
+    if exploded:
+        return URL.build(
+            scheme=SCHEME_IPID,
+            host=exploded['id']
+        )
 
 
 class IPIDException(Exception):
@@ -497,7 +508,7 @@ class IPIdentifier(DAGOperations):
 
             await self.sChanged.emit(cid)
 
-            # await self.rdfPush()
+            await self.rdfPush()
         else:
             self.message('Could not inject new DID document!')
 

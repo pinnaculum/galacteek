@@ -27,3 +27,14 @@ envs:
             textCursorWidth: 12
 
             scrollBarExtent: 32
+
+    notifications:
+      luckySearch:
+        sound: space2
+
+      pyramidAdded:
+        sound: space
+      pyramidConfigured:
+        sound: space
+      pyramidCreated:
+        sound: space

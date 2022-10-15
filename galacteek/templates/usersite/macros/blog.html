@@ -5,11 +5,9 @@
     <b>Tags</b>:
 
     {% for tag in post.tags %}
-    {% set planet, ptag = tag.split('#') %}
-    {% set planet = planet|replace('@', '') %}
 
     {% if from_index %}
-    <a href="_tags/{{planet}}/{{ptag}}/index.html">{{ tag }}</a>
+    <a href="bytag/{{ tag }}/index.html">{{ tag }}</a>
     {% else %}
     {{ tag }}
     {% endif %}
@@ -23,34 +21,34 @@
   <div class="blog-post">
   {% if from_index %}
     <h2 class="blog-title">
-     <a href="{{ post.postname }}/view">{{ post.title }}</a>
+     <a href="posts/{{ post.postName }}/view">{{ post.title.en }}</a>
     </h2>
 
     {{ render_blog_post_tags(post, from_index=from_index) }}
 
     <p class="blog-meta">
       written by
-      <a href="ipid://{{ post.authordid|ipidExtract }}">
+      <a href="ipid://{{ post.didCreator|ipidExtract }}">
         <b>{{ post.author }}</b>
-      </a> at {{ post.date_published|dtclean }}
+      </a> at {{ post.datePublished|dtclean }}
     </p>
   {% else %}
-    <h2 class="blog-title">{{ post.title }}</h2>
+    <h2 class="blog-title">{{ post.title.en }}</h2>
 
     {{ render_blog_post_tags(post, from_index=from_index) }}
 
     <p class="blog-meta">
       written by
-      <a href="ipid://{{ post.authordid|ipidExtract }}">
+      <a href="ipid://{{ post.didCreator|ipidExtract }}">
         <b>{{ post.author }}</b>
-      </a> at {{ post.date_published|dtclean }}
+      </a> at {{ post.datePublished|dtclean }}
     </p>
 
   {% endif %}
 
     <div class="blog-post-body">
       <p>
-        {{ post.body|markdown }}
+        {{ post.body.en|markdown }}
       </p>
     </div>
   </div>

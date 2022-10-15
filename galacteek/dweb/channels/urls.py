@@ -11,6 +11,8 @@ from PyQt5.QtGui import QPainter
 
 class URLCloudQuickItem(QQuickPaintedItem):
     urlChanged = pyqtSignal(QUrl, QColor)
+    urlHovered = pyqtSignal(QUrl, bool)
+
     cloudClicked = pyqtSignal()
     urlAnimationStartStop = pyqtSignal(bool)
 
@@ -30,6 +32,10 @@ class URLCloudQuickItem(QQuickPaintedItem):
 
     def urlAnimate(self, animate: bool):
         self.urlAnimationStartStop.emit(animate)
+        self.update()
+
+    def urlHoveredAnimate(self, url, animate: bool):
+        self.urlHovered.emit(url, animate)
         self.update()
 
     def changeUrl(self, path: QUrl, color: QColor):
