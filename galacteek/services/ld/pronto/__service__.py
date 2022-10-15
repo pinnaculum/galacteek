@@ -3,6 +3,7 @@ import otsrdflib
 import io
 import random
 import traceback
+from pathlib import Path
 
 from yarl import URL
 from omegaconf import OmegaConf
@@ -13,6 +14,8 @@ from galacteek.services import GService
 
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
+
+from galacteek.config import DictConfig
 
 from galacteek.core.asynclib import GThrottler
 from galacteek.core.ps import makeKeyService
@@ -69,6 +72,10 @@ class RDFStoresService(ProntoServiceModels,
     @property
     def chainEnv(self):
         return self.app.cmdArgs.prontoChainEnv
+
+    @property
+    def defaultStorePlugin(self):
+        return self.serviceConfig.defaultRdflibStorePlugin
 
     @property
     def graphsUris(self):
@@ -140,41 +147,102 @@ class RDFStoresService(ProntoServiceModels,
             self.chainEnv)
         self.storesPath.mkdir(parents=True, exist_ok=True)
 
-        await self.initializeGraphs()
+        try:
+            await self.initializeGraphs()
 
-        await self.initializeSparQLModels()
+            await self.initializeSparQLModels()
+        except Exception:
+            traceback.print_exc()
+            raise
 
     def graphRootStoragePath(self, storageName: str):
         return self.storesPath.joinpath(storageName)
 
-    async def registerRegularGraph(self, uri, cfg):
-        store = plugin.get("Sleepycat", Store)(
-            identifier=uri
-        )
+    def graphStoragePath(self, rootPath: Path, storePlugin: str):
+        if storePlugin == 'Oxigraph':
+            return rootPath.joinpath('oxigraphdb')
+        elif storePlugin == 'Sleepycat':
+            return rootPath.joinpath('bsddb')
 
-        rootPath = self.graphRootStoragePath(f'igraph_{cfg.name}')
-        dbPath = rootPath.joinpath('bsddb')
+    def createGraphName(self, graphUri: str):
+        urn = urnParse(graphUri)
+        if urn:
+            return str(urn.specific_string).replace(':', '_')
+
+    def getGraphStore(self, graphUri: str,
+                      storePlugin: str):
+        try:
+            return plugin.get(storePlugin, Store)(
+                identifier=graphUri
+            )
+        except Exception:
+            log.warning(f'Cannot find rdflib store plugin: {storePlugin}')
+
+    async def registerRegularGraph(self,
+                                   uri: str,
+                                   gname: str,
+                                   rootPath: Path,
+                                   cfg: DictConfig,
+                                   storePlugin='Sleepycat') -> IGraph:
+        """
+        Register a regular graph
+
+        :param str uri: Graph URI
+        :param str gname: Storage (internal) graph name
+        :param Path rootPath: Root path where the graph is stored
+        :param DictConfig cfg: graph configuration
+        :param str storePlugin: Store rdflib plugin name
+        :rtype: IGraph
+        """
+
+        store = self.getGraphStore(uri, storePlugin)
+        if store is None:
+            return None
+
+        dbPath = self.graphStoragePath(rootPath, storePlugin)
         dbPath.mkdir(parents=True, exist_ok=True)
 
         graph = IGraph(
             store,
             rootPath,
-            name=cfg.name,
+            name=gname,
             identifier=uri
         )
 
-        graph.open(str(dbPath), create=True)
+        try:
+            graph.open(str(dbPath), create=True)
+        except Exception:
+            log.warning(f'Cannot open graph {uri} from path {dbPath}')
+            return None
 
         # XXX: NS bind
         graph.iNsBind()
 
         await self.graphRegServices(cfg, graph)
 
-        self._graphs[cfg.name] = graph
+        self._graphs[gname] = graph
 
-    async def registerConjunctive(self,
-                                  uri: str,
-                                  cfg, parentStore=None):
+        return graph
+
+    async def registerConjunctive(
+            self,
+            uri: str,
+            gname: str,
+            rootPath: Path,
+            cfg: DictConfig,
+            parentStore=None,
+            storePlugin='Sleepycat') -> IConjunctiveGraph:
+        """
+        Register a conjunctive graph
+
+        :param str uri: Graph URI
+        :param str gname: Storage (internal) graph name
+        :param Path rootPath: Root path where the graph is stored
+        :param DictConfig cfg: graph configuration
+        :param str storePlugin: Store rdflib plugin name
+        :rtype: IConjunctiveGraph
+        """
+
         subgraphs = cfg.get('subgraphs', {})
         useParentStore = cfg.get('useParentStore', False)
         graphBase = cfg.get('defaultBaseGraphUri', None)
@@ -182,45 +250,66 @@ class RDFStoresService(ProntoServiceModels,
         if useParentStore and parentStore:
             store = parentStore
         else:
-            store = plugin.get("Sleepycat", Store)(
-                identifier=uri
-            )
+            store = self.getGraphStore(uri, storePlugin)
+
+        if store is None:
+            return None
+
+        dbPath = self.graphStoragePath(rootPath, storePlugin)
+        dbPath.mkdir(parents=True, exist_ok=True)
 
         cgraph = IConjunctiveGraph(
-            store=store, identifier=uri,
+            store=store,
+            identifier=uri,
             default_graph_base=graphBase
         )
 
-        rootPath = self.graphRootStoragePath(f'ipcg_{cfg.name}')
-        dbPath = rootPath.joinpath('bsddb')
-        dbPath.mkdir(parents=True, exist_ok=True)
-        cgraph.open(str(dbPath), create=True)
+        try:
+            cgraph.open(str(dbPath), create=True)
+        except Exception:
+            log.warning(
+                f'Cannot open conjunctive graph {uri} from path {dbPath}')
+            return None
 
         cgraph.iNsBind()
 
-        for guri, gcfg in subgraphs.items():
-            gtype = gcfg.get('type')
+        for subguri, subgcfg in subgraphs.items():
+            if subgcfg is None:
+                continue
+
+            gtype = subgcfg.get('type')
+            subgname = self.createGraphName(subguri)
+            if not subgname:
+                log.warning(f'Invalid sub graph uri: {subguri}')
+                continue
 
             if not gtype or gtype == 'regular':
                 graph = IGraph(
                     store,
                     rootPath,
-                    name=gcfg.name,
-                    identifier=guri
+                    name=subgname,
+                    identifier=subguri
                 )
             elif gtype == 'conjunctive':
                 # Recursive
-                graph = await self.registerConjunctive(guri, gcfg,
-                                                       parentStore=store)
+                graph = await self.registerConjunctive(
+                    subguri,
+                    subgname,
+                    self.graphRootStoragePath(f'igraph_{subgname}'),
+                    subgcfg,
+                    parentStore=store,
+                    storePlugin=storePlugin
+                )
+
             if graph is not None:
                 graph.iNsBind()
 
-                await self.graphRegServices(gcfg, graph)
-                self._graphs[gcfg.name] = graph
+                await self.graphRegServices(subgcfg, graph)
+                self._graphs[subgname] = graph
 
         await self.graphRegServices(cfg, cgraph)
 
-        self._graphs[cfg.name] = cgraph
+        self._graphs[gname] = cgraph
 
         return cgraph
 
@@ -311,7 +400,6 @@ class RDFStoresService(ProntoServiceModels,
                 synccfg = GraphSemChainSyncConfig(**cfg)
                 self._synchros[uri] = GraphSemChainSynchronizer(synccfg)
 
-        # guardians = self.serviceConfig.get('guardians', {})
         guardians = self._cfgAgents.get('guardians', {})
 
         for uri, cfg in guardians.items():
@@ -321,12 +409,32 @@ class RDFStoresService(ProntoServiceModels,
 
         graphs = self.serviceConfig.get('graphs', {})
         for uri, cfg in graphs.items():
-            type = cfg.get('type', 'default')
+            gtype = cfg.get('type', 'default')
 
-            if type == 'conjunctive':
-                await self.registerConjunctive(uri, cfg)
+            sPlugin = cfg.get('storePlugin',
+                              self.defaultStorePlugin)
+
+            gname = self.createGraphName(uri)
+
+            if not gname:
+                continue
+
+            if gtype == 'conjunctive':
+                await self.registerConjunctive(
+                    uri,
+                    gname,
+                    self.graphRootStoragePath(f'ipcg_{gname}'),
+                    cfg,
+                    storePlugin=sPlugin
+                )
             else:
-                await self.registerRegularGraph(uri, cfg)
+                await self.registerRegularGraph(
+                    uri,
+                    gname,
+                    self.graphRootStoragePath(f'igraph_{gname}'),
+                    cfg,
+                    storePlugin=sPlugin
+                )
 
     @ipfsOp
     async def getLibertarianId(self, ipfsop):
@@ -400,8 +508,6 @@ class RDFStoresService(ProntoServiceModels,
                 'password': ''
             }
         })
-
-        print(str(msg))
 
         await self.psService.send(msg)
 

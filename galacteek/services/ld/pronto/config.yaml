@@ -20,32 +20,28 @@ graphEnvs:
         minSubjectsPerFlush: 8
         flushSubjectsInactiveSecs: 20
 
+    defaultRdflibStorePlugin: Sleepycat
+
     graphs:
       # i (conjunctive)
       urn:ipg:i:
-        name: i
         type: conjunctive
         guardian: urn:ipg:guardians:goliath
 
         namespace: 'urn:ipg:i'
 
         subgraphs:
-          urn:ipg:i:i0:
-            name: i_i0
+          urn:ipg:i:i0: {}
 
-          urn:ipg:i:i1:
-            name: i_i1
+          urn:ipg:i:i1: {}
 
           # Identities (i am)
-          urn:ipg:i:am:
-            name: i_am
+          urn:ipg:i:am: {}
 
-          urn:ipg:i:articles:
-            name: i_articles
+          urn:ipg:i:articles: {}
 
           # blogs
           urn:ipg:i:love:blogs:
-            name: i_love_blogs
             services:
               sparql: {}
               sync:
@@ -53,7 +49,6 @@ graphEnvs:
 
           # tags
           urn:ipg:i:love:itags:
-            name: i_love_itags
 
             datasets:
               urn:glk:datasets:dataset-itags-core:
@@ -63,7 +58,6 @@ graphEnvs:
 
           # Hashmarks (conjunctive)
           urn:ipg:i:love:hashmarks:
-            name: i_love_hashmarks
             type: conjunctive
 
             # Use the parent store and set the default graph URI
@@ -72,12 +66,9 @@ graphEnvs:
             defaultBaseGraphUri: urn:ipg:i:love:hashmarks:private
 
             subgraphs:
-              urn:ipg:i:love:hashmarks:private:
-                name: i_love_hashmarks_private
+              urn:ipg:i:love:hashmarks:private: {}
 
               urn:ipg:i:love:hashmarks:dwebland:
-                name: i_love_hashmarks_dwebland
-
                 datasets:
                   urn:glk:datasets:hashmarks-dwebland:
                     url: ${gitlab_easy_asset_url:galacteek,hashmarks-dwebland,continuous-master,hashmarks-dwebland.tar.gz}
@@ -85,16 +76,12 @@ graphEnvs:
                     upgradeStrategy: replace
 
               urn:ipg:i:love:hashmarks:search:main:
-                name: i_love_hashmarks_search_main
-
                 services:
                   sparql: {}
                   sync:
                     use: urn:ipg:sync:sparql:hashmarks:bylibertarian
 
               urn:ipg:i:love:hashmarks:search:music:
-                name: i_love_hashmarks_search_music
-
                 services:
                   sparql: {}
                   sync:
@@ -103,7 +90,6 @@ graphEnvs:
               urn:ipg:i:love:hashmarks:public:albator:
                 # Public hashmarks (albator)
                 #
-                name: i_love_hashmarks_public_albator
 
                 services:
                   sparql: {}
@@ -112,24 +98,20 @@ graphEnvs:
                     use: urn:ipg:sync:sparql:hashmarks:bylibertarian
 
 
-          urn:ipg:i:uni:
-            name: i_uni
+          urn:ipg:i:uni: {}
 
           urn:ipg:i:uni:mw:ss:earth:
-            name: i_uni_mw_ss_earth
             datasets:
               urn:glk:datasets:earth:
                 url: ${gitlab_easy_asset_url:galacteek,dataset-earth,continuous-master,dataset-earth.tar.gz}
 
-          urn:ipg:i:uni:mw:ss:earth:rings:
-            name: i_uni_mw_ss_earth_rings
+          urn:ipg:i:uni:mw:ss:earth:rings: {}
 
         services:
           sparql:
             exportsAllow: true
 
       urn:ipg:h0:
-        name: h0
 
         services:
           sparql:
@@ -139,55 +121,34 @@ graphEnvs:
             use: 'urn:ipg:sync:ontolochain1'
 
       urn:ipg:l:
-        name: l
         type: conjunctive
 
         subgraphs:
-          urn:ipg:l:l0:
-            name: l_l0
+          urn:ipg:l:l0: {}
 
       urn:ipg:icapsules:registries:
         type: conjunctive
 
-        name: icapsules_registries
         guardian: urn:ipg:guardians:goliath
 
         subgraphs:
-          urn:ipg:icapsules:registries:default:
-            name: icapsules_registries_default
-
-          urn:ipg:icapsules:registries:local:
-            name: icapsules_registries_local
-
-          urn:ipg:icapsules:registries:galacteek:purple:
-            name: icapsules_registries_galacteek_purple
-
-          urn:ipg:icapsules:registries:galacteek:purple:local:
-            name: icapsules_registries_galacteek_purple_local
-
-          urn:ipg:icapsules:registries:galacteek:blue:
-            name: icapsules_registries_galacteek_blue
-
-          urn:ipg:icapsules:registries:galacteek:blue:local:
-            name: icapsules_registries_galacteek_blue_local
-
-          urn:ipg:icapsules:registries:galacteek:red:
-            name: icapsules_registries_galacteek_red
-
-          urn:ipg:icapsules:registries:galacteek:red:local:
-            name: icapsules_registries_galacteek_red_local
+          urn:ipg:icapsules:registries:default: {}
+          urn:ipg:icapsules:registries:local: {}
+          urn:ipg:icapsules:registries:galacteek:purple: {}
+          urn:ipg:icapsules:registries:galacteek:purple:local: {}
+          urn:ipg:icapsules:registries:galacteek:blue: {}
+          urn:ipg:icapsules:registries:galacteek:blue:local: {}
+          urn:ipg:icapsules:registries:galacteek:red: {}
+          urn:ipg:icapsules:registries:galacteek:red:local: {}
 
       # User's multimedia (conjunctive)
       urn:ipg:user:multimedia:
-        name: user_multimedia
         type: conjunctive
 
         subgraphs:
-          urn:ipg:user:multimedia:playlists:
-            name: user_multimedia_playlists
+          urn:ipg:user:multimedia:playlists: {}
 
           urn:ipg:user:multimedia:playlists:public:
-            name: user_multimedia_playlists_public
             services:
               sparql: {}
 

@@ -169,8 +169,8 @@ class WebsiteAddPostTab(GalacteekTab):
             post = await profile.userWebsite.blogPostGet(postName)
             if post:
                 self.__postEditing = post
-                self.title.setText(post['title'])
-                self.markdownInput.setMarkdownText(post['body'])
+                self.title.setText(post['title']['en'])
+                self.markdownInput.setMarkdownText(post['body']['en'])
             else:
                 raise ValueError(f'post {postName} does not exist')
         except ValueError as verr:

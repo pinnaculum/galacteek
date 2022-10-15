@@ -67,7 +67,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="272"/>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="275"/>
         <source>1.0.0</source>
         <translation type="unfinished"></translation>
     </message>
