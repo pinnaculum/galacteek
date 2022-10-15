@@ -29,19 +29,22 @@ class GraphActivityListener(KeyListener):
         makeKeyService('ld', 'pronto')
     ]
 
-    urisWatchList = []
     reading: bool = False
 
-    def __init__(self, watch: list = [],
+    def __init__(self, watch: Union[list, str] = None,
                  minChangesInterval: int = 2):
         super().__init__()
 
+        self.urisWatchList = []
         self.sbuffers = {}
         self.evflushd = {}
         self.eventsq = asyncio.Queue()
 
         if isinstance(watch, list):
-            self.urisWatchList += watch
+            self.urisWatchList += [uri for uri in watch if
+                                   isinstance(uri, str)]
+        elif isinstance(watch, str):
+            self.urisWatchList.append(watch)
 
         self.graphChanged = AsyncSignal(str,
                                         minInterval=minChangesInterval)
@@ -102,11 +105,14 @@ class GraphActivityListener(KeyListener):
                                          message: Union[GraphUpdateEvent,
                                                         dict]) -> None:
         if isinstance(message, GraphUpdateEvent):
-            # Emit graphGotMerged
-            return await self.graphGotMerged.emit(
-                message.graphUri,
-                message.srcGraph
-            )
+            for uriReg in self.urisWatchList:
+                if re.search(uriReg, message.graphUri):
+                    # Emit graphGotMerged
+                    await self.graphGotMerged.emit(
+                        message.graphUri,
+                        message.srcGraph
+                    )
+            return
 
         # LD event
         event = message['event']

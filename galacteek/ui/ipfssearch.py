@@ -46,6 +46,7 @@ from galacteek.dweb.render import renderTemplate
 from galacteek.core import uid4
 from galacteek.core import runningApp
 from galacteek.core import html2t
+from galacteek.core.asynclib import loopTime
 
 from galacteek.ld.rdf import BaseGraph
 from galacteek.ld.rdf.hashmarks import addLdHashmark
@@ -256,7 +257,7 @@ class IPFSSearchHandler(QObject):
     searchQueryTextChanged = pyqtSignal(str)
 
     # Minimum triples count to trigger a flush of the buffer graph
-    hBufferMinTriplesFlush: int = 512
+    hBufferMinTriplesFlush: int = 256
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -273,6 +274,7 @@ class IPFSSearchHandler(QObject):
         self._taskSearch = None
         self._cResults = []
         self._hBufferGraph = BaseGraph()
+        self._hBufferFlushLast = loopTime()
         self._lock = asyncio.Lock()
         self._destroyed = False
         self._outputGraphUri = self.graphUriHashmarksPrivate
@@ -318,25 +320,29 @@ class IPFSSearchHandler(QObject):
 
     def onDestroyed(self):
         self._destroyed = True
-        self._bgwTask.cancel()
+        ensure(self.flushBufferGraph(self._hBufferGraph, force=True))
+
+    async def flushBufferGraph(self, bgraph: BaseGraph, force=False):
+        if len(bgraph) > 0 or force:
+            await self.outputHashmarksGraph.guardian.mergeReplace(
+                bgraph,
+                self.outputHashmarksGraph
+            )
+
+            # Reset
+            self._hBufferGraph = BaseGraph()
+            self._hBufferFlushLast = loopTime()
 
     async def bufferGraphWatchTask(self):
         try:
             while not self._destroyed:
                 await asyncio.sleep(10)
 
-                if len(self._hBufferGraph) > self.hBufferMinTriplesFlush:
-                    # Flush it to the search graph
-
+                if len(self._hBufferGraph) > self.hBufferMinTriplesFlush or \
+                   (loopTime() - self._hBufferFlushLast) > 8:
+                    # Flush it to the hashmarks graph
                     async with self._lock:
-                        await self.outputHashmarksGraph.guardian.mergeReplace(
-                            self._hBufferGraph,
-                            self.outputHashmarksGraph
-                        )
-
-                        # Reset
-                        self._hBufferGraph = BaseGraph()
-
+                        await self.flushBufferGraph(self._hBufferGraph)
         except asyncio.CancelledError:
             pass
         except Exception:

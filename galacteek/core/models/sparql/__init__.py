@@ -29,7 +29,7 @@ class SparQLQueryRunner(GAsyncObject):
                  rq=None, bindings=None, debug=False):
         super().__init__()
 
-        self.activityListener = GraphActivityListener(graphUri)
+        self.activityListener = GraphActivityListener([graphUri])
         self.activityListener.graphGotMerged.connectTo(self.onGraphGotMerged)
 
         self.graphUri = graphUri

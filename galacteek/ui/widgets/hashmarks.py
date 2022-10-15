@@ -335,10 +335,6 @@ class HashmarksSearcher(PopupToolButton, HashmarkActionCreator):
             traceback.print_exc()
 
 
-class HashmarksGraphListener(GraphActivityListener):
-    urisWatchList = ['urn:ipg:i:love:hashmarks:*']
-
-
 class HashmarksMenu(QMenu):
     def objectPaths(self):
         return [
@@ -364,7 +360,7 @@ class HashmarkMgrButton(PopupToolButton, HashmarkActionCreator,
         self.searcher = HashmarksSearcher()
         self.lock = aiorwlock.RWLock()
 
-        self.gListener = HashmarksGraphListener()
+        self.gListener = GraphActivityListener(['urn:ipg:i:love:hashmarks:*'])
         self.gListener.graphChanged.connectTo(self.onNeedUpdate)
 
         self.setObjectName('hashmarksMgrButton')

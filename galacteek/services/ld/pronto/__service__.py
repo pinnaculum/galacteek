@@ -105,13 +105,12 @@ class RDFStoresService(ProntoServiceModels,
 
         # Graph activity listener (listens for graph events)
         self._gaListener = GraphActivityListener([
-            'urn:ipg:i:*',
+            'urn:ipg:i:love:blogs',
             'urn:ipg:i:love:hashmarks:public:.*',
             'urn:ipg:i:love:hashmarks:search:.*'
         ])
 
-        self._gaListener.subjectsChanged.connectTo(
-            self.onGraphSubjectsChange)
+        self._gaListener.subjectsChanged.connectTo(self.onGraphSubjectsChange)
 
         self._cfgAgentsPath = pkgResourcesRscFilename(
             __package__,
