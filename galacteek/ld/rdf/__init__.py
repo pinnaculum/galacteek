@@ -4,7 +4,6 @@ import io
 import time
 import traceback
 
-from bsddb3.db import DBError
 from pathlib import Path
 
 from rdflib import RDF
@@ -144,7 +143,7 @@ class GraphCommonMixin(object):
         def runQuery(q, bindings):
             try:
                 return self.query(q, initBindings=bindings)
-            except DBError:
+            except Exception:
                 return None
 
         return await self.loop.run_in_executor(
