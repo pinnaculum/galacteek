@@ -67,7 +67,6 @@ qrcode==7.3.1
 qasync==0.22.0
 qtawesome==1.1.1
 random-username==1.0.2
-rdfextras==0.4
 rdflib-pyld-compat==0.1.0
 rdflib-sqlalchemy==0.5.3
 rule-engine==3.5.0
