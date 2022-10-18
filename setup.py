@@ -12,6 +12,7 @@ from setuptools import setup
 from setuptools import Command
 from setuptools import find_packages
 from distutils.command.build import build
+from distutils.version import StrictVersion
 
 PY_VER = sys.version_info
 
@@ -222,6 +223,65 @@ class build_ui(Command):
             themesCompileAll()
 
 
+class vbump(Command):
+    """
+    revbump command
+    """
+    user_options = [
+        ("version=", None, 'Version')
+    ]
+
+    def initialize_options(self):
+        self.version = None
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        if not self.version:
+            raise ValueError('No version specified')
+
+        v = StrictVersion(self.version)
+        assert v.version[0] is not None
+        assert v.version[1] is not None
+        assert v.version[2] is not None
+
+        with open('galacteek/VERSION', 'wt') as f:
+            f.write(f'{self.version}\n')
+
+        os.system('git add galacteek/VERSION')
+
+        with open('galacteek/__version__.py', 'wt') as f:
+            f.write(f"__version__ = '{self.version}'\n")
+
+        os.system('git add galacteek/__version__.py')
+
+        with open('packaging/windows/galacteek-installer.nsi',
+                  'rt') as f:
+            data = f.read()
+            data = re.sub(
+                r'(\!define VERSIONMAJOR) (\d*)',
+                rf'\1 {v.version[0]}',
+                data
+            )
+            data = re.sub(
+                r'(\!define VERSIONMINOR) (\d*)',
+                rf'\1 {v.version[1]}',
+                data
+            )
+            data = re.sub(
+                r'(\!define VERSIONBUILD) (\d*)',
+                rf'\1 {v.version[2]}',
+                data
+            )
+
+        with open('packaging/windows/galacteek-installer.nsi',
+                  'wt') as f:
+            f.write(data)
+
+        os.system('git add packaging/windows/galacteek-installer.nsi')
+
+
 class _build(build):
     sub_commands = [('build_ui', None)] + build.sub_commands
 
@@ -275,7 +335,8 @@ setup(
         'build': _build,
         'build_ui': build_ui,
         'build_docs': build_docs,
-        'build_contracts': build_contracts
+        'build_contracts': build_contracts,
+        'vbump': vbump
     },
     packages=found_packages,
     install_requires=install_reqs,

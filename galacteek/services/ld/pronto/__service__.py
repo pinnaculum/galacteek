@@ -3,6 +3,7 @@ import otsrdflib
 import io
 import random
 import traceback
+from collections import deque
 from pathlib import Path
 
 from yarl import URL
@@ -18,6 +19,7 @@ from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.config import DictConfig
 
 from galacteek.core.asynclib import GThrottler
+from galacteek.core.asynclib import loopTime
 from galacteek.core.ps import makeKeyService
 from galacteek.core import pkgResourcesRscFilename
 from galacteek.core import uid4
@@ -97,6 +99,7 @@ class RDFStoresService(ProntoServiceModels,
 
     def on_init(self):
         self._mThrottler = None
+        self._hbdeq = deque([], maxlen=16)
         self._mQueue = asyncio.Queue(maxsize=196)
         self._graphs = {}
         self._synchros = {}
@@ -332,11 +335,16 @@ class RDFStoresService(ProntoServiceModels,
                         self.chainEnv, graph, config=spconfig)
                 )
             elif srvtype == 'sync':
-                use = cfg.get('use', None)
-                if use:
-                    sync = self._synchros.get(use, None)
-                    if sync:
-                        graph.synchronizer = sync
+                try:
+                    scfg = GraphSyncConfig(**cfg)
+                    synchronizer = self._synchros.get(scfg.use, None)
+                    assert synchronizer is not None
+                except Exception:
+                    log.warning(
+                        f'Invalid synchronizer config for graph: {graph}')
+                else:
+                    graph.synchronizer = synchronizer
+                    graph.synchronizerSettings = scfg
             elif synctype == 'export':
                 graph.synchronizer = GraphExportSynchronizer(graph)
 
@@ -482,6 +490,10 @@ class RDFStoresService(ProntoServiceModels,
         await self.ipfsPubsubService(self.psService)
 
     async def onGraphSubjectsChange(self, graphUri: str, subjUris: list):
+        """
+        Graph with uri graphUri received an update
+        (modified/created subjects are passed in subjUris)
+        """
         service = self.p2pSmartQLServiceByUri(URIRef(graphUri))
 
         if not service:
@@ -672,32 +684,46 @@ class RDFStoresService(ProntoServiceModels,
             if service.graph.identifier == uri:
                 return service
 
-    async def heartbeatTask(self):
-        # @GService.task
-        # Deprecated
+    async def _hbQueueFlush(self):
+        ltNow, sent = loopTime(), []
+        try:
+            for it in self._hbdeq:
+                ltSend, msg = it
 
+                if ltNow > ltSend:
+                    await self.psService.send(msg)
+                    sent.append(it)
+
+            [self._hbdeq.remove(item) for item in sent]
+        except Exception:
+            traceback.print_exc()
+
+    @GService.task
+    async def heartbeatTask(self):
         r = random.Random()
 
         while not self.should_stop:
-            t = r.randint(
-                self.serviceConfig.pubsub.heartbeat.intervalMin,
-                self.serviceConfig.pubsub.heartbeat.intervalMax
+            await asyncio.sleep(
+                r.randint(
+                    self.serviceConfig.pubsub.heartbeat.intervalMin,
+                    self.serviceConfig.pubsub.heartbeat.intervalMax
+                )
             )
-            await asyncio.sleep(t)
-
-            libId = await self.getLibertarianId()
 
             msg = SparQLHeartbeatMessage.make(
                 self.chainEnv,
-                libId if libId else ''
+                await self.getLibertarianId()
             )
 
-            for service in reversed(self._children):
-                if not isinstance(service, p2psmartql.P2PSmartQLService):
-                    continue
-
+            for service in self.p2pSmartQLServices():
                 # Add definition for graph
                 # SmartQL http credentials are set by the curve pubsub service
+
+                syncSettings = service.graph.synchronizerSettings
+
+                if not syncSettings or not syncSettings.hbPeriodicSend:
+                    continue
+
                 msg.graphs.append({
                     'graphIri': service.graph.identifier,
                     'smartqlEndpointAddr': service.endpointAddr(),
@@ -707,10 +733,16 @@ class RDFStoresService(ProntoServiceModels,
                     }
                 })
 
-            try:
-                await self.psService.send(msg)
-            except Exception as err:
-                log.debug(f'Could not send smartql heartbeat: {err}')
+            if len(msg.graphs) > 0:
+                self._hbdeq.appendleft((
+                    loopTime() + r.randint(
+                        syncSettings.hbIntervalMin,
+                        syncSettings.hbIntervalMax
+                    ),
+                    msg
+                ))
+
+            await self._hbQueueFlush()
 
 
 def serviceCreate(dotPath, config, parent: GService):

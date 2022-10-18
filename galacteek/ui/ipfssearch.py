@@ -279,11 +279,6 @@ class IPFSSearchHandler(QObject):
         self._destroyed = False
         self._outputGraphUri = self.graphUriHashmarksPrivate
 
-        self.app.loop.call_later(
-            0.5,
-            self._searcherConfigure
-        )
-
         self._bgwTask = ensure(
             self.bufferGraphWatchTask()
         )
@@ -400,6 +395,10 @@ class IPFSSearchHandler(QObject):
 
     def spawnSearchTask(self):
         self._taskSearch = ensure(self.runSearch(self.searchQuery))
+
+    @pyqtSlot()
+    def initialize(self):
+        self._searcherConfigure()
 
     @pyqtSlot()
     def cancelSearchTasks(self):

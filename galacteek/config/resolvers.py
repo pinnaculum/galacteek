@@ -1,3 +1,4 @@
+from random import Random
 import os
 from yarl import URL
 from omegaconf import OmegaConf
@@ -45,5 +46,10 @@ def gitlabEasyAssetUrl(user: str,
     ))
 
 
+def randint(rstart: int, rend: int):
+    return Random().randint(rstart, rend)
+
+
 OmegaConf.register_new_resolver("gitlab_easy_asset_url", gitlabEasyAssetUrl)
 OmegaConf.register_new_resolver("gitlab_asset_url", gitlabAssetUrl)
+OmegaConf.register_new_resolver("randint", randint)

@@ -77,6 +77,7 @@ class GraphCommonMixin(object):
         self.lock = asyncio.Lock()
 
         self.synchronizer = None
+        self.synchronizerSettings: dict = {}
         self._guardian = kw.pop('guardian', None)
 
     @property

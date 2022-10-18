@@ -3,6 +3,7 @@ import json
 import orjson
 import attr
 import zlib
+import traceback
 import collections
 
 from cachetools import TTLCache
@@ -46,6 +47,12 @@ class SparQLServiceConfig:
     exportsAllow: bool = False
     exportFormats: list = ['ttl', 'xml']
 
+    # The maximum CPU process time (in msecs per minute) that a remote
+    # peer is allowed to use for SparQL queries on this service
+    maxProcessTimeMsecs: float = 3000.0
+
+    processTimeQueueSize: int = 8
+
 
 class SparQLWebApp(web.Application):
     pass
@@ -70,12 +77,22 @@ class SparQLSiteHandler:
     def cfg(self):
         return self.service.config
 
-    def ptimeDataForLogin(self, login):
-        return self.processTime.setdefault(login,
-                                           collections.deque([], 8))
+    def ptimeDataForLogin(self, login: str):
+        return self.processTime.setdefault(
+            login,
+            collections.deque([], maxlen=self.cfg.processTimeQueueSize)
+        )
 
     def recentProcessTime(self, log: collections.deque) -> float:
-        if len(log) < 3:
+        """
+        Calculate the recent CPU process time from a log.
+
+        Returns the CPU process time per minute in milliseconds.
+        """
+
+        minLogSize = int((2 * self.cfg.processTimeQueueSize) / 3)
+
+        if len(log) < minLogSize:
             return None
 
         try:
@@ -94,7 +111,6 @@ class SparQLSiteHandler:
 
             return ((totalms * 60) / (tlast - tfirst))
         except Exception:
-            import traceback
             traceback.print_exc()
             return None
 
@@ -108,12 +124,17 @@ class SparQLSiteHandler:
 
         recent = self.recentProcessTime(udata)
 
-        if recent and recent > 5000:  # 5 secs out of 60 secs CPU time
-            log.debug(f'Rate-limiting peer: {auth.login}')
+        if recent and recent > self.cfg.maxProcessTimeMsecs:
+            # We'll block that request. Purge some elements from the log
+            # and raise a ProcessTimeLimitException
 
-            # should use maxlen
-            for x in range(0, int(len(udata) / 5)):
+            for x in range(0,
+                           int((2 * self.cfg.processTimeQueueSize) / 3)):
                 udata.pop()
+
+            log.warning(f'Rate-limiting peer: {auth.login}: '
+                        f'Used {recent} msecs of process time '
+                        f'(limit is {self.cfg.maxProcessTimeMsecs}')
 
             raise ProcessTimeLimitException(f'{recent}')
 
@@ -256,16 +277,17 @@ class SparQLSiteHandler:
                 return await self.msgError(error='Too many requests',
                                            status=429)
             except (BaseException, ValueError):
+                traceback.print_exc()
                 return await self.msgError(error='Invalid auth',
                                            status=401)
 
             try:
                 post = await request.post()
                 q = post['query']
-                opid = post['operation_id']
+                opid = post.get('operation_id')  # noqa
             except Exception:
-                q = request.query.get('query')
-                opid = request.query.get('operation_id')  # noqa
+                return await self.msgError(
+                    error='Invalid request: method should be POST')
 
             try:
                 assert isinstance(q, str)
@@ -324,8 +346,8 @@ class SparQLSiteHandler:
                     )
                 else:
                     raise Exception('Invalid Accept header')
-            except Exception as err:
-                log.debug(f'Query error: {err}')
+            except Exception:
+                log.debug(f'Query error: {traceback.format_exc()}')
 
                 return await self.msgError(error='Invalid query')
 

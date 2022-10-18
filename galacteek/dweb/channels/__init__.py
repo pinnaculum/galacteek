@@ -132,7 +132,7 @@ class GOntoloObject(GAsyncObject):
         super().__init__(parent)
 
         self._chainUri = ''
-        self._graphUri = 'urn:ipg:i'
+        self._graphUri = 'urn:ipg:i:i0'
 
     @property
     def pronto(self):

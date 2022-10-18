@@ -229,7 +229,7 @@ new QWebChannel(qt.webChannelTransport, function (channel) {
 
     query = document.getElementById('searchquery')
     if (query) {
-            query.focus()
+        query.focus()
     }
 
     window.ipfssearch.availableIpfsGateways.connect(function(gwUrlsList) {
@@ -426,6 +426,11 @@ new QWebChannel(qt.webChannelTransport, function (channel) {
             nextb.style.display = 'none'
         }
     })
+
+    /* Call initialize() on the handler, which will send us
+     * the mimetypes and the gateways list */
+
+    window.ipfssearch.initialize();
 })
 
 window.openIpfs = function (path) {

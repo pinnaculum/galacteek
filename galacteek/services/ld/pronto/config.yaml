@@ -5,8 +5,8 @@ graphEnvs:
     # Pubsub service config
     pubsub:
       heartbeat:
-        intervalMin: 10
-        intervalMax: 30
+        intervalMin: 50
+        intervalMax: 80
 
     mSyncThrottler:
       rateLimit: 12
@@ -97,7 +97,6 @@ graphEnvs:
                   sync:
                     use: urn:ipg:sync:sparql:hashmarks:bylibertarian
 
-
           urn:ipg:i:uni: {}
 
           urn:ipg:i:uni:mw:ss:earth:
@@ -112,13 +111,13 @@ graphEnvs:
             exportsAllow: true
 
       urn:ipg:h0:
-
         services:
           sparql:
             exportsAllow: true
 
           sync:
             use: 'urn:ipg:sync:ontolochain1'
+            hbPeriodicSend: true
 
       urn:ipg:l:
         type: conjunctive

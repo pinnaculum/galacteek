@@ -5,6 +5,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.9] - 2022-10-17
+
+### Changed
+
+- ontolochain: urn:ipg:i:i0 is the default output graph
+- ipfs-search UI: make the JS side call initialize() on the handler
+  after all the signals are connected
+
+### Fixed
+
+- P2P smarql service: Only allow POST requests on /sparql
+- P2P smarql service rate-limiting: require a sufficient log size
+  before deciding to block a request or not
+
 ## [0.5.8] - 2022-09-24
 
 ### Added
