@@ -22,6 +22,9 @@ class SettingsController(SettingsFormController):
                 'qtWebEngine.ignoreGpuBlacklist',
                 'qtWebEngine.enableGpuRasterization',
                 'qtWebEngine.enableNativeGpuMemoryBuffers'
+            ],
+            'galacteek.services.dweb.inter': [
+                ('resourceBlocker.enabled', 'enableResourceBlocker')
             ]
         }
 

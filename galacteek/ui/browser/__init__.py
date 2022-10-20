@@ -1925,16 +1925,21 @@ class BrowserTab(GalacteekTab):
             self.ui.stopButton.hide()
             self.ui.reloadPageButton.show()
 
-            # Show the webengine and remove any graphics effect
-            self.stackShowWebEngine()
             self.webLoadingWidget.hide()
             self.webEngineView.noGraphicsEffect()
+
+            # Show the webengine and remove any graphics effect
+            self.stackShowWebEngine()
         else:
             self.setLoadingStatus(True)
 
-            if progress in range(0, 85):
+            if progress in range(0, 60):
                 self.webLoadingWidget.loading(progress)
                 self.webEngineView.blur()
+            elif progress in range(60, 99):
+                self.webLoadingWidget.hide()
+                self.webEngineView.noGraphicsEffect()
+                self.stackShowWebEngine()
 
             self.ui.pBarBrowser.setStyleSheet(
                 '''QProgressBar::chunk#pBarBrowser {

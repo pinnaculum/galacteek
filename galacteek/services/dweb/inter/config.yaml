@@ -1,7 +1,7 @@
 envs:
   default:
     resourceBlocker:
-      enabled: true
+      enabled: false
 
       blockListsMasterUrl: ${gitlab_easy_asset_url:galacteek,dweb-blocklists,continuous-master,dweb-blocklists.yaml}
 

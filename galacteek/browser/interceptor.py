@@ -73,6 +73,13 @@ class ResourceAccessBlocker:
         self._engine = adblock.Engine(adblock.FilterSet())
 
     @property
+    def enabled(self):
+        return cGet(
+            'resourceBlocker.enabled',
+            mod='galacteek.services.dweb.inter'
+        )
+
+    @property
     def currentBlockListRevision(self):
         return cGet(
             'resourceBlocker.currentRevision',
@@ -111,6 +118,9 @@ class ResourceAccessBlocker:
             return True
 
     async def configure(self, cfg):
+        if not self.enabled:
+            return False
+
         loop = asyncio.get_event_loop()
 
         fset = adblock.FilterSet()
@@ -218,32 +228,29 @@ class IPFSRequestInterceptor(QWebEngineUrlRequestInterceptor,
         url = info.requestUrl()
         firstPartyUrl = info.firstPartyUrl()
 
-        if not url.isValid():
-            return
+        if self._urlblocker and self._urlblocker.enabled and \
+           url.scheme() in [SCHEME_HTTP, SCHEME_HTTPS]:
+            # Don't try to block IPs or localhost
 
-        firstPartyInvalid = firstPartyUrl is None or \
-            not firstPartyUrl.isValid() or \
-            firstPartyUrl.scheme() == "file"
+            firstPartyInvalid = firstPartyUrl is None or \
+                not firstPartyUrl.isValid() or \
+                firstPartyUrl.scheme() == "file"
 
-        # Don't try to block IPs or localhost
-        try:
-            ipaddress.ip_address(url.host())
-            assert url.host() != 'localhost'
-        except Exception:
-            blockable = True
-        else:
-            blockable = False
+            try:
+                assert firstPartyInvalid is False
 
-        if self._urlblocker and not firstPartyInvalid and blockable:
-            check = self._urlblocker._engine.check_network_urls(
-                url.toString(),
-                firstPartyUrl.toString(),
-                _resourceTypeAsString(info.resourceType())
-            )
+                ipaddress.ip_address(url.host())
+                assert url.host() != 'localhost'
+            except Exception:
+                check = self._urlblocker._engine.check_network_urls(
+                    url.toString(),
+                    firstPartyUrl.toString(),
+                    _resourceTypeAsString(info.resourceType())
+                )
 
-            if check.matched:
-                # Block access to this resource
-                info.block(True)
+                if check.matched:
+                    # Block access to this resource
+                    info.block(True)
 
         if url.scheme() == SCHEME_HTTP:
             """

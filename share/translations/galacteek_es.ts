@@ -1085,22 +1085,22 @@ Path: {0}, nodes processed: {1}</source>
 <context>
     <name>IPFSSearchResults</name>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="61"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="62"/>
         <source>Results count: &lt;b&gt;{0}&lt;/b&gt; (max score: &lt;b&gt;{1}&lt;/b&gt;)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="69"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="70"/>
         <source>&lt;b&gt;No results found&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="74"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="75"/>
         <source>&lt;b&gt;Error while fetching results&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/ipfssearch.py" line="79"/>
+        <location filename="../../galacteek/ui/ipfssearch.py" line="80"/>
         <source>&lt;b&gt;Searching ...&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>

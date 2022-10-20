@@ -352,7 +352,8 @@ SettingsModWidgetRole = Qt.UserRole + 2
 SettingsModControllerRole = Qt.UserRole + 3
 
 
-class SettingsCenterTab(GalacteekTab):
+class SettingsCenterTab(GalacteekTab,
+                        KeyListener):
     modules = {}
 
     def tabSetup(self):
@@ -362,7 +363,9 @@ class SettingsCenterTab(GalacteekTab):
         self.ui.setupUi(widget)
 
         self.ui.sModules.itemClicked.connect(self.onModuleClicked)
+        self.addToLayout(widget)
 
+    def loadModules(self):
         self.load('General', 'general')
         self.load('IPFS', 'ipfs')
         self.load('Browser', 'browser')
@@ -385,7 +388,11 @@ class SettingsCenterTab(GalacteekTab):
                       'urlscheme',
                       schemeName=scheme)
 
-        self.addToLayout(widget)
+    async def event_g_services_app(self, key, message):
+        event = message['event']
+
+        if event['type'] == 'ApplicationServiceReady':
+            self.loadModules()
 
     def resizeEvent(self, event):
         self.ui.sModules.setFixedWidth(0.25 * event.size().width())
