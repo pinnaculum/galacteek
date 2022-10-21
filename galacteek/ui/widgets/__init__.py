@@ -255,6 +255,7 @@ class GToolButton(QToolButton, Configurable):
 
     def __init__(self, parent=None, **kw):
         super(GToolButton, self).__init__(parent=parent, **kw)
+        self.setMouseTracking(True)
         self.setObjectName(self.gObjName)
         self.cApply()
 

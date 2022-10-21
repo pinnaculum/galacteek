@@ -13,6 +13,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QTimer
 
 from galacteek.core import runningApp
+from galacteek.core.ps import KeyListener
 from galacteek.config import Configurable
 from galacteek.config import cWidgetGet
 from galacteek.config import cWidgetSetAttr
@@ -31,7 +32,8 @@ from ..dwebspace import *
 from . import SpaceDock
 
 
-class MainDockButton(GLargeToolButton):
+class MainDockButton(GLargeToolButton,
+                     KeyListener):
     def __init__(self, toolbarWs, icon=None, parent=None):
         super().__init__(icon=icon, parent=parent)
 
@@ -62,16 +64,19 @@ class MainDockButton(GLargeToolButton):
         runningApp().repolishWidget(self.toolbarWs)
 
     def onHovered(self, hovered: bool):
-        self.opened = hovered
+        self.openUp(hovered)
 
-        self.setProperty('wsShown', hovered)
-        self.toolbarWs.setProperty('wsShown', hovered)
+    def openUp(self, openUp: bool):
+        self.setProperty('wsShown', openUp)
+        self.toolbarWs.setProperty('wsShown', openUp)
 
-        if self.opened:
+        if openUp:
             self.rotatingCubeClip.start()
         else:
             self.rotatingCubeClip.stop()
             self.setCurrentWsIcon()
+
+        self.opened = openUp
 
         runningApp().repolishWidget(self.toolbarWs)
         runningApp().repolishWidget(self)
@@ -87,7 +92,7 @@ class MainDockButton(GLargeToolButton):
             self.setCurrentWsIcon()
 
     def onWsSwitched(self, workspace):
-        if type(workspace) is not WorkspaceStatus:
+        if not isinstance(workspace, WorkspaceStatus):
             self.wsCurrent = workspace
             self.setCurrentWsIcon()
 
@@ -117,7 +122,7 @@ class DwebCraftingWidget(QWidget, Configurable):
         self.toolbarAppStatus = QToolBar(self)
         self.toolbarAppStatus.setIconSize(QSize(24, 24))
 
-        self.showHideMain = MainDockButton(
+        self.dockCommander = MainDockButton(
             self.toolbarWs,
             icon=getIcon('ipfs-cube-64.png')
         )
@@ -131,7 +136,7 @@ class DwebCraftingWidget(QWidget, Configurable):
                 icon=getIcon('information.png'))
             self.showHideStatus.setCheckable(True)
 
-        self.hLayout.addWidget(self.showHideMain)
+        self.hLayout.addWidget(self.dockCommander)
         self.hLayout.addWidget(self.toolbarWs)
         self.hLayout.addWidget(self.toolbarMisc)
         # self.hLayout.addWidget(self.showHidePyramids)
@@ -160,7 +165,6 @@ class DwebCraftingWidget(QWidget, Configurable):
         )
 
         self.toolbarMisc.setSizePolicy(
-            # QSizePolicy.Maximum,
             QSizePolicy.Minimum,
             QSizePolicy.Expanding
         )
@@ -173,7 +177,7 @@ class DwebCraftingWidget(QWidget, Configurable):
         self.spacerAdjust(QSizePolicy.Expanding)
 
         self.cApply()
-        self.showHideMain.hovered.connect(
+        self.dockCommander.hovered.connect(
             self.onShowHideWorkspaces)
 
         if 0:
@@ -208,8 +212,9 @@ class DwebCraftingWidget(QWidget, Configurable):
         runningApp().repolishWidget(self)
 
     def onTimeout(self):
-        if not self.toolbarWsHovered and not self.showHideMain.opened and not \
-                self.showHideMain.isChecked():
+        if not self.toolbarWsHovered and not \
+           self.dockCommander.opened and not \
+                self.dockCommander.isChecked():
             # self.toolbarWs.setVisible(not self.toolbarWsHovered)
             self.toolbarWs.setVisible(False)
 
@@ -217,8 +222,11 @@ class DwebCraftingWidget(QWidget, Configurable):
         self.toolbarWsHovered = hovered
 
     def onShowHideWorkspaces(self, checked):
-        if checked:
-            self.toolbarWs.setVisible(checked)
+        self.showHideWorkspaces(checked)
+
+    def showHideWorkspaces(self, show: bool):
+        if show:
+            self.toolbarWs.setVisible(show)
             self.toolbarWs.sizePolicy().setHorizontalPolicy(
                 QSizePolicy.MinimumExpanding)
         else:
@@ -258,7 +266,7 @@ class DwebCraftingWidget(QWidget, Configurable):
                      self.toolbarWs.height())
 
 
-class DwebAppDock(SpaceDock, Configurable):
+class DwebAppDock(SpaceDock, KeyListener, Configurable):
     """
     Main dock
     """
@@ -294,3 +302,9 @@ class DwebAppDock(SpaceDock, Configurable):
 
     def addStatusWidget(self, widget):
         self.cWidget.toolbarAppStatus.addWidget(widget)
+
+    async def event_g_services_app(self, key, message):
+        event = message['event']
+
+        if event['type'] == 'QmlApplicationLoaded':
+            self.cWidget.showHideWorkspaces(True)

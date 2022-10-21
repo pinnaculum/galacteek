@@ -1142,8 +1142,11 @@ class MultihashPyramidToolButton(PopupToolButton):
                 return True
             else:
                 self._publishFailedCount += 1
-                self.info('Publish failed: ({count} error(s))'.format(
-                    count=self._publishFailedCount))
+
+                if self._publishFailedCount > 3:
+                    self.debug('Publish failed: ({count} error(s))'.format(
+                        count=self._publishFailedCount))
+
                 return False
 
     def didPyramidUrl(self,

@@ -1566,7 +1566,7 @@ QComboBox:on {
 
 QToolBar#wsActionsToolBar {
     background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                stop: 0 #87ceeb, stop: 1 #323232);
+                                stop: 0 #bdb163, stop: 1 #323232);
     margin: 0px;
 }
 
@@ -1631,4 +1631,16 @@ QToolButton#wsMagicianButton:hover {
 QToolButton#wsMagicianButton:pressed,
 QToolButton#wsMagicianButton:checked {
     background-color: #eec146;
+}
+
+/* Ws switch button */
+
+QToolButton#wsSwitchButton:checked,
+QToolButton#wsSwitchButton:pressed {
+    background-color: #ccc894;
+}
+
+QToolButton#wsSwitchButton[wsJustRegistered=true] {
+    border: 1px solid black;
+    background-color: #d4cf97;
 }

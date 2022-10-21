@@ -95,11 +95,11 @@ class PinActions(QObject):
         ensure(self.sPinPageLinksRequested.emit(self.ipfsPath))
 
     def onRpsRegister(self):
-        from galacteek.ui.dwebspace import WS_MISC
+        from galacteek.ui.dwebspace import WS_CONTROL
 
         wsStack = runningApp().mainWindow.stack
 
-        with wsStack.workspaceCtx(WS_MISC) as ws:
+        with wsStack.workspaceCtx(WS_CONTROL) as ws:
             ws.tabWidget.setCurrentWidget(ws.settingsCenter)
             ws.settingsCenter.selectConfigModule('pinning')
 

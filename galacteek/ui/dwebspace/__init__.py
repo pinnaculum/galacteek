@@ -38,6 +38,7 @@ from galacteek import cached_property
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
 
+from galacteek.core import runningApp
 from galacteek.core.tmpf import TmpFile
 
 from galacteek.core.ps import KeyListener
@@ -154,6 +155,17 @@ class WorkspaceSwitchButton(QToolButton, URLDragAndDropProcessor):
     def switch(self, soundNotify=False):
         self.workspace.wsSwitch(soundNotify=soundNotify)
 
+    def styleJustRegistered(self, registered: bool):
+        self.setProperty('wsJustRegistered', registered)
+        runningApp().repolishWidget(self)
+
+        if registered is True:
+            runningApp().loop.call_later(
+                5,
+                self.styleJustRegistered,
+                not registered
+            )
+
     def styleNotify(self):
         self.setProperty('wsNotify', True)
         self.setStyleSheet('''
@@ -262,7 +274,7 @@ WS_FILES = 'files'
 WS_MULTIMEDIA = 'multimedia'
 WS_EDIT = 'edit'
 WS_SEARCH = 'search'
-WS_MISC = 'misc'
+WS_CONTROL = 'control'
 WS_DMESSENGER = 'dmessenger'
 
 
@@ -338,8 +350,6 @@ class BaseWorkspace(QWidget):
         return self.stack.nextWorkspace(self)
 
     async def workspaceSwitched(self):
-        uiNotify('workspaceSwitched')
-
         await self.triggerDefaultActionIfEmpty()
 
     async def triggerDefaultActionIfEmpty(self):
@@ -579,7 +589,7 @@ class TabbedWorkspace(LinkedDataWsMixin,
             self.tabWidget.setTabToolTip(idx, tooltip)
 
     async def workspaceSwitched(self):
-        uiNotify('workspaceSwitched')
+        uiNotify(f'workspaceSwitched.{self.wsName}')
 
         await self.triggerDefaultActionIfEmpty()
 
@@ -795,7 +805,7 @@ class WorkspaceFiles(TabbedWorkspace):
 
         self.wsAddAction(fileManager.addFilesAction)
         self.wsAddAction(fileManager.addDirectoryAction)
-        self.wsAddAction(fileManager.newSeedAction)
+        # self.wsAddAction(fileManager.newSeedAction)
 
         self.actionTorrentClient = self.wsAddCustomAction(
             iBitTorrentClient(), getIcon('torrent.png'),
@@ -1043,7 +1053,7 @@ class WorkspacePeers(TabbedWorkspace):
 class WorkspaceMisc(TabbedWorkspace):
     def __init__(self, stack):
         super(WorkspaceMisc, self).__init__(
-            stack, WS_MISC, icon=getIcon('settings.png'),
+            stack, WS_CONTROL, icon=getIcon('settings.png'),
             description='Settings/Tools'
         )
 

@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Settings: add a setting to enable/disable the resource blocker
   (disabled by default)
 
+### Changed
+- Open up the ws toolbar when a QML dapp is loaded
+
 ## [0.5.9] - 2022-10-17
 
 ### Changed

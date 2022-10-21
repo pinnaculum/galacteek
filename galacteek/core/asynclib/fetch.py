@@ -77,7 +77,7 @@ async def httpFetch(u,
 
         return Path(file.name), h.hexdigest()
     except Exception as err:
-        log.info(f'httpFetch ({url}): fetch error: {err}')
+        log.warning(f'httpFetch ({url}): fetch error: {err}')
         return None, None
 
 
@@ -132,5 +132,5 @@ async def assetFetch(u: Union[URL, str], **kw):
         else:
             return await httpFetch(url, **kw)
     except Exception as err:
-        log.info(f'assetFetch ({url}): fetch error: {err}')
+        log.warning(f'assetFetch ({url}): fetch error: {err}')
         return None, None

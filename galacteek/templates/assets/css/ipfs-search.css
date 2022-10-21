@@ -73,7 +73,6 @@ input.searching[type=text] {
 }
 
 input[type=text]:focus {
-  background-color: lightblue;
   background-color: #6aa5a0;
 }
 
@@ -87,11 +86,13 @@ input[type=button], input[type=submit], input[type=reset] {
 }
 
 select {
-  background-color: #C3D7DF;
+  background-color: #2999a8;
+  font: 14pt "Roboto";
   padding: 4px 4px;
   border: none;
   border-radius: 4px;
 }
+
 
 .hitheader {
   padding: 2px;

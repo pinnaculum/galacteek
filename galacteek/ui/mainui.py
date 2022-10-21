@@ -386,12 +386,14 @@ class CentralStack(QStackedWidget,
     Stacked widget holding the workspaces
     """
 
-    def __init__(self, parent, wsToolBar):
+    def __init__(self,
+                 wsToolBar: WorkspacesToolBar,
+                 parent: QWidget = None):
         super().__init__(parent=parent)
 
-        self.currentChanged.connect(
-            partialEnsure(self.onWorkspaceChanged))
+        self.currentChanged.connect(partialEnsure(self.onWorkspaceChanged))
         self.toolBarWs = wsToolBar
+
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(0)
         self.setContentsMargins(0, 0, 0, 0)
@@ -483,6 +485,8 @@ class CentralStack(QStackedWidget,
 
         if not dormant:
             self.__addWorkspace(workspace, position=position)
+
+            workspace.wsSwitchButton.styleJustRegistered(True)
         else:
             self.__wsDormant.append(workspace)
 
@@ -541,7 +545,6 @@ class CentralStack(QStackedWidget,
 
     @ipfsOp
     async def event_g_services_core_icapsuledb(self, ipfsop, key, message):
-        app = runningApp()
         event = message['event']
 
         if event['type'] == 'QmlApplicationLoadRequest':
@@ -563,7 +566,7 @@ class CentralStack(QStackedWidget,
             if await workspace.load():
                 self.addWorkspace(workspace, section='qapps')
 
-                await app.s.ldPublish({
+                await runningApp().s.ldPublish({
                     'type': 'QmlApplicationLoaded',
                     'appUri': event['appUri']
                 })
@@ -724,12 +727,6 @@ class MainWindow(QMainWindow, KeyListener):
                                     self,
                                     triggered=self.openPsniffTab)
 
-        self.searchServicesAction = QAction(getIcon('ipservice.png'),
-                                            'Search IP services',
-                                            self,
-                                            shortcut=QKeySequence('Ctrl+i'),
-                                            triggered=self.onSearchServices)
-
         self.editorOpenAction = QAction(getIcon('text-editor.png'),
                                         iTextEditor(),
                                         triggered=self.addEditorTab)
@@ -764,32 +761,6 @@ class MainWindow(QMainWindow, KeyListener):
             'Seed AppImage',
             triggered=self.onSeedAppImage
         )
-
-        if 0:
-            self.browseButton = BrowseButton()
-            self.browseButton.setPopupMode(QToolButton.InstantPopup)
-            self.browseButton.setObjectName('buttonBrowseIpfs')
-            self.browseButton.normalIcon()
-
-            self.browseButton.menu.addAction(self.browseAction)
-            self.browseButton.menu.addAction(self.browseAutopinAction)
-            self.browseButton.menu.addSeparator()
-            self.browseButton.menu.addAction(self.editorOpenAction)
-            self.browseButton.menu.addSeparator()
-
-            if not self.app.cmdArgs.seed and self.app.cmdArgs.appimage:
-                # Add the possibility to import the image from the menu
-                # if not specified on the command-line
-                self.browseButton.menu.addAction(self.seedAppImageAction)
-                self.browseButton.menu.addSeparator()
-
-            self.browseButton.menu.addAction(self.quitAction)
-
-            self.browseButton.animatedActions = [
-                self.browseAction,
-                self.browseAutopinAction
-            ]
-            self.browseButton.rotateCube()
 
         # Pin status
         self.pinStatusWidget = PinStatusWidget(self, sticky=True)
@@ -913,7 +884,7 @@ class MainWindow(QMainWindow, KeyListener):
         # self.addToolBar(Qt.TopToolBarArea, self.toolbarMain)
         self.addToolBar(Qt.LeftToolBarArea, self.toolbarQa)
 
-        self.stack = CentralStack(self, self.toolbarWs)
+        self.stack = CentralStack(self.toolbarWs, parent=self)
 
         # Core workspace
         self.wspaceCore = WorkspaceCore(self.stack)
@@ -993,9 +964,6 @@ class MainWindow(QMainWindow, KeyListener):
         self.enableButtons(False)
 
         # Docks
-        # self.pSearchDock = PeersServiceSearchDock(
-        # self.app.peersTracker, self)
-        # self.pSearchDock.setAllowedAreas(Qt.BottomDockWidgetArea)
 
         self.appDock = DwebAppDock(
             self.toolbarWs,
@@ -1016,21 +984,17 @@ class MainWindow(QMainWindow, KeyListener):
 
         self.appDock.addStatusWidget(self.pinningStatusButton)
         self.appDock.addStatusWidget(self.rpsStatusButton)
-        # self.appDock.addStatusWidget(self.pubsubStatusButton)
         self.appDock.addStatusWidget(self.settingsToolButton)
         self.appDock.addStatusWidget(self.userLogsButton)
         self.appDock.addStatusWidget(self.helpToolButton)
         self.appDock.addStatusWidget(self.quitButton)
 
-        # self.addDockWidget(Qt.BottomDockWidgetArea, self.pSearchDock)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.appDock)
 
         # Connect the IPFS context signals
         self.app.ipfsCtx.ipfsConnectionReady.connectTo(self.onConnReady)
         self.app.ipfsCtx.ipfsRepositoryReady.connectTo(self.onRepoReady)
 
-        # self.app.ipfsCtx.pubsub.psMessageRx.connect(self.onPubsubRx)
-        # self.app.ipfsCtx.pubsub.psMessageTx.connect(self.onPubsubTx)
         self.app.ipfsCtx.profilesAvailable.connect(self.onProfilesList)
         self.app.ipfsCtx.profileChanged.connect(self.onProfileChanged)
         self.app.ipfsCtx.pinItemStatusChanged.connect(self.onPinStatusChanged)
@@ -1219,7 +1183,6 @@ class MainWindow(QMainWindow, KeyListener):
             self.menuUserProfile.addAction(action)
 
     async def onRepoReady(self):
-        # self.browseButton.normalIcon()
         self.stack.activateWorkspaces(True)
 
         self.fileManagerWidget.setupModel()
@@ -1317,7 +1280,9 @@ class MainWindow(QMainWindow, KeyListener):
     def onOpenManual(self, lang):
         entry = self.app.manuals.getManualEntry(lang)
         if entry:
-            self.addBrowserTab(workspace=WS_MISC).browseIpfsHash(entry['Hash'])
+            self.addBrowserTab(workspace=WS_CONTROL).browseIpfsHash(
+                entry['Hash']
+            )
 
     def enableButtons(self, flag=True):
         for btn in [
@@ -1382,11 +1347,11 @@ class MainWindow(QMainWindow, KeyListener):
         return None, None
 
     def onSettings(self):
-        with self.stack.workspaceCtx(WS_MISC) as wspace:
+        with self.stack.workspaceCtx(WS_CONTROL) as wspace:
             wspace.showSettings()
 
     def onRunConfigEditor(self):
-        with self.stack.workspaceCtx(WS_MISC) as wspace:
+        with self.stack.workspaceCtx(WS_CONTROL) as wspace:
             wspace.openConfigEditor()
 
     def onToggledPinAllGlobal(self, checked):
@@ -1491,7 +1456,7 @@ class MainWindow(QMainWindow, KeyListener):
     def openPsniffTab(self):
         self.registerTab(
             PubsubSnifferWidget(self), iPubSubSniff(), current=True,
-            workspace=WS_MISC)
+            workspace=WS_CONTROL)
 
     def addEditorTab(self, path=None, editing=True):
         tab = TextEditorTab(editing=editing, parent=self)
@@ -1529,7 +1494,7 @@ class MainWindow(QMainWindow, KeyListener):
         self.registerTab(w, 'New document', current=True)
 
     def onIpfsKeysClicked(self):
-        with self.stack.workspaceCtx(WS_MISC) as ws:
+        with self.stack.workspaceCtx(WS_CONTROL) as ws:
             tab = ws.wsFindTabWithId('ipfs-keys-manager')
             if tab:
                 return ws.tabWidget.setCurrentWidget(tab)
@@ -1582,7 +1547,7 @@ class MainWindow(QMainWindow, KeyListener):
     def addEventLogTab(self, current=False):
         self.registerTab(eventlog.EventLogWidget(self), iEventLog(),
                          current=current,
-                         workspace=WS_MISC)
+                         workspace=WS_CONTROL)
 
     def quit(self):
         # Qt and application exit
@@ -1607,14 +1572,6 @@ class MainWindow(QMainWindow, KeyListener):
     def closeEvent(self, event):
         event.ignore()
         self.hide()
-
-    def onIpfsObjectServed(self, ipfsPath, cType, reqTime):
-        # TODO
-        # Called when an object was served by the native IPFS scheme handler
-        pass
-
-    def onSearchServices(self):
-        self.pSearchDock.searchMode()
 
     def getPyrDropButtonFor(self, ipfsPath, origin=None):
         return self.toolbarPyramids.getPyrDropButtonFor(
