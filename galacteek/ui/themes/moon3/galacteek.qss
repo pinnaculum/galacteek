@@ -1206,12 +1206,11 @@ QToolButton:checked, QToolButton:pressed,
 */
 
 QToolButton:checked {
-    background-color: lightskyblue;
+    background-color: #2f4f4f;
     color: black;
     border: 0px solid #D1DBCB;
     padding: 2px;
 }
-
 
 /* the subcontrol below is used only in the InstantPopup or DelayedPopup mode */
 QToolButton::menu-indicator {
@@ -1594,7 +1593,7 @@ QToolButton:pressed {
 }
 
 QToolButton:checked {
-    background-color: #4682b4;
+    background-color: #2f4f4f;
 
     border: 1px solid black;
     padding: 4px;

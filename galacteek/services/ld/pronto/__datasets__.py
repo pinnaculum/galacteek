@@ -66,12 +66,12 @@ class ProntoDataSetsManagerMixin:
                     log.debug(f'Dataset {opSubject}: same revision')
                     return False
 
-                if upgradeStrategy == 'mergeReplace':
+                if upgradeStrategy in ['mergeReplace', 'replace']:
                     await ograph.guardian.mergeReplace(
                         g,
                         ograph
                     )
-                elif upgradeStrategy == 'replace':
+                elif upgradeStrategy in ['purge', 'purgefirst']:
                     for s, p, o in ograph:
                         ograph.remove((s, p, o))
 

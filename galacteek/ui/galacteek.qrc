@@ -277,6 +277,7 @@
 
   <qresource>
     <file>../../share/icons/linked-data/chain-link.png</file>
+    <file>../../share/icons/linked-data/peers-linked.png</file>
   </qresource>
 
   <qresource>
@@ -299,6 +300,10 @@
   </qresource>
 
   <qresource>
+    <file>../../share/static/sounds/approved-mission.wav</file>
+    <file>../../share/static/sounds/apert.wav</file>
+    <file>../../share/static/sounds/E-Mu-Proteus-FX-Harmonic-C4.wav</file>
+    <file>../../share/static/sounds/Kawai-K5000W-Celesta-C5.wav</file>
     <file>../../share/static/sounds/space.wav</file>
     <file>../../share/static/sounds/space2.wav</file>
     <file>../../share/static/sounds/space3.wav</file>

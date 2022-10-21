@@ -38,3 +38,6 @@ envs:
         sound: space
       pyramidCreated:
         sound: space
+
+      workspaceSwitched:
+        sound: Kawai-K5000W-Celesta-C5.wav

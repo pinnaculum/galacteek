@@ -1,4 +1,5 @@
 from PyQt5.QtCore import QStringListModel
+from rdflib import Literal
 from rdflib import URIRef
 
 from PyQt5.QtWidgets import QApplication
@@ -12,14 +13,13 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QUrl
 from PyQt5.QtCore import QSortFilterProxyModel
 
-from PyQt5.QtGui import QRegExpValidator
-
 from galacteek import ensure
 from galacteek import partialEnsure
 from galacteek import services
 
+from galacteek.config.cmods import app as cmod_app
+
 from galacteek.core.ipfsmarks import *
-from galacteek.core.iptags import ipTagsFormat
 
 from galacteek.core.models.sparql.tags import TagsSparQLModel
 from galacteek.core.models.sparql import SubjectUriRole
@@ -39,6 +39,8 @@ from galacteek.ld.rdf import GraphURIRef
 from ..forms import ui_addhashmarkdialog
 from ..forms import ui_iptagsmanager
 
+from .tags import CreateTagDialog
+
 from ..helpers import *
 from ..widgets import ImageWidget
 from ..widgets import IconSelector
@@ -56,6 +58,7 @@ from ..i18n import iEditHashmark
 
 from ..i18n import iPublicHashmarks
 from ..i18n import iPrivateHashmarks
+from ..i18n import iHashmarksSearchRoom
 from ..i18n import trTodo
 
 
@@ -169,14 +172,20 @@ class AddHashmarkDialog(QDialog):
         msg, ico = None, None
 
         if graphUri.urnLastPart:
-            if graphUri.urnLastPart == 'private':
+            # Should replace this by adding fields (description, etc ..)
+            # in each pronto graph
+
+            urnBlock = graphUri.specificCut('i:love:hashmarks:')
+
+            if urnBlock.startswith('private'):
                 msg = iPrivateHashmarks(str(graphUri))
                 ico = ':/share/icons/key-diago.png'
-
-            elif graphUri.urnLastPart.startswith('search'):
-                msg = 'Search room'  # TODO
-            elif graphUri.urnLastPart.startswith('public'):
-                msg = iPublicHashmarks(str(graphUri))
+            elif urnBlock.startswith('search'):
+                msg = iHashmarksSearchRoom(urnBlock)
+                ico = ':/share/icons/linked-data/peers-linked.png'
+            elif urnBlock.startswith('public'):
+                msg = iPublicHashmarks(urnBlock)
+                ico = ':/share/icons/linked-data/peers-linked.png'
         if msg:
             self.ui.outputGraphMessage.setText(f'<b>{msg}</b>')
 
@@ -373,9 +382,11 @@ class HashmarkIPTagsDialog(QDialog):
 
         self.destTagsModel = TagsSparQLModel(
             graphUri='urn:ipg:i:love:hashmarks',
-            # graphUri='urn:ipg:i',
             rq='HashmarkTags',
-            bindings={'hmuri': self.hashmarkUri}
+            bindings={
+                'hmuri': self.hashmarkUri,
+                'langTag': Literal(cmod_app.defaultContentLangTag())
+            }
         )
 
         self.allTagsProxyModel = QSortFilterProxyModel(self)
@@ -393,12 +404,7 @@ class HashmarkIPTagsDialog(QDialog):
             self.onTagDoubleClicked
         )
 
-        self.ui.addTagButton.clicked.connect(lambda: ensure(self.addTag()))
-        self.ui.lineEditTag.textChanged.connect(self.onTagEditChanged)
-        self.ui.lineEditTag.setValidator(
-            QRegExpValidator(QRegExp(r'[A-Za-z0-9-_@#]+')))
-        self.ui.lineEditTag.setMaxLength(128)
-        self.ui.lineEditTag.setClearButtonEnabled(True)
+        self.ui.createTagButton.clicked.connect(self.onCreateTag)
 
         self.ui.tagItButton.clicked.connect(self.onTagObject)
         self.ui.untagItButton.clicked.connect(partialEnsure(self.untagObject))
@@ -469,18 +475,17 @@ class HashmarkIPTagsDialog(QDialog):
     async def initDialog(self):
         await self.refreshModels()
 
-    async def addTag(self):
-        # TODO
-        tagname = self.ui.lineEditTag.text()
-        if not tagname:
+    async def createTagDialog(self):
+        dlg = CreateTagDialog()
+        await runDialogAsync(dlg)
+
+        if dlg.result() == 0:
             return
+        elif dlg.result() == 1:
+            await dlg.create()
 
-        rdf_hashmarks.ldHashmarkTag(
-            self.hashmarkUri,
-            ipTagsFormat(tagname)
-        )
-
-        await self.refreshModels()
+    def onCreateTag(self):
+        ensure(self.createTagDialog())
 
     async def updateAllTags(self):
         result = list(await rdf_hashmarks.tagsSearch())
@@ -492,18 +497,6 @@ class HashmarkIPTagsDialog(QDialog):
 
     async def validate(self, *args):
         self.done(1)
-
-        if 0:
-            hmTags = []
-            for idx in range(self.destTagsModel.rowCount()):
-                hmTags.append(self.destTagsModel.data(
-                    idx,
-                    Qt.DisplayRole
-                ))
-            return
-
-            rdf_hashmarks.hashmarkTagsUpdate(
-                self.hashmarkUri, hmTags)
 
 
 class IPTagsSelectDialog(QDialog):
@@ -530,13 +523,6 @@ class IPTagsSelectDialog(QDialog):
         self.ui.allTagsView.doubleClicked.connect(
             self.onTagDoubleClicked
         )
-
-        # self.ui.addTagButton.clicked.connect(lambda: ensure(self.addTag()))
-        self.ui.lineEditTag.textChanged.connect(self.onTagEditChanged)
-        self.ui.lineEditTag.setValidator(
-            QRegExpValidator(QRegExp(r'[A-Za-z0-9-_@#]+')))
-        self.ui.lineEditTag.setMaxLength(128)
-        self.ui.lineEditTag.setClearButtonEnabled(True)
 
         self.ui.tagItButton.clicked.connect(self.onTagObject)
         self.ui.untagItButton.clicked.connect(partialEnsure(self.untagObject))

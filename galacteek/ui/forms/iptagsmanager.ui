@@ -11,25 +11,24 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Resource tags</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
-      <widget class="QLabel" name="label">
-       <property name="text">
-        <string>IPTag</string>
+      <widget class="QPushButton" name="createTagButton">
+       <property name="maximumSize">
+        <size>
+         <width>300</width>
+         <height>16777215</height>
+        </size>
        </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLineEdit" name="lineEditTag"/>
-     </item>
-     <item>
-      <widget class="QPushButton" name="addTagButton">
+       <property name="styleSheet">
+        <string notr="true">font: 13pt &quot;Segoe UI&quot;;</string>
+       </property>
        <property name="text">
-        <string>Add</string>
+        <string>Create a new tag</string>
        </property>
       </widget>
      </item>
@@ -70,6 +69,9 @@
          </item>
          <item>
           <widget class="QPushButton" name="untagItButton">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Untag the resource (remove selected tag from the list on the right side)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
            <property name="text">
             <string/>
            </property>
@@ -87,6 +89,9 @@
          </item>
          <item>
           <widget class="QPushButton" name="tagItButton">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Tag the resource with the selected tag (from the tags database list on the left)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
            <property name="text">
             <string/>
            </property>

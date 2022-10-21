@@ -3,16 +3,31 @@ PREFIX h: <ips://galacteek.ld/Hashmark#>
 PREFIX tag: <ips://galacteek.ld/Tag#>
 
 SELECT DISTINCT ?uri ?tagName ?tagDisplayName
+       ?tagPriority ?tagDateCreated
+       ?tagShortDescription
 WHERE {
   ?uri a gs:Tag .
   ?uri tag:name ?tagName .
 
   OPTIONAL {
     ?uri tag:displayName ?tagDisplayName .
-    FILTER (langMatches(lang(?tagDisplayName), "*") )
+    FILTER (langMatches(lang(?tagDisplayName), str(?langTag)))
   } .
 
-  FILTER (langMatches(lang(?tagName), "*") )
+  OPTIONAL {
+    ?uri tag:priority ?tagPriority .
+  } .
+
+  OPTIONAL {
+    ?uri tag:shortDescription ?tagShortDescription .
+    FILTER (langMatches(lang(?tagShortDescription), str(?langTag)))
+  } .
+
+  OPTIONAL {
+    ?uri tag:dateCreated ?tagDateCreated .
+  } .
+
+  FILTER (langMatches(lang(?tagName), str("*")))
 }
 
 GROUP BY ?uri

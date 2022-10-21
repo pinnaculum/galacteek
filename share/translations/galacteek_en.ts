@@ -1108,33 +1108,38 @@ Path: {0}, nodes processed: {1}</source>
 <context>
     <name>IPTagsDialog</name>
     <message>
-        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="14"/>
-        <source>Dialog</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="22"/>
-        <source>IPTag</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="32"/>
-        <source>Add</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="47"/>
+        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="46"/>
         <source>All tags</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="143"/>
+        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="148"/>
         <source>No tags, thanks</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="150"/>
+        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="155"/>
         <source>OK</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="31"/>
+        <source>Create a new tag</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="14"/>
+        <source>Resource tags</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="73"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Untag the resource (remove selected tag from the list on the right side)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="93"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Tag the resource with the selected tag (from the tags database list on the left)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

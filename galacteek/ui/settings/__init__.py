@@ -363,7 +363,16 @@ class SettingsCenterTab(GalacteekTab,
         self.ui.setupUi(widget)
 
         self.ui.sModules.itemClicked.connect(self.onModuleClicked)
+        self.ui.sModules.currentItemChanged.connect(self.onModuleChanged)
         self.addToLayout(widget)
+
+    def selectConfigModule(self, mod: str):
+        modItem = self.modules.get(mod)
+        if modItem:
+            self.ui.sModules.setCurrentItem(
+                modItem,
+                QItemSelectionModel.SelectCurrent
+            )
 
     def loadModules(self):
         self.load('General', 'general')
@@ -399,6 +408,11 @@ class SettingsCenterTab(GalacteekTab,
 
     def onModuleClicked(self, item):
         widget = item.data(SettingsModWidgetRole)
+        if widget:
+            self.ui.stack.setCurrentWidget(widget)
+
+    def onModuleChanged(self, currentItem, oldItem) -> None:
+        widget = currentItem.data(SettingsModWidgetRole)
         if widget:
             self.ui.stack.setCurrentWidget(widget)
 

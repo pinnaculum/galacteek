@@ -343,6 +343,13 @@ def iRpsRegisterHelpMessage():
     )
 
 
+def iRpsRegisterService():
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Register a remote pinning service'
+    )
+
+
 def iRpsStatusSummary(service, status, pinned, pinning, queued, failed):
     return QCoreApplication.translate(
         'GalacteekWindow',

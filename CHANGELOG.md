@@ -5,6 +5,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2022-10-20
+
+### Added
+
+- UI dialog to create tags
+- Settings: add a setting to enable/disable the resource blocker
+  (disabled by default)
+
 ## [0.5.9] - 2022-10-17
 
 ### Changed
@@ -15,8 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- P2P smarql service: Only allow POST requests on /sparql
-- P2P smarql service rate-limiting: require a sufficient log size
+- P2P smartql service: Only allow POST requests on /sparql
+- P2P smartql service rate-limiting: require a sufficient log size
   before deciding to block a request or not
 
 ## [0.5.8] - 2022-09-24

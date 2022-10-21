@@ -51,6 +51,10 @@ class TagsSparQLModel(SparQLListModel):
             item = self.resultGet(index)
 
             if role == Qt.DisplayRole:
+                dn = item.get('tagDisplayName')
+                if dn:
+                    return str(dn)
+
                 return str(item['tagName'])
             elif role == TagNameRole:
                 var = item['tagName']

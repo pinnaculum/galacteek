@@ -20,6 +20,7 @@ from galacteek.core import runningApp
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import stripIpfs
+
 from galacteek.ui.helpers import getIcon
 from galacteek.ui.helpers import messageBox
 from galacteek.ui.helpers import messageBoxAsync
@@ -92,6 +93,15 @@ class PinActions(QObject):
             return messageBox(iNotAnIpfsResource())
 
         ensure(self.sPinPageLinksRequested.emit(self.ipfsPath))
+
+    def onRpsRegister(self):
+        from galacteek.ui.dwebspace import WS_MISC
+
+        wsStack = runningApp().mainWindow.stack
+
+        with wsStack.workspaceCtx(WS_MISC) as ws:
+            ws.tabWidget.setCurrentWidget(ws.settingsCenter)
+            ws.settingsCenter.selectConfigModule('pinning')
 
     async def onUnpinFromRps(self, service, *args):
         if not self.ipfsPath or not self.ipfsPath.valid:
@@ -285,6 +295,13 @@ class PinObjectButton(PopupToolButton, PinActions):
             triggered=self.onHelp
         )
 
+        self.actionRpsRegister = QAction(
+            getIcon('help.png'),
+            iRpsRegisterService(),
+            self,
+            triggered=self.onRpsRegister
+        )
+
         self.actionUnpin = QAction(
             getIcon('cancel.png'),
             iUnpinHere(),
@@ -311,6 +328,10 @@ class PinObjectButton(PopupToolButton, PinActions):
         pinMenu.addSeparator()
         pinMenu.addAction(self.actionUnpin)
         pinMenu.addSeparator()
+
+        pinMenu.addAction(self.actionRpsRegister)
+        pinMenu.addSeparator()
+
         pinMenu.addAction(self.actionHelp)
 
         self.setIcon(self.iconPinBlue)

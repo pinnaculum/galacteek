@@ -173,8 +173,15 @@ def iPrivateHashmarks(uri: str):
     )
 
 
-def iPublicHashmarks(uri: str):
+def iPublicHashmarks(urnBlock: str):
     return QCoreApplication.translate(
         'GalacteekWindow',
-        'Public hashmarks database'
-    )
+        'Public hashmarks database: {0}'
+    ).format(urnBlock)
+
+
+def iHashmarksSearchRoom(urnBlock: str):
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Hashmarks search room: {0}'
+    ).format(urnBlock)

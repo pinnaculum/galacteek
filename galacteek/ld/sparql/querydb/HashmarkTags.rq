@@ -2,11 +2,17 @@ PREFIX gs: <ips://galacteek.ld/>
 PREFIX h: <ips://galacteek.ld/Hashmark#>
 PREFIX tag: <ips://galacteek.ld/Tag#>
 
-SELECT DISTINCT ?uri ?tagName
+SELECT DISTINCT ?uri ?tagName ?tagDisplayName
 WHERE {
   ?hmuri a gs:Hashmark .
   ?hmuri gs:tag ?uri .
 
   ?uri tag:name ?tagName .
+
+  OPTIONAL {
+    ?uri tag:displayName ?tagDisplayName .
+    FILTER (langMatches(lang(?tagDisplayName), str(?langTag)))
+  } .
+
   FILTER (langMatches(lang(?tagName), "*") )
 }

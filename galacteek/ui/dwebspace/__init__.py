@@ -45,6 +45,7 @@ from galacteek.core.ps import makeKeyService
 
 from galacteek import services
 
+from galacteek.ui.notify import uiNotify
 from galacteek.ui import files
 from galacteek.ui import ipfssearch
 from galacteek.ui import textedit
@@ -337,6 +338,8 @@ class BaseWorkspace(QWidget):
         return self.stack.nextWorkspace(self)
 
     async def workspaceSwitched(self):
+        uiNotify('workspaceSwitched')
+
         await self.triggerDefaultActionIfEmpty()
 
     async def triggerDefaultActionIfEmpty(self):
@@ -576,6 +579,8 @@ class TabbedWorkspace(LinkedDataWsMixin,
             self.tabWidget.setTabToolTip(idx, tooltip)
 
     async def workspaceSwitched(self):
+        uiNotify('workspaceSwitched')
+
         await self.triggerDefaultActionIfEmpty()
 
     async def wsTabChanged(self, tabidx):

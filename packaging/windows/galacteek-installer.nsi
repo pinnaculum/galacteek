@@ -13,8 +13,8 @@ RequestExecutionLevel admin
 !define /date NOW "%Y%m%d"
 
 !define VERSIONMAJOR 0
-!define VERSIONMINOR 5
-!define VERSIONBUILD 9
+!define VERSIONMINOR 6
+!define VERSIONBUILD 0
 
 Name "${APPNAME}"
 Icon "share/icons/galacteek.ico"

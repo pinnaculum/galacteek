@@ -1,6 +1,7 @@
 import asyncio
 import attr
 import io
+import re
 import time
 import traceback
 
@@ -69,6 +70,15 @@ class GraphURIRef(URIRef):
         except Exception:
             pass
 
+    def specificCut(self, urnBlock: str):
+        """
+        Return a copy of the URN's specific string stripped of urnBlock
+        """
+        return re.sub(
+            rf'^{urnBlock}', '',
+            str(self.urn.specific_string)
+        )
+
 
 class GraphCommonMixin(object):
     def __init__(self, *args, **kw):
@@ -80,11 +90,11 @@ class GraphCommonMixin(object):
         self.synchronizerSettings: dict = {}
         self._guardian = kw.pop('guardian', None)
 
-    @property
+    @ property
     def guardian(self):
         return self._guardian
 
-    @property
+    @ property
     def nameSpaces(self):
         return [n for n in self.iNs.namespaces()]
 
