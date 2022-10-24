@@ -41,7 +41,7 @@ conda install -c conda-forge libmagic=5.35
 # Install the wheel from local dists
 
 echo "Installing wheel: $WHEEL"
-$APPIPIP install --force-reinstall -r ../requirements.txt
+$APPIPIP install --force-reinstall -r ../requirements.txt --use-deprecated legacy-resolver
 # $APPIPIP install $WHEEL
 $APPIPIP install $WHEEL'[markdown-extensions]'
 # $APPIPIP install $WHEEL'[matplotlib]'

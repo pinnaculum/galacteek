@@ -88,7 +88,7 @@ build:
     - pip install "git+https://gitlab.com/galacteek/ci-tools"
 
     - pip install -U pip
-    - pip install -r requirements.txt
+    - pip install -r requirements.txt --use-deprecated legacy-resolver
 
     # Build everything and create the python wheel
     - python setup.py build build_docs
