@@ -12,7 +12,7 @@ def protocolFormat(proto: str, ns='x'):
     if proto.startswith('/x/'):
         return proto
 
-    return '/{ns}/{proto}'.format(ns=ns, proto=proto)
+    return f'/{ns}/{proto}'
 
 
 class P2PProtocol(asyncio.Protocol):
