@@ -51,15 +51,16 @@ class build_docs(Command):
         pass
 
     def run(self):
-        from sphinx import build_main
-        args = [sys.argv[0], '-b', 'html',
-                'galacteek/docs/manual/en',
-                'galacteek/docs/manual/en/html']
+        args = [
+            'sphinx-build', '-b', 'html',
+            'galacteek/docs/manual/en',
+            'galacteek/docs/manual/en/html'
+        ]
 
         if self.all:
             args.append('-a')
 
-        build_main(args)
+        os.system(' '.join(args))
 
 
 class build_contracts(Command):
