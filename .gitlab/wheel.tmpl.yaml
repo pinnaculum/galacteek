@@ -3,3 +3,6 @@ disturl: ${oc.env:WHEEL_ASSET_URL}
 version: ${oc.env:GALACTEEK_VERSION}
 sha512_checksum_hex: ${oc.env:WHEEL_SHA512_CHECKSUM}
 git_commit_sha: ${oc.env:CI_COMMIT_SHA}
+pip_install_flags:
+  - --use-deprecated
+  - legacy-resolver
