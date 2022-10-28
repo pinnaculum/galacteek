@@ -624,24 +624,25 @@ class IPFSSearchHandler(QObject):
                             ipfsop,
                             iPath: IPFSPath,
                             hit: dict,
-                            mType: str,
+                            mType: MIMEType,
                             filesStat):
         """
         Store the hashmark in the hashmarks RDF graph
         """
 
+        storageFileName: str = None
         refs = []
 
         title = hit.get('title')
         descr = hit.get('description')
-        mimetype = hit.get('mimetype')
 
-        if mimetype is None:
-            mimeObj = mType
-        else:
-            mimeObj = MIMEType(mimetype)
+        # Guess a reasonable storage name (for downloads)
+        # based on the mime type
 
-        mimeObj = mType
+        extguess = mimetypes.guess_extension(str(mType))
+
+        if extguess and filesStat.stat['Type'] == 'file':
+            storageFileName = f'{title}{extguess}'
 
         # Even if the search query was empty, always store an empty
         # string so that the group_concat() works
@@ -669,10 +670,11 @@ class IPFSSearchHandler(QObject):
             descr=descr,
             size=hit.get('size', 0),
             score=hit.get('score', 0),
-            mimeType=mimeObj,
+            mimeType=mType,
             filesStat=filesStat,
             keywordMatch=kwm,
             referencedBy=refs,
+            storageName=storageFileName,
             dateLastSeen=dateLastSeen,
             customOutputGraph=self._hBufferGraph  # write in buffer graph
         )

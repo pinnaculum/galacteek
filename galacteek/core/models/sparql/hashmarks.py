@@ -5,6 +5,8 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QFont
 
+from galacteek.core import runningApp
+
 from galacteek.ui.helpers import getIcon
 
 from galacteek.ui.i18n import iHashmarkInfoToolTip
@@ -196,6 +198,9 @@ class LDHashmarksItemModel(LDHashmarksSparQLItemModel):
             SubjectUriRole,
             uri
         )
+
+    async def searchHashmarkAsync(self, uri: str) -> list:
+        return await runningApp().rexec(self.searchHashmark, uri)
 
     async def handleItem(self,
                          item: SparQLBaseItem,

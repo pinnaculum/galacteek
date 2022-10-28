@@ -1,7 +1,7 @@
 envs:
   default:
     qtWebEngine:
-      numRasterThreads: 4
+      numRasterThreads: 8
 
       ignoreGpuBlacklist: false
       enableGpuRasterization: true

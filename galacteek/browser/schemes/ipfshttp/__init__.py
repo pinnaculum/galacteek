@@ -5,8 +5,8 @@ from galacteek.browser.schemes import BaseURLSchemeHandler
 
 from galacteek.ipfs import ipfsOp
 
-from iphttp import IpfsHttpServerError
-from iphttp.request import request as iphttpRequest
+from iptt.iphttp import IpfsHttpServerError
+from iptt.iphttp.request import iphttp_request
 
 
 class IpfsHttpSchemeHandler(BaseURLSchemeHandler):
@@ -21,15 +21,17 @@ class IpfsHttpSchemeHandler(BaseURLSchemeHandler):
             return self.reqDenied(request)
 
         try:
-            data, mimeType = await iphttpRequest(
+            response = await iphttp_request(
                 ipfsop.client,
                 rUrl.toString(),
                 buffer=buf,
                 method=rMethod
             )
 
-            if mimeType:
-                request.reply(mimeType.encode('ascii'), buf)
+            assert response
+
+            request.reply(response.content_type.encode('ascii'),
+                          buf)
         except IpfsHttpServerError as herr:
             # Handle HTTP errors from the server
             if herr.http_status == HTTPNotFound.status_code:

@@ -72,6 +72,7 @@ async def addLdHashmark(resourceUrl: Union[IPFSPath, str, URIRef],
                         imageUriRef: URIRef = None,
                         thumbnailUriRef: URIRef = None,
                         metaLangTag: str = 'en',
+                        storageName: str = None,
                         schemePreferred: str = None,
                         referencedBy: list = [],
                         keywordMatch: list = [''],
@@ -152,6 +153,9 @@ async def addLdHashmark(resourceUrl: Union[IPFSPath, str, URIRef],
     if isinstance(mimeType, MIMEType):
         hmark['mimeType'] = str(mimeType)
         hmark['mimeCategory'] = mimeType.category
+
+    if isinstance(storageName, str):
+        hmark['storageFileName'] = storageName
 
     if schemePreferred:
         hmark['schemePreferred'] = schemePreferred
