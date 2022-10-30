@@ -7,7 +7,10 @@ export XKB_CONFIG_ROOT=/usr/share/X11/xkb
 
 export GALACTEEK_MAGIC_DBPATH=/app/share/file/magic-galacteek.mgc
 
-export PYTHONPATH=/app/lib/python3.7/site-packages
+galacteek-starter --venv-info > venv.starter
+source venv.starter
+
+export PYTHONPATH=${GVENV_SITE_PACKAGES}:/app/lib/python3.7/site-packages:${PYTHONPATH}
 export SSL_CERT_FILE=${PYTHONPATH}/certifi/cacert.pem
 
 galacteek-starter --from-flatpak "$@"
