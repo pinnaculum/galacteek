@@ -1,5 +1,6 @@
 import re
 
+from rdflib import Literal
 from rdflib import URIRef
 
 from PyQt5.QtCore import QUrl
@@ -27,6 +28,8 @@ class IPIDTemplatesRenderer(object):
                                 request,
                                 uid,
                                 ipid,
+                                passService,
+                                ipidGraph,
                                 path='/',
                                 rMethod='GET'):
         if rMethod == 'GET':
@@ -36,7 +39,12 @@ class IPIDTemplatesRenderer(object):
                 request,
                 'ipid/summary.html',
                 ipid=ipid,
-                services=services
+                services=services,
+                passportService=passService,
+                ipidg=ipidGraph,
+                querydb=querydb,
+                Literal=Literal,
+                URIRef=URIRef
             )
 
 
@@ -98,10 +106,14 @@ class IPIDSchemeHandler(NativeIPFSSchemeHandler,
         ipidGraph = await ipid.rdfGraph()
 
         if path == '/':
+            passport = await ipid.passportService()
+
             return await self.ipidRenderSummary(
                 request,
                 uid,
                 ipid,
+                passport,
+                ipidGraph,
                 rMethod=rMethod
             )
         elif self.ipidUrlPathValid(path):
@@ -114,15 +126,7 @@ class IPIDSchemeHandler(NativeIPFSSchemeHandler,
                 ))).pop(0)
             except Exception:
                 return self.urlInvalid(request)
-            else:
-                print(serviceId, 'got', serviceInfo)
 
-            if 0:
-                service = await ipid.searchServiceById(serviceId)
-                if not service:
-                    return self.urlInvalid(request)
-
-            # endpoint = service.endpoint
             return await self.handleService(request,
                                             uid,
                                             ipidGraph,
@@ -139,5 +143,4 @@ class IPIDSchemeHandler(NativeIPFSSchemeHandler,
                 return self.urlInvalid(request)
         elif rMethod == 'POST':
             # TODO
-            # rHeaders = request.requestHeaders()
             pass

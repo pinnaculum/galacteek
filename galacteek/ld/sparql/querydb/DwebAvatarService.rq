@@ -1,0 +1,11 @@
+PREFIX gs: <ips://galacteek.ld/>
+PREFIX didv: <https://w3id.org/did#>
+
+SELECT ?avatarUrl
+WHERE {
+  ?did a gs:did .
+  ?did didv:service ?avatarsrv .
+  ?avatarsrv a gs:DwebAvatarService .
+
+	OPTIONAL { ?avatarsrv didv:serviceEndpoint ?avatarUrl . } .
+}

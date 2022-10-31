@@ -1,0 +1,28 @@
+PREFIX gs: <ips://galacteek.ld/>
+PREFIX did: <ips://galacteek.ld/did>
+PREFIX didv: <https://w3id.org/did#>
+
+SELECT ?uri
+       ?avatarUrl
+       ?image
+       ?ipHandleShort
+       ?nickName
+WHERE {
+  ?did a gs:did .
+
+  ?did didv:service ?uri .
+  ?uri a gs:DwebPassportService .
+
+  # ?did didv:service ?avatarsrv .
+	# OPTIONAL { ?avatarsrv didv:serviceEndpoint ?avatarUrl . } .
+
+	?uri didv:serviceEndpoint ?endpoint .
+  ?endpoint a gs:DwebPassport .
+  ?endpoint gs:me ?passport .
+
+	OPTIONAL {
+    ?passport gs:ipHandleShort ?ipHandleShort .
+	  ?passport gs:nickName ?nickName .
+	  ?passport gs:image ?image .
+  } .
+}

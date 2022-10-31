@@ -1,18 +1,45 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    <title>IPID profile</title>
+    <title>IPID summary: {{ ipid.did }}</title>
   </head>
   <body>
+
+{% set avlist = ipidg.queryAsync(
+  querydb.get('DwebAvatarService'),
+  initBindings={'did': URIRef(ipid.did)}
+) | list %}
+
+{% set results = ipidg.queryAsync(
+  querydb.get('DwebPassport'),
+  initBindings={'did': URIRef(ipid.did)}
+) | list %}
+
+{% set passinfos = results.pop(0) %}
+{% set avatar = avlist.pop(0) %}
+
     <div>
-      <p><b>{{ ipid.did }}</b></p>
+      <div style="margin-left: 30px; float: left">
+        {% if avatar %}
+          <a href="{{ avatar.avatarUrl }}">
+            <img width="25%" height="auto" src="{{ avatar.avatarUrl }}"/>
+          </a>
+        {% endif %}
+        {% if passinfos.image %}
+          <a href="{{ passinfos.image }}">
+            <img width="25%" height="auto" src="{{ passinfos.image }}"/>
+          </a>
+        {% endif %}
 
-{% for service in services %}
-      <p>
-        <a href="{{ service.ipidServiceUrl }}">{{ service.srvPath }}</a>
-      </p>
-{% endfor %}
+        <h2>{{ passinfos.ipHandleShort }}</h2>
+        <h2>{{ passinfos.nickName }}</h2>
 
+      {% for service in services %}
+        <p style="margin-left: 10px">
+          <a href="{{ service.ipidServiceUrl }}">{{ service.srvPath }}</a>
+        </p>
+      {% endfor %}
+      </div>
     </div>
   </body>
 </html>

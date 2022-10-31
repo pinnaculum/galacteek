@@ -899,12 +899,15 @@ class IPIdentifier(DAGOperations):
     async def _stop(self):
         await self._stopP2PServices()
 
+    async def passportService(self):
+        return await self.searchServiceById(
+            self.didUrl(path='/passport'))
+
     async def upgrade(self, iphandle=None):
         if not self.local:
             return
 
-        ps = await self.searchServiceById(
-            self.didUrl(path='/passport'))
+        ps = await self.passportService()
 
         if not ps:
             # Create a dweb passport

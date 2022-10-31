@@ -6,7 +6,7 @@ from galacteek.browser.schemes import BaseURLSchemeHandler
 from galacteek.ipfs import ipfsOp
 
 from iptt.iphttp import IpfsHttpServerError
-from iptt.iphttp.request import iphttp_request
+from iptt.iphttp.request import iphttp_request_url
 
 
 class IpfsHttpSchemeHandler(BaseURLSchemeHandler):
@@ -21,7 +21,7 @@ class IpfsHttpSchemeHandler(BaseURLSchemeHandler):
             return self.reqDenied(request)
 
         try:
-            response = await iphttp_request(
+            response = await iphttp_request_url(
                 ipfsop.client,
                 rUrl.toString(),
                 buffer=buf,
