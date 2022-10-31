@@ -28,4 +28,6 @@ sleep 2
 fluxbox > /dev/null 2>&1 &
 sleep 1
 
+eval export galacteek-starter --venv-info
+
 exec "$@"
