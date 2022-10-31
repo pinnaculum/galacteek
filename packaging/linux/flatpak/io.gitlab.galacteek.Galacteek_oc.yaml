@@ -124,8 +124,6 @@ modules:
 
       # Install requirements; build and install via setup.py
       - pip install -U pip
-      # XXX: temporary fix for rdflib relying on old setuptools 2_to_3
-      - pip install setuptools==58
 
       - pip install -r requirements-docs.txt
       - pip install -r requirements.txt
