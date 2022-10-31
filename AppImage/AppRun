@@ -23,13 +23,12 @@ export PATH=${HERE}/usr/bin:$PATH
 export LD_LIBRARY_PATH=${HERE}/usr/lib:$LD_LIBRARY_PATH
 
 export PYTHONHOME=${HERE}/usr
+export PYTHONPATH=${HERE}/usr/lib/python3.7/site-packages:${PYTHONPATH}
 
 # Configure using galacteek-starter
-"${HERE}"/usr/bin/python "${HERE}"/usr/bin/galacteek-starter \
-    --venv-info > venv.starter
-source venv.starter
+eval export $("${HERE}"/usr/bin/python "${HERE}"/usr/bin/galacteek-starter --venv-info)
 
-export PYTHONPATH=${GVENV_SITE_PACKAGES}:${HERE}/usr/lib/python3.7/site-packages:${PYTHONPATH}
+export PYTHONPATH=${GVENV_SITE_PACKAGES}:${PYTHONPATH}
 
 export QT_QPA_PLATFORM_PLUGIN_PATH=${HERE}/usr/lib/python3.7/site-packages/PyQt5/Qt5/plugins/platforms
 export QT_STYLE_OVERRIDE=Fusion

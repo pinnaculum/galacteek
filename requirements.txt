@@ -77,8 +77,7 @@ validators==0.20.0
 yarl==1.5.1
 aiogeminipfs @ https://gitlab.com/galacteek/aiogeminipfs/-/releases/0.2.1/downloads/aiogeminipfs-0.2.1-py3-none-any.whl#sha256=4bb42f2c0f2f74a0e7bc35a1df37d63763b573d8da5d900918f9829a9d782ee7
 aiopubsub @ https://gitlab.com/api/v4/projects/40071322/packages/generic/aiopubsub/3.1.0/aiopubsub-3.1.0-py3-none-any.whl#sha256=520d3ec43f470fd612320e782e4bb333cded7b7b8cc3d876cfe7b4bc79a2a19e
-iptt @ https://galacteek.mypinata.cloud/ipfs/bafybeiacdsep6kgvxh5r2wdbpjlncpvjrw7m65wqz75ajywya4acafhcem/iptt-1.0.3-py3-none-any.whl#sha256=6dd50ff4e3c7589362a030e5d6a142bcdc99b0703193043eb3b782460003327c
-# oxrdflib @ https://gitlab.com/galacteek/oxrdflib/-/releases/0.3.2/downloads/oxrdflib-0.3.2-py3-none-any.whl#sha256=80e33f0dd618ce16dcf7c1aeb9807e78c66494decf31de2ce0cee570547c8eb6
+iptt @ https://galacteek.mypinata.cloud/ipfs/bafybeiarxbqhtaw5qoob4veqwvd73v6cq5iswjxsruik3ymj26tcafomda/iptt-1.0.4-py3-none-any.whl#sha256=4e41fb3b2e85d796e33fbe6f080a12c6dde53e8db3b196f46ae3c39195f1da14
 rdflib @ https://gitlab.com/galacteek/rdflib/-/releases/5.0.0/downloads/rdflib-5.0.0-py3-none-any.whl#sha256=ddcae9e193d999d810bafaeea9fcf55ec7024486fec51053e9c8eef63e4d179f
 rdflib-jsonld @ https://gitlab.com/galacteek/rdflib-jsonld/-/releases/0.6.0-dev/downloads/rdflib_jsonld-0.6.0.dev0-py2.py3-none-any.whl#sha256=d2e3ba9fd3372ecc9321ca5a66da58b84d21205c67554bbb75154f033f12b8d0
 SparQL-Burger @ https://gitlab.com/galacteek/SPARQL-Burger/-/releases/1.0.2/downloads/SparQL_Burger-1.0.2-py3-none-any.whl#sha256=3e6932ee1f69d434e4691ac99797d34dce148b720f0aa0cf2f3e84b5fae729bd

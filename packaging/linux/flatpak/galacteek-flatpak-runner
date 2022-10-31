@@ -1,16 +1,15 @@
 #!/bin/bash
 
 HERE=$(dirname $(readlink -f "${0}"))
+SPHERE=/app/lib/python3.7/site-packages
 
 export GALACTEEK_COMMIT_SHA="@@COMMIT_SHA@@"
 export XKB_CONFIG_ROOT=/usr/share/X11/xkb
-
 export GALACTEEK_MAGIC_DBPATH=/app/share/file/magic-galacteek.mgc
 
-galacteek-starter --venv-info > venv.starter
-source venv.starter
+eval export $(galacteek-starter --venv-info)
 
-export PYTHONPATH=${GVENV_SITE_PACKAGES}:/app/lib/python3.7/site-packages:${PYTHONPATH}
-export SSL_CERT_FILE=${PYTHONPATH}/certifi/cacert.pem
+export PYTHONPATH=${GVENV_SITE_PACKAGES}:${SPHERE}:${PYTHONPATH}
+export SSL_CERT_FILE=${SPHERE}/certifi/cacert.pem
 
 galacteek-starter --from-flatpak "$@"
