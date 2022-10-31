@@ -127,45 +127,24 @@ cat > galacteek.app/Contents/MacOS/galacteek <<\EAT
 #!/usr/bin/env bash
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-export PYTHONHOME="${DIR}/../Resources"
-export PATH=$PATH:$DIR/../Resources/bin
-
-python3 "$DIR/../Resources/bin/galacteek-starter" --venv-info > venv.starter
-source venv.starter
-
-export PYTHONPATH="${GVENV_SITE_PACKAGES}:${DIR}/../Resources/lib/python3.7/site-packages:$PYTHONPATH"
-
-export SSL_CERT_FILE="${PYTHONPATH}/certifi/cacert.pem"
-export GALACTEEK_MAGIC_DBPATH="${DIR}/../Resources/share/file/magic-galacteek.mgc"
-export DYLD_FALLBACK_LIBRARY_PATH="$DYLD_FALLBACK_LIBRARY_PATH:$DIR/../Resources/lib"
-
-python3 "$DIR/../Resources/bin/galacteek-starter" --from-dmg
-EAT
-
-# create entry script for galacteek (debug)
-cat > galacteek.app/Contents/MacOS/galacteek-debug <<\EAT
-#!/usr/bin/env bash
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+SPHERE="${DIR}/../Resources/lib/python3.7/site-packages"
 
 export PYTHONHOME="${DIR}/../Resources"
-export PATH=$PATH:$DIR/../Resources/bin
+export PATH=$DIR/../Resources/bin:$PATH
+export PYTHONPATH="${SPHERE}:$PYTHONPATH"
 
-python3 "$DIR/../Resources/bin/galacteek-starter" --venv-info > venv.starter
-source venv.starter
+eval export $(python3 "$DIR/../Resources/bin/galacteek-starter" --venv-info)
 
-export PYTHONPATH="${GVENV_SITE_PACKAGES}:${DIR}/../Resources/lib/python3.7/site-packages:$PYTHONPATH"
+export PYTHONPATH="${GVENV_SITE_PACKAGES}:$PYTHONPATH"
 
-export PYTHONPATH="${DIR}/../Resources/lib/python3.7/site-packages"
-export SSL_CERT_FILE="${PYTHONPATH}/certifi/cacert.pem"
+export SSL_CERT_FILE="${SPHERE}/certifi/cacert.pem"
 export GALACTEEK_MAGIC_DBPATH="${DIR}/../Resources/share/file/magic-galacteek.mgc"
 export DYLD_FALLBACK_LIBRARY_PATH="$DYLD_FALLBACK_LIBRARY_PATH:$DIR/../Resources/lib"
-export PATH=$PATH:$DIR/../Resources/bin
 
 python3 "$DIR/../Resources/bin/galacteek-starter" --from-dmg
 EAT
 
 chmod a+x galacteek.app/Contents/MacOS/galacteek
-chmod a+x galacteek.app/Contents/MacOS/galacteek-debug
 
 # bloat deletion sequence
 pushd galacteek.app/Contents/Resources
