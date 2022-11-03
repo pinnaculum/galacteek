@@ -573,7 +573,7 @@ class CentralStack(QStackedWidget,
 
                 await workspace.loadIcon()
 
-                if runSettings['wsSwitch'] is True:
+                if runSettings['wsSwitch'] is True and 0:
                     workspace.wsSwitch()
 
 
