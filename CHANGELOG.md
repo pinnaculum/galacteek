@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - UI dialog to create tags
 - Settings: add a setting to enable/disable the resource blocker
   (disabled by default)
+- An action in the clipboard item menu to copy the URL in the clipboard
+  for a specific gateway.
 
 ### Changed
 - Open up the ws toolbar when a QML dapp is loaded

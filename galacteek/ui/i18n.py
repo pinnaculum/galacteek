@@ -7,6 +7,7 @@ from galacteek.i18n.blackhole import *  # noqa
 from galacteek.i18n.browser import *  # noqa
 from galacteek.i18n.bm import *  # noqa
 from galacteek.i18n.bt import *  # noqa
+from galacteek.i18n.clipboard import *  # noqa
 from galacteek.i18n.conn import *  # noqa
 from galacteek.i18n.did import *  # noqa
 from galacteek.i18n.hashmark import *  # noqa

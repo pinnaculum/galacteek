@@ -3,6 +3,7 @@ import aioipfs
 import time
 import shutil
 import traceback
+from yarl import URL
 
 from PyQt5.QtWidgets import QStackedWidget
 from PyQt5.QtWidgets import QToolButton
@@ -17,11 +18,11 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import QRect
 from PyQt5.QtCore import QPropertyAnimation
 from PyQt5.QtCore import QEasingCurve
-from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import QSize
 from PyQt5.QtCore import QFile
 from PyQt5.QtCore import QFileInfo
 from PyQt5.QtCore import QIODevice
+from PyQt5.QtCore import pyqtSignal
 
 from galacteek import ensure
 from galacteek import partialEnsure
@@ -68,192 +69,19 @@ from .widgets.pinwidgets import PinObjectAction
 from .dialogs import ChooseProgramDialog
 from .dialogs import runDialogAsync
 from .dialogs import TextBrowserDialog
+from .gateways import gatewaysMenu
 
 from . import dag
 
 from .i18n import iUnknown
 from .i18n import iDagViewer
-from .i18n import iDagView
 from .i18n import iHashmark
 from .i18n import iIpfsQrEncode
 from .i18n import iHelp
 from .i18n import iLinkToMfsFolder
 from .i18n import iEditObject
 
-
-def iClipboardEmpty():
-    return QCoreApplication.translate(
-        'ClipboardManager',
-        'No valid IPFS CID/path in the clipboard')
-
-
-def iClipboardStackItemsCount(count):
-    return QCoreApplication.translate(
-        'ClipboardManager',
-        '{} item(s) in the clipboard stack').format(count)
-
-
-def iCopyCIDToClipboard():
-    return QCoreApplication.translate(
-        'FileManagerForm',
-        "Copy CID to clipboard")
-
-
-def iCopiedToClipboard():
-    return QCoreApplication.translate(
-        'FileManagerForm',
-        'Copied to clipboard')
-
-
-def iCopyPathToClipboard():
-    return QCoreApplication.translate(
-        'FileManagerForm',
-        "Copy full path to clipboard")
-
-
-def iCopyPubGwUrlToClipboard():
-    return QCoreApplication.translate(
-        'FileManagerForm',
-        "Copy public gatewayed URL to clipboard (ipfs.io)")
-
-
-def iCopyToClipboard():
-    return QCoreApplication.translate(
-        'ClipboardManager',
-        'Copy to clipboard')
-
-
-def iClipboardNoValidAddress():
-    return QCoreApplication.translate(
-        'ClipboardManager',
-        'No valid address for this item')
-
-
-def iFromClipboard(path):
-    return QCoreApplication.translate(
-        'ClipboardManager',
-        'Clipboard: browse IPFS path: {0}').format(path)
-
-
-def iClipboardClearHistory():
-    return QCoreApplication.translate(
-        'ClipboardManager',
-        'Clear clipboard history')
-
-
-def iClipItemViewGraphAsTTL():
-    return QCoreApplication.translate('ClipboardManager',
-                                      'View graph as TTL (turtle)')
-
-
-def iClipItemExplore():
-    return QCoreApplication.translate('ClipboardManager',
-                                      'Explore directory')
-
-
-def iClipItemSubscribeToFeed():
-    return QCoreApplication.translate('ClipboardManager',
-                                      'Subscribe to Atom feed')
-
-
-def iClipItemHashmark():
-    return QCoreApplication.translate('ClipboardManager',
-                                      'Hashmark')
-
-
-def iClipItemPin():
-    return QCoreApplication.translate('ClipboardManager',
-                                      'Pin')
-
-
-def iClipItemDownload():
-    return QCoreApplication.translate('ClipboardManager',
-                                      'Download')
-
-
-def iClipItemIpldExplorer():
-    return QCoreApplication.translate('ClipboardManager',
-                                      'Run IPLD Explorer')
-
-
-def iClipItemMarkupRocks():
-    return QCoreApplication.translate('ClipboardManager',
-                                      'Open with Markdown editor')
-
-
-def iClipItemEditText():
-    return QCoreApplication.translate('ClipboardManager',
-                                      'Edit text file')
-
-
-def iClipItemIcapsulesRegInstall():
-    return QCoreApplication.translate('ClipboardManager',
-                                      'Install capsules registry')
-
-
-def iClipItemDagView():
-    return iDagView()
-
-
-def iClipboardHistory():
-    return QCoreApplication.translate('ClipboardManager', 'Clipboard history')
-
-
-def iClipItemBrowse():
-    return QCoreApplication.translate('ClipboardManager',
-                                      'Browse IPFS path')
-
-
-def iClipItemOpen():
-    return QCoreApplication.translate('ClipboardManager', 'Open')
-
-
-def iClipItemOpenWithApp():
-    return QCoreApplication.translate('ClipboardManager',
-                                      'Open with application')
-
-
-def iClipItemOpenWithDefaultApp():
-    return QCoreApplication.translate('ClipboardManager',
-                                      'Open with default system application')
-
-
-def iClipItemSetCurrent():
-    return QCoreApplication.translate('ClipboardManager',
-                                      'Set as current clipboard item')
-
-
-def iClipItemSetAsHome():
-    return QCoreApplication.translate('ClipboardManager',
-                                      'Set as homepage')
-
-
-def iClipItemRemove():
-    return QCoreApplication.translate('ClipboardManager',
-                                      'Remove item')
-
-
-def iClipItemSwitch(num):
-    return QCoreApplication.translate(
-        'ClipboardManager',
-        'Switch to item {} in the stack').format(num)
-
-
-def iClipboardStack():
-    return QCoreApplication.translate('ClipboardManager',
-                                      'Clipboard stack')
-
-
-def iClipStackQrEncrypted():
-    return QCoreApplication.translate(
-        'ClipboardManager',
-        'QR codes: encode clipboard stack to image (encrypted)')
-
-
-def iClipStackQrPublic():
-    return QCoreApplication.translate(
-        'ClipboardManager',
-        'QR codes: encode clipboard stack to image (clear)')
+from galacteek.i18n.clipboard import *
 
 
 class ClipboardManager(PopupToolButton):
@@ -494,6 +322,8 @@ class ClipboardItemButton(PopupToolButton):
     Represents a ClipboardItem in the clipboard stack
     """
 
+    customGwPathCopy = pyqtSignal(URL)
+
     def __init__(self, rscOpener, clipItem=None, parent=None):
         super().__init__(mode=QToolButton.InstantPopup, parent=parent)
 
@@ -604,6 +434,8 @@ class ClipboardItemButton(PopupToolButton):
 
         self.geoAnimation = QPropertyAnimation(self, b'geometry')
 
+        self.customGwPathCopy.connect(self.onCopyCustomGwPathToClipboard)
+
     @property
     def item(self):
         return self._item
@@ -642,6 +474,17 @@ class ClipboardItemButton(PopupToolButton):
 
     def onCopyGwPathToClipboard(self):
         self.app.setClipboardText(self.item.ipfsPath.publicGwUrl)
+
+    def onCopyCustomGwPathToClipboard(self, gateway: URL):
+        """
+        Copy the object URL accessible from a certain IPFS HTTP gateway
+
+        :param URL gateway: The URL of the gateway
+        """
+        if gateway:
+            self.app.setClipboardText(
+                str(self.item.ipfsPath.publicUrlForGateway(gateway))
+            )
 
     def onOpenWithProgram(self):
         self.openWithProgram()
@@ -792,6 +635,10 @@ class ClipboardItemButton(PopupToolButton):
         self.menu.addSeparator()
         self.menu.addAction(self.copyPathToCbAction)
         self.menu.addAction(self.copyGwPathToCbAction)
+        self.menu.addSeparator()
+
+        self.menu.addMenu(gatewaysMenu(self.customGwPathCopy,
+                                       parent=self.menu))
         self.menu.addSeparator()
 
         self.mfsMenu = ipfsop.ctx.currentProfile.createMfsMenu(

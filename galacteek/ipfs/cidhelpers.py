@@ -6,6 +6,7 @@ import aioipfs
 from rdflib import URIRef
 from urllib.parse import quote
 from urllib.parse import unquote
+from yarl import URL
 
 from PyQt5.QtCore import QUrl
 
@@ -591,6 +592,15 @@ class IPFSPath:
 
     def gwUrlForConnParams(self, params):
         return f'http://{params.host}:{params.gatewayPort}{self.fullPath}'
+
+    def publicUrlForGateway(self, gatewayUrl: URL) -> URL:
+        """
+        Return the URL of this object served from a specific IPFS
+        HTTP gateway.
+
+        :rtype: URL
+        """
+        return gatewayUrl.with_path(self.fullPath)
 
     @staticmethod
     def fromUriRef(uri: Union[URIRef, str]):
