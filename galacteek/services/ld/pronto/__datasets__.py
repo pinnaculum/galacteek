@@ -62,7 +62,7 @@ class ProntoDataSetsManagerMixin:
                     predicate=DATASET.revision
                 )
 
-                if lastRevision and thisRevision == lastRevision and 0:
+                if lastRevision and thisRevision == lastRevision:
                     log.debug(f'Dataset {opSubject}: same revision')
                     return False
 

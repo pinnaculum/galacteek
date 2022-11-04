@@ -13,6 +13,20 @@ def iIPTagLong():
         'GalacteekWindow', 'InterPlanetary tag')
 
 
+def iIPTagFetchingMeaning():
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Searching a description for this tag ...'
+    )
+
+
+def iIPTagFetchMeaningError(err: str):
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        'Error finding the meaning of the tag: {0}'
+    ).format(err)
+
+
 def iHashmarkIPTagsEdit():
     return QCoreApplication.translate(
         'GalacteekWindow', 'Edit hashmark IP tags')

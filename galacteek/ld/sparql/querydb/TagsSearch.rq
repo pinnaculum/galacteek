@@ -2,9 +2,13 @@ PREFIX gs: <ips://galacteek.ld/>
 PREFIX h: <ips://galacteek.ld/Hashmark#>
 PREFIX tag: <ips://galacteek.ld/Tag#>
 
+PREFIX dbo: <http://dbpedia.org/ontology/>
+
 SELECT DISTINCT ?uri ?tagName ?tagDisplayName
        ?tagPriority ?tagDateCreated
        ?tagShortDescription
+       ?tagAbstract
+       (GROUP_CONCAT(?meaningUrl; SEPARATOR=";") as ?meanings)
 WHERE {
   ?uri a gs:Tag .
   ?uri tag:name ?tagName .
@@ -16,6 +20,14 @@ WHERE {
 
   OPTIONAL {
     ?uri tag:priority ?tagPriority .
+  } .
+
+  OPTIONAL {
+    ?uri tag:hasMeaning ?meaningUrl .
+    OPTIONAL {
+      ?meaningUrl dbo:abstract ?tagAbstract .
+      FILTER (langMatches(lang(?tagAbstract), str(?langTag)))
+    } .
   } .
 
   OPTIONAL {

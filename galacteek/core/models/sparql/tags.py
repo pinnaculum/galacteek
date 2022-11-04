@@ -9,6 +9,8 @@ from . import SubjectUriRole
 TagNameRole = Qt.UserRole + 4
 TagDisplayNameRole = Qt.UserRole + 5
 TagWatchedRole = Qt.UserRole + 6
+TagMeaningUrlsRole = Qt.UserRole + 7
+TagAbstractRole = Qt.UserRole + 8
 
 
 class TagsSparQLModel(SparQLListModel):
@@ -64,9 +66,20 @@ class TagsSparQLModel(SparQLListModel):
                 var = item['tagDisplayName']
                 if var:
                     return str(var)
+            elif role == TagMeaningUrlsRole:
+                var = item.get('meanings')
+                if var:
+                    return str(var)
+                return ''
+            elif role == TagAbstractRole:
+                return str(item.get('tagAbstract', ''))
             elif role == SubjectUriRole:
                 return item['uri']
             elif role == Qt.ToolTipRole:
+                abstract = item.get('tagAbstract')
+                if abstract:
+                    return str(abstract)
+
                 return str(item['uri'])
             elif role == Qt.FontRole:
                 return QFont('Montserrat', 16)

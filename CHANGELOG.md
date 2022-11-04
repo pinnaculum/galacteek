@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (disabled by default)
 - An action in the clipboard item menu to copy the URL in the clipboard
   for a specific gateway.
+- Show the meaning of a tag (i18n resource abstract, live from dbpedia)
+  in the tags dialog
 
 ### Changed
 - Open up the ws toolbar when a QML dapp is loaded

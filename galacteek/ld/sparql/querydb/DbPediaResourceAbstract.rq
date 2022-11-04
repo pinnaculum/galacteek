@@ -1,0 +1,12 @@
+PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX dbr: <http://dbpedia.org/resource/>
+
+CONSTRUCT {
+  ?s dbo:abstract ?abstract .
+}
+WHERE {
+  ?s dbo:abstract ?abstract .
+
+  FILTER langMatches(lang(?abstract), "%s")
+  %s
+}

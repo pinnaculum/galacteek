@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>474</width>
-    <height>365</height>
+    <width>610</width>
+    <height>525</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -50,6 +50,31 @@
          <item>
           <widget class="QListView" name="allTagsView"/>
          </item>
+         <item>
+          <widget class="QLabel" name="tagAbstractLabel">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>100</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>300</width>
+             <height>100</height>
+            </size>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="textFormat">
+            <enum>Qt::RichText</enum>
+           </property>
+           <property name="wordWrap">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
         </layout>
        </item>
        <item>
@@ -72,6 +97,9 @@
            <property name="toolTip">
             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Untag the resource (remove selected tag from the list on the right side)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
+           <property name="styleSheet">
+            <string notr="true">background: white;</string>
+           </property>
            <property name="text">
             <string/>
            </property>
@@ -91,6 +119,9 @@
           <widget class="QPushButton" name="tagItButton">
            <property name="toolTip">
             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Tag the resource with the selected tag (from the tags database list on the left)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">background-color: white;</string>
            </property>
            <property name="text">
             <string/>

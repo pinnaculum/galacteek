@@ -1,6 +1,7 @@
-from PyQt5.QtCore import QStringListModel
 from rdflib import Literal
 from rdflib import URIRef
+
+from yarl import URL
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QDialog
@@ -12,6 +13,7 @@ from PyQt5.QtCore import QRegExp
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QUrl
 from PyQt5.QtCore import QSortFilterProxyModel
+from PyQt5.QtCore import QStringListModel
 
 from galacteek import ensure
 from galacteek import partialEnsure
@@ -22,6 +24,7 @@ from galacteek.config.cmods import app as cmod_app
 from galacteek.core.ipfsmarks import *
 
 from galacteek.core.models.sparql.tags import TagsSparQLModel
+from galacteek.core.models.sparql.tags import TagMeaningUrlsRole
 from galacteek.core.models.sparql import SubjectUriRole
 
 from galacteek.browser.schemes import isEnsUrl
@@ -35,6 +38,7 @@ from galacteek.appsettings import *
 
 from galacteek.ld.rdf import hashmarks as rdf_hashmarks
 from galacteek.ld.rdf import GraphURIRef
+from galacteek.ld.rdf import dbpedia
 
 from ..forms import ui_addhashmarkdialog
 from ..forms import ui_iptagsmanager
@@ -52,6 +56,9 @@ from ..i18n import iPinSingle
 from ..i18n import iPinRecursive
 from ..i18n import iNoTitleProvided
 from ..i18n import iHashmarkIPTagsEdit
+
+from ..i18n import iIPTagFetchingMeaning
+from ..i18n import iIPTagFetchMeaningError
 
 from ..i18n import iAddHashmark
 from ..i18n import iEditHashmark
@@ -87,6 +94,7 @@ class AddHashmarkDialog(QDialog):
         self.mimeType = None
         self.filesStat = None
 
+        self.iconWidget = None
         self.iconCid = None
         self.schemePreferred = schemePreferred
 
@@ -95,16 +103,9 @@ class AddHashmarkDialog(QDialog):
         self.ui.resourceLabel.setText(self.resourceUrl)
         self.ui.resourceLabel.setStyleSheet(boldLabelStyle())
         self.ui.resourceLabel.setToolTip(self.resourceUrl)
-        # self.ui.newCategory.textChanged.connect(self.onNewCatChanged)
         self.ui.title.setText(title)
 
         langTagComboBoxInit(self.ui.langtag, default=langTag)
-
-        # pix = QPixmap.fromImage(QImage(':/share/icons/hashmarks.png'))
-        # pix = pix.scaledToWidth(32)
-        # self.ui.hashmarksIconLabel.setPixmap(pix)
-
-        self.iconWidget = None
 
         self.ui.pinCombo.addItem(iDoNotPin())
         self.ui.pinCombo.addItem(iPinSingle())
@@ -140,8 +141,6 @@ class AddHashmarkDialog(QDialog):
                                      self.imageSelector)
 
         regexp1 = QRegExp(r"[A-Za-z0-9/\-]+")  # noqa
-        # self.ui.newCategory.setValidator(QRegExpValidator(regexp1))
-        # self.ui.newCategory.setMaxLength(64)
 
         if pin is True:
             self.ui.pinCombo.setCurrentIndex(1)
@@ -315,7 +314,6 @@ class AddHashmarkDialog(QDialog):
         ensure(self.process())
 
     async def process(self):
-        # storageFormatIdx = self.ui.storageFormat.currentIndex()
         title = self.ui.title.text()
 
         if len(title) == 0:
@@ -370,6 +368,7 @@ class HashmarkIPTagsDialog(QDialog):
             parent=None):
         super(HashmarkIPTagsDialog, self).__init__(parent)
 
+        self._tasks = []
         self.app = QApplication.instance()
         self.hashmarkUri = hashmarkUri
         self.graphUri = graphUri
@@ -395,11 +394,13 @@ class HashmarkIPTagsDialog(QDialog):
         self.ui = ui_iptagsmanager.Ui_IPTagsDialog()
         self.ui.setupUi(self)
 
+        self.ui.tagAbstractLabel.setVisible(False)
         self.ui.destTagsView.setModel(self.destTagsModel)
         self.ui.destTagsView.setEditTriggers(
             QAbstractItemView.NoEditTriggers
         )
         self.ui.allTagsView.setModel(self.allTagsModel)
+        self.ui.allTagsView.clicked.connect(self.onTagClicked)
         self.ui.allTagsView.doubleClicked.connect(
             self.onTagDoubleClicked
         )
@@ -425,6 +426,75 @@ class HashmarkIPTagsDialog(QDialog):
         self.allTagsProxyModel.setFilterRegExp(text)
         self.ui.allTagsView.clearSelection()
 
+    def setTagAbstract(self, tagAbstract: str):
+        self.ui.tagAbstractLabel.setText(tagAbstract)
+        self.ui.tagAbstractLabel.setToolTip(tagAbstract)
+        self.ui.tagAbstractLabel.setVisible(True)
+
+    def onTagClicked(self, idx):
+        if self._tasks:
+            [t.cancel() for t in self._tasks]
+
+            self._tasks.clear()
+
+        self._tasks.append(ensure(self.tagMeaningTask(idx)))
+
+    async def tagMeaningTask(self, idx):
+        """
+        A Tag was clicked. Get the meaning of the tag (the tag abstract),
+        store it, and show the meaning in the dialog.
+        """
+
+        self.setTagAbstract(iIPTagFetchingMeaning())
+
+        def getAbstract(g, url: URL):
+            return g.value(
+                subject=URIRef(str(url)),
+                predicate=URIRef('http://dbpedia.org/ontology/abstract')
+            )
+
+        def dbpediaMeaningUrls():
+            """
+            Return tag meaning URLs that point to dbpedia resources
+            """
+
+            for url in [URL(u) for u in self.allTagsModel.data(
+                idx,
+                TagMeaningUrlsRole
+            ).split(';')]:
+                if url.host == 'dbpedia.org':
+                    if url.scheme != 'http':
+                        url = url.with_scheme('http')
+
+                    yield url
+
+        for url in dbpediaMeaningUrls():
+            tagAbstract = getAbstract(self.allTagsModel.graph, url)
+
+            if tagAbstract:
+                self.setTagAbstract(tagAbstract)
+                return
+
+            try:
+                graph = await dbpedia.requestGraph(
+                    'DbPediaResourceAbstract',
+                    cmod_app.defaultContentLangTag(),
+                    f'FILTER (?s = <{url}>)'
+                )
+                assert graph is not None
+            except Exception as err:
+                self.ui.tagAbstractLabel.setText(
+                    iIPTagFetchMeaningError(err))
+            else:
+                tagAbstract = getAbstract(graph, url)
+
+                if tagAbstract:
+                    # Add the abstract triples
+                    for s, p, o in graph:
+                        self.allTagsModel.graph.add((s, p, o))
+
+                    self.setTagAbstract(tagAbstract)
+
     def onTagDoubleClicked(self, idx):
         ensure(self.tagObject([idx]))
 
@@ -448,7 +518,7 @@ class HashmarkIPTagsDialog(QDialog):
         except Exception:
             pass
 
-        self.destTagsModel.update()
+        await self.refreshModels()
 
     async def tagObject(self, indexes=None):
         indexes = indexes if indexes else self.ui.allTagsView.selectedIndexes()
@@ -469,7 +539,6 @@ class HashmarkIPTagsDialog(QDialog):
         await self.refreshModels()
 
     async def refreshModels(self):
-        self.allTagsModel.update()
         self.destTagsModel.update()
 
     async def initDialog(self):
@@ -582,7 +651,7 @@ class IPTagsSelectDialog(QDialog):
                 )
 
     async def refreshModels(self):
-        self.allTagsModel.update()
+        pass
 
     async def initDialog(self):
         await self.refreshModels()
