@@ -15,6 +15,8 @@ from PyQt5.QtCore import QUrl
 from PyQt5.QtCore import QSortFilterProxyModel
 from PyQt5.QtCore import QStringListModel
 
+from PyQt5.QtGui import QRegExpValidator
+
 from galacteek import ensure
 from galacteek import partialEnsure
 from galacteek import services
@@ -71,6 +73,9 @@ from ..i18n import trTodo
 
 def boldLabelStyle():
     return 'QLabel { font-weight: bold; }'
+
+
+reTagName = QRegExp(r"[\w\-\_\s]{1,64}")
 
 
 class AddHashmarkDialog(QDialog):
@@ -139,8 +144,6 @@ class AddHashmarkDialog(QDialog):
 
         self.ui.formLayout.insertRow(8, QLabel('Thumbnail'),
                                      self.imageSelector)
-
-        regexp1 = QRegExp(r"[A-Za-z0-9/\-]+")  # noqa
 
         if pin is True:
             self.ui.pinCombo.setCurrentIndex(1)
@@ -377,8 +380,6 @@ class HashmarkIPTagsDialog(QDialog):
 
         self.destTags = []
 
-        self.allTagsModel = self.pronto.allTagsModel
-
         self.destTagsModel = TagsSparQLModel(
             graphUri='urn:ipg:i:love:hashmarks',
             rq='HashmarkTags',
@@ -388,8 +389,9 @@ class HashmarkIPTagsDialog(QDialog):
             }
         )
 
-        self.allTagsProxyModel = QSortFilterProxyModel(self)
-        self.allTagsProxyModel.setSourceModel(self.allTagsModel)
+        self.allTagsModel = QSortFilterProxyModel(self)
+        self.allTagsModel.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        self.allTagsModel.setSourceModel(self.pronto.allTagsModel)
 
         self.ui = ui_iptagsmanager.Ui_IPTagsDialog()
         self.ui.setupUi(self)
@@ -405,11 +407,13 @@ class HashmarkIPTagsDialog(QDialog):
             self.onTagDoubleClicked
         )
 
+        self.ui.tagSearchLine.textEdited.connect(self.onTagSearch)
+        self.ui.tagSearchLine.setValidator(QRegExpValidator(reTagName))
+
         self.ui.createTagButton.clicked.connect(self.onCreateTag)
 
         self.ui.tagItButton.clicked.connect(self.onTagObject)
         self.ui.untagItButton.clicked.connect(partialEnsure(self.untagObject))
-        # self.ui.okButton.clicked.connect(lambda: ensure(self.validate()))
         self.ui.okButton.clicked.connect(partialEnsure(self.validate))
         self.ui.noTagsButton.clicked.connect(self.reject)
 
@@ -422,13 +426,30 @@ class HashmarkIPTagsDialog(QDialog):
     def pronto(self):
         return services.getByDotName('ld.pronto')
 
-    def onTagEditChanged(self, text):
-        self.allTagsProxyModel.setFilterRegExp(text)
+    @property
+    def tagSearchText(self):
+        return self.ui.tagSearchLine.text()
+
+    @property
+    def sourceModel(self):
+        return self.allTagsModel.sourceModel()
+
+    def onTagSearch(self, tagName: str):
+        """
+        Called when the tag search line is edited by the user.
+        Set the filter regexp on the tags proxy model.
+        """
+
+        self.allTagsModel.setFilterRegExp(tagName)
         self.ui.allTagsView.clearSelection()
 
     def setTagAbstract(self, tagAbstract: str):
         self.ui.tagAbstractLabel.setText(tagAbstract)
-        self.ui.tagAbstractLabel.setToolTip(tagAbstract)
+
+        self.ui.tagAbstractLabel.setToolTip(
+            self.sourceModel.abstractSummarize(tagAbstract, 20)
+        )
+
         self.ui.tagAbstractLabel.setVisible(True)
 
     def onTagClicked(self, idx):
@@ -442,10 +463,15 @@ class HashmarkIPTagsDialog(QDialog):
     async def tagMeaningTask(self, idx):
         """
         A Tag was clicked. Get the meaning of the tag (the tag abstract),
-        store it, and show the meaning in the dialog.
+        store it, and show the abstract in the dialog.
         """
 
-        self.setTagAbstract(iIPTagFetchingMeaning())
+        uri = self.allTagsModel.data(
+            idx,
+            SubjectUriRole
+        )
+
+        self.setTagAbstract(iIPTagFetchingMeaning(uri))
 
         def getAbstract(g, url: URL):
             return g.value(
@@ -469,7 +495,7 @@ class HashmarkIPTagsDialog(QDialog):
                     yield url
 
         for url in dbpediaMeaningUrls():
-            tagAbstract = getAbstract(self.allTagsModel.graph, url)
+            tagAbstract = getAbstract(self.sourceModel.graph, url)
 
             if tagAbstract:
                 self.setTagAbstract(tagAbstract)
@@ -491,7 +517,7 @@ class HashmarkIPTagsDialog(QDialog):
                 if tagAbstract:
                     # Add the abstract triples
                     for s, p, o in graph:
-                        self.allTagsModel.graph.add((s, p, o))
+                        self.sourceModel.graph.add((s, p, o))
 
                     self.setTagAbstract(tagAbstract)
 
@@ -545,7 +571,7 @@ class HashmarkIPTagsDialog(QDialog):
         await self.refreshModels()
 
     async def createTagDialog(self):
-        dlg = CreateTagDialog()
+        dlg = CreateTagDialog(name=self.tagSearchText)
         await runDialogAsync(dlg)
 
         if dlg.result() == 0:
@@ -555,14 +581,6 @@ class HashmarkIPTagsDialog(QDialog):
 
     def onCreateTag(self):
         ensure(self.createTagDialog())
-
-    async def updateAllTags(self):
-        result = list(await rdf_hashmarks.tagsSearch())
-        tags = [str(row['tag']) for row in result]
-
-        self.allTagsModel.setStringList(tags)
-        self.ui.allTagsView.setModel(self.allTagsProxyModel)
-        self.allTagsProxyModel.sort(0)
 
     async def validate(self, *args):
         self.done(1)
@@ -610,10 +628,6 @@ class IPTagsSelectDialog(QDialog):
     @property
     def selectedTagsList(self):
         return self.destTagsModel.stringList()
-
-    def onTagEditChanged(self, text):
-        self.allTagsProxyModel.setFilterRegExp(text)
-        self.ui.allTagsView.clearSelection()
 
     def onTagDoubleClicked(self, idx):
         ensure(self.tagObject([idx]))

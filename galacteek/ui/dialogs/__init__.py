@@ -1297,6 +1297,12 @@ class DefaultProgressDialog(QWidget):
         self.retryButton.hide()
         self.retryButton.clicked.connect(partialEnsure(self.sWantRetry.emit))
 
+        self.changeSettingsButton = QPushButton('Change settings')
+        self.changeSettingsButton.setEnabled(True)
+        self.changeSettingsButton.hide()
+        self.changeSettingsButton.clicked.connect(
+            partialEnsure(self.sWantRetry.emit))
+
         self.status = QLabel()
         self.status.setObjectName('statusProgressLabel')
         self.status.setAlignment(Qt.AlignCenter)
@@ -1321,6 +1327,7 @@ class DefaultProgressDialog(QWidget):
         self.vl.addWidget(self.statusExtra, 0, Qt.AlignCenter)
         self.vl.addWidget(self.pBar, 0, Qt.AlignCenter)
         self.vl.addWidget(self.retryButton, 0, Qt.AlignCenter)
+        self.vl.addWidget(self.changeSettingsButton, 0, Qt.AlignCenter)
         self.vl.addItem(
             QSpacerItem(10, 50, QSizePolicy.Expanding, QSizePolicy.Expanding))
         self.showProgress(False)
@@ -1359,11 +1366,15 @@ class DefaultProgressDialog(QWidget):
         self.statusExtra.setText(text)
         self.statusExtra.setVisible(True)
 
+    def showChangeSettings(self, visible=True):
+        self.changeSettingsButton.setVisible(visible)
+
     def showRetry(self, visible=True):
         self.retryButton.setVisible(visible)
 
     def showProgress(self, show=True):
         self.pBar.setVisible(show)
+        self.changeSettingsButton.setEnabled(not show)
 
     def progress(self, p: int):
         self.pBar.setValue(p)
@@ -1401,7 +1412,6 @@ class IPFSDaemonInitDialog(QDialog):
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.onTimerOut)
-        # self.timer.start(1000)
 
         self.ui = ui_ipfsdaemoninitdialog.Ui_IPFSDaemonInitDialog()
         self.ui.setupUi(self)

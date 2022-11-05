@@ -17,7 +17,7 @@ from ..forms import ui_createtagdialog
 class CreateTagDialog(BaseDialog):
     uiClass = ui_createtagdialog.Ui_CreateTagDialog
 
-    def __init__(self, parent=None):
+    def __init__(self, name: str = None, parent=None):
         super().__init__(parent=parent)
 
         self.ui.buttonBox.accepted.connect(self.accept)
@@ -30,6 +30,10 @@ class CreateTagDialog(BaseDialog):
             QRegExpValidator(QRegExp(r'[\w-_:]{1,64}'))
         )
         self.ui.tagUriName.setFocus(Qt.OtherFocusReason)
+
+        if isinstance(name, str):
+            self.ui.tagUriName.setText(name)
+            self.ui.displayName.setFocus(Qt.OtherFocusReason)
 
         self.ui.setTagPriority.setChecked(False)
 

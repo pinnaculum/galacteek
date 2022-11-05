@@ -48,6 +48,9 @@ class TagsSparQLModel(SparQLListModel):
                 role=TagDisplayNameRole
             )
 
+    def abstractSummarize(self, abstract: str, lines: int = 10):
+        return '\n'.join(abstract.split('.')[0:lines])
+
     def data(self, index, role=None):
         try:
             item = self.resultGet(index)
@@ -78,11 +81,11 @@ class TagsSparQLModel(SparQLListModel):
             elif role == Qt.ToolTipRole:
                 abstract = item.get('tagAbstract')
                 if abstract:
-                    return str(abstract)
+                    return self.abstractSummarize(str(abstract))
 
                 return str(item['uri'])
             elif role == Qt.FontRole:
-                return QFont('Montserrat', 16)
+                return QFont('Montserrat', 14)
         except Exception:
             return QVariant(None)
 
@@ -130,7 +133,7 @@ class TagInfosSparQLModel(SparQLListModel):
             elif role == Qt.ToolTipRole:
                 return str(item['uri'])
             elif role == Qt.FontRole:
-                return QFont('Montserrat', 18)
+                return QFont('Montserrat', 14)
             else:
                 return super().data(index, role)
         except Exception:

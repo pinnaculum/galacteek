@@ -45,6 +45,13 @@ def iIpfsDaemonResumed():
     )
 
 
+def iIpfsDaemonTakingAWhile(remainSecs: int):
+    return QCoreApplication.translate(
+        'Galacteek',
+        'Check the ports config! (reconfigure in {0} secs)'
+    ).format(remainSecs)
+
+
 def iIpfsDaemonGwStarted():
     return QCoreApplication.translate('Galacteek',
                                       "IPFS daemon's gateway started")

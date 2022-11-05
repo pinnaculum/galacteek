@@ -8,6 +8,10 @@ class ConnectionError(Exception):
     pass
 
 
+class DaemonStartError(Exception):
+    pass
+
+
 def kilobytes(kb):
     return (1024 * kb)
 

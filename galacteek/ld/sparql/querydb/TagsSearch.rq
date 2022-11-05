@@ -43,4 +43,4 @@ WHERE {
 }
 
 GROUP BY ?uri
-ORDER BY ASC(?uri)
+ORDER BY ASC(?tagDisplayName)

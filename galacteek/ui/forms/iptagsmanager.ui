@@ -17,6 +17,13 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
+      <widget class="QLineEdit" name="tagSearchLine">
+       <property name="placeholderText">
+        <string>Type a tag name to search for ...</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="createTagButton">
        <property name="maximumSize">
         <size>
@@ -98,7 +105,12 @@
             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Untag the resource (remove selected tag from the list on the right side)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="styleSheet">
-            <string notr="true">background: white;</string>
+            <string notr="true">QPushButton {
+background: white;
+}
+QPushButton:hover {
+background: lightsteelblue;
+}</string>
            </property>
            <property name="text">
             <string/>

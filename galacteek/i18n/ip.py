@@ -13,11 +13,11 @@ def iIPTagLong():
         'GalacteekWindow', 'InterPlanetary tag')
 
 
-def iIPTagFetchingMeaning():
+def iIPTagFetchingMeaning(name: str):
     return QCoreApplication.translate(
         'GalacteekWindow',
-        'Searching a description for this tag ...'
-    )
+        'Searching a description for <b>{0}</b> ...'
+    ).format(name)
 
 
 def iIPTagFetchMeaningError(err: str):
