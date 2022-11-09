@@ -1,3 +1,5 @@
+from rdflib import URIRef
+
 from PyQt5.QtCore import QRegExp
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QUrl
@@ -50,7 +52,7 @@ class CreateTagDialog(BaseDialog):
         if uriName.startswith('it:'):
             uriName = uriName.replace('it:', '')
 
-        return f'it:{uriName}'
+        return URIRef(f'it:{uriName}')
 
     @property
     def prioritySpecified(self):

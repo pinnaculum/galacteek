@@ -1,0 +1,22 @@
+PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX dbr: <http://dbpedia.org/resource/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+CONSTRUCT {
+  ?uri rdfs:label ?label .
+  ?uri rdfs:label ?labelEn .
+  ?uri dbo:abstract ?abstract .
+}
+WHERE {
+  ?uri dbo:abstract ?abstract .
+  ?uri rdfs:label ?label .
+
+  ?uri rdfs:label ?labelEn .
+  FILTER langMatches(lang(?labelEn), "en")
+
+  FILTER langMatches(lang(?label), "%s")
+  FILTER langMatches(lang(?abstract), "%s")
+  FILTER (contains(lcase(str(?label)), "%s"))
+}
+
+LIMIT 30

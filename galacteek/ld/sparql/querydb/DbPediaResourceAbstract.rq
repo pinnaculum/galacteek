@@ -8,5 +8,5 @@ WHERE {
   ?s dbo:abstract ?abstract .
 
   FILTER langMatches(lang(?abstract), "%s")
-  %s
+  FILTER (?s = <%s>)
 }

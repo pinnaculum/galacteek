@@ -14,7 +14,7 @@ RequestExecutionLevel admin
 
 !define VERSIONMAJOR 0
 !define VERSIONMINOR 6
-!define VERSIONBUILD 0
+!define VERSIONBUILD 1
 
 Name "${APPNAME}"
 Icon "share/icons/galacteek.ico"

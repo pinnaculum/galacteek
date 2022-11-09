@@ -17,11 +17,58 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
-      <widget class="QLineEdit" name="tagSearchLine">
-       <property name="placeholderText">
-        <string>Type a tag name to search for ...</string>
-       </property>
-      </widget>
+      <layout class="QHBoxLayout" name="hLayoutLdSearch">
+       <item>
+        <widget class="QComboBox" name="dbSource">
+         <property name="maximumSize">
+          <size>
+           <width>92</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Select the knowledge graph platform to use when searching tags (dbpedia or wikidata).&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>32</width>
+           <height>32</height>
+          </size>
+         </property>
+         <item>
+          <property name="text">
+           <string extracomment="wikidata">wikidata</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../galacteek.qrc">
+            <normaloff>:/share/icons/linked-data/wikidata.png</normaloff>:/share/icons/linked-data/wikidata.png</iconset>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>dbpedia</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../galacteek.qrc">
+            <normaloff>:/share/icons/linked-data/dbpedia.png</normaloff>:/share/icons/linked-data/dbpedia.png</iconset>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="searchLanguage">
+         <property name="maximumSize">
+          <size>
+           <width>120</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Language to run tag search queries for&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </item>
      <item>
       <widget class="QPushButton" name="createTagButton">
@@ -36,6 +83,17 @@
        </property>
        <property name="text">
         <string>Create a new tag</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_4">
+     <item alignment="Qt::AlignHCenter">
+      <widget class="QLabel" name="searchStatusLabel">
+       <property name="text">
+        <string/>
        </property>
       </widget>
      </item>

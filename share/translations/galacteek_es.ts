@@ -945,22 +945,22 @@ Path: {0}, nodes processed: {1}</source>
 <context>
     <name>IPTagsDialog</name>
     <message>
-        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="53"/>
+        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="111"/>
         <source>All tags</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="186"/>
+        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="249"/>
         <source>No tags, thanks</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="193"/>
+        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="256"/>
         <source>OK</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="38"/>
+        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="85"/>
         <source>Create a new tag</source>
         <translation type="unfinished"></translation>
     </message>
@@ -970,18 +970,33 @@ Path: {0}, nodes processed: {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="105"/>
+        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="163"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Untag the resource (remove selected tag from the list on the right side)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="128"/>
+        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="191"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Tag the resource with the selected tag (from the tags database list on the left)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="22"/>
-        <source>Type a tag name to search for ...</source>
+        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="30"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Select the knowledge graph platform to use when searching tags (dbpedia or wikidata).&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="40"/>
+        <source>wikidata</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="49"/>
+        <source>dbpedia</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../galacteek/ui/forms/iptagsmanager.ui" line="67"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Language to run tag search queries for&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

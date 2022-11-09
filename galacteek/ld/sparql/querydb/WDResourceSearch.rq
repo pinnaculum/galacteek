@@ -1,0 +1,47 @@
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX schema: <http://schema.org/>
+
+SELECT DISTINCT ?label ?labelEn ?uri ?desc
+{ 
+  VALUES ?classes {
+    wd:Q5 # Person
+    wd:Q515 # City
+    wd:Q1549591 # Big city
+    wd:Q6256 # Country
+    wd:Q82794 # geographic region
+    wd:Q9430 # Ocean
+    wd:Q8502 # mountain
+    wd:Q46831 # mountain range
+    wd:Q571 # Book
+    wd:Q756 # Plant
+    wd:Q11004 # Vegetable
+    wd:Q12280 # Bridge ^_^
+    wd:Q112193867 # class of disease
+    wd:Q7366 # Song
+    wd:Q215380 # Musical group
+    wd:Q132364 # communication protocol
+    wd:Q15836568 # computer network protocol
+    wd:Q11016 # technology
+    wd:Q1076579 # act of parliament
+    wd:Q1047113 # specialty/field
+    wd:Q6957341 # major religion
+    wd:Q336 # science
+    wd:Q28640 # profession
+    wd:Q634 # planet
+  }
+
+  ?uri wdt:P31/wdt:P279 ?classes .
+
+  ?uri rdfs:label ?label .
+  ?uri schema:description ?desc .
+
+  ?uri rdfs:label ?labelEn .
+  FILTER(LANG(?labelEn) = "en")
+
+  FILTER(LANG(?label) = "%s")
+  FILTER(LANG(?desc) = "%s")
+  FILTER(CONTAINS(lcase(str(?label)), "%s"))
+}
+LIMIT 50

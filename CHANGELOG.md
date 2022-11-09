@@ -5,6 +5,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2022-11-06
+
+### Added
+- LDSearcher widget: linked-data searcher
+- Tags dialog: make it possible to add new tags by querying wikidata or dbpedia
+
+### Fixed
+- Catch/silence asyncio.CancelledError in dbpedia CONSTRUCT tasks
+
 ## [0.6.0] - 2022-10-20
 
 ### Added

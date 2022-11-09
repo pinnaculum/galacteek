@@ -1,0 +1,12 @@
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX schema: <http://schema.org/>
+
+CONSTRUCT {
+  ?s schema:description ?desc .
+}
+WHERE {
+  ?s schema:description ?desc .
+
+  FILTER(LANG(?desc) = "%s")
+  FILTER (?s = <%s>)
+}

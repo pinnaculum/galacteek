@@ -14,6 +14,7 @@ from galacteek import services
 from galacteek.core.models import AbstractModel
 from galacteek.core.models import BaseAbstractItem
 from galacteek.ld.sparql import querydb
+
 from galacteek.ld.rdf.watch import GraphActivityListener
 from galacteek.dweb.channels import GAsyncObject
 

@@ -29,6 +29,9 @@ envs:
             scrollBarExtent: 32
 
     notifications:
+      tagSearchSuccess:
+        sound: apert
+
       luckySearch:
         sound: space2
 

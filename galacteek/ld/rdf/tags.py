@@ -1,7 +1,9 @@
+import re
 from typing import Union
 
 from rdflib import Literal
 from rdflib import URIRef
+from rdflib import RDF
 
 from galacteek import services
 from galacteek.core import utcDatetimeIso
@@ -15,6 +17,22 @@ TOP_TAGS_GRAPH_URI = 'urn:ipg:i:love:itags'
 def getGraph(graphUri: str):
     pronto = services.getByDotName('ld.pronto')
     return pronto.graphByUri(graphUri)
+
+
+def tagUriFromComponents(comps: list) -> URIRef:
+    return URIRef('it:' + ':'.join(comps[0:128]))
+
+
+def tagUriFromLabel(label: str) -> URIRef:
+    """
+    Create a it: tag URI from an RDF (@en) label
+    """
+    try:
+        return tagUriFromComponents(
+            re.split(r'[^\w\-]{1,256}',
+                     label))
+    except Exception:
+        return None
 
 
 async def tagsSearch(tagName: str = None,
@@ -49,7 +67,16 @@ async def tagCreate(tagUri: Union[str, URIRef],
     :param bool watch: Watch this tag (tag preferences manager)
     :rtype: bool
     """
+
     graph = getGraph(graphUri)
+
+    stype = graph.value(
+        subject=tagUri,
+        predicate=RDF.type
+    )
+
+    if stype:
+        return False
 
     tag = {
         '@type': 'Tag',

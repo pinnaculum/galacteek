@@ -278,6 +278,8 @@
   <qresource>
     <file>../../share/icons/linked-data/chain-link.png</file>
     <file>../../share/icons/linked-data/peers-linked.png</file>
+    <file>../../share/icons/linked-data/wikidata.png</file>
+    <file>../../share/icons/linked-data/dbpedia.png</file>
   </qresource>
 
   <qresource>

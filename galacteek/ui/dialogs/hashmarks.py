@@ -1,3 +1,5 @@
+import asyncio
+
 from rdflib import Literal
 from rdflib import URIRef
 
@@ -11,6 +13,7 @@ from PyQt5.QtWidgets import QAbstractItemView
 
 from PyQt5.QtCore import QRegExp
 from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QTimer
 from PyQt5.QtCore import QUrl
 from PyQt5.QtCore import QSortFilterProxyModel
 from PyQt5.QtCore import QStringListModel
@@ -29,6 +32,11 @@ from galacteek.core.models.sparql.tags import TagsSparQLModel
 from galacteek.core.models.sparql.tags import TagMeaningUrlsRole
 from galacteek.core.models.sparql import SubjectUriRole
 
+from galacteek.core.models.sparql.kg import kgConstructModel
+
+from galacteek.core.models.sparql.kg import RdfLabelRole
+from galacteek.core.models.sparql.kg import RdfEnglishLabelRole
+
 from galacteek.browser.schemes import isEnsUrl
 from galacteek.browser.schemes import isHttpUrl
 from galacteek.browser.schemes import isGeminiUrl
@@ -39,6 +47,7 @@ from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.appsettings import *
 
 from galacteek.ld.rdf import hashmarks as rdf_hashmarks
+from galacteek.ld.rdf import tags as rdf_tags
 from galacteek.ld.rdf import GraphURIRef
 from galacteek.ld.rdf import dbpedia
 
@@ -48,10 +57,15 @@ from ..forms import ui_iptagsmanager
 from .tags import CreateTagDialog
 
 from ..helpers import *
+from ..notify import uiNotify
 from ..widgets import ImageWidget
 from ..widgets import IconSelector
 from ..widgets import ImageSelector
 from ..widgets import OutputGraphSelectorWidget
+from ..widgets import AnimatedLabel
+from ..widgets.ld import LDSearcher
+
+from ..clips import RotatingCubeClipSimple
 
 from ..i18n import iDoNotPin
 from ..i18n import iPinSingle
@@ -61,6 +75,7 @@ from ..i18n import iHashmarkIPTagsEdit
 
 from ..i18n import iIPTagFetchingMeaning
 from ..i18n import iIPTagFetchMeaningError
+from ..i18n import iIPTagInvalid
 
 from ..i18n import iAddHashmark
 from ..i18n import iEditHashmark
@@ -69,6 +84,14 @@ from ..i18n import iPublicHashmarks
 from ..i18n import iPrivateHashmarks
 from ..i18n import iHashmarksSearchRoom
 from ..i18n import trTodo
+
+from ..i18n import iKgSearchForTags
+from ..i18n import iKgSearching
+from ..i18n import iKgSearchNoResultsFor
+from ..i18n import iKgSearchBePatient0
+from ..i18n import iKgSearchBePatient1
+from ..i18n import iKgSearchBePatient2
+from ..i18n import iKgSearchBePatient3
 
 
 def boldLabelStyle():
@@ -372,9 +395,15 @@ class HashmarkIPTagsDialog(QDialog):
         super(HashmarkIPTagsDialog, self).__init__(parent)
 
         self._tasks = []
+        self._ldstasks = []
+        self._tagSearchTextLast = None
+
         self.app = QApplication.instance()
         self.hashmarkUri = hashmarkUri
         self.graphUri = graphUri
+
+        self.ui = ui_iptagsmanager.Ui_IPTagsDialog()
+        self.ui.setupUi(self)
 
         self.setWindowTitle(iHashmarkIPTagsEdit())
 
@@ -393,8 +422,28 @@ class HashmarkIPTagsDialog(QDialog):
         self.allTagsModel.setFilterCaseSensitivity(Qt.CaseInsensitive)
         self.allTagsModel.setSourceModel(self.pronto.allTagsModel)
 
-        self.ui = ui_iptagsmanager.Ui_IPTagsDialog()
-        self.ui.setupUi(self)
+        self.statusLabel = AnimatedLabel(RotatingCubeClipSimple())
+        self.statusLabel.clip.setScaledSize(QSize(32, 32))
+
+        langTagComboBoxInit(self.ui.searchLanguage)
+        self.ui.searchLanguage.currentTextChanged.connect(
+            self.onChangeSearchLanguage
+        )
+
+        self.ldSearcher = LDSearcher(parent=self)
+        self.ldSearcher.setPlaceholderText(
+            iKgSearchForTags(self.contentLangTag))
+        self.ldSearcher.textChanged.connect(self.onLdSearchChanged)
+        self.ldSearcher.textEdited.connect(self.onLdSearchEdit)
+        self.ldSearcher.resultActivated.connect(self.onLdResultActivated)
+        self.ldSearcher.setValidator(QRegExpValidator(reTagName))
+
+        self.editTimer = QTimer(self)
+        self.editTimer.setSingleShot(True)
+        self.editTimer.timeout.connect(partialEnsure(self.ldSearchTag))
+
+        self.ui.hLayoutLdSearch.addWidget(self.statusLabel)
+        self.ui.hLayoutLdSearch.addWidget(self.ldSearcher)
 
         self.ui.tagAbstractLabel.setVisible(False)
         self.ui.destTagsView.setModel(self.destTagsModel)
@@ -407,9 +456,6 @@ class HashmarkIPTagsDialog(QDialog):
             self.onTagDoubleClicked
         )
 
-        self.ui.tagSearchLine.textEdited.connect(self.onTagSearch)
-        self.ui.tagSearchLine.setValidator(QRegExpValidator(reTagName))
-
         self.ui.createTagButton.clicked.connect(self.onCreateTag)
 
         self.ui.tagItButton.clicked.connect(self.onTagObject)
@@ -418,9 +464,11 @@ class HashmarkIPTagsDialog(QDialog):
         self.ui.noTagsButton.clicked.connect(self.reject)
 
         self.setMinimumSize(
-            self.app.desktopGeometry.width() / 2,
-            (2 * self.app.desktopGeometry.height()) / 3
+            self.app.desktopGeometry.width() * 0.7,
+            self.app.desktopGeometry.height() * 0.6,
         )
+
+        self.ldSearcher.setFocus(Qt.OtherFocusReason)
 
     @property
     def pronto(self):
@@ -428,20 +476,193 @@ class HashmarkIPTagsDialog(QDialog):
 
     @property
     def tagSearchText(self):
-        return self.ui.tagSearchLine.text()
+        return self.ldSearcher.text()
+
+    @property
+    def tagSearchTextLast(self):
+        return self._tagSearchTextLast
 
     @property
     def sourceModel(self):
         return self.allTagsModel.sourceModel()
 
-    def onTagSearch(self, tagName: str):
+    @property
+    def contentLangTag(self):
+        # return cmod_app.defaultContentLangTag()
+        return langTagComboBoxGetTag(self.ui.searchLanguage)
+
+    @property
+    def dbSource(self):
+        # return self.ui.dbSource.currentText()
+
+        if self.ui.dbSource.currentIndex() == 0:
+            return 'wikidata'
+        elif self.ui.dbSource.currentIndex() == 1:
+            return 'dbpedia'
+
+    def cancelTasks(self):
+        [t.cancel() for t in self._tasks + self._ldstasks]
+        self._tasks.clear()
+        self._ldstasks.clear()
+
+    def cancelLdSearchTasks(self):
+        [t.cancel() for t in self._ldstasks]
+        self._ldstasks.clear()
+
+    def onChangeSearchLanguage(self, langText: str):
+        self.ldSearcher.setPlaceholderText(
+            iKgSearchForTags(langText))
+
+    def onLdResultActivated(self, idx):
+        # RDF Label for the user's language
+        label = self.ldSearcher.model.data(idx, RdfLabelRole)
+
+        # XXX: get the English label
+        labelEn = self.ldSearcher.model.data(idx, RdfEnglishLabelRole)
+
+        def created(future):
+            try:
+                name = future.result()
+                assert isinstance(name, str)
+                self.ldSearcher.setText(name)
+            except AssertionError:
+                pass
+            except Exception:
+                pass
+
+        if label and labelEn:
+            f = ensure(self.createTagFromKgUri(
+                self.contentLangTag,
+                label,
+                labelEn,
+                URIRef(self.ldSearcher.model.data(idx, SubjectUriRole)))
+            )
+            f.add_done_callback(created)
+
+    async def createTagFromKgUri(self,
+                                 lang: str,
+                                 label: str,
+                                 labelEn: str,
+                                 rscuri: URIRef) -> str:
+        """
+        Create a tag from a knowledge graph resource URI
+        """
+
+        # XXX: **always** use the English RDF label when we create the URI
+        tagUri = rdf_tags.tagUriFromLabel(labelEn)
+        if not tagUri:
+            return await messageBoxAsync(iIPTagInvalid())
+
+        await rdf_tags.tagCreate(
+            tagUri,
+            tagNames={
+                'en': label
+            },
+            tagDisplayNames={
+                'en': labelEn,
+                lang: label
+            },
+            meanings=[{
+                '@type': 'TagMeaning',
+                '@id': str(rscuri)
+            }],
+            watch=True
+        )
+
+        return self.tagSearchTextLast
+
+    def onLdSearchChanged(self, text: str):
+        self.allTagsModel.setFilterRegExp(text)
+        self.ui.allTagsView.clearSelection()
+
+    def onLdSearchEdit(self, text: str):
         """
         Called when the tag search line is edited by the user.
         Set the filter regexp on the tags proxy model.
         """
 
-        self.allTagsModel.setFilterRegExp(tagName)
-        self.ui.allTagsView.clearSelection()
+        self.statusLabel.stopClip()
+        self.editTimer.stop()
+
+        if text:
+            self._tagSearchTextLast = text
+
+            self.allTagsModel.setFilterRegExp(text)
+            self.ui.allTagsView.clearSelection()
+
+            self.editTimer.start(800)
+
+    async def ldSearchTag(self):
+        self.cancelLdSearchTasks()
+        self.ldSearcher.resetModel()
+
+        tagName = self.tagSearchText
+
+        if not tagName:
+            return
+
+        def searchFinished(fut):
+            self.cancelLdSearchTasks()
+            self.statusLabel.stopClip()
+            self.ui.searchStatusLabel.setText('')
+
+            try:
+                model = fut.result()
+                assert model is not None
+                assert len(model._results) > 0
+
+                self.ldSearcher.feedModel(model)
+            except Exception as err:
+                self.ui.searchStatusLabel.setText(
+                    iKgSearchNoResultsFor(tagName, str(err))
+                )
+            else:
+                uiNotify('tagSearchSuccess')
+
+        self.ui.searchStatusLabel.setText(
+            iKgSearching(tagName, self.dbSource)
+        )
+
+        if self.dbSource == 'wikidata':
+            future = ensure(kgConstructModel(
+                'WDResourceSearch',
+                self.contentLangTag,  # label language
+                self.contentLangTag,  # abstract language
+                tagName.lower().strip(),
+                db='wikidata',
+                returnFormat='json'
+            ))
+        elif self.dbSource == 'dbpedia':
+            future = ensure(kgConstructModel(
+                'DbPediaResourceSearch',
+                self.contentLangTag,  # label language
+                self.contentLangTag,  # abstract language
+                tagName.lower().strip(),
+                db='dbpedia',
+                returnFormat='graph'
+            ))
+
+        self.statusLabel.startClip()
+
+        prog = ensure(self.searchStatusTask())
+
+        future.add_done_callback(searchFinished)
+
+        self._ldstasks.append(future)
+        self._ldstasks.append(prog)
+
+    async def searchStatusTask(self):
+        msgs = [
+            iKgSearchBePatient0(),
+            iKgSearchBePatient1(),
+            iKgSearchBePatient2(),
+            iKgSearchBePatient3()
+        ]
+
+        for x in range(0, len(msgs)):
+            await asyncio.sleep(5)
+
+            self.ui.searchStatusLabel.setText(msgs[x])
 
     def setTagAbstract(self, tagAbstract: str):
         self.ui.tagAbstractLabel.setText(tagAbstract)
@@ -474,27 +695,36 @@ class HashmarkIPTagsDialog(QDialog):
         self.setTagAbstract(iIPTagFetchingMeaning(uri))
 
         def getAbstract(g, url: URL):
-            return g.value(
-                subject=URIRef(str(url)),
-                predicate=URIRef('http://dbpedia.org/ontology/abstract')
-            )
+            if url.host == 'dbpedia.org':
+                return g.value(
+                    subject=URIRef(str(url)),
+                    predicate=URIRef('http://dbpedia.org/ontology/abstract')
+                )
+            elif url.host.endswith('wikidata.org'):
+                return g.value(
+                    subject=URIRef(str(url)),
+                    predicate=URIRef('http://schema.org/description')
+                )
 
-        def dbpediaMeaningUrls():
+        def meaningUrls():
             """
-            Return tag meaning URLs that point to dbpedia resources
+            Return tag meaning URLs that point to dbpedia or
+            wikidata resources
             """
 
             for url in [URL(u) for u in self.allTagsModel.data(
                 idx,
                 TagMeaningUrlsRole
             ).split(';')]:
-                if url.host == 'dbpedia.org':
+                if url.host in ['dbpedia.org',
+                                'www.wikidata.org',
+                                'wikidata.org']:
                     if url.scheme != 'http':
                         url = url.with_scheme('http')
 
                     yield url
 
-        for url in dbpediaMeaningUrls():
+        for url in meaningUrls():
             tagAbstract = getAbstract(self.sourceModel.graph, url)
 
             if tagAbstract:
@@ -502,12 +732,24 @@ class HashmarkIPTagsDialog(QDialog):
                 return
 
             try:
-                graph = await dbpedia.requestGraph(
-                    'DbPediaResourceAbstract',
-                    cmod_app.defaultContentLangTag(),
-                    f'FILTER (?s = <{url}>)'
-                )
-                assert graph is not None
+                if url.host == 'dbpedia.org':
+                    graph = await dbpedia.request(
+                        'DbPediaResourceAbstract',
+                        cmod_app.defaultContentLangTag(),
+                        str(url),
+                        db='dbpedia'
+                    )
+                    assert graph is not None
+                elif url.host in ['wikidata.org', 'www.wikidata.org']:
+                    graph = await dbpedia.request(
+                        'WDResourceDesc',
+                        cmod_app.defaultContentLangTag(),
+                        str(url),
+                        db='wikidata'
+                    )
+                    assert graph is not None
+                else:
+                    raise ValueError('Cannot fetch description')
             except Exception as err:
                 self.ui.tagAbstractLabel.setText(
                     iIPTagFetchMeaningError(err))
@@ -574,6 +816,8 @@ class HashmarkIPTagsDialog(QDialog):
         dlg = CreateTagDialog(name=self.tagSearchText)
         await runDialogAsync(dlg)
 
+        self.cancelTasks()
+
         if dlg.result() == 0:
             return
         elif dlg.result() == 1:
@@ -583,6 +827,7 @@ class HashmarkIPTagsDialog(QDialog):
         ensure(self.createTagDialog())
 
     async def validate(self, *args):
+        self.cancelTasks()
         self.done(1)
 
 

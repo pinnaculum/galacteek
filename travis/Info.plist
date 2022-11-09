@@ -17,9 +17,9 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleVersion</key>
-    <string>0.5.5</string>
+    <string>0.6.1</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.5.5</string>
+    <string>0.6.1</string>
     <key>LSMinimumSystemVersion</key>
     <string>10.7.0</string>
     <key>LSUIElement</key>
@@ -27,7 +27,7 @@
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSHumanReadableCopyright</key>
-    <string>© 2020 galacteek</string>
+    <string>© 2022 galacteek</string>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
     <key>LSEnvironment</key>
