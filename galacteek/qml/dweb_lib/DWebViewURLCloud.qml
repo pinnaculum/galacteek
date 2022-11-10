@@ -12,7 +12,7 @@ URLCloud {
   Rectangle {
     id: container
     anchors.fill: parent
-    color: '#323232'
+    color: "transparent"
 
     property string currentUrl
     property string hoveredtUrl
@@ -84,7 +84,7 @@ URLCloud {
           ColorAnimation {
             target: rcenter
             from: particle.color
-            to: '#323232'
+            to: container.color
             duration: 2000
             properties: "color"
           }

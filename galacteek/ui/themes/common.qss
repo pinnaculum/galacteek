@@ -191,3 +191,40 @@ QToolButton#blogPostsMgrButton {
     background-color: lightblue;
     qproperty-iconSize: 64px;
 }
+
+/* Galacteek toolbars */
+
+/* Pyramids toolbar */
+
+QToolBar#pyramidsToolBar {
+    padding: 0;
+    margin: 0;
+    border: 2px solid #446474;
+    background-color: #4f4f4f;
+}
+
+QToolBar#pyramidsToolBar QMenu {
+    font: 15pt "Segoe UI";
+}
+
+/* QA toolbar */
+
+QToolBar#qaToolBar,
+QToolBar#qaToolBar[dropping=false] {
+    border: 2px solid #446474;
+    background-color: #4b1e1e;
+}
+
+QToolBar#qaToolBar[hovering=true] {
+    background-color: #2e3f57;
+    border: 2px solid black;
+}
+
+QToolBar#qaToolBar[hovering=false] {
+    border: 2px solid #446474;
+    background-color: #4b1e1e;
+}
+
+QToolBar#qaToolBar[dropping=true] {
+    background-color: #d9742a;
+}

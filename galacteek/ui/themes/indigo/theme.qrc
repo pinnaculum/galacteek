@@ -1,0 +1,13 @@
+<!DOCTYPE RCC>
+
+<RCC>
+  <qresource prefix="/icons">
+    <file alias="branch-child-guide.png">resources/icons/branch-child-guide.png</file>
+    <file alias="branch-closed.png">resources/icons/branch-closed.png</file>
+    <file alias="branch-end-guide.png">resources/icons/branch-end-guide.png</file>
+    <file alias="branch-guide.png">resources/icons/branch-guide.png</file>
+    <file alias="branch-open.png">resources/icons/branch-open.png</file>
+    <file alias="down-arrow.png">resources/icons/down-arrow.png</file>
+    <file alias="up-arrow.png">resources/icons/up-arrow.png</file>
+  </qresource>
+</RCC>

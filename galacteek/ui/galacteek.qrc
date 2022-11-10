@@ -295,6 +295,14 @@
   </qresource>
 
   <qresource>
+    <file>../../galacteek/ui/themes/breeze-dark/galacteek.qss</file>
+  </qresource>
+
+  <qresource>
+    <file>../../galacteek/ui/themes/indigo/galacteek.qss</file>
+  </qresource>
+
+  <qresource>
     <file>../../share/styles/sakura/sakura.css</file>
   </qresource>
   <qresource>

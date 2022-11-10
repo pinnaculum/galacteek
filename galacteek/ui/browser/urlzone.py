@@ -262,7 +262,10 @@ class URLInputWidget(QWidget):
         self.editTimer.stop()
 
     def hideMatches(self):
-        self.contentSearch.hide()
+        try:
+            self.contentSearch.hide()
+        except Exception:
+            pass
 
     def startStopUrlAnimation(self, active: bool):
         self.obs.setAnimationStatus(

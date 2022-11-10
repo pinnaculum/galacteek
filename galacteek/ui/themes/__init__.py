@@ -12,7 +12,6 @@ from galacteek import log
 from galacteek.core import pkgResourcesDirEntries
 from galacteek.core import pkgResourcesRscFilename
 from galacteek.core import runningApp
-from galacteek.core.fswatcher import FileWatcher
 
 from galacteek.ui.style import GalacteekStyle
 
@@ -131,17 +130,20 @@ def themesCompileAll():
 class ThemesManager:
     def __init__(self):
         self.app = runningApp()
-        self.fsWatcher = FileWatcher()
-
-        self.fsWatcher.pathChanged.connect(self.onThemeChanged)
 
     def onThemeChanged(self, path: str):
         tp = Path(path)
         self.themeApply(tp.name)
-        # self.app.repolishWidget(self.app.mainWindow)
 
     def change(self, theme):
         self.themeApply(theme)
+
+    def qssCommon(self):
+        return self.app.readQSSFile(
+            pkgResourcesRscFilename(
+                'galacteek.ui.themes', 'common.qss'
+            )
+        )
 
     def themeApply(self, themeName: str, watch: bool = False):
         exTheme = self.app.theme
@@ -149,10 +151,6 @@ class ThemesManager:
             # There's already a theme installed
             if exTheme.styleModName and exTheme.styleModName in sys.modules:
                 del sys.modules[exTheme.styleModName]
-
-        libCommonPath = pkgResourcesRscFilename(
-            'galacteek.ui.themes', 'common.qss'
-        )
 
         themeDir = pkgResourcesRscFilename('galacteek.ui.themes', themeName)
         if not themeDir:
@@ -169,8 +167,6 @@ class ThemesManager:
         except Exception as err:
             log.debug(f'Error importing theme {themeName}: {err}')
 
-        style = GalacteekStyle()
-
         try:
             theme = themeModule.theme
         except Exception as err:
@@ -185,21 +181,15 @@ class ThemesManager:
         qssPlatformPath = \
             f":/galacteek/ui/themes/{themeName}/galacteek_{sysName}.qss"  # noqa
 
-        fontsQss = self.app.readQSSFile(libCommonPath)
-
+        commonQss = self.qssCommon()
         mainQss = self.app.readQSSFile(qssPath)
 
-        if not fontsQss or not mainQss:
+        if not commonQss or not mainQss:
             log.debug(f'No main QSS for theme: {themeName}')
             return False
 
-        self.app.setStyleSheet(fontsQss + mainQss)
-
-        if style:
-            self.app.setStyle(style)
-
-        if watch:
-            self.fsWatcher.watch(themeDir)
+        self.app.setStyleSheet(commonQss + mainQss)
+        self.app.setStyle(GalacteekStyle())
 
         theme.apply(self.app)
 

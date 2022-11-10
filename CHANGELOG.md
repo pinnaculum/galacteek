@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - LDSearcher widget: linked-data searcher
 - Tags dialog: make it possible to add new tags by querying wikidata or dbpedia
+- New themes: breeze-dark and indigo
 
 ### Fixed
 - Catch/silence asyncio.CancelledError in dbpedia CONSTRUCT tasks

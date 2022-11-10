@@ -801,7 +801,6 @@ class UserProfile(QObject):
 
     @ipfsOp
     async def cryptoRegisterKeys(self, op):
-        self.userLogInfo('Registering keys')
         try:
             pubKey = await asyncReadFile(str(self.rsaPubKeyPath))
             if pubKey is None:

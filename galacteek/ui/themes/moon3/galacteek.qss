@@ -614,71 +614,10 @@ QToolBar::handle:vertical {
 QToolBar::separator:horizontal {
     image: url(:/theme_icons/rc/Hsepartoolbar.png);
 }
+
 QToolBar::separator:vertical {
     image: url(:/theme_icons/rc/Vsepartoolbar.png);
 }
-
-/* Galacteek toolbars */
-
-QToolBar#workspacesToolBar {
-    padding: 0;
-    margin: 0;
-    border: 1px solid #446474;
-    background-color: #4f4f4f;
-}
-
-QToolBar#workspacesToolBar[pinned=true] {
-    border: 2px solid #4b1e1e;
-}
-
-QToolBar#pyramidsToolBar {
-    padding: 0;
-    margin: 0;
-    border: 2px solid #446474;
-    background-color: #4f4f4f;
-}
-
-QToolBar#pyramidsToolBar QMenu {
-    font: 15pt "Segoe UI";
-}
-
-QToolBar#qaToolBar,
-QToolBar#qaToolBar[dropping=false] {
-    border: 2px solid #446474;
-    background-color: #4b1e1e;
-}
-
-QToolBar#qaToolBar[hovering=true] {
-    background-color: #2e3f57;
-    border: 2px solid black;
-}
-
-QToolBar#qaToolBar[hovering=false] {
-    border: 2px solid #446474;
-    background-color: #4b1e1e;
-}
-
-
-QToolBar#qaToolBar[dropping=true] {
-    background-color: #d9742a;
-}
-
-/*
-QToolBar#qaToolBar[dropping=false] {
-    background-color: #4b1e1e;
-}
-*/
-
-QToolBar#qaToolBarOld[dropping=true] QToolButton {
-    qproperty-iconSize: 64px;
-    background-color: #d9742a;
-}
-
-QToolBar#qaToolBarOld[dropping=false] QToolButton {
-    qproperty-iconSize: 32px;
-    background-color: #4b1e1e;
-}
-
 
 QToolButton#qt_toolbar_ext_button_disabled {
     background: #58595a;
