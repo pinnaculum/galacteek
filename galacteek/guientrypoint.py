@@ -223,6 +223,11 @@ def buildArgsParser(fromParser=None):
         dest='configDefault',
         help="Start with default configuration")
     parser.add_argument(
+        '--config-apply',
+        default=None,
+        dest='configApply',
+        help='Update config by applying config files from a directory')
+    parser.add_argument(
         '--config-ipfs-auto',
         action='store_true',
         default=False,

@@ -23,6 +23,7 @@ cfgInitTable = [
     # 'galacteek.tshaping.ttroll',
 
     'galacteek.services.dweb.ethereum',
+    'galacteek.services.ld.pronto',
     'galacteek.services.net.bitmessage',
     'galacteek.services.net.tor',
 

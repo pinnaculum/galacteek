@@ -1260,6 +1260,7 @@ class GalacteekApplication(ApplicationDaemonStarterMixin,
 
     def initSettings(self):
         from galacteek.config import initFromTable
+        from galacteek.config import regConfigFromFile
 
         if not os.path.isfile(self.settingsFileLocation):
             self._freshInstall = True
@@ -1289,6 +1290,14 @@ class GalacteekApplication(ApplicationDaemonStarterMixin,
 
         # Init new config system
         initFromTable()
+
+        # Patch from profile
+        if self.cmdArgs.configApply and os.path.isdir(
+                self.cmdArgs.configApply):
+            for cfg in Path(self.cmdArgs.configApply).glob('*.yaml'):
+                regConfigFromFile(cfg.name.replace('.yaml', ''),
+                                  cfg,
+                                  revmerge=True)
 
         cSetDefault('locations.downloadsPath',
                     self.defaultDownloadsLocation,

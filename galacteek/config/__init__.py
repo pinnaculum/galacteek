@@ -71,11 +71,12 @@ def configSavePackage(pkgName: str):
         OmegaConf.save(cEntry['configAll'], str(savePath))
 
 
-def regConfigFromFile(pkgName: str, fpath: str):
+def regConfigFromFile(pkgName: str, fpath: Path,
+                      revmerge=False):
     global cCache
 
     eConf = cCache.get(pkgName, None)
-    if eConf:
+    if eConf and not revmerge:
         return eConf
 
     if not fpath or not fpath.is_file():
@@ -90,7 +91,10 @@ def regConfigFromFile(pkgName: str, fpath: str):
     if savePath.is_file():
         # Merge existing
         eCfgAll, eCfg = configFromFile(str(savePath))
-        if eCfg:
+
+        if eCfg and revmerge:
+            cfgAll = merge(eCfgAll, cfgAll)
+        elif eCfg and not revmerge:
             cfgAll = merge(cfgAll, eCfgAll)
 
     savePath.parent.mkdir(parents=True, exist_ok=True)
