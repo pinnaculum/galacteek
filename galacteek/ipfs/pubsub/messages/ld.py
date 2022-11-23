@@ -161,7 +161,7 @@ class SparQLHeartbeatMessage(PubsubMessage):
 
     @staticmethod
     def make(prontoEnv: str, libertarianId: str):
-        msg = SparQLHeartbeatMessage({
+        return SparQLHeartbeatMessage({
             'msgtype': SparQLHeartbeatMessage.TYPE,
             'version': 2,
             'date': utcDatetimeIso(),
@@ -170,8 +170,6 @@ class SparQLHeartbeatMessage(PubsubMessage):
             'p2pLibertarianId': libertarianId,
             'graphs': []
         })
-
-        return msg
 
     @property
     def revision(self):

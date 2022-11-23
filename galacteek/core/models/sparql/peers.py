@@ -4,6 +4,7 @@ from PyQt5.QtCore import QVariant
 from PyQt5.QtCore import Qt
 
 from galacteek import ensure
+from galacteek.core.iphandle import SpaceHandle
 from galacteek.did.ipid import IPService
 from galacteek.did import didExplode
 from galacteek.ld import uriTermExtract
@@ -49,7 +50,7 @@ class PeersSparQLModel(SparQLListModel):
 
         try:
             if role == Qt.DisplayRole:
-                return str(item['handle'])
+                return SpaceHandle(str(item['handle'])).username
             elif role == Qt.UserRole:
                 return str(item['did'])
             elif role == Qt.ToolTipRole:

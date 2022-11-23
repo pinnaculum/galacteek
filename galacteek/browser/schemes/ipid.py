@@ -105,14 +105,12 @@ class IPIDSchemeHandler(NativeIPFSSchemeHandler,
 
         ipidGraph = await ipid.rdfGraph()
 
-        if path == '/':
-            passport = await ipid.passportService()
-
+        if path in ['/', '/passport']:
             return await self.ipidRenderSummary(
                 request,
                 uid,
                 ipid,
-                passport,
+                await ipid.passportService(),
                 ipidGraph,
                 rMethod=rMethod
             )

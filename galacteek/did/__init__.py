@@ -1,5 +1,9 @@
 import re
 from urllib.parse import parse_qs
+from urllib.parse import quote
+
+from rdflib import URIRef
+from yarl import URL
 
 from galacteek.core import normalizedUtcDate
 
@@ -18,7 +22,7 @@ didRe = re.compile(
     r'(?P<scheme>(did))' +
     r'\:(?P<method>([\w]+))\:(?P<id>([\w])+)' +
     r'(?P<params>([\w=:;]+)?)' +
-    r'(?P<path>([\w=/_\-().]+)?)' +
+    r'(?P<path>([\w=/_\-()\.\:\s]+)?)' +
     r'(?P<query>(\?[\w=/_\-&]+)?)' +
     r'#?(?P<fragment>([\w]+)?)$'
 )
@@ -33,7 +37,32 @@ def normedUtcDate():
     return normalizedUtcDate()
 
 
-def didExplode(did):
+def serviceIdToUrl(didUri: str, quotep=False) -> URL:
+    """
+    Transform a DID service URI string to a ipid://<did>/<path> URL
+
+    :param str didUrl: DID service uri
+    :rtype: URL
+    """
+    m = didRe.match(didUri)
+
+    if m and m.group('method') == 'ipid':
+        path = m.group('path')
+
+        return URL.build(
+            scheme=m.group('method'),
+            host=m.group('id'),
+            path=quote(path) if quotep else path
+        )
+
+
+def serviceIdToUriRef(didUrl: str) -> URIRef:
+    url = serviceIdToUrl(didUrl)
+
+    return URIRef(str(url)) if url else None
+
+
+def didExplode(did: str) -> dict:
     """
     Explode a DID into its different components.
 
@@ -48,7 +77,7 @@ def didExplode(did):
         - query: DID query, as a dictionary
 
     :param str did: The DID string to analyze
-    :rtype dict:
+    :rtype: dict
     """
 
     match = didRe.match(did)

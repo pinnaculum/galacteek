@@ -551,7 +551,8 @@ class HashmarkIPTagsDialog(QDialog):
         # XXX: **always** use the English RDF label when we create the URI
         tagUri = rdf_tags.tagUriFromLabel(labelEn)
         if not tagUri:
-            return await messageBoxAsync(iIPTagInvalid())
+            await messageBoxAsync(iIPTagInvalid())
+            return None
 
         await rdf_tags.tagCreate(
             tagUri,

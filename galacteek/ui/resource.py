@@ -25,6 +25,7 @@ from galacteek.core.ps import hubPublish
 
 from galacteek import loopTime
 
+from galacteek.did import serviceIdToUriRef
 from galacteek.did.ipid import IPService
 
 from galacteek.dweb.page import PDFViewerPage
@@ -530,10 +531,14 @@ class IPFSResourceOpener(QObject):
             url = endpoint.get('accessUrl')
             if url:
                 await self.open(url)
+            else:
+                await self.open(serviceIdToUriRef(serviceId))
+
+        elif pService.type == IPService.SRV_TYPE_PASSPORT:
+            await self.open(serviceIdToUriRef(serviceId))
 
         elif isinstance(endpoint, str):
-            path = IPFSPath(endpoint, autoCidConv=True)
-            await self.open(path)
+            await self.open(IPFSPath(endpoint, autoCidConv=True))
 
     @ipfsOp
     async def openIpServiceObject(self, ipfsop, serviceId, objectId):

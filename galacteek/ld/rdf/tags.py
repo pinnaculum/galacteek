@@ -6,6 +6,7 @@ from rdflib import URIRef
 from rdflib import RDF
 
 from galacteek import services
+from galacteek import log
 from galacteek.core import utcDatetimeIso
 from galacteek.ld import ipsTermUri
 from galacteek.ld.sparql import querydb
@@ -25,13 +26,16 @@ def tagUriFromComponents(comps: list) -> URIRef:
 
 def tagUriFromLabel(label: str) -> URIRef:
     """
-    Create a it: tag URI from an RDF (@en) label
+    Create a it: tag URI from an RDF (@en) label.
+
+    The label is always lowercased (the URI components should be in lowercase).
     """
     try:
         return tagUriFromComponents(
             re.split(r'[^\w\-]{1,256}',
-                     label))
+                     label.lower()))
     except Exception:
+        log.warning(f'Could not build tag uri from: {label}')
         return None
 
 
