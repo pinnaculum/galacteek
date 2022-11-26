@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - LDSearcher widget: linked-data searcher
 - Tags dialog: make it possible to add new tags by querying wikidata or dbpedia
 - New themes: breeze-dark and indigo
+- Add --config-apply cmdline arg
+
+### Changed
+- Upgrade pillow req to v9.2.0
+- Tag URIs are always lowercased
 
 ### Fixed
 - Catch/silence asyncio.CancelledError in dbpedia CONSTRUCT tasks

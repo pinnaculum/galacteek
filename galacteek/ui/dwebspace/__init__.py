@@ -457,6 +457,10 @@ class LinkedDataWsMixin:
         hashmarksLdCenter.refresh()
 
 
+class TabActionsToolBar(QToolBar):
+    pass
+
+
 class TabbedWorkspace(LinkedDataWsMixin,
                       BaseWorkspace):
     def __init__(self, stack,
@@ -478,8 +482,10 @@ class TabbedWorkspace(LinkedDataWsMixin,
         self.previousOpenedTabIdx = -1
         self.inactiveTabsNotify = inactiveTabsNotify
 
-        self.toolBarActions = QToolBar()
-        self.toolBarActions.setObjectName('wsActionsToolBar')
+        self.toolBarWsActions = QToolBar(self)
+        self.toolBarWsActions.setObjectName('wsActionsToolBar')
+        self.toolBarTabActions = TabActionsToolBar(self)
+        self.toolBarTabActions.setObjectName('tabActionsToolBar')
 
     def wsToolTip(self):
         return self.wsDescription
@@ -527,9 +533,10 @@ class TabbedWorkspace(LinkedDataWsMixin,
             self.tabWidget.setDocumentMode(True)
 
         # Set the corner widgets
-        # Workspace actions on the left, the right toolbar is unused for now
+        # Tab actions on the left, ws actiions on the riight
 
-        self.setCornerLeft(self.toolBarActions)
+        self.setCornerLeft(self.toolBarTabActions)
+        self.setCornerRight(self.toolBarWsActions)
 
         # Pinned actions
 
@@ -550,11 +557,11 @@ class TabbedWorkspace(LinkedDataWsMixin,
         for tabIdx, tab in self.wsTabs():
             await tab.onClose()
 
-    def setCornerLeft(self, pButton):
-        self.tabWidget.setCornerWidget(pButton, Qt.TopLeftCorner)
+    def setCornerLeft(self, widget: QWidget):
+        self.tabWidget.setCornerWidget(widget, Qt.TopLeftCorner)
 
-    def setCornerRight(self, nButton):
-        self.tabWidget.setCornerWidget(nButton, Qt.TopRightCorner)
+    def setCornerRight(self, widget: QWidget):
+        self.tabWidget.setCornerWidget(widget, Qt.TopRightCorner)
 
     def previousWorkspace(self):
         return self.stack.previousWorkspace(self)
@@ -608,6 +615,14 @@ class TabbedWorkspace(LinkedDataWsMixin,
                 if itab:
                     await itab.onTabHidden()
 
+        self.toolBarTabActions.clear()
+
+        for widgetAction in tab.tabActions():
+            self.toolBarTabActions.addAction(widgetAction)
+
+        self.tabWidget.tabBar().repaint()
+        self.tabWidget.repaint()
+
     async def wsTabRemoved(self, tabidx):
         await self.triggerDefaultActionIfEmpty()
 
@@ -618,7 +633,7 @@ class TabbedWorkspace(LinkedDataWsMixin,
     def wsAddCustomAction(self, actionName: str, icon, name,
                           func, default=False,
                           shortcut=None):
-        action = self.toolBarActions.addAction(
+        action = self.toolBarWsActions.addAction(
             icon, name, func
         )
         self.wsActions[actionName] = action
@@ -632,18 +647,18 @@ class TabbedWorkspace(LinkedDataWsMixin,
         return action
 
     def wsAddAction(self, action: QAction, default=False):
-        self.toolBarActions.addAction(action)
+        self.toolBarWsActions.addAction(action)
 
         if default is True and not self.defaultAction:
             self.defaultAction = action
 
-        if len(list(self.toolBarActions.actions())) == 1 and \
+        if len(list(self.toolBarWsActions.actions())) == 1 and \
                 not self.defaultAction:
             # Only one action yet, make it the default
             self.defaultAction = action
 
     def wsAddWidget(self, widget):
-        self.toolBarActions.addWidget(widget)
+        self.toolBarWsActions.addWidget(widget)
 
     async def onTabDoubleClicked(self, idx):
         tab = self.tabWidget.widget(idx)
@@ -1016,7 +1031,7 @@ class WorkspacePeers(TabbedWorkspace):
 
         # Chat center button
         self.chatCenterButton = chat.ChatCenterButton(
-            parent=self.toolBarActions)
+            parent=self.toolBarWsActions)
 
         self.wsRegisterTab(
             pMgrTab, iPeers(),

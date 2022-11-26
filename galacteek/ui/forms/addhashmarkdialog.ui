@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>800</width>
-    <height>555</height>
+    <height>586</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -15,6 +15,12 @@
     <horstretch>0</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>640</width>
+    <height>480</height>
+   </size>
   </property>
   <property name="maximumSize">
    <size>
@@ -38,79 +44,40 @@
      <property name="title">
       <string>Add LD hashmark</string>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout_2">
-      <item>
-       <widget class="QComboBox" name="storageFormat">
-        <property name="enabled">
-         <bool>false</bool>
+     <layout class="QGridLayout" name="gridLayout_2">
+      <item row="3" column="0">
+       <spacer name="verticalSpacer">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
         </property>
-        <item>
-         <property name="text">
-          <string>Linked Data</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>SQLite database</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="resourceLabel">
-        <property name="minimumSize">
+        <property name="sizeHint" stdset="0">
          <size>
-          <width>0</width>
-          <height>0</height>
+          <width>20</width>
+          <height>40</height>
          </size>
         </property>
-        <property name="maximumSize">
-         <size>
-          <width>1024</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-       </widget>
+       </spacer>
       </item>
-      <item>
-       <layout class="QFormLayout" name="formLayout">
-        <property name="labelAlignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-        <property name="formAlignment">
-         <set>Qt::AlignHCenter|Qt::AlignTop</set>
-        </property>
-        <property name="verticalSpacing">
-         <number>10</number>
-        </property>
-        <item row="0" column="0">
-         <widget class="QLabel" name="hashmarksIconLabel">
-          <property name="text">
-           <string/>
+      <item row="1" column="0">
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="4" column="1">
+         <widget class="QLineEdit" name="title">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>500</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="maxLength">
+           <number>128</number>
           </property>
          </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_5">
-          <property name="toolTip">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select which RDF graph the hashmark will be stored into.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;You can store it in a private graph, or in one of the public graphs available.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-          </property>
-          <property name="text">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Output graph&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <layout class="QHBoxLayout" name="gSelectorLayout"/>
         </item>
         <item row="2" column="1">
          <widget class="QLabel" name="outputGraphMessage">
@@ -122,6 +89,33 @@
           </property>
          </widget>
         </item>
+        <item row="0" column="1">
+         <layout class="QHBoxLayout" name="gSelectorLayout"/>
+        </item>
+        <item row="5" column="0">
+         <widget class="QLabel" name="label_7">
+          <property name="text">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Description&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+         </widget>
+        </item>
+        <item row="7" column="1">
+         <widget class="QComboBox" name="pinCombo">
+          <property name="maximumSize">
+           <size>
+            <width>200</width>
+            <height>16777215</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item row="7" column="0">
+         <widget class="QLabel" name="label_8">
+          <property name="text">
+           <string>Pinning</string>
+          </property>
+         </widget>
+        </item>
         <item row="3" column="0">
          <widget class="QLabel" name="label_9">
           <property name="toolTip">
@@ -129,6 +123,23 @@
           </property>
           <property name="text">
            <string>Metadata language</string>
+          </property>
+         </widget>
+        </item>
+        <item row="6" column="0">
+         <widget class="QLabel" name="label_6">
+          <property name="text">
+           <string>Comment</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_5">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select which RDF graph the hashmark will be stored into.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;You can store it in a private graph, or in one of the public graphs available.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="text">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Output graph&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
          </widget>
         </item>
@@ -157,49 +168,16 @@
           </property>
          </widget>
         </item>
-        <item row="4" column="1">
-         <widget class="QLineEdit" name="title">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>500</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="maxLength">
-           <number>128</number>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="0">
-         <widget class="QLabel" name="label_7">
-          <property name="text">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Description&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-          </property>
-         </widget>
-        </item>
         <item row="5" column="1">
          <widget class="QTextEdit" name="description">
           <property name="maximumSize">
            <size>
             <width>500</width>
-            <height>70</height>
+            <height>60</height>
            </size>
           </property>
           <property name="acceptRichText">
            <bool>false</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="6" column="0">
-         <widget class="QLabel" name="label_6">
-          <property name="text">
-           <string>Comment</string>
           </property>
          </widget>
         </item>
@@ -216,67 +194,35 @@
           </property>
          </widget>
         </item>
-        <item row="8" column="1">
-         <spacer name="verticalSpacer_2">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>10</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item row="11" column="0">
-         <widget class="QLabel" name="label_8">
-          <property name="text">
-           <string>Pinning</string>
-          </property>
-         </widget>
-        </item>
-        <item row="11" column="1">
-         <widget class="QComboBox" name="pinCombo">
-          <property name="maximumSize">
-           <size>
-            <width>200</width>
-            <height>16777215</height>
-           </size>
-          </property>
-         </widget>
-        </item>
-        <item row="12" column="0">
-         <widget class="QLabel" name="label_3">
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-        </item>
-        <item row="10" column="0">
-         <widget class="QLabel" name="label_10">
-          <property name="text">
-           <string>Version</string>
-          </property>
-         </widget>
-        </item>
-        <item row="10" column="1">
-         <widget class="QLineEdit" name="version">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>150</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="placeholderText">
-           <string>1.0.0</string>
-          </property>
-         </widget>
-        </item>
        </layout>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="resourceLabel">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>1024</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <layout class="QGridLayout" name="extraGridLayout"/>
       </item>
      </layout>
     </widget>

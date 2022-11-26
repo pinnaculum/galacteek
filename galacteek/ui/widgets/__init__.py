@@ -141,7 +141,7 @@ class GalacteekTab(QWidget):
         if vLayout is True:
             self.vLayout = QVBoxLayout(self)
             self.vLayout.setSpacing(0)
-            self.vLayout.setContentsMargins(4, 4, 4, 4)
+            self.vLayout.setContentsMargins(0, 0, 0, 0)
             self.setLayout(self.vLayout)
 
         self.setContentsMargins(0, 0, 0, 0)
@@ -205,6 +205,13 @@ class GalacteekTab(QWidget):
 
     def tabBar(self):
         return self.workspace.tabWidget.tabBar()
+
+    def tabActions(self) -> list:
+        """
+        Override this to return a list of actions for this tab (QWidgetAction)
+        """
+
+        return []
 
     def addToLayout(self, widget):
         self.vLayout.addWidget(widget)

@@ -8,7 +8,6 @@ from yarl import URL
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QLabel
-from PyQt5.QtWidgets import QFormLayout
 from PyQt5.QtWidgets import QAbstractItemView
 
 from PyQt5.QtCore import QRegExp
@@ -58,7 +57,6 @@ from .tags import CreateTagDialog
 
 from ..helpers import *
 from ..notify import uiNotify
-from ..widgets import ImageWidget
 from ..widgets import IconSelector
 from ..widgets import ImageSelector
 from ..widgets import OutputGraphSelectorWidget
@@ -139,12 +137,6 @@ class AddHashmarkDialog(QDialog):
         self.ui.pinCombo.addItem(iPinSingle())
         self.ui.pinCombo.addItem(iPinRecursive())
 
-        self.ui.formLayout.setRowWrapPolicy(QFormLayout.DontWrapRows)
-        self.ui.formLayout.setFieldGrowthPolicy(
-            QFormLayout.ExpandingFieldsGrow)
-        self.ui.formLayout.setLabelAlignment(Qt.AlignHCenter | Qt.AlignTop)
-        self.ui.formLayout.setHorizontalSpacing(20)
-
         self.graphSelector = OutputGraphSelectorWidget(
             uriFilters=[
                 r'urn:ipg:i:love:hashmarks:(private|public.*|search.*)'
@@ -159,14 +151,15 @@ class AddHashmarkDialog(QDialog):
         self.iconSelector = IconSelector(parent=self, allowEmpty=True)
         self.iconSelector.iconSelected.connect(self.onIconSelected)
         self.iconSelector.emptyIconSelected.connect(self.onIconEmpty)
-        self.ui.formLayout.insertRow(7, QLabel('Icon'),
-                                     self.iconSelector)
+
+        self.ui.extraGridLayout.addWidget(QLabel('Icon'), 0, 0)
+        self.ui.extraGridLayout.addWidget(self.iconSelector, 0, 1)
 
         # Img
         self.imageSelector = ImageSelector(parent=self)
 
-        self.ui.formLayout.insertRow(8, QLabel('Thumbnail'),
-                                     self.imageSelector)
+        self.ui.extraGridLayout.addWidget(QLabel('Thumbnail'), 1, 0)
+        self.ui.extraGridLayout.addWidget(self.imageSelector, 1, 1)
 
         if pin is True:
             self.ui.pinCombo.setCurrentIndex(1)
@@ -314,28 +307,6 @@ class AddHashmarkDialog(QDialog):
     def onIconEmpty(self):
         self.iconCid = None
 
-    def onSelectIcon(self):
-        fps = filesSelectImages()
-        if len(fps) > 0:
-            ensure(self.setIcon(fps.pop()))
-
-    @ipfsOp
-    async def setIcon(self, op, fp):
-        entry = await op.addPath(fp, recursive=False)
-        if entry:
-            cid = entry['Hash']
-
-            if self.iconWidget is None:
-                iconWidget = ImageWidget()
-
-                if await iconWidget.load(cid):
-                    self.ui.formLayout.insertRow(7, QLabel(''), iconWidget)
-                    self.iconCid = cid
-                    self.iconWidget = iconWidget
-            else:
-                if await self.iconWidget.load(cid):
-                    self.iconCid = cid
-
     def accept(self):
         ensure(self.process())
 
@@ -465,7 +436,7 @@ class HashmarkIPTagsDialog(QDialog):
 
         self.setMinimumSize(
             self.app.desktopGeometry.width() * 0.7,
-            self.app.desktopGeometry.height() * 0.6,
+            self.app.desktopGeometry.height() * 0.8,
         )
 
         self.ldSearcher.setFocus(Qt.OtherFocusReason)
@@ -863,8 +834,8 @@ class IPTagsSelectDialog(QDialog):
         self.ui.noTagsButton.clicked.connect(self.reject)
 
         self.setMinimumSize(
-            self.app.desktopGeometry.width() / 2,
-            (2 * self.app.desktopGeometry.height()) / 3
+            self.app.desktopGeometry.width() * 0.7,
+            self.app.desktopGeometry.height() * 0.8,
         )
 
     @property

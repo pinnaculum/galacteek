@@ -17,6 +17,7 @@ from PyQt5.QtWidgets import QTextBrowser
 from PyQt5.QtWidgets import QTextEdit
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QWidgetAction
 from PyQt5.QtWidgets import QGraphicsBlurEffect
 
 from PyQt5.QtPrintSupport import *
@@ -129,6 +130,8 @@ class JSConsoleWidget(QWidget):
     def __init__(self, parent=None):
         super(JSConsoleWidget, self).__init__(parent)
 
+        app = QApplication.instance()
+
         self.setLayout(QVBoxLayout())
 
         self.closeButton = QPushButton(iClose())
@@ -143,6 +146,11 @@ class JSConsoleWidget(QWidget):
 
         self.setObjectName('javascriptConsole')
         self.log('<p><b>Javascript output console</b></p>')
+
+        self.setMinimumSize(
+            app.desktopGeometry.width() * 0.6,
+            app.desktopGeometry.height() * 0.8,
+        )
 
     def onClose(self):
         self.close()
@@ -374,18 +382,6 @@ class WebView(IPFSWebView):
                            iHashmark(),
                            functools.partial(self.hashmarkPath, str(ipfsPath)))
             menu.addSeparator()
-
-            if 0:
-                menu.addAction(getIcon('pin.png'), iPin(),
-                               functools.partial(self.browserTab.pinPath,
-                                                 ipfsPath.objPath))
-                menu.addAction(
-                    getIcon('pin.png'),
-                    iPinRecursive(),
-                    functools.partial(
-                        self.browserTab.pinPath,
-                        ipfsPath.objPath,
-                        True))
 
             pinObjectAction = PinObjectAction(ipfsPath, parent=menu)
 
@@ -936,9 +932,14 @@ class BrowserTab(GalacteekTab):
             shortcut=QKeySequence('Ctrl+b'),
             triggered=partialEnsure(self.onHashmarkPage)
         )
-        self.ui.hashmarkThisPage.setDefaultAction(self.hashmarkPageAction)
-        self.ui.hashmarkThisPage.setEnabled(False)
-        self.ui.hashmarkThisPage.setAutoRaise(True)
+        self.hashmarkButton = QToolButton()
+        self.hashmarkButton.setIcon(getIcon('hashmark-black.png'))
+        self.hashmarkButton.clicked.connect(partialEnsure(self.onHashmarkPage))
+        self.hashmarkButton.setEnabled(False)
+
+        self.hashmarkWAction = QWidgetAction(self)
+        self.hashmarkWAction.setDefaultWidget(self.hashmarkButton)
+        self.hashmarkWAction.setEnabled(False)
 
         # Setup the IPFS control tool button (has actions
         # for browsing CIDS and web profiles etc..)
@@ -1037,9 +1038,16 @@ class BrowserTab(GalacteekTab):
         self.ipfsControlMenu.addSeparator()
         self.ipfsControlMenu.addMenu(self.prontoGraphsMenu)
 
-        self.ui.loadIpfsButton.setMenu(self.ipfsControlMenu)
-        self.ui.loadIpfsButton.setPopupMode(QToolButton.InstantPopup)
-        self.ui.loadIpfsButton.clicked.connect(self.onLoadIpfsCID)
+        self.controller = PopupToolButton(
+            getIcon('cube-blue.png'),
+            mode=QToolButton.InstantPopup
+        )
+        self.controller.setMenu(self.ipfsControlMenu)
+        self.controller.setPopupMode(QToolButton.InstantPopup)
+        self.controller.clicked.connect(self.onLoadIpfsCID)
+
+        self.controllerWAction = QWidgetAction(self)
+        self.controllerWAction.setDefaultWidget(self.controller)
 
         self.ui.pBarBrowser.setTextVisible(False)
         self.ui.pinAllButton.setCheckable(True)
@@ -1056,16 +1064,21 @@ class BrowserTab(GalacteekTab):
 
         # PIN tool button
         self.pinToolButton = PinObjectButton(
-            mode=QToolButton.InstantPopup)
+            mode=QToolButton.InstantPopup
+        )
         self.pinToolButton.pinQueueName = 'browser'
         self.pinToolButton.mode = 'web'
         self.pinToolButton.sPinPageLinksRequested.connectTo(
             self.onPinPageLinks)
 
-        self.ui.hLayoutCtrl.insertWidget(1, self.pinToolButton)
+        self.pinWAction = QWidgetAction(self)
+        self.pinWAction.setDefaultWidget(self.pinToolButton)
 
         self.ui.zoomInButton.clicked.connect(self.onZoomIn)
         self.ui.zoomOutButton.clicked.connect(self.onZoomOut)
+
+        self.ui.zoomInButton.hide()
+        self.ui.zoomOutButton.hide()
 
         # Event filter
         evfilter = BrowserKeyFilter(self)
@@ -1148,6 +1161,20 @@ class BrowserTab(GalacteekTab):
     @property
     def currentIpfsObject(self):
         return self._currentIpfsObject
+
+    def tabActions(self) -> list:
+        """
+        Return a list of widget actions for this browser tab
+
+        - main controller
+        - pin action
+        - hashmark action
+        """
+        return [
+            self.controllerWAction,
+            self.pinWAction,
+            self.hashmarkWAction
+        ]
 
     def tabDestroyedPost(self):
         # Reparent
@@ -1442,7 +1469,7 @@ class BrowserTab(GalacteekTab):
             ensure(showProfileChangedPage())
 
     def onShowBrowserHelp(self):
-        self.app.manuals.browseManualPage('browsing.html')
+        self.enterUrl(QUrl('manual:/browsing.html'))
 
     def searchControlsSetVisible(self, view):
         for w in [self.ui.searchInPage,
@@ -1464,10 +1491,7 @@ class BrowserTab(GalacteekTab):
         self.searchControlsSetVisible(not self.ui.searchInPage.isVisible())
 
     def onSearchInPageEdit(self, text):
-        if 0:
-            self.ui.searchInPage.setStyleSheet(
-                'QLineEdit { color: black; }'
-            )
+        pass
 
     def onSearchInPage(self):
         self.searchInPage()
@@ -1763,21 +1787,14 @@ class BrowserTab(GalacteekTab):
         if not url.isValid() or url.scheme() in ['data', SCHEME_Z]:
             return
 
-        # self.webEngineView.webPage.setBgActive()
-
         sHandler = self.webEngineView.webProfile.urlSchemeHandler(
             url.scheme().encode())
 
         urlAuthority = url.authority()
-        self.ui.hashmarkThisPage.setEnabled(True)
+
+        self.hashmarkWAction.setEnabled(True)
 
         if url.scheme() in [SCHEME_IPFS, SCHEME_IPNS, SCHEME_DWEB]:
-            if 0:
-                self.urlZone.setStyleSheet('''
-                    QLineEdit {
-                        background-color: #C3D7DF;
-                    }''')
-
             self.urlZoneInsert(url)
 
             self._currentIpfsObject = IPFSPath(url.toString())

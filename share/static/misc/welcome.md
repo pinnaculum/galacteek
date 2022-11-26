@@ -2,8 +2,6 @@
 Welcome to the dweb
 ===================
 
-[![bafkreibv5sdto5ickedlfojmlipmj35xfiqyzpkexg2tfaxmuhspu4kr3e](ipfs://bafkreibv5sdto5ickedlfojmlipmj35xfiqyzpkexg2tfaxmuhspu4kr3e){: style="width:128px; height:128px" }](ipfs://bafkreibv5sdto5ickedlfojmlipmj35xfiqyzpkexg2tfaxmuhspu4kr3e)
-
 **galacteek** is a browser for the distributed web (AKA the
 *dweb*). It works with the [IPFS](ipns://ipfs.io) protocol,
 which uses the concept of content-addressing to distribute
@@ -14,8 +12,7 @@ Donations
 
 **galacteek** will always be opensource and free of charge.
 If you use the software and want to contribute to its improvement,
-please [help the project by making a donation](https://liberapay.com/galacteek/donate)
-(also with [GitHub Sponsors](https://github.com/sponsors/pinnaculum))
+please help the project by making a donation [with Liberapay](https://liberapay.com/galacteek/donate) or [Ko-Fi](https://ko-fi.com/galacteek).
 
 You can also donate via Bitcoin at the following address:
 
@@ -49,11 +46,9 @@ files in the IPFS repository from your local filesystem.
 tools to communicate, like the encrypted chat and the Atom
 feeds reader
 
-- **Search**: this workspace is for searching content on the dweb
-
 - **Editing**: Edit files and write blog posts
 
-- **Multimedia**: workspace for the multimedia player
+- **Multimedia**: Workspace for the multimedia player
 
 - **Messenger** workspace: allows you to send messages with the
 BitMessage protocol.

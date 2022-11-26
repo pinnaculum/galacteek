@@ -27,77 +27,57 @@
 <context>
     <name>AddHashmarkDialog</name>
     <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="156"/>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="167"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Title&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="182"/>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="98"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Description&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="202"/>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="132"/>
         <source>Comment</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="235"/>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="115"/>
         <source>Pinning</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="49"/>
-        <source>Linked Data</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="54"/>
-        <source>SQLite database</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="148"/>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="159"/>
         <source>en</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="259"/>
-        <source>Version</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="275"/>
-        <source>1.0.0</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="26"/>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="32"/>
         <source>Register LD hashmark</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="105"/>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="139"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select which RDF graph the hashmark will be stored into.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;You can store it in a private graph, or in one of the public graphs available.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="108"/>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="142"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Output graph&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="39"/>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="45"/>
         <source>Add LD hashmark</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="128"/>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="122"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt;The metadata language tag (@language in JSON-LD)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="131"/>
+        <location filename="../../galacteek/ui/forms/addhashmarkdialog.ui" line="125"/>
         <source>Metadata language</source>
         <translation type="unfinished"></translation>
     </message>
@@ -169,72 +149,57 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/browsertab.ui" line="67"/>
-        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Browse IPFS&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/forms/browsertab.ui" line="70"/>
-        <source>...</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/forms/browsertab.ui" line="118"/>
-        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Hashmark this page&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/forms/browsertab.ui" line="170"/>
+        <location filename="../../galacteek/ui/forms/browsertab.ui" line="124"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Stop&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/browsertab.ui" line="190"/>
+        <location filename="../../galacteek/ui/forms/browsertab.ui" line="144"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Reload page&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/browsertab.ui" line="228"/>
+        <location filename="../../galacteek/ui/forms/browsertab.ui" line="182"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Previous&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/browsertab.ui" line="266"/>
+        <location filename="../../galacteek/ui/forms/browsertab.ui" line="220"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Next&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/browsertab.ui" line="307"/>
+        <location filename="../../galacteek/ui/forms/browsertab.ui" line="261"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Find in page&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/browsertab.ui" line="343"/>
+        <location filename="../../galacteek/ui/forms/browsertab.ui" line="297"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Zoom out&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/browsertab.ui" line="363"/>
+        <location filename="../../galacteek/ui/forms/browsertab.ui" line="317"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Zoom in&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/browsertab.ui" line="138"/>
+        <location filename="../../galacteek/ui/forms/browsertab.ui" line="92"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Automatically pins visited pages&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/browsertab.ui" line="454"/>
+        <location filename="../../galacteek/ui/forms/browsertab.ui" line="408"/>
         <source>Find in page:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/browsertab.ui" line="474"/>
+        <location filename="../../galacteek/ui/forms/browsertab.ui" line="428"/>
         <source>Search</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/forms/browsertab.ui" line="93"/>
+        <location filename="../../galacteek/ui/forms/browsertab.ui" line="67"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Web Profile&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>

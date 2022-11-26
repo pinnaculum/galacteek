@@ -22,7 +22,7 @@
         <widget class="QComboBox" name="dbSource">
          <property name="maximumSize">
           <size>
-           <width>92</width>
+           <width>128</width>
            <height>16777215</height>
           </size>
          </property>

@@ -20,7 +20,7 @@
 }
 
 * {
-    font: 13pt "Segoe UI";
+    font: 12pt "Segoe UI";
 }
 
 QMainWindow::separator:horizontal {
@@ -32,7 +32,6 @@ QMainWindow::separator:vertical {
     width: 0px;
     height: 0px;
 }
-
 
 QTreeView::item, QListView::item, QTreeWidget::item, QListWidget::item
 {
@@ -113,7 +112,7 @@ QDockWidget#dockCrafting {
 }
 
 QMenu#hashmarksMgrMenu {
-    font: 14pt "Segoe UI";
+    font: 13pt "Segoe UI";
 }
 
 QWidget#urlZone {

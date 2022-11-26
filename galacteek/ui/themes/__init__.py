@@ -13,8 +13,6 @@ from galacteek.core import pkgResourcesDirEntries
 from galacteek.core import pkgResourcesRscFilename
 from galacteek.core import runningApp
 
-from galacteek.ui.style import GalacteekStyle
-
 
 @attr.s(auto_attribs=True)
 class ThemeColors:
@@ -146,12 +144,6 @@ class ThemesManager:
         )
 
     def themeApply(self, themeName: str, watch: bool = False):
-        exTheme = self.app.theme
-        if exTheme:
-            # There's already a theme installed
-            if exTheme.styleModName and exTheme.styleModName in sys.modules:
-                del sys.modules[exTheme.styleModName]
-
         themeDir = pkgResourcesRscFilename('galacteek.ui.themes', themeName)
         if not themeDir:
             return False
@@ -189,7 +181,6 @@ class ThemesManager:
             return False
 
         self.app.setStyleSheet(commonQss + mainQss)
-        self.app.setStyle(GalacteekStyle())
 
         theme.apply(self.app)
 

@@ -136,7 +136,7 @@ QWidget
 
 QWidget:disabled
 {
-    color: #454545;
+    /* color: #454545; */
     background-color: #31363b;
 }
 
@@ -758,6 +758,7 @@ QToolBar
     font-weight: bold;
 }
 
+/*
 QToolBar:horizontal
 {
     background: 0.09em solid #31363b;
@@ -767,6 +768,7 @@ QToolBar:vertical
 {
     background: 0.09em solid #31363b;
 }
+*/
 
 QToolBar::handle:horizontal
 {
@@ -832,7 +834,7 @@ QDialog QToolBar QToolButton[popupMode="2"]
 QPushButton
 {
     color: #eff0f1;
-    background-color: #31363b;
+    /* background-color: #31363b; */
     border: 0.04em solid #76797c;
     padding: 0.23em;
     border-radius: 0.09em;
@@ -1976,13 +1978,13 @@ QDialog QToolBar QToolButton[hasMenu="false"][popupMode="2"]
 
 QToolButton[autoRaise="false"]
 {
-    background-color: #31363b;
+    background: transparent;
     border-radius: 0.09em;
 }
 
 QToolButton[autoRaise="true"]
 {
-    background-color: #31363b;
+    background: transparent;
     border: 0.04em solid transparent;
 }
 
@@ -2487,4 +2489,12 @@ QFrame[frameShape][isWindow="true"][windowFrame="5"]
 {
     border: 5px solid #2c3034;
     border-radius: 3px;
+}
+
+/* galacteek widgets */
+
+QToolBar#tabActionsToolBar {
+    background-color: #464b4f;
+    border-bottom: 1px solid #778899;
+    border-right: 1px solid #778899;
 }

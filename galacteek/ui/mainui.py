@@ -858,6 +858,7 @@ class MainWindow(QMainWindow, KeyListener):
 
         dMenu = QMenu(iDonate(), self)
         dMenu.addAction(iDonateLiberaPay(), self.onHelpDonateLiberaPay)
+        dMenu.addAction(iDonateKoFi(), self.onHelpDonateKoFi)
         dMenu.addAction(iDonateGithubSponsors(), self.onHelpDonateGSponsors)
         dMenu.addSeparator()
         dMenu.addAction(iDonateBitcoin(), self.onHelpDonateBitcoin)
@@ -1502,12 +1503,15 @@ class MainWindow(QMainWindow, KeyListener):
                 ws.wsRegisterTab(keys.KeysTab(self), iKeys(), current=True)
 
     def onHelpDonateGSponsors(self):
-        tab = self.app.mainWindow.addBrowserTab(workspace='@Earth')
-        tab.enterUrl(QUrl('https://github.com/sponsors/pinnaculum'))
+        self.addBrowserTab().enterUrl(
+            QUrl('https://github.com/sponsors/pinnaculum')
+        )
 
     def onHelpDonateLiberaPay(self):
-        tab = self.app.mainWindow.addBrowserTab(workspace='@Earth')
-        tab.enterUrl(QUrl('https://liberapay.com/galacteek'))
+        self.addBrowserTab().enterUrl(QUrl('https://liberapay.com/galacteek'))
+
+    def onHelpDonateKoFi(self):
+        self.addBrowserTab().enterUrl(QUrl('https://ko-fi.com/galacteek'))
 
     def onHelpDonateBitcoin(self):
         ensure(runDialogAsync(BTCDonateDialog))
@@ -1524,7 +1528,9 @@ class MainWindow(QMainWindow, KeyListener):
         if isinstance(ws, TabbedWorkspace):
             ws.openHashmarks(parent=self)
 
-    def addBrowserTab(self, label='No page loaded', pinBrowsed=False,
+    def addBrowserTab(self,
+                      label='...',
+                      pinBrowsed=False,
                       minProfile=None, current=True,
                       workspace=None,
                       wsSwitch=True,

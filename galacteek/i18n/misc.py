@@ -42,6 +42,10 @@ def iDonateLiberaPay():
     return QCoreApplication.translate('Galacteek', 'Donate with LiberaPay')
 
 
+def iDonateKoFi():
+    return QCoreApplication.translate('Galacteek', 'Donate with Ko-Fi')
+
+
 def iDonateGithubSponsors():
     return QCoreApplication.translate(
         'Galacteek', 'Donate with Github Sponsors')
