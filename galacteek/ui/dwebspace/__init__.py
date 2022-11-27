@@ -19,6 +19,7 @@ from PyQt5.QtWidgets import QSpacerItem
 from PyQt5.QtWidgets import QStackedWidget
 
 from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import QEvent
@@ -615,13 +616,30 @@ class TabbedWorkspace(LinkedDataWsMixin,
                 if itab:
                     await itab.onTabHidden()
 
+        #
+        # Register the tab actions in the tab actions toolbar
+        #
+        # First we disable updates on the tab bar to avoid flickering
+        #
+
+        tbar = self.tabWidget.tabBar()
+        tbar.setUpdatesEnabled(False)
+
         self.toolBarTabActions.clear()
 
         for widgetAction in tab.tabActions():
             self.toolBarTabActions.addAction(widgetAction)
 
-        self.tabWidget.tabBar().repaint()
-        self.tabWidget.repaint()
+        # Re-enable updates on the tab bar
+        tbar.setUpdatesEnabled(True)
+
+        # Trick or treat
+        self.app.loop.call_later(
+            0.1,
+            QCoreApplication.sendEvent,
+            tbar,
+            QEvent(QEvent.FontChange)
+        )
 
     async def wsTabRemoved(self, tabidx):
         await self.triggerDefaultActionIfEmpty()
