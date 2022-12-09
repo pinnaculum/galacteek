@@ -111,29 +111,7 @@ should enable pubsub and p2p streams, or some features won't be available
 (`Check this page <https://gitlab.com/galacteek/galacteek/-/wikis/Configure-your-daemon>`_
 for more information).
 
-- Decentralized Identifiers (DID) support with IPID_
-- Semantic dweb agent (distributed RDF graph)
-- Browser-to-browser DID authentication over libp2p streams
-  (Verifiable Credentials with RSA-PSS)
-- Browsing sessions with automatic pinning (pins every page you browse)
-- Distributed chat with pubsub (chat channels syncronized with CRDT+DAG)
-- Support for remote pinning services
-- File manager with drag-and-drop support and timeframes (per-day view
-  of files in the MFS)
-- File sharing
-- BitTorrent to IPFS bridge
-- Gemini_ support
-- Tor support
-- Simple messenger based on the Bitmessage_ protocol
-- Search content with the ipfs-search_ search engine as well as with cyber_
-- Built-in blog with Atom feeds
-- Webcam to IPFS capture (image and videos)
-- Basic built-in media player with playlists based on linked-data
-- Image viewer and QR codes support
-- Use the IPFS filestore to avoid file duplication
-- ENS_ (Ethereum Name Service) resolving (access to ENS+IPFS websites)
-- Run WASM binaries with wasmer_ (use *Open* on a WASM object from the
-  clipboard manager)
+(`Features list <https://galacteek.gitlab.io/features/>`_
 
 Command-line usage
 ==================
@@ -233,6 +211,7 @@ This software incudes icons made by the following FlatIcon authors:
 - `Smashicons <https://smashicons.com>`_
 - `Pause08 <https://www.flaticon.com/authors/pause08>`_
 - `DinosoftLabs <https://www.flaticon.com/authors/DinosoftLabs>`_
+- `edt.im <https://www.flaticon.com/authors/edtim>`_
 
 Some of the beautiful artwork (under the Creative Commons CC-BY-SA license)
 from the ipfs-logo_ project's repository is included, unchanged.

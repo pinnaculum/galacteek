@@ -224,6 +224,38 @@ class build_ui(Command):
             themesCompileAll()
 
 
+class build_logo(Command):
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        logo = 'share/logos/galacteek.png'
+
+        os.system(
+            f'convert {logo} -resize 50% '
+            'share/icons/galacteek.png'
+        )
+
+        os.system(
+            f'convert {logo} -resize 25% '
+            'share/icons/galacteek-128.png'
+        )
+
+        os.system(
+            f'convert {logo} -resize 50% '
+            'share/icons/galacteek.ico'
+        )
+
+        os.system(
+            'png2icns share/icons/galacteek.icns share/icons/galacteek.png'
+        )
+
+
 class vbump(Command):
     """
     revbump command
@@ -337,6 +369,7 @@ setup(
         'build_ui': build_ui,
         'build_docs': build_docs,
         'build_contracts': build_contracts,
+        'build_logo': build_logo,
         'vbump': vbump
     },
     packages=found_packages,
