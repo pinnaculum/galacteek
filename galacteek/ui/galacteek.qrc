@@ -19,6 +19,7 @@
     <file>../../share/icons/logs.png</file>
     <file>../../share/icons/gemini.png</file>
     <file>../../share/icons/tor.png</file>
+    <file>../../share/icons/vault.png</file>
     <file>../../share/icons/graph-link.png</file>
     <file>../../share/icons/markdown.png</file>
     <file>../../share/icons/planets/globe-grid.png</file>
@@ -42,6 +43,9 @@
     <file>../../share/icons/dmessenger/dmessenger-inbox-newmessages.png</file>
     <file>../../share/icons/blockchain1.png</file>
     <file>../../share/icons/blockchain2.png</file>
+    <file>../../share/js/autofill/AutoFillObserver.js</file>
+    <file>../../share/js/autofill/AutoFillPasswordForms.js</file>
+    <file>../../share/js/webchannel/WebChannelSetup.js</file>
     <file>../../share/js/rdfstore.min.js</file>
     <file>../../share/js/web3.min.js</file>
     <file>../../share/js/webtorrent.min.js</file>

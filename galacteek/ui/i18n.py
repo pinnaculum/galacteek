@@ -10,6 +10,7 @@ from galacteek.i18n.bm import *  # noqa
 from galacteek.i18n.bt import *  # noqa
 from galacteek.i18n.clipboard import *  # noqa
 from galacteek.i18n.conn import *  # noqa
+from galacteek.i18n.credentials import *  # noqa
 from galacteek.i18n.did import *  # noqa
 from galacteek.i18n.hashmark import *  # noqa
 from galacteek.i18n.ip import *  # noqa

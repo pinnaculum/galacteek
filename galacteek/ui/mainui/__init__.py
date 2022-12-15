@@ -1,7 +1,4 @@
 import functools
-import traceback
-
-from logbook import Handler
 
 from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtWidgets import QWidget
@@ -12,8 +9,6 @@ from PyQt5.QtWidgets import QActionGroup
 from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtWidgets import QPushButton
 from PyQt5.QtWidgets import QLabel
-from PyQt5.QtWidgets import QTextEdit
-from PyQt5.QtWidgets import QLineEdit
 from PyQt5.QtWidgets import QStackedWidget
 from PyQt5.QtWidgets import QToolTip
 
@@ -30,7 +25,6 @@ from PyQt5.Qt import QSizePolicy
 
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtGui import QTextCursor
-from PyQt5.QtGui import QTextDocument
 
 from PyQt5 import QtWebEngineWidgets
 
@@ -39,10 +33,12 @@ from galacteek import ensure
 from galacteek import partialEnsure
 from galacteek import log
 from galacteek import database
+
+from galacteek.appsettings import *
+
 from galacteek.core import runningApp
 from galacteek.core.glogger import loggerMain
 from galacteek.core.glogger import loggerUser
-from galacteek.core.glogger import LogRecordStyler
 from galacteek.core.asynclib import asyncify
 from galacteek.core.modelhelpers import *
 from galacteek.core.ps import KeyListener
@@ -51,51 +47,54 @@ from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.cidhelpers import IPFSPath
 
-from .forms import ui_ipfsinfos
+from .logs import UserLogsWindow
+from .logs import MainWindowLogHandler
 
-from . import userwebsite
-from . import browser
-from . import files
-from . import keys
-from . import textedit
-from . import ipfssearch
-from . import eventlog
-from .files import unixfs
+from ..forms import ui_ipfsinfos
 
-from .dids import DIDExplorer
-from .clips import RotatingCubeClipSimple
-from .clips import RotatingCubeRedFlash140d
-from .textedit import TextEditorTab
-from .iprofile import ProfileEditDialog
-from .iprofile import ProfileButton
-from .pubsub import PubsubSnifferWidget
-from .pyramids import MultihashPyramidsToolBar
-from .quickaccess import QuickAccessToolBar
-from .daemonstats import BandwidthGraphView
-from .daemonstats import PeersCountGraphView
-from .camera import CameraController
-from .helpers import *
-from .pinning.pinstatus import RPSStatusButton
-from .pinning.pinstatus import PinStatusWidget
-from .widgets import AtomFeedsToolbarButton
-from .widgets import PopupToolButton
-from .widgets.hashmarks import HashmarkMgrButton
-from .widgets import AnimatedLabel
-from .widgets.netselector import IPFSNetworkSelectorToolButton
-from .widgets.toolbar import BasicToolBar
+from .. import userwebsite
+from .. import browser
+from .. import files
+from .. import keys
+from .. import textedit
+from .. import ipfssearch
+from .. import eventlog
+from ..files import unixfs
 
-from .widgets.torcontrol import TorControllerButton
+from ..dids import DIDExplorer
+from ..clips import RotatingCubeClipSimple
+from ..clips import RotatingCubeRedFlash140d
+from ..textedit import TextEditorTab
+from ..iprofile import ProfileEditDialog
+from ..iprofile import ProfileButton
+from ..pubsub import PubsubSnifferWidget
+from ..pyramids import MultihashPyramidsToolBar
+from ..quickaccess import QuickAccessToolBar
+from ..daemonstats import BandwidthGraphView
+from ..daemonstats import PeersCountGraphView
+from ..camera import CameraController
+from ..helpers import *
+from ..pinning.pinstatus import RPSStatusButton
+from ..pinning.pinstatus import PinStatusWidget
+from ..widgets import AtomFeedsToolbarButton
+from ..widgets import PopupToolButton
+from ..widgets.hashmarks import HashmarkMgrButton
+from ..widgets import AnimatedLabel
+from ..widgets.netselector import IPFSNetworkSelectorToolButton
+from ..widgets.toolbar import BasicToolBar
 
-from .docks.appdock import *
+from ..widgets.torcontrol import TorControllerButton
 
-from .dialogs import *
-from ..appsettings import *
-from .i18n import *
+from ..docks.appdock import *
 
-from .dwebspace import *
+from ..dialogs import *
 
-from .clipboard import ClipboardManager
-from .clipboard import ClipboardItemsStack
+from ..i18n import *
+
+from ..dwebspace import *
+
+from ..clipboard import ClipboardManager
+from ..clipboard import ClipboardItemsStack
 
 
 def iPinningItemStatus(pinPath, pinProgress):
@@ -136,133 +135,6 @@ def iAboutGalacteek():
         <p>galacteek version: {0}</p>
         <p>PyQt5 version: {1}</p>
         ''').format(__version__, QT_VERSION_STR)  # noqa
-
-
-class UserLogsWindow(QMainWindow):
-    hidden = pyqtSignal()
-
-    def __init__(self):
-        super(UserLogsWindow, self).__init__()
-        self.toolbar = QToolBar(self)
-        self.toolbar.setMovable(False)
-        self.addToolBar(Qt.TopToolBarArea, self.toolbar)
-
-        self.logsBrowser = QTextEdit(self)
-        self.logsBrowser.setFontPointSize(16)
-        self.logsBrowser.setReadOnly(True)
-        self.logsBrowser.setObjectName('logsTextWidget')
-        self.logsBrowser.setSizePolicy(
-            QSizePolicy.Expanding, QSizePolicy.Expanding)
-
-        self.searchBack = QPushButton('Search backward')
-        self.searchBack.clicked.connect(self.onSearchBack)
-        self.searchFor = QPushButton('Search forward')
-        self.searchFor.clicked.connect(self.onSearchForward)
-
-        self.logsSearcher = QLineEdit(self)
-        self.logsSearcher.setClearButtonEnabled(True)
-        self.toolbar.addWidget(self.logsSearcher)
-        self.toolbar.addWidget(self.searchBack)
-        self.toolbar.addWidget(self.searchFor)
-        self.logsSearcher.returnPressed.connect(self.onSearchBack)
-        self.logsSearcher.textChanged.connect(self.onSearchTextChanged)
-        self.setCentralWidget(self.logsBrowser)
-
-    def onSearchTextChanged(self):
-        pass
-
-    def onSearchBack(self):
-        flags = QTextDocument.FindCaseSensitively | QTextDocument.FindBackward
-        self.searchText(flags)
-
-    def onSearchForward(self):
-        flags = QTextDocument.FindCaseSensitively
-        self.searchText(flags)
-
-    def searchText(self, flags):
-        text = self.logsSearcher.text()
-        if text:
-            self.logsBrowser.find(text, flags)
-
-    def hideEvent(self, event):
-        self.hidden.emit()
-        super().hideEvent(event)
-
-
-class MainWindowLogHandler(Handler):
-    """
-    Custom logbook handler that logs to the status bar
-
-    Should be moved to a separate module
-    """
-
-    modulesColorTable = {
-        'galacteek.ui.resource': '#7f8491',
-        'galacteek.did.ipid': '#7f8491',
-        'galacteek.core.profile': 'blue',
-        'galacteek.ui.chat': 'blue'
-    }
-
-    def __init__(self, logsBrowser, application_name=None, address=None,
-                 facility='user', level=0, format_string=None,
-                 filter=None, bubble=True, window=None):
-        Handler.__init__(self, level, filter, bubble)
-        self.app = QApplication.instance()
-        self.application_name = application_name
-        self.window = window
-        self.logsBrowser = logsBrowser
-        self.logsBrowser.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        self.doc = self.logsBrowser.document()
-        self.logStyler = LogRecordStyler()
-
-    def emit(self, record):
-        # The emit could be called from another thread so play it safe ..
-        if not self.app.shuttingDown:
-            self.app.loop.call_soon_threadsafe(self._handleRecord, record)
-
-    def _handleRecord(self, record):
-        try:
-            cursor = self.logsBrowser.textCursor()
-            vScrollBar = self.logsBrowser.verticalScrollBar()
-            color, _font = self.logStyler.getStyle(record)
-
-            if record.level_name == 'INFO':
-                self.window.statusMessage(
-                    f'''
-                    <div style="width: 450px">
-                      <p style="color: {color}">
-                        <b>{record.module}</b>
-                      </p>
-                      <p>{record.message}</p>
-                    </div>
-                    '''
-                )
-
-            oldScrollbarValue = vScrollBar.value()
-            isDown = oldScrollbarValue == vScrollBar.maximum()
-
-            self.logsBrowser.moveCursor(QTextCursor.End)
-            self.logsBrowser.insertHtml(
-                f'''
-                <p style="color: {color}; font: 14pt 'Inter UI';">
-                    [{record.time:%H:%M:%S.%f%z}]
-                    <b>@{record.module}@</b>: {record.message}
-                </p>
-                <br />
-                '''
-            )
-
-            if cursor.hasSelection() or not isDown:
-                self.logsBrowser.setTextCursor(cursor)
-                vScrollBar.setValue(oldScrollbarValue)
-            else:
-                self.logsBrowser.moveCursor(QTextCursor.End)
-                vScrollBar.setValue(vScrollBar.maximum())
-
-            if self.doc.lineCount() > 2048:
-                self.doc.clear()
-        except Exception:
-            traceback.print_exc()
 
 
 class IPFSDaemonStatusWidget(QWidget):
@@ -989,6 +861,7 @@ class MainWindow(QMainWindow, KeyListener):
         self.appDock.addStatusWidget(self.ipfsStatusCube)
         self.appDock.addStatusWidget(self.networkSelectorButton)
         self.appDock.addStatusWidget(self.torControlButton)
+        self.appDock.addStatusWidget(self.app.credsManager)
 
         self.appDock.addStatusWidget(self.pinningStatusButton)
         self.appDock.addStatusWidget(self.rpsStatusButton)

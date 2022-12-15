@@ -676,44 +676,6 @@ p, li { white-space: pre-wrap; }
         <source>Devices</source>
         <translation type="unfinished"></translation>
     </message>
-    <message>
-        <location filename="../../galacteek/ui/mainui.py" line="102"/>
-        <source>
-Path: {0}, nodes processed: {1}</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../galacteek/ui/mainui.py" line="111"/>
-        <source>
-        &lt;p&gt;
-        &lt;b&gt;galacteek&lt;/b&gt; is a multi-platform Qt5-based browser
-        for the distributed web
-        &lt;/p&gt;
-        &lt;br/&gt;
-
-        &lt;p&gt;Website:
-        &lt;a href=&quot;https://galacteek.gitlab.io&quot;&gt;
-            https://galacteek.gitlab.io
-        &lt;/a&gt;
-        &lt;/p&gt;
-
-        &lt;p&gt;GitLab:
-        &lt;a href=&quot;https://gitlab.com/galacteek/galacteek&quot;&gt;
-            https://gitlab.com/galacteek/galacteek
-        &lt;/a&gt;
-        &lt;/p&gt;
-        &lt;p&gt;
-        Author:
-        &lt;a href=&quot;mailto: BM-87dtCqLxqnpwzUyjzL8etxGK8MQQrhnxnt1@bitmessage&quot;&gt;
-        cipres (David Cipres)
-        &lt;/a&gt;
-        &lt;/p&gt;
-
-        &lt;p&gt;galacteek version: {0}&lt;/p&gt;
-        &lt;p&gt;PyQt5 version: {1}&lt;/p&gt;
-        </source>
-        <translation type="unfinished"></translation>
-    </message>
 </context>
 <context>
     <name>HashmarksViewForm</name>

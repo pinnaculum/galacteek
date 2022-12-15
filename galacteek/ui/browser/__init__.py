@@ -36,6 +36,7 @@ from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWebEngineWidgets import QWebEngineDownloadItem
 from PyQt5.QtWebEngineWidgets import QWebEngineContextMenuData
 from PyQt5.QtWebEngineWidgets import QWebEngineScript
+from PyQt5.QtWebChannel import QWebChannel
 
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtGui import QCursor
@@ -84,10 +85,13 @@ from galacteek.browser.webprofiles import WP_NAME_ANON
 from galacteek.browser.webprofiles import webProfilesPrio
 
 from galacteek.dweb.webscripts import scriptFromString
+from galacteek.dweb.webscripts import scriptFromQFile
 from galacteek.dweb.page import BaseHandler
 from galacteek.dweb.page import pyqtSlot
 from galacteek.dweb.render import renderTemplate
 from galacteek.dweb.htmlparsers import IPFSLinksParser
+
+from galacteek.dweb.channels import dom
 
 from ..pronto import buildProntoGraphsMenu
 
@@ -554,6 +558,12 @@ class WebView(IPFSWebView):
 
         if web3Channel:
             self.webPage.changeWebChannel(web3Channel)
+        else:
+            # Default channel with autofill
+            channel = QWebChannel(self)
+            channel.registerObject('dombridge',
+                                   dom.DOMBridge(self))
+            self.webPage.changeWebChannel(channel)
 
         self.setPage(self.webPage)
 
@@ -1900,6 +1910,44 @@ class BrowserTab(GalacteekTab):
         self.currentUrlHistoryRecord()
 
         self.urlZoneInsert(self.currentUrl)
+
+        ensure(self.afterLoadScripts())
+
+    @ipfsOp
+    async def afterLoadScripts(self, ipfsop):
+        """
+        Run scripts that need to be executed after the page is loaded
+
+        Password forms are handled here.
+        """
+
+        autoFillVars = ''
+        profile = ipfsop.ctx.currentProfile
+        ipid = await profile.userInfo.ipIdentifier()
+
+        yurl = URL(
+            self.currentUrl.toString()
+        ).with_query('').with_fragment('')
+
+        for cred in self.app.credsManager.forUrl(ipid.did,
+                                                 yurl):
+            ufield = cred.get('username_field')
+            pwfield = cred.get('password_field')
+            username = cred.get('username')
+            password = cred.get('password')
+
+            autoFillVars += f"autoFillVals['{ufield}'] = '{username}';\n"
+            autoFillVars += f"autoFillVals['{pwfield}'] = '{password}';\n"
+
+        if autoFillVars:
+            script = scriptFromQFile(
+                'autofill-password-forms',
+                ':/share/js/autofill/AutoFillPasswordForms.js'
+            )
+
+            await self.webView.page().runJs(
+                script.sourceCode() % autoFillVars
+            )
 
     async def onIconChanged(self, icon):
         self.workspace.tabWidget.setTabIcon(self.tabPageIdx, icon)

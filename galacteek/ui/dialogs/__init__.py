@@ -96,6 +96,8 @@ from ..forms import ui_hugonewpostdialog
 from ..forms import ui_hugoinstalldialog
 from ..forms import ui_filedownloaddialog
 
+from ..forms import ui_pwdstoreaskdialog
+
 from ..helpers import *
 from ..widgets import HorizontalLine
 from ..widgets import IconSelector
@@ -2241,3 +2243,16 @@ class FileDownloadDialog(BaseDialog):
 
         if csize > 0 and size and pct in range(0, 101):
             self.ui.pbar.setValue(pct)
+
+
+class WebCredentialsStoreAskDialog(BaseDialog):
+    uiClass = ui_pwdstoreaskdialog.Ui_PasswordStoreAskDialog
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.ui.storeButton.clicked.connect(self.accept)
+        self.ui.doNotStoreButton.clicked.connect(self.reject)
+
+    def accept(self):
+        self.done(1)

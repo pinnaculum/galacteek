@@ -131,6 +131,7 @@ from galacteek.ui.dwebspace import *
 from galacteek.ui.resource import IPFSResourceOpener
 from galacteek.ui.style import GalacteekStyle
 from galacteek.ui.qmlapp import qmlRegisterCustomTypes
+from galacteek.ui.widgets.passwords import PasswordsManager
 
 from galacteek.ui.helpers import *
 from galacteek.ui.i18n import *
@@ -142,6 +143,7 @@ from galacteek.core.ipfsmarks import IPFSMarks
 
 from galacteek.services.app import AppService
 
+from .credstore import CredentialsStore
 from .conn import ApplicationDaemonStarterMixin
 
 from yarl import URL
@@ -292,6 +294,7 @@ class GalacteekApplication(ApplicationDaemonStarterMixin,
         self._ipfsIconsCache = {}
         self._ipfsIconsCacheMax = 32
         self._goIpfsBinPath = None
+        self.__creds = None
 
         self.sqliteDb = None
         self.scheduler = None
@@ -511,10 +514,6 @@ class GalacteekApplication(ApplicationDaemonStarterMixin,
         return self._nsCacheLocation
 
     @property
-    def orbitDataLocation(self):
-        return self._orbitDataLocation
-
-    @property
     def cAsyncio(self):
         return cGet('asyncio')
 
@@ -555,6 +554,9 @@ class GalacteekApplication(ApplicationDaemonStarterMixin,
     def networkProxySetNull(self):
         self.networkProxySet(NullProxy())
 
+    def pwVaultOpen(self, pwd: str) -> bool:
+        return self.__creds.open(pwd)
+
     def initSystemTray(self):
         self.systemTray.setIcon(getIcon('galacteek.png'))
         self.systemTray.show()
@@ -575,6 +577,14 @@ class GalacteekApplication(ApplicationDaemonStarterMixin,
         self.systemTray.setContextMenu(systemTrayMenu)
 
     def initMisc(self):
+        # Passwords vault
+        self.__creds = CredentialsStore(self.__pwVaultLocation)
+
+        self.credsManager = PasswordsManager(
+            icon=getIcon('vault.png'),
+            credsStore=self.__creds
+        )
+
         # Start with no proxy
         self.networkProxySet(NullProxy())
         useSystemProxyConfig(False)
@@ -1173,7 +1183,7 @@ class GalacteekApplication(ApplicationDaemonStarterMixin,
         self._ipfsDataLocation = self.dataLocation.joinpath('ipfs')
         self._ipfsdStatusLocation = self.dataLocation.joinpath('ipfsd.status')
 
-        self._orbitDataLocation = self.dataLocation.joinpath('orbitdb')
+        self.__pwVaultLocation = self.dataLocation.joinpath('pwvault')
         self._mHashDbLocation = self.dataLocation.joinpath('mhashmetadb')
         self._sqliteDbLocation = self.dataLocation.joinpath('db.sqlite')
         self._torConfigLocation = self.dataLocation.joinpath('torrc')

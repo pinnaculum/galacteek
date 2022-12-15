@@ -459,10 +459,22 @@ def inputText(title='', label='', parent=None):
         return text
 
 
-def inputTextLong(title='', label='', text='', inputMethod=None,
-                  parent=None):
+def inputTextLong(title: str = '', label: str = '',
+                  text: str = '', inputMethod=None,
+                  parent=None) -> str:
     text, ok = QInputDialog.getText(
         parent, title, label, QLineEdit.Normal,
+        text, Qt.Dialog, inputMethod if inputMethod else Qt.ImhNone)
+    if ok:
+        return text
+
+
+def inputPassword(title: str = '',
+                  label: str = 'Enter password',
+                  text='', inputMethod=None,
+                  parent=None) -> str:
+    text, ok = QInputDialog.getText(
+        parent, title, label, QLineEdit.Password,
         text, Qt.Dialog, inputMethod if inputMethod else Qt.ImhNone)
     if ok:
         return text

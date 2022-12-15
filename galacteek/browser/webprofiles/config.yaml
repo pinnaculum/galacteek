@@ -104,9 +104,25 @@ envs:
           jquery:
             type: 'qrc'
             path: ':/share/js/jquery-3.6.0.min.js'
+
           rdfstore:
             type: 'qrc'
             path: ':/share/js/rdfstore.min.js'
+
+          autofill:
+            type: 'qrc'
+            path: ':/share/js/autofill/AutoFillObserver.js'
+            priority: 2
+
+          qtwebchannel:
+            type: 'qrc'
+            path: ':/qtwebchannel/qwebchannel.js'
+            priority: 0
+
+          webchannel_setup:
+            type: 'qrc'
+            path: ':/share/js/webchannel/WebChannelSetup.js'
+            priority: 1
 
         fonts:
           standard: 'Inter UI'
