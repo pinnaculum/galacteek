@@ -9,8 +9,8 @@ class BaseClip(QMovie):
     cache = True
 
     def __init__(self, cache=True, speed=None):
-        super(BaseClip, self).__init__(
-            ':/share/clips/{}'.format(self.clipname))
+        super(BaseClip, self).__init__(f':/share/clips/{self.clipname}')
+
         self.setSpeed(speed if speed else self.speedStart)
 
         self.setCacheMode(
@@ -21,6 +21,11 @@ class BaseClip(QMovie):
 
     def playing(self):
         return self.state() == QMovie.Running
+
+
+class BouncyOrbitClip(BaseClip):
+    clipname = 'bouncy-orbit.gif'
+    speedStart = 50
 
 
 class RotatingCubeClipSimple(BaseClip):

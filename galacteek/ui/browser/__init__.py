@@ -794,13 +794,13 @@ class BrowserLoadingWidget(QWidget):
         self.vl = QVBoxLayout(self)
         self.setLayout(self.vl)
 
-        self.animation = AnimatedLabel(BouncingCubeClip2(),
+        self.animation = AnimatedLabel(BouncyOrbitClip(),
                                        parent=self)
         self.vl.addWidget(self.animation, 1, Qt.AlignCenter)
 
     def loading(self, progress: int = 100):
         self.animation.startClip()
-        self.animation.clip.setSpeed(max(progress * 3, 200))
+        self.animation.clip.setSpeed(max(progress, 100))
 
     def hideEvent(self, ev):
         self.animation.stopClip()
@@ -810,7 +810,7 @@ class PageResourceNotLoadingWidget(OverlayWidget):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
 
-        self.animation = AnimatedLabel(BouncingCubeClip1(),
+        self.animation = AnimatedLabel(BouncyOrbitClip(),
                                        parent=self)
         if parent:
             self.resize(parent.size())
@@ -819,7 +819,6 @@ class PageResourceNotLoadingWidget(OverlayWidget):
 
     def loading(self, progress: int = 100):
         self.animation.startClip()
-        self.animation.clip.setSpeed(max(progress * 2, 150))
 
 
 class BrowserTab(GalacteekTab):

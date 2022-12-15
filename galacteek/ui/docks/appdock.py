@@ -25,7 +25,7 @@ from ..widgets.toolbar import BasicToolBar
 from ..helpers import getIcon
 from ..helpers import iconSizeGet
 
-from ..clips import RotatingCubeRedFlash140d
+from ..clips import BouncyOrbitClip
 
 from ..dwebspace import *
 
@@ -49,11 +49,10 @@ class MainDockButton(GLargeToolButton,
         self.toolbarWs.wsSwitched.connect(self.onWsSwitched)
         self.toolbarWs.hovered.connect(self.onHovered)
 
-        self.rotatingCubeClip = RotatingCubeRedFlash140d()
-        self.rotatingCubeClip.setSpeed(120)
-        self.rotatingCubeClip.finished.connect(
-            functools.partial(self.rotatingCubeClip.start))
-        self.rotatingCubeClip.frameChanged.connect(self.onCubeClipFrame)
+        self.bouncyClip = BouncyOrbitClip()
+        self.bouncyClip.finished.connect(
+            functools.partial(self.bouncyClip.start))
+        self.bouncyClip.frameChanged.connect(self.onCubeClipFrame)
 
         self.hovered.connect(self.onHovered)
         self.toggled.connect(self.onToggled)
@@ -71,9 +70,9 @@ class MainDockButton(GLargeToolButton,
         self.toolbarWs.setProperty('wsShown', openUp)
 
         if openUp:
-            self.rotatingCubeClip.start()
+            self.bouncyClip.start()
         else:
-            self.rotatingCubeClip.stop()
+            self.bouncyClip.stop()
             self.setCurrentWsIcon()
 
         self.opened = openUp
@@ -87,7 +86,7 @@ class MainDockButton(GLargeToolButton,
 
     def onCubeClipFrame(self, no):
         if self.opened:
-            self.setIcon(self.rotatingCubeClip.createIcon())
+            self.setIcon(self.bouncyClip.createIcon())
         else:
             self.setCurrentWsIcon()
 

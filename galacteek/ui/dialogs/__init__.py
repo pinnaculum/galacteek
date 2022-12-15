@@ -94,6 +94,7 @@ from ..widgets import PlanetSelector
 from ..widgets import LabelWithURLOpener
 from ..widgets import AnimatedLabel
 from ..clips import BouncingCubeClip1
+from ..clips import BouncyOrbitClip
 from ..colors import *
 
 from ..i18n import iTitle
@@ -1291,7 +1292,7 @@ class DefaultProgressDialog(QWidget):
         self.sWantRetry = AsyncSignal()
 
         self.vl = QVBoxLayout(self)
-        self.cube = AnimatedLabel(BouncingCubeClip1())
+        self.orbit = AnimatedLabel(BouncyOrbitClip())
         self.pBar = QProgressBar()
         self.retryButton = QPushButton('Retry')
         self.retryButton.hide()
@@ -1322,7 +1323,7 @@ class DefaultProgressDialog(QWidget):
         self.setLayout(self.vl)
         self.vl.addItem(
             QSpacerItem(10, 50, QSizePolicy.Expanding, QSizePolicy.Expanding))
-        self.vl.addWidget(self.cube, 0, Qt.AlignCenter)
+        self.vl.addWidget(self.orbit, 0, Qt.AlignCenter)
         self.vl.addWidget(self.status, 0, Qt.AlignCenter)
         self.vl.addWidget(self.statusExtra, 0, Qt.AlignCenter)
         self.vl.addWidget(self.pBar, 0, Qt.AlignCenter)
@@ -1332,7 +1333,7 @@ class DefaultProgressDialog(QWidget):
             QSpacerItem(10, 50, QSizePolicy.Expanding, QSizePolicy.Expanding))
         self.showProgress(False)
 
-        self.cube.clip.setScaledSize(QSize(256, 256))
+        self.orbit.clip.setScaledSize(QSize(256, 256))
         self.setContentsMargins(0, 0, 0, 0)
         self.vl.setContentsMargins(0, 0, 0, 0)
 
@@ -1354,10 +1355,10 @@ class DefaultProgressDialog(QWidget):
         self.statusExtra.setText('')
 
     def spin(self):
-        self.cube.startClip()
+        self.orbit.startClip()
 
     def stop(self):
-        self.cube.stopClip()
+        self.orbit.stopClip()
 
     def log(self, text):
         self.status.setText(text)

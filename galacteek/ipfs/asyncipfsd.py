@@ -446,8 +446,11 @@ class AsyncIPFSDaemon(object):
         repoV = self.repoVersion()
 
         if isinstance(repoV, int) and latestMigrationV > 0 and \
-           repoV < latestMigrationV:
-            # Migrate
+           repoV < latestMigrationV and latestMigrationV < 13:
+            # XXX: Migrations for repov = 13 are temporarily disabled
+            # (2022-12-15)
+            # fs-repo-12-to-13 works but kubo 0.17 cannot use a v13 repo
+
             self.message('Detected repository version {repoV}, migrating')
 
             yield 25, 'Running migration'
@@ -626,7 +629,7 @@ class AsyncIPFSDaemon(object):
         if self.namesysPubsub:
             args.append('--enable-namesys-pubsub')
 
-        if self.migrateRepo:
+        if self.migrateRepo and 0:
             args.append('--migrate')
 
         if self.offline:
