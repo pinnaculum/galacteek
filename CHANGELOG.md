@@ -5,6 +5,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.2] - 2022-12-16
+
+### Changed
+- Freeze kubo repo migrations for v13
+
 ## [0.6.1] - 2022-11-06
 
 ### Added
