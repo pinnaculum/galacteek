@@ -1,6 +1,6 @@
 app-id: io.gitlab.galacteek.Galacteek
 runtime: org.freedesktop.Platform
-runtime-version: '21.08'
+runtime-version: '22.08'
 sdk: org.freedesktop.Sdk
 command: galacteek-flatpak-runner
 finish-args:
@@ -50,19 +50,19 @@ modules:
         url: "https://dist.torproject.org/tor-0.4.5.6.tar.gz"
         sha256: "22cba3794fedd5fa87afc1e512c6ce2c21bc20b4e1c6f8079d832dc1e545e733"
 
-  # Fetch and extract kubo 0.15.0
+  # Fetch and extract kubo 0.17.0
   - name: fetch-kubo
     buildsystem: simple
     build-commands:
-      - tar -xvf kubo_v0.15.0_linux-amd64.tar.gz
+      - tar -xvf kubo_v0.17.0_linux-amd64.tar.gz
       - cp kubo/ipfs $FLATPAK_DEST/bin
     build-options:
       build-args:
         - --share=network
     sources:
       - type: file
-        url: "https://dist.ipfs.tech/kubo/v0.15.0/kubo_v0.15.0_linux-amd64.tar.gz"
-        sha256: "c5ef6c393df26007e10e48e009d427f5bdbab14cbc82461c927529a3b840924d"
+        url: "https://dist.ipfs.tech/kubo/v0.17.0/kubo_v0.17.0_linux-amd64.tar.gz"
+        sha256: "7121f3e2d44a6a978d289a206cdbc7f10ba0348f7386c456ff1fdc4d4a8408d0"
 
   # Fetch and extract fs-repo-migrations 2.0.2
   - name: fetch-fs-repo-migrations
