@@ -350,6 +350,7 @@ install_reqs_ui_pyqt_515 = reqs_parse('requirements-ui-pyqt-5.15.txt')
 install_reqs_ld_schemas = reqs_parse('requirements-ld-schemas.txt')
 install_reqs_rdf_bsddb = reqs_parse('requirements-rdf-bsddb.txt')
 install_reqs_trafficshaping = reqs_parse('requirements-trafficshaping.txt')
+install_reqs_chatgpt = reqs_parse('requirements-chatgpt.txt')
 
 
 found_packages = find_packages(exclude=['tests', 'tests.*'])
@@ -383,6 +384,7 @@ setup(
         'trafficshaping': install_reqs_trafficshaping,
         'matplotlib': install_reqs_extra_matplotlib,
         'docs': install_reqs_docs,
+        'chatgpt': install_reqs_chatgpt
     },
     dependency_links=deps_links,
     package_data={

@@ -1,0 +1,14 @@
+envs:
+  default:
+    accounts:
+      main:
+        enabled: True
+        description: 'Default OpenAI account'
+
+        apiKey: ???
+
+        defaultTemperature: 0.9
+
+        params:
+          engine: text-davinci-003
+          temperature: 0.9

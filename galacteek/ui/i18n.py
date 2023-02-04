@@ -3,6 +3,7 @@ import inspect
 from PyQt5.QtCore import QCoreApplication
 
 from galacteek.i18n.actions import *  # noqa
+from galacteek.i18n.ai import *  # noqa
 from galacteek.i18n.blackhole import *  # noqa
 from galacteek.i18n.browser import *  # noqa
 from galacteek.i18n.bm import *  # noqa

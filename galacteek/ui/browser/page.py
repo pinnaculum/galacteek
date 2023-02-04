@@ -29,8 +29,6 @@ class BrowserDwebPage (QWebEnginePage):
             partialEnsure(self.onPermissionRequestCanceled))
         self.setBgColor(self.app.theme.colors.webEngineBackground)
 
-        # self.changeWebChannel(QWebChannel(self))
-
     @property
     def channel(self):
         return self.webChannel()
@@ -127,9 +125,6 @@ class BrowserDwebPage (QWebEnginePage):
         self.setWebChannel(channel)
 
     def registerPageHandler(self):
-        # self.channel = QWebChannel(self)
-        # self.changeWebChannel(self.channel)
-
         self.changeWebChannel(QWebChannel(self))
         self.pageHandler = CurrentPageHandler(self)
         self.channel.registerObject('gpage', self.pageHandler)

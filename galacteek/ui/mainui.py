@@ -756,6 +756,13 @@ class MainWindow(QMainWindow, KeyListener):
             triggered=self.onOpenHashmarksCenter
         )
 
+        self.chatBotSessionAction = QAction(
+            getIcon('ai/chatbot.png'),
+            'Chatbot session',
+            shortcut=QKeySequence('Ctrl+Shift+c'),
+            triggered=self.onNewChatBotSession
+        )
+
         self.seedAppImageAction = QAction(
             getIcon('appimage.png'),
             'Seed AppImage',
@@ -1104,6 +1111,8 @@ class MainWindow(QMainWindow, KeyListener):
 
         self.stack.wsAddGlobalAction(self.browseAction, default=True)
         self.stack.wsAddGlobalAction(self.hashmarksCenterAction, default=False)
+        self.stack.wsAddGlobalAction(self.chatBotSessionAction, default=False)
+
         self.stack.activateWorkspaces(False)
 
     def onSeedAppImage(self):
@@ -1524,6 +1533,14 @@ class MainWindow(QMainWindow, KeyListener):
 
         if isinstance(ws, TabbedWorkspace):
             ws.openHashmarks(parent=self)
+
+    def onNewChatBotSession(self):
+        from galacteek.ui.chatbot import ChatBotSessionTab
+
+        self.registerTab(ChatBotSessionTab(self),
+                         'Chatbot session',
+                         icon=getIcon('ai/chatbot.png'),
+                         current=True)
 
     def addBrowserTab(self,
                       label='...',

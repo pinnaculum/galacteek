@@ -1,6 +1,8 @@
 cfgInitTable = [
     'galacteek.application',
 
+    'galacteek.ai.openai',
+
     # browser
     'galacteek.browser',
     'galacteek.browser.schemes',

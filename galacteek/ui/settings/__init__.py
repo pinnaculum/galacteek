@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import QComboBox
 from PyQt5.QtWidgets import QCheckBox
 from PyQt5.QtWidgets import QSpinBox
 from PyQt5.QtWidgets import QLineEdit
+from PyQt5.QtWidgets import QTextEdit
 from PyQt5.QtWidgets import QSizePolicy
 from PyQt5.QtWidgets import QScrollArea
 
@@ -383,6 +384,7 @@ class SettingsCenterTab(GalacteekTab,
         self.load('Files', 'files')
         self.load(iRemotePinning(), 'pinning')
         self.load(iBitMessage(), 'bitmessage')
+        self.load('OpenAI', 'ai')
 
         for pName, profile in self.app.webProfiles.items():
             self.load(
@@ -471,9 +473,15 @@ class SettingsBaseController(QObject, Configurable, KeyListener):
     def cfgValueTranslate(self, cAttr, value):
         pass
 
+    def cfgItemChanged(self, widget, mod, attr, value):
+        pass
+
     def cfgWatch(self, widget, cAttr, cMod):
         def valueChanged(value, attr, mod):
             cSet(attr, value, mod=mod)
+
+            # Notify callback when it was changed
+            self.cfgItemChanged(widget, mod, attr, value)
 
         val = cGet(cAttr, mod=cMod)
 
@@ -511,6 +519,11 @@ class SettingsBaseController(QObject, Configurable, KeyListener):
         elif isinstance(widget, QLineEdit):
             widget.textChanged.connect(
                 lambda text: valueChanged(text, cAttr, cMod)
+            )
+            widget.setText(val)
+        elif isinstance(widget, QTextEdit):
+            widget.textChanged.connect(
+                lambda: valueChanged(widget.toPlainText(), cAttr, cMod)
             )
             widget.setText(val)
 
