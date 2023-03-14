@@ -65,6 +65,7 @@ from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.mimetype import detectMimeType
 
+from galacteek.core import runningApp
 from galacteek.core.asynclib import asyncReadFile
 from galacteek.space import allPlanetsNames
 from galacteek.dweb.markdown import markitdown
@@ -515,12 +516,14 @@ class PopupToolButton(QToolButton, URLDragAndDropProcessor):
 
     def unflashButton(self):
         self.setProperty('flash', False)
-        self.app.repolishWidget(self)
 
-    def flashButton(self):
+        runningApp().repolishWidget(self)
+
+    def flashButton(self, delay: int = 2):
         self.setProperty('flash', True)
-        self.app.repolishWidget(self)
-        self.app.loop.call_later(2, self.unflashButton)
+
+        runningApp().repolishWidget(self)
+        runningApp().loop.call_later(delay, self.unflashButton)
 
     async def populateMenuAsync(self, menu):
         pass

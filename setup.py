@@ -403,6 +403,7 @@ setup(
             'ld/contexts/*',
             'ld/contexts/messages/*',
             'ld/contexts/services/*',
+            'ui/pyramids/*.zip',
             'templates/*.html',
             'templates/assets/js/*.js',
             'templates/assets/css/*.css',

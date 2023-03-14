@@ -5,6 +5,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.3] - 2023-03-14
+
+### Added
+- Support for building websites with hugo (a static website generator)
+  - New dialog to automatically download and install hugo (extended version)
+  - Support for changing the hugo theme from a list of standalone themes
+
+- Pyramids
+  - Add a menu action to copy the pyramid's URL using one of the public
+    IPFS HTTP gateways
+  - Add a menu action to pin the pyramid's content locally or to a remote
+    IPFS pinning service
+
+### Changed
+- Text editor: flash the pyramid drop button after a modification
+  to a file is made to draw attention
+
 ## [0.6.2] - 2022-12-16
 
 ### Changed

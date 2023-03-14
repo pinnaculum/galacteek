@@ -2,14 +2,21 @@ import functools
 import aioipfs
 import asyncio
 import random
+import shutil
+
 from datetime import datetime
 from pathlib import Path
+import zipfile
 
 from mkdocs import *  # noqa
 from mkdocs.commands import build as mkdocs_build
 from mkdocs.config import load_config
 
+from yarl import URL
+from rdflib import URIRef
+
 from PyQt5.QtWidgets import QAction
+from PyQt5.QtWidgets import QMenu
 from PyQt5.QtWidgets import QToolTip
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QToolButton
@@ -44,6 +51,7 @@ from galacteek.ipfs.dag import EvolvingDAG
 from galacteek.ipfs.dag import DAGRewindException
 from galacteek.dweb.render import ipfsRender
 from galacteek.core import utcDatetimeIso
+from galacteek.core import pkgResourcesRscFilename
 from galacteek.core.ipfsmarks import MultihashPyramid
 from galacteek.core.ipfsmarks import IPFSHashMark
 from galacteek.core.profile import UserProfile
@@ -54,28 +62,37 @@ from galacteek.core.fswatcher import FileWatcher
 from galacteek.did.ipid import IPService
 from galacteek.did.ipid import IPIDServiceException
 
-from .widgets import PopupToolButton
-from .widgets import URLDragAndDropProcessor
-from .helpers import getMimeIcon
-from .helpers import getIcon
-from .helpers import getIconFromIpfs
-from .helpers import runDialogAsync
-from .helpers import questionBoxAsync
-from .helpers import getImageFromIpfs
-from .helpers import inputTextLong
-from .helpers import messageBox
-from .helpers import messageBoxAsync
-from .helpers import qrcFileData
-from .dialogs import AddMultihashPyramidDialog
-from .hashmarks import addHashmarkAsync
+from ..widgets import PopupToolButton
+from ..widgets import URLDragAndDropProcessor
+from ..widgets.toolbar import SmartToolBar
+from ..widgets.pinwidgets import PinObjectAction
 
-from .widgets.toolbar import SmartToolBar
+from ..helpers import getMimeIcon
+from ..helpers import getIcon
+from ..helpers import getIconFromIpfs
+from ..helpers import runDialogAsync
+from ..helpers import questionBoxAsync
+from ..helpers import getImageFromIpfs
+from ..helpers import inputTextLong
+from ..helpers import messageBox
+from ..helpers import messageBoxAsync
+from ..helpers import qrcFileData
+from ..dialogs import AddMultihashPyramidDialog
+from ..dialogs import HugoInstallDialog
+from ..dialogs import FileDownloadDialog
+from ..hashmarks import addHashmarkAsync
+from ..gateways import gatewaysMenu
+from ..notify import uiNotify
 
-from .i18n import iRemove
-from .i18n import iHelp
-from .i18n import iHashmark
-from .i18n import iOpen
-from .i18n import iEditObject
+from ..textedit import EditorContext
+
+from ..i18n import iRemove
+from ..i18n import iHelp
+from ..i18n import iHashmark
+from ..i18n import iOpen
+from ..i18n import iEditObject
+from ..i18n import iCopySpGwUrlToClipboardCustom
+from ..i18n import iCopySpGwUrlToClipboardIpns
 
 
 def iCreateRawPyramid():
@@ -167,6 +184,38 @@ def iCreateWebsiteMkdocsToolTip():
         simple.
         </p>
         '''
+    )
+
+
+def iCreateWebsiteHugo():
+    return QCoreApplication.translate(
+        'PyramidMaster',
+        'Create: hugo website'
+    )
+
+
+def iCreateWebsiteHugoToolTip():
+    return QCoreApplication.translate(
+        'PyramidMaster',
+        '''
+        <p>
+        Create a website with the hugo static website generator.
+        </p>
+        '''
+    )
+
+
+def iHugoWriteNewPost():
+    return QCoreApplication.translate(
+        'PyramidMaster',
+        'Hugo: write new post'
+    )
+
+
+def iHugoChangeTheme():
+    return QCoreApplication.translate(
+        'PyramidMaster',
+        'Hugo: change theme'
     )
 
 
@@ -383,6 +432,14 @@ class MultihashPyramidsToolBar(SmartToolBar):
         self.pyramidsControlButton.menu.addSeparator()
 
         ac = self.pyramidsControlButton.menu.addAction(
+            getIcon('hugo.png'),
+            iCreateWebsiteHugo(),
+            self.onAddPyramidWebsiteHugo
+        )
+        ac.setToolTip(iCreateWebsiteHugoToolTip())
+        self.pyramidsControlButton.menu.addSeparator()
+
+        ac = self.pyramidsControlButton.menu.addAction(
             getMimeIcon('text/gemini'),
             iCreateGem(),
             self.onAddPyramidGem
@@ -508,6 +565,8 @@ class MultihashPyramidsToolBar(SmartToolBar):
             button = AutoSyncPyramidButton(pyramid, parent=self)
         elif pyramid.type == MultihashPyramid.TYPE_WEBSITE_MKDOCS:
             button = WebsiteMkdocsPyramidButton(pyramid, parent=self)
+        elif pyramid.type == MultihashPyramid.TYPE_WEBSITE_HUGO:
+            button = WebsiteHugoPyramidButton(pyramid, parent=self)
         elif pyramid.type == MultihashPyramid.TYPE_GEMINI:
             button = GemPyramidButton(pyramid, parent=self)
         elif pyramid.type == MultihashPyramid.TYPE_HTTP_SERVICE_FORWARD:
@@ -614,6 +673,20 @@ class MultihashPyramidsToolBar(SmartToolBar):
                               title='New website (mkdocs)',
                               parent=self))
 
+    def onAddPyramidWebsiteHugo(self):
+        hugoPath = self.app.which('hugo')
+
+        if not hugoPath:
+            ensure(runDialogAsync(HugoInstallDialog))
+        else:
+            ensure(runDialogAsync(
+                AddMultihashPyramidDialog, self.app.marksLocal,
+                MultihashPyramid.TYPE_WEBSITE_HUGO,
+                category='hugo',
+                title='New website (hugo)',
+                parent=self)
+            )
+
     def onAddPyramidGem(self):
         ensure(runDialogAsync(AddMultihashPyramidDialog, self.app.marksLocal,
                               MultihashPyramid.TYPE_GEMINI,
@@ -644,6 +717,9 @@ class MultihashPyramidToolButton(PopupToolButton):
     deleteRequest = pyqtSignal()
     changed = pyqtSignal()
     emptyNow = pyqtSignal()
+
+    customGwIpnsCopy = pyqtSignal(URL)
+    customGwLastCopy = pyqtSignal(URL)
 
     def __init__(self, pyramid, icon=None, parent=None):
         super(MultihashPyramidToolButton, self).__init__(
@@ -726,6 +802,24 @@ class MultihashPyramidToolButton(PopupToolButton):
                                         self,
                                         triggered=self.onCopyIpnsGw)
 
+        # Menu to copy the pyramid's IPNS URL with a specific IPFS gateway
+        self.ccCustomGwIpnsMenu = gatewaysMenu(
+            self.customGwIpnsCopy,
+            parent=self.menu,
+            menuText=iCopySpGwUrlToClipboardIpns()
+        )
+        self.customGwIpnsCopy.connect(self.onCopyCustomGwIPNSUrlToClipboard)
+
+        # Menu to copy the pyramid latest object's IPFS URL
+        # with a specific IPFS gateway
+        self.ccCustomGwLastMenu = gatewaysMenu(
+            self.customGwLastCopy,
+            parent=self.menu,
+            menuText=iCopySpGwUrlToClipboardCustom('Latest object')
+        )
+        self.customGwLastCopy.connect(
+            self.onCopyCustomGwLatestObjUrlToClipboard)
+
         self.generateQrAction = QAction(getIcon('ipfs-qrcode.png'),
                                         iPyramidGenerateQr(),
                                         self,
@@ -753,6 +847,12 @@ class MultihashPyramidToolButton(PopupToolButton):
                                       iHashmark(),
                                       self,
                                       triggered=self.onHashmark)
+
+        # The button/action to pin the latest object in the pyramid
+        self.pinAction = PinObjectAction(
+            parent=self.menu,
+            pinQueueName='pyramids'
+        )
 
         self.createExtraActions()
 
@@ -783,6 +883,8 @@ class MultihashPyramidToolButton(PopupToolButton):
         self.openLatestAction.setEnabled(capStone is not None)
         self.popItemAction.setEnabled(capStone is not None)
 
+        self.pinAction.button.changeObject(IPFSPath(self.pyramidion.path))
+
         self.debug('Pyramidion changed: {top}'.format(
             top=capStone if capStone else 'empty'))
 
@@ -809,6 +911,14 @@ class MultihashPyramidToolButton(PopupToolButton):
     @property
     def pyrToolTip(self):
         return self._pyrToolTip
+
+    def latestHashmark(self):
+        return self.app.marksLocal.pyramidGetLatestHashmark(self.pyramid.path)
+
+    def latestInputHashmark(self):
+        return self.app.marksLocal.pyramidGetLatestInputHashmark(
+            self.pyramid.path
+        )
 
     def chBgColor(self, color):
         self.setStyleSheet(f'background-color: {color}')
@@ -839,7 +949,8 @@ class MultihashPyramidToolButton(PopupToolButton):
         self.buildMenu()
         self.watcherTask = await self.app.scheduler.spawn(
             self.publishWatcherTask())
-        mark = self.app.marksLocal.pyramidGetLatestHashmark(self.pyramid.path)
+
+        mark = self.latestHashmark()
         if mark:
             self.pyramidion = mark
 
@@ -853,6 +964,7 @@ class MultihashPyramidToolButton(PopupToolButton):
 
     def buildMenu(self):
         self.buildMenuWithActions([
+            self.pinAction,
             self.openAction,
             self.openLatestAction,
             self.editAction,
@@ -861,6 +973,8 @@ class MultihashPyramidToolButton(PopupToolButton):
             self.didUnpublishAction,
             self.copyIpnsAction,
             self.copyIpnsGwAction,
+            self.ccCustomGwIpnsMenu.menuAction(),
+            self.ccCustomGwLastMenu.menuAction(),
             self.popItemAction,
             self.generateQrAction,
             self.hashmarkAction,
@@ -947,6 +1061,21 @@ class MultihashPyramidToolButton(PopupToolButton):
         )
 
         self.setToolTip(self.pyrToolTip)
+
+    def onCopyCustomGwIPNSUrlToClipboard(self, gateway: URL):
+        if self.ipnsKeyPath:
+            self.app.setClipboardText(
+                str(self.ipnsKeyPath.publicUrlForGateway(gateway))
+            )
+
+    def onCopyCustomGwLatestObjUrlToClipboard(self, gateway: URL):
+        mark = self.latestHashmark()
+        if mark:
+            path = IPFSPath(mark.path)
+
+            self.app.setClipboardText(
+                str(path.publicUrlForGateway(gateway))
+            )
 
     def onDeletePyramid(self):
         self.deleteRequest.emit()
@@ -1299,6 +1428,7 @@ class AutoSyncPyramidButton(MultihashPyramidToolButton):
 
     def buildMenu(self):
         self.buildMenuWithActions([
+            self.pinAction,
             self.openAction,
             self.openLatestAction,
             self.forceSyncAction,
@@ -1306,6 +1436,8 @@ class AutoSyncPyramidButton(MultihashPyramidToolButton):
             self.didUnpublishAction,
             self.copyIpnsAction,
             self.copyIpnsGwAction,
+            self.ccCustomGwIpnsMenu.menuAction(),
+            self.ccCustomGwLastMenu.menuAction(),
             self.generateQrAction,
             self.hashmarkAction,
             self.deleteAction
@@ -1427,21 +1559,30 @@ class ContinuousPyramid(MultihashPyramidToolButton):
         pass
 
     def onInputEdit(self):
-        mark = self.app.marksLocal.pyramidGetLatestInputHashmark(
-            self.pyramid.path)
+        self.editLastInput()
+
+    def editLastInput(self, **openkw):
+        mark = self.latestInputHashmark()
+
         if mark:
             ensure(self.app.resourceOpener.open(
-                mark.path, editObject=True,
-                pyramidOrigin=self.pyramid.path))
+                mark.path,
+                editObject=True,
+                pyramidOrigin=self.pyramid.path,
+                **openkw
+            ))
 
     @ipfsOp
     async def pyramidInputNew(self, ipfsop, fspath):
         entry = await ipfsop.addPath(fspath, recursive=True)
+
         if entry:
             path = IPFSPath(entry['Hash'])
             self.app.marksLocal.pyramidAdd(
                 self.pyramid.path, str(path), unique=True,
                 type='inputmark')
+
+            uiNotify('pyramidInputNew')
 
     @ipfsOp
     async def pyramidInputNewObject(self, ipfsop, ipfsPath):
@@ -1459,6 +1600,8 @@ class ContinuousPyramid(MultihashPyramidToolButton):
             self.app.marksLocal.pyramidAdd(
                 self.pyramid.path, str(path), unique=True,
                 type='mark')
+
+            uiNotify('pyramidOutputNew')
 
 
 class GemPyramidButton(ContinuousPyramid):
@@ -1500,7 +1643,7 @@ class GemPyramidButton(ContinuousPyramid):
             'pyramids.html', fragment='gems')
 
     def gemOpenCapsule(self):
-        ensure(self.app.resourceOpener.open(self.accessUrl))
+        ensure(self.app.resourceOpener.open(URIRef(self.accessUrl)))
 
     def buildMenu(self):
         self.gemAccessAction = self.menu.addAction(
@@ -1689,7 +1832,7 @@ class HttpForwardServicePyramidButton(MultihashPyramidToolButton):
         return f'/p2p/{self.app.ipfsCtx.node.id}/x/ipfs-http/{self.pyramid.name}/1.0'  # noqa
 
     def openService(self):
-        ensure(self.app.resourceOpener.open(self.accessUrl))
+        ensure(self.app.resourceOpener.open(URIRef(self.accessUrl)))
 
     def buildMenu(self):
         self.httpAccessAction = self.menu.addAction(
@@ -1771,6 +1914,7 @@ class WebsiteMkdocsPyramidButton(ContinuousPyramid):
 
     def buildMenu(self):
         self.buildMenuWithActions([
+            self.pinAction,
             self.openAction,
             self.openLatestAction,
             self.inputEditAction,
@@ -1778,6 +1922,8 @@ class WebsiteMkdocsPyramidButton(ContinuousPyramid):
             self.didUnpublishAction,
             self.copyIpnsAction,
             self.copyIpnsGwAction,
+            self.ccCustomGwIpnsMenu.menuAction(),
+            self.ccCustomGwLastMenu.menuAction(),
             self.generateQrAction,
             self.hashmarkAction,
             self.deleteAction
@@ -1928,6 +2074,331 @@ class WebsiteMkdocsPyramidButton(ContinuousPyramid):
             'pyramids.html', fragment='dwebsite')
 
 
+class HugoEditorContext(EditorContext):
+    pass
+
+
+class WebsiteHugoPyramidButton(ContinuousPyramid):
+    """
+    This pyramid generates websites with hugo
+    """
+
+    didServicesSection = 'dwebsites'
+    didServiceType = IPService.SRV_TYPE_DWEBSITE_GENERIC
+
+    @property
+    def initialTitle(self):
+        return self.pyramid.extra.get('initialTitle', 'No title')
+
+    @property
+    def themesList(self):
+        return [
+            ('sk3', 'https://github.com/J-Siu/hugo-theme-sk3'),
+            ('m10c', 'https://github.com/vaga/hugo-theme-m10c'),
+            ('terminal', 'https://github.com/panr/hugo-theme-terminal'),
+            ('beautifulhugo', 'https://github.com/halogenica/beautifulhugo'),
+            ('clarity', 'https://github.com/chipzoller/hugo-clarity'),
+            ('bilberry', 'https://github.com/Lednerb/bilberry-hugo-theme'),
+            ('shell', 'https://github.com/Yukuro/hugo-theme-shell'),
+            ('awesome', 'https://github.com/hugo-sid/hugo-blog-awesome')
+        ]
+
+    @property
+    def initialLang(self):
+        return self.pyramid.extra.get('initialLanguageCode', 'en-us')
+
+    def buildMenu(self):
+        self.postNewAction = self.menu.addAction(
+            getIcon('hugo.png'),
+            iHugoWriteNewPost(),
+            self.postNew
+        )
+
+        self.themesMenu = QMenu(iHugoChangeTheme(), parent=self.menu)
+        self.themesMenu.setIcon(getIcon('hugo.png'))
+        self.themesMenu.triggered.connect(self.onChangeTheme)
+
+        for tdef in self.themesList:
+            action = self.themesMenu.addAction(
+                getIcon('hugo.png'),
+                tdef[0],
+                lambda: None
+            )
+            action.setData(tdef[1])
+
+        self.buildMenuWithActions([
+            self.pinAction,
+            self.openAction,
+            self.openLatestAction,
+            self.postNewAction,
+            self.themesMenu.menuAction(),
+            self.inputEditAction,
+            self.didPublishAction,
+            self.didUnpublishAction,
+            self.copyIpnsAction,
+            self.copyIpnsGwAction,
+            self.ccCustomGwIpnsMenu.menuAction(),
+            self.ccCustomGwLastMenu.menuAction(),
+            self.generateQrAction,
+            self.hashmarkAction,
+            self.deleteAction
+        ])
+
+        self.menu.addAction(
+            getIcon('help.png'),
+            iHelp(),
+            self.hugoHelpMessage
+        )
+
+    def hugoBinPath(self):
+        return self.app.which('hugo')
+
+    def onChangeTheme(self, action):
+        ensure(self.installTheme(action.text(), URL(action.data())))
+
+    def onInputEdit(self):
+        self.editLastInput(
+            editorContext=HugoEditorContext(
+                mode='hugo'
+            )
+        )
+
+    def postNew(self):
+        self.editLastInput(
+            editorContext=HugoEditorContext(
+                mode='hugo',
+                initActions=[
+                    'post'
+                ]
+            )
+        )
+
+    async def onMarkAdded(self, mark, mtype):
+        if mtype == 'inputmark':
+            await self.hugoProcessInput(mark.path)
+
+    async def hugoRun(self, args: list, cwd=None, **opts):
+        try:
+            hugop = self.hugoBinPath()
+            assert hugop is not None
+
+            proc = await asyncio.create_subprocess_shell(
+                ' '.join([hugop] + args),
+                cwd=cwd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                **opts
+            )
+            stdout, stderr = await proc.communicate()
+        except BaseException:
+            return -1, None, None
+        else:
+            return proc.returncode, stdout, stderr
+
+    @ipfsOp
+    async def hugoProcessInput(self, ipfsop, dIpfsPath):
+        self.chBgColor('orange')
+
+        try:
+            tmpdir = self.app.tempDirCreate(self.app.tempDir.path())
+
+            async with ipfsop.getContexted(dIpfsPath, tmpdir) as get:
+                outputdir = get.finaldir.joinpath('public')
+
+                retcode, out, err = await self.hugoRun(
+                    ['-D'],
+                    cwd=str(get.finaldir)
+                )
+
+                assert retcode == 0
+
+                self.resetStyleSheet()
+
+                await self.pyramidOutputNew(str(outputdir))
+        except Exception:
+            await messageBoxAsync(
+                f'Error updating hugo website: {err}')
+
+    def hugoSetTheme(self, dirp: Path, themeName: str):
+        keep = []
+        cfgp = dirp.joinpath('config.toml')
+
+        try:
+            assert cfgp.is_file()
+
+            with open(cfgp, 'rt') as fd:
+                for liner in fd:
+                    line = liner.replace('\n', '')
+
+                    if line and not line.startswith('theme'):
+                        keep.append(line)
+
+            keep.append(f'theme = "{themeName}"')
+
+            with open(cfgp, 'w+t') as fd:
+                fd.write("\n".join(keep))
+
+            return True
+        except Exception:
+            return False
+
+    def hugoExtractTheme(self,
+                         zipPath: Path,
+                         hugoPath: Path,
+                         name: str = None) -> bool:
+        """
+        Extract a hugo theme (packed as a zip file) to the 'themes'
+        directory of a hugo website.
+        """
+
+        rootd: str = None
+        themesDir = hugoPath.joinpath('themes')
+
+        if not zipPath.is_file():
+            return False
+
+        with zipfile.ZipFile(str(zipPath), 'r') as zip:
+            zip.extractall(str(themesDir))
+
+            # Find out the top directory's name
+            for info in zip.infolist():
+                fname = info.filename.rstrip('/')
+
+                if info.is_dir() and (fname.endswith('master') or
+                                      fname.endswith('main')):
+                    rootd = fname
+
+        # Rename the found directory's name to the real theme's name
+        if rootd and name:
+            oldp = themesDir.joinpath(rootd)
+            newp = themesDir.joinpath(name)
+
+            if newp.is_dir():
+                # Theme was already there, remove it to get the latest version
+                shutil.rmtree(newp)
+
+            if oldp.is_dir():
+                oldp.rename(newp)
+
+        return True
+
+    @ipfsOp
+    async def installTheme(self,
+                           ipfsop,
+                           themeName: str,
+                           repoUrl: URL):
+        """
+        Install a hugo theme from a zip archive
+        """
+
+        zipUrl = URL(f'{repoUrl}/archive/refs/heads/master.zip')
+
+        mark = self.latestInputHashmark()
+
+        try:
+            tmpdir = self.app.tempDirCreate(self.app.tempDir.path())
+
+            assert mark is not None
+
+            dlg = await runDialogAsync(FileDownloadDialog, zipUrl)
+            assert dlg.result() == 1
+
+            zipp = dlg.output
+
+            assert zipp is not None
+
+            async with ipfsop.getContexted(mark.path, tmpdir) as hugo:
+                result = self.hugoExtractTheme(zipp, hugo.finaldir,
+                                               name=themeName)
+                assert result is True
+
+                self.hugoSetTheme(hugo.finaldir, themeName)
+
+                await self.pyramidInputNew(str(hugo.finaldir))
+
+            zipp.unlink()
+        except Exception as err:
+            await messageBoxAsync(f'Error installing hugo theme: {err}')
+
+    @ipfsOp
+    async def hugoNew(self, ipfsop):
+        """
+        Create a new hugo website
+        """
+
+        # Default theme (binario)
+        binarioPath = Path(pkgResourcesRscFilename(
+            'galacteek.ui.pyramids',
+            'binario.zip'
+        ))
+
+        try:
+            hugodir = Path(self.app.tempDirCreate(self.app.tempDir.path()))
+            cfgp = hugodir.joinpath('config.toml')
+
+            code, out, _ = await self.hugoRun(['new', 'site', str(hugodir)])
+            assert code == 0
+
+            self.hugoExtractTheme(binarioPath, hugodir,
+                                  name='binario')
+
+            cfg = [
+                f'title = "{self.initialTitle}"',
+                f'languageCode = "{self.initialLang}"',
+                'theme = "binario"',
+                'baseURL = "/"',
+                'relativeUrls = true'
+            ]
+
+            with open(cfgp, 'w+t') as fd:
+                fd.write('\n'.join(cfg))
+
+            await self.pyramidInputNew(str(hugodir))
+        except BaseException as err:
+            await messageBoxAsync(f'Error creating hugo website: {err}')
+
+    async def initialize(self):
+        await super().initialize()
+
+        if not self.pyramidion:
+            await self.hugoNew()
+
+    def updateToolTip(self):
+        self._pyrToolTip = '''
+            <p>
+                <img width='64' height='64'
+                    src=':/share/icons/hugo.png'/>
+            </p>
+            <p>
+                Hugo website pyramid: <b>{path}</b>
+                ({itemscount} item(s) in the stack)
+            </p>
+
+            <p>Description: {descr}</p>
+            <p>IPNS key: <b>{ipns}</b></p>
+            <p>IPNS key (CIDv1): <b>{ipnsv1}</b></p>
+
+            <p>
+                <img width='16' height='16'
+                    src=':/share/icons/pyramid-stack.png'/>
+                Latest (pyramidion): <b>{latest}</b>
+            </p>
+        '''.format(
+            path=self.pyramid.path,
+            descr=self.pyramid.description,
+            ipns=self.pyramid.ipnsKey,
+            ipnsv1=ipnsKeyCidV1(self.pyramid.ipnsKey),
+            itemscount=self.pyramid.marksCount,
+            latest=self.pyramid.latest if self.pyramid.latest else
+            iEmptyPyramid()
+        )
+        self.setToolTip(self.pyrToolTip)
+
+    def hugoHelpMessage(self):
+        self.app.manuals.browseManualPage(
+            'pyramids.html', fragment='hugo')
+
+
 class EDAGBuildingPyramidController(MultihashPyramidToolButton):
     """
     A type of pyramid that works on a EDAG, like the gallery generator
@@ -2006,7 +2477,7 @@ class EDAGBuildingPyramidController(MultihashPyramidToolButton):
 
         self.edag.dagCidChanged.connect(self.onPyramidDagCidChanged)
 
-        mark = self.app.marksLocal.pyramidGetLatestHashmark(self.pyramid.path)
+        mark = self.latestHashmark()
         if mark:
             self.pyramidion = mark
 

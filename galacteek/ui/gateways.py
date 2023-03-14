@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QMenu
 from galacteek.config.cmods import ipfs as cmod_ipfs
 
 from .helpers import getIcon
-from .i18n import iCopySpecificGwUrlToClipboard
+from .i18n import iCopySpGwUrlToClipboard
 
 
 def onGatewayAction(signal,
@@ -14,8 +14,11 @@ def onGatewayAction(signal,
     signal.emit(URL(str(gwUrl)))
 
 
-def gatewaysMenu(signal, parent=None):
-    menu = QMenu(iCopySpecificGwUrlToClipboard(), parent=parent)
+def gatewaysMenu(signal,
+                 parent=None,
+                 menuText: str = None):
+    menu = QMenu(menuText if menuText else iCopySpGwUrlToClipboard(),
+                 parent=parent)
     menu.setIcon(getIcon('clipboard.png'))
 
     try:

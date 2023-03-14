@@ -15,7 +15,7 @@ You can easily access this manual by typing
 `manual:/ <manual:/>`_ in the address bar of the browser.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
    :name: mastertoc
 
     Settings <settings>
@@ -27,7 +27,6 @@ You can easily access this manual by typing
     Shortcuts <shortcuts>
     Hashmarks <hashmarks>
     File manager <filemanager>
-    File sharing <filesharing>
     Explorer <unixfs>
     Messenger <messenger>
     Mediaplayer <mediaplayer>

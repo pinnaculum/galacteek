@@ -5,7 +5,10 @@ import os.path
 import os
 import math
 import secrets
+import tarfile
+from zipfile import ZipFile
 
+from yarl import URL
 from pathlib import Path
 
 from PyQt5.QtWidgets import QSizePolicy
@@ -30,6 +33,7 @@ from PyQt5.QtWidgets import QTreeWidgetItem
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QTextBrowser
 
+from PyQt5.QtCore import QDate
 from PyQt5.QtCore import QSize
 from PyQt5.QtCore import QFile
 from PyQt5.QtCore import QIODevice
@@ -57,6 +61,8 @@ from galacteek.core.ipfsmarks import *
 from galacteek.core.ipfsmarks import categoryValid
 from galacteek.core import readQrcFileRaw
 from galacteek.core import runningApp
+from galacteek.core import titleToPostName
+from galacteek.core.asynclib.fetch import httpFetch
 from galacteek import AsyncSignal
 
 from galacteek.browser.schemes import SCHEME_IPFS_P_HTTP
@@ -86,6 +92,9 @@ from ..forms import ui_videochatackwaitdialog
 from ..forms import ui_videochatackwait
 from ..forms import ui_donatecryptodialog
 from ..forms import ui_httpforwardservicedialog
+from ..forms import ui_hugonewpostdialog
+from ..forms import ui_hugoinstalldialog
+from ..forms import ui_filedownloaddialog
 
 from ..helpers import *
 from ..widgets import HorizontalLine
@@ -93,6 +102,7 @@ from ..widgets import IconSelector
 from ..widgets import PlanetSelector
 from ..widgets import LabelWithURLOpener
 from ..widgets import AnimatedLabel
+
 from ..clips import BouncingCubeClip1
 from ..clips import BouncyOrbitClip
 from ..colors import *
@@ -527,6 +537,23 @@ class AddMultihashPyramidDialog(QDialog):
             self.httpServiceUi = ui_httpforwardservicedialog.Ui_Form()
             self.httpServiceUi.setupUi(self.httpServiceForm)
             extraLayout.addWidget(self.httpServiceForm)
+        elif pyramidType == MultihashPyramid.TYPE_WEBSITE_HUGO:
+            self.hugoTitle = QLineEdit(self)
+            self.hugoLang = QComboBox(self)
+
+            layout1 = QVBoxLayout()
+            layout2 = QHBoxLayout()
+            layout3 = QHBoxLayout()
+            layout2.addWidget(QLabel('Website title'))
+            layout2.addWidget(self.hugoTitle)
+            layout3.addWidget(QLabel('Language'))
+            layout3.addWidget(self.hugoLang)
+            layout1.addLayout(layout2)
+            layout1.addLayout(layout3)
+
+            langTagComboBoxInit(self.hugoLang)
+
+            extraLayout.addLayout(layout1)
 
         self.iconSelector = IconSelector()
         self.iconSelector.iconSelected.connect(self.onIconSelected)
@@ -624,6 +651,9 @@ class AddMultihashPyramidDialog(QDialog):
             extra['httpListenPort'] = self.httpServiceUi.httpListenPort.value()
             extra['httpAdvertisePort'] = \
                 self.httpServiceUi.httpAdvertisePort.value()
+        elif self.pyramidType == MultihashPyramid.TYPE_WEBSITE_HUGO:
+            extra['initialLanguageCode'] = langTagComboBoxGetTag(self.hugoLang)
+            extra['initialTitle'] = self.hugoTitle.text()
 
         ipnsKeyName = 'galacteek.pyramids.{cat}.{name}'.format(
             cat=category.replace('/', '_'), name=pyramidName)
@@ -2030,3 +2060,181 @@ class HTTPForwardDIDServiceAddDialog(BaseDialog):
             messageBox('DID service name: invalid length (3 to 16 characters)')
         else:
             self.done(1)
+
+
+class HugoNewPostDialog(BaseDialog):
+    uiClass = ui_hugonewpostdialog.Ui_HugoNewPostDialog
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.ui.title.textChanged.connect(self.onTitleChanged)
+        self.ui.buttonBox.accepted.connect(self.accept)
+        self.ui.buttonBox.rejected.connect(self.reject)
+        self.ui.useCurrentDate.stateChanged.connect(self.onUseCurrentDate)
+
+        self.ui.date.setDate(QDate.currentDate())
+
+        langTagComboBoxInit(self.ui.language)
+
+    @property
+    def title(self):
+        return self.ui.title.text()
+
+    @property
+    def basename(self):
+        if self.title:
+            return titleToPostName(self.title)
+
+    @property
+    def filename(self):
+        if self.basename:
+            return f'{self.basename}.{self.lang}.md'
+
+    @property
+    def lang(self):
+        return langTagComboBoxGetTag(self.ui.language)
+
+    def onTitleChanged(self, title: str):
+        pass
+
+    def onUseCurrentDate(self, state: int):
+        self.ui.date.setEnabled(not state == Qt.Checked)
+
+
+class HugoInstallDialog(BaseDialog):
+    uiClass = ui_hugoinstalldialog.Ui_HugoInstallDialog
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.app = runningApp()
+        self.ui.cancelDownloadButton.clicked.connect(self.onCancel)
+        self.ui.cancelInstallButton.clicked.connect(self.onCancel)
+        self.ui.errorButton.clicked.connect(self.onCancel)
+        self.ui.finishButton.clicked.connect(self.onFinish)
+        self.ui.installButton.clicked.connect(self.onInstall)
+        self.ui.stack.setCurrentIndex(0)
+
+    def onCancel(self):
+        self.done(0)
+
+    def onFinish(self):
+        self.done(1)
+
+    def onInstall(self):
+        self.ui.stack.setCurrentIndex(1)
+
+        ensureSafe(self.download())
+
+    def ghrUrl(self, release, filename: str):
+        return URL.build(
+            host='github.com',
+            scheme='https',
+            path=f'/gohugoio/hugo/releases/download/v{release}/{filename}'
+        )
+
+    def downloadUrl(self):
+        app = runningApp()
+
+        if app.linuxSystem:
+            return self.ghrUrl('0.111.3',
+                               'hugo_extended_0.111.3_linux-amd64.tar.gz')
+        elif app.macosSystem:
+            return self.ghrUrl('0.111.3',
+                               'hugo_extended_0.111.3_darwin-universal.tar.gz')
+        elif app.windowsSystem:
+            return self.ghrUrl('0.111.3',
+                               'hugo_extended_0.111.3_windows-amd64.zip')
+
+    async def download(self):
+        url = self.downloadUrl()
+        if not url:
+            self.ui.stack.setCurrentIndex(3)
+            return
+
+        self.ui.status.setText(str(url))
+        self.ui.pbar.setValue(0)
+
+        path, digest = await httpFetch(
+            url, callback=self.progCallback,
+            chunkSize=65535
+        )
+
+        if not path:
+            self.ui.stack.setCurrentIndex(3)
+            return
+
+        self.ui.status.setText('Extracting')
+
+        result = await self.app.rexec(self.extract, path)
+
+        if result is True:
+            self.ui.stack.setCurrentIndex(2)
+        else:
+            self.ui.stack.setCurrentIndex(3)
+
+    def extract(self, path: Path):
+        try:
+            if path.name.endswith('.zip'):
+                with ZipFile(str(path), 'r') as zip:
+                    zip.extract('hugo.exe', path=str(self.app.ipfsBinLocation))
+            elif path.name.endswith('.tar.gz'):
+                with tarfile.open(str(path), 'r') as tar:
+                    tar.extract('hugo', path=str(self.app.ipfsBinLocation))
+            else:
+                return False
+        except Exception:
+            return False
+
+        return True
+
+    def progCallback(self, size: int, csize: int):
+        pct = int((size * 100) / csize)
+
+        if csize > 0 and size and pct in range(0, 101):
+            self.ui.pbar.setValue(pct)
+
+
+class FileDownloadDialog(BaseDialog):
+    uiClass = ui_filedownloaddialog.Ui_FileDownloadDialog
+
+    def __init__(self, url: URL, parent=None):
+        super().__init__(parent)
+
+        self.url = url
+        self.output: Path = None
+
+        self.ui.cancelDownloadButton.clicked.connect(self.onCancel)
+
+        self.task = ensureSafe(self.download())
+
+    def onCancel(self):
+        self.task.cancel()
+        self.done(0)
+
+    async def download(self):
+        self.ui.url.setText(str(self.url))
+        self.ui.pbar.setValue(0)
+
+        path, digest = await httpFetch(
+            self.url, callback=self.progCallback
+        )
+
+        if not path:
+            self.done(0)
+
+        self.output = path
+
+        self.ui.pbar.setValue(100)
+        self.ui.url.setText('<b>OK</b>')
+
+        await asyncio.sleep(0.2)
+
+        self.done(1)
+
+    def progCallback(self, size: int, csize: int):
+        pct = int((size * 100) / csize)
+
+        if csize > 0 and size and pct in range(0, 101):
+            self.ui.pbar.setValue(pct)

@@ -39,10 +39,22 @@ def iCopyPubGwUrlToClipboard():
         "Copy public gatewayed URL to clipboard (ipfs.io)")
 
 
-def iCopySpecificGwUrlToClipboard():
+def iCopySpGwUrlToClipboard():
     return QCoreApplication.translate(
         'FileManagerForm',
         "Copy gatewayed URL to clipboard (Specific Gateway)")
+
+
+def iCopySpGwUrlToClipboardIpns():
+    return QCoreApplication.translate(
+        'FileManagerForm',
+        "Copy gatewayed URL to clipboard (IPNS URL)")
+
+
+def iCopySpGwUrlToClipboardCustom(msg: str):
+    return QCoreApplication.translate(
+        'FileManagerForm',
+        "Copy gatewayed URL to clipboard ({0})").format(msg)
 
 
 def iCopyToClipboard():

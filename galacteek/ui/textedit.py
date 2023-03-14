@@ -1,3 +1,4 @@
+import attr
 import functools
 import aiofiles
 import os.path
@@ -58,7 +59,9 @@ from galacteek import log
 from galacteek import partialEnsure
 from galacteek.ipfs.ipfsops import *
 from galacteek.core import isoformat
+from galacteek.core import utcDatetimeIso
 from galacteek.core.asynclib import asyncReadTextFileChunked
+from galacteek.core.asynclib import asyncWriteFile
 from galacteek.core.asynclib import threadExec
 from galacteek.appsettings import *
 from galacteek.ipfs import ipfsOp
@@ -70,6 +73,7 @@ from galacteek.dweb.markdown import markitdown
 
 from .helpers import *
 
+from .dialogs import HugoNewPostDialog
 from .widgets import GMediumToolButton
 from .widgets import IPFSWebView
 from .widgets import AnimatedLabel
@@ -79,6 +83,7 @@ from .widgets import GalacteekTab
 from .widgets import CheckableToolButton
 from .widgets import HashmarkThisButton
 from .widgets import MarkdownTextEdit
+from .widgets import PopupToolButton
 from .clips import RotatingCubeRedFlash140d
 from .i18n import *
 
@@ -369,14 +374,17 @@ class Document(QTextDocument):
 
 
 class TextEditorTab(GalacteekTab):
-    def __init__(self, editing=False, pyramidOrigin=None, parent=None):
+    def __init__(self, editing=False, editorContext=None,
+                 pyramidOrigin=None, parent=None):
         super(TextEditorTab, self).__init__(parent)
 
         self.editor = TextEditorWidget(
             editing=editing,
+            editorContext=editorContext,
             pyramidOrigin=pyramidOrigin,
             parent=self
         )
+
         self.editor.documentChanged.connect(self.onDocChange)
         self.editor.documentNameChanged.connect(self.onDocnameChanged)
 
@@ -463,7 +471,56 @@ class PreviewWidget(IPFSWebView):
     pass
 
 
-class TextEditorWidget(QWidget):
+@attr.s(auto_attribs=True)
+class EditorContext:
+    mode: str = 'generic'
+
+    initActions: list = []
+
+
+class HugoActions:
+    def onNewHugoPost(self):
+        ensure(self.writeHugoPost())
+
+    async def writeHugoPost(self):
+        rootDir = Path(self.checkoutPath)
+        postsDir = rootDir.joinpath('content').joinpath('posts')
+
+        postsDir.mkdir(parents=True, exist_ok=True)
+
+        dlg = await runDialogAsync(HugoNewPostDialog)
+        if not dlg.result() == 1:
+            return
+
+        date = utcDatetimeIso()
+        filepath = postsDir.joinpath(dlg.filename)
+
+        if filepath.exists():
+            return messageBox('Already exists')
+
+        contents = [
+            '---',
+            f'title: "{dlg.title}"',
+            f'date: {date}',
+            '---'
+            '\n',
+            'Write your post in Markdown here.',
+            '\n',
+            '<!--more-->'
+        ]
+
+        await asyncWriteFile(str(filepath),
+                             '\n'.join(contents),
+                             mode='wt')
+
+        self.localCheckoutChanged = True
+        self.sessionViewUpdate()
+
+        await self.openFileAbsolute(filepath)
+
+
+class TextEditorWidget(QWidget,
+                       HugoActions):
     """
     Simple Editor widget that stores the edited files in a unixfs node
     """
@@ -473,11 +530,16 @@ class TextEditorWidget(QWidget):
     documentNameChanged = pyqtSignal(Document, str)
     filenameEntered = pyqtSignal(str)
 
-    def __init__(self, offline=False, editing=False, sessionDagCid=None,
+    def __init__(self, offline=False,
+                 editing=False,
+                 editorContext=None,
+                 sessionDagCid=None,
                  pyramidOrigin=None,
                  pyramidAutoPush=False, parent=None):
         super(TextEditorWidget, self).__init__(parent)
 
+        self.ectx = editorContext if editorContext is not None else \
+            EditorContext()
         self.app = QApplication.instance()
         self.setLayout(QVBoxLayout(self))
         self.textEditor = Editor(self)
@@ -569,7 +631,7 @@ class TextEditorWidget(QWidget):
             toggled=self.onEditToggled, parent=self
         )
 
-        self.saveButton = GMediumToolButton(self)
+        self.saveButton = QPushButton(iSave(), parent=self)
         self.saveButton.setIcon(getIcon('save-file.png'))
         self.saveButton.setIconSize(QSize(32, 32))
         self.saveButton.clicked.connect(self.onSave)
@@ -598,10 +660,23 @@ class TextEditorWidget(QWidget):
 
         self.filenameEntered.connect(self.onFilenameEntered)
 
+        # Hugo
+        self.hugoButton = PopupToolButton(
+            icon=getIcon('hugo.png')
+        )
+        self.hugoActionPost = self.hugoButton.menu.addAction(
+            getIcon('hugo.png'),
+            'New post',
+            self.onNewHugoPost
+        )
+        self.hugoButton.hide()
+
         self.ctrlLayout.addWidget(self.busyCube)
         self.ctrlLayout.addWidget(self.editButton)
+        self.ctrlLayout.addWidget(self.hugoButton)
         self.ctrlLayout.addItem(
             QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Minimum))
+
         self.ctrlLayout.addWidget(self.editorViewButton)
         self.ctrlLayout.addWidget(self.previewButton)
         self.ctrlLayout.addWidget(self.fsViewButton)
@@ -1363,6 +1438,9 @@ class TextEditorWidget(QWidget):
 
             self.saveButton.setEnabled(False)
 
+            # Flash the pyramid drop button to draw attention
+            pyrDropButton.flashButton(delay=3)
+
     @ipfsOp
     async def publishEntry(self, ipfsop, entry):
         log.debug('Publishing {}'.format(entry))
@@ -1449,13 +1527,31 @@ class TextEditorWidget(QWidget):
             self.fsViewButton.setChecked(True)
             self.rootMultihashChanged.emit(sInfo.cid)
 
+        await self.loadExtensions()
+
         self.busy(False)
+
+    async def loadExtensions(self):
+        if self.ectx.mode == 'hugo':
+            self.hugoButton.show()
+
+            postsIndex = self.model.index(
+                f'{self.checkoutPath}/content/posts')
+
+            if postsIndex and postsIndex.isValid():
+                # Expand content/posts
+
+                self.filesView.scrollTo(postsIndex)
+                self.filesView.expand(postsIndex)
+
+            if 'post' in self.ectx.initActions:
+                self.hugoActionPost.trigger()
 
     async def isTextFile(self, path):
         mtype = await detectMimeTypeFromFile(path)
         return mtype and (mtype.isText or mtype.isHtml)
 
-    async def openFileFromCheckout(self, relpath):
+    async def openFileFromCheckout(self, relpath: str):
         if not await self.checkChanges():
             return
 
@@ -1484,6 +1580,12 @@ class TextEditorWidget(QWidget):
         self.currentDocument = doc
         self.busy(False)
         return doc
+
+    async def openFileAbsolute(self, filepath: str):
+        path = re.sub(self.checkoutPath, '', str(filepath)).lstrip('/')
+
+        if path:
+            await self.openFileFromCheckout(path)
 
     def decode(self, data):
         for enc in ['utf-8', 'latin1', 'ascii']:

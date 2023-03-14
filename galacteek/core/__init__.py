@@ -268,3 +268,11 @@ def html2t(text: str):
     h2text = html2text.HTML2Text()
     h2text.emphasis_mark = ''
     return h2text.handle(text).replace('\n', '').strip()
+
+
+def titleToPostName(title: str):
+    flags = re.IGNORECASE | re.UNICODE
+
+    words = re.findall(r'[\w]+', title, flags=flags)
+    if words:
+        return '-'.join(words)

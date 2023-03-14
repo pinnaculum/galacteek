@@ -42,6 +42,11 @@ envs:
       pyramidCreated:
         sound: space
 
+      pyramidInputNew:
+        sound: apert
+      pyramidOutputNew:
+        sound: approved-mission
+
       workspaceSwitched:
         control:
           sound: apert.wav

@@ -150,12 +150,13 @@ def markitdown(text):
 
     if platform.system() == 'Windows':
         extensions += [
-            'markdown.extensions.attr_list'
+            'markdown.extensions.attr_list',
+            'meta'
         ]
     else:
         extensions += [
-            'attr_list'
-            # 'mdx_unimoji'
+            'attr_list',
+            'meta'
         ]
 
     return markdown.markdown(

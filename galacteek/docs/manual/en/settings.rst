@@ -93,14 +93,6 @@ section below for more infos.
 User interface settings
 -----------------------
 
-Enable navigation history
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-If enabled, visited dweb URLs are recorded and you will get
-history search results when typing an URL.
-
-This is *disabled* by default.
-
 Default web profile
 ^^^^^^^^^^^^^^^^^^^
 

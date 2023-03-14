@@ -1,7 +1,7 @@
 import asyncio
 import uuid
-import re
 import traceback
+
 from datetime import datetime
 from datetime import timezone
 
@@ -24,6 +24,7 @@ from galacteek.core.analyzer import ResourceAnalyzer
 from galacteek.core import isoformat
 from galacteek.core import pkgResourcesRscFilename
 from galacteek.core import utcDatetimeIso
+from galacteek.core import titleToPostName
 from galacteek.core.asynclib import SignalNotEmittedError
 from galacteek.dweb import render
 from galacteek.dweb.markdown import markitdown
@@ -102,18 +103,6 @@ class UserDAG(EvolvingDAG):
             return False
 
         return metadata.get('dateModified') is None
-
-
-def titleToPostName(title: str):
-    flags = re.IGNORECASE | re.UNICODE
-
-    words = re.findall(r'[a-z]+', title, flags=flags)
-    if words:
-        return '-'.join(words)
-    else:
-        return '-'.join(
-            re.findall(r'[\w]+', title, flags=flags)
-        )
 
 
 class UserWebsite:

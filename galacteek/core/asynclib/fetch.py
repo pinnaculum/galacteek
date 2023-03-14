@@ -22,6 +22,7 @@ async def httpFetch(u,
                     chunkSize=8192,
                     maxSize=0,
                     impatient=False,
+                    callback=None,
                     firstChunkTimeout=8):
     from galacteek import log
 
@@ -42,6 +43,8 @@ async def httpFetch(u,
                             f'httpFetch: {url}: '
                             f'Invalid reply code: {resp.status}'
                         )
+
+                    contentSize = int(resp.headers.get('Content-Length', 0))
 
                     if impatient is True:
                         # impatient mode (used when fetching objects
@@ -68,6 +71,9 @@ async def httpFetch(u,
                         h.update(chunk)
 
                         size += len(chunk)
+
+                        if size > 0 and contentSize > 0 and callable(callback):
+                            callback(size, contentSize)
 
                         if maxSize > 0 and size > maxSize:
                             raise Exception(

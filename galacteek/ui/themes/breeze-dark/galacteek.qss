@@ -688,6 +688,17 @@ QPlainTextEdit
     border: 0.04em solid #76797c;
 }
 
+QWidget#logsTextWindow {
+    background-color: #4a9ea1;
+}
+
+QTextEdit#logsTextWidget {
+    background-color: #E0DEDE;
+    font: 12pt "Inter UI";
+    margin: 1px;
+    padding: 0px;
+}
+
 QSizeGrip
 {
     border-image: url(:/dark/sizegrip.svg);
@@ -1980,6 +1991,10 @@ QToolButton[autoRaise="false"]
 {
     background: transparent;
     border-radius: 0.09em;
+}
+
+QToolButton[flash=true] {
+    background-color: lightsteelblue;
 }
 
 QToolButton[autoRaise="true"]

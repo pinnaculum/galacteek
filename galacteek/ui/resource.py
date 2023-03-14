@@ -129,6 +129,8 @@ class IPFSResourceOpener(QObject):
                    tryDecrypt=False,
                    fromEncrypted=False,
                    editObject=False,
+                   editParams={},
+                   editorContext=None,
                    pin=False,
                    burnAfterReading=False,
                    useWorkspace=None):
@@ -293,10 +295,12 @@ class IPFSResourceOpener(QObject):
             tab = TextEditorTab(
                 parent=self.app.mainWindow,
                 editing=editObject,
+                editorContext=editorContext,
                 pyramidOrigin=pyramidOrigin
             )
             tab.editor.display(ipfsPath)
             self.objectOpened.emit(ipfsPath)
+
             return self.app.mainWindow.registerTab(
                 tab,
                 rscShortName,
@@ -530,7 +534,7 @@ class IPFSResourceOpener(QObject):
                                IPService.SRV_TYPE_HTTP_SERVICE]:
             url = endpoint.get('accessUrl')
             if url:
-                await self.open(url)
+                await self.open(URIRef(url))
             else:
                 await self.open(serviceIdToUriRef(serviceId))
 
