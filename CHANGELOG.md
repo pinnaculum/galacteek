@@ -5,6 +5,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.4] - 2023-03-16
+
+### Added
+- Add some more hugo themes for hugo pyramids
+
+### Changed
+- Group pyramid clipboard actions in a single menu
+- Text editor: use the pathlib.Path API
+
 ## [0.6.3] - 2023-03-14
 
 ### Added

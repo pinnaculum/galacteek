@@ -4,11 +4,12 @@ import aiofiles
 import os.path
 import os
 import uuid
-import re
 import shutil
 import difflib
+
 from pathlib import Path
 from datetime import datetime
+from typing import Union
 
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QCheckBox
@@ -257,7 +258,7 @@ class EditorLegacy(QTextEdit):
         self.setExtraSelections(extraSelections)
 
 
-def filenameIsMarkdown(filename):
+def filenameIsMarkdown(filename: str) -> bool:
     return os.path.splitext(filename)[1] in [
         '.md',
         '.mdown',
@@ -268,7 +269,7 @@ def filenameIsMarkdown(filename):
     ]
 
 
-def filenameIsHtml(filename):
+def filenameIsHtml(filename: str) -> bool:
     return os.path.splitext(filename)[1] in [
         '.html',
         '.htm',
@@ -425,6 +426,7 @@ class TextEditorTab(GalacteekTab):
 
             self.editor.cleanup()
             return True
+
         return False
 
 
@@ -483,8 +485,7 @@ class HugoActions:
         ensure(self.writeHugoPost())
 
     async def writeHugoPost(self):
-        rootDir = Path(self.checkoutPath)
-        postsDir = rootDir.joinpath('content').joinpath('posts')
+        postsDir = self.checkoutPath.joinpath('content').joinpath('posts')
 
         postsDir.mkdir(parents=True, exist_ok=True)
 
@@ -544,7 +545,7 @@ class TextEditorWidget(QWidget,
         self.setLayout(QVBoxLayout(self))
         self.textEditor = Editor(self)
 
-        self.checkoutPath = None
+        self.checkoutPath: Path = None
         self.pyramidOrigin = pyramidOrigin
         self.pyramidAutoPush = pyramidAutoPush
 
@@ -573,7 +574,7 @@ class TextEditorWidget(QWidget,
         self.model.setFilter(
             QDir.Files | QDir.AllDirs | QDir.NoDot | QDir.NoDotDot
         )
-        self.model.setRootPath(self.checkoutPath)
+        self.model.setRootPath(str(self.checkoutPath))
 
         self.filesView.setVisible(False)
         self.filesView.hideColumn(1)
@@ -803,10 +804,10 @@ class TextEditorWidget(QWidget,
             self.highlighter = None
 
     def cleanup(self):
-        if os.path.isdir(self.checkoutPath):
-            log.debug('Cleaning up checkout directory: {}'.format(
-                self.checkoutPath))
-            shutil.rmtree(self.checkoutPath)
+        if self.checkoutPath and self.checkoutPath.is_dir():
+            log.debug(f'Cleaning up checkout directory: {self.checkoutPath}')
+
+            shutil.rmtree(str(self.checkoutPath))
 
     def busy(self, busy=True):
         self.busyCube.setVisible(busy)
@@ -859,9 +860,9 @@ class TextEditorWidget(QWidget,
         if path and await questionBoxAsync(iRemove(), iRemoveFileAsk()):
             await self._fsDelete(path)
 
-    def fsAddFile(self, root):
+    def fsAddFile(self, root: str):
         if not root:
-            rootDir = Path(self.checkoutPath)
+            rootDir = self.checkoutPath
         else:
             rootDir = Path(root)
 
@@ -880,7 +881,7 @@ class TextEditorWidget(QWidget,
 
     def fsImportFile(self, root):
         if not root:
-            rootDir = Path(self.checkoutPath)
+            rootDir = self.checkoutPath
         else:
             rootDir = Path(root)
 
@@ -941,7 +942,7 @@ class TextEditorWidget(QWidget,
 
     def fsImportDirectory(self, root):
         if not root:
-            rootDir = Path(self.checkoutPath)
+            rootDir = self.checkoutPath
         else:
             rootDir = Path(root)
 
@@ -949,11 +950,12 @@ class TextEditorWidget(QWidget,
 
         if dirpath:
             dstPath = rootDir.joinpath(os.path.basename(dirpath))
+
             ensure(self._fsImportDirectory(dirpath, str(dstPath)))
 
-    def fsAddDirectory(self, root):
+    def fsAddDirectory(self, root: str):
         if not root:
-            rootDir = Path(self.checkoutPath)
+            rootDir = self.checkoutPath
         else:
             rootDir = Path(root)
 
@@ -979,8 +981,7 @@ class TextEditorWidget(QWidget,
         if not os.path.isfile(fullPath):
             return
 
-        filepath = re.sub(self.checkoutPath, '', fullPath).lstrip('/')
-        ensure(self.openFileFromCheckout(filepath))
+        ensure(self.openFileAbsolute(Path(fullPath)))
 
     def onDocumentChanged(self):
         if self.previewWidget.isVisible():
@@ -1054,7 +1055,9 @@ class TextEditorWidget(QWidget,
     def genUid(self):
         return str(uuid.uuid4())
 
-    def newDocument(self, name=None, text='', encoding='utf-8',
+    def newDocument(self, name: str = None,
+                    text: str = '',
+                    encoding: str = 'utf-8',
                     textLayout=True):
         self.textEditor.setStyleSheet(defaultStyleSheet)
         doc = Document(name=name, text=text, parent=self, encoding=encoding,
@@ -1154,44 +1157,42 @@ class TextEditorWidget(QWidget,
             else:
                 self.previewButton.setChecked(True)
 
-    def onSessionCidChanged(self, cid):
+    def onSessionCidChanged(self, cid: str):
         log.debug('Session now at CID: {}'.format(cid))
+
         self.unixDirCid = cid
         self.unixDirPath = IPFSPath(cid)
         self.unixDirLabel.path = self.unixDirPath
         self.unixDirClipButton.path = self.unixDirPath
 
-    def sessionViewUpdate(self, root=None):
-        path = root if root else self.checkoutPath
-        self.model.setRootPath(path)
-        self.filesView.setRootIndex(self.model.index(path))
+    def sessionViewUpdate(self, root: Union[Path, str] = None):
+        path = root if root else str(self.checkoutPath)
+
+        self.model.setRootPath(str(path))
+        self.filesView.setRootIndex(self.model.index(str(path)))
 
     def sessionNew(self):
-        localDirName = self.genUid()
-        localPath = os.path.join(
-            self.app.tempDir.path(), localDirName)
+        localPath = Path(self.app.tempDir.path()).joinpath(self.genUid())
 
-        if not os.path.exists(localPath):
-            try:
-                os.mkdir(localPath)
-            except:
-                pass
+        if not localPath.is_dir():
+            localPath.mkdir()
 
         ensure(self.sync())
+
         self.sessionViewUpdate(localPath)
         self.checkoutPath = localPath
+
         return localPath
 
     def makeDatetime(self, date=None):
-        datet = date if date else datetime.now()
-        return isoformat(datet)
+        return isoformat(date if date else datetime.now())
 
     @ipfsOp
     async def sync(self, ipfsop):
         self.busy(True)
         try:
             entry = await ipfsop.addPath(
-                self.checkoutPath,
+                str(self.checkoutPath),
                 wrap=False,
                 hidden=True,
                 offline=self.offlineModeButton.isChecked()
@@ -1202,17 +1203,18 @@ class TextEditorWidget(QWidget,
         else:
             self.localCheckoutChanged = False
             self.busy(False)
+
             if not entry:
                 return
 
             self.rootMultihashChanged.emit(entry['Hash'])
             return entry
 
-    def checkoutChildPath(self, path):
+    def checkoutChildPath(self, path: str) -> Path:
         if self.checkoutPath:
-            return Path(os.path.join(self.checkoutPath, path))
+            return self.checkoutPath.joinpath(path)
 
-    def checkoutChildFileUrl(self, path):
+    def checkoutChildFileUrl(self, path: str) -> QUrl:
         return QUrl('file://{0}'.format(self.checkoutChildPath(path)))
 
     async def writeDocument(self, document):
@@ -1221,6 +1223,7 @@ class TextEditorWidget(QWidget,
 
         async with aiofiles.open(docPath, 'w+t') as fd:
             log.debug('Writing document: {}'.format(docPath))
+
             await fd.write(text)
 
     @ipfsOp
@@ -1354,11 +1357,12 @@ class TextEditorWidget(QWidget,
 
             if document.previewDocument.filename and \
                     self.autoMdHtmlSaveButton.isChecked():
-                pPath = os.path.join(self.checkoutPath,
-                                     document.previewDocument.filename)
+                pPath = self.checkoutPath.joinpath(
+                    document.previewDocument.filename
+                )
                 text = document.previewDocument.toHtml()
 
-                async with aiofiles.open(pPath, 'w+t') as fd:
+                async with aiofiles.open(str(pPath), 'w+t') as fd:
                     await fd.write(text)
 
         document.setModified(False)
@@ -1510,18 +1514,17 @@ class TextEditorWidget(QWidget,
             else:
                 path = dstdir
 
-            self.checkoutPath = path
+            self.checkoutPath = Path(path)
             self.sessionViewUpdate(self.checkoutPath)
 
-            for file in os.listdir(self.checkoutPath):
+            # Open the first text file we find at the root
+
+            for file in self.checkoutPath.iterdir():
                 await asyncio.sleep(0)
 
-                fp = os.path.join(self.checkoutPath, file)
-                mtype = await detectMimeTypeFromFile(fp)
+                if await self.isTextFile(file):
+                    await self.openFileFromCheckout(str(file))
 
-                # Open first text file we find
-                if mtype and (mtype.isText or mtype.isHtml):
-                    await self.openFileFromCheckout(file)
                     break
 
             self.fsViewButton.setChecked(True)
@@ -1547,8 +1550,9 @@ class TextEditorWidget(QWidget,
             if 'post' in self.ectx.initActions:
                 self.hugoActionPost.trigger()
 
-    async def isTextFile(self, path):
-        mtype = await detectMimeTypeFromFile(path)
+    async def isTextFile(self, path: Union[Path, str]):
+        mtype = await detectMimeTypeFromFile(str(path))
+
         return mtype and (mtype.isText or mtype.isHtml)
 
     async def openFileFromCheckout(self, relpath: str):
@@ -1556,12 +1560,15 @@ class TextEditorWidget(QWidget,
             return
 
         self.previewButton.setChecked(False)
-        fp = Path(os.path.join(self.checkoutPath, relpath))
+
+        fp = self.checkoutPath.joinpath(relpath)
 
         if not fp.exists():
             return
 
         fsize = fp.stat().st_size
+
+        log.debug(f'Opening file: {fp}')
 
         if fsize > 0 and not await self.isTextFile(str(fp)):
             return messageBox('Not a text file')
@@ -1579,13 +1586,17 @@ class TextEditorWidget(QWidget,
 
         self.currentDocument = doc
         self.busy(False)
+
         return doc
 
-    async def openFileAbsolute(self, filepath: str):
-        path = re.sub(self.checkoutPath, '', str(filepath)).lstrip('/')
+    async def openFileAbsolute(self, filepath: Path):
+        try:
+            path = filepath.relative_to(self.checkoutPath)
 
-        if path:
-            await self.openFileFromCheckout(path)
+            if path:
+                await self.openFileFromCheckout(str(path))
+        except Exception:
+            pass
 
     def decode(self, data):
         for enc in ['utf-8', 'latin1', 'ascii']:

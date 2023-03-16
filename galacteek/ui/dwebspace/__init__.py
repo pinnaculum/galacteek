@@ -997,6 +997,10 @@ class WorkspaceEdition(TabbedWorkspace):
     def setupWorkspace(self):
         super().setupWorkspace()
 
+        self.actionTextEdit = self.wsAddCustomAction(
+            'textedit', getIcon('text-editor.png'),
+            iTextEditor(), self.onAddTextEditorTab, default=True)
+
         self.actionHelp = self.wsAddCustomAction(
             'help', getIcon('help.png'),
             iHelp(), self.onHelpEditing)
@@ -1009,10 +1013,6 @@ class WorkspaceEdition(TabbedWorkspace):
         self.actionPostBlog = self.wsAddCustomAction(
             'blogpost', getIcon('feather-pen.png'),
             iNewBlogPost(), self.onAddBlogPost)
-
-        self.actionTextEdit = self.wsAddCustomAction(
-            'textedit', getIcon('text-editor.png'),
-            iTextEditor(), self.onAddTextEditorTab, default=True)
 
     def onHelpEditing(self):
         self.app.manuals.browseManualPage('editing.html')

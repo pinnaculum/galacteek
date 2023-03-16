@@ -2169,6 +2169,8 @@ class HugoInstallDialog(BaseDialog):
 
         result = await self.app.rexec(self.extract, path)
 
+        path.unlink()
+
         if result is True:
             self.ui.stack.setCurrentIndex(2)
         else:
@@ -2223,13 +2225,14 @@ class FileDownloadDialog(BaseDialog):
 
         if not path:
             self.done(0)
+            return
 
         self.output = path
 
         self.ui.pbar.setValue(100)
         self.ui.url.setText('<b>OK</b>')
 
-        await asyncio.sleep(0.2)
+        await asyncio.sleep(0.5)
 
         self.done(1)
 

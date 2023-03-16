@@ -332,6 +332,13 @@ def iPyramidDropObject():
     )
 
 
+def iPyramidAddress():
+    return QCoreApplication.translate(
+        'PyramidMaster',
+        'Pyramid address (clipboard)'
+    )
+
+
 def iGalleryBrowse():
     return QCoreApplication.translate(
         'PyramidMaster',
@@ -445,14 +452,6 @@ class MultihashPyramidsToolBar(SmartToolBar):
             self.onAddPyramidGem
         )
         self.pyramidsControlButton.menu.addSeparator()
-
-        if 0:
-            self.pyramidsControlButton.menu.addAction(
-                getMimeIcon('text/html'),
-                iCreateHttpForwardService(),
-                self.onAddPyramidHttpService
-            )
-            self.pyramidsControlButton.menu.addSeparator()
 
         self.pyramidsControlButton.menu.addAction(
             pyrIcon, iHelp(), self.pyramidHelpMessage)
@@ -793,6 +792,11 @@ class MultihashPyramidToolButton(PopupToolButton):
                                      triggered=self.onPopItem)
         self.popItemAction.setEnabled(False)
 
+        # Pyramid address menu
+        self.addressMenu = QMenu(iPyramidAddress())
+        self.addressMenu.setIcon(getIcon('clipboard.png'))
+
+        # Actions to copy raw IPNS address and gatewayed IPNS address
         self.copyIpnsAction = QAction(getIcon('clipboard.png'),
                                       iCopyIpnsAddress(),
                                       self,
@@ -819,6 +823,15 @@ class MultihashPyramidToolButton(PopupToolButton):
         )
         self.customGwLastCopy.connect(
             self.onCopyCustomGwLatestObjUrlToClipboard)
+
+        # Build the pyramid address menu
+        self.addressMenu.addAction(self.copyIpnsAction)
+        self.addressMenu.addSeparator()
+        self.addressMenu.addAction(self.copyIpnsGwAction)
+        self.addressMenu.addSeparator()
+        self.addressMenu.addAction(self.ccCustomGwIpnsMenu.menuAction())
+        self.addressMenu.addSeparator()
+        self.addressMenu.addAction(self.ccCustomGwLastMenu.menuAction())
 
         self.generateQrAction = QAction(getIcon('ipfs-qrcode.png'),
                                         iPyramidGenerateQr(),
@@ -971,10 +984,11 @@ class MultihashPyramidToolButton(PopupToolButton):
             self.publishCurrentClipAction,
             self.didPublishAction,
             self.didUnpublishAction,
-            self.copyIpnsAction,
-            self.copyIpnsGwAction,
-            self.ccCustomGwIpnsMenu.menuAction(),
-            self.ccCustomGwLastMenu.menuAction(),
+            # self.copyIpnsAction,
+            # self.copyIpnsGwAction,
+            # self.ccCustomGwIpnsMenu.menuAction(),
+            # self.ccCustomGwLastMenu.menuAction(),
+            self.addressMenu.menuAction(),
             self.popItemAction,
             self.generateQrAction,
             self.hashmarkAction,
@@ -990,13 +1004,6 @@ class MultihashPyramidToolButton(PopupToolButton):
             self.flashToolTip('Pyramid: {path}'.format(path=self.pyramid.path))
 
         self.chBgColor('#EB2121')
-
-        if 0:
-            self.setStyleSheet('''
-                QToolButton {
-                    background-color: #EB2121;
-                }
-            ''')
 
     def dropEvent(self, event):
         URLDragAndDropProcessor.dropEvent(self, event)
@@ -1434,10 +1441,7 @@ class AutoSyncPyramidButton(MultihashPyramidToolButton):
             self.forceSyncAction,
             self.didPublishAction,
             self.didUnpublishAction,
-            self.copyIpnsAction,
-            self.copyIpnsGwAction,
-            self.ccCustomGwIpnsMenu.menuAction(),
-            self.ccCustomGwLastMenu.menuAction(),
+            self.addressMenu.menuAction(),
             self.generateQrAction,
             self.hashmarkAction,
             self.deleteAction
@@ -1920,10 +1924,7 @@ class WebsiteMkdocsPyramidButton(ContinuousPyramid):
             self.inputEditAction,
             self.didPublishAction,
             self.didUnpublishAction,
-            self.copyIpnsAction,
-            self.copyIpnsGwAction,
-            self.ccCustomGwIpnsMenu.menuAction(),
-            self.ccCustomGwLastMenu.menuAction(),
+            self.addressMenu.menuAction(),
             self.generateQrAction,
             self.hashmarkAction,
             self.deleteAction
@@ -2100,7 +2101,21 @@ class WebsiteHugoPyramidButton(ContinuousPyramid):
             ('clarity', 'https://github.com/chipzoller/hugo-clarity'),
             ('bilberry', 'https://github.com/Lednerb/bilberry-hugo-theme'),
             ('shell', 'https://github.com/Yukuro/hugo-theme-shell'),
-            ('awesome', 'https://github.com/hugo-sid/hugo-blog-awesome')
+            ('awesome', 'https://github.com/hugo-sid/hugo-blog-awesome'),
+            ('mini', 'https://github.com/nodejh/hugo-theme-mini'),
+            ('xmin', 'https://github.com/athul/archie'),
+            ('anatole', 'https://github.com/lxndrblz/anatole'),
+            ('whiteplain', 'https://github.com/taikii/whiteplain'),
+            ('cleanwhite',
+             'https://github.com/zhaohuabing/hugo-theme-cleanwhite'),
+            ('archie', 'https://github.com/athul/archie'),
+            ('vitae', 'https://github.com/dataCobra/hugo-vitae'),
+            ('nostyleplease',
+             'https://github.com/Masellum/hugo-theme-nostyleplease'),
+            ('fuji',
+             'https://github.com/dsrkafuu/hugo-theme-fuji'),
+            ('minima',
+             'https://github.com/mivinci/hugo-theme-minima')
         ]
 
     @property
@@ -2118,7 +2133,7 @@ class WebsiteHugoPyramidButton(ContinuousPyramid):
         self.themesMenu.setIcon(getIcon('hugo.png'))
         self.themesMenu.triggered.connect(self.onChangeTheme)
 
-        for tdef in self.themesList:
+        for tdef in sorted(self.themesList, key=lambda te: te[0]):
             action = self.themesMenu.addAction(
                 getIcon('hugo.png'),
                 tdef[0],
@@ -2135,10 +2150,7 @@ class WebsiteHugoPyramidButton(ContinuousPyramid):
             self.inputEditAction,
             self.didPublishAction,
             self.didUnpublishAction,
-            self.copyIpnsAction,
-            self.copyIpnsGwAction,
-            self.ccCustomGwIpnsMenu.menuAction(),
-            self.ccCustomGwLastMenu.menuAction(),
+            self.addressMenu.menuAction(),
             self.generateQrAction,
             self.hashmarkAction,
             self.deleteAction
@@ -2567,8 +2579,7 @@ class GalleryPyramidController(EDAGBuildingPyramidController):
         self.buildMenuWithActions([
             self.browseIpnsAction,
             self.browseDirectAction,
-            self.copyIpnsAction,
-            self.copyIpnsGwAction,
+            self.addressMenu.menuAction(),
             self.changeTitleAction,
             self.didPublishAction,
             self.didUnpublishAction,
