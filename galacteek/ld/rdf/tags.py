@@ -9,10 +9,13 @@ from galacteek import services
 from galacteek import log
 from galacteek.core import utcDatetimeIso
 from galacteek.ld import ipsTermUri
+from galacteek.ld.rdf import BaseGraph
 from galacteek.ld.sparql import querydb
 
 
 TOP_TAGS_GRAPH_URI = 'urn:ipg:i:love:itags'
+
+tagsManagerUri = URIRef('urn:glk:tags:manager')
 
 
 def getGraph(graphUri: str):
@@ -51,6 +54,46 @@ async def tagsSearch(tagName: str = None,
         querydb.get('TagsSearch'),
         initBindings=bindings
     )
+
+
+def tagWatch(tagUri: URIRef,
+             graphUri: str = TOP_TAGS_GRAPH_URI) -> None:
+    """
+    Start watching/subscribing to a tag
+    """
+
+    dstgraph = getGraph(graphUri)
+
+    graph = BaseGraph()
+    graph.remove((
+        tagsManagerUri,
+        ipsTermUri('TagPreferencesManager', fragment='watchTag'),
+        tagUri
+    ))
+
+    graph.add((
+        tagsManagerUri,
+        ipsTermUri('TagPreferencesManager', fragment='watchTag'),
+        tagUri
+    ))
+
+    dstgraph += graph
+    dstgraph.publishUpdateEvent(graph)
+
+
+def tagUnwatch(tagUri: URIRef,
+               graphUri: str = TOP_TAGS_GRAPH_URI) -> None:
+    """
+    Stop watching/subscribing to a tag
+    """
+
+    graph = getGraph(graphUri)
+
+    graph.remove((
+        tagsManagerUri,
+        ipsTermUri('TagPreferencesManager', fragment='watchTag'),
+        tagUri
+    ))
 
 
 async def tagCreate(tagUri: Union[str, URIRef],
@@ -103,7 +146,7 @@ async def tagCreate(tagUri: Union[str, URIRef],
     if tagGraph:
         if watch is True:
             graph.add((
-                URIRef('urn:glk:tags:manager'),
+                tagsManagerUri,
                 ipsTermUri('TagPreferencesManager', fragment='watchTag'),
                 URIRef(tagUri)
             ))

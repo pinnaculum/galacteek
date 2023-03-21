@@ -1,8 +1,12 @@
 from galacteek.config import cGet
 
+from galacteek import ensure
+from galacteek import services
+
 from . import SettingsFormController
 
 from ..helpers import langTagComboBoxInit
+from ..helpers import langTagComboBoxGetTag
 from ..themes import themesList
 
 
@@ -68,6 +72,22 @@ class SettingsController(SettingsFormController):
         self.ui.themeCombo.currentTextChanged.connect(
             self.applyTheme
         )
+        self.ui.contentLangTag.currentTextChanged.connect(
+            self.applyContentLang
+        )
+
+    def applyContentLang(self, language: str):
+        pronto = services.getByDotName('ld.pronto')
+        langTag = langTagComboBoxGetTag(self.ui.contentLangTag)
+
+        if langTag:
+            ensure(self.app.s.psPublish({
+                'type': 'ContentLanguageChangedEvent'
+            }))
+
+            # Update the itags models
+            pronto.allTagsModel.changeTagLanguage(langTag)
+            pronto.tagsPrefsModel.changeTagLanguage(langTag)
 
     def applyTheme(self, themeName: str):
         self.app.themes.change(themeName)

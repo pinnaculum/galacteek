@@ -1193,12 +1193,9 @@ class MainWindow(QMainWindow, KeyListener):
         await self.displayConnectionInfo()
         await self.app.marksLocal.pyramidsInit()
         await self.app.sqliteDb.feeds.start()
-        await self.hashmarkMgrButton.updateMenu()
-        await self.hashmarkMgrButton.updateIcons()
 
         with self.stack.workspaceCtx(WS_FILES, show=False) as ws:
             await ws.importWelcome()
-            await ws.seedsSetup()
 
         with self.stack.workspaceCtx('@Earth', show=True) as ws:
             await ws.loadDapps()

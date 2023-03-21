@@ -5,14 +5,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.6.4] - 2023-03-16
+## [0.6.4] - 2023-03-21
 
 ### Added
 - Add some more hugo themes for hugo pyramids
+- Add a new pronto event: GraphModelUpdateEvent
 
 ### Changed
 - Group pyramid clipboard actions in a single menu
 - Text editor: use the pathlib.Path API
+- Update the tags model and rebuild the hashmarks menu when the default
+  content language is changed
+
+### Fixed
+- Tag preferences model: honor the content language from the settings
+- Hashmarks manager
+  - Prevent a double menu update on startup
+  - Fix issue with wrong tag language code
+  - Optimize menu update when tagging/untagging hashmarks from the tags dialog
+  - Add an action to remove a subscription to a tag
 
 ## [0.6.3] - 2023-03-14
 

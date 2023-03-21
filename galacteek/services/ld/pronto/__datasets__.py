@@ -55,6 +55,8 @@ class ProntoDataSetsManagerMixin:
                         log.debug(f'dsProcess: {name} failed: {err}')
                         continue
 
+                assert len(g) > 0
+
                 tar.close()
 
                 thisRevision = g.value(
@@ -85,6 +87,8 @@ class ProntoDataSetsManagerMixin:
                     DATASET.processedRevision,
                     thisRevision
                 ))
+
+                ograph.commit()
             except asyncio.CancelledError:
                 pass
             except Exception:

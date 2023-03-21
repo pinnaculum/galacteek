@@ -537,7 +537,7 @@ class RDFStoresService(ProntoServiceModels,
             try:
                 log.debug(f'RDF stores: closing {graph.identifier}')
 
-                graph.close()
+                graph.close(commit_pending_transaction=True)
             except Exception as err:
                 log.debug(f'RDF graph close error: {err}')
             else:

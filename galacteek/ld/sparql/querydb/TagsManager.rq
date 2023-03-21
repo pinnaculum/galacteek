@@ -5,11 +5,12 @@ PREFIX tagmgr: <ips://galacteek.ld/TagPreferencesManager#>
 SELECT ?uri ?tagWatched ?tagName ?tagDisplayName
 WHERE {
   ?uri a gs:TagPreferencesManager .
+
   ?uri tagmgr:watchTag ?tagWatched .
   ?tagWatched tag:name ?tagName .
 
   OPTIONAL {
     ?tagWatched tag:displayName ?tagDisplayName .
-    FILTER (langMatches(lang(?tagDisplayName), "*") )
+    FILTER(LANG(?tagDisplayName) = str(?langTagMatch))
   } .
 }

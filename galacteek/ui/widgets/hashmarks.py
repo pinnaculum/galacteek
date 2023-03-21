@@ -1,7 +1,10 @@
-from galacteek.ld.rdf.hashmarks import *
 import aiorwlock
 import asyncio
 import traceback
+import functools
+
+from rdflib import URIRef
+from typing import List
 from datetime import datetime
 
 from PyQt5.QtWidgets import QToolButton
@@ -28,26 +31,29 @@ from galacteek.ipfs.wrappers import ipfsOp
 from galacteek import ensure
 from galacteek import partialEnsure
 from galacteek import services
+from galacteek import database
+from galacteek import ensureSafe
+
 from galacteek.browser.schemes import isIpfsUrl
 from galacteek.core.asynclib import asyncify
 from galacteek.core.ps import KeyListener
 from galacteek.core.ps import makeKeyService
 from galacteek.hashmarks import migrateHashmarksDbToRdf
-from galacteek.ui.hashmarks import addHashmarkAsync
+from galacteek.ld.rdf.hashmarks import *
+from galacteek.ld.rdf import tags as rdf_tags
+from galacteek.ld.rdf.watch import GraphActivityListener
 
-from galacteek import database
-from galacteek import ensureSafe
+from galacteek.ui.hashmarks import addHashmarkAsync
 
 from . import GMediumToolButton
 from . import PopupToolButton
-
-from galacteek.ld.rdf.watch import GraphActivityListener
 
 from ..helpers import getIcon
 from ..helpers import getIconFromIpfs
 
 from ..i18n import iEditHashmark
 from ..i18n import iHashmarksDatabase
+from ..i18n import iHashmarksDatabaseStillEmpty
 from ..i18n import iSearchHashmarks
 from ..i18n import iSearchHashmarksAllAcross
 from ..i18n import iSearchUseShiftReturn
@@ -329,6 +335,7 @@ class HashmarksSearcher(PopupToolButton, HashmarkActionCreator):
                 action.data()['mark']
             )
             self.searchLine.clear()
+
             if closeMenu:
                 self.menu.hide()
         except Exception:
@@ -336,9 +343,37 @@ class HashmarksSearcher(PopupToolButton, HashmarkActionCreator):
 
 
 class HashmarksMenu(QMenu):
+    tagUnwatched = pyqtSignal(str)
+
+    def __init__(self, tagName: str, tagUri: str, parent=None):
+        super().__init__(tagName, parent)
+
+        self.unwatchAction = self.addAction(
+            getIcon('clear-all.png'),
+            trTodo('Unsubscribe from this tag'),
+            functools.partial(self.onUnwatchTag,
+                              tagName,
+                              tagUri)
+        )
+        self.unwatchAction.setMenuRole(QAction.ApplicationSpecificRole)
+
+        self.addAction(self.unwatchAction)
+        self.addSeparator()
+
+    def onUnwatchTag(self, tagName: str, tagUri: str):
+        # Unsubscribe from tag
+        rdf_tags.tagUnwatch(URIRef(tagUri))
+
+        # Emit notification to remove the associated menu
+        self.tagUnwatched.emit(tagUri)
+
+    def hashmarkActions(self):
+        return [action for action in self.actions() if action.text(
+        ) and action.menuRole() != QAction.ApplicationSpecificRole]
+
     def objectPaths(self):
         return [
-            action.data()['path'] for action in self.actions()
+            action.data()['path'] for action in self.hashmarkActions()
         ]
 
     def objectIsRegistered(self, path: str):
@@ -360,8 +395,12 @@ class HashmarkMgrButton(PopupToolButton, HashmarkActionCreator,
         self.searcher = HashmarksSearcher()
         self.lock = aiorwlock.RWLock()
 
-        self.gListener = GraphActivityListener(['urn:ipg:i:love:hashmarks:*'])
-        self.gListener.graphChanged.connectTo(self.onNeedUpdate)
+        self.gListener = GraphActivityListener([
+            'urn:ipg:i:love:hashmarks:*',
+            'urn:ipg:i:love:itags'
+        ])
+
+        self.gListener.graphModelChanged.connectTo(self.onNeedUpdate)
 
         self.setObjectName('hashmarksMgrButton')
         self.setIcon(getIcon(iconFile))
@@ -373,18 +412,37 @@ class HashmarkMgrButton(PopupToolButton, HashmarkActionCreator,
         self.maxItemsPerTag = maxItemsPerTag
 
         self.psListen(makeKeyService('ld', 'pronto'))
+        self.psListen(makeKeyService('app'))
+
+        self.updateToolTip()
 
     @property
     def pronto(self):
         return services.getByDotName('ld.pronto')
 
-    async def event_g_services_ld_pronto(self, key, message):
-        if isinstance(message, dict):
-            if message['event']['type'] == 'ProntoModelsReady':
-                ensure(self.updateMenu())
+    def updateToolTip(self):
+        if len(self.cMenus) > 0:
+            self.setToolTip(iHashmarksDatabase())
+        else:
+            self.setToolTip(iHashmarksDatabaseStillEmpty())
 
-    async def onNeedUpdate(self, uri: str):
-        # Graph was changed, update the menu
+    async def event_g_services_app(self, key, message):
+        event = message['event']
+
+        if event.get('type') == 'ContentLanguageChangedEvent':
+            # Default content language was changed
+            # Purge the menu, and let it repopulate itself by the
+            # menu update after the model is rebuilt
+
+            async with self.lock.writer_lock:
+                menus = list(self.cMenus.items())
+
+                for tagUri, menu in menus:
+                    self.menu.removeAction(menu.menuAction())
+                    del self.cMenus[tagUri]
+
+    async def onNeedUpdate(self, graphUri: str):
+        # Graph's model was changed, update the menu
 
         await self.updateMenu()
 
@@ -408,14 +466,23 @@ class HashmarkMgrButton(PopupToolButton, HashmarkActionCreator,
         self.menu.addMenu(self.searcher.menu)
         self.menu.addSeparator()
 
-        self.popularTagsMenu = QMenu('Popular Tags')
-        self.popularTagsMenu.setObjectName('popularTagsMenu')
-        self.popularTagsMenu.setIcon(getIcon('hash.png'))
-        self.popularTagsMenu.aboutToShow.connect(
-            partialEnsure(self.onShowPopularTags))
+        if 0:
+            self.popularTagsMenu = QMenu('Popular Tags')
+            self.popularTagsMenu.setObjectName('popularTagsMenu')
+            self.popularTagsMenu.setIcon(getIcon('hash.png'))
+            self.popularTagsMenu.aboutToShow.connect(
+                partialEnsure(self.onShowPopularTags))
 
-        # self.menu.addMenu(self.popularTagsMenu)
-        # self.menu.addSeparator()
+    def onPurgeTag(self, tagUri: str):
+        """
+        Called when the user unsubscribes from a tag.
+        Just remove the tag's menu from the main menu.
+        """
+        menu = self.cMenus.get(tagUri)
+        if menu:
+            self.menu.removeAction(menu.menuAction())
+
+            del self.cMenus[tagUri]
 
     def onMigrate(self):
         ensure(migrateHashmarksDbToRdf())
@@ -453,43 +520,65 @@ class HashmarkMgrButton(PopupToolButton, HashmarkActionCreator,
 
     def tagMenu(self, tagUri: str,
                 tagName: str,
-                tagDisplayName: str):
+                tagDisplayName: str) -> HashmarksMenu:
+        """
+        Returns the HashmarksMenu for a given tag, creating it
+        if it doesn't already exist.
+        """
         if tagUri not in self.cMenus:
             self.cMenus[tagUri] = HashmarksMenu(
-                tagDisplayName if tagDisplayName else tagName
+                tagDisplayName if tagDisplayName else tagName,
+                tagUri,
+                parent=self
             )
+
             self.cMenus[tagUri].setToolTipsVisible(True)
             self.cMenus[tagUri].triggered.connect(
-                lambda action: ensure(self.linkActivated(action)))
+                partialEnsure(self.linkActivated)
+            )
+            self.cMenus[tagUri].tagUnwatched.connect(self.onPurgeTag)
             self.cMenus[tagUri].setObjectName('hashmarksMgrMenu')
             self.cMenus[tagUri].setIcon(getIcon('cube-orange.png'))
+
             self.menu.addMenu(self.cMenus[tagUri])
 
         return self.cMenus[tagUri]
 
-    async def updateMenu(self):
+    async def updateMenu(self, onlyTags: List[str] = []) -> None:
+        """
+        Update the hashmarks menu.
+
+        :param list onlyTags: a list of tag URIs to limit the update to
+        """
+
         countAdded = 0
         self.hCount = 0
 
         async with self.lock.writer_lock:
-            tagsWatching = self.pronto.tagsPrefsModel.tagsWatching()
+            tagsl = self.pronto.tagsPrefsModel.tagsWatching()
 
-            for tagName, tagDisplayName, tagUri in tagsWatching:
+            for tagName, tagDisplayName, tagUri in tagsl:
+                if onlyTags and str(tagUri) not in onlyTags:
+                    continue
+
                 marks = list(await ldHashmarksByTag(tagUri))
 
                 if len(marks) == 0:
                     continue
 
-                menu = self.tagMenu(tagUri, tagName, tagDisplayName)
+                menu = self.tagMenu(str(tagUri),
+                                    tagName,
+                                    tagDisplayName)
                 new, initialPaths = [], menu.objectPaths()
 
                 def exists(path):
-                    for action in menu.actions():
+                    for action in menu.hashmarkActions():
                         if action.data()['path'] == path:
                             return action
 
                 for hashmark in marks:
                     uri = str(hashmark['uri'])
+
                     if uri not in initialPaths and uri not in new:
                         menu.addAction(self.makeHashmarkAction(hashmark))
                         countAdded += 1
@@ -497,21 +586,21 @@ class HashmarkMgrButton(PopupToolButton, HashmarkActionCreator,
                 else:
                     menu.hide()
 
-        self.setToolTip(iHashmarksDatabase())
-
-        if countAdded > 0:
-            self.flashButton()
-
+        self.updateToolTip()
         self.flashButton()
 
     @property
     def hmModel(self):
         return self.pronto.allHashmarksItemModel
 
-    async def linkActivated(self, action):
+    async def linkActivated(self, action, *qta):
         try:
+            assert action.data() is not None
+
             self.hashmarkClicked.emit(
                 action.data()['mark']
             )
+        except AssertionError:
+            pass
         except Exception:
             traceback.print_exc()

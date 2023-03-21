@@ -166,6 +166,20 @@ def iHashmarksDatabase():
     )
 
 
+def iHashmarksDatabaseStillEmpty():
+    return QCoreApplication.translate(
+        'GalacteekWindow',
+        '''
+
+        The hashmarks database is empty at the moment, or you haven't
+        subscribed to any tags yet.
+
+        If it's the first time you start galacteek, this is normal,
+        please wait for the initial database to be downloaded.
+        '''
+    )
+
+
 def iPrivateHashmarks(uri: str):
     return QCoreApplication.translate(
         'GalacteekWindow',

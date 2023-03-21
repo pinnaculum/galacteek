@@ -366,6 +366,7 @@ QMenu
 {
     color: #eff0f1;
     margin: 0.09em;
+    border: 1px solid #3a556c;
 }
 
 QMenu::icon
@@ -1993,7 +1994,7 @@ QToolButton[autoRaise="false"]
     border-radius: 0.09em;
 }
 
-QToolButton[flash=true] {
+QToolButton[flash="true"] {
     background-color: lightsteelblue;
 }
 

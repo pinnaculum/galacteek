@@ -14,6 +14,7 @@ from galacteek import services
 from galacteek import log
 from galacteek.ld import ipsContextUri
 from galacteek.ld.sparql import querydb
+from galacteek.ld.rdf import BaseGraph
 from galacteek.ld.rdf.terms import HASHMARK
 
 
@@ -250,14 +251,16 @@ async def ldHashmarksByTag(tagUri: URIRef = None,
 def ldHashmarkTag(hashmarkUri: URIRef,
                   tag: URIRef,
                   graphUri: str = MAIN_HASHMARKS_GRAPH_URI) -> None:
-    graph = getGraph(graphUri)
+    dstgraph = getGraph(graphUri)
+
+    graph = BaseGraph()
     graph.add((
         hashmarkUri,
         HASHMARK.tag,
         tag
     ))
 
-    graph.publishUpdateEvent(graph)
+    dstgraph += graph
 
 
 def ldHashmarkUntag(hashmarkUri: URIRef,

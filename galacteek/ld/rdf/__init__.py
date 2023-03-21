@@ -194,7 +194,18 @@ class GraphCommonMixin(object):
             event
         )
 
-    def publishUpdateEvent(self, srcGraph: Graph):
+    def publishGraphModelUpdateEvent(self) -> None:
+        """
+        Publish a graph model update notification: the model
+        for this graph was updated
+        """
+
+        self.publishLdEvent({
+            'type': 'GraphModelUpdateEvent',
+            'graphUri': str(self.identifier)
+        })
+
+    def publishUpdateEvent(self, srcGraph: Graph) -> None:
         """
         Publish a graph update notification: this graph
         was updated with the contents of srcGraph

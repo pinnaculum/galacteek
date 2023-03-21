@@ -1,5 +1,7 @@
 import asyncio
 
+from typing import List
+
 from rdflib import Literal
 from rdflib import URIRef
 
@@ -370,15 +372,18 @@ class HashmarkIPTagsDialog(QDialog):
         self._tagSearchTextLast = None
 
         self.app = QApplication.instance()
-        self.hashmarkUri = hashmarkUri
-        self.graphUri = graphUri
+        self.hashmarkUri: URIRef = hashmarkUri
+        self.graphUri: str = graphUri
 
         self.ui = ui_iptagsmanager.Ui_IPTagsDialog()
         self.ui.setupUi(self)
 
         self.setWindowTitle(iHashmarkIPTagsEdit())
 
-        self.destTags = []
+        self.destTags: list = []
+
+        # List of tag URIs already associated with the hashmark (on load)
+        self.initialTagsUris: List[str] = []
 
         self.destTagsModel = TagsSparQLModel(
             graphUri='urn:ipg:i:love:hashmarks',
@@ -388,6 +393,7 @@ class HashmarkIPTagsDialog(QDialog):
                 'langTag': Literal(cmod_app.defaultContentLangTag())
             }
         )
+        self.destTagsModel.modelReset.connect(self.onDestTagsReset)
 
         self.allTagsModel = QSortFilterProxyModel(self)
         self.allTagsModel.setFilterCaseSensitivity(Qt.CaseInsensitive)
@@ -459,7 +465,6 @@ class HashmarkIPTagsDialog(QDialog):
 
     @property
     def contentLangTag(self):
-        # return cmod_app.defaultContentLangTag()
         return langTagComboBoxGetTag(self.ui.searchLanguage)
 
     @property
@@ -471,20 +476,37 @@ class HashmarkIPTagsDialog(QDialog):
         elif self.ui.dbSource.currentIndex() == 1:
             return 'dbpedia'
 
-    def cancelTasks(self):
+    def destTagsUris(self) -> List[str]:
+        """
+        Returns a list of the selected tags, as URI strings
+        """
+        return [str(ref) for ref in
+                self.destTagsModel.tagUris()]
+
+    def onDestTagsReset(self) -> None:
+        """
+        Destination tags model was reset: store the URIs of the
+        tags already associated with the hashmark. This is then
+        compared to the final list when the dialog is validated.
+        """
+
+        if not self.initialTagsUris:
+            self.initialTagsUris = self.destTagsUris()
+
+    def cancelTasks(self) -> None:
         [t.cancel() for t in self._tasks + self._ldstasks]
         self._tasks.clear()
         self._ldstasks.clear()
 
-    def cancelLdSearchTasks(self):
+    def cancelLdSearchTasks(self) -> None:
         [t.cancel() for t in self._ldstasks]
         self._ldstasks.clear()
 
-    def onChangeSearchLanguage(self, langText: str):
+    def onChangeSearchLanguage(self, langText: str) -> None:
         self.ldSearcher.setPlaceholderText(
             iKgSearchForTags(langText))
 
-    def onLdResultActivated(self, idx):
+    def onLdResultActivated(self, idx) -> None:
         # RDF Label for the user's language
         label = self.ldSearcher.model.data(idx, RdfLabelRole)
 
@@ -538,16 +560,16 @@ class HashmarkIPTagsDialog(QDialog):
                 '@type': 'TagMeaning',
                 '@id': str(rscuri)
             }],
-            watch=True
+            watch=False
         )
 
         return self.tagSearchTextLast
 
-    def onLdSearchChanged(self, text: str):
+    def onLdSearchChanged(self, text: str) -> None:
         self.allTagsModel.setFilterRegExp(text)
         self.ui.allTagsView.clearSelection()
 
-    def onLdSearchEdit(self, text: str):
+    def onLdSearchEdit(self, text: str) -> None:
         """
         Called when the tag search line is edited by the user.
         Set the filter regexp on the tags proxy model.
@@ -564,7 +586,7 @@ class HashmarkIPTagsDialog(QDialog):
 
             self.editTimer.start(800)
 
-    async def ldSearchTag(self):
+    async def ldSearchTag(self) -> None:
         self.cancelLdSearchTasks()
         self.ldSearcher.resetModel()
 
@@ -623,7 +645,7 @@ class HashmarkIPTagsDialog(QDialog):
         self._ldstasks.append(future)
         self._ldstasks.append(prog)
 
-    async def searchStatusTask(self):
+    async def searchStatusTask(self) -> None:
         msgs = [
             iKgSearchBePatient0(),
             iKgSearchBePatient1(),
@@ -636,7 +658,7 @@ class HashmarkIPTagsDialog(QDialog):
 
             self.ui.searchStatusLabel.setText(msgs[x])
 
-    def setTagAbstract(self, tagAbstract: str):
+    def setTagAbstract(self, tagAbstract: str) -> None:
         self.ui.tagAbstractLabel.setText(tagAbstract)
 
         self.ui.tagAbstractLabel.setToolTip(
@@ -645,7 +667,7 @@ class HashmarkIPTagsDialog(QDialog):
 
         self.ui.tagAbstractLabel.setVisible(True)
 
-    def onTagClicked(self, idx):
+    def onTagClicked(self, idx) -> None:
         if self._tasks:
             [t.cancel() for t in self._tasks]
 
@@ -653,7 +675,7 @@ class HashmarkIPTagsDialog(QDialog):
 
         self._tasks.append(ensure(self.tagMeaningTask(idx)))
 
-    async def tagMeaningTask(self, idx):
+    async def tagMeaningTask(self, idx) -> None:
         """
         A Tag was clicked. Get the meaning of the tag (the tag abstract),
         store it, and show the abstract in the dialog.
@@ -776,6 +798,9 @@ class HashmarkIPTagsDialog(QDialog):
                     graphUri=self.graphUri
                 )
 
+                # Watch this tag.
+                rdf_tags.tagWatch(URIRef(tagUri))
+
         await self.refreshModels()
 
     async def refreshModels(self):
@@ -800,6 +825,22 @@ class HashmarkIPTagsDialog(QDialog):
 
     async def validate(self, *args):
         self.cancelTasks()
+
+        # Compute the list of itag URIs that the hashmark was tagged with
+        # during the lifetime of this dialog (a simple diff between the
+        # final tags list and the initial list), then update the hashmark
+        # manager button's menu for those new tags only.
+
+        selectedUris = self.destTagsUris()
+
+        if self.initialTagsUris and selectedUris:
+            diff = list(set(selectedUris) - set(self.initialTagsUris))
+
+            if diff:
+                ensure(self.app.mainWindow.hashmarkMgrButton.updateMenu(
+                    onlyTags=diff
+                ))
+
         self.done(1)
 
 

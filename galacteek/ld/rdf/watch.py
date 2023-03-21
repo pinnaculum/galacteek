@@ -23,6 +23,9 @@ from galacteek.ld.rdf import GraphUpdateEvent
 class GraphActivityListener(KeyListener):
     """
     Pubsub activity listener for pronto graphs
+
+    GraphActivityListener listens for the various pubsub events
+    emitted by a graph's guardian, and translates them as async signals.
     """
 
     psListenKeys = [
@@ -46,8 +49,13 @@ class GraphActivityListener(KeyListener):
         elif isinstance(watch, str):
             self.urisWatchList.append(watch)
 
+        # Signal for when the RDF graph is changed
         self.graphChanged = AsyncSignal(str,
                                         minInterval=minChangesInterval)
+
+        # Signal for when the Qt model for an RDF graph is changed
+        self.graphModelChanged = AsyncSignal(str,
+                                             minInterval=minChangesInterval)
 
         self.subjectsChanged = AsyncSignal(str, list)
 
@@ -139,3 +147,13 @@ class GraphActivityListener(KeyListener):
                         await self.flush(graphUri, esubs)
 
                     break
+        elif event['type'] == 'GraphModelUpdateEvent':
+            # GraphModelUpdateEvent is propagated from BaseGraph
+            # when the internal Qt model's state of a SparQLModel
+            # is changed (after a query is run)
+
+            graphUri = event.get('graphUri')
+
+            for uriReg in self.urisWatchList:
+                if re.search(uriReg, graphUri):
+                    await self.graphModelChanged.emit(graphUri)

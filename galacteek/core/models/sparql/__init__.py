@@ -36,6 +36,7 @@ class SparQLQueryRunner(GAsyncObject):
         self.graphUri = graphUri
         self._graph = graph
         self._results = []
+        self._initBindings: dict = {}
         self._qprepared = {}
         self._varsCount = 0
         self._debug = debug
@@ -60,8 +61,11 @@ class SparQLQueryRunner(GAsyncObject):
     def rqGet(self, rqName: str) -> str:
         return querydb.get(rqName)
 
+    def bindingsUpdate(self, **bindings) -> None:
+        self._initBindings.update(**bindings)
+
     def _setup(self, rqQuery: str = None,
-               bindings: dict = None):
+               bindings: dict = None) -> None:
         if rqQuery is None:
             return
         self._initBindings = bindings
@@ -71,18 +75,18 @@ class SparQLQueryRunner(GAsyncObject):
         if q:
             self.prepare('q0', q)
 
-    def update(self):
+    def update(self) -> None:
         # If a query was already prepared, toast it
 
         if self.q0:
             ensure(self.graphQueryAsync(self.q0,
                                         bindings=self._initBindings))
 
-    def setGraph(self, graph):
+    def setGraph(self, graph) -> None:
         self._graph = graph
         self.clearModel()
 
-    def clearModel(self):
+    def clearModel(self) -> None:
         self.beginResetModel()
         self._results = []
         self.endResetModel()
@@ -124,6 +128,8 @@ class SparQLQueryRunner(GAsyncObject):
             self.beginResetModel()
             self._results = list(results)
             self.endResetModel()
+
+            self.graph.publishGraphModelUpdateEvent()
 
     def runPreparedQuery(self, queryName, bindings):
         try:
@@ -232,11 +238,6 @@ class SparQLItemModel(AbstractModel,
         self.colList = columns
 
         self.rootItem = SparQLBaseItem(self.colList)
-
-        # This should be moved to a subclass that the list model can also use
-        # self.activityListener = GraphActivityListener(graphUri)
-        # self.activityListener.graphChanged.connectTo(self.onGraphUpdated)
-        # self.activityListener.graphGotMerged.connectTo(self.onGraphGotMerged)
 
     async def onGraphUpdated(self, graphUri: str) -> None:
         """
@@ -380,6 +381,8 @@ class SparQLItemModel(AbstractModel,
                     continue
 
             await asyncio.sleep(0)
+
+        self.graph.publishGraphModelUpdateEvent()
 
     def update(self):
         if self.q0:

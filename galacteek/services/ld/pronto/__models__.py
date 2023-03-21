@@ -21,7 +21,10 @@ class ProntoServiceModels:
         self.allTagsModel.update()
 
         self.tagsPrefsModel = TagsPreferencesModel(
-            graphUri='urn:ipg:i:love:itags'
+            graphUri='urn:ipg:i:love:itags',
+            bindings={
+                'langTagMatch': Literal(langTag)
+            }
         )
         self.tagsPrefsModel.update()
 
@@ -33,7 +36,7 @@ class ProntoServiceModels:
             bindings={
                 'searchQuery': Literal(''),
                 'mimeCategoryQuery': Literal(''),
-                'langTagMatch': Literal('en')  # BC
+                'langTagMatch': Literal(langTag)
             }
         )
         self.allHashmarksItemModel.update()

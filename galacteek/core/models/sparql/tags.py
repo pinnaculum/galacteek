@@ -20,6 +20,13 @@ class TagsSparQLModel(SparQLListModel):
 
     rq = 'TagsSearch'
 
+    def changeTagLanguage(self, langCode: str) -> None:
+        """
+        Change the model's tags language filter
+        """
+        self.bindingsUpdate(langTag=langCode)
+        self.update()
+
     def tagNames(self):
         for ri in range(0, self.rowCount()):
             yield self.data(
@@ -35,18 +42,11 @@ class TagsSparQLModel(SparQLListModel):
             )
 
     def tagsDetails(self):
-        for ri in range(0, self.rowCount()):
-            idx = self.createIndex(ri, 0)
-            yield self.data(
-                idx,
-                role=SubjectUriRole
-            ), self.data(
-                idx,
-                role=TagNameRole
-            ), self.data(
-                idx,
-                role=TagDisplayNameRole
-            )
+        yield from self.rgen(
+            Qt.DisplayRole,
+            TagDisplayNameRole,
+            SubjectUriRole
+        )
 
     def abstractSummarize(self, abstract: str, lines: int = 10):
         return '\n'.join(abstract.split('.')[0:lines])
@@ -103,6 +103,13 @@ class TagsPreferencesModel(SparQLListModel):
             TagDisplayNameRole,
             TagWatchedRole
         )
+
+    def changeTagLanguage(self, langCode: str) -> None:
+        """
+        Change the tags language filter
+        """
+        self.bindingsUpdate(langTagMatch=langCode)
+        self.update()
 
     def data(self, index, role=None):
         item = self.resultGet(index)
