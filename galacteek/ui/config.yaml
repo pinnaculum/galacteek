@@ -50,3 +50,9 @@ envs:
       workspaceSwitched:
         control:
           sound: apert.wav
+
+      chatBotAsking:
+        sound: apert
+
+      chatBotGotAnswer:
+        sound: approved-mission

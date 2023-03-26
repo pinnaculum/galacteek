@@ -5,6 +5,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.5] - 2023-03-25
+
+### Added
+- Web Passwords vault implementation: save passwords from HTML forms and
+  autofill passwords
+- ChatGPT integration with the openai python module
+  - Implement basics: text completion, image generation
+  - Implement translation to languages supported by ChatGPT
+  - Implement QML code generation with live preview in a QtQuickWidget
+
+### Changed
+- openai pypi requirement: ==0.27.2
+
 ## [0.6.4] - 2023-03-21
 
 ### Added

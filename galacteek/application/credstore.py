@@ -31,7 +31,7 @@ class CredentialsStore:
         try:
             assert len(pwd) > 0
 
-            self.__pwVault.load(pwd, user='nobody')
+            self.__pwVault.load(pwd, user=user)
         except AccessDeniedError:
             traceback.print_exc()
             return False

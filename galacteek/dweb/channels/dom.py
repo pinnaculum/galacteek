@@ -8,8 +8,7 @@ from galacteek import ensure
 from galacteek.core import runningApp
 from galacteek.browser.schemes import SCHEME_HTTPS
 from galacteek.browser.schemes import SCHEME_IPFS
-
-# from . import GAsyncObject
+from galacteek.browser.schemes import SCHEME_IPNS
 
 
 class DOMBridge(QObject):
@@ -36,10 +35,10 @@ class DOMBridge(QObject):
 
             assert url.scheme in [
                 SCHEME_HTTPS,
-                SCHEME_IPFS
+                SCHEME_IPFS,
+                SCHEME_IPNS
             ]
-        except Exception as err:
-            print(err)
+        except Exception:
             return
 
         ensure(runningApp().credsManager.pwStoreRequest.emit(

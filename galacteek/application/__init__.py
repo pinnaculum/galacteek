@@ -554,6 +554,11 @@ class GalacteekApplication(ApplicationDaemonStarterMixin,
     def networkProxySetNull(self):
         self.networkProxySet(NullProxy())
 
+    def pwVaultExists(self) -> bool:
+        # Returns True if the default passwords vault exists
+
+        return self.__pwVaultLocation.is_file()
+
     def pwVaultOpen(self, pwd: str) -> bool:
         return self.__creds.open(pwd)
 
@@ -581,8 +586,7 @@ class GalacteekApplication(ApplicationDaemonStarterMixin,
         self.__creds = CredentialsStore(self.__pwVaultLocation)
 
         self.credsManager = PasswordsManager(
-            icon=getIcon('vault.png'),
-            credsStore=self.__creds
+            self.__creds
         )
 
         # Start with no proxy

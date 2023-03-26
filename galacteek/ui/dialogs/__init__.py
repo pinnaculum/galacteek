@@ -95,6 +95,7 @@ from ..forms import ui_httpforwardservicedialog
 from ..forms import ui_hugonewpostdialog
 from ..forms import ui_hugoinstalldialog
 from ..forms import ui_filedownloaddialog
+from ..forms import ui_pwvaultcreatedialog
 
 from ..forms import ui_pwdstoreaskdialog
 
@@ -114,6 +115,7 @@ from ..i18n import iDownload
 from ..i18n import iDownloadOpenDialog
 from ..i18n import iOpen
 from ..i18n import iDonateBitcoin
+from ..i18n import iInvalidInput
 
 
 def boldLabelStyle():
@@ -2256,3 +2258,27 @@ class WebCredentialsStoreAskDialog(BaseDialog):
 
     def accept(self):
         self.done(1)
+
+
+class WebCredentialsCreateDialog(BaseDialog):
+    uiClass = ui_pwvaultcreatedialog.Ui_PasswordsVaultCreateDialog
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.ui.buttonBox.accepted.connect(self.accept)
+        self.ui.buttonBox.rejected.connect(self.reject)
+
+    @property
+    def pwd(self):
+        return self.ui.password.text()
+
+    @property
+    def pwdr(self):
+        return self.ui.passwordRepeat.text()
+
+    def accept(self):
+        if not self.pwd or self.pwd != self.pwdr:
+            self.ui.status.setText(iInvalidInput())
+        else:
+            self.done(1)

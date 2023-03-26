@@ -1148,8 +1148,11 @@ class WorkspaceMisc(TabbedWorkspace):
     def showPinSettings(self):
         pass
 
-    def showSettings(self):
+    def showSettings(self, showModule: str = None):
         self.tabWidget.setCurrentWidget(self.settingsCenter)
+
+        if showModule:
+            self.settingsCenter.selectConfigModule(showModule)
 
 
 class WorkspaceMessenger(SingleWidgetWorkspace, KeyListener):

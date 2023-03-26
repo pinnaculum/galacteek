@@ -30,6 +30,6 @@ class TmpFile:
         self._tempFile.close()
         self.remove()
 
-    def remove(self):
-        if self._delete:
+    def remove(self, force: bool = False):
+        if self._delete or force:
             os.remove(self._tempFile.name)

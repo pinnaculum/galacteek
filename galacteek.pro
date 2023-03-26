@@ -19,7 +19,7 @@ SOURCES = galacteek/application/__init__.py \
 	galacteek/ui/ipfssearch.py \
 	galacteek/ui/files/unixfs.py \
 	galacteek/ui/keys.py \
-	galacteek/ui/mainui.py \
+	galacteek/ui/mainui/__init__.py \
 	galacteek/ui/mediaplayer/__init__.py \
 	galacteek/ui/peers/__init__.py \
 	galacteek/ui/pinning/pinstatus.py \
