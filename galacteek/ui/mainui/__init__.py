@@ -36,6 +36,8 @@ from galacteek import database
 
 from galacteek.appsettings import *
 
+from galacteek.ai import openai as opai
+
 from galacteek.core import runningApp
 from galacteek.core.glogger import loggerMain
 from galacteek.core.glogger import loggerUser
@@ -46,6 +48,7 @@ from galacteek.core.ps import makeKeyService
 from galacteek.ipfs.wrappers import *
 from galacteek.ipfs.ipfsops import *
 from galacteek.ipfs.cidhelpers import IPFSPath
+from galacteek.ui.chatbot import ChatBotSessionTab
 
 from .logs import UserLogsWindow
 from .logs import MainWindowLogHandler
@@ -629,9 +632,9 @@ class MainWindow(QMainWindow, KeyListener):
         )
 
         self.chatBotSessionAction = QAction(
-            getIcon('ai/chatbot.png'),
-            'Chatbot session',
-            shortcut=QKeySequence('Ctrl+Shift+c'),
+            getIcon('ai/chatbot-smile.png'),
+            iChatBotDiscussion(),
+            shortcut=QKeySequence('Ctrl+Shift+b'),
             triggered=self.onNewChatBotSession
         )
 
@@ -1408,12 +1411,14 @@ class MainWindow(QMainWindow, KeyListener):
             ws.openHashmarks(parent=self)
 
     def onNewChatBotSession(self):
-        from galacteek.ui.chatbot import ChatBotSessionTab
-
-        self.registerTab(ChatBotSessionTab(self),
-                         'Chatbot session',
-                         icon=getIcon('ai/chatbot.png'),
-                         current=True)
+        if opai.isConfigured():
+            self.registerTab(ChatBotSessionTab(self),
+                             iChatBotDiscussion(),
+                             icon=getIcon('ai/chatbot.png'),
+                             current=True)
+        else:
+            with self.stack.workspaceCtx(WS_CONTROL) as wspace:
+                wspace.showSettings(showModule='ai')
 
     def addBrowserTab(self,
                       label='...',

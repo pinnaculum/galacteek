@@ -6,6 +6,7 @@
     <file>../../share/icons/appimage.png</file>
     <file>../../share/icons/article.png</file>
     <file>../../share/icons/ai/chatbot.png</file>
+    <file>../../share/icons/ai/chatbot-smile.png</file>
     <file>../../share/icons/cyber.png</file>
     <file>../../share/icons/clock.png</file>
     <file>../../share/icons/feather-pen.png</file>
@@ -17,9 +18,11 @@
     <file>../../share/icons/hugo.png</file>
     <file>../../share/icons/ipservice.png</file>
     <file>../../share/icons/logs.png</file>
+    <file>../../share/icons/question.png</file>
     <file>../../share/icons/gemini.png</file>
     <file>../../share/icons/tor.png</file>
     <file>../../share/icons/vault.png</file>
+    <file>../../share/icons/vault-closed.png</file>
     <file>../../share/icons/graph-link.png</file>
     <file>../../share/icons/markdown.png</file>
     <file>../../share/icons/planets/globe-grid.png</file>
@@ -330,6 +333,10 @@
   <qresource>
     <file>../../share/crypto/btc/btc-donate.png</file>
     <file>../../share/crypto/btc/btc-donate-001.png</file>
+  </qresource>
+
+  <qresource>
+    <file>../../share/img/chatbot-blue.jpg</file>
   </qresource>
 
   <qresource prefix="/">

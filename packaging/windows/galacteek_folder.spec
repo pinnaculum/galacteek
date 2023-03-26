@@ -117,6 +117,8 @@ a = Analysis(['galacteek_win.py'],
         'multiaddr.codecs.*',
         'omegaconf',
         'mode',
+        'openai',
+        'openai.*',
         'claptcha'
     ],
     hookspath=['packaging/windows/hooks'],

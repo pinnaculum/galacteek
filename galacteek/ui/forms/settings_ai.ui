@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>554</width>
+    <width>689</width>
     <height>390</height>
    </rect>
   </property>
@@ -24,28 +24,7 @@
        <layout class="QGridLayout" name="gridLayout_2">
         <item row="1" column="0">
          <layout class="QGridLayout" name="gridLayout">
-          <item row="3" column="0">
-           <widget class="QLabel" name="label_4">
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QCheckBox" name="checkBox">
-            <property name="text">
-             <string>Enable this account</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QLineEdit" name="openaiPassword">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="1">
+          <item row="1" column="1">
            <spacer name="verticalSpacer_2">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
@@ -58,10 +37,24 @@
             </property>
            </spacer>
           </item>
-          <item row="5" column="1">
+          <item row="4" column="1">
+           <widget class="QLabel" name="testAccountResult">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
            <widget class="QLineEdit" name="openaiApiKey"/>
           </item>
-          <item row="5" column="0">
+          <item row="3" column="1">
+           <widget class="QPushButton" name="testAccountButton">
+            <property name="text">
+             <string>Test account</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
            <widget class="QLabel" name="label">
             <property name="toolTip">
              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;OpenAPI API key&lt;/p&gt;&lt;p&gt;https://beta.openai.com/account/api-keys&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -71,43 +64,8 @@
             </property>
            </widget>
           </item>
-          <item row="6" column="1">
-           <widget class="QPushButton" name="testAccountButton">
-            <property name="text">
-             <string>Test account</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="label_3">
-            <property name="text">
-             <string>Password</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="label_2">
-            <property name="text">
-             <string>Email</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QLineEdit" name="lineEdit_3">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QLineEdit" name="lineEdit">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="7" column="1">
-           <widget class="QLabel" name="testAccountResult">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_4">
             <property name="text">
              <string/>
             </property>
@@ -115,10 +73,24 @@
           </item>
          </layout>
         </item>
-        <item row="0" column="0" alignment="Qt::AlignHCenter">
+        <item row="0" column="0">
          <widget class="QLabel" name="label_5">
+          <property name="styleSheet">
+           <string notr="true">QLabel {
+   margin: 5px;
+}</string>
+          </property>
           <property name="text">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt; font-weight:600;&quot;&gt;After creating an OpenAI account, create an API key and paste it below&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Sans Serif'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:14pt; font-weight:600; color:#18a7ff;&quot;&gt;After creating an OpenAI account, create an API key and paste it below.&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:14pt; font-weight:600; color:#18a7ff;&quot;&gt;To create an API key, go to the &lt;/span&gt;&lt;a href=&quot;https://platform.openai.com/overview&quot;&gt;&lt;span style=&quot; font-size:14pt; text-decoration: underline; color:#18a7ff;&quot;&gt;OpenAI dashboard.&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:14pt; font-weight:600; color:#18a7ff;&quot;&gt;Then click on your profile's icon in the top-right corner, and then click on the &amp;quot;View API keys link&amp;quot;. From this page, click on the &amp;quot;Create new secret key&amp;quot; button. Then copy-paste the API key (string starting with &amp;quot;sk-&amp;quot;) in the field below.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="wordWrap">
+           <bool>true</bool>
           </property>
          </widget>
         </item>

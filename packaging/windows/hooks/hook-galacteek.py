@@ -61,7 +61,9 @@ hiddenimports = [
     'aioipfs',
     'frozendict',
     'mkdocs',
-    'mkdocs-bootswatch'
+    'mkdocs-bootswatch',
+    'openai',
+    'vicious_vault'
 ]
 
 # We have to manually list multiaddr.codecs modules
@@ -89,6 +91,7 @@ hiddenimports += collect_submodules('galacteek.ui.forms')
 hiddenimports += collect_submodules('galacteek.ui.settings')
 
 hiddenimports += collect_submodules('mkdocs')
+hiddenimports += collect_submodules('openai')
 
 hiddenimports += collect_submodules('rdflib')
 hiddenimports += collect_submodules('rdflib_jsonld')

@@ -34,10 +34,14 @@ def quickWidgetFromIpfs(ipfsPath: IPFSPath, parent=None):
     return qWidget
 
 
-def quickWidgetFromFile(fp: str, parent=None):
+def quickWidgetFromFile(fp: str, parent=None,
+                        show: bool = True):
     qWidget = QQuickWidget(parent)
     qWidget.setSource(QUrl.fromLocalFile(fp))
-    qWidget.show()
+
+    if show:
+        qWidget.show()
+
     return qWidget
 
 

@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Store web credentials ?</string>
   </property>
   <layout class="QGridLayout" name="gridLayout_2">
    <item row="0" column="0">
@@ -25,8 +25,17 @@
      </item>
      <item alignment="Qt::AlignHCenter">
       <widget class="QLabel" name="siteUrl">
+       <property name="maximumSize">
+        <size>
+         <width>430</width>
+         <height>16777215</height>
+        </size>
+       </property>
        <property name="text">
         <string/>
+       </property>
+       <property name="wordWrap">
+        <bool>false</bool>
        </property>
       </widget>
      </item>
