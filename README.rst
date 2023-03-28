@@ -17,6 +17,12 @@ Where
 Join in `on the Telegram channel <https://t.me/Galacteek>`_ or
 `in the Matrix room <https://matrix.to/#/#galacteek:matrix.org>`_
 
+.. image:: https://storage.ko-fi.com/cdn/kofi_stroke_cup.svg
+    :target: https://ko-fi.com/galacteek
+    :width: 256
+    :height: 256
+    :alt: Sponsor with Ko-fi
+
 Installation
 ============
 
@@ -68,14 +74,21 @@ Sponsor this project
 
 See the sponsor_ page for all the possible ways to donate to this project.
 
-.. image:: https://gitlab.com/galacteek/galacteek/-/raw/master/share/icons/github-mark.png
-    :target: https://github.com/sponsors/pinnaculum
-    :alt: Sponsor with Github Sponsors
+.. image:: https://storage.ko-fi.com/cdn/kofi_stroke_cup.svg
+    :target: https://ko-fi.com/galacteek
+    :alt: Sponsor with Ko-fi
+    :width: 128
+    :height: 128
     :align: left
 
 .. image:: https://gitlab.com/galacteek/galacteek/-/raw/master/share/icons/liberapay.png
     :target: https://liberapay.com/galacteek/donate
     :alt: Sponsor with Liberapay
+    :align: left
+
+.. image:: https://gitlab.com/galacteek/galacteek/-/raw/master/share/icons/github-mark.png
+    :target: https://github.com/sponsors/pinnaculum
+    :alt: Sponsor with Github Sponsors
     :align: left
 
 Contact
