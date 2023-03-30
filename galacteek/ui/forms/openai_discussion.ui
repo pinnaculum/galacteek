@@ -67,33 +67,13 @@
           </size>
          </property>
          <property name="placeholderText">
-          <string>Enter your question here (use Ctrl+L to focus)</string>
+          <string>Enter your question here (use Ctrl+L to focus, Ctrl+Enter to ask)</string>
          </property>
         </widget>
        </item>
        <item>
         <layout class="QGridLayout" name="gridLayout_2">
-         <item row="1" column="0">
-          <widget class="QToolButton" name="imageGenButton">
-           <property name="toolTip">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt;Ask the chatbot to generate an image&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-           <property name="text">
-            <string>Image</string>
-           </property>
-           <property name="icon">
-            <iconset resource="../galacteek.qrc">
-             <normaloff>:/share/icons/mimetypes/image-png.png</normaloff>:/share/icons/mimetypes/image-png.png</iconset>
-           </property>
-           <property name="shortcut">
-            <string>Ctrl+I</string>
-           </property>
-           <property name="toolButtonStyle">
-            <enum>Qt::ToolButtonTextBesideIcon</enum>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
+         <item row="1" column="2">
           <widget class="QToolButton" name="qmlGenButton">
            <property name="toolTip">
             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt;Ask the chatbot to &lt;/span&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;generate the QML code&lt;/span&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt; for this question, and &lt;/span&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;load&lt;/span&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt; the generated QML code with Qt Quick in a widget&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -113,10 +93,30 @@
            </property>
           </widget>
          </item>
-         <item row="0" column="0">
+         <item row="1" column="1">
+          <widget class="QToolButton" name="imageGenButton">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt;Ask the chatbot to generate an image&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string>Image</string>
+           </property>
+           <property name="icon">
+            <iconset resource="../galacteek.qrc">
+             <normaloff>:/share/icons/mimetypes/image-png.png</normaloff>:/share/icons/mimetypes/image-png.png</iconset>
+           </property>
+           <property name="shortcut">
+            <string>Ctrl+I</string>
+           </property>
+           <property name="toolButtonStyle">
+            <enum>Qt::ToolButtonTextBesideIcon</enum>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
           <widget class="QToolButton" name="askButton">
            <property name="toolTip">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt;Ask the chatbot to answer (complete) a question&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Ask the chatbot to answer (complete) a question. Use Ctrl+Enter to validate.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="text">
             <string>Ask</string>
@@ -133,7 +133,7 @@
            </property>
           </widget>
          </item>
-         <item row="0" column="1">
+         <item row="0" column="2">
           <widget class="QToolButton" name="tsButton">
            <property name="toolTip">
             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt;Ask the chatbot to &lt;/span&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;translate&lt;/span&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt; the input text to a certain language.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -156,6 +156,20 @@
            </property>
           </widget>
          </item>
+         <item row="0" column="0">
+          <widget class="QDial" name="temperatureDial">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Temperature (for text completions).&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;At lower temperatures, the chatbot will behave in a more focused and deterministic manner. Higher temperatures will produce more random output.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0" alignment="Qt::AlignHCenter">
+          <widget class="QLabel" name="tempLabel">
+           <property name="text">
+            <string/>
+           </property>
+          </widget>
+         </item>
         </layout>
        </item>
       </layout>
@@ -175,7 +189,7 @@
               <x>0</x>
               <y>0</y>
               <width>485</width>
-              <height>365</height>
+              <height>334</height>
              </rect>
             </property>
            </widget>

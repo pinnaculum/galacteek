@@ -748,12 +748,14 @@ class IPFSSearchHandler(QObject):
 
         try:
             with async_timeout.timeout(timeout):
+                # 2023-03-31: ipfs-search SSL cert is expired,
+                # disable SSL verification temporarily
                 async for pageCount, result in ipfsSearchGen(
                         searchQuery,
                         page=pageStart,
                         filters=self.filters,
                         proxyUrl=proxy.url() if proxy else None,
-                        sslverify=self.app.sslverify):
+                        sslverify=False):
                     await asyncio.sleep(0)
 
                     gotResults = True

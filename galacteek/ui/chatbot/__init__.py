@@ -42,6 +42,8 @@ from ..i18n import iChatBotGenerateOneImage
 from ..i18n import iChatBotGenerateImageCount
 from ..i18n import iChatBotTranslateToLang
 from ..i18n import iChatBotInvalidResponse
+from ..i18n import iCopyToClipboard
+from ..i18n import iRemove
 
 
 def stripEmpty(s: str) -> str:
@@ -172,7 +174,12 @@ class ChatBotDiscussionWidget(QWidget):
         qa.rmRequested.connect(functools.partial(self.onRemoveQuestion,
                                                  qa))
 
-        self.vl.insertWidget(self.vl.count(), qa)
+        if self.spacer:
+            # The spacer is there, insert before
+            self.vl.insertWidget(self.vl.count() - 1, qa)
+        else:
+            # No spacer yet, append
+            self.vl.insertWidget(self.vl.count(), qa)
 
         if not self.spacer:
             # Add a spacer item in the spacer layout
@@ -207,15 +214,17 @@ class QuestionAnswer(QWidget):
         qi.setPixmap(
             QPixmap(':/share/icons/question.png').scaledToWidth(32))
 
-        font = QFont('Times', 14)
+        font = QFont('Segoe UI', 14)
         font.setBold(True)
         fm = QFontMetrics(font)
 
         rmButton = QToolButton()
+        rmButton.setToolTip(iRemove())
         rmButton.setIcon(getIcon('cancel.png'))
         rmButton.clicked.connect(self.rmRequested.emit)
 
         self.cbButton = QToolButton()
+        self.cbButton.setToolTip(iCopyToClipboard())
         self.cbButton.setIcon(getIcon('clipboard.png'))
         self.cbButton.clicked.connect(self.copyToClipboard)
         self.cbButton.setEnabled(False)
@@ -226,6 +235,7 @@ class QuestionAnswer(QWidget):
         qLabel.setToolTip(question)
         qLabel.setAlignment(Qt.AlignLeft)
         qLabel.setMaximumHeight(fm.lineSpacing() * 3)
+        qLabel.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         ql.addWidget(rmButton)
         ql.addWidget(self.cbButton)
@@ -259,22 +269,39 @@ class QuestionAnswer(QWidget):
                 )
 
     def showTextCompletion(self, answer: str,
-                           maxLines: int = 100) -> None:
+                           margin: int = 5,
+                           maxLines: int = 60) -> None:
         self.rmAnim()
 
         answerText = QTextEdit()
-        answerText.setViewportMargins(6, 6, 6, 6)
+        answerText.setCurrentFont(QFont('Inter UI', 14))
+
+        answerText.document().setUseDesignMetrics(True)
+        answerText.document().setTextWidth(self.width() * 0.8)
+
+        answerText.setViewportMargins(margin, margin, margin, margin)
         answerText.setReadOnly(True)
         answerText.setPlainText(stripEmpty(answer))
 
+        doch = answerText.document().size().height()
+
         fm = QFontMetrics(answerText.font())
 
-        answerText.setMinimumHeight(fm.lineSpacing() * 40)
+        if doch > 0 and doch < fm.lineSpacing() * 10:
+            """
+            Document height represents no more than 10 lines, use it
+            to fix the widget's height
+            """
+            answerText.setFixedHeight((doch * 1.75) + margin * 2)
+        else:
+            alineco = max(10, answerText.document().lineCount())
 
-        answerText.setFixedHeight(
-            min(max(8, answerText.document().lineCount()),
-                maxLines) * fm.lineSpacing()
-        )
+            answerText.setMinimumHeight(
+                (fm.lineSpacing() * min(15, alineco)) + margin * 2
+            )
+            answerText.setMaximumHeight(
+                (fm.lineSpacing() * min(maxLines, alineco)) + margin * 2
+            )
 
         self.answerLayout.addWidget(answerText)
         self.cbButton.setEnabled(True)
@@ -330,6 +357,13 @@ class ChatBotSessionTab(GalacteekTab):
         self.ui.qmlGenButton.clicked.connect(self.onQmlGen)
         self.ui.clearChat.clicked.connect(self.onClearChat)
 
+        # Temperature dial setup
+        self.ui.temperatureDial.valueChanged.connect(self.onTempChanged)
+        self.ui.temperatureDial.setRange(0, 100)
+        self.ui.temperatureDial.setValue(10)
+        self.ui.temperatureDial.setWrapping(True)
+        self.ui.temperatureDial.setNotchesVisible(True)
+
         self.ui.imageGenButton.setPopupMode(QToolButton.InstantPopup)
 
         self.tsLangMenu = QMenu()
@@ -371,6 +405,15 @@ class ChatBotSessionTab(GalacteekTab):
         if maximum > 0:
             self.vscrollbar.setValue(maximum)
 
+    @property
+    def aiTemp(self):
+        """
+        Converts the QDial value (0-100 range) to a temperature value as
+        used by the openai module (a float in the 0.0 - 2.0 range)
+        """
+
+        return float((self.ui.temperatureDial.value() * 2) / 100)
+
     def keyPressEvent(self, event):
         modifiers = event.modifiers()
 
@@ -399,6 +442,30 @@ class ChatBotSessionTab(GalacteekTab):
 
     def resizeEvent(self, event) -> None:
         self.disc.adjustImage()
+
+    def onTempChanged(self, value: int) -> None:
+        """
+        Called when the dial value for the temperature is changed.
+        Just update the label below the dial with a matching color.
+        """
+
+        if value in range(0, 20):
+            color = 'deepskyblue'
+        elif value in range(20, 35):
+            color = 'cyan'
+        elif value in range(35, 50):
+            color = 'yellow'
+        elif value in range(50, 70):
+            color = 'darkorange'
+        elif value in range(70, 85):
+            color = 'orange'
+        elif value in range(85, 101):
+            color = 'red'
+        else:
+            color = 'gray'
+
+        self.ui.tempLabel.setStyleSheet(f'color: {color};')
+        self.ui.tempLabel.setText(f'T: {value}°')
 
     def onClearChat(self) -> None:
         self.disc = ChatBotDiscussionWidget(parent=self)
@@ -441,7 +508,8 @@ class ChatBotSessionTab(GalacteekTab):
         qa = self.disc.go(prompt)
 
         try:
-            resp = await opai.complete(prompt)
+            resp = await opai.complete(prompt,
+                                       temperature=self.aiTemp)
             assert len(resp.choices) > 0
         except AssertionError:
             qa.error(iChatBotInvalidResponse())

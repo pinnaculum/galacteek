@@ -44,20 +44,23 @@ def resetApiKey():
 async def complete(prompt: str,
                    engine: str = 'text-davinci-003',
                    maxtokens: int = 2000,
-                   temperature: int = -1):
+                   n: int = 1,
+                   temperature: float = -1):
     account = cGet('accounts.main',
                    mod='galacteek.ai.openai')
 
     try:
         openai = apimod()
+        temp = temperature if (temperature >= 0 and temperature <= 2.0) else \
+            account.params.temperature
 
         completion = await openai.Completion.acreate(
             engine=engine,
             prompt=prompt,
             max_tokens=maxtokens,
-            n=1,
+            n=n,
             stop=None,
-            temperature=account.params.temperature
+            temperature=temp
         )
     except Exception:
         log.debug(traceback.format_exc())
