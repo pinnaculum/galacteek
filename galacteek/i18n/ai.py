@@ -29,6 +29,20 @@ def iChatBotGenerateImageCount(count: int):
     ).format(count)
 
 
+def iChatBotImageVariation():
+    return QCoreApplication.translate(
+        'Galacteek',
+        'Image variation'
+    )
+
+
+def iChatBotCreateImageVariation(count: int):
+    return QCoreApplication.translate(
+        'Galacteek',
+        'Create {0} image variation(s)'
+    ).format(count)
+
+
 def iChatBotTranslateToLang(langName: str):
     return QCoreApplication.translate(
         'Galacteek',

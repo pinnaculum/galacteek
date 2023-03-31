@@ -293,7 +293,9 @@ def cidValid(cid):
     return False
 
 
-domainRe = re.compile(r'^([A-Za-z0-9]\.|[A-Za-z0-9][A-Za-z0-9-]{0,61}[A-Za-z0-9]\.){1,3}[A-Za-z]{2,6}$')  # noqa
+domainReStr = r'([A-Za-z0-9]\.|[A-Za-z0-9][A-Za-z0-9-]{0,61}[A-Za-z0-9]\.){1,3}[A-Za-z]{2,6}'  # noqa
+
+domainRe = re.compile(rf'^{domainReStr}$')
 
 
 def domainValid(domain):
@@ -317,9 +319,23 @@ ipfsPathRe = re.compile(
     flags=re.UNICODE)
 
 
-ipfsDomainPathRe = re.compile(
-    r'^(\s*)?(?:http)://(?P<objectref>[\w.-]{1,113})\.(?P<gwscheme>(ipfs|ipns))\.(?:[\w]+):(?:[\d]+)/(?P<subpath>[' + pathChars + ']{0,1024})' + query + fragment,  # noqa
-    flags=re.UNICODE)
+# For subdomain gateway URLs
+# https://docs.ipfs.tech/how-to/address-ipfs-on-web/#subdomain-gateway
+# string length regex range for the root CID doesn't matter that much as
+# it's decoded by IPFSPath and must be a valid CID
+
+ipfsSubdomainUrlRe = re.compile(
+    r'\s*https?://(?P<rootcid>[a-z0-9]{46,113})\.(?P<gwscheme>(ipfs|ipns))\.' +
+    domainReStr +
+    r':?(?P<httpport>[\d]+)?' +
+    r'(?P<subpath>/[' +
+    pathChars +
+    ']{1,1024})?' +
+    query +
+    fragment,
+    flags=re.UNICODE
+)
+
 
 # For ipfs://<cid-base32>
 ipfsPathDedRe = re.compile(
@@ -622,15 +638,15 @@ class IPFSPath:
         if len(self.input) > self.maxLength:
             return False
 
-        ma = ipfsRegSearchDomainPath(self.input)
+        ma = ipfsRegSearchSubDomain(self.input)
         if ma:
             gdict = ma.groupdict()
-            objRef = gdict.get('objectref')
+            rCid = gdict.get('rootcid')
             subpath = gdict.get('subpath')
             scheme = gdict.get('gwscheme')
 
             if scheme == 'ipfs':
-                if not self.parseCid(objRef):
+                if not self.parseCid(rCid):
                     return False
 
                 if subpath:
@@ -639,21 +655,21 @@ class IPFSPath:
                         subpath
                     )
                 else:
-                    self._rscPath = joinIpfs(self.rootCidRepr) + '/'
+                    self._rscPath = joinIpfs(self.rootCidRepr)
             elif scheme == 'ipns':
                 if subpath:
                     self._rscPath = self.pathjoin(
-                        joinIpns(objRef),
+                        joinIpns(rCid),
                         subpath
                     )
                 else:
-                    self._rscPath = joinIpns(objRef) + '/'
+                    self._rscPath = joinIpns(rCid)
 
-                self._ipnsId = objRef
+                self._ipnsId = rCid
 
-            self._query = gdict.get('query')
-            self._subPath = subpath
+            self._subPath = subpath if subpath else '/'
             self._scheme = scheme
+            self._query = gdict.get('query')
             self._fragment = gdict.get('fragment')
 
             self.hubNotify()
@@ -900,43 +916,43 @@ class IPFSPath:
             frag=self.fragment if self.fragment else 'No fragment')
 
 
-def ipfsRegSearchPath(text):
+def ipfsRegSearchPath(text: str):
     return ipfsPathRe.match(text)
 
 
-def ipfsDedSearchPath(text):
+def ipfsDedSearchPath(text: str):
     # search for the dedicated ipfs:// scheme
     return ipfsPathDedRe.match(text)
 
 
-def ipfsRegSearchDomainPath(text):
-    return ipfsDomainPathRe.match(text)
+def ipfsRegSearchSubDomain(text: str):
+    return ipfsSubdomainUrlRe.match(text)
 
 
-def ipfsDedSearchPath58(text):
+def ipfsDedSearchPath58(text: str):
     # Like ipfsDedSearchPath() but allows any type of CID (including
     # CIDv0) as root CID. Only used to be able to extract the root CID
     # and replace it with the base32 version
     return ipfsPathDedRe58.match(text)
 
 
-def ipfsHttpSearch(text):
+def ipfsHttpSearch(text: str):
     return ipfsHttpPathRe.match(text)
 
 
-def ipfsRegSearchCid(text):
+def ipfsRegSearchCid(text: str):
     return ipfsCidRe.match(text)
 
 
-def ipfsRegSearchCid32(text):
+def ipfsRegSearchCid32(text: str):
     return ipfsCid32Re.match(text)
 
 
-def ipnsRegSearchPath(text):
+def ipnsRegSearchPath(text: str):
     return ipnsPathRe.match(text) or ipnsPathDedRe.match(text)
 
 
-def ipfsPathExtract(text):
+def ipfsPathExtract(text: str):
     ma = ipfsRegSearchPath(text)
     if ma:
         return ma.group('fullpath')
@@ -949,5 +965,5 @@ def ipfsPathExtract(text):
         return joinIpfs(text)
 
 
-def qurlPercentDecode(qurl):
+def qurlPercentDecode(qurl: QUrl):
     return QUrl(QUrl.fromPercentEncoding(qurl.toEncoded())).toString()

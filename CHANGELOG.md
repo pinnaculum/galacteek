@@ -5,6 +5,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.7] - 2023-04-01
+
+### Added
+- ChatGPT
+  - Resize generated images
+  - Add an "Open" button to import generated images to IPFS and open them
+  - Implement image variations (up to 9 images in one call)
+
+### Fixed
+- IPFSPath: fix parsing of "subdomain gateway" URLs
+
 ## [0.6.6] - 2023-03-31
 
 ### Added

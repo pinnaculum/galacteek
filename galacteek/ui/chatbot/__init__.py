@@ -8,6 +8,9 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QSize
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtCore import QByteArray
+from PyQt5.QtCore import QIODevice
+from PyQt5.QtCore import QBuffer
 
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtGui import QFont
@@ -18,6 +21,7 @@ from PyQt5.QtWidgets import QLabel
 from PyQt5.QtWidgets import QTextEdit
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWidgets import QHBoxLayout
+from PyQt5.QtWidgets import QPushButton
 from PyQt5.QtWidgets import QToolButton
 from PyQt5.QtWidgets import QSpacerItem
 from PyQt5.QtWidgets import QSizePolicy
@@ -25,24 +29,31 @@ from PyQt5.QtWidgets import QMenu
 from PyQt5.QtQuickWidgets import QQuickWidget
 
 from galacteek import ensure
+from galacteek import partialEnsure
 from galacteek.ai import openai as opai
 from galacteek.core import runningApp
 from galacteek.core.tmpf import TmpFile
 from galacteek.core.asynclib import asyncWriteFile
 from galacteek.core.langtags import mainLangTags
+from galacteek.ipfs import ipfsOp
 from galacteek.qml import quickWidgetFromFile
 
 from ..helpers import getIcon
+from ..helpers import getMimeIcon
 from ..widgets import GalacteekTab
 from ..widgets import AnimatedLabel
+from ..widgets import PopupToolButton
 from ..clips import BouncyOrbitClip
 from ..forms import ui_openai_discussion
 from ..notify import uiNotify
 from ..i18n import iChatBotGenerateOneImage
 from ..i18n import iChatBotGenerateImageCount
+from ..i18n import iChatBotCreateImageVariation
+from ..i18n import iChatBotImageVariation
 from ..i18n import iChatBotTranslateToLang
 from ..i18n import iChatBotInvalidResponse
 from ..i18n import iCopyToClipboard
+from ..i18n import iOpen
 from ..i18n import iRemove
 
 
@@ -201,6 +212,7 @@ class QuestionAnswer(QWidget):
     """
 
     rmRequested = pyqtSignal()
+    wantImageVariation = pyqtSignal(QPixmap, int)
 
     def __init__(self, question: str, parent=None):
         super().__init__(parent)
@@ -306,17 +318,71 @@ class QuestionAnswer(QWidget):
         self.answerLayout.addWidget(answerText)
         self.cbButton.setEnabled(True)
 
-    def showImage(self, imgData):
+    def onOpenImage(self, pixmap: QPixmap) -> None:
+        ensure(self.importPixmap(pixmap))
+
+    def onCreateImageVariation(self, pixmap: QPixmap, count: int) -> None:
+        self.wantImageVariation.emit(pixmap, count)
+
+    @ipfsOp
+    async def importPixmap(self, ipfsop, pixmap: QPixmap):
+        data = QByteArray()
+        buffer = QBuffer(data)
+
+        try:
+            buffer.open(QIODevice.WriteOnly)
+            pixmap.save(buffer, 'PNG')
+            buffer.close()
+
+            entry = await ipfsop.addBytes(bytes(buffer.data()))
+            assert entry
+        except Exception:
+            pass
+        else:
+            ensure(runningApp().resourceOpener.open(entry['Hash']))
+
+    def showImage(self, imgData: bytes) -> None:
         self.rmAnim()
 
         try:
+            hl = QHBoxLayout()
+            actl = QVBoxLayout()
+
             pix = QPixmap()
             pix.loadFromData(imgData)
 
             imgLabel = QLabel()
-            imgLabel.setPixmap(pix)
+            imgLabel.setPixmap(
+                pix.scaledToWidth(self.width() * 0.75)
+            )
 
-            self.answerLayout.addWidget(imgLabel)
+            openButton = QPushButton(iOpen())
+            openButton.setIcon(getIcon('open.png'))
+            openButton.clicked.connect(
+                functools.partial(self.onOpenImage, pix)
+            )
+
+            varyButton = PopupToolButton()
+            varyButton.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+            varyButton.setText(iChatBotImageVariation())
+            varyButton.setIcon(getMimeIcon('image/png'))
+
+            for x in range(1, 10):
+                varyButton.menu.addAction(
+                    iChatBotCreateImageVariation(x),
+                    functools.partial(self.onCreateImageVariation, pix, x)
+                )
+
+            actl.addSpacerItem(QSpacerItem(10, 10,
+                                           QSizePolicy.Expanding,
+                                           QSizePolicy.Expanding))
+            actl.addWidget(openButton)
+            actl.addWidget(varyButton)
+
+            hl.addWidget(imgLabel)
+            hl.addLayout(actl)
+
+            self.answerLayout.addLayout(hl)
         except Exception:
             traceback.print_exc()
 
@@ -521,26 +587,57 @@ class ChatBotSessionTab(GalacteekTab):
 
         uiNotify('chatBotGotAnswer')
 
-    async def imageGenerate(self, prompt: str, count: int) -> None:
-        qa = self.disc.go(prompt)
+    async def processImageResponse(self, qa: QuestionAnswer, response):
+        for data in response['data']:
+            try:
+                img = base64.b64decode(data['b64_json'])
+            except Exception:
+                continue
+
+            qa.showImage(img)
+
+            await asyncio.sleep(0.05)
+
+        qa.wantImageVariation.connect(
+            partialEnsure(self.imageVary)
+        )
+
+        uiNotify('chatBotGotAnswer')
+
+    async def imageVary(self, pixmap: QPixmap, count: int, *qta) -> None:
+        qa = self.disc.go(iChatBotImageVariation())
 
         try:
-            response = await opai.image(prompt,
-                                        n=count)
+            with TmpFile(suffix='.png', delete=False) as file:
+                pixmap.save(file.name, 'PNG')
+
+            with open(file.name, 'rb') as fd:
+                response = await opai.imageVary(fd,
+                                                n=count)
+
+            os.remove(file.name)
+
             assert response
         except AssertionError:
             qa.error(iChatBotInvalidResponse())
         except Exception as err:
             qa.error(str(err))
         else:
-            for data in response['data']:
-                img = base64.b64decode(data['b64_json'])
+            await self.processImageResponse(qa, response)
 
-                qa.showImage(img)
+    async def imageGenerate(self, prompt: str, count: int) -> None:
+        qa = self.disc.go(prompt)
 
-                await asyncio.sleep(0.05)
-
-            uiNotify('chatBotGotAnswer')
+        try:
+            response = await opai.imageCreate(prompt,
+                                              n=count)
+            assert response
+        except AssertionError:
+            qa.error(iChatBotInvalidResponse())
+        except Exception as err:
+            qa.error(str(err))
+        else:
+            await self.processImageResponse(qa, response)
 
     async def qmlGenerate(self, prompt: str):
         qa = self.disc.go(prompt)

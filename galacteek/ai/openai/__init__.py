@@ -68,11 +68,11 @@ async def complete(prompt: str,
         return completion
 
 
-async def image(prompt: str,
-                engine: str = 'text-davinci-003',
-                n: int = 1,
-                rformat='b64_json',
-                **opts):
+async def imageCreate(prompt: str,
+                      engine: str = 'text-davinci-003',
+                      n: int = 1,
+                      rformat='b64_json',
+                      **opts):
     try:
         openai = apimod()
 
@@ -82,6 +82,29 @@ async def image(prompt: str,
             response_format=rformat,
             **opts
         )
+    except Exception:
+        log.debug(traceback.format_exc())
+    else:
+        return resp
+
+
+async def imageVary(image,
+                    n: int = 1,
+                    rformat='b64_json',
+                    **opts):
+    try:
+        openai = apimod()
+
+        assert n in range(1, 11)
+
+        resp = await openai.Image.acreate_variation(
+            image=image,
+            n=n,
+            response_format=rformat,
+            **opts
+        )
+    except AssertionError:
+        return None
     except Exception:
         log.debug(traceback.format_exc())
     else:
