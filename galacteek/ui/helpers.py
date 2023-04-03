@@ -690,9 +690,10 @@ def pixmapAsBase64Url(pixmap, justUrl=False):
             return f'<img src="{avatarUrl}"></img>'
 
 
-def easyToolTip(tooltip: str, pos, widget, timeout: int):
+def easyToolTip(tooltip: str, pos, widget, timeout: int,
+                delay: float = 0.1):
     runningApp().loop.call_later(
-        0.1,
+        delay,
         QToolTip.showText,
         pos,
         tooltip,

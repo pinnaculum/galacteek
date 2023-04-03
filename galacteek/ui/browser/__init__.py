@@ -39,7 +39,6 @@ from PyQt5.QtWebEngineWidgets import QWebEngineScript
 from PyQt5.QtWebChannel import QWebChannel
 
 from PyQt5.QtGui import QKeySequence
-from PyQt5.QtGui import QCursor
 
 from galacteek import log
 from galacteek import logUser
@@ -1219,19 +1218,24 @@ class BrowserTab(GalacteekTab):
         self.ui.contentDetailsLabel.setVisible(False)
 
     def displayHoveredUrl(self, url: QUrl):
-        pos = QCursor.pos()
+        wegeom = self.webEngineView.geometry()
+        wegp = self.webEngineView.mapToGlobal(QPoint(0, 0))
 
-        easyToolTip(
-            url.toString(),
-            self.mapFromGlobal(QPoint(
-                pos.x(),
-                pos.y() + 8,
-            )),
-            self.webEngineView,
-            10000
-        )
+        if isUrlSupported(url):
+            urls = url.toString()
 
-        self.urlZone.pageUrlHovered.emit(url)
+            if len(urls) > 92:
+                urls = urls[0:92] + '...'
+
+            easyToolTip(
+                urls,
+                QPoint(wegp.x(), wegp.y() + wegeom.height() - 32),
+                self.webEngineView,
+                5000,
+                1.5
+            )
+
+            self.urlZone.pageUrlHovered.emit(url)
 
     async def onTabDoubleClicked(self):
         log.debug('Browser Tab double clicked')
