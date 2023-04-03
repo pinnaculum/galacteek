@@ -2,8 +2,10 @@ import sys
 import os
 import os.path
 import uuid
+import ipaddress
 import logging
 import asyncio
+import ipfshttpclient
 import jinja2
 import jinja2.exceptions
 import warnings
@@ -86,6 +88,7 @@ from galacteek.browser.schemes import DWebSchemeHandlerGateway
 from galacteek.browser.schemes import EthDNSSchemeHandler
 from galacteek.browser.schemes import EthDNSProxySchemeHandler
 from galacteek.browser.schemes import NativeIPFSSchemeHandler
+from galacteek.browser.schemes import NativeSyncIPFSSchemeHandler
 from galacteek.browser.schemes import ObjectProxySchemeHandler
 from galacteek.browser.schemes import MultiObjectHostSchemeHandler
 from galacteek.browser.schemes.ipid import IPIDSchemeHandler
@@ -830,6 +833,18 @@ class GalacteekApplication(ApplicationDaemonStarterMixin,
         """
         return self.ipfsOperatorForLoop(self.loop)
 
+    def getIpfsHttpClient(self, session: bool = True) -> ipfshttpclient.Client:
+        connParams = self.getIpfsConnectionParams()
+
+        # Build the multiaddr
+        try:
+            ip = ipaddress.ip_address(connParams.host)
+            maddr = f'/ip{ip.version}/{connParams.host}/tcp/{connParams.apiPort}/http'  # noqa
+        except Exception:
+            maddr = f'/dns/{connParams.host}/tcp/{connParams.apiPort}/http'
+
+        return ipfshttpclient.Client(maddr, session=session)
+
     def getIpfsConnectionParams(self):
         mgr = self.settingsMgr
 
@@ -1114,7 +1129,7 @@ class GalacteekApplication(ApplicationDaemonStarterMixin,
             warnings.simplefilter('always', BytesWarning)
             warnings.simplefilter('always', ImportWarning)
 
-        self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=16)
+        self._executor = concurrent.futures.ThreadPoolExecutor(64)
 
         if not self.windowsSystem:
             loop.add_signal_handler(
@@ -1368,6 +1383,9 @@ class GalacteekApplication(ApplicationDaemonStarterMixin,
         self.dwebSchemeHandler = DWebSchemeHandlerGateway(self)
         self.ensSchemeHandler = EthDNSSchemeHandler(self)
         self.ensProxySchemeHandler = EthDNSProxySchemeHandler(self)
+        self.nativeSyncIpfsSchemeHandler = NativeSyncIPFSSchemeHandler(
+            self, noMutexes=self.cmdArgs.noipfsmutexlock
+        )
         self.nativeIpfsSchemeHandler = NativeIPFSSchemeHandler(
             self, noMutexes=self.cmdArgs.noipfsmutexlock
         )

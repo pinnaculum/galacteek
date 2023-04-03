@@ -217,7 +217,7 @@ def magicInstance():
     return iMagic
 
 
-def mimeTypeProcess(mTypeText, buff, info=None):
+def mimeTypeProcess(mTypeText, buff, info=None) -> MIMEType:
     if mTypeText == 'text/xml':
         # If it's an XML, check if it's an Atom feed from the buffer
         # Can't call feedparser here cause we only got a partial buffer
@@ -237,7 +237,15 @@ def mimeTypeProcess(mTypeText, buff, info=None):
     return MIMEType(mTypeText)
 
 
-async def detectMimeTypeFromBuffer(buff):
+def detectMimeTypeFromBufferSync(buff: bytes) -> MIMEType:
+    m = magicInstance()
+    mime = m.from_buffer(buff)
+
+    if isinstance(mime, str):
+        return mimeTypeProcess(mime, buff)
+
+
+async def detectMimeTypeFromBuffer(buff: bytes) -> MIMEType:
     """
     Guess the MIME type from a bytes buffer, using either libmagic or file(1)
 
@@ -316,7 +324,7 @@ async def detectMimeType(ipfsop, rscPath, bufferSize=131070, timeout=15):
         buff = await ipfsop.catObject(
             rscPath, length=bufferSize, timeout=timeout)
     except aioipfs.APIError as err:
-        dec = APIErrorDecoder(err)
+        dec = APIErrorDecoder(err.message)
 
         if dec.errIsDirectory():
             return MIMEType('inode/directory')

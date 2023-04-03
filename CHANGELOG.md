@@ -5,6 +5,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.8] - 2023-04-04
+
+### Added
+- Implement a synchronous thread-based version of NativeIPFSSchemeHandler
+  that's now used by the ipfs:// scheme handler
+
+### Fixed
+- Show the hovered URL tooltip at the bottom left corner of the
+  QtWebEngineView widget
+
 ## [0.6.7] - 2023-04-01
 
 ### Added

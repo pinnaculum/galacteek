@@ -7,6 +7,8 @@ from PyQt5.QtWebEngineWidgets import QWebEngineScript
 from PyQt5.QtPrintSupport import *
 
 from PyQt5.QtCore import QCoreApplication
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import QUrl
 
 from PyQt5.QtGui import QColor
 
@@ -18,6 +20,8 @@ from ..helpers import *
 
 class BrowserDwebPage (QWebEnginePage):
     jsConsoleMessage = pyqtSignal(int, str, int, str)
+
+    acceptedNavRequest = pyqtSignal(QUrl, int)
 
     def __init__(self, webProfile, parent):
         super(BrowserDwebPage, self).__init__(webProfile, parent)
@@ -41,6 +45,14 @@ class BrowserDwebPage (QWebEnginePage):
 
     def onRenderProcessPid(self, pid):
         log.debug(f'{self.url().toString()}: renderer process has PID: {pid}')
+
+    def acceptNavigationRequest(self,
+                                url,
+                                navType,
+                                isMainFrame: bool) -> bool:
+        self.acceptedNavRequest.emit(url, navType)
+
+        return True
 
     def certificateError(self, error):
         return questionBox(

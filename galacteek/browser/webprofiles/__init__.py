@@ -195,7 +195,7 @@ class BaseProfile(QWebEngineProfile, KeyListener):
             self.installHandler(scheme, self.app.dwebSchemeHandler)
 
         for scheme in [SCHEME_IPFS, SCHEME_IPNS]:
-            self.installHandler(scheme, self.app.nativeIpfsSchemeHandler)
+            self.installHandler(scheme, self.app.nativeSyncIpfsSchemeHandler)
 
         self.installHandler(SCHEME_ENS, self.app.ensProxySchemeHandler)
         self.installHandler(SCHEME_ENSR, self.app.ensSchemeHandler)
@@ -357,7 +357,7 @@ class BaseProfile(QWebEngineProfile, KeyListener):
         for scheme in [SCHEME_IPFS, SCHEME_IPNS]:
             profile.installUrlSchemeHandler(
                 scheme.encode(),
-                self.app.nativeIpfsSchemeHandler)
+                self.app.nativeSyncIpfsSchemeHandler)
 
         m = SCHEME_MANUAL.encode()
         manualHandler = self.urlSchemeHandler(m)

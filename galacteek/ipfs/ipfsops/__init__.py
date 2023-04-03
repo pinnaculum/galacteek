@@ -254,18 +254,18 @@ class LDOpsContext(object):
 
 
 class APIErrorDecoder:
-    def __init__(self, exc):
-        self.exc = exc
+    def __init__(self, message: str):
+        self.message = message
 
     def errIsDirectory(self):
-        return self.exc.message == 'this dag node is a directory'
+        return self.message == 'this dag node is a directory'
 
     def errNoSuchLink(self):
-        return self.exc.message.startswith('no link named') or \
-            self.exc.message == 'no such link found'
+        return self.message.startswith('no link named') or \
+            self.message == 'no such link found'
 
     def errUnknownNode(self):
-        return self.exc.message == 'unknown node type'
+        return self.message == 'unknown node type'
 
 
 # Stream-resolve cache

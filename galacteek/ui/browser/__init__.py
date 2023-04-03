@@ -193,6 +193,8 @@ class JSConsoleWidget(QWidget):
 
 
 class WebView(IPFSWebView):
+    acceptedNavRequest = pyqtSignal(QUrl, int)
+
     def __init__(self, browserTab, webProfile, parent=None):
         super(WebView, self).__init__(parent=parent)
 
@@ -532,14 +534,16 @@ class WebView(IPFSWebView):
     def openInTab(self, path, current=True):
         tab = self.browserTab.gWindow.addBrowserTab(
             position='nextcurrent',
-            current=current
+            current=current,
+            pinBrowsed=self.browserTab.pinAll
         )
         tab.browseFsPath(path)
 
     def openUrlInTab(self, url, switch=False):
         tab = self.browserTab.gWindow.addBrowserTab(
             position='nextcurrent',
-            current=switch
+            current=switch,
+            pinBrowsed=self.browserTab.pinAll
         )
         tab.enterUrl(url)
 
@@ -554,6 +558,7 @@ class WebView(IPFSWebView):
         self.webPage = BrowserDwebPage(self.webProfile, self.browserTab)
         self.webPage.jsConsoleMessage.connect(self.onJsMessage)
         self.webPage.linkHovered.connect(self.onLinkHovered)
+        self.webPage.acceptedNavRequest.connect(self.acceptedNavRequest)
 
         if web3Channel:
             self.webPage.changeWebChannel(web3Channel)
@@ -588,6 +593,7 @@ class WebView(IPFSWebView):
 
 
 class BrowserKeyFilter(QObject):
+    escapePressed = pyqtSignal()
     hashmarkPressed = pyqtSignal()
     savePagePressed = pyqtSignal()
     reloadPressed = pyqtSignal()
@@ -627,6 +633,10 @@ class BrowserKeyFilter(QObject):
 
             if key == Qt.Key_F5:
                 self.reloadPressed.emit()
+                return True
+
+            if key == Qt.Key_Escape:
+                self.escapePressed.emit()
                 return True
 
         return False
@@ -914,6 +924,7 @@ class BrowserTab(GalacteekTab):
         self.webEngineView.loadStarted.connect(self.onLoadStarted)
         self.webEngineView.loadProgress.connect(self.onLoadProgress)
         self.webEngineView.titleChanged.connect(self.onTitleChanged)
+        self.webEngineView.acceptedNavRequest.connect(self.onNavRequest)
 
         self.ui.backButton.clicked.connect(self.backButtonClicked)
         self.ui.forwardButton.clicked.connect(self.forwardButtonClicked)
@@ -1026,8 +1037,6 @@ class BrowserTab(GalacteekTab):
 
         self.ipfsControlMenu.addAction(self.browserHelpAction)
         self.ipfsControlMenu.addSeparator()
-        # self.ipfsControlMenu.addMenu(self.webProfilesMenu)
-        # self.ipfsControlMenu.addSeparator()
 
         self.ipfsControlMenu.addMenu(self.pageOpsButton.menu)
         self.ipfsControlMenu.addSeparator()
@@ -1775,8 +1784,12 @@ class BrowserTab(GalacteekTab):
     def refreshButtonClicked(self):
         self.webEngineView.reload()
 
+    def onNavRequest(self, url: QUrl, int):
+        pass
+
     def stopButtonClicked(self):
         self.setLoadingStatus(False)
+
         self.urlZone.resetState()
         self.webEngineView.stop()
         self.ui.pBarBrowser.setValue(0)
@@ -1913,9 +1926,10 @@ class BrowserTab(GalacteekTab):
         self.ui.stopButton.setEnabled(False)
         self.currentUrlHistoryRecord()
 
-        self.urlZoneInsert(self.currentUrl)
+        if self.currentUrl is not None:
+            self.urlZoneInsert(self.currentUrl)
 
-        ensure(self.afterLoadScripts())
+            ensure(self.afterLoadScripts())
 
     @ipfsOp
     async def afterLoadScripts(self, ipfsop):
@@ -1925,6 +1939,8 @@ class BrowserTab(GalacteekTab):
         Password forms are handled here.
         """
 
+        from vicious_vault import AccessDeniedError
+
         autoFillVars = ''
         profile = ipfsop.ctx.currentProfile
         ipid = await profile.userInfo.ipIdentifier()
@@ -1933,15 +1949,18 @@ class BrowserTab(GalacteekTab):
             self.currentUrl.toString()
         ).with_query('').with_fragment('')
 
-        for cred in self.app.credsManager.forUrl(ipid.did,
-                                                 yurl):
-            ufield = cred.get('username_field')
-            pwfield = cred.get('password_field')
-            username = cred.get('username')
-            password = cred.get('password')
+        try:
+            for cred in self.app.credsManager.forUrl(ipid.did,
+                                                     yurl):
+                ufield = cred.get('username_field')
+                pwfield = cred.get('password_field')
+                username = cred.get('username')
+                password = cred.get('password')
 
-            autoFillVars += f"autoFillVals['{ufield}'] = '{username}';\n"
-            autoFillVars += f"autoFillVals['{pwfield}'] = '{password}';\n"
+                autoFillVars += f"autoFillVals['{ufield}'] = '{username}';\n"
+                autoFillVars += f"autoFillVals['{pwfield}'] = '{password}';\n"
+        except AccessDeniedError:
+            return
 
         if autoFillVars:
             script = scriptFromQFile(

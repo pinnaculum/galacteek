@@ -11,7 +11,11 @@ import aiohttp
 from aiohttp.web_exceptions import HTTPOk
 from yarl import URL
 from datetime import datetime
+
 from cachetools import TTLCache
+
+import ipfshttpclient
+from ipfshttpclient import exceptions as ihttp_exc
 
 from PyQt5.QtWebEngineCore import QWebEngineUrlSchemeHandler
 from PyQt5.QtWebEngineCore import QWebEngineUrlScheme
@@ -23,6 +27,7 @@ from PyQt5.QtCore import QBuffer
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import QMutex
 
+from galacteek import cached_property
 from galacteek import log
 from galacteek import logUser
 from galacteek import ensure
@@ -40,6 +45,7 @@ from galacteek.dweb.enswhois import ensContentHash
 
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.mimetype import detectMimeTypeFromBuffer
+from galacteek.ipfs.mimetype import detectMimeTypeFromBufferSync
 from galacteek.ipfs.mimetype import MIMEType
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import joinIpns
@@ -435,7 +441,7 @@ class BaseURLSchemeHandler(QWebEngineUrlSchemeHandler):
                 tmpl.encode()
             )
 
-    def serveContent(self, uid, request, ctype, data):
+    def serveContent(self, uid, request, ctype, data, buf: QBuffer = None):
         if uid not in self.requests:
             # Destroyed ?
             return
@@ -446,7 +452,7 @@ class BaseURLSchemeHandler(QWebEngineUrlSchemeHandler):
             mutex.lock()
 
         try:
-            buf = QBuffer(parent=request)
+            buf = buf if buf else QBuffer(parent=request)
             request.destroyed.connect(buf.deleteLater)
 
             buf.open(QIODevice.WriteOnly)
@@ -702,13 +708,272 @@ class EthDNSSchemeHandler(BaseURLSchemeHandler):
             return self.urlNotFound(request)
 
 
+class NativeSyncIPFSSchemeHandler(BaseURLSchemeHandler):
+    """
+    Native synchronous scheme handler for URLs using the
+    ipfs://<cidv1base32> or ipns://<fqdn>/.. formats
+
+    We don't use the HTTP gateway at all here, making requests
+    manually on the daemon with the ipfshttpclient library.
+
+    The requests with this scheme handler are handled in separate threads.
+    This has the advantage of avoiding to hog the main GUI event loop
+    with a lot of coroutines.
+    """
+
+    schemeConfigName: str = SCHEME_IPFS
+
+    # contentReady signal (handled by onContentReady)
+    contentReady = pyqtSignal(
+        str, object, IPFSPath, str, bytes)
+
+    # objectServed signal: emitted when an object has been fetched and
+    # served to a QtWebEngine request
+    objectServed = pyqtSignal(IPFSPath, str, float)
+
+    def __init__(self, app, parent=None, validCidQSize=32,
+                 noMutexes=True):
+        super(NativeSyncIPFSSchemeHandler, self).__init__(
+            parent=parent,
+            noMutexes=noMutexes
+        )
+
+        self.app = app
+        self.validCids = collections.deque([], validCidQSize)
+
+        self.contentCache = TTLCache(
+            self.schemeConfig.contentCacheMaxItems,
+            self.schemeConfig.contentCacheTTL
+        )
+
+        self.contentReady.connect(self.onContentReady)
+
+    @cached_property
+    def client(self):
+        return self.app.getIpfsHttpClient()
+
+    def debug(self, msg):
+        log.debug(f'Native (synchronous) scheme handler (DEBUG): {msg}')
+
+    def warning(self, msg):
+        log.warning(f'Native (synchronous) scheme handler (WARNING): {msg}')
+
+    def info(self, msg):
+        log.info(f'Native (synchronous) scheme handler (INFO): {msg}')
+
+    def requestStarted(self, request):
+        uid = self.allocReqId(request)
+        request.reqUid = uid
+        request.destroyed.connect(
+            functools.partial(self.onRequestDestroyed, uid))
+
+        # Run in the main threadpool
+        self.app.executor.submit(
+            self.handleRequestSync,
+            request,
+            uid
+        )
+
+    def onContentReady(self, uid, request, ipfsPath: IPFSPath,
+                       mimeType: str, data: bytes):
+        self.serveContent(uid, request, mimeType, data)
+
+    def directoryListingSync(self, request,
+                             client: ipfshttpclient.Client,
+                             path):
+        currentIpfsPath = IPFSPath(path)
+
+        if not currentIpfsPath.valid:
+            self.debug('Invalid path: {0}'.format(path))
+            return
+
+        ctx = {}
+        try:
+            listing = client.ls(path).as_json()
+        except BaseException:
+            return None
+
+        if 'Objects' not in listing:
+            return None
+
+        ctx['path'] = path
+        ctx['links'] = []
+
+        if len(listing['Objects']) > 0:
+            obj = listing['Objects'].pop()
+            ctx['links'] += obj.get('Links', [])
+
+        for lnk in ctx['links']:
+            lType = lnk.get('Type')
+
+            if lType == 1:
+                lnk['href'] = lnk['Name'] + '/'
+            else:
+                lnk['href'] = lnk['Name']
+
+        try:
+            tmpl = self.app.jinjaEnv.get_template('ipfsdirlisting.html')
+            data = tmpl.render(**ctx)
+
+            assert data
+        except:
+            self.debug('Failed to render directory listing template')
+        else:
+            return data.encode()
+
+    def renderDirectorySync(self, request, client, path):
+        ipfsPath = IPFSPath(path)
+
+        indexPath = ipfsPath.child('index.html')
+        data = None
+
+        try:
+            data = client.cat(indexPath.objPath)
+
+            assert data
+        except ihttp_exc.ErrorResponse as rerr:
+            dec = APIErrorDecoder(str(rerr).strip())
+
+            if dec.errNoSuchLink():
+                return self.directoryListingSync(
+                    request, client, path)
+
+            return self.urlInvalid(request)
+        except (ihttp_exc.TimeoutError,
+                ihttp_exc.ProtocolError,
+                ihttp_exc.ConnectionError):
+            return self.reqFailed(request)
+        except BaseException:
+            pass
+        else:
+            return bytes(data)
+
+    def handleRequestSync(self, request, uid):
+        try:
+            assert self.client
+
+            rUrl = request.requestUrl()
+            scheme = rUrl.scheme()
+            host = rUrl.host()
+        except (AssertionError, RuntimeError):
+            return self.reqFailed(request)
+
+        if not host:
+            return self.urlInvalid(request)
+
+        if scheme == SCHEME_IPFS:
+            # hostname = base32-encoded CID or FQDN
+            #
+            # We keep a list (deque) of CIDs that have been validated.
+            # If you hit a page which references a lot of other resources
+            # for instance, this should be faster than regexp
+
+            if domainValid(host):
+                ipfsPathS = joinIpns(host) + rUrl.path()
+            else:
+                if host not in self.validCids:
+                    if not ipfsRegSearchCid32(host):
+                        return self.urlInvalid(request)
+
+                    self.validCids.append(host)
+
+                ipfsPathS = joinIpfs(host) + rUrl.path()
+        elif scheme == SCHEME_IPNS:
+            ipfsPathS = joinIpns(host) + rUrl.path()
+        else:
+            return self.urlInvalid(request)
+
+        ipfsPath = IPFSPath(ipfsPathS)
+        if not ipfsPath.valid:
+            return self.urlInvalid(request)
+
+        try:
+            return self.fetchObject(self.client, request, ipfsPath, uid)
+        except asyncio.TimeoutError:
+            return self.reqFailed(request)
+        except Exception as err:
+            # Any other error
+
+            traceback.print_exc()
+
+            self.debug(f'Unknown error while serving request: {err}')
+
+            return self.reqFailed(request)
+
+    def fetchObject(self,
+                    client: ipfshttpclient.Client,
+                    request: QWebEngineUrlRequestJob,
+                    ipfsPath: IPFSPath,
+                    uid: str):
+        """
+        Synchronous version of the "old" fetchFromPath coroutine.
+        We use ipfshttpclient here.
+        """
+
+        try:
+            data = client.cat(ipfsPath.objPath)
+        except (ihttp_exc.TimeoutError,
+                ihttp_exc.ProtocolError,
+                ihttp_exc.ConnectionError) as err:
+            self.debug(f'Unknown error while fetching object: {err}')
+
+            return self.reqFailed(request)
+        except ihttp_exc.ErrorResponse as rerr:
+            dec = APIErrorDecoder(str(rerr).strip())
+
+            if dec.errNoSuchLink():
+                return self.urlNotFound(request)
+            elif dec.errIsDirectory():
+                url = request.requestUrl()
+
+                if not url.path().endswith('/'):
+                    # Critical: we tried a cat() on an object which
+                    # turns out to be a UnixFS directory and the
+                    # URL path() doesn't have a trailing '/'. We need
+                    # to create a new request cycle by redirecting
+                    # to a QUrl which does have the trailing /, otherwise
+                    # qtwebengine won't correctly resolve relative URLs
+
+                    redirUrl = QUrl(url.toString())
+                    redirUrl.setPath(redirUrl.path() + '/')
+
+                    return request.redirect(redirUrl)
+
+                data = self.renderDirectorySync(
+                    request,
+                    client,
+                    str(ipfsPath)
+                )
+
+                if data:
+                    mime = detectMimeTypeFromBufferSync(data[0:256])
+
+                    self.contentReady.emit(
+                        uid, request, ipfsPath, mime.type, data)
+            elif dec.errUnknownNode():
+                return self.reqFailed(request)
+        except Exception:
+            traceback.print_exc()
+
+            return self.reqFailed(request)
+        else:
+            mime = detectMimeTypeFromBufferSync(data[0:256])
+
+            if mime:
+                if ipfsPath.objPath.endswith('.css'):
+                    mime = MIMEType('text/css')
+
+                self.contentReady.emit(
+                    uid, request, ipfsPath, mime.type, data)
+
+
 class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
     """
     Native scheme handler for URLs using the ipfs://<cidv1base32>
     or ipns://<fqdn>/.. formats
 
     We don't use the gateway at all here, making the async requests
-    manually on the daemon.
+    manually on the daemon (with aioipfs).
 
     The requestStarted() function will first assign a UUID to the
     request and store the request in the handler so that it doesn't get
@@ -806,7 +1071,7 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
         except asyncio.TimeoutError:
             return self.reqFailed(request)
         except aioipfs.APIError as exc:
-            dec = APIErrorDecoder(exc)
+            dec = APIErrorDecoder(exc.message)
 
             if dec.errNoSuchLink():
                 return await self.directoryListing(
@@ -939,7 +1204,7 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
                 path=str(ipfsPath), err=exc.message)
             )
 
-            dec = APIErrorDecoder(exc)
+            dec = APIErrorDecoder(exc.message)
 
             if dec.errNoSuchLink():
                 return self.urlNotFound(request)
@@ -1027,7 +1292,7 @@ class NativeIPFSSchemeHandler(BaseURLSchemeHandler):
                 path=str(ipfsPath), err=exc.message)
             )
 
-            dec = APIErrorDecoder(exc)
+            dec = APIErrorDecoder(exc.message)
 
             if dec.errNoSuchLink():
                 return self.urlNotFound(request)
@@ -1496,7 +1761,7 @@ class MultiDAGProxySchemeHandler(NativeIPFSSchemeHandler):
                 path=str(ipfsPath), err=exc.message)
             )
 
-            dec = APIErrorDecoder(exc)
+            dec = APIErrorDecoder(exc.message)
 
             if dec.errNoSuchLink():
                 return self.urlNotFound(request)

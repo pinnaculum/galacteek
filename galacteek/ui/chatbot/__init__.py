@@ -576,6 +576,7 @@ class ChatBotSessionTab(GalacteekTab):
         try:
             resp = await opai.complete(prompt,
                                        temperature=self.aiTemp)
+            assert resp
             assert len(resp.choices) > 0
         except AssertionError:
             qa.error(iChatBotInvalidResponse())

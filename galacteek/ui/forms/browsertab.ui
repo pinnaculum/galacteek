@@ -136,6 +136,9 @@
              <height>32</height>
             </size>
            </property>
+           <property name="shortcut">
+            <string>Ctrl+P</string>
+           </property>
           </widget>
          </item>
          <item>
@@ -193,6 +196,9 @@
              <width>48</width>
              <height>48</height>
             </size>
+           </property>
+           <property name="shortcut">
+            <string>Ctrl+Backspace</string>
            </property>
           </widget>
          </item>
