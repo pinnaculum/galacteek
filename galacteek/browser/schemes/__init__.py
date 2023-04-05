@@ -5,6 +5,7 @@ import asyncio
 import aiodns
 import async_timeout
 import collections
+import concurrent.futures
 import time
 import traceback
 import aiohttp
@@ -741,9 +742,9 @@ class NativeSyncIPFSSchemeHandler(BaseURLSchemeHandler):
         self.app = app
         self.validCids = collections.deque([], validCidQSize)
 
-        self.contentCache = TTLCache(
-            self.schemeConfig.contentCacheMaxItems,
-            self.schemeConfig.contentCacheTTL
+        self.__executor = concurrent.futures.ThreadPoolExecutor(
+            max_workers=self.schemeConfig.threadPoolMaxWorkers,
+            thread_name_prefix='g-ipfss'
         )
 
         self.contentReady.connect(self.onContentReady)
@@ -767,8 +768,8 @@ class NativeSyncIPFSSchemeHandler(BaseURLSchemeHandler):
         request.destroyed.connect(
             functools.partial(self.onRequestDestroyed, uid))
 
-        # Run in the main threadpool
-        self.app.executor.submit(
+        # Run in the dedicated threadpool
+        self.__executor.submit(
             self.handleRequestSync,
             request,
             uid
@@ -776,6 +777,10 @@ class NativeSyncIPFSSchemeHandler(BaseURLSchemeHandler):
 
     def onContentReady(self, uid, request, ipfsPath: IPFSPath,
                        mimeType: str, data: bytes):
+        """
+        Called when the contentReady signal is emitted.
+        This will run in the main thread.
+        """
         self.serveContent(uid, request, mimeType, data)
 
     def directoryListingSync(self, request,

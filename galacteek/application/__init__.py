@@ -1129,7 +1129,7 @@ class GalacteekApplication(ApplicationDaemonStarterMixin,
             warnings.simplefilter('always', BytesWarning)
             warnings.simplefilter('always', ImportWarning)
 
-        self._executor = concurrent.futures.ThreadPoolExecutor(64)
+        self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=16)
 
         if not self.windowsSystem:
             loop.add_signal_handler(
@@ -1384,7 +1384,7 @@ class GalacteekApplication(ApplicationDaemonStarterMixin,
         self.ensSchemeHandler = EthDNSSchemeHandler(self)
         self.ensProxySchemeHandler = EthDNSProxySchemeHandler(self)
         self.nativeSyncIpfsSchemeHandler = NativeSyncIPFSSchemeHandler(
-            self, noMutexes=self.cmdArgs.noipfsmutexlock
+            self, noMutexes=True
         )
         self.nativeIpfsSchemeHandler = NativeIPFSSchemeHandler(
             self, noMutexes=self.cmdArgs.noipfsmutexlock

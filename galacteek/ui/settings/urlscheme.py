@@ -31,5 +31,15 @@ class SettingsController(SettingsFormController):
     def prepare(self):
         self.ui.contentCacheEnable.stateChanged.connect(self.onCacheChange)
 
+        if self.schemeName == 'ipfs':
+            # threadPoolMaxWorkers
+            self.cfgWatch(
+                self.ui.threadPoolMaxWorkers,
+                f'byScheme.{self.schemeName}.threadPoolMaxWorkers',
+                self.configModuleName
+            )
+
+            self.ui.threadPoolMaxWorkers.setEnabled(True)
+
     async def settingsInit(self):
         self.ui.groupBoxMain.setTitle(iUrlSchemeLabel(self.schemeName))

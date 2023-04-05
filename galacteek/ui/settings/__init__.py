@@ -484,6 +484,8 @@ class SettingsBaseController(QObject, Configurable, KeyListener):
             self.cfgItemChanged(widget, mod, attr, value)
 
         val = cGet(cAttr, mod=cMod)
+        if val is None:
+            return
 
         if isinstance(widget, QComboBox):
             def comboTextChanged(text: str):
