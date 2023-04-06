@@ -386,6 +386,18 @@ class SparQLResultsModel(QAbstractListModel,
 
     def __rSyncPreparedQuery(self,
                              graphUri, query, bindings):
+        urifySchemes = [
+            'ftp',
+            'http',
+            'https',
+            'dweb',
+            'ipfs',
+            'ipns',
+            'ips',
+            'i',
+            'it',
+            'inter'
+        ]
         graph = self.rdf.graphByUri(graphUri)
         _bindings = {}
 
@@ -396,7 +408,7 @@ class SparQLResultsModel(QAbstractListModel,
             # TOTO: detect urns here ?
             for k, v in bindings.items():
                 u = URL(v)
-                if u.scheme and u.scheme in ['http', 'ips', 'i', 'inter']:
+                if u.scheme and u.scheme in urifySchemes:
                     _bindings[k] = URIRef(v)
                 else:
                     _bindings[k] = Literal(v)
