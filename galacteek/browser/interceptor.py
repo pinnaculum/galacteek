@@ -32,7 +32,7 @@ from galacteek.core.asynclib.fetch import assetFetch
 from galacteek.core.asynclib import asyncReadFile
 
 from galacteek.ipfs.cidhelpers import IPFSPath
-from galacteek.ipfs.fetch import fetchWithDedicatedGateway
+from galacteek.ipfs.fetch import fetchWithSpecificGateway
 
 
 # https://github.com/qutebrowser/qutebrowser/blob/991cf1e8baee1a2365c1e2e81f92ce348344871c/qutebrowser/components/braveadblock.py
@@ -166,7 +166,7 @@ class ResourceAccessBlocker:
                         # xxx: continue or bail out ?
                         continue
 
-                    filtersp, lsum = await fetchWithDedicatedGateway(
+                    filtersp, lsum = await fetchWithSpecificGateway(
                         sourcePath)
 
                     if not filtersp:

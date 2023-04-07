@@ -33,7 +33,7 @@ from galacteek.services import getByDotName
 
 from galacteek.ipfs import ipfsOp
 from galacteek.ipfs.cidhelpers import IPFSPath
-from galacteek.ipfs.fetch import fetchWithDedicatedGateway
+from galacteek.ipfs.fetch import fetchWithSpecificGateway
 
 from . import ldregistry
 
@@ -455,7 +455,7 @@ class ICapsuleRegistryLoaderService(GService):
         """
 
         for attempt in range(0, maxAttempts):
-            fp, _s = await fetchWithDedicatedGateway(
+            fp, _s = await fetchWithSpecificGateway(
                 cIpfsPath,
                 maxSize=maxArchiveSize
             )

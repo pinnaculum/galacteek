@@ -67,10 +67,20 @@ async def checkGateway(gatewayUrl: str):
     return False
 
 
-async def fetchWithDedicatedGateway(iPath: IPFSPath,
-                                    maxSize=0):
+async def fetchWithMyPinataGateway(iPath: IPFSPath,
+                                   name: str = 'galacteek',
+                                   maxSize=0):
     return await httpFetch(
-        URL('https://galacteek.mypinata.cloud').with_path(iPath.objPath),
+        URL(f'https://{name}.mypinata.cloud').with_path(iPath.objPath),
+        maxSize=maxSize, impatient=True
+    )
+
+
+async def fetchWithSpecificGateway(iPath: IPFSPath,
+                                   gwHost: str = 'dweb.link',
+                                   maxSize=0):
+    return await httpFetch(
+        URL(f'https://{gwHost}').with_path(iPath.objPath),
         maxSize=maxSize, impatient=True
     )
 

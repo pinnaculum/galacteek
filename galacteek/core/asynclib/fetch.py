@@ -115,7 +115,7 @@ async def httpFetchTo(u,
 
 async def assetFetch(u: Union[URL, str], **kw):
     from galacteek import log
-    from galacteek.ipfs.fetch import fetchWithDedicatedGateway
+    from galacteek.ipfs.fetch import fetchWithSpecificGateway
 
     location = None
     url = u if isinstance(u, URL) else URL(u)
@@ -131,7 +131,7 @@ async def assetFetch(u: Union[URL, str], **kw):
         if aPath.valid:
             # Pull from gateway
 
-            return await fetchWithDedicatedGateway(
+            return await fetchWithSpecificGateway(
                 aPath,
                 maxSize=megabytes(8)
             )
