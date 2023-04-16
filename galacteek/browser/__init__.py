@@ -95,12 +95,13 @@ def webEngineSetup(config: DictConfig) -> None:
     # Non configurable switches
     flags += [
         '--enable-accelerated-2d-canvas',
-        # '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-backing-store-limit',
+        '--disable-background-timer-throttling',
         '--disable-stack-profiler',
         '--enable-zero-copy',
         '--enable-smooth-scrolling',
         '--enable-accelerated-video-decode'
-        # '--default-background-color=000000'
     ]
 
     os.environ[qtweFlagsVar] = ' '.join(flags)

@@ -4,6 +4,7 @@ import os.path
 import re
 import aioipfs
 import validators
+
 from yarl import URL
 from urllib.parse import quote
 
@@ -33,7 +34,6 @@ from PyQt5.QtCore import QEvent
 from PyQt5.QtCore import QPoint
 
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
-from PyQt5.QtWebEngineWidgets import QWebEngineDownloadItem
 from PyQt5.QtWebEngineWidgets import QWebEngineContextMenuData
 from PyQt5.QtWebEngineWidgets import QWebEngineScript
 from PyQt5.QtWebChannel import QWebChannel
@@ -55,7 +55,6 @@ from galacteek.ipfs.stat import StatInfo
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import joinIpns
-from galacteek.ipfs.cidhelpers import cidValid
 from galacteek.core.asynclib import asyncify
 
 from galacteek.browser import greasemonkey
@@ -1602,20 +1601,7 @@ class BrowserTab(GalacteekTab):
             messageBox(iSaveWebPageToPdfFileOk(path))
 
     def onSavePageContained(self):
-        tmpd = self.app.tempDirCreate(self.app.tempDirWeb)
-        if tmpd is None:
-            return messageBox('Cannot create temporary directory')
-
-        page = self.webView.page()
-
-        url = page.url()
-        filename = url.fileName()
-
-        if not filename or cidValid(filename):
-            filename = 'index.html'
-
-        path = os.path.join(tmpd, filename)
-        page.save(path, QWebEngineDownloadItem.CompleteHtmlSaveFormat)
+        self.webView.page().savePageComplete()
 
     async def onHashmarkPage(self, *qta):
         try:
@@ -1924,7 +1910,6 @@ class BrowserTab(GalacteekTab):
 
     def onLoadFinished(self, ok):
         self.ui.stopButton.setEnabled(False)
-        self.currentUrlHistoryRecord()
 
         if self.currentUrl is not None:
             self.urlZoneInsert(self.currentUrl)
@@ -1980,6 +1965,11 @@ class BrowserTab(GalacteekTab):
 
     def onLoadStarted(self):
         self.setLoadingStatus(True)
+        self.ui.pBarBrowser.setStyleSheet(
+            '''QProgressBar::chunk#pBarBrowser {
+                background-color: #4b9fa2;
+            }'''
+        )
 
         if not self.currentUrl:
             self.stackShowLoading()
@@ -2013,27 +2003,21 @@ class BrowserTab(GalacteekTab):
             self.ui.reloadPageButton.show()
 
             self.webLoadingWidget.hide()
-            self.webEngineView.noGraphicsEffect()
 
             # Show the webengine and remove any graphics effect
             self.stackShowWebEngine()
         else:
             self.setLoadingStatus(True)
+            self.ui.reloadPageButton.hide()
+            self.ui.stopButton.show()
 
             if progress in range(0, 60):
                 self.webLoadingWidget.loading(progress)
-                self.webEngineView.blur()
             elif progress in range(60, 99):
                 self.webLoadingWidget.hide()
-                self.webEngineView.noGraphicsEffect()
-                self.stackShowWebEngine()
 
-            self.ui.pBarBrowser.setStyleSheet(
-                '''QProgressBar::chunk#pBarBrowser {
-                    background-color: #4b9fa2;
-                }''')
-            self.ui.reloadPageButton.hide()
-            self.ui.stopButton.show()
+                if self.stack.currentWidget() is not self.webEngineView:
+                    self.stackShowWebEngine()
 
     def browseFsPath(self, path, schemePreferred='ipfs'):
         def _handle(iPath):

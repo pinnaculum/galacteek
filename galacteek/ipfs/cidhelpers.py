@@ -618,6 +618,43 @@ class IPFSPath:
         """
         return gatewayUrl.with_path(self.fullPath)
 
+    def publicSubDomainUrlForGateway(self, gatewayUrl: URL) -> URL:
+        """
+        Return a subdomain URL of this object served from a
+        specific IPFS HTTP gateway,
+
+        Raise ValueError if an URL cannot be produced.
+
+        :rtype: URL
+        """
+
+        # Dumb check, not all HTTP gateway services support subdomain
+        # The caller should know that the gateway passed will work
+
+        if gatewayUrl.host not in ['dweb.link',
+                                   'cf-ipfs.com',
+                                   'c4rex.co',
+                                   'jorropo.net',  # not sure
+                                   'w3s.link']:
+            raise ValueError(
+                f'{gatewayUrl.host} does not support subdomain URLs')
+
+        if self.isIpfs:
+            host = f'{self.rootCidRepr}.ipfs.{gatewayUrl.host}'
+        elif self.isIpns and self.ipnsKey:
+            host = f'{self.ipnsKey}.ipns.{gatewayUrl.host}'
+        else:
+            raise ValueError('Cannot build a subdomain URL for this object')
+
+        print(self.subPath)
+
+        return URL.build(
+            scheme=gatewayUrl.scheme,
+            host=host,
+            port=gatewayUrl.port,
+            path='/' + self.subPath if self.subPath else ''
+        )
+
     @staticmethod
     def fromUriRef(uri: Union[URIRef, str]):
         ref = uri if isinstance(uri, URIRef) else URIRef(uri)

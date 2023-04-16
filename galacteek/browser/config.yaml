@@ -3,7 +3,7 @@ envs:
     qtWebEngine:
       numRasterThreads: 8
 
-      ignoreGpuBlacklist: false
+      ignoreGpuBlacklist: true
       enableGpuRasterization: true
       enableNativeGpuMemoryBuffers: true
 

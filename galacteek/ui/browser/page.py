@@ -1,8 +1,10 @@
 import asyncio
+from pathlib import Path
 
 from PyQt5.QtWebChannel import QWebChannel
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWebEngineWidgets import QWebEngineScript
+from PyQt5.QtWebEngineWidgets import QWebEngineDownloadItem
 
 from PyQt5.QtPrintSupport import *
 
@@ -13,6 +15,7 @@ from PyQt5.QtCore import QUrl
 from PyQt5.QtGui import QColor
 
 from galacteek import partialEnsure
+from galacteek.ipfs import cidhelpers
 from galacteek.dweb.render import renderTemplate
 
 from ..helpers import *
@@ -203,3 +206,25 @@ class BrowserDwebPage (QWebEnginePage):
         return await self.runJs('''
             document.getElementsByTagName('html')[0].getAttribute('lang');
         ''')
+
+    def savePageComplete(self, dst: str = 'downloads') -> Path:
+        """
+        Save this QWebEnginePage as a complete html with resources
+        """
+
+        dstd = self.app.tempDirWeb if dst == 'downloads' else \
+            self.app.tempDirArchive
+
+        tmpd = Path(self.app.tempDirCreate(dstd))
+
+        filename = self.url().fileName()
+
+        if not filename or cidhelpers.cidValid(filename):
+            filename = 'index.html'
+
+        self.save(
+            str(tmpd.joinpath(filename)),
+            QWebEngineDownloadItem.CompleteHtmlSaveFormat
+        )
+
+        return tmpd

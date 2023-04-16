@@ -616,6 +616,8 @@ class GalacteekApplication(ApplicationDaemonStarterMixin,
         self.tempDir = QTemporaryDir()
         self.tempDirWeb = self.tempDirCreate(
             self.tempDir.path(), 'webdownloads')
+        self.tempDirArchive = self.tempDirCreate(
+            self.tempDir.path(), 'downloads-archive')
 
         self._goIpfsBinPath = self.suitableGoIpfsBinary()
 

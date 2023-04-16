@@ -346,24 +346,52 @@ class BaseProfile(QWebEngineProfile, KeyListener):
         log.debug(f'Configured profile: {self.profileName}: '
                   f'Storage path: {self.persistentStoragePath()}')
 
-    def quickClone(self):
-        # Clone the profile for usage in QML
-        # (QML uses a special QQuickWebEngineProfile)
+    def installHandlerForProfile(self,
+                                 profile: QWebEngineProfile,
+                                 schemeName: str) -> None:
+        """
+        Install a URL scheme handler for a given profile and scheme.
+        The scheme must already have been registered.
+        """
+
+        handler = self.urlSchemeHandler(schemeName.encode())
+
+        if handler:
+            profile.installUrlSchemeHandler(
+                schemeName.encode(),
+                handler
+            )
+
+    def quickClone(self) -> QQuickWebEngineProfile:
+        """
+        Clone this profile for usage in QML
+        (QML uses a special QQuickWebEngineProfile)
+        """
+
+        # URL Schemes we install on the profile
+
+        schemes = [SCHEME_GEMINI,
+                   SCHEME_GEMI,
+                   SCHEME_MANUAL,
+                   SCHEME_I,
+                   SCHEME_IPFS,
+                   SCHEME_IPNS,
+                   SCHEME_IPFS_P_HTTP,
+                   SCHEME_IPFS_P_HTTPS,
+                   SCHEME_IPID,
+                   SCHEME_DWEB,
+                   SCHEME_ENS,
+                   SCHEME_ENSR,
+                   SCHEME_PRONTO_GRAPHS]
 
         profile = QQuickWebEngineProfile(self)
-        profile.installUrlSchemeHandler(
-            SCHEME_I.encode(), self.app.iSchemeHandler)
+        profile.setDownloadPath(self.downloadPath())
+        profile.setStorageName(self.storageName())
 
-        for scheme in [SCHEME_IPFS, SCHEME_IPNS]:
-            profile.installUrlSchemeHandler(
-                scheme.encode(),
-                self.app.nativeSyncIpfsSchemeHandler)
+        # Install these schemes on the QQuickWebEngineProfile
 
-        m = SCHEME_MANUAL.encode()
-        manualHandler = self.urlSchemeHandler(m)
-
-        if manualHandler:
-            profile.installUrlSchemeHandler(m, manualHandler)
+        [self.installHandlerForProfile(profile, scheme)
+         for scheme in schemes]
 
         return profile
 

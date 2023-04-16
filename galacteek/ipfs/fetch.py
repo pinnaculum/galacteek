@@ -77,7 +77,7 @@ async def fetchWithMyPinataGateway(iPath: IPFSPath,
 
 
 async def fetchWithSpecificGateway(iPath: IPFSPath,
-                                   gwHost: str = 'dweb.link',
+                                   gwHost: str = 'gateway.pinata.cloud',
                                    maxSize=0):
     return await httpFetch(
         URL(f'https://{gwHost}').with_path(iPath.objPath),

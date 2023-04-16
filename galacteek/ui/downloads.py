@@ -17,6 +17,8 @@ from galacteek.ipfs.cidhelpers import qurlPercentDecode
 from galacteek.core.asynclib import asyncReadFile
 from galacteek.core.asynclib import asyncWriteFile
 
+from galacteek.ld.rdf import hashmarks as rdf_hashmarks
+
 from .helpers import runDialog
 from .dialogs import DownloadOpenObjectDialog
 from ..appsettings import *
@@ -50,17 +52,16 @@ class DownloadsManager(QObject):
         fname, ext = os.path.splitext(iPath.basename)
         return ext in autoOpenExtensions
 
-    def onDownloadRequested(self, downItem):
-        if not downItem:
-            return
-
+    def onDownloadRequested(self, downItem: QWebEngineDownloadItem) -> None:
         downPath = downItem.path()
         downUrl = downItem.url()
 
-        if downPath.startswith(self.app.tempDirWeb):
+        if downPath.startswith(self.app.tempDirWeb) or \
+           downPath.startswith(self.app.tempDirArchive):
             downItem.finished.connect(
                 functools.partial(self.pageSaved, downItem))
             downItem.accept()
+
             return
 
         iPath = IPFSPath(qurlPercentDecode(downUrl), autoCidConv=True)
@@ -110,14 +111,15 @@ class DownloadsManager(QObject):
             if iPath.valid:
                 ensure(self.app.resourceOpener.open(iPath))
 
-    def pageSaved(self, downItem):
+    def pageSaved(self, downItem: QWebEngineDownloadItem) -> None:
         saveFormat = downItem.savePageFormat()
 
         if saveFormat == QWebEngineDownloadItem.CompleteHtmlSaveFormat:
             ensure(self.pageSavedComplete(downItem))
 
     @ipfsOp
-    async def pageSavedComplete(self, ipfsop, downItem):
+    async def pageSavedComplete(self, ipfsop,
+                                downItem: QWebEngineDownloadItem):
         curProfile = ipfsop.ctx.currentProfile
 
         path = downItem.path()
@@ -144,17 +146,21 @@ class DownloadsManager(QObject):
 
         try:
             entry = await ipfsop.addPath(basedir)
+
+            assert entry
         except aioipfs.APIError as err:
-            log.debug('Cannot import saved page: {}'.format(err.message))
-            return
+            log.debug(f'Cannot import saved page: {err.message}')
         else:
-            if entry is None:
-                return
-
             cid = entry.get('Hash')
-            logUser.debug('Saved webpage to {}'.format(cid))
 
-            if curProfile and cid:
-                await curProfile.webPageSaved.emit(entry, title)
+            logUser.debug(f'Saved webpage with CID: {cid}')
 
-            self.app.systemTrayMessage('Downloads', iPageSaved(title))
+            if path.startswith(self.app.tempDirArchive):
+                # Archive: register a hashmark for it
+                iPath = IPFSPath(cid)
+                await rdf_hashmarks.addLdHashmark(iPath, title)
+            elif path.startswith(self.app.tempDirWeb):
+                if curProfile and cid:
+                    await curProfile.webPageSaved.emit(entry, title)
+
+                self.app.systemTrayMessage('Downloads', iPageSaved(title))
