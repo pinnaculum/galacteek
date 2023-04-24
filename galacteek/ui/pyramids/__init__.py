@@ -810,6 +810,7 @@ class MultihashPyramidToolButton(PopupToolButton):
         self.ccCustomGwIpnsMenu = gatewaysMenu(
             self.customGwIpnsCopy,
             parent=self.menu,
+            runCheck=True,
             menuText=iCopySpGwUrlToClipboardIpns()
         )
         self.customGwIpnsCopy.connect(self.onCopyCustomGwIPNSUrlToClipboard)
@@ -819,6 +820,7 @@ class MultihashPyramidToolButton(PopupToolButton):
         self.ccCustomGwLastMenu = gatewaysMenu(
             self.customGwLastCopy,
             parent=self.menu,
+            runCheck=True,
             menuText=iCopySpGwUrlToClipboardCustom('Latest object')
         )
         self.customGwLastCopy.connect(

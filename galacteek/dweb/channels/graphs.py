@@ -326,12 +326,10 @@ class SparQLResultsModel(QAbstractListModel,
             return QVariant(r)
 
     def data(self, QModelIndex, role=None):
-        global _caches
-
+        val = None
         row = QModelIndex.row()
 
         try:
-            val = None
             item = self._results[row]
             roleName = self.roles[role]
             cell = item[roleName.decode()]
@@ -339,11 +337,13 @@ class SparQLResultsModel(QAbstractListModel,
             if cell is None:
                 return QVariant(None)
             elif isinstance(cell, Literal):
-                val = str(cell)
+                val = cell.value
             elif isinstance(cell, URIRef):
                 val = str(cell)
             else:
-                val = str(cell)
+                raise ValueError(
+                    f'Value of type {type(cell)} not supported'
+                )
 
             if val:
                 return val
@@ -354,6 +354,9 @@ class SparQLResultsModel(QAbstractListModel,
             return QVariant(None)
         except IndexError as ierr:
             log.warning(f'IndexError on row {row}: {ierr}')
+            return QVariant(None)
+        except ValueError as verr:
+            log.warning(f'ValueError on row {row}: {verr}')
             return QVariant(None)
 
         return QVariant(None)
@@ -407,11 +410,16 @@ class SparQLResultsModel(QAbstractListModel,
             # TODO: compute bindings on property setting if possible
             # TOTO: detect urns here ?
             for k, v in bindings.items():
-                u = URL(v)
-                if u.scheme and u.scheme in urifySchemes:
-                    _bindings[k] = URIRef(v)
-                else:
+                if isinstance(v, str):
+                    u = URL(v)
+                    if u.scheme and u.scheme in urifySchemes:
+                        _bindings[k] = URIRef(v)
+                    else:
+                        _bindings[k] = Literal(v)
+                elif type(v) in [int, float, bool]:
                     _bindings[k] = Literal(v)
+                else:
+                    log.warning(f'Unknown binding type for: {k}')
 
             results = graph.query(query, initBindings=_bindings)
             aVars = [str(r) for r in results.vars]
@@ -621,6 +629,7 @@ class SparQLWrapperResultsModel(SparQLResultsModel):
             if cell['type'] == 'uri':
                 val = str(cell['value'])
             elif cell['type'] == 'literal':
+                # XXX: don't assume str
                 val = str(cell['value'])
             elif cell['type'] == 'typed-literal':
                 dtype = cell['datatype']

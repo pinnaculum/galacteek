@@ -5,6 +5,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.9] - 2023-04-24
+
+### Added
+- Implement a simple IPFS HTTP gateway availability checker
+- Show the HTTP gateway response time and status in the gateways menus
+- IPFSPath: implement publicSubDomainUrlForGateway()
+
+### Changed
+- QQuickWebEngineProfile: install all URL schemes in quickClone()
+
+### Fixed
+- SparQLResultsModel: always use Literal.value in data()
+
 ## [0.6.8] - 2023-04-04
 
 ### Added

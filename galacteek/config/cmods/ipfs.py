@@ -87,4 +87,5 @@ def ipfsHttpGatewaysAvailable(network: str = 'main') -> list:
             return 100
 
     gws = sorted(cfg.items(), key=gfilter)
-    return [gwc.get('url', f'https://{gwhost}') for gwhost, gwc in gws]
+    return [gwc.get('url', f'https://{gwhost}') for gwhost, gwc in gws
+            if gwc.get('enabled', True) is True]

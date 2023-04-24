@@ -638,6 +638,7 @@ class ClipboardItemButton(PopupToolButton):
         self.menu.addSeparator()
 
         self.menu.addMenu(gatewaysMenu(self.customGwPathCopy,
+                                       runCheck=True,
                                        parent=self.menu))
         self.menu.addSeparator()
 

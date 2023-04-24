@@ -78,26 +78,47 @@ envs:
         main:
           cf-ipfs.com:
             priority: 2
-          dweb.link:
-            priority: 1
-          jorropo.net:
-            priority: 1
-          gateway.ipfs.io:
-            priority: 1
           cloudflare-ipfs.com:
             priority: 1
+
+          dweb.link:
+            priority: 1
+
+          jorropo.net:
+            priority: 1
+            enabled: False
+
+          gateway.ipfs.io:
+            priority: 1
+
           c4rex.co:
+            priority: 2
+
+          konubinix.eu:
             priority: 2
           infura-ipfs.io:
             priority: 3
+
           ipfs.infura.io:
             priority: 5
+            enabled: False
           ipfs.eth.aragon.network:
             priority: 5
+          ipns.co:
+            priority: 3
+          ipfs.yt:
+            priority: 2
+          ipfs.fleek.co:
+            priority: 2
 
-          # The main pinata gw understandably has some rate limiting
           gateway.pinata.cloud:
-            priority: 5
+            priority: 1
+
+          nftstorage.link:
+            priority: 3
+
+          permaweb.eu.org:
+            priority: 3
 
     peering:
       #

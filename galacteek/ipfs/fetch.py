@@ -4,6 +4,7 @@ import random
 
 from galacteek import log
 from galacteek.config import cGet
+from galacteek.core.asynclib import loopTime
 from galacteek.core.asynclib.fetch import httpFetch
 from galacteek.ipfs.cidhelpers import IPFSPath
 
@@ -42,11 +43,12 @@ def pickGateway(network='main', skim=5):
         return URL(url)
 
 
-async def checkGateway(gatewayUrl: str):
+async def checkGateway(gatewayUrl: URL,
+                       timeout: int = 7) -> tuple:
     """
     Check if an HTTP gateway is responding
 
-    :param str gatewayUrl: base gateway URL
+    :param URL gatewayUrl: base gateway URL
     :rtype: bool
     """
 
@@ -54,22 +56,28 @@ async def checkGateway(gatewayUrl: str):
         'bafybeifx7yeb55armcsxwwitkymga5xf53dxiarykms3ygqic223w5sk3m'
     )
 
+    start = loopTime()
     path, csum = await httpFetch(
         gatewayUrl.with_path(iPath.objPath),
+        timeout=timeout,
         impatient=True
     )
+    took = loopTime() - start
 
     if path and csum:
         path.unlink()
 
-        return True
+        return True, took
 
-    return False
+    return False, took
 
 
 async def fetchWithMyPinataGateway(iPath: IPFSPath,
                                    name: str = 'galacteek',
                                    maxSize=0):
+    """
+    Fetch an IPFS object with a dedicated pinata gateway
+    """
     return await httpFetch(
         URL(f'https://{name}.mypinata.cloud').with_path(iPath.objPath),
         maxSize=maxSize, impatient=True
@@ -79,6 +87,9 @@ async def fetchWithMyPinataGateway(iPath: IPFSPath,
 async def fetchWithSpecificGateway(iPath: IPFSPath,
                                    gwHost: str = 'gateway.pinata.cloud',
                                    maxSize=0):
+    """
+    Fetch an IPFS object with a certain HTTP gateway
+    """
     return await httpFetch(
         URL(f'https://{gwHost}').with_path(iPath.objPath),
         maxSize=maxSize, impatient=True
