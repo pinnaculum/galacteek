@@ -42,6 +42,11 @@ from galacteek.core.ps import keyPsJson
 
 
 class IHandler(QObject):
+    # Signals for when the dapp's QQuickWidget is shown or hidden
+    shown = pyqtSignal()
+    hidden = pyqtSignal()
+
+    # Old signals (now we use SizeRootObjectToView)
     sizeChanged = pyqtSignal(int, int)
     size = None
 
@@ -71,7 +76,7 @@ class QMLApplicationWidget(QWidget):
         self.app = runningApp()
         self.epFileUrl = fileUrl
 
-        self.fsw = FileWatcher(bufferMs=10000, delay=1, parent=self)
+        self.fsw = FileWatcher(bufferMs=5000, delay=1, parent=self)
         self.fsw.pathChanged.connect(self.onReloadApp)
         self.fsw.watch(self.epFileUrl)
 
@@ -129,6 +134,16 @@ class QMLApplicationWidget(QWidget):
                 event.size().height()
             )
 
+    def showEvent(self, event):
+        self.iInterface.shown.emit()
+
+        super().showEvent(event)
+
+    def hideEvent(self, event):
+        self.iInterface.hidden.emit()
+
+        super().hideEvent(event)
+
     def importComponent(self, path):
         self.engine.addImportPath(path)
         self.fsw.watchWalk(Path(path))
@@ -150,6 +165,7 @@ class QMLApplicationWidget(QWidget):
             self.engine,
             QUrl.fromLocalFile(self.epFileUrl)
         )
+        qcomp.setResizeMode(QQuickWidget.SizeRootObjectToView)
 
         if not qcomp:
             return

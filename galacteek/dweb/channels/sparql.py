@@ -7,6 +7,7 @@ from PyQt5.QtCore import QJsonValue
 from galacteek import services
 from galacteek import log
 from galacteek.ld.rdf import dbpedia
+from galacteek.ld.sparql import querydb
 
 from . import GAsyncObject
 
@@ -83,3 +84,16 @@ class SparQLHandler(GAsyncObject, SparQLInterface):
         except Exception as err:
             log.debug(f'Dbpedia SparQL query error for {query}: {err}')
             return QVariant([])
+
+    @pyqtSlot(str, QJsonValue, result=QVariant)
+    def queryDbGet(self, rqName: str, params):
+        """
+        Return a sparql query from the querydb.
+        """
+        try:
+            args = params.toVariant()
+
+            return QVariant(querydb.get(rqName, *args))
+        except Exception as err:
+            log.warning(f'querydbget failed for {rqName}: {err}')
+            return QVariant(None)

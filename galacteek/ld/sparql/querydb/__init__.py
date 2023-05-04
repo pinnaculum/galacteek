@@ -4,7 +4,7 @@ from galacteek import log
 from galacteek.core import pkgResourcesRscFilename
 
 
-def get(name: str, *args):
+def get(name: str, *args) -> str:
     """
     Get a SparQL query (as string) from an .rq file stored
     inside this module
