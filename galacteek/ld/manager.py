@@ -10,6 +10,9 @@ from galacteek.core import pkgResourcesRscFilename
 from galacteek.core import pkgResourcesListDir
 from galacteek.core.fswatcher import FileWatcher
 
+from . import asyncjsonld
+from .ldloader import aioipfs_document_loader
+
 
 class LDSchemasImporter:
     def __init__(self):
@@ -79,8 +82,18 @@ class LDSchemasImporter:
                     f'Error discovering IPS schemas pkg ({p}): {err}')
                 continue
 
-    async def update(self, ipfsop):
+    async def update(self, ipfsop) -> None:
         await self.nsToIpfs('galacteek.ld')
+
+    async def setDefaultDocLoader(self, ipfsop) -> None:
+        """
+        Set the default jsonld (asyncjsonld module) document loader,
+        using this ipfs operator's aioipfs client.
+        """
+
+        asyncjsonld.set_document_loader(
+            await aioipfs_document_loader(ipfsop.client, self)
+        )
 
     async def importLdContexts(self,
                                ipfsop,

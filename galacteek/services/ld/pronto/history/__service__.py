@@ -18,7 +18,7 @@ from galacteek.ipfs.pubsub.messages.ld import SparQLHeartbeatMessage
 from galacteek.ld import gLdDefaultContext
 from galacteek.ld import ontolochain
 from galacteek.ld.sparql.aioclient import Sparkie
-from galacteek.ld.signatures import jsonldsig
+from galacteek.ld.signatures import ajsonldsig
 
 
 class GraphHistorySynchronizer:
@@ -258,7 +258,7 @@ class GraphingHistoryService(GService):
             'outputGraph': graphUri,
 
             'verificationMethod': f'{ipid.did}#keys-1',
-            'signature': jsonldsig.signsa(dagraw, privKey.exportKey())
+            'signature': await ajsonldsig.signsa(dagraw, privKey.exportKey())
         }
 
         await dstGraph.pullObject(doc)

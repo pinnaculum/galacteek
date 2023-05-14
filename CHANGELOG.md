@@ -5,6 +5,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2023-05-08
+
+### Changed
+- Register a default aioipfs jsonld document loader early on
+  (this fixes some jsonld *normalization* operations where the default
+  "requests" document loader couldn't pull schemas from ipfs)
+- asyncify the *galacteek.ld.signatures* module
+- goliath (guardian): add a processor for ips://galacteek.ld/GenericReaction
+
 ## [0.6.9] - 2023-04-24
 
 ### Added

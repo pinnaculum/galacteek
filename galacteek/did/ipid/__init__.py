@@ -47,7 +47,7 @@ from galacteek.core.asynclib import async_enterable
 from galacteek.core.asynccache import amlrucache
 from galacteek.crypto.rsa import RSAExecutor
 
-from galacteek.ld.signatures import jsonldsig
+from galacteek.ld.signatures import ajsonldsig
 from galacteek.ld.rdf import BaseGraph
 from galacteek.ld.rdf.terms import DID
 
@@ -526,7 +526,7 @@ class IPIdentifier(DAGOperations):
             rsaAgent = await self.rsaAgentGet(ipfsop)
             privKey = await rsaAgent._privateKey()
 
-            return jsonldsig.sign(document, privKey.exportKey())
+            return await ajsonldsig.sign(document, privKey.exportKey())
         except Exception as err:
             self.message(f'Failed to create JSON-LD signature: {err}')
 
@@ -535,7 +535,7 @@ class IPIdentifier(DAGOperations):
         try:
             rsaAgent = await self.rsaAgentGet(ipfsop)
 
-            return jsonldsig.verify(
+            return await ajsonldsig.verify(
                 document, pubKey if pubKey else rsaAgent.pubKeyPem
             )
         except Exception as err:

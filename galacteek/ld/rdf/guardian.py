@@ -73,6 +73,56 @@ class GuardianTriggerAction:
             liked
         ))
 
+    async def processGenericReaction(self, src: Graph, dst: Graph,
+                                     s: URIRef, p: URIRef, o: URIRef):
+        """
+        Process a ips://galacteek.ld/GenericReaction
+
+        A GenericReaction describes a reaction to a "creative thing"
+        (but can be any type of resource)
+        """
+
+        reactionId = src.value(
+            subject=s,
+            predicate=URIRef('ips://galacteek.ld/GenericReaction#reactionId')
+        )
+
+        obj = src.value(
+            subject=s,
+            predicate=URIRef('ips://galacteek.ld/object')
+        )
+        agent = src.value(
+            subject=s,
+            predicate=URIRef('ips://galacteek.ld/agent')
+        )
+
+        # Purge previous references for this reaction type, leaving us
+        # with always only one reaction triple for this agent, reaction
+        # type and object, pointing to the latest GenericReaction
+        for row in await dst.queryAsync('''
+            PREFIX gs: <ips://galacteek.ld/>
+            SELECT *
+            WHERE {
+                ?agent ?reactionId ?reaction .
+                ?reaction gs:object ?obj .
+            }
+            ''', initBindings={
+            'agent': agent,
+            'obj': obj,
+            'reactionId': reactionId
+        }):
+            dst.remove((
+                agent,
+                reactionId,
+                row['reaction']
+            ))
+
+        dst.add((
+            agent,
+            reactionId,
+            s
+        ))
+
     async def unfollowSubject(self, src: Graph, dst: Graph, s, p, o):
         followee = src.value(
             subject=s,

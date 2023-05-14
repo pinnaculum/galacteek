@@ -38,6 +38,13 @@ guardians:
           do: 'trigger'
           call: 'processLikeAction'
 
+      - subject: '^.*$'
+        predicate: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
+        object: 'ips://galacteek.ld/GenericReaction'
+        action:
+          do: 'trigger'
+          call: 'processGenericReaction'
+
 
 # Graph synchronizers definitions
 synchronizers:

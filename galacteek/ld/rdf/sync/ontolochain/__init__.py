@@ -26,7 +26,7 @@ from galacteek.ld.rdf import BaseGraph
 from galacteek.ld import ontolochain
 from galacteek.ld.rdf.terms import *
 from galacteek.ld.sparql import select, where, T, Filter
-from galacteek.ld.signatures import jsonldsig
+from galacteek.ld.signatures import ajsonldsig
 
 
 from ..smartqlclient import SmartQLClient
@@ -487,7 +487,7 @@ class GraphSemChainSynchronizer:
                 await asyncio.sleep(0.05)
 
                 # JSON-LD signature verification
-                verif = jsonldsig.verifysa(
+                verif = await ajsonldsig.verifysa(
                     obj,
                     str(res['sigjws']['value']),
                     pem

@@ -1214,7 +1214,7 @@ class QMLDappWorkspace(SingleWidgetWorkspace, KeyListener):
         self.components = appComponents
         self.depends = depends
         self.qmlEntryPoint = entryPoint
-        self.appWidget = QMLApplicationWidget(self.qmlEntryPoint)
+        self.appWidget = QMLApplicationWidget(appUri, self.qmlEntryPoint)
         self.appUri = appUri
         self.iconPath = iconIpfsPath
         self.wLayout.addWidget(self.appWidget)

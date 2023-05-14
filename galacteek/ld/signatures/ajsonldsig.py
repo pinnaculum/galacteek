@@ -3,27 +3,27 @@ from datetime import datetime
 
 import pytz
 from Cryptodome.Hash import SHA256
-from pyld import jsonld
+from galacteek.ld import asyncjsonld
 
 from .jws import sign_jws, verify_jws
 
 
-def normalize_jsonld(jld_document):
+async def normalize_jsonld(jld_document):
     """
     Normalize and hash the json-ld document
     """
     options = {'algorithm': 'URDNA2015', 'format': 'application/nquads'}
-    normalized = jsonld.normalize(jld_document, options=options)
+    normalized = await asyncjsonld.normalize(jld_document, options=options)
     normalized_hash = SHA256.new(data=normalized.encode('utf-8')).digest()
     return normalized_hash
 
 
-def sign(jld_document, private_key):
+async def sign(jld_document, private_key):
     """
     Produces a signed JSON-LD document with a Json Web Signature
     """
     jld_document = deepcopy(jld_document)
-    normalized_jld_hash = normalize_jsonld(jld_document)
+    normalized_jld_hash = await normalize_jsonld(jld_document)
     jws_signature = sign_jws(normalized_jld_hash, private_key)
 
     # construct the signature document and add it to jsonld
@@ -37,9 +37,9 @@ def sign(jld_document, private_key):
     return jld_document
 
 
-def signsa(jld_document, private_key):
+async def signsa(jld_document, private_key):
     jld_document = deepcopy(jld_document)
-    normalized_jld_hash = normalize_jsonld(jld_document)
+    normalized_jld_hash = await normalize_jsonld(jld_document)
     jws_signature = sign_jws(normalized_jld_hash, private_key)
 
     # construct the signature document and add it to jsonld
@@ -52,20 +52,20 @@ def signsa(jld_document, private_key):
     return signature
 
 
-def verify(signed_jld_document, public_key):
+async def verify(signed_jld_document, public_key):
     """
     Verifies the Json Web Signature of a signed JSON-LD Document
     """
     signed_jld_document = deepcopy(signed_jld_document)
     signature = signed_jld_document.pop('signature')
     jws_signature = signature['signatureValue'].encode('utf-8')
-    normalized_jld_hash = normalize_jsonld(signed_jld_document)
+    normalized_jld_hash = await normalize_jsonld(signed_jld_document)
 
     return verify_jws(normalized_jld_hash, jws_signature, public_key)
 
 
-def verifysa(jld_document, jws_signature_value: str, public_key):
-    normalized_jld_hash = normalize_jsonld(deepcopy(jld_document))
+async def verifysa(jld_document, jws_signature_value: str, public_key):
+    normalized_jld_hash = await normalize_jsonld(deepcopy(jld_document))
 
     return verify_jws(
         normalized_jld_hash,

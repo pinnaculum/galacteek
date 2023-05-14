@@ -286,7 +286,7 @@ async def to_rdf(input_, options=None):
 
     :return: the resulting RDF dataset (or a serialization of it).
     """
-    return JsonLdProcessor().to_rdf(input_, options)
+    return await JsonLdProcessor().to_rdf(input_, options)
 
 
 def set_document_loader(load_document):
@@ -1052,7 +1052,7 @@ class JsonLdProcessor(object):
                 if 'format' in opts:
                     del opts['format']
                 opts['produceGeneralizedRdf'] = False
-                dataset = self.to_rdf(input_, opts)
+                dataset = await self.to_rdf(input_, opts)
         except JsonLdError as cause:
             raise JsonLdError(
                 'Could not convert input to RDF dataset before normalization.',

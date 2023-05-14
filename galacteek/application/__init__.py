@@ -597,7 +597,7 @@ class GalacteekApplication(ApplicationDaemonStarterMixin,
         useSystemProxyConfig(False)
 
         # Discover/preload LD schemas
-        self._ldSchemasImporter.discover()
+        self.ldSchemas.discover()
 
         self.multihashDb = IPFSObjectMetadataDatabase(
             str(self._mHashDbLocation), loop=self.loop)
@@ -706,16 +706,19 @@ class GalacteekApplication(ApplicationDaemonStarterMixin,
                 '/share/static/docs/markdown-reference.html')
 
     @ipfsOp
-    async def setupRepository(self, op):
+    async def setupRepository(self, ipfsop):
         vPath = pkgResourcesRscFilename(
             'galacteek.extapps', 'video-rendezvous')
         # CHANGE
-        self.ipfsCtx.resources['videocall'] = await op.addPath(vPath)
+        self.ipfsCtx.resources['videocall'] = await ipfsop.addPath(vPath)
 
         await self.qSchemeHandler.start()
 
+        # Set the default jsonld (asyncjsonld) document loader
+        await self.ldSchemas.setDefaultDocLoader(ipfsop)
+
         # Trigger LD schemas update
-        await self._ldSchemasImporter.update(op)
+        await self.ldSchemas.update(ipfsop)
 
         self.feedFollower = FeedFollower(self)
         self.feedFollowerTask = await self.scheduler.spawn(

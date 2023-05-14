@@ -66,7 +66,7 @@ class IHandler(QObject):
 
 
 class QMLApplicationWidget(QWidget):
-    def __init__(self, fileUrl, parent=None):
+    def __init__(self, dappUri: str, fileUrl: str, parent=None):
         super(QMLApplicationWidget, self).__init__(parent=parent)
 
         self.stack = QStackedWidget()
@@ -75,6 +75,7 @@ class QMLApplicationWidget(QWidget):
 
         self.app = runningApp()
         self.epFileUrl = fileUrl
+        self.dappUri = dappUri
 
         self.fsw = FileWatcher(bufferMs=5000, delay=1, parent=self)
         self.fsw.pathChanged.connect(self.onReloadApp)

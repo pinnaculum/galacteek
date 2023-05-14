@@ -1,6 +1,10 @@
 from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtCore import QJsonValue
+from PyQt5.QtCore import QVariant
 
 from galacteek import log
+from galacteek.config import cGet
+from galacteek.config.util import ocToContainer
 from galacteek.core import runningApp
 from galacteek.dweb.markdown import markitdown
 from galacteek.ipfs.cidhelpers import IPFSPath
@@ -11,7 +15,7 @@ from . import GAsyncObject
 class GHandler(GAsyncObject):
     @pyqtSlot(result=int)
     def apiVersion(self):
-        return 7
+        return 8
 
     @pyqtSlot(str, str)
     def logMsg(self, level: str, message: str):
@@ -57,3 +61,19 @@ class GHandler(GAsyncObject):
             return self.app.getClipboardText()
         except Exception:
             return ''
+
+    @pyqtSlot(str, str, QJsonValue, result=QVariant)
+    def configGet(self,
+                  modName: str,
+                  attr: str,
+                  default: QJsonValue):
+        """
+        Wrapper around galacteek.config.cGet
+        """
+        try:
+            cvalue = ocToContainer(cGet(attr, mod=modName))
+            assert cvalue
+        except Exception:
+            return default.toVariant()
+        else:
+            return QVariant(cvalue)
