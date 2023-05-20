@@ -86,9 +86,6 @@ async def aioipfs_document_loader(ipfsClient: aioipfs.AsyncIPFS,
                 obj = orjson.loads(data.decode())
                 assert obj is not None
 
-                # log.debug(
-                #     f'IPS loader: REQ {url} => {path.objPath}')
-
                 if url not in contextsCache and len(data) < 4096:
                     # Cache contexts <4kb
                     contextsCache[url] = obj
@@ -99,6 +96,11 @@ async def aioipfs_document_loader(ipfsClient: aioipfs.AsyncIPFS,
                     'documentUrl': url,
                     'contextUrl': None
                 }
+            else:
+                raise ValueError(
+                    f'Cannot determine the object path for '
+                    f'ips schema URL: {url}'
+                )
         except asyncio.TimeoutError as terr:
             log.debug(f'Timeout error while loading context: {terr}')
             raise terr
@@ -108,6 +110,8 @@ async def aioipfs_document_loader(ipfsClient: aioipfs.AsyncIPFS,
         except JsonLdError as e:
             log.debug(str(e))
             raise e
+        except ValueError as verr:
+            raise verr
         except Exception as cause:
             raise JsonLdError(
                 'Could not retrieve a JSON-LD document from the URL.',

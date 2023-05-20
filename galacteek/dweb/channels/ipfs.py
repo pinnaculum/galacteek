@@ -217,7 +217,7 @@ class IPFSHandler(GAsyncObject, IPFSInterface, KeyListener):
             return js
 
     @opSlot(str, QJsonValue)
-    async def pin(self, path, options):
+    async def pin(self, path: str, options):
         ipfsop = self.app.ipfsOperatorForLoop()
 
         opts = self._dict(options)
@@ -233,6 +233,21 @@ class IPFSHandler(GAsyncObject, IPFSInterface, KeyListener):
             traceback.print_exc()
 
         return success
+
+    @opSlot(str, str)
+    async def gpin(self, path: str, qname: str):
+        """
+        Queue for pinning via ipfsop.ctx
+        """
+        ipfsop = self.app.ipfsOperatorForLoop()
+
+        try:
+            await ipfsop.ctx.pin(path, qname=qname)
+        except Exception:
+            traceback.print_exc()
+            return False
+
+        return True
 
     @opSlot(str, QJsonValue)
     async def unpin(self, path: str, options):

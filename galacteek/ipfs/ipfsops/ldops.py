@@ -233,7 +233,7 @@ class LDOpsContext(object):
 
 
 class LinkedDataOps(object):
-    @ async_enterable
+    @async_enterable
     async def ldOps(self):
         app = runningApp()
 

@@ -40,6 +40,11 @@ graphEnvs:
 
           urn:ipg:i:articles: {}
 
+          urn:ipg:i:init0:
+            datasets:
+              urn:glk:datasets:dataset-init0:
+                url: ${gitlab_easy_asset_url:galacteek,dataset-init0,continuous-master,dataset-init0.tar.gz}
+
           # blogs
           urn:ipg:i:love:blogs:
             services:
@@ -49,7 +54,6 @@ graphEnvs:
 
           # tags
           urn:ipg:i:love:itags:
-
             datasets:
               urn:glk:datasets:dataset-itags-core:
                 url: ${gitlab_easy_asset_url:galacteek,dataset-itags-core,continuous-master,dataset-itags-core.tar.gz}

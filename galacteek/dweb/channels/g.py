@@ -1,3 +1,6 @@
+import traceback
+from rdflib import URIRef
+
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtCore import QJsonValue
 from PyQt5.QtCore import QVariant
@@ -9,13 +12,17 @@ from galacteek.core import runningApp
 from galacteek.dweb.markdown import markitdown
 from galacteek.ipfs.cidhelpers import IPFSPath
 
+from galacteek.ld.rdf import hashmarks as rdf_hashmarks
+from galacteek.ld.rdf import tags as rdf_tags
+
 from . import GAsyncObject
+from . import opSlot
 
 
 class GHandler(GAsyncObject):
     @pyqtSlot(result=int)
     def apiVersion(self):
-        return 8
+        return 9
 
     @pyqtSlot(str, str)
     def logMsg(self, level: str, message: str):
@@ -77,3 +84,43 @@ class GHandler(GAsyncObject):
             return default.toVariant()
         else:
             return QVariant(cvalue)
+
+    @opSlot(str, str, QJsonValue, QJsonValue, result=QVariant)
+    async def hashmarksAdd(self,
+                           url: str,
+                           title: str,
+                           itags: QJsonValue,
+                           options: QJsonValue):
+        """
+        Add an RDF hashmark with addLdHashmark()
+        """
+        extra = {}
+        opts = options.toVariant()
+
+        try:
+            dstGraph = opts.get('graphUri', None)
+            uri = URIRef(url)
+
+            if dstGraph:
+                extra['graphUri'] = dstGraph
+
+            result = await rdf_hashmarks.addLdHashmark(
+                uri,
+                title,
+                **extra
+            )
+
+            assert result is True
+
+            for tag in itags.toVariant():
+                rdf_hashmarks.ldHashmarkTag(uri, URIRef(tag), **extra)
+
+            if opts.get('watchTags') is True:
+                for tag in itags.toVariant():
+                    rdf_tags.tagWatch(URIRef(tag))
+
+            return QVariant(True)
+        except Exception:
+            log.warning(f'hashmarksAdd error: {traceback.format_exc()}')
+
+            return QVariant(False)
