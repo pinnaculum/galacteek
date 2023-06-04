@@ -3,13 +3,15 @@ PREFIX did: <ips://galacteek.ld/did>
 PREFIX didv: <https://w3id.org/did#>
 
 SELECT ?uri ?srvtype ?srvdescr
+       ?did
        ?endpoint
        ?eptype
 WHERE {
+  ?did didv:service ?uri .
   ?uri a ?srvtype .
 
-	?uri didv:serviceEndpoint ?endpoint .
-	OPTIONAL { ?endpoint a ?eptype . }.
+  ?uri didv:serviceEndpoint ?endpoint .
+  OPTIONAL { ?endpoint a ?eptype . }.
 
   OPTIONAL { ?uri gs:description ?srvdescr . } .                        
 }

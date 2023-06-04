@@ -10,6 +10,7 @@ from cachetools import TTLCache
 
 from rdflib import Literal
 from rdflib import URIRef
+from rdflib.namespace import XSD
 from rdflib.plugins.sparql import prepareQuery
 
 from SPARQLWrapper import SPARQLWrapper, JSON, RDF
@@ -337,7 +338,11 @@ class SparQLResultsModel(QAbstractListModel,
             if cell is None:
                 return QVariant(None)
             elif isinstance(cell, Literal):
-                val = cell.value
+                if cell.datatype in [XSD.dateTime, XSD.date]:
+                    # date or datetime: return in isoformat
+                    val = cell.toPython().isoformat()
+                else:
+                    val = cell.value
             elif isinstance(cell, URIRef):
                 val = str(cell)
             else:
@@ -389,7 +394,10 @@ class SparQLResultsModel(QAbstractListModel,
 
     def __rSyncPreparedQuery(self,
                              graphUri, query, bindings):
+        # List of schemes that will be treated as RDF uris
         urifySchemes = [
+            'did',
+            'ipid',
             'ftp',
             'http',
             'https',

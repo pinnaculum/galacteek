@@ -234,28 +234,29 @@ class ICapsuleRegistryLoaderService(GService):
             description = str(manifest.value(mTerm('description')))
             mtype = str(manifest.value(mTerm('capsuleType')))
             iconCid = str(manifest.value(mTerm('iconIpfsPath')))
-            # httpGws = str(manifest.value(mTerm('ipfsHttpGws')))
 
-            comps = await self.querier.capsuleComponents(
-                icapid
-            )
+            comps = await self.querier.capsuleComponents(icapid)
 
             for compUri in comps:
+                containsEp = False
                 comp = self.graphRegistryRoot.resource(compUri)
 
                 stype = str(comp.value(compTerm('sourceType')))
 
                 fspath = Path(str(comp.value(compTerm('fsPath'))))
-                ep = str(comp.value(compTerm('qmlEntryPoint')))
+                ep = comp.value(compTerm('qmlEntryPoint'))
 
                 if stype in ['localfs', 'local']:
                     if ep and not qmlEntryPoint:
                         qmlEntryPoint = str(
-                            fspath.joinpath('qml').joinpath(ep))
+                            fspath.joinpath('qml').joinpath(ep.value)
+                        )
+                        containsEp = True
 
                     if fspath:
                         cloaded.append({
-                            'fsPath': str(fspath)
+                            'fsPath': str(fspath),
+                            'containsEp': containsEp
                         })
                     continue
                 elif stype in ['dweb', 'ipfs']:
@@ -277,7 +278,9 @@ class ICapsuleRegistryLoaderService(GService):
 
                     if ep and not qmlEntryPoint:
                         qmlEntryPoint = str(
-                            cpath.joinpath('qml').joinpath(ep))
+                            cpath.joinpath('qml').joinpath(ep.value)
+                        )
+                        containsEp = True
 
                     if not iPath.valid:
                         continue
@@ -286,7 +289,8 @@ class ICapsuleRegistryLoaderService(GService):
                         # Already installed
 
                         cloaded.append({
-                            'fsPath': str(cpath)
+                            'fsPath': str(cpath),
+                            'containsEp': containsEp
                         })
 
                         continue

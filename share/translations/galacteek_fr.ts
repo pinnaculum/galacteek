@@ -654,17 +654,17 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>Galacteek</name>
     <message>
-        <location filename="../../galacteek/ui/downloads.py" line="28"/>
+        <location filename="../../galacteek/ui/downloads.py" line="30"/>
         <source>Finished downloading file {0}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/downloads.py" line="33"/>
+        <location filename="../../galacteek/ui/downloads.py" line="35"/>
         <source>Downloading file {0} ..</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../galacteek/ui/downloads.py" line="38"/>
+        <location filename="../../galacteek/ui/downloads.py" line="40"/>
         <source>Web page {0} was saved</source>
         <translation type="unfinished"></translation>
     </message>

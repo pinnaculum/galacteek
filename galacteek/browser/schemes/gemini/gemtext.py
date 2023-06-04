@@ -52,6 +52,10 @@ def convert_single_line(gmi_line):
                 inner_text = groups[0].strip()
                 return inner_text, f"<{tag}>{inner_text}</{tag}>"
 
+    url = urlparse(gmi_line)
+    if url and url.scheme in ['gemini', 'ipfs'] and url.netloc:
+        return None, f"<p><a href='{url.geturl()}'>{url.geturl()}</a></p>"
+
     return None, f"<p>{gmi_line}</p>"
 
 

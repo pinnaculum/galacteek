@@ -5,11 +5,14 @@
     <style>
       body {
         padding: 10px;
-        background-color: #323232;
         font: 14pt "Arial";
         margin: 10px;
-        color: white;
       }
+
+      p {
+        color: cornsilk;
+      }
+
       a {
         color: #fe921f;
       }
@@ -25,6 +28,7 @@
       input {
         padding: 5px;
         margin: 10px;
+        background-color: black;
       }
 
       input[type=text] {
@@ -32,12 +36,23 @@
       }
 
       input[type=button] {
-        font-size: 120%;
+        background-color: #778899;
+        font-size: 150%;
+        padding: 20px;
+        border: 1px solid gray;
       }
 
-      div#reqinput {
-        background-color: #4b9fa2;
+      input[type=button]:hover {
         border: 2px solid black;
+      }
+
+      textarea {
+        padding: 20px;
+        font: 14pt "Segoe UI";
+      }
+
+      .capsulemsg {
+        font-size: 150%;
       }
     </style>
   </head>
@@ -46,12 +61,15 @@
       function submitForm() {
         const ele = document.getElementById('itext')
 
-        window.location = '{{ posturl }}?' + encodeURIComponent(ele.value)
+        if (ele.value.length > 0) {
+          window.location = '{{ posturl }}?' + encodeURIComponent(ele.value)
+        } else {
+          alert('Empty input')
+        }
       }
-
     </script>
 
-    <div align="center">
+    <div class="capsulemsg" align="center">
       <p>
       The gemini capsule at <a href='{{ gemurl }}'/>{{ gemurl }}</a> sent an
       input request.
@@ -61,10 +79,12 @@
     <div id='reqinput' align="center">
       <b>{{ geminput }}</b>
 
-      <form id='form' onsubmit='event.preventDefault(); submitForm()'>
-        <input width='50%' type='text' id='itext' />
+      <form id="qform" onsubmit='event.preventDefault(); submitForm()'>
+        <textarea width='60%' rows="15" cols="80" id='itext'></textarea>
+
         <br/>
-        <input type='button' value='Send' onclick='event.preventDefault(); submitForm()' />
+        <input type='button' value='Send'
+          onclick='event.preventDefault(); submitForm()' />
       </form>
     </div>
   </body>

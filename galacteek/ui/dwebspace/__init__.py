@@ -1288,7 +1288,10 @@ class QMLDappWorkspace(SingleWidgetWorkspace, KeyListener):
 
                 qPath = rootPath.joinpath('qml')
 
-                self.appWidget.importComponent(str(qPath))
+                self.appWidget.importComponent(
+                    str(qPath),
+                    containsEntryPoint=comp.get('containsEp', False)
+                )
         except Exception as err:
             traceback.print_exc()
             log.debug(f'{self.appUri}: failed to load components: {err}')

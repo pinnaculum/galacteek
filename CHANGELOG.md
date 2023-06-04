@@ -5,6 +5,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2023-06-04
+
+### Changed
+- Dweb passport service: use DID based URLs for all passport identifiers
+- Set a "last seen date" triple for DIDs
+- Change the gemini CSS
+
+### Fixed
+- SparQLResultsModel: properly handle datetime Literals in data()
+
 ## [0.7.0] - 2023-05-08
 
 ### Changed

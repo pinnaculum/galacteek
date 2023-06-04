@@ -1,6 +1,5 @@
 import asyncio
 
-from galacteek import services
 from galacteek.core import mergeDicts
 from galacteek.core import runningApp
 from galacteek.core.iphandle import SpaceHandle
@@ -98,13 +97,13 @@ class DwebPassportService(IPService):
 async def create(ipid, initialIpHandle: str = None):
     handle = SpaceHandle(initialIpHandle)
 
-    iService = services.getByDotName('dweb.schemes.i')
-
-    iriPassport = iService.iriGenObject('DwebPassport')
-    iriPerson = iService.iriGenObject('Person')
+    # URIs for the passport service
+    iriSrv = ipid.didUrl(path='/passport')
+    iriPassport = ipid.didUrl(path='/passport/DwebPassport')
+    iriPerson = ipid.didUrl(path='/passport/me')
 
     return await ipid.addServiceContexted({
-        'id': ipid.didUrl(path='/passport'),
+        'id': iriSrv,
         'type': IPService.SRV_TYPE_PASSPORT
     },
         contextInline=False,

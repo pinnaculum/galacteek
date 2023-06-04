@@ -80,6 +80,21 @@ class IPIDSchemeHandler(NativeIPFSSchemeHandler,
                 return request.redirect(QUrl(str(url)))
 
             return self.urlInvalid(request)
+        elif eptype == ipsContextUri('GeminiIpfsCapsuleServiceEndpoint'):
+            url = ipidGraph.value(
+                endpoint,
+                ipsTermUri('GeminiIpfsCapsuleServiceEndpoint',
+                           'accessUrl')
+            )
+            if url:
+                return request.redirect(QUrl(str(url)))
+
+            url = ipidGraph.value(
+                endpoint,
+                ipsTermUri('accessUrl')
+            )
+            if url:
+                return request.redirect(QUrl(str(url)))
         else:
             return self.urlInvalid(request)
 

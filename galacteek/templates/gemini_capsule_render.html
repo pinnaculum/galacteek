@@ -11,15 +11,16 @@
       }
 
       body {
-        font: 14pt "Symbola";
+        font: 15pt "Symbola";
         margin: 5px;
         color: cornsilk;
       }
 
       a {
-        color: #fe921f;
+        color: #00ffff;
         text-decoration: underline;
-        font-size: 1.1em;
+        font-size: 1.3em;
+        padding-left: 5px;
       }
 
       a:hover {
@@ -27,25 +28,36 @@
       }
 
       h1 {
-        color: #FF7F50;
-        padding-left: 10px;
+        color: #A52A2A;
+        text-decoration: underline;
         font-size: 1.7em;
       }
 
       h2 {
-        color: #6495ED;
-        padding-left: 10px;
+        color: #FF7F50;
         font-size: 1.4em;
       }
+
       h3 {
-        color: #6495ed;
-        padding-left: 10px;
+        color: #DEB887;
         font-size: 1.3em;
       }
+
+      li {
+        font-size: 1.2em;
+        line-height: 1.4;
+      }
+
+      ul {
+        list-style-type: upper-roman;
+      }
+
 
       p {
         color: lightsteelblue;
         font-size: 1.1em;
+        padding-left: 10px;
+        line-height: 1.5;
       }
 
       pre {
@@ -62,7 +74,6 @@
         margin: 0;
       }
     </style>
-
   </head>
   <body>
     {% block body %}

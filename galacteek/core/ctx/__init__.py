@@ -61,6 +61,9 @@ from galacteek.crypto.rsa import RSAExecutor
 from galacteek.crypto.ecc import ECCExecutor
 from galacteek.crypto.ecc import Curve25519
 
+from galacteek.ld.rdf.terms import DID
+from galacteek.ld.rdf.util import literalDtNow
+
 from galacteek.services import GService
 
 
@@ -656,6 +659,9 @@ class Peers(GService):
                     ensure(self.didPerformAuth(piCtx, iMsg))
 
                 self._byHandle[iMsg.iphandle] = piCtx
+
+            # Render the validated IPID in the identities graph
+            await self.graphIpid(ipid)
         else:
             # This peer is already registered in the network graph
             # What we ought to do here is just to refresh the DID document
@@ -676,10 +682,11 @@ class Peers(GService):
 
         await self.changed.emit()
 
-    async def graphIpid(self, ipid):
-        from galacteek.ld.rdf.terms import DID
-
-        # Graph it in
+    async def graphIpid(self, ipid: IPIdentifier) -> bool:
+        """
+        Transform the DID document for this ipid to RDF and merge the
+        resulting graph in the identities graph (urn:ipg:i:am)
+        """
 
         try:
             iamg = self.prontoService.graphByUri('urn:ipg:i:am')
@@ -693,6 +700,13 @@ class Peers(GService):
                 g = await ipid.rdfGraph()
                 assert g is not None
 
+                # Add a triple for last-seen datetime
+                g.add((
+                    ipid.didUriRef,
+                    DID.didDateLastSeen,
+                    literalDtNow()
+                ))
+
                 await iamg.guardian.mergeReplace(
                     g,
                     iamg,
@@ -700,6 +714,9 @@ class Peers(GService):
                 )
         except Exception as err:
             log.debug(f'Could not graph IPID: {ipid.did}: {err}')
+            return False
+        else:
+            return True
 
     @ipfsOp
     async def didPerformAuth(self, ipfsop, piCtx, identMsg):

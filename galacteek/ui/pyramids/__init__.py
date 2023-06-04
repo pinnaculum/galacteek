@@ -1693,6 +1693,8 @@ class GemPyramidButton(ContinuousPyramid):
                 'description': descr if descr else 'No description',
                 'serviceEndpoint': {
                     '@type': 'GeminiIpfsCapsuleServiceEndpoint',
+                    '@context':
+                        'ips://galacteek.ld/GeminiIpfsCapsuleServiceEndpoint',
                     '@id': self.accessUrlGem,
 
                     'accessUrl': self.accessUrl,

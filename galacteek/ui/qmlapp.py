@@ -145,7 +145,15 @@ class QMLApplicationWidget(QWidget):
 
         super().hideEvent(event)
 
-    def importComponent(self, path):
+    def importComponent(self, path: str,
+                        containsEntryPoint: bool = False):
+        rootPathKey = 'dappRootFsPath'
+        ctx = self.engine.rootContext()
+
+        value = ctx.contextProperty(rootPathKey)
+        if not value and containsEntryPoint:
+            ctx.setContextProperty(rootPathKey, path)
+
         self.engine.addImportPath(path)
         self.fsw.watchWalk(Path(path))
 
