@@ -22,7 +22,7 @@ from . import opSlot
 class GHandler(GAsyncObject):
     @pyqtSlot(result=int)
     def apiVersion(self):
-        return 9
+        return 10
 
     @pyqtSlot(str, str)
     def logMsg(self, level: str, message: str):
@@ -37,6 +37,19 @@ class GHandler(GAsyncObject):
     def mdToHtml(self, mdText: str):
         try:
             return markitdown(mdText)
+        except Exception:
+            return ''
+
+    @pyqtSlot(str, QJsonValue, result=str)
+    def mdToHtmlWithOpts(self,
+                         mdText: str,
+                         options: QJsonValue):
+        try:
+            opts = options.toVariant()
+            return markitdown(
+                mdText,
+                ipfsLinksUseLocalGw=opts.get('ipfsLinksUseLocalGw', False)
+            )
         except Exception:
             return ''
 

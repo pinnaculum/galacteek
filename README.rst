@@ -191,7 +191,7 @@ Requirements
 ============
 
 - python3 >= 3.7 (Works with python *3.7*, *3.8*, *3.9*)
-- go-ipfs_ >= 0.5.0 (the installers include go-ipfs version 0.9.0)
+- kubo_ >= 0.14.0 (the installers include kubo version *0.17.0*)
 - PyQt5 >= 5.13.2
 - PyQtWebengine >= 5.13.2
 - gstreamer (on Linux) for media player support
@@ -236,7 +236,7 @@ from the ipfs-logo_ project's repository is included, unchanged.
 .. _sponsor: https://gitlab.com/galacteek/galacteek/-/blob/master/SPONSOR.rst
 .. _raspberry: https://gitlab.com/galacteek/galacteek/-/blob/master/RASPBERRY.rst
 .. _quamash: https://github.com/harvimt/quamash
-.. _go-ipfs: https://github.com/ipfs/go-ipfs
+.. _kubo: https://github.com/ipfs/kubo
 .. _dist.ipfs.io: https://dist.ipfs.io
 .. _IPFS: https://ipfs.io
 .. _ipfs-logo: https://github.com/ipfs/logo

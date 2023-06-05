@@ -576,7 +576,10 @@ class IPIdentifier(DAGOperations):
                 signature, pubKeyPem
             )
 
-            return payload.decode('utf-8') == str(subjUri)
+            if payload:
+                return payload.decode('utf-8') == str(subjUri)
+            else:
+                raise ValueError(f'Cannot verify JWS for subject: {subjUri}')
         except Exception as err:
             self.message(f'Failed to create signature: {err}')
 

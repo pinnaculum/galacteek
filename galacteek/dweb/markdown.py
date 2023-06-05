@@ -1,9 +1,12 @@
 import markdown
 import platform
+from yarl import URL
 
 from markdown.extensions import Extension
 from markdown.inlinepatterns import Pattern
 import xml.etree.ElementTree as etree
+
+from galacteek.core import runningApp
 
 from galacteek.dweb.pygmentedmarkdown import CodeBlockExtension
 
@@ -23,12 +26,13 @@ class LinkBuilder:
             el = etree.Element('a')
 
         if '!' in a:
-            img = etree.SubElement(el, 'img')
-
-            img.set('src', href)
-            img.set('width', '150px')
-            img.set('height', 'auto')
-            img.set('title', label)
+            etree.SubElement(
+                el, 'img',
+                src=href,
+                title=label,
+                width='50%',
+                height='auto'
+            )
         elif '%' in a:
             vid = etree.SubElement(el, 'video')
 
@@ -75,7 +79,14 @@ class LinkBuilder:
                     ipfsPath
                 )
             else:
-                if '%' in a:
+                if self.config['useLocalGwUrls'] is True:
+                    # Use galacteek's HTTP gateway
+
+                    connParams = runningApp().getIpfsConnectionParams()
+                    url = str(ipfsPath.publicUrlForGateway(
+                        URL(connParams.gatewayUrl)
+                    ))
+                elif '%' in a:
                     url = ipfsPath.dwebUrl
                 else:
                     url = ipfsPath.ipfsUrl
@@ -83,7 +94,8 @@ class LinkBuilder:
                 return self.mkLink(
                     a,
                     linkName if linkName else ipfsPath.objPath,
-                    ipfsPath.objPath, url)
+                    ipfsPath.objPath, url
+                )
 
 
 class IPFSPathPattern(Pattern, LinkBuilder):
@@ -130,6 +142,10 @@ class IPFSCIDPattern(Pattern, LinkBuilder):
 
 class IPFSLinksExtension(Extension):
     def __init__(self, *args, **kwargs):
+        self.config = {
+            'useLocalGwUrls': [False,
+                               'Use local HTTP gateway for IPFS obj urls']
+        }
         super(IPFSLinksExtension, self).__init__(*args, **kwargs)
 
     def extendMarkdown(self, md, md_globals):
@@ -142,10 +158,11 @@ class IPFSLinksExtension(Extension):
         md.inlinePatterns['ipnspath'] = IPNSPathPattern(self.getConfigs(), md)
 
 
-def markitdown(text):
+def markitdown(text,
+               ipfsLinksUseLocalGw: bool = False) -> str:
     extensions = [
         CodeBlockExtension(),
-        IPFSLinksExtension()
+        IPFSLinksExtension(useLocalGwUrls=ipfsLinksUseLocalGw)
     ]
 
     if platform.system() == 'Windows':
