@@ -17,7 +17,7 @@ cp packaging/windows/pyinstaller4.10/pyimod03_importers.py \
     c:\\hostedtoolcache\\windows\\python\\3.7.9\\x64\\lib\\site-packages\\PyInstaller\\loader
 
 # Copy tor and the dlls
-cp /c/ProgramData/chocolatey/lib/tor/tools/Tor/*  packaging/windows/tor
+cp -r /c/ProgramData/chocolatey/lib/tor/tools/Tor/*  packaging/windows/tor
 
 cp packaging/windows/galacteek_win.py .
 cp packaging/windows/galacteek_folder.spec .
