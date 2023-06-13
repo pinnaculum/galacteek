@@ -903,10 +903,13 @@ class Peers(GService):
                 if not piCtx.pingedRecently:
                     await piCtx.watch(ipfsop)
 
-    def getByPeerId(self, peerId):
+    def getByPeerId(self, peerId: str) -> PeerIdentityCtx:
         return self._byPeerId.get(peerId, None)
 
-    def getByHandle(self, handle):
+    def getByDid(self, did: str) -> PeerIdentityCtx:
+        return self._byDid.get(did, None)
+
+    def getByHandle(self, handle) -> PeerIdentityCtx:
         return self._byHandle.get(handle, None)
 
     def peerRegistered(self, peerId):

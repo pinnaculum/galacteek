@@ -47,6 +47,7 @@ openai==0.27.2
 orjson>=3
 otsrdflib==0.5.0
 pillow==9.2.0
+pituophis==1.1
 protobuf==3.6.1
 psutil==5.9.2
 ptpython==3.0.20

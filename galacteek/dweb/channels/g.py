@@ -137,3 +137,22 @@ class GHandler(GAsyncObject):
             log.warning(f'hashmarksAdd error: {traceback.format_exc()}')
 
             return QVariant(False)
+
+    @pyqtSlot(str, result=QVariant)
+    def peerGetDidFromPeerId(self, peerId: str):
+        """
+        Return a peer's current DID identifier string from an IPFS peerId
+        """
+        pCtx = self.app.ipfsCtx.peers.getByPeerId(peerId)
+        if not pCtx or not pCtx.ipid:
+            return QVariant(None)
+
+        return QVariant(pCtx.ipid.did)
+
+    @pyqtSlot(str, result=QVariant)
+    def peerGetPeerIdFromDid(self, did: str):
+        pCtx = self.app.ipfsCtx.peers.getByDid(did)
+        if not pCtx or not pCtx.ipid:
+            return QVariant(None)
+
+        return QVariant(pCtx.ipid.did)

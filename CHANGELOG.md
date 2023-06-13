@@ -5,6 +5,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.2] - 2023-06-12
+
+### Added
+- Support for the gopher protocol
+- g dweb channel: add slots to get the DID from a peer ID and vice versa
+
 ## [0.7.1] - 2023-06-04
 
 ### Changed

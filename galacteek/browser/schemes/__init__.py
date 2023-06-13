@@ -75,6 +75,7 @@ SCHEME_GEMINI = 'gemini'
 SCHEME_GEMIPFS = 'gemipfs'
 SCHEME_GEMI = 'gemi'  # deprecate soon by ipfs+gemini
 SCHEME_GEM = 'gem'
+SCHEME_GOPHER = 'gopher'
 
 # Torrent stuff
 
@@ -288,6 +289,13 @@ def initializeSchemes():
         SCHEME_GEM,
         syntax=QWebEngineUrlScheme.Syntax.Host,
         flags=defaultSchemeFlags
+    )
+
+    declareUrlScheme(
+        SCHEME_GOPHER,
+        syntax=QWebEngineUrlScheme.Syntax.HostAndPort,
+        flags=defaultSchemeFlags,
+        defaultPort=70
     )
 
     declareUrlScheme(

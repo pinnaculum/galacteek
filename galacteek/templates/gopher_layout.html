@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="{{ charset }}">
+    <title>{{ title }} </title>
+    <style>
+      body {
+        font: 14pt "Inter UI";
+        margin: 5px;
+      }
+
+      a {
+        color: #00ffff;
+        text-decoration: underline;
+        font-size: 1.3em;
+        padding-left: 5px;
+      }
+
+      a:hover {
+        color: steelblue;
+      }
+
+      h1 {
+        color: #A52A2A;
+        text-decoration: underline;
+        font-size: 1.7em;
+      }
+
+      h2 {
+        color: #FF7F50;
+        font-size: 1.4em;
+      }
+
+      h3 {
+        color: #DEB887;
+        font-size: 1.3em;
+      }
+
+      li {
+        font-size: 1.2em;
+        line-height: 1.4;
+      }
+
+      ul {
+        list-style-type: upper-roman;
+      }
+
+
+      input {
+        padding: 5px;
+        margin: 10px;
+        background-color: black;
+      }
+
+      input[type=search] {
+        font-size: 120%;
+        width: 600px;
+      }
+
+      input[type=submit] {
+        font-size: 150%;
+      }
+
+      p {
+        font-size: 1.1em;
+        padding-left: 10px;
+        line-height: 1.2;
+      }
+
+      pre {
+        display: block;
+        color: lightgreen;
+        white-space: pre-wrap;
+        white-space: -moz-pre-wrap;
+        white-space: -pre-wrap;
+        white-space: -o-pre-wrap;
+        word-wrap: break-word;
+        overflow-x: auto;
+        font-family: monospace;
+        font-size: 1.2em;
+        line-height: 1.6;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="text/javascript">
+      function qredirect(field, url) {
+        var elem = document.getElementById(field)
+
+        if (elem.value.length > 0)
+          window.location.href = url + '?' + encodeURIComponent(elem.value)
+      }
+    </script>
+    <div>
+    {% block body %}
+    {% endblock %}
+    </div>
+  </body>
+</html>

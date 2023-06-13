@@ -97,6 +97,7 @@ from galacteek.browser.schemes.i import ISchemeHandler
 from galacteek.browser.schemes.ipfshttp import IpfsHttpSchemeHandler
 from galacteek.browser.schemes.gemini import GeminiSchemeHandler
 from galacteek.browser.schemes.gemini import GemIpfsSchemeHandler
+from galacteek.browser.schemes.gopher import GopherSchemeHandler
 from galacteek.browser.schemes.pronto import ProntoGraphsSchemeHandler
 from galacteek.browser.schemes.webtorrent import WebTorrentSchemeHandler
 
@@ -1400,6 +1401,7 @@ class GalacteekApplication(ApplicationDaemonStarterMixin,
         self.iSchemeHandler = ISchemeHandler(self)
         self.geminiSchemeHandler = GeminiSchemeHandler(self)
         self.gemIpfsSchemeHandler = GemIpfsSchemeHandler(self)
+        self.gopherSchemeHandler = GopherSchemeHandler(self)
         self.prontoGSchemeHandler = ProntoGraphsSchemeHandler(self)
         self.webTorrentSchemeHandler = WebTorrentSchemeHandler(self)
         self.ipfsHttpSchemeHandler = IpfsHttpSchemeHandler(self)

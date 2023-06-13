@@ -17,6 +17,7 @@ from galacteek.browser.schemes import SCHEME_DWEB
 from galacteek.browser.schemes import SCHEME_ENS
 from galacteek.browser.schemes import SCHEME_ENSR
 from galacteek.browser.schemes import SCHEME_FS
+from galacteek.browser.schemes import SCHEME_GOPHER
 from galacteek.browser.schemes import SCHEME_I
 from galacteek.browser.schemes import SCHEME_IPFS
 from galacteek.browser.schemes import SCHEME_IPFS_P_HTTP
@@ -217,6 +218,8 @@ class BaseProfile(QWebEngineProfile, KeyListener):
                             self.app.webTorrentSchemeHandler)
         self.installHandler(SCHEME_MAGNET,
                             self.app.webTorrentSchemeHandler)
+        self.installHandler(SCHEME_GOPHER,
+                            self.app.gopherSchemeHandler)
 
     def profileFont(self, name, default=None):
         return self.config.fonts.get(name, default)
@@ -372,6 +375,7 @@ class BaseProfile(QWebEngineProfile, KeyListener):
 
         schemes = [SCHEME_GEMINI,
                    SCHEME_GEMI,
+                   SCHEME_GOPHER,
                    SCHEME_MANUAL,
                    SCHEME_I,
                    SCHEME_IPFS,

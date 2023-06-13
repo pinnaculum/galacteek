@@ -1,0 +1,37 @@
+{% extends "gopher_layout.html" %}
+{% block body %}
+{% if itemType == '0' %}
+  {% if url.path().endswith('.md') %}
+    {{ bodytext | markdown }}
+  {% else %}
+    <pre>
+    {{ bodytext }}
+    </pre>
+  {% endif %}
+{% else %}
+{% for item in menu %}
+  {% if item.port != 0 and item.port != 70 %}
+    {% set gurl = ['gopher://', item.host, ':', item.port, '/', item.type, item.path]|join %}
+  {% else %}
+    {% set gurl = ['gopher://', item.host, '/', item.type, item.path]|join %}
+  {% endif %}
+
+  {% if item.type == 'i' %}
+    <pre>{{ item.text }}</pre>
+  {% elif item.type == '7' %}
+    <form onsubmit="event.preventDefault(); qredirect('searchq', '{{ gurl }}');">
+      <input id="searchq" type="search" />
+      <input type="submit" value="{{ item.text }}"/>
+    </form>
+  {% elif item.type in ['0', '1', '4', '5', '9'] %}
+    <p><a href="{{ gurl }}">{{ item.text }}</a></p>
+  {% elif item.type in ['p', 'I', 'g'] %}
+    <p>
+      <a href="{{ gurl }}">{{ item.text }}
+      <img width="75%" height="auto" src="{{ gurl }}"/>
+      </a>
+    </p>
+  {% endif %}
+{% endfor %}
+{% endif %}
+{% endblock %}
