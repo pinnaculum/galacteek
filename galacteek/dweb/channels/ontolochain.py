@@ -63,8 +63,6 @@ class OntoloChainInterface(object):
             # Dates
             if 'dateCreated' not in dag:
                 dag['dateCreated'] = utcDatetimeIso()
-            if 'dateModified' not in dag:
-                dag['dateModified'] = utcDatetimeIso()
 
             # dag['verificationMethod'] = f'{ipid.did}#keys-1'
 

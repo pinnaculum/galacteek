@@ -156,11 +156,15 @@ class LDInterface(object):
         return True
 
     async def a_ipgTripleAdd(self, app, loop,
-                             guri, s, p, o):
+                             guri, s, p, o,
+                             rmFirst: bool = True):
         graph = self.rdfService.graphByUri(guri)
 
         if graph is None:
             return False
+
+        if rmFirst:
+            graph.remove((URIRef(s), URIRef(p), None))
 
         graph.add((URIRef(s), URIRef(p), o))
         return True
@@ -206,12 +210,13 @@ class LDHandler(GAsyncObject, LDInterface):
             self._dict(obj)
         )
 
-    @pyqtSlot(str, str, str, str, result=bool)
-    def tAddLiteral(self, graphUri: str, s, p, o):
+    @pyqtSlot(str, str, str, str, bool, result=bool)
+    def tAddLiteral(self, graphUri: str, s, p, o, rmFirst: bool):
         return self.tc(
             self.a_ipgTripleAdd,
             graphUri,
-            s, p, Literal(o)
+            s, p, Literal(o),
+            rmFirst
         )
 
     @pyqtSlot(str, str, str, str, result=bool)

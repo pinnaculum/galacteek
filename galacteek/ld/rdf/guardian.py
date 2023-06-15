@@ -12,7 +12,10 @@ from rdflib import BNode
 from galacteek import log
 from galacteek import cached_property
 
+from galacteek.core import utcDatetimeIso
+from galacteek.did.ipid import IPIdentifier
 from galacteek.ipfs import ipfsOp
+from galacteek.ld import ipsTermUri
 from galacteek.ld.rdf import BaseGraph
 
 
@@ -32,7 +35,8 @@ class GuardianTriggerAction:
     do: str = 'trigger'
     call: str = None
 
-    async def followSubject(self, src: Graph, dst: Graph, s, p, o):
+    async def followSubject(self, src: Graph, dst: Graph, s, p, o,
+                            ipid: IPIdentifier = None):
         followee = src.value(
             subject=s,
             predicate=URIRef('ips://galacteek.ld/followee')
@@ -48,7 +52,8 @@ class GuardianTriggerAction:
             followee
         ))
 
-    async def processLikeAction(self, src: Graph, dst: Graph, s, p, o):
+    async def processLikeAction(self, src: Graph, dst: Graph, s, p, o,
+                                ipid: IPIdentifier = None):
         lpred = URIRef('ips://galacteek.ld/likes')
 
         liked = src.value(
@@ -74,7 +79,8 @@ class GuardianTriggerAction:
         ))
 
     async def processGenericReaction(self, src: Graph, dst: Graph,
-                                     s: URIRef, p: URIRef, o: URIRef):
+                                     s: URIRef, p: URIRef, o: URIRef,
+                                     ipid: IPIdentifier = None):
         """
         Process a ips://galacteek.ld/GenericReaction
 
@@ -123,7 +129,50 @@ class GuardianTriggerAction:
             s
         ))
 
-    async def unfollowSubject(self, src: Graph, dst: Graph, s, p, o):
+    async def processReply(self, src: Graph, dst: Graph,
+                           s: URIRef, p: URIRef, o: URIRef,
+                           ipid: IPIdentifier = None):
+        """
+        Process a relation where something is "inReplyTo"
+        (ips://galacteek.ld/inReplyTo) something else, typically
+        a post, an article, any creative thing. If this is in reply
+        to something we created, create a notification.
+        """
+
+        if ipid is None:
+            # Need an ipid to process this
+            return
+
+        authorPred = ipsTermUri('author')
+
+        senderAuthor = src.value(
+            subject=s,
+            predicate=authorPred
+        )
+
+        # Pull the author from the dst graph
+        oAuthor = dst.value(
+            subject=o,
+            predicate=authorPred
+        )
+
+        if oAuthor == ipid.meUriRef:
+            # This is a reply to something we authored: create a notification
+
+            return {
+                '@type': 'Notification',
+                '@id': ipid.didRscUrlGenerate('Notification'),
+                'dateNotified': utcDatetimeIso(),
+                'recipient': str(ipid.meUriRef),
+                'nType': 'reply',
+                'agent': str(senderAuthor),
+                'object': str(s),
+                'about': str(o),
+                'acknowledged': 0
+            }
+
+    async def unfollowSubject(self, src: Graph, dst: Graph, s, p, o,
+                              ipid: IPIdentifier = None):
         followee = src.value(
             subject=s,
             predicate=URIRef('ips://galacteek.ld/followee')
@@ -141,7 +190,8 @@ class GuardianTriggerAction:
             ))
 
     @ipfsOp
-    async def captchaVcProcess(self, ipfsop, src: Graph, dst: Graph, s, p, o):
+    async def captchaVcProcess(self, ipfsop, src: Graph, dst: Graph, s, p, o,
+                               ipid: IPIdentifier = None):
         issuer = src.value(
             subject=s,
             predicate=URIRef('ips://galacteek.ld/issuer')
@@ -273,7 +323,8 @@ class GraphGuardian:
 
         return action
 
-    async def merge(self, graph: Graph, dst: Graph):
+    async def merge(self, graph: Graph, dst: Graph,
+                    ipIdentifier: IPIdentifier = None):
         """
         Guardian graph merge
 
@@ -296,7 +347,8 @@ class GraphGuardian:
                     try:
                         coro = getattr(action, action.call)
                         assert asyncio.iscoroutinefunction(coro)
-                        res = await coro(graph, dst, s, p, o)
+                        res = await coro(graph, dst, s, p, o,
+                                         ipid=ipIdentifier)
 
                         if isinstance(res, dict):
                             residue.append(res)
@@ -330,14 +382,14 @@ class GraphGuardian:
         def mergeReplaceRun(gsrc: Graph, gdst: Graph) -> bool:
             try:
                 for s, p, o in gsrc:
-                    # No BNodes allowed by default
-                    if isinstance(s, BNode) and not bnodes:
-                        gsrc.remove((s, p, o))
-                    elif isinstance(o, BNode) and not bnodes:
-                        gsrc.remove((s, p, o))
+                    if not bnodes:
+                        if isinstance(s, BNode):
+                            gsrc.remove((s, p, o))
+                        elif isinstance(o, BNode):
+                            gsrc.remove((s, p, o))
 
                     gdst.remove((s, p, None))
-                    time.sleep(0.05)
+                    time.sleep(0.02)
 
                 # Should lock here
                 gdst += gsrc

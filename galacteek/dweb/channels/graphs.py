@@ -350,7 +350,7 @@ class SparQLResultsModel(QAbstractListModel,
                     f'Value of type {type(cell)} not supported'
                 )
 
-            if val:
+            if val is not None:
                 return val
             else:
                 return QVariant(None)

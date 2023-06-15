@@ -45,6 +45,12 @@ guardians:
           do: 'trigger'
           call: 'processGenericReaction'
 
+      - subject: '^.*$'
+        predicate: 'ips://galacteek.ld/inReplyTo'
+        object: '^.*$'
+        action:
+          do: 'trigger'
+          call: 'processReply'
 
 # Graph synchronizers definitions
 synchronizers:

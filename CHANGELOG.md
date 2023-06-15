@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Support for the gopher protocol
 - g dweb channel: add slots to get the DID from a peer ID and vice versa
+- Guardian trigger action for object replies (gs:inReplyTo)
 
 ## [0.7.1] - 2023-06-04
 

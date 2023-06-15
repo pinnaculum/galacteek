@@ -4,6 +4,7 @@ import posixpath
 import json
 import re
 import random
+import secrets
 import string
 import weakref
 
@@ -143,7 +144,13 @@ class IPIdentifier(DAGOperations):
 
     @property
     def didUriRef(self):
-        return URIRef(self._did)
+        return URIRef(self.did)
+
+    @property
+    def meUriRef(self):
+        # URI of the Person object in the DwebPassport service
+        # did:ipid:xxxx/passport/me
+        return URIRef(f'{self.did}/passport/me')
 
     @property
     def p2pServices(self):
@@ -181,7 +188,7 @@ class IPIdentifier(DAGOperations):
         return self.didUrl(fragment=frag)
 
     def didUrl(self, params=None, path=None,
-               query=None, fragment=None):
+               query=None, fragment=None) -> str:
         """
         Build a DID URL with the given params
         """
@@ -209,6 +216,18 @@ class IPIdentifier(DAGOperations):
                 url += fragment
 
         return url
+
+    def didRscUrlGenerate(self, rsctype: str, *args) -> str:
+        """
+        Generate a random DID url that can be used for various
+        (local) resources linked to this DID, like reply notifications, etc ..
+        """
+
+        uid = secrets.token_hex(24)
+
+        return self.didUrl(
+            path=f'/rsc/{rsctype}/{uid}'
+        )
 
     def dump(self):
         """

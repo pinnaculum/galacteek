@@ -582,6 +582,8 @@ class RDFStoresService(ProntoServiceModels,
         else:
             dst = [self.graphG.identifier]
 
+        ipid = await ipfsop.ipid()
+
         async with ipfsop.ldOps() as ld:
             objGraph = await ld.rdfify(obj)
 
@@ -602,10 +604,12 @@ class RDFStoresService(ProntoServiceModels,
                     continue
 
                 result = await destGraph.guardian.merge(
-                    objGraph, destGraph)
+                    objGraph, destGraph,
+                    ipIdentifier=ipid
+                )
 
                 for so in result:
-                    result = await self.storeObject(
+                    await self.storeObject(
                         ipfsop,
                         so,
                         graphs=graphs

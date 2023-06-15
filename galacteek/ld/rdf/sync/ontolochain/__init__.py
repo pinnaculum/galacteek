@@ -252,26 +252,19 @@ class GraphSemChainSynchronizer:
                     log.debug(f'syncChain: {curi}: error {err}')
                     continue
 
-                try:
-                    await self.syncGeoEntities(
-                        hGraph, smartql,
-                        await hGraph.rexec(self.ontoloChainsGeoEmittersList),
-                        curi,
-                        contextName='OntoloChainGeoEmitter'
-                    )
-
-                    if 0:
+                if 0:
+                    try:
                         await self.syncGeoEntities(
                             hGraph, smartql,
                             await hGraph.rexec(
                                 self.ontoloChainsGeoEmittersList),
                             curi,
-                            contextName='OntoloChainGeoTransponder'
+                            contextName='OntoloChainGeoEmitter'
                         )
-                except Exception as err:
-                    log.debug(
-                        f'Sync with {peerId}: '
-                        f'failed to fetch geo entities: {err}')
+                    except Exception as err:
+                        log.debug(
+                            f'Sync with {peerId}: '
+                            f'failed to fetch geo entities: {err}')
 
                 self._chainSync[curi] = False
 
