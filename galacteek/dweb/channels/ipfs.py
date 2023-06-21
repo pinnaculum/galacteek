@@ -1,5 +1,9 @@
 from pathlib import Path
+import shutil
+import tempfile
 import traceback
+import io
+import zipfile
 
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtCore import pyqtSignal
@@ -204,6 +208,94 @@ class IPFSHandler(GAsyncObject, IPFSInterface, KeyListener):
         else:
             return QVariant(QByteArray(bytes(data)))
 
+    @opSlot(str, str)
+    async def filesCp(self, src: str, dest: str):
+        try:
+            return await (self.app.ipfsOperatorForLoop()).filesCp(
+                src, dest
+            )
+        except Exception:
+            return False
+
+    @opSlot(QJsonValue, str, str)
+    async def filesLink(self, entry: QJsonValue, dest: str, name: str):
+        try:
+            return await (self.app.ipfsOperatorForLoop()).filesLink(
+                self._dict(entry),
+                dest,
+                name=name if name else None
+            )
+        except Exception:
+            traceback.print_exc()
+            return False
+
+    @opSlot(QJsonValue, str)
+    async def filesLinkFp(self, entry: QJsonValue, dest: str):
+        try:
+            return await (self.app.ipfsOperatorForLoop()).filesLinkFp(
+                self._dict(entry),
+                dest
+            )
+        except Exception:
+            traceback.print_exc()
+            return False
+
+    @opSlot(str, str, bool)
+    async def filesDelete(self, path: str, name: str, recursive: bool):
+        try:
+            return await (self.app.ipfsOperatorForLoop()).filesDelete(
+                path, name, recursive=recursive
+            )
+        except Exception:
+            traceback.print_exc()
+            return False
+
+    @opSlot(str, bool)
+    async def filesMkdir(self, path: str, parents: bool):
+        try:
+            return await (self.app.ipfsOperatorForLoop()).filesMkdir(
+                path, parents=parents
+            )
+        except Exception:
+            traceback.print_exc()
+            return False
+
+    @opSlot(str, str)
+    async def filesMove(self, src: str, dst: str):
+        try:
+            return await (self.app.ipfsOperatorForLoop()).filesMove(src, dst)
+        except Exception:
+            traceback.print_exc()
+            return False
+
+    @opSlot(str, bool)
+    async def filesList(self, path: str, sort: bool):
+        try:
+            return await (self.app.ipfsOperatorForLoop()).filesList(
+                path, sort=sort
+            )
+        except Exception:
+            traceback.print_exc()
+            return False
+
+    @opSlot(str, bytes, int, int, bool, bool)
+    async def filesWrite(self, path: str, data: bytes,
+                         offset: int,
+                         count: int,
+                         create: bool,
+                         truncate: bool):
+        try:
+            return await (self.app.ipfsOperatorForLoop()).filesWrite(
+                path, data,
+                create=create,
+                truncate=truncate,
+                offset=offset,
+                count=count
+            )
+        except Exception:
+            traceback.print_exc()
+            return False
+
     @opSlot(str)
     async def getJson(self, path):
         ipfsop = self.app.ipfsOperatorForLoop()
@@ -263,6 +355,42 @@ class IPFSHandler(GAsyncObject, IPFSInterface, KeyListener):
             return False
         else:
             return True
+
+    @opSlot(str, QJsonValue)
+    async def unpackToIpfs(self, ipfsPath: str, options):
+        """
+        Extract a zip (or other archive in the future) to an IPFS
+        UnixFS directory and return its CID.
+        """
+
+        opts = self._dict(options)
+        timeout = opts.get('timeout', None)
+        mime = opts.get('mimeType', 'application/x-zip')
+
+        try:
+            ipfsop = self.app.ipfsOperatorForLoop()
+            dstdir = tempfile.mkdtemp(prefix='ipfsunzip')
+
+            data = await ipfsop.catObject(
+                ipfsPath,
+                timeout=timeout
+            )
+            assert data is not None
+
+            with zipfile.ZipFile(io.BytesIO(data), 'r') as zip:
+                zip.extractall(dstdir)
+
+            entry = await ipfsop.addPath(dstdir, recursive=True)
+            assert entry
+
+            shutil.rmtree(dstdir)
+
+            return {
+                'cid': entry['Hash'],
+                'mimeType': mime
+            }
+        except Exception:
+            return QVariant(None)
 
     @opSlot(str, QJsonValue)
     async def list(self, path: str, options):
@@ -476,6 +604,13 @@ class IpfsObjectInterface(QObject):
         return ''
 
     @pyqtSlot(result=str)
+    def dirname(self):
+        if self._ipfsPath.valid and self._ipfsPath.dirname:
+            return self._ipfsPath.dirname
+
+        return ''
+
+    @pyqtSlot(result=str)
     def ipnsId(self):
         if self._ipfsPath.valid and self._ipfsPath.ipnsId:
             return self._ipfsPath.ipnsId
@@ -524,6 +659,9 @@ class IpfsObjectInterface(QObject):
 
     @pyqtSlot(str, result=str)
     def child(self, subpath: str):
+        if not self._ipfsPath.valid:
+            return ''
+
         ch = self._ipfsPath.child(subpath)
         if ch and ch.valid:
             return str(ch)

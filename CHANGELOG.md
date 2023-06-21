@@ -5,6 +5,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.3] - 2023-06-22
+
+### Added
+- MFS model: add a role for the MFS path
+- ipfs channel: add some coroutines for MFS operations
+- g channel: add a coroutine to convert gemtext
+
 ## [0.7.2] - 2023-06-12
 
 ### Added

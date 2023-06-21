@@ -22,7 +22,7 @@ from . import opSlot
 class GHandler(GAsyncObject):
     @pyqtSlot(result=int)
     def apiVersion(self):
-        return 10
+        return 11
 
     @pyqtSlot(str, str)
     def logMsg(self, level: str, message: str):
@@ -52,6 +52,43 @@ class GHandler(GAsyncObject):
             )
         except Exception:
             return ''
+
+    @pyqtSlot(str, QJsonValue, result=QVariant)
+    def gemTextToHtml(self,
+                      gemText: str,
+                      options: QJsonValue):
+        from trimgmi import Document as GmiDocument
+        from trimgmi import LineType as GmiLineType
+        from trimgmi.sample import emit_naive_html
+
+        try:
+            toc = []
+            doc = GmiDocument()
+            for line in gemText.split('\n'):
+                doc.append(line)
+
+            html = ''
+
+            hrefPrev = None
+            for line in doc.emit_line_objects(auto_tidy=True):
+                if line.type == GmiLineType.LINK:
+                    toc.append({
+                        'href': line.extra,
+                        'hrefPrev': hrefPrev,
+                        'title': line.text if line.text else line.extra
+                    })
+                    hrefPrev = line.extra
+
+            for line in emit_naive_html(doc):
+                html += line + "\n"
+
+            return QVariant({
+                'html': html,
+                'toc': toc,
+                'title': None
+            })
+        except Exception:
+            return QVariant(None)
 
     @pyqtSlot(str, result=str)
     def urlFromGateway(self, url: str):

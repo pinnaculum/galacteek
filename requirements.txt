@@ -74,6 +74,7 @@ rule-engine==3.5.0
 SPARQLWrapper==1.8.5
 strict-rfc3339==0.7
 tortoise-orm==0.17.6
+trimgmi==0.3.0
 urnparse==0.2.0
 validators==0.20.0
 yarl==1.5.1

@@ -195,6 +195,9 @@ mimeTypeDagPb = MIMEType('ipfs/dag-pb')
 mimeTypeDagUnknown = MIMEType('ipfs/dag-unknown')
 mimeTypeWasm = MIMEType('application/wasm')
 
+# gpub: e-book containing text files in the "text/gemini" format
+mimeTypeGpub = MIMEType('application/gpub+zip')
+
 
 def magicInstance():
     global iMagic

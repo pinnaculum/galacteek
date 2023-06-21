@@ -233,7 +233,7 @@ class DwebCraftingWidget(QWidget, Configurable):
                 QSizePolicy.Maximum)
 
         self.t1.stop()
-        self.t1.start(1400)
+        self.t1.start(4000)
 
     def onShowHidePyramids(self, checked):
         cWidgetSetAttr(self.objectName(),

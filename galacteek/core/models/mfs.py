@@ -20,6 +20,7 @@ from galacteek.ipfs.paths import posixIpfsPath
 from galacteek.ipfs.cidhelpers import joinIpfs
 from galacteek.ipfs.cidhelpers import IPFSPath
 from galacteek.ipfs.ipfsops import *
+from galacteek.ipfs import mimetype
 from galacteek.ipfs.wrappers import ipfsOp
 from galacteek.appsettings import *
 
@@ -252,6 +253,12 @@ class MFSNameItem(MFSItem):
     def mimeType(self):
         return self._mimeType
 
+    def mimeSpecialCase(self):
+        filename, ext = os.path.splitext(self.entry['Name'])
+
+        if ext == '.gpub':
+            return str(mimetype.mimeTypeGpub)
+
     def mimeFromDb(self, db):
         self._mimeType = db.mimeTypeForFile(self.entry['Name'])
 
@@ -316,6 +323,7 @@ class MFSItemModel(QStandardItemModel):
     IpfsUrlRole = Qt.UserRole + 5
     MimeTypeRole = Qt.UserRole + 6
     UnixFsTypeRole = Qt.UserRole + 7
+    MfsPathRole = Qt.UserRole + 8
 
     def __init__(self):
         QStandardItemModel.__init__(self)
@@ -524,13 +532,23 @@ class MFSItemModel(QStandardItemModel):
         elif role == self.FileNameRole and (isinstance(
                 item, MFSNameItem) or isinstance(item, MFSRootItem)):
             return item.text()
-        elif role == self.MimeTypeRole and isinstance(item, MFSNameItem):
-            if item.mimeType:
-                return item.mimeType.name()
+        elif role == self.MimeTypeRole:
+            if isinstance(item, MFSRootItem):
+                return 'application/x-directory'
+            elif isinstance(item, MFSNameItem):
+                mspecial = item.mimeSpecialCase()
+
+                if mspecial:
+                    return mspecial
+                elif item.mimeType:
+                    return item.mimeType.name()
         elif role == self.IpfsPathRole and isinstance(item, MFSNameItem):
             return item.fullPath
         elif role == self.IpfsUrlRole and isinstance(item, MFSNameItem):
             return item.ipfsPath.ipfsUrl
+        elif role == self.MfsPathRole and isinstance(item, MFSItem):
+            return item.path
+
         else:
             return super().data(index, role)
 
@@ -540,7 +558,8 @@ class MFSItemModel(QStandardItemModel):
             self.IpfsPathRole: 'ipfsPath'.encode(),
             self.IpfsUrlRole: 'ipfsUrl'.encode(),
             self.CidRole: 'cid'.encode(),
-            self.MimeTypeRole: 'mimeType'.encode()
+            self.MimeTypeRole: 'mimeType'.encode(),
+            self.MfsPathRole: 'mfsPath'.encode()
         }
 
     # Called from QML
@@ -564,6 +583,10 @@ class MFSItemModel(QStandardItemModel):
     @pyqtSlot(result=int)
     def ipfsUrlRoleValue(self):
         return self.IpfsUrlRole
+
+    @pyqtSlot(result=int)
+    def mfsPathRoleValue(self):
+        return self.MfsPathRole
 
     @pyqtSlot(QModelIndex, int, int, result=str)
     def requestListingFromIndex(self, idx, depth: int, timeout: int):

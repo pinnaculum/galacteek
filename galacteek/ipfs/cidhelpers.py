@@ -502,6 +502,11 @@ class IPFSPath:
             return posixIpfsPath.basename(self.objPath.rstrip('/'))
 
     @property
+    def dirname(self):
+        if self.valid:
+            return posixIpfsPath.dirname(self.objPath.rstrip('/'))
+
+    @property
     def objPath(self):
         # Return the object path (without fragment)
         return self._rscPath

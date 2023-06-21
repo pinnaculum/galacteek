@@ -35,6 +35,7 @@ def opSlot(*args, **kws):
 
             task._obj.opDone.emit(
                 task._tid,
+                task._fnName,
                 value
             )
         except RuntimeError:
@@ -54,7 +55,7 @@ def opSlot(*args, **kws):
             )
             task._tid = secrets.token_hex(16)
             task._obj = obj
-            # task._fnName = fn.__name__
+            task._fnName = fn.__name__
 
             task.add_done_callback(_error_handler)
             return task._tid
@@ -90,7 +91,8 @@ def tcSlot(*args, **kws):
 
 
 class GAsyncObject(QObject):
-    opDone = pyqtSignal(str, QVariant)
+    opDone = pyqtSignal(str, str, QVariant,
+                        arguments=['opid', 'opname', 'result'])
 
     def __init__(self, parent=None):
         super().__init__(parent)
