@@ -73,6 +73,11 @@ class ProntoDataSetsManagerMixin:
                         g,
                         ograph
                     )
+                elif upgradeStrategy in ['mergeForward', 'forward']:
+                    await ograph.guardian.mergeForward(
+                        g,
+                        ograph
+                    )
                 elif upgradeStrategy in ['purge', 'purgefirst']:
                     for s, p, o in ograph:
                         ograph.remove((s, p, o))

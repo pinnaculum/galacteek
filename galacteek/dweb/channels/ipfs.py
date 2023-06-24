@@ -357,28 +357,40 @@ class IPFSHandler(GAsyncObject, IPFSInterface, KeyListener):
             return True
 
     @opSlot(str, QJsonValue)
-    async def unpackToIpfs(self, ipfsPath: str, options):
+    async def unpackToIpfs(self, path: str, options):
         """
         Extract a zip (or other archive in the future) to an IPFS
         UnixFS directory and return its CID.
+
+        The path argument can be a filepath or an IPFS unixfs path
         """
 
         opts = self._dict(options)
         timeout = opts.get('timeout', None)
         mime = opts.get('mimeType', 'application/x-zip')
+        sourceUrl = opts.get('sourceUrl')
 
         try:
             ipfsop = self.app.ipfsOperatorForLoop()
             dstdir = tempfile.mkdtemp(prefix='ipfsunzip')
+            fp = Path(path)
+            ipfsPath = IPFSPath(path)
 
-            data = await ipfsop.catObject(
-                ipfsPath,
-                timeout=timeout
-            )
-            assert data is not None
+            if fp.is_file():
+                with zipfile.ZipFile(str(fp), 'r') as zip:
+                    zip.extractall(dstdir)
 
-            with zipfile.ZipFile(io.BytesIO(data), 'r') as zip:
-                zip.extractall(dstdir)
+            elif ipfsPath.valid:
+                data = await ipfsop.catObject(
+                    path,
+                    timeout=timeout
+                )
+                assert data is not None
+
+                with zipfile.ZipFile(io.BytesIO(data), 'r') as zip:
+                    zip.extractall(dstdir)
+            else:
+                raise ValueError(f'Cannot handle: {path}')
 
             entry = await ipfsop.addPath(dstdir, recursive=True)
             assert entry
@@ -387,9 +399,11 @@ class IPFSHandler(GAsyncObject, IPFSInterface, KeyListener):
 
             return {
                 'cid': entry['Hash'],
-                'mimeType': mime
+                'mimeType': mime,
+                'sourceUrl': sourceUrl
             }
         except Exception:
+            traceback.print_exc()
             return QVariant(None)
 
     @opSlot(str, QJsonValue)

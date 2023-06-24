@@ -408,3 +408,49 @@ class GraphGuardian:
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, mergeReplaceRun,
                                           graph, dst)
+
+    async def mergeForward(self,
+                           graph: Graph,
+                           dst: BaseGraph,
+                           notify=True,
+                           bnodes=False,
+                           debug=False) -> bool:
+        """
+        Add triples from the source graph that are not in the
+        destination graph.
+
+        :param Graph graph: input graph
+        :param Graph dst: destination graph
+        :param bool notify: Emit PS notify event
+        :param bool bnodes: Allow BNodes
+        """
+
+        def mergeForwardRun(gsrc: Graph, gdst: Graph) -> bool:
+            try:
+                for s, p, o in gsrc:
+                    if not bnodes:
+                        if isinstance(s, BNode):
+                            gsrc.remove((s, p, o))
+                        elif isinstance(o, BNode):
+                            gsrc.remove((s, p, o))
+
+                    if (s, p, o) not in gdst:
+                        gdst.add((s, p, o))
+
+                    time.sleep(0.01)
+
+            except Exception:
+                log.warning(f'mergeForward failure ! {traceback.format_exc()}')
+                return False
+            else:
+                # Hub notification
+
+                if notify:
+                    dst.publishUpdateEvent(gsrc)
+
+                log.debug(f'mergeForward success: {len(graph)} triples')
+                return True
+
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, mergeForwardRun,
+                                          graph, dst)

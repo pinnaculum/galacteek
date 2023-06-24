@@ -38,8 +38,6 @@ graphEnvs:
           # Identities (i am)
           urn:ipg:i:am: {}
 
-          urn:ipg:i:articles: {}
-
           urn:ipg:i:init0:
             datasets:
               urn:glk:datasets:dataset-init0:

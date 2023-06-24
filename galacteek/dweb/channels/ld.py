@@ -202,13 +202,26 @@ class LDHandler(GAsyncObject, LDInterface):
     async def ipgRdfMergeFromFile(self, graphUri: str, fp: str):
         return await self.a_ipgRdfMergeFromFile(mid, fp, graphUri)
 
-    @pyqtSlot(str, QJsonValue, result=bool)
-    def ipgObjectStore(self, graphUri: str, obj):
-        return self.tc(
-            self.a_ipgObjectStore,
-            graphUri,
-            self._dict(obj)
-        )
+    @opSlot(str, QJsonValue)
+    async def ipgObjectStore(self, graphUri: str, obj):
+        graph = self.rdfService.graphByUri(graphUri)
+
+        if graph is None:
+            return
+
+        await graph.pullObject(self._dict(obj))
+
+    @opSlot(str, QJsonValue)
+    async def ipgObjectMerge(self, graphUri: str, obj: QJsonValue):
+        dstGraph = self.rdfService.graphByUri(graphUri)
+
+        if dstGraph is None:
+            return
+
+        graph = await dstGraph.rdfifyObject(self._dict(obj))
+
+        if graph:
+            await dstGraph.guardian.mergeReplace(graph, dstGraph)
 
     @pyqtSlot(str, str, str, str, bool, result=bool)
     def tAddLiteral(self, graphUri: str, s, p, o, rmFirst: bool):
